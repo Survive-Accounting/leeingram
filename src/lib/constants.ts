@@ -17,13 +17,12 @@ export const STATUS_COLORS: Record<LessonStatus, string> = {
 };
 
 export const QUESTIONNAIRE_QUESTIONS = [
-  "What topic are you trying to teach?",
-  "How do you explain this concept conceptually?",
-  "What formulas, journal entries, or steps must students memorize?",
-  "What common mistakes should students watch for?",
-  "What textbook problems should this lesson focus on?",
-  "Why are these problems tricky on exams?",
-  "Any additional teaching notes?",
+  "What topic are you teaching?",
+  "How do you explain this conceptually? (Your voice & approach)",
+  "Key formulas, journal entries, or steps students must memorize?",
+  "Memory tricks or shortcuts you use for students?",
+  "Common mistakes & exam traps to watch for?",
+  "Which textbook problems should this lesson focus on? (Optional — fill after uploading resources)",
 ];
 
 export const FILE_TYPES = [

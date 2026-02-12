@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Sparkles, FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, Sparkles, FileSpreadsheet, ExternalLink, Loader2, Send, Pencil, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { LESSON_STATUSES, QUESTIONNAIRE_QUESTIONS } from "@/lib/constants";
 import type { LessonStatus } from "@/lib/constants";
@@ -18,6 +21,10 @@ type LessonStatusEnum = Database["public"]["Enums"]["lesson_status"];
 export default function LessonDetail() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const [refinementPrompt, setRefinementPrompt] = useState("");
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState({ lessonPlan: "", problemList: "", videoOutline: "" });
 
   const { data: lesson } = useQuery({
     queryKey: ["lesson", lessonId],
@@ -61,6 +68,35 @@ export default function LessonDetail() {
     enabled: !!lessonId,
   });
 
+  const { data: styleGuide } = useQuery({
+    queryKey: ["style-guide"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_preferences")
+        .select("style_guide")
+        .eq("user_id", session!.user.id)
+        .maybeSingle();
+      return data?.style_guide || "";
+    },
+    enabled: !!session,
+  });
+
+  const { data: previousPlans } = useQuery({
+    queryKey: ["previous-plans"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("lesson_plans")
+        .select("generated_lesson_plan, lesson_id, lessons(lesson_title)")
+        .not("generated_lesson_plan", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(2);
+      return data?.map((p: any) => ({
+        title: p.lessons?.lesson_title || "",
+        lessonPlan: p.generated_lesson_plan || "",
+      })) || [];
+    },
+  });
+
   const statusMutation = useMutation({
     mutationFn: async (newStatus: LessonStatusEnum) => {
       const { error } = await supabase
@@ -76,15 +112,33 @@ export default function LessonDetail() {
   });
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
-      const response = await supabase.functions.invoke("generate-lesson-plan", {
-        body: {
-          lessonTitle: lesson!.lesson_title,
-          questionnaire: lessonPlan!.questionnaire_answers,
-        },
-      });
+    mutationFn: async (refinePrompt?: string) => {
+      const body: any = {
+        lessonTitle: lesson!.lesson_title,
+        questionnaire: lessonPlan!.questionnaire_answers,
+        chapterId: lesson!.chapter_id,
+        styleGuide: styleGuide || "",
+        previousPlans: previousPlans || [],
+      };
+
+      if (refinePrompt) {
+        body.refinementPrompt = refinePrompt;
+        body.currentPlan = {
+          lessonPlan: lessonPlan!.generated_lesson_plan,
+          problemList: lessonPlan!.generated_problem_list,
+          videoOutline: lessonPlan!.generated_video_outline,
+        };
+      }
+
+      const response = await supabase.functions.invoke("generate-lesson-plan", { body });
       if (response.error) throw new Error(response.error.message);
       const result = response.data;
+
+      // Save refinement history
+      const history = (lessonPlan as any)?.refinement_history || [];
+      const newHistory = refinePrompt
+        ? [...history, { prompt: refinePrompt, timestamp: new Date().toISOString() }]
+        : history;
 
       const { error } = await supabase
         .from("lesson_plans")
@@ -92,15 +146,36 @@ export default function LessonDetail() {
           generated_lesson_plan: result.lessonPlan,
           generated_problem_list: result.problemList,
           generated_video_outline: result.videoOutline,
+          refinement_history: newHistory,
         })
         .eq("id", lessonPlan!.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lesson-plan", lessonId] });
-      toast.success("Lesson plan generated!");
+      setRefinementPrompt("");
+      toast.success("Lesson plan updated!");
     },
     onError: (e) => toast.error("Generation failed: " + e.message),
+  });
+
+  const saveEditMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("lesson_plans")
+        .update({
+          generated_lesson_plan: editValues.lessonPlan,
+          generated_problem_list: editValues.problemList,
+          generated_video_outline: editValues.videoOutline,
+        })
+        .eq("id", lessonPlan!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lesson-plan", lessonId] });
+      setEditingSection(null);
+      toast.success("Saved!");
+    },
   });
 
   const sheetMutation = useMutation({
@@ -112,7 +187,6 @@ export default function LessonDetail() {
       });
       if (error) throw error;
 
-      // Update status
       await supabase
         .from("lessons")
         .update({ lesson_status: "Sheet Generated" as LessonStatusEnum })
@@ -124,6 +198,15 @@ export default function LessonDetail() {
       toast.success("Google Sheet placeholder created!");
     },
   });
+
+  const startEditing = () => {
+    setEditValues({
+      lessonPlan: lessonPlan?.generated_lesson_plan || "",
+      problemList: lessonPlan?.generated_problem_list || "",
+      videoOutline: lessonPlan?.generated_video_outline || "",
+    });
+    setEditingSection("all");
+  };
 
   if (!lesson || !lessonPlan) {
     return (
@@ -137,6 +220,7 @@ export default function LessonDetail() {
   const course = lesson.courses as { course_name: string };
   const answers = lessonPlan.questionnaire_answers as Record<string, string>;
   const currentStatusIndex = LESSON_STATUSES.indexOf(lesson.lesson_status as LessonStatus);
+  const hasGenerated = !!lessonPlan.generated_lesson_plan;
 
   return (
     <AppLayout>
@@ -208,38 +292,117 @@ export default function LessonDetail() {
           <Card>
             <CardHeader className="flex-row items-center justify-between pb-3">
               <CardTitle className="text-base">AI Lesson Plan</CardTitle>
-              <Button
-                size="sm"
-                onClick={() => generateMutation.mutate()}
-                disabled={generateMutation.isPending}
-              >
-                {generateMutation.isPending ? (
-                  <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Generating...</>
-                ) : (
-                  <><Sparkles className="mr-1 h-3.5 w-3.5" /> {lessonPlan.generated_lesson_plan ? "Regenerate" : "Generate"}</>
+              <div className="flex gap-2">
+                {hasGenerated && !editingSection && (
+                  <Button size="sm" variant="outline" onClick={startEditing}>
+                    <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                  </Button>
                 )}
-              </Button>
+                {editingSection && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>
+                      <X className="mr-1 h-3.5 w-3.5" /> Cancel
+                    </Button>
+                    <Button size="sm" onClick={() => saveEditMutation.mutate()} disabled={saveEditMutation.isPending}>
+                      <Save className="mr-1 h-3.5 w-3.5" /> Save
+                    </Button>
+                  </>
+                )}
+                {!editingSection && (
+                  <Button
+                    size="sm"
+                    onClick={() => generateMutation.mutate(undefined)}
+                    disabled={generateMutation.isPending}
+                  >
+                    {generateMutation.isPending ? (
+                      <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="mr-1 h-3.5 w-3.5" /> {hasGenerated ? "Regenerate" : "Generate"}</>
+                    )}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-0">
-              {lessonPlan.generated_lesson_plan ? (
-                <>
-                  <div>
-                    <p className="mb-1 text-xs font-semibold text-muted-foreground">LESSON SUMMARY</p>
-                    <p className="whitespace-pre-wrap text-sm">{lessonPlan.generated_lesson_plan}</p>
-                  </div>
-                  <div>
-                    <p className="mb-1 text-xs font-semibold text-muted-foreground">PROBLEM BREAKDOWN</p>
-                    <p className="whitespace-pre-wrap text-sm">{lessonPlan.generated_problem_list}</p>
-                  </div>
-                  <div>
-                    <p className="mb-1 text-xs font-semibold text-muted-foreground">VIDEO OUTLINE</p>
-                    <p className="whitespace-pre-wrap text-sm">{lessonPlan.generated_video_outline}</p>
-                  </div>
-                </>
+              {hasGenerated ? (
+                editingSection ? (
+                  <>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-muted-foreground">LESSON SUMMARY</p>
+                      <Textarea
+                        value={editValues.lessonPlan}
+                        onChange={(e) => setEditValues((v) => ({ ...v, lessonPlan: e.target.value }))}
+                        rows={8}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-muted-foreground">PROBLEM BREAKDOWN</p>
+                      <Textarea
+                        value={editValues.problemList}
+                        onChange={(e) => setEditValues((v) => ({ ...v, problemList: e.target.value }))}
+                        rows={8}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-muted-foreground">VIDEO OUTLINE</p>
+                      <Textarea
+                        value={editValues.videoOutline}
+                        onChange={(e) => setEditValues((v) => ({ ...v, videoOutline: e.target.value }))}
+                        rows={8}
+                        className="text-sm"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-muted-foreground">LESSON SUMMARY</p>
+                      <p className="whitespace-pre-wrap text-sm">{lessonPlan.generated_lesson_plan}</p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-muted-foreground">PROBLEM BREAKDOWN</p>
+                      <p className="whitespace-pre-wrap text-sm">{lessonPlan.generated_problem_list}</p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold text-muted-foreground">VIDEO OUTLINE</p>
+                      <p className="whitespace-pre-wrap text-sm">{lessonPlan.generated_video_outline}</p>
+                    </div>
+                  </>
+                )
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Click "Generate" to create an AI lesson plan from your questionnaire answers.
                 </p>
+              )}
+
+              {/* Refinement Chat */}
+              {hasGenerated && !editingSection && (
+                <div className="border-t pt-4">
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">REFINE THIS PLAN</p>
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={refinementPrompt}
+                      onChange={(e) => setRefinementPrompt(e.target.value)}
+                      placeholder="e.g. Make the tone more conversational, add more emphasis on the timeline visual..."
+                      rows={2}
+                      className="text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      className="shrink-0 self-end"
+                      onClick={() => generateMutation.mutate(refinementPrompt)}
+                      disabled={!refinementPrompt.trim() || generateMutation.isPending}
+                    >
+                      {generateMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
