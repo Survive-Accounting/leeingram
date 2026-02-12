@@ -32,6 +32,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             >
               Create Lesson
             </Link>
+            <Link
+              to="/style-guide"
+              className={`transition-colors hover:text-foreground ${
+                location.pathname === "/style-guide" ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+            >
+              Style Guide
+            </Link>
           </nav>
           <div className="ml-auto">
             <Button variant="ghost" size="sm" onClick={signOut}>

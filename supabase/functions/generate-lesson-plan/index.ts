@@ -11,7 +11,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -35,15 +34,49 @@ serve(async (req) => {
       });
     }
 
-    const { lessonTitle, questionnaire } = await req.json();
+    const { lessonTitle, questionnaire, chapterId, styleGuide, previousPlans, refinementPrompt, currentPlan } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Build context from chapter resources (PDF URLs for reference)
+    let resourceContext = "";
+    if (chapterId) {
+      const { data: resources } = await supabase
+        .from("chapter_resources")
+        .select("file_name, file_type, file_url")
+        .eq("chapter_id", chapterId);
+      
+      if (resources?.length) {
+        resourceContext = "\n\nCHAPTER RESOURCES AVAILABLE:\n" + 
+          resources.map((r: any) => `- ${r.file_name} (${r.file_type}): ${r.file_url}`).join("\n");
+      }
+    }
+
+    // Build style context
+    let styleContext = "";
+    if (styleGuide?.trim()) {
+      styleContext = `\n\nINSTRUCTOR STYLE GUIDE:\n${styleGuide}`;
+    }
+
+    // Build example context from previous plans
+    let exampleContext = "";
+    if (previousPlans?.length) {
+      const examples = previousPlans.slice(0, 2);
+      exampleContext = "\n\nPREVIOUS LESSON PLAN EXAMPLES (match this style/voice):\n" +
+        examples.map((p: any, i: number) => 
+          `--- Example ${i + 1}: ${p.title} ---\n${p.lessonPlan}\n`
+        ).join("\n");
+    }
 
     const questionnaireText = Object.entries(questionnaire as Record<string, string>)
       .map(([q, a]) => `Q: ${q}\nA: ${a}`)
       .join("\n\n");
 
+    // Handle refinement vs initial generation
+    const isRefinement = !!refinementPrompt && !!currentPlan;
+
     const systemPrompt = `You are an expert accounting instructor helping create exam-prep video lessons. You produce structured, practical lesson plans.
+${styleContext}${exampleContext}${resourceContext}
 
 When given a lesson title and questionnaire answers, generate exactly three sections:
 
@@ -58,7 +91,27 @@ When given a lesson title and questionnaire answers, generate exactly three sect
    Segment 4 — Exam Tips & Shortcuts: Key exam strategies
    Segment 5 — Wrap Up & Next Steps: Summary and preview of next lesson
 
-Be specific and practical. Reference the actual textbook problems and concepts mentioned in the questionnaire.`;
+Be specific and practical. Reference the actual textbook problems and concepts mentioned in the questionnaire. Match the instructor's teaching style and voice from their style guide and examples.`;
+
+    const messages: Array<{role: string; content: string}> = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    if (isRefinement) {
+      messages.push({
+        role: "assistant",
+        content: `LESSON SUMMARY\n${currentPlan.lessonPlan}\n\nPROBLEM BREAKDOWN\n${currentPlan.problemList}\n\nVIDEO OUTLINE\n${currentPlan.videoOutline}`,
+      });
+      messages.push({
+        role: "user",
+        content: `Please revise the lesson plan based on this feedback:\n\n${refinementPrompt}\n\nRegenerate all three sections (LESSON SUMMARY, PROBLEM BREAKDOWN, VIDEO OUTLINE) with these adjustments applied.`,
+      });
+    } else {
+      messages.push({
+        role: "user",
+        content: `Lesson Title: ${lessonTitle}\n\nQuestionnaire Answers:\n${questionnaireText}\n\nGenerate the three sections: LESSON SUMMARY, PROBLEM BREAKDOWN, and VIDEO OUTLINE.`,
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -68,13 +121,7 @@ Be specific and practical. Reference the actual textbook problems and concepts m
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `Lesson Title: ${lessonTitle}\n\nQuestionnaire Answers:\n${questionnaireText}\n\nGenerate the three sections: LESSON SUMMARY, PROBLEM BREAKDOWN, and VIDEO OUTLINE.`,
-          },
-        ],
+        messages,
       }),
     });
 

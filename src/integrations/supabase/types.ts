@@ -150,6 +150,7 @@ export type Database = {
           id: string
           lesson_id: string
           questionnaire_answers: Json
+          refinement_history: Json | null
         }
         Insert: {
           created_at?: string
@@ -159,6 +160,7 @@ export type Database = {
           id?: string
           lesson_id: string
           questionnaire_answers?: Json
+          refinement_history?: Json | null
         }
         Update: {
           created_at?: string
@@ -168,6 +170,7 @@ export type Database = {
           id?: string
           lesson_id?: string
           questionnaire_answers?: Json
+          refinement_history?: Json | null
         }
         Relationships: [
           {
@@ -220,6 +223,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          style_guide: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          style_guide?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          style_guide?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
