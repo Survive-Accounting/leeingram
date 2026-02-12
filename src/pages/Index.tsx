@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BookOpen, ChevronRight, Plus } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function Index() {
   const { data: courses, isLoading: coursesLoading } = useQuery({
@@ -63,7 +64,7 @@ export default function Index() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-3">
         {courses?.map((course) => {
           const courseChapters = chapters?.filter((ch) => ch.course_id === course.id) ?? [];
           const totalLessons = courseChapters.reduce(
@@ -72,43 +73,52 @@ export default function Index() {
           );
 
           return (
-            <Card key={course.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">{course.course_name}</CardTitle>
-                  </div>
-                  <Badge variant="secondary">
-                    {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-1 pt-0">
-                {courseChapters.map((ch) => {
-                  const count = getChapterLessonCount(ch.id);
-                  return (
-                    <Link
-                      key={ch.id}
-                      to={`/chapter/${ch.id}`}
-                      className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
-                    >
-                      <span className="text-foreground">
-                        Ch {ch.chapter_number} — {ch.chapter_name}
-                      </span>
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        {count > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            {count}
-                          </Badge>
-                        )}
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </span>
-                    </Link>
-                  );
-                })}
-              </CardContent>
-            </Card>
+            <Collapsible key={course.id}>
+              <Card className="overflow-hidden">
+                <CollapsibleTrigger className="w-full text-left">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">{course.course_name}</CardTitle>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">
+                          {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
+                        </Badge>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=closed]>&]:rotate-[-90deg]" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-1 pt-0">
+                    {courseChapters.map((ch) => {
+                      const count = getChapterLessonCount(ch.id);
+                      return (
+                        <Link
+                          key={ch.id}
+                          to={`/chapter/${ch.id}`}
+                          className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
+                        >
+                          <span className="text-foreground">
+                            Ch {ch.chapter_number} — {ch.chapter_name}
+                          </span>
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            {count > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {count}
+                              </Badge>
+                            )}
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           );
         })}
       </div>
