@@ -1,8 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen } from "lucide-react";
+import { BookOpen, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,6 +33,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               Create Lesson
             </Link>
           </nav>
+          <div className="ml-auto">
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="mr-1 h-3.5 w-3.5" /> Sign Out
+            </Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
