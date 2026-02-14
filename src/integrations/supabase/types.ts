@@ -213,6 +213,7 @@ export type Database = {
       }
       focus_sessions: {
         Row: {
+          actual_minutes: number | null
           completed_at: string | null
           created_at: string
           domain: string
@@ -221,10 +222,13 @@ export type Database = {
           focus_detail: string | null
           id: string
           intention: string
+          lesson_id: string | null
+          notes: string | null
           started_at: string
           user_id: string
         }
         Insert: {
+          actual_minutes?: number | null
           completed_at?: string | null
           created_at?: string
           domain?: string
@@ -233,10 +237,13 @@ export type Database = {
           focus_detail?: string | null
           id?: string
           intention?: string
+          lesson_id?: string | null
+          notes?: string | null
           started_at?: string
           user_id: string
         }
         Update: {
+          actual_minutes?: number | null
           completed_at?: string | null
           created_at?: string
           domain?: string
@@ -245,10 +252,20 @@ export type Database = {
           focus_detail?: string | null
           id?: string
           intention?: string
+          lesson_id?: string | null
+          notes?: string | null
           started_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_sheets: {
         Row: {
