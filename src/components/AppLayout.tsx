@@ -33,12 +33,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               Create Lesson
             </Link>
             <Link
-              to="/email-factory"
+              to="/marketing"
               className={`transition-colors hover:text-foreground ${
-                location.pathname === "/email-factory" ? "text-foreground font-medium" : "text-muted-foreground"
+                location.pathname.startsWith("/marketing") ? "text-foreground font-medium" : "text-muted-foreground"
               }`}
             >
-              Email Factory
+              Marketing
             </Link>
             <Link
               to="/style-guide"
