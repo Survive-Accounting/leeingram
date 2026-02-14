@@ -12,6 +12,7 @@ import LessonDetail from "./pages/LessonDetail";
 import StyleGuide from "./pages/StyleGuide";
 import EmailFactory from "./pages/EmailFactory";
 import Marketing from "./pages/Marketing";
+import DomainSelect from "./pages/DomainSelect";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -29,7 +30,8 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/auth" element={!loading && session ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/auth" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
+      <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
       <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
