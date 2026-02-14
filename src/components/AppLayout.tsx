@@ -48,6 +48,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             >
               Style Guide
             </Link>
+            <Link
+              to="/roadmap"
+              className={`transition-colors hover:text-foreground ${
+                location.pathname === "/roadmap" ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+            >
+              Roadmap
+            </Link>
           </nav>
           <div className="ml-auto">
             <Button variant="ghost" size="sm" onClick={signOut}>

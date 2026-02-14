@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import ChapterPage from "./pages/ChapterPage";
+import FeatureRoadmap from "./pages/FeatureRoadmap";
 import CreateLesson from "./pages/CreateLesson";
 import LessonDetail from "./pages/LessonDetail";
 import StyleGuide from "./pages/StyleGuide";
@@ -34,6 +35,7 @@ const AppRoutes = () => {
       <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
       <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
       <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />
+      <Route path="/roadmap" element={<ProtectedRoute><FeatureRoadmap /></ProtectedRoute>} />
       <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
       <Route path="/marketing/emails" element={<ProtectedRoute><EmailFactory /></ProtectedRoute>} />
       <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
