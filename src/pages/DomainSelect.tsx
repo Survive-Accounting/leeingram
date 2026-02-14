@@ -9,27 +9,71 @@ const DOMAINS = [
     key: "writing",
     label: "Writing [for Ben]",
     tagline: "No destination",
-    color: "hsl(45, 90%, 50%)",
-    glowColor: "hsl(45, 90%, 65%)",
     route: "/writing",
   },
   {
     key: "survive",
     label: "Survive Accounting",
     tagline: "Nationwide exam prep platform",
-    color: "hsl(220, 70%, 55%)",
-    glowColor: "hsl(220, 70%, 70%)",
     route: "/",
   },
   {
     key: "leeingram",
     label: "Leeingram.co",
     tagline: "What's my next big project?",
-    color: "hsl(160, 60%, 45%)",
-    glowColor: "hsl(160, 60%, 60%)",
     route: "/leeingram",
   },
 ];
+
+// Matrix rain character set
+const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF";
+
+function MatrixRain() {
+  const [columns, setColumns] = useState<{ x: number; chars: string[]; speed: number; opacity: number }[]>([]);
+
+  useEffect(() => {
+    const cols = Math.floor(window.innerWidth / 18);
+    const generated = Array.from({ length: cols }, (_, i) => ({
+      x: i * 18,
+      chars: Array.from({ length: Math.floor(Math.random() * 25 + 8) }, () =>
+        MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]
+      ),
+      speed: Math.random() * 15 + 8,
+      opacity: Math.random() * 0.3 + 0.05,
+    }));
+    setColumns(generated);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {columns.map((col, i) => (
+        <div
+          key={i}
+          className="absolute top-0 flex flex-col"
+          style={{
+            left: col.x,
+            animation: `matrixFall ${col.speed}s linear infinite`,
+            opacity: col.opacity,
+          }}
+        >
+          {col.chars.map((char, j) => (
+            <span
+              key={j}
+              className="text-xs leading-tight"
+              style={{
+                color: j === 0 ? "#ffffff" : `hsl(120, 100%, ${60 - j * 2}%)`,
+                textShadow: j === 0 ? "0 0 8px #fff" : `0 0 5px hsl(120, 100%, 50%)`,
+                fontFamily: "'Courier New', monospace",
+              }}
+            >
+              {char}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function DomainSelect() {
   const { signOut } = useAuth();
@@ -37,48 +81,41 @@ export default function DomainSelect() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [entered, setEntered] = useState(false);
   const [showDomains, setShowDomains] = useState(false);
-  const [stars, setStars] = useState<{ x: number; y: number; size: number; delay: number }[]>([]);
+  const [typedText, setTypedText] = useState("");
+  const fullText = "Welcome, Lee.";
 
+  // Typewriter effect
   useEffect(() => {
-    const generated = Array.from({ length: 80 }, () => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 2.5 + 0.5,
-      delay: Math.random() * 3,
-    }));
-    setStars(generated);
-  }, []);
+    if (typedText.length < fullText.length) {
+      const timeout = setTimeout(() => {
+        setTypedText(fullText.slice(0, typedText.length + 1));
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [typedText]);
 
   const handleEnter = () => {
     setEntered(true);
-    setTimeout(() => setShowDomains(true), 600);
+    setTimeout(() => setShowDomains(true), 500);
   };
 
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #0a0a1a 0%, #1a1a3e 40%, #0d0d2b 100%)",
+        background: "#000000",
         fontFamily: "'Courier New', Courier, monospace",
       }}
     >
-      {/* Stars */}
-      {stars.map((star, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            width: star.size,
-            height: star.size,
-            background: "white",
-            opacity: 0.6,
-            animation: `twinkle ${2 + star.delay}s ease-in-out infinite`,
-            animationDelay: `${star.delay}s`,
-          }}
-        />
-      ))}
+      <MatrixRain />
+
+      {/* Scanline overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,0,0.015) 2px, rgba(0,255,0,0.015) 4px)",
+        }}
+      />
 
       {/* Sign out */}
       <div className="absolute top-4 right-4 z-10">
@@ -86,143 +123,116 @@ export default function DomainSelect() {
           variant="ghost"
           size="sm"
           onClick={signOut}
-          className="text-white/50 hover:text-white hover:bg-white/10"
+          style={{ color: "hsl(120, 60%, 35%)" }}
+          className="hover:bg-green-950/50"
         >
           <LogOut className="mr-1 h-3.5 w-3.5" /> Sign Out
         </Button>
       </div>
 
       {!entered ? (
-        <div className="flex flex-col items-center gap-8 animate-fade-in z-10">
-          {/* Retro logo */}
-          <div
-            className="text-center"
-            style={{
-              textShadow: "0 0 20px hsl(220, 70%, 55%), 0 0 40px hsl(220, 70%, 55%), 0 0 80px hsl(280, 60%, 50%)",
-            }}
-          >
+        <div className="flex flex-col items-center gap-10 z-10">
+          {/* Typewriter welcome */}
+          <div className="text-center">
             <h1
-              className="text-5xl md:text-7xl font-bold tracking-tight"
-              style={{ color: "hsl(0, 0%, 100%)" }}
+              className="text-4xl md:text-6xl font-bold"
+              style={{
+                color: "#00ff41",
+                textShadow: "0 0 20px rgba(0,255,65,0.5), 0 0 40px rgba(0,255,65,0.2)",
+              }}
             >
-              THE FACTORY
+              {typedText}
+              <span className="animate-pulse">_</span>
             </h1>
-            <p className="mt-2 text-lg tracking-[0.3em] uppercase" style={{ color: "hsl(220, 70%, 70%)" }}>
-              Content Production Hub
-            </p>
           </div>
 
-          {/* Visitor counter */}
-          <div
-            className="border px-4 py-1.5 text-xs"
-            style={{
-              borderColor: "hsl(45, 80%, 50%)",
-              color: "hsl(45, 80%, 60%)",
-              background: "rgba(0,0,0,0.5)",
-            }}
-          >
-            🔥 VISITOR #{Math.floor(Math.random() * 9000 + 1000)} 🔥 YOU ARE THE CHOSEN ONE
-          </div>
-
-          {/* Enter button */}
-          <button
-            onClick={handleEnter}
-            className="relative px-12 py-4 text-xl font-bold uppercase tracking-widest transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg, hsl(280, 60%, 50%), hsl(220, 70%, 55%))",
-              color: "white",
-              border: "2px solid hsl(280, 60%, 70%)",
-              borderRadius: "4px",
-              boxShadow: "0 0 30px hsl(280, 60%, 50% / 0.5), inset 0 0 20px hsl(280, 60%, 50% / 0.2)",
-              textShadow: "0 0 10px white",
-            }}
-          >
-            ⚡ ENTER YOUR DOMAIN ⚡
-          </button>
-
-          {/* Under construction */}
-          <p
-            className="text-xs animate-pulse"
-            style={{ color: "hsl(0, 80%, 60%)" }}
-          >
-            🚧 UNDER CONSTRUCTION — BEST VIEWED AT 800x600 🚧
-          </p>
+          {/* Enter button — only show after typing finishes */}
+          {typedText.length >= fullText.length && (
+            <button
+              onClick={handleEnter}
+              className="relative px-10 py-4 text-lg font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer animate-fade-in"
+              style={{
+                background: "transparent",
+                color: "#00ff41",
+                border: "1px solid #00ff41",
+                borderRadius: "2px",
+                boxShadow: "0 0 15px rgba(0,255,65,0.2), inset 0 0 15px rgba(0,255,65,0.05)",
+                textShadow: "0 0 10px rgba(0,255,65,0.5)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 0 30px rgba(0,255,65,0.4), inset 0 0 20px rgba(0,255,65,0.1)";
+                e.currentTarget.style.background = "rgba(0,255,65,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 0 15px rgba(0,255,65,0.2), inset 0 0 15px rgba(0,255,65,0.05)";
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              Enter Your Chosen Domain
+            </button>
+          )}
         </div>
       ) : (
         <div
-          className="flex flex-col items-center gap-10 z-10 w-full max-w-2xl px-4"
+          className="flex flex-col items-center gap-8 z-10 w-full max-w-xl px-4"
           style={{
-            animation: showDomains ? "none" : "fadeIn 0.5s ease-out",
             opacity: showDomains ? 1 : 0,
-            transition: "opacity 0.5s ease-out",
+            transition: "opacity 0.6s ease-out",
           }}
         >
           {showDomains && (
             <>
-              <div className="text-center">
-                <h2
-                  className="text-2xl md:text-3xl font-bold uppercase tracking-wider"
-                  style={{
-                    color: "white",
-                    textShadow: "0 0 15px hsl(220, 70%, 55%)",
-                  }}
-                >
-                  Choose Your Domain
-                </h2>
-                <div
-                  className="mt-2 h-px w-48 mx-auto"
-                  style={{
-                    background: "linear-gradient(90deg, transparent, hsl(220, 70%, 55%), transparent)",
-                  }}
-                />
-              </div>
+              <h2
+                className="text-sm uppercase tracking-[0.4em] font-bold"
+                style={{
+                  color: "hsl(120, 80%, 40%)",
+                  textShadow: "0 0 10px rgba(0,255,65,0.3)",
+                }}
+              >
+                Select Domain
+              </h2>
 
-              <div className="grid gap-4 w-full">
+              <div className="grid gap-3 w-full">
                 {DOMAINS.map((domain) => (
                   <button
                     key={domain.key}
                     onClick={() => navigate(domain.route)}
                     onMouseEnter={() => setHovered(domain.key)}
                     onMouseLeave={() => setHovered(null)}
-                    className="relative w-full text-left p-6 transition-all duration-300 cursor-pointer"
+                    className="relative w-full text-left p-5 transition-all duration-300 cursor-pointer"
                     style={{
-                      background:
-                        hovered === domain.key
-                          ? `linear-gradient(135deg, ${domain.color}20, ${domain.glowColor}10)`
-                          : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${hovered === domain.key ? domain.color : "rgba(255,255,255,0.1)"}`,
-                      borderRadius: "6px",
-                      boxShadow:
-                        hovered === domain.key
-                          ? `0 0 25px ${domain.color}40, inset 0 0 15px ${domain.color}10`
-                          : "none",
-                      transform: hovered === domain.key ? "translateX(4px)" : "none",
+                      background: hovered === domain.key ? "rgba(0,255,65,0.06)" : "rgba(0,255,65,0.015)",
+                      border: `1px solid ${hovered === domain.key ? "rgba(0,255,65,0.6)" : "rgba(0,255,65,0.15)"}`,
+                      borderRadius: "2px",
+                      boxShadow: hovered === domain.key
+                        ? "0 0 25px rgba(0,255,65,0.15), inset 0 0 15px rgba(0,255,65,0.05)"
+                        : "none",
                     }}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <h3
-                          className="text-lg font-bold"
+                          className="text-base font-bold tracking-wide"
                           style={{
-                            color: hovered === domain.key ? domain.glowColor : "white",
-                            textShadow: hovered === domain.key ? `0 0 10px ${domain.color}` : "none",
+                            color: hovered === domain.key ? "#00ff41" : "rgba(0,255,65,0.7)",
+                            textShadow: hovered === domain.key ? "0 0 8px rgba(0,255,65,0.5)" : "none",
                           }}
                         >
                           {domain.label}
                         </h3>
                         <p
-                          className="text-sm mt-0.5"
-                          style={{ color: "rgba(255,255,255,0.5)" }}
+                          className="text-xs mt-1 tracking-wider"
+                          style={{ color: "rgba(0,255,65,0.35)" }}
                         >
                           {domain.tagline}
                         </p>
                       </div>
                       <span
-                        className="text-2xl transition-transform duration-300"
+                        className="text-xl transition-all duration-300"
                         style={{
                           transform: hovered === domain.key ? "translateX(4px)" : "none",
-                          opacity: hovered === domain.key ? 1 : 0.3,
-                          color: domain.color,
+                          opacity: hovered === domain.key ? 1 : 0.2,
+                          color: "#00ff41",
                         }}
                       >
                         →
@@ -232,11 +242,8 @@ export default function DomainSelect() {
                 ))}
               </div>
 
-              <p
-                className="text-xs text-center"
-                style={{ color: "rgba(255,255,255,0.25)" }}
-              >
-                © 2026 The Factory™ — All Rights Reserved — Made with ☕ and 🎸
+              <p className="text-xs text-center" style={{ color: "rgba(0,255,65,0.15)" }}>
+                system v2.026 // the factory™
               </p>
             </>
           )}
@@ -244,16 +251,9 @@ export default function DomainSelect() {
       )}
 
       <style>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 1; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fadeIn 1s ease-out;
+        @keyframes matrixFall {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100vh); }
         }
       `}</style>
     </div>
