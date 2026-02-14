@@ -211,6 +211,45 @@ export type Database = {
         }
         Relationships: []
       }
+      focus_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          domain: string
+          duration_minutes: number
+          focus_area: string
+          focus_detail: string | null
+          id: string
+          intention: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          domain?: string
+          duration_minutes?: number
+          focus_area: string
+          focus_detail?: string | null
+          id?: string
+          intention?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          domain?: string
+          duration_minutes?: number
+          focus_area?: string
+          focus_detail?: string | null
+          id?: string
+          intention?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_sheets: {
         Row: {
           created_at: string
@@ -323,6 +362,30 @@ export type Database = {
           },
         ]
       }
+      music_links: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          user_id: string
+          youtube_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          user_id: string
+          youtube_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          user_id?: string
+          youtube_url?: string
+        }
+        Relationships: []
+      }
       roadmap_items: {
         Row: {
           category: string
@@ -362,6 +425,68 @@ export type Database = {
         }
         Relationships: []
       }
+      story_ideas: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      story_uploads: {
+        Row: {
+          file_name: string
+          file_url: string
+          id: string
+          story_idea_id: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name: string
+          file_url: string
+          id?: string
+          story_idea_id: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          file_name?: string
+          file_url?: string
+          id?: string
+          story_idea_id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_uploads_story_idea_id_fkey"
+            columns: ["story_idea_id"]
+            isOneToOne: false
+            referencedRelation: "story_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -394,6 +519,80 @@ export type Database = {
           semesters?: string[] | null
           style_guide?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vlog_episodes: {
+        Row: {
+          created_at: string
+          description: string | null
+          episode_number: number
+          id: string
+          season_id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          episode_number: number
+          id?: string
+          season_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          episode_number?: number
+          id?: string
+          season_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlog_episodes_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "vlog_seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlog_seasons: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          season_number: number
+          series_name: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          season_number: number
+          series_name?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          season_number?: number
+          series_name?: string
+          title?: string
           user_id?: string
         }
         Relationships: []
