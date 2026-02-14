@@ -442,6 +442,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sprint_activity_log: {
+        Row: {
+          action_detail: string | null
+          action_type: string
+          created_at: string
+          id: string
+          lesson_id: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          action_detail?: string | null
+          action_type: string
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          action_detail?: string | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_activity_log_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprint_activity_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "focus_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_ideas: {
         Row: {
           created_at: string

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSprint } from "@/contexts/SprintContext";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ export default function LessonDetail() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const queryClient = useQueryClient();
   const { session } = useAuth();
+  const { logAction } = useSprint();
   const [refinementPrompt, setRefinementPrompt] = useState("");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ lessonPlan: "", problemList: "", videoOutline: "" });
@@ -105,9 +107,10 @@ export default function LessonDetail() {
         .eq("id", lessonId!);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, newStatus) => {
       queryClient.invalidateQueries({ queryKey: ["lesson", lessonId] });
       toast.success("Status updated");
+      logAction("status_change", `Changed status to ${newStatus}`, lessonId);
     },
   });
 
@@ -155,6 +158,7 @@ export default function LessonDetail() {
       queryClient.invalidateQueries({ queryKey: ["lesson-plan", lessonId] });
       setRefinementPrompt("");
       toast.success("Lesson plan updated!");
+      logAction("ai_generate", refinementPrompt ? `Refined plan: "${refinementPrompt}"` : "Generated lesson plan", lessonId);
     },
     onError: (e) => toast.error("Generation failed: " + e.message),
   });
@@ -175,6 +179,7 @@ export default function LessonDetail() {
       queryClient.invalidateQueries({ queryKey: ["lesson-plan", lessonId] });
       setEditingSection(null);
       toast.success("Saved!");
+      logAction("manual_edit", "Manually edited lesson plan", lessonId);
     },
   });
 
@@ -196,6 +201,7 @@ export default function LessonDetail() {
       queryClient.invalidateQueries({ queryKey: ["google-sheet", lessonId] });
       queryClient.invalidateQueries({ queryKey: ["lesson", lessonId] });
       toast.success("Google Sheet placeholder created!");
+      logAction("sheet_generated", "Generated Google Sheet placeholder", lessonId);
     },
   });
 
