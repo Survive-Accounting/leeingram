@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { Factory, Mail, Lightbulb, Lock } from "lucide-react";
+import { Factory, Mail, Lightbulb, Timer } from "lucide-react";
 
 const FACTORIES = [
   {
@@ -25,7 +25,15 @@ const FACTORIES = [
     description: "Brainstorm features, track roadmap items, and plan the future",
     icon: Lightbulb,
     route: "/roadmap",
-    available: false,
+    available: true,
+  },
+  {
+    key: "focus",
+    label: "Focus Sprint",
+    description: "Microfocused work sessions — set intention, timer, and get to work",
+    icon: Timer,
+    route: "/focus",
+    available: true,
   },
 ];
 
@@ -48,11 +56,6 @@ export default function SurviveHome() {
                   <h2 className="text-sm font-semibold text-foreground">{f.label}</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">{f.description}</p>
                 </div>
-                {!f.available && (
-                  <span className="absolute top-2 right-3 flex items-center gap-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                    <Lock className="h-3 w-3" /> Coming Soon
-                  </span>
-                )}
               </div>
             );
 
