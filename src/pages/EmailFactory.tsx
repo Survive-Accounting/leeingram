@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -72,6 +73,7 @@ export default function EmailFactory() {
   const [newEmail, setNewEmail] = useState({
     title: "",
     email_type: "General",
+    course_tags: [] as string[],
     audience: "",
     purpose: "",
     giving: "",
@@ -99,6 +101,16 @@ export default function EmailFactory() {
     enabled: !!user?.id,
   });
 
+  // Fetch courses for audience picker
+  const { data: courses } = useQuery({
+    queryKey: ["courses"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("courses").select("id, course_name, slug").order("course_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const emailTypes = (prefs as any)?.email_types ?? DEFAULT_EMAIL_TYPES;
   const semesters = (prefs as any)?.semesters ?? DEFAULT_SEMESTERS;
   const emailStyleGuide = (prefs as any)?.email_style_guide ?? "";
@@ -122,11 +134,22 @@ export default function EmailFactory() {
   // Create email
   const createMutation = useMutation({
     mutationFn: async () => {
+      const audienceStr = newEmail.course_tags.length > 0
+        ? newEmail.course_tags.join(", ") + " students"
+        : newEmail.audience || "All students";
       const { data, error } = await supabase
         .from("emails")
         .insert({
           user_id: user!.id,
-          ...newEmail,
+          title: newEmail.title,
+          email_type: newEmail.email_type,
+          audience: audienceStr,
+          course_tags: newEmail.course_tags,
+          purpose: newEmail.purpose,
+          giving: newEmail.giving,
+          hoping_to_receive: newEmail.hoping_to_receive,
+          local_flavor: newEmail.local_flavor,
+          semester: newEmail.semester,
           status: "planning",
         })
         .select()
@@ -141,6 +164,7 @@ export default function EmailFactory() {
       setNewEmail({
         title: "",
         email_type: "General",
+        course_tags: [],
         audience: "",
         purpose: "",
         giving: "",
@@ -588,39 +612,55 @@ export default function EmailFactory() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Who's it for?</Label>
-              <Input
-                value={newEmail.audience}
-                onChange={(e) => setNewEmail((p) => ({ ...p, audience: e.target.value }))}
-                placeholder="e.g. ACCY 201 students who just took Exam 1"
-              />
+              <Label>Who's it for? (select courses)</Label>
+              <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+                {courses?.map((course: any) => (
+                  <label key={course.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={newEmail.course_tags.includes(course.course_name)}
+                      onCheckedChange={(checked) => {
+                        setNewEmail((p) => ({
+                          ...p,
+                          course_tags: checked
+                            ? [...p.course_tags, course.course_name]
+                            : p.course_tags.filter((t) => t !== course.course_name),
+                        }));
+                      }}
+                    />
+                    <span>{course.course_name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Purpose</Label>
-              <Input
+              <Label>Purpose <span className="text-muted-foreground text-xs">(internal note)</span></Label>
+              <Textarea
                 value={newEmail.purpose}
                 onChange={(e) => setNewEmail((p) => ({ ...p, purpose: e.target.value }))}
                 placeholder="e.g. Collect post-exam feedback and encourage engagement"
+                rows={2}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>What are you giving?</Label>
-              <Input
+              <Label>What are you giving? <span className="text-muted-foreground text-xs">(internal note)</span></Label>
+              <Textarea
                 value={newEmail.giving}
                 onChange={(e) => setNewEmail((p) => ({ ...p, giving: e.target.value }))}
                 placeholder="e.g. $25 Venmo drawing, genuine care, study tips"
+                rows={2}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>What do you hope to receive?</Label>
-              <Input
+              <Label>What do you hope to receive? <span className="text-muted-foreground text-xs">(internal note)</span></Label>
+              <Textarea
                 value={newEmail.hoping_to_receive}
                 onChange={(e) => setNewEmail((p) => ({ ...p, hoping_to_receive: e.target.value }))}
                 placeholder="e.g. Honest exam feedback, question details, engagement"
+                rows={2}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Local Flavor / Ole Miss Touches</Label>
+              <Label>Local Flavor / Ole Miss Touches <span className="text-muted-foreground text-xs">(optional — can add later)</span></Label>
               <Input
                 value={newEmail.local_flavor}
                 onChange={(e) => setNewEmail((p) => ({ ...p, local_flavor: e.target.value }))}
