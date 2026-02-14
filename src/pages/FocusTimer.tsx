@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSprint } from "@/contexts/SprintContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
@@ -12,17 +13,25 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Play, Pause, RotateCcw, Target, Brain, Plus, Square, ExternalLink, Clock } from "lucide-react";
+import { Play, Pause, Target, Brain, Plus, Square, ExternalLink, Clock } from "lucide-react";
 
 const DURATIONS = [15, 25, 35, 45, 60, 90, 120];
+
+const ACTION_LABELS: Record<string, string> = {
+  status_change: "📋 Status Change",
+  ai_generate: "✨ AI Generation",
+  manual_edit: "✏️ Manual Edit",
+  sheet_generated: "📊 Sheet Created",
+  lesson_created: "📖 Lesson Created",
+};
 
 type SessionPhase = "setup" | "running" | "report";
 
 export default function FocusTimer() {
   const { user } = useAuth();
+  const { setActiveSession } = useSprint();
   const queryClient = useQueryClient();
 
-  // Setup state
   const [intention, setIntention] = useState("");
   const [focusArea, setFocusArea] = useState<string>("");
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
@@ -31,17 +40,16 @@ export default function FocusTimer() {
   const [focusDetail, setFocusDetail] = useState<string>("");
   const [duration, setDuration] = useState(25);
 
-  // Timer state
   const [secondsLeft, setSecondsLeft] = useState(25 * 60);
   const [running, setRunning] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [phase, setPhase] = useState<SessionPhase>("setup");
   const [startedAt, setStartedAt] = useState<Date | null>(null);
-  const [totalDuration, setTotalDuration] = useState(25); // tracks extensions
+  const [totalDuration, setTotalDuration] = useState(25);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Report state
   const [notes, setNotes] = useState("");
+  const [activityLog, setActivityLog] = useState<any[]>([]);
 
   // Data queries
   const { data: courses } = useQuery({
@@ -81,14 +89,45 @@ export default function FocusTimer() {
   });
 
   const { data: pastSessions, refetch: refetchSessions } = useQuery({
-    queryKey: ["focus-sessions"],
+    queryKey: ["focus-sessions-detailed"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: sessions } = await supabase
         .from("focus_sessions")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(20);
-      return data || [];
+      if (!sessions) return [];
+
+      // Fetch lesson status for sessions that have a lesson_id
+      const lessonIds = [...new Set(sessions.filter((s: any) => s.lesson_id).map((s: any) => s.lesson_id))];
+      let lessonMap: Record<string, any> = {};
+      if (lessonIds.length > 0) {
+        const { data: lessonData } = await supabase
+          .from("lessons")
+          .select("id, lesson_title, lesson_status")
+          .in("id", lessonIds);
+        if (lessonData) {
+          lessonMap = Object.fromEntries(lessonData.map((l) => [l.id, l]));
+        }
+      }
+
+      // Fetch activity counts per session
+      const sessionIds = sessions.map((s: any) => s.id);
+      const { data: activities } = await supabase
+        .from("sprint_activity_log")
+        .select("session_id, action_type")
+        .in("session_id", sessionIds);
+
+      const activityCountMap: Record<string, number> = {};
+      activities?.forEach((a: any) => {
+        activityCountMap[a.session_id] = (activityCountMap[a.session_id] || 0) + 1;
+      });
+
+      return sessions.map((s: any) => ({
+        ...s,
+        lesson: s.lesson_id ? lessonMap[s.lesson_id] || null : null,
+        activityCount: activityCountMap[s.id] || 0,
+      }));
     },
   });
 
@@ -126,6 +165,7 @@ export default function FocusTimer() {
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
     setSessionId(data.id);
+    setActiveSession(data.id, selectedLessonId || null);
     setStartedAt(new Date());
     setTotalDuration(duration);
     setSecondsLeft(duration * 60);
@@ -142,8 +182,17 @@ export default function FocusTimer() {
     toast.success("+15 minutes added — keep going!");
   };
 
-  const endSession = () => {
+  const endSession = async () => {
     setRunning(false);
+    // Fetch activity log for this session
+    if (sessionId) {
+      const { data } = await supabase
+        .from("sprint_activity_log")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
+      setActivityLog(data || []);
+    }
     setPhase("report");
   };
 
@@ -157,6 +206,7 @@ export default function FocusTimer() {
       notes,
     }).eq("id", sessionId);
     toast.success("Sprint logged! Great work.");
+    setActiveSession(null);
     refetchSessions();
     resetAll();
   };
@@ -165,8 +215,10 @@ export default function FocusTimer() {
     setRunning(false);
     setPhase("setup");
     setSessionId(null);
+    setActiveSession(null);
     setStartedAt(null);
     setNotes("");
+    setActivityLog([]);
     setSecondsLeft(duration * 60);
     setTotalDuration(duration);
   };
@@ -225,7 +277,6 @@ export default function FocusTimer() {
                 </div>
               </div>
 
-              {/* Content drill-down: Course → Chapter → Lesson */}
               {focusArea === "content" && (
                 <div className="space-y-3 border-l-2 border-primary/20 pl-4">
                   <div className="space-y-1.5">
@@ -237,7 +288,6 @@ export default function FocusTimer() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   {selectedCourseId && chapters && chapters.length > 0 && (
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Chapter</Label>
@@ -249,7 +299,6 @@ export default function FocusTimer() {
                       </Select>
                     </div>
                   )}
-
                   {selectedChapterId && lessons && lessons.length > 0 && (
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Lesson</Label>
@@ -268,7 +317,6 @@ export default function FocusTimer() {
                 </div>
               )}
 
-              {/* Marketing detail */}
               {focusArea === "marketing" && emails && emails.length > 0 && (
                 <div className="space-y-1.5">
                   <Label>Which email?</Label>
@@ -325,22 +373,14 @@ export default function FocusTimer() {
                   {running ? <Pause className="mr-1 h-4 w-4" /> : <Play className="mr-1 h-4 w-4" />}
                   {running ? "Pause" : "Resume"}
                 </Button>
-                {secondsLeft <= 0 && (
-                  <Button variant="outline" size="lg" onClick={extendSession}>
-                    <Plus className="mr-1 h-4 w-4" /> 15 min
-                  </Button>
-                )}
                 <Button variant="default" size="lg" onClick={endSession}>
                   <Square className="mr-1 h-4 w-4" /> End Sprint
                 </Button>
               </div>
 
-              {/* Always show extend option, not just at 0 */}
-              {secondsLeft > 0 && (
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={extendSession}>
-                  <Plus className="mr-1 h-3 w-3" /> Add 15 min to wrap up
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={extendSession}>
+                <Plus className="mr-1 h-3 w-3" /> Add 15 min to wrap up
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -351,7 +391,7 @@ export default function FocusTimer() {
             <CardContent className="p-6 space-y-4">
               <div className="text-center">
                 <h2 className="text-lg font-semibold text-foreground">Sprint Complete 🎯</h2>
-                <p className="text-sm text-muted-foreground mt-1">Log what you accomplished</p>
+                <p className="text-sm text-muted-foreground mt-1">Here's what happened</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-center">
@@ -360,8 +400,8 @@ export default function FocusTimer() {
                   <p className="text-xs text-muted-foreground">Time Spent</p>
                 </div>
                 <div className="border rounded-md p-3">
-                  <p className="text-2xl font-bold text-foreground">{focusArea === "content" ? "📖" : "📧"}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{focusArea}</p>
+                  <p className="text-2xl font-bold text-foreground">{activityLog.length}</p>
+                  <p className="text-xs text-muted-foreground">Actions Logged</p>
                 </div>
               </div>
 
@@ -369,14 +409,41 @@ export default function FocusTimer() {
                 <div className="flex items-center gap-2 text-sm border rounded-md p-3 bg-muted/50">
                   <span className="text-muted-foreground">Lesson:</span>
                   <span className="font-medium text-foreground flex-1">{selectedLesson.lesson_title}</span>
+                  <Badge variant="outline" className="text-[10px]">{selectedLesson.lesson_status}</Badge>
                   <Link to={`/lesson/${selectedLessonId}`} className="text-primary hover:underline">
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               )}
 
+              {/* Activity Log */}
+              {activityLog.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Activity Log</p>
+                  <div className="border rounded-md divide-y">
+                    {activityLog.map((a: any) => (
+                      <div key={a.id} className="flex items-start gap-2 p-2.5 text-xs">
+                        <span className="shrink-0">{ACTION_LABELS[a.action_type] || a.action_type}</span>
+                        {a.action_detail && (
+                          <span className="text-muted-foreground flex-1">{a.action_detail}</span>
+                        )}
+                        <span className="text-muted-foreground/50 shrink-0">
+                          {new Date(a.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activityLog.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center italic border rounded-md p-3">
+                  No actions tracked this session. Actions are logged when you generate plans, change statuses, or edit lessons.
+                </p>
+              )}
+
               <div className="space-y-1.5">
-                <Label>What did you accomplish?</Label>
+                <Label>Additional notes</Label>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -386,7 +453,7 @@ export default function FocusTimer() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={resetAll}>Skip</Button>
+                <Button variant="outline" className="flex-1" onClick={() => { setActiveSession(null); resetAll(); }}>Skip</Button>
                 <Button className="flex-1" onClick={submitReport}>
                   Save Sprint Report
                 </Button>
@@ -416,12 +483,21 @@ export default function FocusTimer() {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant="outline" className="text-[10px] capitalize">{s.focus_area}</Badge>
                     {s.focus_detail && <span className="truncate">{s.focus_detail}</span>}
-                    {s.lesson_id && (
-                      <Link to={`/lesson/${s.lesson_id}`} className="text-primary hover:underline ml-auto shrink-0">
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
+                    {s.activityCount > 0 && (
+                      <Badge variant="secondary" className="text-[10px]">{s.activityCount} actions</Badge>
                     )}
                   </div>
+                  {/* Lesson status */}
+                  {s.lesson && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">📖</span>
+                      <span className="truncate text-foreground">{s.lesson.lesson_title}</span>
+                      <Badge variant="outline" className="text-[10px] ml-auto shrink-0">{s.lesson.lesson_status}</Badge>
+                      <Link to={`/lesson/${s.lesson_id}`} className="text-primary hover:underline shrink-0">
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  )}
                   {s.notes && (
                     <p className="text-xs text-muted-foreground/80 italic border-t pt-1.5 mt-1">{s.notes}</p>
                   )}
