@@ -112,6 +112,81 @@ export type Database = {
         }
         Relationships: []
       }
+      emails: {
+        Row: {
+          ai_refined_body: string | null
+          ai_strategy_notes: string | null
+          audience: string
+          course_tags: string[] | null
+          created_at: string
+          email_type: string
+          final_draft: string | null
+          giving: string
+          hoping_to_receive: string
+          id: string
+          journal_body: string
+          local_flavor: string
+          max_refinements: number
+          purpose: string
+          refinement_count: number
+          refinement_history: Json | null
+          semester: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_refined_body?: string | null
+          ai_strategy_notes?: string | null
+          audience?: string
+          course_tags?: string[] | null
+          created_at?: string
+          email_type?: string
+          final_draft?: string | null
+          giving?: string
+          hoping_to_receive?: string
+          id?: string
+          journal_body?: string
+          local_flavor?: string
+          max_refinements?: number
+          purpose?: string
+          refinement_count?: number
+          refinement_history?: Json | null
+          semester?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_refined_body?: string | null
+          ai_strategy_notes?: string | null
+          audience?: string
+          course_tags?: string[] | null
+          created_at?: string
+          email_type?: string
+          final_draft?: string | null
+          giving?: string
+          hoping_to_receive?: string
+          id?: string
+          journal_body?: string
+          local_flavor?: string
+          max_refinements?: number
+          purpose?: string
+          refinement_count?: number
+          refinement_history?: Json | null
+          semester?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_sheets: {
         Row: {
           created_at: string
@@ -227,21 +302,33 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          email_max_refinements: number | null
+          email_style_guide: string | null
+          email_types: string[] | null
           id: string
+          semesters: string[] | null
           style_guide: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          email_max_refinements?: number | null
+          email_style_guide?: string | null
+          email_types?: string[] | null
           id?: string
+          semesters?: string[] | null
           style_guide?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          email_max_refinements?: number | null
+          email_style_guide?: string | null
+          email_types?: string[] | null
           id?: string
+          semesters?: string[] | null
           style_guide?: string | null
           updated_at?: string
           user_id?: string

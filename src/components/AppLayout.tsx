@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, LogOut } from "lucide-react";
+import { BookOpen, LogOut, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +31,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               }`}
             >
               Create Lesson
+            </Link>
+            <Link
+              to="/email-factory"
+              className={`transition-colors hover:text-foreground ${
+                location.pathname === "/email-factory" ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+            >
+              Email Factory
             </Link>
             <Link
               to="/style-guide"

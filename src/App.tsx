@@ -9,6 +9,7 @@ import ChapterPage from "./pages/ChapterPage";
 import CreateLesson from "./pages/CreateLesson";
 import LessonDetail from "./pages/LessonDetail";
 import StyleGuide from "./pages/StyleGuide";
+import EmailFactory from "./pages/EmailFactory";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const AppRoutes = () => {
       <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
       <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
       <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />
+      <Route path="/email-factory" element={<ProtectedRoute><EmailFactory /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
