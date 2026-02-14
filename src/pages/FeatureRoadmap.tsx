@@ -235,7 +235,7 @@ export default function FeatureRoadmap() {
                         </Button>
                       </div>
                       {item.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
                       )}
                       <div className="flex flex-wrap gap-1.5">
                         <Badge variant="outline" className={`text-xs ${priorityStyle(item.priority)}`}>
@@ -277,6 +277,18 @@ export default function FeatureRoadmap() {
                           </SelectContent>
                         </Select>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2 text-xs h-7 border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                          const msg = `Let's build the "${item.title}" feature. Here's the description: ${item.description || "No description provided."}`;
+                          navigator.clipboard.writeText(msg);
+                          toast.success("Copied prompt to clipboard — paste it in chat to start building!");
+                        }}
+                      >
+                        <Rocket className="mr-1 h-3 w-3" /> Let's Build This
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
