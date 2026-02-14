@@ -4,7 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
+import SurviveHome from "./pages/SurviveHome";
+import ContentFactory from "./pages/ContentFactory";
 import ChapterPage from "./pages/ChapterPage";
 import FeatureRoadmap from "./pages/FeatureRoadmap";
 import CreateLesson from "./pages/CreateLesson";
@@ -13,6 +14,8 @@ import StyleGuide from "./pages/StyleGuide";
 import EmailFactory from "./pages/EmailFactory";
 import Marketing from "./pages/Marketing";
 import DomainSelect from "./pages/DomainSelect";
+import Writing from "./pages/Writing";
+import Leeingram from "./pages/Leeingram";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -32,7 +35,9 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/auth" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
-      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+      {/* Survive Accounting domain */}
+      <Route path="/" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
+      <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
       <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
       <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
       <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
@@ -40,6 +45,10 @@ const AppRoutes = () => {
       <Route path="/roadmap" element={<ProtectedRoute><FeatureRoadmap /></ProtectedRoute>} />
       <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
       <Route path="/marketing/emails" element={<ProtectedRoute><EmailFactory /></ProtectedRoute>} />
+      {/* Writing domain */}
+      <Route path="/writing" element={<ProtectedRoute><Writing /></ProtectedRoute>} />
+      {/* Leeingram domain */}
+      <Route path="/leeingram" element={<ProtectedRoute><Leeingram /></ProtectedRoute>} />
       <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
