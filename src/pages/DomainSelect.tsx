@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LogOut, Music, Plus, Trash2, ExternalLink } from "lucide-react";
 
 const DOMAINS = [
   {
@@ -76,13 +79,40 @@ function MatrixRain() {
 }
 
 export default function DomainSelect() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [hovered, setHovered] = useState<string | null>(null);
   const [entered, setEntered] = useState(false);
   const [showDomains, setShowDomains] = useState(false);
   const [typedText, setTypedText] = useState("");
+  const [showMusic, setShowMusic] = useState(false);
+  const [newLink, setNewLink] = useState({ title: "", url: "" });
   const fullText = "Welcome, Lee.";
+
+  const { data: musicLinks } = useQuery({
+    queryKey: ["music-links"],
+    queryFn: async () => {
+      const { data } = await supabase.from("music_links").select("*").order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const addLink = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("music_links").insert({ user_id: user!.id, title: newLink.title, youtube_url: newLink.url });
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["music-links"] }); setNewLink({ title: "", url: "" }); },
+  });
+
+  const deleteLink = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("music_links").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["music-links"] }),
+  });
 
   // Typewriter effect
   useEffect(() => {
@@ -245,6 +275,72 @@ export default function DomainSelect() {
               <p className="text-xs text-center" style={{ color: "rgba(0,255,65,0.15)" }}>
                 system v2.026 // the factory™
               </p>
+
+              {/* Music Library Toggle */}
+              <div className="w-full mt-4">
+                <button
+                  onClick={() => setShowMusic(!showMusic)}
+                  className="flex items-center gap-2 mx-auto text-xs uppercase tracking-widest transition-colors cursor-pointer"
+                  style={{ color: showMusic ? "#00ff41" : "rgba(0,255,65,0.3)" }}
+                >
+                  <Music className="h-3.5 w-3.5" />
+                  {showMusic ? "Hide Music Library" : "Choose Your Music"}
+                </button>
+
+                {showMusic && (
+                  <div className="mt-4 space-y-3 animate-fade-in">
+                    <div className="flex gap-2">
+                      <Input
+                        value={newLink.title}
+                        onChange={(e) => setNewLink((p) => ({ ...p, title: e.target.value }))}
+                        placeholder="Title"
+                        className="flex-1 bg-transparent text-xs"
+                        style={{ borderColor: "rgba(0,255,65,0.2)", color: "#00ff41" }}
+                      />
+                      <Input
+                        value={newLink.url}
+                        onChange={(e) => setNewLink((p) => ({ ...p, url: e.target.value }))}
+                        placeholder="YouTube URL"
+                        className="flex-1 bg-transparent text-xs"
+                        style={{ borderColor: "rgba(0,255,65,0.2)", color: "#00ff41" }}
+                      />
+                      <button
+                        onClick={() => newLink.url && addLink.mutate()}
+                        className="px-3 transition-colors cursor-pointer"
+                        style={{ border: "1px solid rgba(0,255,65,0.3)", color: "#00ff41", borderRadius: "2px" }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {musicLinks && musicLinks.map((link: any) => (
+                      <div
+                        key={link.id}
+                        className="flex items-center gap-2 p-2 text-xs"
+                        style={{ border: "1px solid rgba(0,255,65,0.1)", borderRadius: "2px" }}
+                      >
+                        <span className="flex-1 truncate" style={{ color: "rgba(0,255,65,0.6)" }}>
+                          {link.title || "Untitled"}
+                        </span>
+                        <a
+                          href={link.youtube_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#00ff41" }}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <button
+                          onClick={() => deleteLink.mutate(link.id)}
+                          className="cursor-pointer"
+                          style={{ color: "rgba(255,0,0,0.5)" }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
