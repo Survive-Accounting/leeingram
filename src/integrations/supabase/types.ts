@@ -124,6 +124,7 @@ export type Database = {
           giving: string
           hoping_to_receive: string
           id: string
+          is_series: boolean | null
           journal_body: string
           local_flavor: string
           max_refinements: number
@@ -131,6 +132,13 @@ export type Database = {
           refinement_count: number
           refinement_history: Json | null
           semester: string
+          send_date: string | null
+          send_day: string | null
+          send_time: string | null
+          send_week: number | null
+          sent_at: string | null
+          series_name: string | null
+          series_order: number | null
           status: string
           tags: string[] | null
           title: string
@@ -148,6 +156,7 @@ export type Database = {
           giving?: string
           hoping_to_receive?: string
           id?: string
+          is_series?: boolean | null
           journal_body?: string
           local_flavor?: string
           max_refinements?: number
@@ -155,6 +164,13 @@ export type Database = {
           refinement_count?: number
           refinement_history?: Json | null
           semester?: string
+          send_date?: string | null
+          send_day?: string | null
+          send_time?: string | null
+          send_week?: number | null
+          sent_at?: string | null
+          series_name?: string | null
+          series_order?: number | null
           status?: string
           tags?: string[] | null
           title?: string
@@ -172,6 +188,7 @@ export type Database = {
           giving?: string
           hoping_to_receive?: string
           id?: string
+          is_series?: boolean | null
           journal_body?: string
           local_flavor?: string
           max_refinements?: number
@@ -179,6 +196,13 @@ export type Database = {
           refinement_count?: number
           refinement_history?: Json | null
           semester?: string
+          send_date?: string | null
+          send_day?: string | null
+          send_time?: string | null
+          send_week?: number | null
+          sent_at?: string | null
+          series_name?: string | null
+          series_order?: number | null
           status?: string
           tags?: string[] | null
           title?: string
