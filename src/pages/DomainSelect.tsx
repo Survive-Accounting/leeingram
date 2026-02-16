@@ -13,18 +13,35 @@ const DOMAINS = [
     label: "Writing [for Ben]",
     tagline: "No destination",
     route: "/writing",
+    comingSoon: false,
   },
   {
     key: "survive",
     label: "Survive Accounting",
     tagline: "Nationwide exam prep platform",
     route: "/",
+    comingSoon: false,
   },
   {
     key: "leeingram",
     label: "Leeingram.co",
     tagline: "What's my next big project?",
     route: "/leeingram",
+    comingSoon: false,
+  },
+  {
+    key: "prof_ingram",
+    label: "Prof Ingram",
+    tagline: "Arts Entrepreneurship & Quickbooks",
+    route: "/prof-ingram",
+    comingSoon: true,
+  },
+  {
+    key: "travel",
+    label: "Travel",
+    tagline: "Adventures & trip planning",
+    route: "/travel",
+    comingSoon: true,
   },
 ];
 
@@ -222,21 +239,54 @@ export default function DomainSelect() {
                 Select Domain
               </h2>
 
+              {/* Focus Sprint Entry */}
+              <button
+                onClick={() => navigate("/focus")}
+                className="w-full text-left p-4 mb-2 transition-all duration-300 cursor-pointer"
+                style={{
+                  background: "rgba(255,200,0,0.04)",
+                  border: "1px solid rgba(255,200,0,0.25)",
+                  borderRadius: "2px",
+                  boxShadow: "0 0 15px rgba(255,200,0,0.08)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = "0 0 25px rgba(255,200,0,0.2)";
+                  e.currentTarget.style.borderColor = "rgba(255,200,0,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "0 0 15px rgba(255,200,0,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(255,200,0,0.25)";
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold tracking-wide" style={{ color: "rgba(255,200,0,0.85)", textShadow: "0 0 8px rgba(255,200,0,0.3)" }}>
+                      ⚡ Focus Sprint
+                    </h3>
+                    <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(255,200,0,0.35)" }}>
+                      Start a timed work session across any domain
+                    </p>
+                  </div>
+                  <span className="text-xl" style={{ color: "rgba(255,200,0,0.6)" }}>→</span>
+                </div>
+              </button>
+
               <div className="grid gap-3 w-full">
                 {DOMAINS.map((domain) => (
                   <button
                     key={domain.key}
-                    onClick={() => navigate(domain.route)}
+                    onClick={() => !domain.comingSoon && navigate(domain.route)}
                     onMouseEnter={() => setHovered(domain.key)}
                     onMouseLeave={() => setHovered(null)}
-                    className="relative w-full text-left p-5 transition-all duration-300 cursor-pointer"
+                    className={`relative w-full text-left p-5 transition-all duration-300 ${domain.comingSoon ? "cursor-default" : "cursor-pointer"}`}
                     style={{
-                      background: hovered === domain.key ? "rgba(0,255,65,0.06)" : "rgba(0,255,65,0.015)",
-                      border: `1px solid ${hovered === domain.key ? "rgba(0,255,65,0.6)" : "rgba(0,255,65,0.15)"}`,
+                      background: hovered === domain.key && !domain.comingSoon ? "rgba(0,255,65,0.06)" : "rgba(0,255,65,0.015)",
+                      border: `1px solid ${hovered === domain.key && !domain.comingSoon ? "rgba(0,255,65,0.6)" : "rgba(0,255,65,0.15)"}`,
                       borderRadius: "2px",
-                      boxShadow: hovered === domain.key
+                      boxShadow: hovered === domain.key && !domain.comingSoon
                         ? "0 0 25px rgba(0,255,65,0.15), inset 0 0 15px rgba(0,255,65,0.05)"
                         : "none",
+                      opacity: domain.comingSoon ? 0.45 : 1,
                     }}
                   >
                     <div className="flex items-center justify-between">
@@ -244,29 +294,28 @@ export default function DomainSelect() {
                         <h3
                           className="text-base font-bold tracking-wide"
                           style={{
-                            color: hovered === domain.key ? "#00ff41" : "rgba(0,255,65,0.7)",
-                            textShadow: hovered === domain.key ? "0 0 8px rgba(0,255,65,0.5)" : "none",
+                            color: hovered === domain.key && !domain.comingSoon ? "#00ff41" : "rgba(0,255,65,0.7)",
+                            textShadow: hovered === domain.key && !domain.comingSoon ? "0 0 8px rgba(0,255,65,0.5)" : "none",
                           }}
                         >
                           {domain.label}
                         </h3>
-                        <p
-                          className="text-xs mt-1 tracking-wider"
-                          style={{ color: "rgba(0,255,65,0.35)" }}
-                        >
-                          {domain.tagline}
+                        <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(0,255,65,0.35)" }}>
+                          {domain.comingSoon ? "Coming soon" : domain.tagline}
                         </p>
                       </div>
-                      <span
-                        className="text-xl transition-all duration-300"
-                        style={{
-                          transform: hovered === domain.key ? "translateX(4px)" : "none",
-                          opacity: hovered === domain.key ? 1 : 0.2,
-                          color: "#00ff41",
-                        }}
-                      >
-                        →
-                      </span>
+                      {!domain.comingSoon && (
+                        <span
+                          className="text-xl transition-all duration-300"
+                          style={{
+                            transform: hovered === domain.key ? "translateX(4px)" : "none",
+                            opacity: hovered === domain.key ? 1 : 0.2,
+                            color: "#00ff41",
+                          }}
+                        >
+                          →
+                        </span>
+                      )}
                     </div>
                   </button>
                 ))}
