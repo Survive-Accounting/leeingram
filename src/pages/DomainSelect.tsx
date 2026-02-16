@@ -242,32 +242,34 @@ export default function DomainSelect() {
               {/* Focus Sprint Entry */}
               <button
                 onClick={() => navigate("/focus")}
-                className="w-full text-left p-4 mb-2 transition-all duration-300 cursor-pointer"
+                className="w-full text-left p-5 mb-3 transition-all duration-300 cursor-pointer animate-pulse-subtle"
                 style={{
-                  background: "rgba(255,200,0,0.04)",
-                  border: "1px solid rgba(255,200,0,0.25)",
+                  background: "linear-gradient(135deg, rgba(255,170,0,0.08) 0%, rgba(255,120,0,0.04) 100%)",
+                  border: "1px solid rgba(255,170,0,0.35)",
                   borderRadius: "2px",
-                  boxShadow: "0 0 15px rgba(255,200,0,0.08)",
+                  boxShadow: "0 0 20px rgba(255,170,0,0.12), inset 0 0 30px rgba(255,170,0,0.03)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 0 25px rgba(255,200,0,0.2)";
-                  e.currentTarget.style.borderColor = "rgba(255,200,0,0.5)";
+                  e.currentTarget.style.boxShadow = "0 0 35px rgba(255,170,0,0.25), inset 0 0 30px rgba(255,170,0,0.06)";
+                  e.currentTarget.style.borderColor = "rgba(255,170,0,0.6)";
+                  e.currentTarget.style.background = "linear-gradient(135deg, rgba(255,170,0,0.14) 0%, rgba(255,120,0,0.08) 100%)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 0 15px rgba(255,200,0,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(255,200,0,0.25)";
+                  e.currentTarget.style.boxShadow = "0 0 20px rgba(255,170,0,0.12), inset 0 0 30px rgba(255,170,0,0.03)";
+                  e.currentTarget.style.borderColor = "rgba(255,170,0,0.35)";
+                  e.currentTarget.style.background = "linear-gradient(135deg, rgba(255,170,0,0.08) 0%, rgba(255,120,0,0.04) 100%)";
                 }}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold tracking-wide" style={{ color: "rgba(255,200,0,0.85)", textShadow: "0 0 8px rgba(255,200,0,0.3)" }}>
+                    <h3 className="text-base font-bold tracking-wide" style={{ color: "rgba(255,170,0,0.9)", textShadow: "0 0 12px rgba(255,170,0,0.4)" }}>
                       ⚡ Focus Sprint
                     </h3>
-                    <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(255,200,0,0.35)" }}>
+                    <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(255,170,0,0.4)" }}>
                       Start a timed work session across any domain
                     </p>
                   </div>
-                  <span className="text-xl" style={{ color: "rgba(255,200,0,0.6)" }}>→</span>
+                  <span className="text-xl" style={{ color: "rgba(255,170,0,0.6)", textShadow: "0 0 8px rgba(255,170,0,0.3)" }}>→</span>
                 </div>
               </button>
 
@@ -400,6 +402,11 @@ export default function DomainSelect() {
           0% { transform: translateY(-100%); }
           100% { transform: translateY(100vh); }
         }
+        @keyframes pulseSlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(255,170,0,0.12), inset 0 0 30px rgba(255,170,0,0.03); }
+          50% { box-shadow: 0 0 28px rgba(255,170,0,0.18), inset 0 0 30px rgba(255,170,0,0.05); }
+        }
+        .animate-pulse-subtle { animation: pulseSlow 3s ease-in-out infinite; }
       `}</style>
     </div>
   );
