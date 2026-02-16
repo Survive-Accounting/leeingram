@@ -30,7 +30,7 @@ const FACTORIES = [
   {
     key: "focus",
     label: "Focus Sprint",
-    description: "Microfocused work sessions — set intention, timer, and get to work",
+    description: "Microfocused work sessions — now available from the domains page too",
     icon: Timer,
     route: "/focus",
     available: true,
