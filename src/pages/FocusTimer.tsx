@@ -47,7 +47,7 @@ const DOMAIN_FOCUS_AREAS: Record<string, { value: string; label: string }[]> = {
 
 const DOMAIN_LABELS: Record<string, string> = {
   survive: "Survive Accounting",
-  writing: "Writing [for Ben]",
+  writing: "Writing",
   leeingram: "Leeingram.co",
   prof_ingram: "Prof Ingram",
   travel: "Travel",

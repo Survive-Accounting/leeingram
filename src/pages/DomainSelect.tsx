@@ -10,8 +10,8 @@ import { LogOut, Music, Plus, Trash2, ExternalLink } from "lucide-react";
 const DOMAINS = [
   {
     key: "writing",
-    label: "Writing [for Ben]",
-    tagline: "No destination",
+    label: "Writing",
+    tagline: "Finishing what we've started.",
     route: "/writing",
     comingSoon: false,
   },
