@@ -14,7 +14,7 @@ export default function Travel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ location: "", description: "", start_date: "", end_date: "" });
+  const [form, setForm] = useState({ location: "", description: "", start_date: "", end_date: "", year_only: "" });
 
   const { data: trips } = useQuery({
     queryKey: ["trips"],
@@ -26,10 +26,11 @@ export default function Travel() {
 
   const createTrip = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("trips").insert({ user_id: user!.id, location: form.location, description: form.description, start_date: form.start_date || null, end_date: form.end_date || null });
+      const startDate = form.start_date || (form.year_only ? `${form.year_only}-01-01` : null);
+      const { error } = await supabase.from("trips").insert({ user_id: user!.id, location: form.location, description: form.description || (form.year_only && !form.start_date ? form.year_only : null), start_date: startDate, end_date: form.end_date || null });
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); setForm({ location: "", description: "", start_date: "", end_date: "" }); setOpen(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); setForm({ location: "", description: "", start_date: "", end_date: "", year_only: "" }); setOpen(false); },
   });
 
   const deleteTrip = useMutation({
@@ -59,10 +60,13 @@ export default function Travel() {
             <div className="space-y-4 mt-2">
               <div><Label>Location</Label><Input value={form.location} onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Mexico City, Mexico" /></div>
               <div><Label>Description (optional)</Label><Input value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="What's this trip about?" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Start Date</Label><Input type="date" value={form.start_date} onChange={(e) => setForm(p => ({ ...p, start_date: e.target.value }))} /></div>
-                <div><Label>End Date (optional)</Label><Input type="date" value={form.end_date} onChange={(e) => setForm(p => ({ ...p, end_date: e.target.value }))} /></div>
-              </div>
+              <div><Label>Year only (if you don't know exact dates)</Label><Input value={form.year_only} onChange={(e) => setForm(p => ({ ...p, year_only: e.target.value, start_date: "", end_date: "" }))} placeholder="e.g. 2022" maxLength={4} /></div>
+              {!form.year_only && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Start Date</Label><Input type="date" value={form.start_date} onChange={(e) => setForm(p => ({ ...p, start_date: e.target.value }))} /></div>
+                  <div><Label>End Date (optional)</Label><Input type="date" value={form.end_date} onChange={(e) => setForm(p => ({ ...p, end_date: e.target.value }))} /></div>
+                </div>
+              )}
               <Button onClick={() => form.location && createTrip.mutate()} disabled={!form.location || createTrip.isPending} className="w-full">{createTrip.isPending ? "Creating..." : "Create Trip"}</Button>
             </div>
           </DialogContent>
