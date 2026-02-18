@@ -56,7 +56,7 @@ export default function Travel() {
   const { data: trips } = useQuery({
     queryKey: ["trips"],
     queryFn: async () => {
-      const { data } = await supabase.from("trips").select("*").order("start_date", { ascending: false, nullsFirst: false });
+      const { data } = await supabase.from("trips").select("*").order("start_date", { ascending: true, nullsFirst: true });
       return data || [];
     },
   });
