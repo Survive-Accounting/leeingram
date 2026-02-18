@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SprintProvider } from "@/contexts/SprintContext";
 import SurviveHome from "./pages/SurviveHome";
 import ContentFactory from "./pages/ContentFactory";
+import ContentRoadmap from "./pages/ContentRoadmap";
 import ChapterPage from "./pages/ChapterPage";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
 import FocusTimer from "./pages/FocusTimer";
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       {/* Survive Accounting domain */}
       <Route path="/" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
       <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+      <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
       <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
       <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
       <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />

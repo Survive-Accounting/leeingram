@@ -24,7 +24,7 @@ const FACTORIES = [
     label: "Idea Factory",
     description: "Brainstorm features, track roadmap items, and plan the future",
     icon: Lightbulb,
-    route: "/roadmap",
+    route: "/ideas?domain=survive",
     available: true,
   },
 ];

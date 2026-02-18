@@ -14,6 +14,7 @@ interface RoadmapColumnProps {
   onDelete: (id: string) => void;
   variant?: "default" | "active" | "completed";
   semesterGroups?: Record<string, any[]>;
+  headerExtra?: React.ReactNode;
 }
 
 export function RoadmapColumn({
@@ -24,6 +25,7 @@ export function RoadmapColumn({
   onDelete,
   variant = "default",
   semesterGroups,
+  headerExtra,
 }: RoadmapColumnProps) {
   const { setNodeRef } = useDroppable({ id: statusValue });
 
@@ -49,6 +51,7 @@ export function RoadmapColumn({
           {variant === "active" && "🔥 "}{label}
         </h2>
         <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+        {headerExtra}
       </div>
 
       {semesterGroups ? (
@@ -59,7 +62,7 @@ export function RoadmapColumn({
                 <div className="text-[10px] font-medium text-muted-foreground mb-1 px-1 uppercase tracking-wider">
                   {semester}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {semItems.map((item: any) => (
                     <RoadmapItemRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />
                   ))}
@@ -73,7 +76,7 @@ export function RoadmapColumn({
         </div>
       ) : (
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1 flex-1">
+          <div className="space-y-2 flex-1">
             {items.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 text-center py-6">No items</p>
             ) : (

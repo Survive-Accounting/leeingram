@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSprint } from "@/contexts/SprintContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -342,7 +343,8 @@ export default function FocusTimer() {
   const availableFocusAreas = focusDomain ? (DOMAIN_FOCUS_AREAS[focusDomain] || []) : [];
 
   return (
-    <div className="max-w-lg mx-auto py-8 space-y-6 px-4">
+    <AppLayout>
+      <div className="max-w-lg mx-auto space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
           <Brain className="h-6 w-6 text-primary" /> Focus Sprint
@@ -717,6 +719,7 @@ export default function FocusTimer() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AppLayout>
   );
 }

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      changelog: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_number: number
+          sub_tasks: Json
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_number: number
+          sub_tasks?: Json
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_number?: number
+          sub_tasks?: Json
+          title?: string
+        }
+        Relationships: []
+      }
       chapter_resources: {
         Row: {
           chapter_id: string
@@ -406,6 +430,7 @@ export type Database = {
       roadmap_items: {
         Row: {
           category: string
+          completed_at: string | null
           created_at: string
           description: string | null
           domain: string
@@ -419,6 +444,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           domain?: string
@@ -432,6 +458,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           domain?: string
