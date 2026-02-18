@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DomainLayout } from "@/components/DomainLayout";
-import { Plus, MapPin, Calendar, Trash2, ChevronDown } from "lucide-react";
+import { Plus, MapPin, Calendar, Trash2, ChevronDown, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ export default function Travel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<any>(null);
   const [form, setForm] = useState({ location: "", description: "", start_date: "", end_date: "", year_only: "" });
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [pastOpen, setPastOpen] = useState(true);
@@ -34,7 +35,18 @@ export default function Travel() {
       const { error } = await supabase.from("trips").insert({ user_id: user!.id, location: form.location, description: desc, start_date: startDate, end_date: form.end_date || null });
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); setForm({ location: "", description: "", start_date: "", end_date: "", year_only: "" }); setOpen(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); resetForm(); },
+  });
+
+  const updateTrip = useMutation({
+    mutationFn: async () => {
+      if (!editingTrip) return;
+      const startDate = form.start_date || (form.year_only ? `${form.year_only}-01-01` : null);
+      const desc = form.description || (form.year_only && !form.start_date ? form.year_only : null);
+      const { error } = await supabase.from("trips").update({ location: form.location, description: desc, start_date: startDate, end_date: form.end_date || null }).eq("id", editingTrip.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); resetForm(); },
   });
 
   const deleteTrip = useMutation({
@@ -44,6 +56,21 @@ export default function Travel() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["trips"] }),
   });
+
+  const resetForm = () => { setForm({ location: "", description: "", start_date: "", end_date: "", year_only: "" }); setEditingTrip(null); setOpen(false); };
+
+  const startEdit = (trip: any) => {
+    const yearOnly = isYearOnly(trip);
+    setEditingTrip(trip);
+    setForm({
+      location: trip.location,
+      description: yearOnly ? "" : (trip.description || ""),
+      start_date: yearOnly ? "" : (trip.start_date || ""),
+      end_date: trip.end_date || "",
+      year_only: yearOnly ? trip.start_date?.substring(0, 4) || "" : "",
+    });
+    setOpen(true);
+  };
 
   const isYearOnly = (trip: any) => {
     if (!trip.start_date) return false;
@@ -83,9 +110,14 @@ export default function Travel() {
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-transparent" onClick={() => deleteTrip.mutate(trip.id)}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white/30 hover:text-white/70 hover:bg-transparent" onClick={() => startEdit(trip)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-transparent" onClick={() => deleteTrip.mutate(trip.id)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -103,12 +135,12 @@ export default function Travel() {
       title="Travel"
       tagline="Adventures & trip planning"
       actions={
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); else setOpen(v); }}>
           <DialogTrigger asChild>
             <Button size="sm" className="bg-white/10 border border-white/20 text-white hover:bg-white/20"><Plus className="mr-1 h-4 w-4" /> New Trip</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Plan a Trip</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingTrip ? "Edit Trip" : "Plan a Trip"}</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div><Label>Location</Label><Input value={form.location} onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Mexico City, Mexico" /></div>
               <div><Label>Description (optional)</Label><Input value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="What's this trip about?" /></div>
@@ -119,7 +151,11 @@ export default function Travel() {
                   <div><Label>End Date (optional)</Label><Input type="date" value={form.end_date} onChange={(e) => setForm(p => ({ ...p, end_date: e.target.value }))} /></div>
                 </div>
               )}
-              <Button onClick={() => form.location && createTrip.mutate()} disabled={!form.location || createTrip.isPending} className="w-full">{createTrip.isPending ? "Creating..." : "Create Trip"}</Button>
+              {editingTrip ? (
+                <Button onClick={() => form.location && updateTrip.mutate()} disabled={!form.location || updateTrip.isPending} className="w-full">{updateTrip.isPending ? "Saving..." : "Save Changes"}</Button>
+              ) : (
+                <Button onClick={() => form.location && createTrip.mutate()} disabled={!form.location || createTrip.isPending} className="w-full">{createTrip.isPending ? "Creating..." : "Create Trip"}</Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>
