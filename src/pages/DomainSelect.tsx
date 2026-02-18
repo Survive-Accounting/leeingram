@@ -8,7 +8,7 @@ import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 
 const WORK_DOMAINS = [
-  { key: "survive", label: "Survive Accounting", tagline: "Nationwide exam prep platform", route: "/" },
+  { key: "survive", label: "Survive Accounting", tagline: "Nationwide exam prep platform", route: "/survive" },
   { key: "prof_ingram", label: "Prof Ingram", tagline: "Arts Entrepreneurship & Quickbooks", route: "/prof-ingram" },
   { key: "leeingram", label: "Leeingram.co", tagline: "What's my next big project?", route: "/leeingram" },
 ];
