@@ -66,8 +66,8 @@ const COLUMNS = [
 ];
 
 // ─── Sortable Task Card ───
-function TaskCard({ task, onEdit, onDelete, isDragOverlay }: {
-  task: any; onEdit: (t: any) => void; onDelete: (id: string) => void; isDragOverlay?: boolean;
+function TaskCard({ task, onEdit, onDelete, isDragOverlay, showAllBadges }: {
+  task: any; onEdit: (t: any) => void; onDelete: (id: string) => void; isDragOverlay?: boolean; showAllBadges?: boolean;
 }) {
   const [descOpen, setDescOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id, disabled: isDragOverlay });
@@ -94,14 +94,13 @@ function TaskCard({ task, onEdit, onDelete, isDragOverlay }: {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-1 pl-5">
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-tight">{catLabel}</Badge>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 leading-tight">{statusLabel}</Badge>
+            {showAllBadges && <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-tight">{catLabel}</Badge>}
             {task.target_date && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-tight">
                 <CalendarIcon className="h-2 w-2 mr-0.5" />{format(new Date(task.target_date + "T00:00:00"), "MMM d")}
               </Badge>
             )}
-            {task.assigned_to !== "both" && (
+            {showAllBadges && task.assigned_to !== "both" && task.assigned_to !== "unassigned" && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-tight bg-primary/10">{task.assigned_to === "lee" ? "Lee" : "MK"}</Badge>
             )}
           </div>
@@ -144,8 +143,8 @@ function TaskCard({ task, onEdit, onDelete, isDragOverlay }: {
 }
 
 // ─── Droppable Column ───
-function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory }: {
-  id: string; label: string; tasks: any[]; onEdit: (t: any) => void; onDelete: (id: string) => void; groupByCategory?: boolean;
+function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory, showAllBadges }: {
+  id: string; label: string; tasks: any[]; onEdit: (t: any) => void; onDelete: (id: string) => void; groupByCategory?: boolean; showAllBadges?: boolean;
 }) {
   const { setNodeRef } = useDroppable({ id });
   const isAssigned = id === "lee" || id === "mk";
@@ -181,7 +180,7 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory }: {
                 <div key={cat.value}>
                   <div className="text-[10px] font-medium text-muted-foreground mb-1 px-1 uppercase tracking-wider">{cat.label}</div>
                   <div className="space-y-2">
-                    {items.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} />)}
+                    {items.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} showAllBadges={showAllBadges} />)}
                   </div>
                 </div>
               );
@@ -193,7 +192,7 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory }: {
             {tasks.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 text-center py-6">No items</p>
             ) : (
-              tasks.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} />)
+              tasks.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} showAllBadges={showAllBadges} />)
             )}
           </div>
         )}
@@ -211,11 +210,13 @@ export default function TripPlanning() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
   const [activeItem, setActiveItem] = useState<any>(null);
+  const [showDueDateManager, setShowDueDateManager] = useState(false);
+  const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
 
   // Filters
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterAssignee, setFilterAssignee] = useState("all");
-  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
+  const [filterDate, setFilterDate] = useState<string | undefined>(undefined);
 
   // Form
   const emptyForm = { title: "", description: "", category: "immigration", assigned_to: "unassigned", target_date: undefined as Date | undefined, status: "todo", is_listed: false, is_sold: false, sold_price: "", links: [] as { url: string; label: string }[] };
@@ -333,6 +334,16 @@ export default function TripPlanning() {
     setShowCreate(true);
   };
 
+  // Collect unique due dates from tasks, sorted soonest first
+  const presetDueDates = useMemo(() => {
+    if (!tasks) return [];
+    const dates = new Set<string>();
+    for (const t of tasks) {
+      if (t.target_date) dates.add(t.target_date);
+    }
+    return Array.from(dates).sort();
+  }, [tasks]);
+
   // Filtered tasks
   const filtered = useMemo(() => {
     if (!tasks) return [];
@@ -341,8 +352,7 @@ export default function TripPlanning() {
       if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
       if (filterDate) {
         if (!t.target_date) return false;
-        const td = new Date(t.target_date + "T00:00:00");
-        if (td > filterDate) return false;
+        if (t.target_date !== filterDate) return false;
       }
       return true;
     });
@@ -391,6 +401,9 @@ export default function TripPlanning() {
       tagline="Organize your move"
       actions={
         <div className="flex gap-2">
+         <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => setShowDueDateManager(true)}>
+            <CalendarIcon className="mr-1 h-3.5 w-3.5" /> Set Due Dates
+          </Button>
           <Button size="sm" variant="outline" disabled className="text-white/40 border-white/20">
             <Printer className="mr-1 h-3.5 w-3.5" /> Print View (Coming Soon)
           </Button>
@@ -417,17 +430,18 @@ export default function TripPlanning() {
             {ASSIGNEES.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={cn("h-8 text-xs bg-white/5 border-white/20 text-white", filterDate && "border-primary")}>
-              <CalendarIcon className="mr-1 h-3 w-3" />
-              {filterDate ? `Due by ${format(filterDate, "MMM d")}` : "Due Date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={filterDate} onSelect={setFilterDate} className={cn("p-3 pointer-events-auto")} />
-          </PopoverContent>
-        </Popover>
+        <Select value={filterDate || "all"} onValueChange={v => setFilterDate(v === "all" ? undefined : v)}>
+          <SelectTrigger className={cn("h-8 text-xs w-[160px] bg-white/5 border-white/20 text-white", filterDate && "border-primary")}>
+            <CalendarIcon className="mr-1 h-3 w-3" />
+            <SelectValue placeholder="Due Date" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Dates</SelectItem>
+            {presetDueDates.map(d => (
+              <SelectItem key={d} value={d}>{format(new Date(d + "T00:00:00"), "MMM d, yyyy")}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {hasFilters && (
           <Button variant="ghost" size="sm" className="h-8 text-xs text-white/60 hover:text-white" onClick={() => { setFilterCategory("all"); setFilterAssignee("all"); setFilterDate(undefined); }}>
             Clear
@@ -441,7 +455,7 @@ export default function TripPlanning() {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <PlanColumn id="all" label="All To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} groupByCategory />
+            <PlanColumn id="all" label="All To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} groupByCategory showAllBadges />
             <PlanColumn id="unassigned" label="Unassigned" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
             <PlanColumn id="lee" label="Lee" tasks={leeTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
             <PlanColumn id="mk" label="MK" tasks={mkTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
@@ -488,18 +502,33 @@ export default function TripPlanning() {
                 </Select>
               </div>
               <div>
-                <Label>Target Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.target_date && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {form.target_date ? format(form.target_date, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={form.target_date} onSelect={d => setForm(p => ({ ...p, target_date: d }))} className={cn("p-3 pointer-events-auto")} />
-                  </PopoverContent>
-                </Popover>
+                <Label>Due Date</Label>
+                {presetDueDates.length > 0 ? (
+                  <Select
+                    value={form.target_date ? format(form.target_date, "yyyy-MM-dd") : "none"}
+                    onValueChange={v => setForm(p => ({ ...p, target_date: v === "none" ? undefined : new Date(v + "T00:00:00") }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Choose due date" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No due date</SelectItem>
+                      {presetDueDates.map(d => (
+                        <SelectItem key={d} value={d}>{format(new Date(d + "T00:00:00"), "MMM d, yyyy")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.target_date && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.target_date ? format(form.target_date, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={form.target_date} onSelect={d => setForm(p => ({ ...p, target_date: d }))} className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
             </div>
 
@@ -554,6 +583,58 @@ export default function TripPlanning() {
                 {createMutation.isPending ? "Adding..." : "Add Task"}
               </Button>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Set Due Dates Dialog */}
+      <Dialog open={showDueDateManager} onOpenChange={setShowDueDateManager}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Set Due Dates</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Add milestone dates, then assign them to tasks using the due date dropdown.</p>
+          <div className="space-y-3 mt-2">
+            <div className="space-y-1">
+              {presetDueDates.map(d => (
+                <div key={d} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                  <span className="text-sm">{format(new Date(d + "T00:00:00"), "MMMM d, yyyy")}</span>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {tasks?.filter(t => t.target_date === d).length || 0} tasks
+                  </Badge>
+                </div>
+              ))}
+              {presetDueDates.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No due dates set yet</p>}
+            </div>
+            <div className="border-t pt-3">
+              <Label className="text-xs mb-1 block">Add a new due date</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("flex-1 justify-start text-left font-normal", !newDueDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                      {newDueDate ? format(newDueDate, "MMM d, yyyy") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={newDueDate} onSelect={setNewDueDate} className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+                <Button size="sm" disabled={!newDueDate || !user} onClick={async () => {
+                  if (!newDueDate || !user) return;
+                  const dateStr = format(newDueDate, "yyyy-MM-dd");
+                  // Create a placeholder task to register this date
+                  await supabase.from("trip_tasks").insert({
+                    trip_id: tripId!, user_id: user.id, title: `[Due Date Milestone] ${format(newDueDate, "MMM d")}`,
+                    category: "general", assigned_to: "unassigned", status: "todo",
+                    target_date: dateStr, description: "Milestone date marker — assign tasks to this date.",
+                  });
+                  queryClient.invalidateQueries({ queryKey: ["trip-tasks", tripId] });
+                  setNewDueDate(undefined);
+                  toast.success("Due date added!");
+                }}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
