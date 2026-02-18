@@ -16,8 +16,18 @@ export const PRIORITIES = [
 
 export const STATUSES = [
   { value: "planned", label: "Planned" },
-  { value: "in_progress", label: "Currently In Progress" },
-  { value: "done", label: "Completed Features" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "done", label: "Completed" },
+];
+
+export const DOMAINS = [
+  { value: "all", label: "All Domains" },
+  { value: "survive", label: "Survive Accounting" },
+  { value: "prof_ingram", label: "Prof Ingram" },
+  { value: "leeingram", label: "Leeingram.co" },
+  { value: "travel", label: "Travel" },
+  { value: "writing", label: "Writing" },
+  { value: "general", label: "General" },
 ];
 
 export const IDEA_STATUS = { value: "idea", label: "Ideas" };

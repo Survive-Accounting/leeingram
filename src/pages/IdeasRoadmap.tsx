@@ -21,32 +21,39 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+  type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { Plus, Lightbulb, Rocket, Filter, ChevronDown } from "lucide-react";
-import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS, SEED_IDEAS, IDEA_STATUS, ARCHIVED_STATUS } from "@/components/roadmap/RoadmapConstants";
+import { CATEGORIES, PRIORITIES, SEMESTERS, SEED_IDEAS, DOMAINS } from "@/components/roadmap/RoadmapConstants";
 import { RoadmapColumn } from "@/components/roadmap/RoadmapColumn";
+import { RoadmapItemRow } from "@/components/roadmap/RoadmapItemRow";
 import { VisionSection } from "@/components/roadmap/VisionSection";
 
-export default function FeatureRoadmap() {
+export default function IdeasRoadmap() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
+  const [visionsOpen, setVisionsOpen] = useState(false);
+  const [prioritiesOpen, setPrioritiesOpen] = useState(false);
   const [ideasOpen, setIdeasOpen] = useState(false);
   const [archivedOpen, setArchivedOpen] = useState(false);
 
+  const [filterDomain, setFilterDomain] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterSemester, setFilterSemester] = useState("all");
 
   const [newItem, setNewItem] = useState({
-    title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea",
+    title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea", domain: "general",
   });
 
   const [localOrder, setLocalOrder] = useState<Record<string, string[]>>({});
+  const [activeItem, setActiveItem] = useState<any>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -74,7 +81,7 @@ export default function FeatureRoadmap() {
       queryClient.invalidateQueries({ queryKey: ["roadmap-items"] });
       toast.success("Added to roadmap!");
     },
-    onError: (e) => toast.error("Failed: " + e.message),
+    onError: (e: any) => toast.error("Failed: " + e.message),
   });
 
   const updateMutation = useMutation({
@@ -108,7 +115,7 @@ export default function FeatureRoadmap() {
   const handleCreate = () => {
     createMutation.mutate(newItem);
     setShowCreate(false);
-    setNewItem({ title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea" });
+    setNewItem({ title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea", domain: "general" });
   };
 
   const handleUpdate = (id: string, updates: Record<string, any>) => {
@@ -122,12 +129,13 @@ export default function FeatureRoadmap() {
   const filtered = useMemo(() => {
     if (!items) return [];
     return items.filter((i: any) => {
+      if (filterDomain !== "all" && i.domain !== filterDomain) return false;
       if (filterCategory !== "all" && i.category !== filterCategory) return false;
       if (filterPriority !== "all" && i.priority !== filterPriority) return false;
       if (filterSemester !== "all" && i.target_semester !== filterSemester) return false;
       return true;
     });
-  }, [items, filterCategory, filterPriority, filterSemester]);
+  }, [items, filterDomain, filterCategory, filterPriority, filterSemester]);
 
   const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
@@ -149,8 +157,6 @@ export default function FeatureRoadmap() {
   const ideaItems = sortAndOrder(filtered.filter((i: any) => i.status === "idea"), "idea");
   const archivedItems = sortAndOrder(filtered.filter((i: any) => i.status === "archived" || i.status === "deferred"), "archived");
 
-  const allBoardItems = [...plannedItems, ...inProgressItems, ...completedItems];
-
   const plannedBySemester = useMemo(() => {
     const groups: Record<string, any[]> = {};
     for (const item of plannedItems) {
@@ -165,25 +171,25 @@ export default function FeatureRoadmap() {
     return ordered;
   }, [plannedItems]);
 
-  // Cross-column drag and drop
   const statusMap: Record<string, string> = {
-    planned: "planned",
-    in_progress: "in_progress",
-    done: "done",
-    idea: "idea",
-    archived: "archived",
+    planned: "planned", in_progress: "in_progress", done: "done", idea: "idea", archived: "archived",
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const id = event.active.id as string;
+    const item = filtered.find((i: any) => i.id === id);
+    setActiveItem(item || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveItem(null);
     const { active, over } = event;
     if (!over) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Check if dropped on a column (droppable area)
     if (statusMap[overId]) {
-      // Moving to a different column
       const item = filtered.find((i: any) => i.id === activeId);
       if (item && item.status !== overId) {
         handleUpdate(activeId, { status: overId });
@@ -191,23 +197,16 @@ export default function FeatureRoadmap() {
       return;
     }
 
-    // Dropped on another item - find which column it's in
     const overItem = filtered.find((i: any) => i.id === overId);
-    const activeItem = filtered.find((i: any) => i.id === activeId);
-    if (!overItem || !activeItem) return;
+    const activeItemData = filtered.find((i: any) => i.id === activeId);
+    if (!overItem || !activeItemData) return;
 
-    if (activeItem.status !== overItem.status) {
-      // Cross-column: update status
+    if (activeItemData.status !== overItem.status) {
       handleUpdate(activeId, { status: overItem.status });
     } else {
-      // Same column: reorder
-      const statusKey = activeItem.status === "done" ? "done" : activeItem.status;
+      const statusKey = activeItemData.status;
       const listMap: Record<string, any[]> = {
-        planned: plannedItems,
-        in_progress: inProgressItems,
-        done: completedItems,
-        idea: ideaItems,
-        archived: archivedItems,
+        planned: plannedItems, in_progress: inProgressItems, done: completedItems, idea: ideaItems, archived: archivedItems,
       };
       const list = listMap[statusKey];
       if (!list) return;
@@ -221,14 +220,14 @@ export default function FeatureRoadmap() {
     }
   };
 
-  const hasFilters = filterCategory !== "all" || filterPriority !== "all" || filterSemester !== "all";
+  const hasFilters = filterDomain !== "all" || filterCategory !== "all" || filterPriority !== "all" || filterSemester !== "all";
 
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Feature Roadmap</h1>
-          <p className="text-sm text-muted-foreground">Brainstorm, prioritize, and schedule your platform's future</p>
+          <h1 className="text-2xl font-bold text-foreground">Ideas Roadmap</h1>
+          <p className="text-sm text-muted-foreground">Brainstorm, prioritize, and schedule across all domains</p>
         </div>
         <div className="flex gap-2">
           {(!items || items.length === 0) && (
@@ -245,6 +244,12 @@ export default function FeatureRoadmap() {
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={filterDomain} onValueChange={setFilterDomain}>
+          <SelectTrigger className="h-8 text-xs w-[160px]"><SelectValue placeholder="Domain" /></SelectTrigger>
+          <SelectContent>
+            {DOMAINS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
           <SelectTrigger className="h-8 text-xs w-[150px]"><SelectValue placeholder="Category" /></SelectTrigger>
           <SelectContent>
@@ -267,7 +272,7 @@ export default function FeatureRoadmap() {
           </SelectContent>
         </Select>
         {hasFilters && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterCategory("all"); setFilterPriority("all"); setFilterSemester("all"); }}>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterDomain("all"); setFilterCategory("all"); setFilterPriority("all"); setFilterSemester("all"); }}>
             Clear filters
           </Button>
         )}
@@ -286,110 +291,105 @@ export default function FeatureRoadmap() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Trello Board with cross-column DnD */}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <RoadmapColumn
-                label="Planned"
-                items={plannedItems}
-                statusValue="planned"
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                semesterGroups={plannedBySemester}
-              />
-              <RoadmapColumn
-                label="In Progress"
-                items={inProgressItems}
-                statusValue="in_progress"
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                variant="active"
-              />
-              <RoadmapColumn
-                label="Completed"
-                items={completedItems}
-                statusValue="done"
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                variant="completed"
-              />
-            </div>
-          </DndContext>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="space-y-4">
+            {/* Visions toggle */}
+            <Collapsible open={visionsOpen} onOpenChange={setVisionsOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${visionsOpen ? "rotate-180" : ""}`} />
+                <span className="text-sm font-semibold text-foreground">🔭 Visions</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <VisionSection />
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Divider */}
-          <div className="border-t border-border" />
+            {/* Priorities toggle = Trello board */}
+            <Collapsible open={prioritiesOpen} onOpenChange={setPrioritiesOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${prioritiesOpen ? "rotate-180" : ""}`} />
+                <span className="text-sm font-semibold text-foreground">📋 Priorities</span>
+                <Badge variant="secondary" className="text-xs">{plannedItems.length + inProgressItems.length + completedItems.length}</Badge>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                  <RoadmapColumn label="Planned" items={plannedItems} statusValue="planned" onUpdate={handleUpdate} onDelete={handleDelete} semesterGroups={plannedBySemester} />
+                  <RoadmapColumn label="In Progress" items={inProgressItems} statusValue="in_progress" onUpdate={handleUpdate} onDelete={handleDelete} variant="active" />
+                  <RoadmapColumn label="Completed" items={completedItems} statusValue="done" onUpdate={handleUpdate} onDelete={handleDelete} variant="completed" />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Toggleable sections */}
-          <VisionSection />
+            <div className="border-t border-border" />
 
-          {/* Ideas toggle */}
-          <Collapsible open={ideasOpen} onOpenChange={setIdeasOpen}>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${ideasOpen ? "rotate-180" : ""}`} />
-              <span className="text-sm font-semibold text-foreground">💡 Ideas</span>
-              <Badge variant="secondary" className="text-xs">{ideaItems.length}</Badge>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <RoadmapColumn
-                  label="Ideas"
-                  items={ideaItems}
-                  statusValue="idea"
-                  onUpdate={handleUpdate}
-                  onDelete={handleDelete}
-                />
-              </DndContext>
-            </CollapsibleContent>
-          </Collapsible>
+            {/* Ideas toggle */}
+            <Collapsible open={ideasOpen} onOpenChange={setIdeasOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${ideasOpen ? "rotate-180" : ""}`} />
+                <span className="text-sm font-semibold text-foreground">💡 Ideas</span>
+                <Badge variant="secondary" className="text-xs">{ideaItems.length}</Badge>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <RoadmapColumn label="Ideas" items={ideaItems} statusValue="idea" onUpdate={handleUpdate} onDelete={handleDelete} />
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Archived toggle */}
-          <Collapsible open={archivedOpen} onOpenChange={setArchivedOpen}>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${archivedOpen ? "rotate-180" : ""}`} />
-              <span className="text-sm font-semibold text-muted-foreground">📦 Archived</span>
-              <Badge variant="secondary" className="text-xs">{archivedItems.length}</Badge>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <RoadmapColumn
-                  label="Archived"
-                  items={archivedItems}
-                  statusValue="archived"
-                  onUpdate={handleUpdate}
-                  onDelete={handleDelete}
-                />
-              </DndContext>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
+            {/* Archived toggle */}
+            <Collapsible open={archivedOpen} onOpenChange={setArchivedOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${archivedOpen ? "rotate-180" : ""}`} />
+                <span className="text-sm font-semibold text-muted-foreground">📦 Archived</span>
+                <Badge variant="secondary" className="text-xs">{archivedItems.length}</Badge>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <RoadmapColumn label="Archived" items={archivedItems} statusValue="archived" onUpdate={handleUpdate} onDelete={handleDelete} />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          {/* DragOverlay for smooth cross-column dragging */}
+          <DragOverlay dropAnimation={null}>
+            {activeItem ? (
+              <div className="opacity-90 rotate-2 scale-105 pointer-events-none">
+                <RoadmapItemRow item={activeItem} onUpdate={() => {}} onDelete={() => {}} isDragOverlay />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Feature Idea</DialogTitle>
-            <DialogDescription>Brainstorm a new feature for the roadmap.</DialogDescription>
+            <DialogTitle>Add Idea</DialogTitle>
+            <DialogDescription>Brainstorm a new idea for any domain.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label>Title</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-sm pointer-events-none select-none">I want to</span>
-                <Input
-                  value={newItem.title}
-                  onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))}
-                  className="pl-[5.5rem]"
-                  placeholder="build a video factory for promos..."
-                />
+                <Input value={newItem.title} onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))} className="pl-[5.5rem]" placeholder="build a video factory for promos..." />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>
-              <Textarea value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} rows={3} placeholder="What does this feature do? Why is it valuable?" />
+              <Textarea value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} rows={3} placeholder="What does this do? Why is it valuable?" />
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Domain</Label>
+                <Select value={newItem.domain} onValueChange={(v) => setNewItem((p) => ({ ...p, domain: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{DOMAINS.filter(d => d.value !== "all").map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label>Category</Label>
                 <Select value={newItem.category} onValueChange={(v) => setNewItem((p) => ({ ...p, category: v }))}>
@@ -397,6 +397,8 @@ export default function FeatureRoadmap() {
                   <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Priority</Label>
                 <Select value={newItem.priority} onValueChange={(v) => setNewItem((p) => ({ ...p, priority: v }))}>
@@ -404,13 +406,13 @@ export default function FeatureRoadmap() {
                   <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Target Semester</Label>
-              <Select value={newItem.target_semester} onValueChange={(v) => setNewItem((p) => ({ ...p, target_semester: v }))}>
-                <SelectTrigger><SelectValue placeholder="Pick a semester" /></SelectTrigger>
-                <SelectContent>{SEMESTERS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <Label>Target Semester</Label>
+                <Select value={newItem.target_semester} onValueChange={(v) => setNewItem((p) => ({ ...p, target_semester: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Pick a semester" /></SelectTrigger>
+                  <SelectContent>{SEMESTERS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -425,9 +427,7 @@ export default function FeatureRoadmap() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Load Brainstormed Ideas</DialogTitle>
-            <DialogDescription>
-              This will add {SEED_IDEAS.length} feature ideas from your previous brainstorming sessions.
-            </DialogDescription>
+            <DialogDescription>This will add {SEED_IDEAS.length} ideas from your previous brainstorming sessions.</DialogDescription>
           </DialogHeader>
           <div className="max-h-60 overflow-y-auto space-y-1.5 text-sm">
             {SEED_IDEAS.map((idea, i) => (

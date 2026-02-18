@@ -20,6 +20,13 @@ const PLAY_DOMAINS = [
   { key: "writing", label: "Writing", tagline: "No destination", route: "/writing" },
 ];
 
+const FAMILY_TABS = [
+  { key: "me", label: "Me" },
+  { key: "mckenzie", label: "McKenzie" },
+  { key: "baby", label: "Baby" },
+  { key: "us", label: "Us" },
+];
+
 const DomainLink = ({ domain, navigate }: { domain: typeof WORK_DOMAINS[0]; navigate: any }) => (
   <button
     onClick={() => navigate(domain.route)}
@@ -117,8 +124,11 @@ export default function DomainSelect() {
   const queryClient = useQueryClient();
   const [workOpen, setWorkOpen] = useState(false);
   const [playOpen, setPlayOpen] = useState(false);
+  const [familyOpen, setFamilyOpen] = useState(false);
+  const [familyTab, setFamilyTab] = useState<string | null>(null);
   const [showMusic, setShowMusic] = useState(false);
   const [newLink, setNewLink] = useState({ title: "", url: "" });
+  const promptCount = 0; // TODO: track actual prompt count
 
   const { data: musicLinks } = useQuery({
     queryKey: ["music-links"],
@@ -200,8 +210,61 @@ export default function DomainSelect() {
           )}
         </div>
 
+        {/* Ideas */}
+        <FlickerButton
+          label="Ideas"
+          subtitle="Idea Factory → Roadmap"
+          expanded={false}
+          onClick={() => navigate("/ideas")}
+        />
+
+        {/* Family */}
+        <div className="w-full space-y-2">
+          <FlickerButton
+            label="Family"
+            subtitle="Coming soon"
+            expanded={familyOpen}
+            onClick={() => setFamilyOpen(!familyOpen)}
+          />
+          {familyOpen && (
+            <div className="space-y-1.5 pl-2 pr-1 animate-fade-in">
+              {FAMILY_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setFamilyTab(tab.key)}
+                  className="w-full text-left px-4 py-2.5 transition-all duration-200 cursor-pointer rounded-md group"
+                  style={{
+                    background: familyTab === tab.key ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${familyTab === tab.key ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)"}`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = familyTab === tab.key ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)";
+                    e.currentTarget.style.borderColor = familyTab === tab.key ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)";
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold tracking-wide text-white/85 group-hover:text-white transition-colors">
+                      {tab.label}
+                    </h3>
+                    <span className="text-[10px] uppercase tracking-widest text-white/30">Coming Soon</span>
+                  </div>
+                </button>
+              ))}
+              {familyTab === "us" && (
+                <div className="p-3 rounded-md text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-xs text-white/40 italic">💰 Money Meetings Dashboard — coming soon</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <p className="text-xs text-center" style={{ color: "rgba(255,255,255,0.15)" }}>
-          system v2.026 // the factory™
+          Lovable Prompts = {promptCount} // Earned Wisdom, LLC
         </p>
 
         {/* Music Library */}
