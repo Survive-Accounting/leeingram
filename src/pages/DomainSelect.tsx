@@ -10,10 +10,10 @@ import aorakiBg from "@/assets/aoraki-bg.jpg";
 
 const DOMAINS = [
   {
-    key: "writing",
-    label: "Writing",
-    tagline: "Finishing what we've started.",
-    route: "/writing",
+    key: "travel",
+    label: "Travel",
+    tagline: "Adventures & trip planning",
+    route: "/travel",
     comingSoon: false,
   },
   {
@@ -24,13 +24,6 @@ const DOMAINS = [
     comingSoon: false,
   },
   {
-    key: "leeingram",
-    label: "Leeingram.co",
-    tagline: "What's my next big project?",
-    route: "/leeingram",
-    comingSoon: false,
-  },
-  {
     key: "prof_ingram",
     label: "Prof Ingram",
     tagline: "Arts Entrepreneurship & Quickbooks",
@@ -38,10 +31,17 @@ const DOMAINS = [
     comingSoon: false,
   },
   {
-    key: "travel",
-    label: "Travel",
-    tagline: "Adventures & trip planning",
-    route: "/travel",
+    key: "writing",
+    label: "Writing",
+    tagline: "No destination",
+    route: "/writing",
+    comingSoon: false,
+  },
+  {
+    key: "leeingram",
+    label: "Leeingram.co",
+    tagline: "What's my next big project?",
+    route: "/leeingram",
     comingSoon: false,
   },
 ];

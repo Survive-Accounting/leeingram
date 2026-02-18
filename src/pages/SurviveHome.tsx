@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { AppLayout } from "@/components/AppLayout";
-import { Factory, Mail, Lightbulb, Timer } from "lucide-react";
+import { DomainLayout } from "@/components/DomainLayout";
+import { Factory, Mail, Lightbulb } from "lucide-react";
 
 const FACTORIES = [
   {
@@ -27,34 +27,38 @@ const FACTORIES = [
     route: "/roadmap",
     available: true,
   },
-  {
-    key: "focus",
-    label: "Focus Sprint",
-    description: "Microfocused work sessions — now available from the domains page too",
-    icon: Timer,
-    route: "/focus",
-    available: true,
-  },
 ];
 
 export default function SurviveHome() {
   return (
-    <AppLayout>
-      <div className="flex flex-col items-center py-12">
-        <h1 className="text-2xl font-bold text-foreground mb-1">Survive Accounting</h1>
-        <p className="text-sm text-muted-foreground mb-10">Enter Your Chosen Factory</p>
-
+    <DomainLayout title="Survive Accounting" tagline="Nationwide exam prep platform">
+      <div className="flex flex-col items-center py-8">
         <div className="grid gap-4 w-full max-w-xl">
           {FACTORIES.map((f) => {
             const Icon = f.icon;
             const inner = (
-              <div className="relative flex items-center gap-4 rounded-lg border bg-card p-5 transition-colors hover:bg-accent group cursor-pointer">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" />
+              <div
+                className="relative flex items-center gap-4 rounded-lg p-5 transition-all cursor-pointer"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(12px)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+                }}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <Icon className="h-5 w-5 text-white/80" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-sm font-semibold text-foreground">{f.label}</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">{f.description}</p>
+                  <h2 className="text-sm font-semibold text-white">{f.label}</h2>
+                  <p className="text-xs text-white/50 mt-0.5">{f.description}</p>
                 </div>
               </div>
             );
@@ -71,6 +75,6 @@ export default function SurviveHome() {
           })}
         </div>
       </div>
-    </AppLayout>
+    </DomainLayout>
   );
 }
