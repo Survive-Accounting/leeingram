@@ -127,7 +127,7 @@ export default function Landing() {
                 Now, it supports a life built around travel, teaching, adventure, and creative freedom.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                Join the journey.
+                Subscribe to join the journey.
               </p>
             </div>
 
