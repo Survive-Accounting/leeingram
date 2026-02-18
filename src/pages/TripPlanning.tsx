@@ -31,6 +31,7 @@ import canvasConfetti from "canvas-confetti";
 import {
   Plus, Filter, ChevronDown, GripVertical, Pencil, Trash2, Check, X,
   Link as LinkIcon, ExternalLink, CalendarIcon, Printer, ArrowRight, PartyPopper,
+  Eye, EyeOff,
 } from "lucide-react";
 
 const TRIP_CATEGORIES = [
@@ -139,7 +140,7 @@ function TaskCard({ task, onEdit, onDelete, onAdvance, onMarkDone, isDragOverlay
             </div>
           )}
           {/* Description toggle */}
-          {task.description ? (
+          {task.description && (
             <Collapsible open={descOpen} onOpenChange={setDescOpen}>
               <CollapsibleTrigger asChild>
                 <button className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-0.5 pl-5">
@@ -151,8 +152,6 @@ function TaskCard({ task, onEdit, onDelete, onAdvance, onMarkDone, isDragOverlay
                 <p className="text-[10px] text-muted-foreground mt-0.5 pl-5 leading-relaxed whitespace-pre-wrap">{task.description}</p>
               </CollapsibleContent>
             </Collapsible>
-          ) : (
-            <button className="text-[10px] text-muted-foreground/40 pl-5 cursor-default">No description</button>
           )}
         </div>
       </Card>
@@ -231,6 +230,9 @@ export default function TripPlanning() {
   const [activeItem, setActiveItem] = useState<any>(null);
   const [showDueDateManager, setShowDueDateManager] = useState(false);
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
+
+  // View mode: "all" shows all 4 columns, "review" shows To Do's + Lee + MK, "assign" shows To Assign + Lee + MK
+  const [viewMode, setViewMode] = useState<"all" | "review" | "assign">("all");
 
   // Celebration dialog
   const [celebrateTask, setCelebrateTask] = useState<any>(null);
@@ -530,14 +532,41 @@ export default function TripPlanning() {
         )}
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="mb-4 flex items-center gap-1">
+        <span className="text-[10px] text-white/40 mr-1 uppercase tracking-wider">View:</span>
+        {[
+          { value: "all" as const, label: "All Columns" },
+          { value: "review" as const, label: "Review To Do's" },
+          { value: "assign" as const, label: "Assign Tasks" },
+        ].map(v => (
+          <Button
+            key={v.value}
+            variant={viewMode === v.value ? "secondary" : "ghost"}
+            size="sm"
+            className={cn("h-7 text-xs", viewMode === v.value ? "bg-white/15 text-white" : "text-white/50 hover:text-white")}
+            onClick={() => setViewMode(v.value)}
+          >
+            {v.label}
+          </Button>
+        ))}
+      </div>
+
       {/* Board */}
       {isLoading ? (
         <p className="text-white/50 text-sm">Loading...</p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <PlanColumn id="all" label="To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag} />
-            <PlanColumn id="unassigned" label="To Assign" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} />
+          <div className={cn(
+            "grid grid-cols-1 gap-4",
+            viewMode === "all" ? "md:grid-cols-4" : "md:grid-cols-3"
+          )}>
+            {(viewMode === "all" || viewMode === "review") && (
+              <PlanColumn id="all" label="To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag} />
+            )}
+            {(viewMode === "all" || viewMode === "assign") && (
+              <PlanColumn id="unassigned" label="To Assign" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} />
+            )}
             <PlanColumn id="lee" label="Lee" tasks={leeTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone}
               headerExtra={completedLee.length > 0 ? (
                 <Button variant="ghost" size="sm" className="h-6 text-[10px] text-emerald-400 hover:text-emerald-300 ml-auto" onClick={() => setShowLeeCompleted(true)}>
