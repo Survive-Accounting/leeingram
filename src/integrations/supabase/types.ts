@@ -600,6 +600,144 @@ export type Database = {
           },
         ]
       }
+      trip_explore_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          trip_id: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          trip_id: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          trip_id?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_explore_items_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_task_links: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          task_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          task_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          task_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_task_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "trip_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_tasks: {
+        Row: {
+          assigned_to: string
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_listed: boolean | null
+          is_sold: boolean | null
+          sold_price: number | null
+          sort_order: number | null
+          status: string
+          target_date: string | null
+          title: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_listed?: boolean | null
+          is_sold?: boolean | null
+          sold_price?: number | null
+          sort_order?: number | null
+          status?: string
+          target_date?: string | null
+          title: string
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_listed?: boolean | null
+          is_sold?: boolean | null
+          sold_price?: number | null
+          sort_order?: number | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_tasks_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           created_at: string

@@ -22,6 +22,8 @@ import Writing from "./pages/Writing";
 import Leeingram from "./pages/Leeingram";
 import ProfIngram from "./pages/ProfIngram";
 import Travel from "./pages/Travel";
+import TripPlanning from "./pages/TripPlanning";
+import TripExploring from "./pages/TripExploring";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +69,8 @@ const AppRoutes = () => {
       <Route path="/prof-ingram" element={<ProtectedRoute><ProfIngram /></ProtectedRoute>} />
       {/* Travel domain */}
       <Route path="/travel" element={<ProtectedRoute><Travel /></ProtectedRoute>} />
+      <Route path="/travel/:tripId/planning" element={<ProtectedRoute><TripPlanning /></ProtectedRoute>} />
+      <Route path="/travel/:tripId/exploring" element={<ProtectedRoute><TripExploring /></ProtectedRoute>} />
       <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DomainLayout } from "@/components/DomainLayout";
-import { Plus, MapPin, Calendar, Trash2, ChevronDown, Pencil } from "lucide-react";
+import { Plus, MapPin, Calendar, Trash2, ChevronDown, Pencil, ClipboardList, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,7 @@ const getSeasonDisplay = (trip: any): string => {
 
 export default function Travel() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<any>(null);
@@ -151,6 +153,17 @@ export default function Travel() {
             <div className="flex items-center gap-1.5 mt-2 text-xs text-white/40">
               <Calendar className="h-3 w-3" />
               {getSeasonDisplay(trip)}
+            </div>
+            {/* Planning & Exploring buttons */}
+            <div className="flex gap-2 mt-3">
+              <Button variant="outline" size="sm" className="h-7 text-xs bg-white/5 border-white/20 text-white/70 hover:text-white hover:bg-white/10"
+                onClick={(e) => { e.stopPropagation(); navigate(`/travel/${trip.id}/planning`); }}>
+                <ClipboardList className="mr-1 h-3 w-3" /> Planning Dashboard
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs bg-white/5 border-white/20 text-white/70 hover:text-white hover:bg-white/10"
+                onClick={(e) => { e.stopPropagation(); navigate(`/travel/${trip.id}/exploring`); }}>
+                <Compass className="mr-1 h-3 w-3" /> Exploring
+              </Button>
             </div>
           </div>
         </div>
