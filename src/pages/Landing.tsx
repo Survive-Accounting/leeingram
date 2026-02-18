@@ -99,7 +99,7 @@ export default function Landing() {
               <img
                 src={leeHeadshot}
                 alt="Lee Ingram"
-                className="w-[7.2rem] h-[7.2rem] sm:w-[8.4rem] sm:h-[8.4rem] rounded-full object-cover object-top"
+                className="w-[7.2rem] h-[7.2rem] sm:w-[8.4rem] sm:h-[8.4rem] rounded-full object-cover object-[center_15%]"
                 style={{
                   filter: "contrast(0.95) saturate(0.85) brightness(1.05) drop-shadow(0 0 16px rgba(218,165,32,0.3))",
                   WebkitMaskImage: "radial-gradient(circle, black 55%, transparent 78%)",
@@ -122,6 +122,9 @@ export default function Landing() {
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
                 Today, it supports a life built around travel, teaching, adventure, and creative freedom.
+              </p>
+              <p className="text-sm text-white/85 leading-relaxed">
+                Join me on the journey.
               </p>
             </div>
 
