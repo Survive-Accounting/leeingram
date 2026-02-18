@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -18,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
-import { ChevronDown, GripVertical, ChevronRight, Trophy } from "lucide-react";
+import { ChevronDown, GripVertical, ChevronRight, Trophy, Plus } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface LessonItem {
@@ -231,9 +232,16 @@ export default function ContentRoadmap() {
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Content Roadmap</h1>
-        <p className="text-sm text-muted-foreground">Track lesson production across all courses</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Content Roadmap</h1>
+          <p className="text-sm text-muted-foreground">Track lesson production across all courses</p>
+        </div>
+        <Button asChild>
+          <Link to="/create-lesson">
+            <Plus className="mr-1 h-4 w-4" /> Create Lesson
+          </Link>
+        </Button>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>

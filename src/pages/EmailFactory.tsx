@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,43 +10,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
-  Plus,
-  Mail,
-  Send,
-  Sparkles,
-  FileText,
-  ArrowRight,
-  Trash2,
-  Copy,
-  CheckCircle2,
-  ExternalLink,
-  Calendar,
-  Link2,
-  ChevronLeft,
+  Plus, Mail, Send, Sparkles, FileText, ArrowRight, Trash2, Copy,
+  CheckCircle2, ExternalLink, Calendar, Link2, ChevronLeft, ChevronDown, Code,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { addDays, startOfWeek, format, parse } from "date-fns";
 
 type EmailStatus = "planning" | "journaling" | "refining" | "finalized" | "sent";
 
 const STATUS_LABELS: Record<EmailStatus, string> = {
-  planning: "Planning",
-  journaling: "Journaling",
-  refining: "AI Refining",
-  finalized: "Finalized",
-  sent: "Sent",
+  planning: "Plan", journaling: "Journal", refining: "Refine", finalized: "Final", sent: "Sent",
 };
 
 const STATUS_STYLES: Record<EmailStatus, string> = {
@@ -58,58 +39,63 @@ const STATUS_STYLES: Record<EmailStatus, string> = {
 };
 
 const DEFAULT_EMAIL_TYPES = [
-  "Post-Exam Feedback",
-  "Welcome/Onboarding",
-  "Course Update",
-  "Promotion",
-  "Thank You",
-  "Re-engagement",
-  "General",
+  "Post-Exam Feedback", "Welcome/Onboarding", "Course Update",
+  "Promotion", "Thank You", "Re-engagement", "General",
 ];
 
 const DEFAULT_SEMESTERS = ["Spring 2026", "Summer 2026", "Fall 2026", "Spring 2027"];
-
 const SEND_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
 const WEEK_OPTIONS = Array.from({ length: 16 }, (_, i) => i + 1);
+const DAY_INDEX: Record<string, number> = {
+  Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
+};
+
+function calcSendDate(semesterStart: string | null | undefined, weekNum: number | null | undefined, sendDay: string | null | undefined): string | null {
+  if (!semesterStart || !weekNum || !sendDay) return null;
+  try {
+    const start = new Date(semesterStart + "T00:00:00");
+    const weekStart = startOfWeek(start, { weekStartsOn: 1 }); // Monday
+    const targetWeekStart = addDays(weekStart, (weekNum - 1) * 7);
+    const dayIdx = DAY_INDEX[sendDay];
+    if (dayIdx === undefined) return null;
+    const mondayBased = dayIdx === 0 ? 6 : dayIdx - 1;
+    const result = addDays(targetWeekStart, mondayBased);
+    return format(result, "yyyy-MM-dd");
+  } catch { return null; }
+}
 
 export default function EmailFactory() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("all");
   const [showCreate, setShowCreate] = useState(false);
-
-  const [newEmail, setNewEmail] = useState({
-    title: "",
-    email_type: "General",
-    course_tags: [] as string[],
-    audience: "",
-    purpose: "",
-    giving: "",
-    hoping_to_receive: "",
-    local_flavor: "",
-    semester: "Spring 2026",
-    is_series: false,
-    series_name: "",
-    send_day: "",
-    send_time: "",
-    send_week: undefined as number | undefined,
-  });
-
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<"plan" | "journal" | "refine" | "finalize">("plan");
   const [journalDraft, setJournalDraft] = useState("");
   const [refinementPrompt, setRefinementPrompt] = useState("");
   const [finalDraftEdit, setFinalDraftEdit] = useState("");
   const [isEditingFinal, setIsEditingFinal] = useState(false);
+  const [showFinalizedDialog, setShowFinalizedDialog] = useState(false);
+  const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
+
+  const [newEmail, setNewEmail] = useState({
+    title: "", email_type: "General", course_tags: [] as string[],
+    semester: "Spring 2026", series_name: "", send_day: "",
+    send_week: undefined as number | undefined,
+  });
+
+  // Semester dates
+  const [semesterStart, setSemesterStart] = useState("");
+  const [semesterEnd, setSemesterEnd] = useState("");
 
   const { data: prefs } = useQuery({
     queryKey: ["user-preferences", user?.id],
     queryFn: async () => {
       const { data } = await supabase
-        .from("user_preferences")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+        .from("user_preferences").select("*").eq("user_id", user!.id).maybeSingle();
+      if (data) {
+        setSemesterStart((data as any).semester_start_date || "");
+        setSemesterEnd((data as any).semester_end_date || "");
+      }
       return data;
     },
     enabled: !!user?.id,
@@ -119,75 +105,70 @@ export default function EmailFactory() {
     queryKey: ["courses"],
     queryFn: async () => {
       const { data, error } = await supabase.from("courses").select("id, course_name, slug").order("course_name");
-      if (error) throw error;
-      return data;
+      if (error) throw error; return data;
     },
   });
 
   const emailTypes = (prefs as any)?.email_types ?? DEFAULT_EMAIL_TYPES;
   const semesters = (prefs as any)?.semesters ?? DEFAULT_SEMESTERS;
   const emailStyleGuide = (prefs as any)?.email_style_guide ?? "";
-  const maxRefinements = (prefs as any)?.email_max_refinements ?? 3;
+  const maxRefinements = 5;
 
   const { data: emails, isLoading } = useQuery({
     queryKey: ["emails"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("emails")
-        .select("*")
-        .order("updated_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      const { data, error } = await supabase.from("emails").select("*").order("updated_at", { ascending: false });
+      if (error) throw error; return data;
     },
   });
 
   const activeEmail = emails?.find((e: any) => e.id === editingId);
 
-  // Get related series emails
-  const seriesEmails = activeEmail?.series_name
-    ? emails?.filter((e: any) => e.series_name === activeEmail.series_name && e.id !== activeEmail.id)
-    : [];
+  // Group emails by series
+  const emailsBySeries = useMemo(() => {
+    if (!emails) return { series: {} as Record<string, any[]>, standalone: [] as any[] };
+    const series: Record<string, any[]> = {};
+    const standalone: any[] = [];
+    emails.forEach((e: any) => {
+      if (e.series_name) {
+        if (!series[e.series_name]) series[e.series_name] = [];
+        series[e.series_name].push(e);
+      } else {
+        standalone.push(e);
+      }
+    });
+    return { series, standalone };
+  }, [emails]);
+
+  const saveSemesterDates = async () => {
+    if (!user) return;
+    const { error } = await supabase.from("user_preferences")
+      .upsert({ user_id: user.id, semester_start_date: semesterStart || null, semester_end_date: semesterEnd || null } as any,
+        { onConflict: "user_id" });
+    if (error) toast.error("Failed to save dates");
+    else toast.success("Semester dates saved!");
+  };
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const audienceStr = newEmail.course_tags.length > 0
-        ? newEmail.course_tags.join(", ") + " students"
-        : newEmail.audience || "All students";
-      const { data, error } = await supabase
-        .from("emails")
-        .insert({
-          user_id: user!.id,
-          title: newEmail.title,
-          email_type: newEmail.email_type,
-          audience: audienceStr,
-          course_tags: newEmail.course_tags,
-          purpose: newEmail.purpose,
-          giving: newEmail.giving,
-          hoping_to_receive: newEmail.hoping_to_receive,
-          local_flavor: newEmail.local_flavor,
-          semester: newEmail.semester,
-          status: "planning",
-          is_series: newEmail.is_series,
-          series_name: newEmail.series_name,
-          send_day: newEmail.send_day,
-          send_time: newEmail.send_time,
-          send_week: newEmail.send_week ?? null,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const sendDate = calcSendDate(semesterStart, newEmail.send_week, newEmail.send_day);
+      const { data, error } = await supabase.from("emails").insert({
+        user_id: user!.id, title: newEmail.title, email_type: newEmail.email_type,
+        audience: newEmail.course_tags.length > 0 ? newEmail.course_tags.join(", ") + " students" : "All students",
+        course_tags: newEmail.course_tags, semester: newEmail.semester, status: "planning",
+        is_series: !!newEmail.series_name, series_name: newEmail.series_name || null,
+        send_day: newEmail.send_day || null, send_week: newEmail.send_week ?? null,
+        send_date: sendDate, max_refinements: 5,
+      }).select().single();
+      if (error) throw error; return data;
     },
     onSuccess: (data: any) => {
       toast.success("Email created!");
       setShowCreate(false);
       setEditingId(data.id);
-      setNewEmail({
-        title: "", email_type: "General", course_tags: [], audience: "",
-        purpose: "", giving: "", hoping_to_receive: "", local_flavor: "",
-        semester: "Spring 2026", is_series: false, series_name: "",
-        send_day: "", send_time: "", send_week: undefined,
-      });
+      setActivePanel("journal");
+      setJournalDraft("");
+      setNewEmail({ title: "", email_type: "General", course_tags: [], semester: "Spring 2026", series_name: "", send_day: "", send_week: undefined });
       queryClient.invalidateQueries({ queryKey: ["emails"] });
     },
     onError: (e) => toast.error("Failed: " + e.message),
@@ -212,20 +193,16 @@ export default function EmailFactory() {
       const email = activeEmail;
       if (!email) throw new Error("No email selected");
       const isFirstPass = email.refinement_count === 0;
-      const body = {
-        journalBody: email.journal_body,
-        emailType: email.email_type,
-        audience: email.audience,
-        purpose: email.purpose,
-        giving: email.giving,
-        hopingToReceive: email.hoping_to_receive,
-        localFlavor: email.local_flavor,
-        emailStyleGuide,
-        refinementPrompt: isFirstPass ? undefined : refinementPrompt,
-        previousDraft: isFirstPass ? undefined : (email.ai_refined_body || email.journal_body),
-        passNumber: email.refinement_count + 1,
-      };
-      const { data, error } = await supabase.functions.invoke("refine-email", { body });
+      const { data, error } = await supabase.functions.invoke("refine-email", {
+        body: {
+          journalBody: email.journal_body, emailType: email.email_type,
+          audience: email.audience, purpose: "", giving: "", hopingToReceive: "",
+          localFlavor: "", emailStyleGuide,
+          refinementPrompt: isFirstPass ? undefined : refinementPrompt,
+          previousDraft: isFirstPass ? undefined : (email.ai_refined_body || email.journal_body),
+          passNumber: email.refinement_count + 1,
+        },
+      });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
@@ -234,19 +211,13 @@ export default function EmailFactory() {
       const email = activeEmail;
       const history = Array.isArray(email?.refinement_history) ? email.refinement_history : [];
       updateMutation.mutate({
-        ai_refined_body: data.refinedEmail,
-        ai_strategy_notes: data.strategyNotes,
-        status: "refining",
-        refinement_count: (email?.refinement_count ?? 0) + 1,
-        refinement_history: [
-          ...history,
-          {
-            pass: (email?.refinement_count ?? 0) + 1,
-            prompt: refinementPrompt || "Initial refinement",
-            result: data.refinedEmail,
-            timestamp: new Date().toISOString(),
-          },
-        ],
+        ai_refined_body: data.refinedEmail, ai_strategy_notes: data.strategyNotes,
+        status: "refining", refinement_count: (email?.refinement_count ?? 0) + 1,
+        refinement_history: [...history, {
+          pass: (email?.refinement_count ?? 0) + 1,
+          prompt: refinementPrompt || "Initial refinement",
+          result: data.refinedEmail, timestamp: new Date().toISOString(),
+        }],
       });
       setRefinementPrompt("");
       toast.success("Refinement complete!");
@@ -258,6 +229,7 @@ export default function EmailFactory() {
     const draft = activeEmail?.ai_refined_body || activeEmail?.journal_body || "";
     updateMutation.mutate({ final_draft: draft, status: "finalized" });
     setFinalDraftEdit(draft);
+    setActivePanel("finalize");
     toast.success("Email finalized!");
   };
 
@@ -265,11 +237,6 @@ export default function EmailFactory() {
     updateMutation.mutate({ final_draft: finalDraftEdit });
     setIsEditingFinal(false);
     toast.success("Final draft updated!");
-  };
-
-  const markAsSent = () => {
-    updateMutation.mutate({ status: "sent", sent_at: new Date().toISOString() });
-    toast.success("Marked as sent!");
   };
 
   const deleteMutation = useMutation({
@@ -290,109 +257,128 @@ export default function EmailFactory() {
     setFinalDraftEdit(email.final_draft || "");
     setIsEditingFinal(false);
     setRefinementPrompt("");
+    // Auto-select the right tab based on status
+    if (email.status === "finalized" || email.status === "sent") setActivePanel("finalize");
+    else if (email.status === "refining") setActivePanel("refine");
+    else if (email.status === "journaling") setActivePanel("journal");
+    else setActivePanel("plan");
   };
 
-  const filteredEmails = activeTab === "all"
-    ? emails
-    : emails?.filter((e: any) => e.status === activeTab);
-
-  const remainingPasses = activeEmail
-    ? Math.max(0, maxRefinements - (activeEmail.refinement_count ?? 0))
-    : 0;
-
-  // Unique series names for suggestions
+  const remainingPasses = activeEmail ? Math.max(0, maxRefinements - (activeEmail.refinement_count ?? 0)) : 0;
   const existingSeriesNames = [...new Set(emails?.map((e: any) => e.series_name).filter(Boolean) || [])];
+
+  const toggleSeries = (name: string) => {
+    setExpandedSeries(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  };
+
+  const computedSendDate = activeEmail ? calcSendDate(semesterStart, activeEmail.send_week, activeEmail.send_day) : null;
 
   return (
     <AppLayout>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/marketing" className="text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Email Factory</h1>
-            <p className="text-sm text-muted-foreground">
-              Give more than you receive — craft authentic emails that connect
-            </p>
+            <p className="text-sm text-muted-foreground">Give more than you receive</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
-            <a
-              href="https://www.surviveaccounting.com/author/mass_emails?tab=history"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-              LearnWorlds
+            <a href="https://www.surviveaccounting.com/author/mass_emails?tab=history" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> LearnWorlds
             </a>
           </Button>
-          <Button onClick={() => setShowCreate(true)}>
+          <Button onClick={() => setShowCreate(true)} size="sm">
             <Plus className="mr-1 h-4 w-4" /> New Email
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        {/* Sidebar */}
-        <div className="space-y-3">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full">
-              <TabsTrigger value="all" className="flex-1 text-xs">All</TabsTrigger>
-              <TabsTrigger value="planning" className="flex-1 text-xs">Plan</TabsTrigger>
-              <TabsTrigger value="journaling" className="flex-1 text-xs">Draft</TabsTrigger>
-              <TabsTrigger value="refining" className="flex-1 text-xs">Refine</TabsTrigger>
-              <TabsTrigger value="finalized" className="flex-1 text-xs">Done</TabsTrigger>
-              <TabsTrigger value="sent" className="flex-1 text-xs">Sent</TabsTrigger>
-            </TabsList>
-          </Tabs>
+      {/* Semester Dates */}
+      <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
+        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs text-muted-foreground whitespace-nowrap">Semester Start</Label>
+          <Input type="date" className="h-7 w-36 text-xs" value={semesterStart} onChange={(e) => setSemesterStart(e.target.value)} />
+          <Label className="text-xs text-muted-foreground whitespace-nowrap">End</Label>
+          <Input type="date" className="h-7 w-36 text-xs" value={semesterEnd} onChange={(e) => setSemesterEnd(e.target.value)} />
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={saveSemesterDates}>Save</Button>
+        </div>
+      </div>
 
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : !filteredEmails?.length ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              No emails yet. Create your first one!
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-[calc(100vh-240px)] overflow-y-auto">
-              {filteredEmails.map((email: any) => (
-                <Card
-                  key={email.id}
-                  className={`cursor-pointer transition-colors hover:bg-accent/50 ${editingId === email.id ? "ring-2 ring-primary" : ""}`}
-                  onClick={() => openEmail(email)}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate text-foreground">
-                          {email.title || "Untitled Email"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {email.email_type} · {email.semester}
-                          {email.series_name && ` · 📧 ${email.series_name}`}
-                        </p>
-                        {email.send_day && (
-                          <p className="text-xs text-muted-foreground/70">
-                            {email.send_day}{email.send_time ? ` @ ${email.send_time}` : ""}{email.send_week ? ` · Wk ${email.send_week}` : ""}
-                          </p>
+      <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+        {/* Sidebar: Series + Standalone */}
+        <div className="space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
+          {Object.entries(emailsBySeries.series).map(([seriesName, seriesEmails]) => (
+            <Collapsible key={seriesName} open={expandedSeries.has(seriesName)} onOpenChange={() => toggleSeries(seriesName)}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 rounded-lg bg-muted/50 hover:bg-accent/50 transition-colors cursor-pointer text-left">
+                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform ${expandedSeries.has(seriesName) ? "" : "-rotate-90"}`} />
+                <Link2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="text-sm font-medium text-foreground flex-1 truncate">{seriesName}</span>
+                <Badge variant="secondary" className="text-[10px]">{seriesEmails.length}</Badge>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-1 pl-3 pt-1">
+                  {seriesEmails.map((email: any) => (
+                    <Card
+                      key={email.id}
+                      className={`cursor-pointer transition-colors hover:bg-accent/50 ${editingId === email.id ? "ring-2 ring-primary" : ""}`}
+                      onClick={() => openEmail(email)}
+                    >
+                      <CardContent className="p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_STYLES[email.status as EmailStatus] || ""}`}>
+                            {STATUS_LABELS[email.status as EmailStatus]}
+                          </Badge>
+                        </div>
+                        {email.send_week && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Wk {email.send_week}{email.send_day ? ` · ${email.send_day}` : ""}</p>
                         )}
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs shrink-0 ${STATUS_STYLES[email.status as EmailStatus] || ""}`}
-                      >
-                        {STATUS_LABELS[email.status as EmailStatus] || email.status}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
+
+          {emailsBySeries.standalone.length > 0 && Object.keys(emailsBySeries.series).length > 0 && (
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 px-3 pt-2">Standalone</div>
+          )}
+          {emailsBySeries.standalone.map((email: any) => (
+            <Card
+              key={email.id}
+              className={`cursor-pointer transition-colors hover:bg-accent/50 ${editingId === email.id ? "ring-2 ring-primary" : ""}`}
+              onClick={() => openEmail(email)}
+            >
+              <CardContent className="p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
+                    <p className="text-[10px] text-muted-foreground">{email.email_type} · {email.semester}</p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_STYLES[email.status as EmailStatus] || ""}`}>
+                    {STATUS_LABELS[email.status as EmailStatus]}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {!isLoading && (!emails || emails.length === 0) && (
+            <p className="text-sm text-muted-foreground py-8 text-center">No emails yet. Create your first one!</p>
           )}
         </div>
 
-        {/* Main Content */}
+        {/* Main Panel */}
         <div>
           {!activeEmail ? (
             <Card>
@@ -402,275 +388,342 @@ export default function EmailFactory() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {/* Header */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{activeEmail.title || "Untitled"}</CardTitle>
-                      <CardDescription>
-                        {activeEmail.email_type} · {activeEmail.audience} · {activeEmail.semester}
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={STATUS_STYLES[activeEmail.status as EmailStatus] || ""}>
-                        {STATUS_LABELS[activeEmail.status as EmailStatus]}
-                      </Badge>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(activeEmail.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-3">
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-muted-foreground">Purpose:</span> <span className="text-foreground">{activeEmail.purpose || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Giving:</span> <span className="text-foreground">{activeEmail.giving || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Hoping to receive:</span> <span className="text-foreground">{activeEmail.hoping_to_receive || "—"}</span></div>
-                    <div><span className="text-muted-foreground">Local flavor:</span> <span className="text-foreground">{activeEmail.local_flavor || "—"}</span></div>
-                  </div>
+            <div className="space-y-3">
+              {/* Email Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">{activeEmail.title || "Untitled"}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {activeEmail.email_type} · {activeEmail.semester}
+                    {activeEmail.series_name && ` · 📧 ${activeEmail.series_name}`}
+                    {computedSendDate && ` · 📅 ${computedSendDate}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={STATUS_STYLES[activeEmail.status as EmailStatus] || ""}>
+                    {STATUS_LABELS[activeEmail.status as EmailStatus]}
+                  </Badge>
+                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(activeEmail.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
 
-                  {/* Scheduling info */}
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {activeEmail.is_series && activeEmail.series_name && (
-                      <Badge variant="secondary"><Link2 className="mr-1 h-3 w-3" />{activeEmail.series_name}</Badge>
-                    )}
-                    {activeEmail.send_day && (
-                      <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />{activeEmail.send_day}{activeEmail.send_time ? ` @ ${activeEmail.send_time}` : ""}</Badge>
-                    )}
-                    {activeEmail.send_week && (
-                      <Badge variant="outline">Week {activeEmail.send_week}</Badge>
-                    )}
-                  </div>
+              {/* Tab Toggles */}
+              <Tabs value={activePanel} onValueChange={(v) => setActivePanel(v as any)}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="plan" className="flex-1 text-xs">Plan</TabsTrigger>
+                  <TabsTrigger value="journal" className="flex-1 text-xs">Journal</TabsTrigger>
+                  <TabsTrigger value="refine" className="flex-1 text-xs">Refine</TabsTrigger>
+                  <TabsTrigger value="finalize" className="flex-1 text-xs">Finalize</TabsTrigger>
+                </TabsList>
 
-                  {/* Inline scheduling editor */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Send Day</Label>
-                      <Select
-                        value={activeEmail.send_day || ""}
-                        onValueChange={(v) => updateMutation.mutate({ send_day: v })}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Day" /></SelectTrigger>
-                        <SelectContent>
-                          {SEND_DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Send Time</Label>
-                      <Input
-                        type="time"
-                        className="h-8 text-xs"
-                        value={activeEmail.send_time || ""}
-                        onChange={(e) => updateMutation.mutate({ send_time: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Week #</Label>
-                      <Select
-                        value={activeEmail.send_week?.toString() || ""}
-                        onValueChange={(v) => updateMutation.mutate({ send_week: parseInt(v) })}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Week" /></SelectTrigger>
-                        <SelectContent>
-                          {WEEK_OPTIONS.map((w) => <SelectItem key={w} value={w.toString()}>Week {w}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Series: Related Emails */}
-              {seriesEmails && seriesEmails.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Link2 className="h-4 w-4" /> Series: {activeEmail.series_name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-1">
-                    {seriesEmails.map((se: any) => (
-                      <div
-                        key={se.id}
-                        className="flex items-center justify-between rounded-md border p-2 text-sm cursor-pointer hover:bg-accent/50"
-                        onClick={() => openEmail(se)}
-                      >
-                        <span className="truncate">{se.title || "Untitled"}</span>
-                        <Badge variant="outline" className={`text-xs ${STATUS_STYLES[se.status as EmailStatus] || ""}`}>
-                          {STATUS_LABELS[se.status as EmailStatus]}
-                        </Badge>
+                {/* PLAN TAB */}
+                <TabsContent value="plan" className="space-y-3 mt-3">
+                  <Card>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Title</Label>
+                        <Input className="h-8 text-sm" value={activeEmail.title || ""} onChange={(e) => updateMutation.mutate({ title: e.target.value })} />
                       </div>
-                    ))}
-                    <p className="text-xs text-muted-foreground pt-1">
-                      💡 Suggested follow-ups: Recap, Thank You, Results Announcement
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Journal */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-4 w-4" /> Journal Your Email
-                  </CardTitle>
-                  <CardDescription>Write freely. This is 100% you — raw, authentic, human.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Textarea
-                    value={journalDraft}
-                    onChange={(e) => setJournalDraft(e.target.value)}
-                    rows={12}
-                    placeholder="Start writing your email draft here. Be yourself. Be raw. Be human..."
-                    className="font-mono text-sm"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={saveJournal} disabled={!journalDraft.trim()}>Save Draft</Button>
-                    {activeEmail.journal_body && activeEmail.refinement_count < maxRefinements && (
-                      <Button onClick={() => refineMutation.mutate()} disabled={refineMutation.isPending}>
-                        <Sparkles className="mr-1 h-4 w-4" />
-                        {activeEmail.refinement_count === 0 ? "Send to AI Editor" : `Refine (${remainingPasses} left)`}
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* AI Refined */}
-              {activeEmail.ai_refined_body && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Sparkles className="h-4 w-4" /> AI-Edited Draft
-                      <Badge variant="secondary" className="text-xs">Pass {activeEmail.refinement_count}/{maxRefinements}</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap">{activeEmail.ai_refined_body}</div>
-                    {remainingPasses > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm">Feedback for next pass:</Label>
-                        <Textarea value={refinementPrompt} onChange={(e) => setRefinementPrompt(e.target.value)} rows={3} placeholder="Tell the AI what to adjust..." />
-                        <Button onClick={() => refineMutation.mutate()} disabled={!refinementPrompt.trim() || refineMutation.isPending} size="sm">
-                          <Sparkles className="mr-1 h-3.5 w-3.5" />
-                          {refineMutation.isPending ? "Refining..." : `Refine (${remainingPasses} left)`}
-                        </Button>
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(activeEmail.ai_refined_body || ""); toast.success("Copied!"); }}>
-                        <Copy className="mr-1 h-3.5 w-3.5" /> Copy
-                      </Button>
-                      <Button size="sm" onClick={finalize}>
-                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Finalize
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Strategy Notes */}
-              {activeEmail.ai_strategy_notes && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2"><Send className="h-4 w-4" /> Strategy Notes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap">{activeEmail.ai_strategy_notes}</div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Final Draft — Editable */}
-              {activeEmail.final_draft && (
-                <Card className="border-border bg-accent/30">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2 text-foreground">
-                        <CheckCircle2 className="h-4 w-4" /> Final Draft
-                      </CardTitle>
-                      {!isEditingFinal && activeEmail.status !== "sent" && (
-                        <Button variant="ghost" size="sm" onClick={() => { setFinalDraftEdit(activeEmail.final_draft || ""); setIsEditingFinal(true); }}>
-                          Edit
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {isEditingFinal ? (
-                      <>
-                        <Textarea
-                          value={finalDraftEdit}
-                          onChange={(e) => setFinalDraftEdit(e.target.value)}
-                          rows={14}
-                          className="font-mono text-sm"
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveFinalEdit}>Save Changes</Button>
-                          <Button variant="outline" size="sm" onClick={() => setIsEditingFinal(false)}>Cancel</Button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Email Type</Label>
+                          <Select value={activeEmail.email_type} onValueChange={(v) => updateMutation.mutate({ email_type: v })}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{emailTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                          </Select>
                         </div>
-                      </>
-                    ) : (
-                      <div className="rounded-md border bg-card p-4 text-sm whitespace-pre-wrap">{activeEmail.final_draft}</div>
-                    )}
+                        <div className="space-y-1">
+                          <Label className="text-xs">Semester</Label>
+                          <Select value={activeEmail.semester} onValueChange={(v) => updateMutation.mutate({ semester: v })}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{semesters.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Week #</Label>
+                          <Select
+                            value={activeEmail.send_week?.toString() || ""}
+                            onValueChange={(v) => {
+                              const week = parseInt(v);
+                              const sendDate = calcSendDate(semesterStart, week, activeEmail.send_day);
+                              updateMutation.mutate({ send_week: week, send_date: sendDate });
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Week" /></SelectTrigger>
+                            <SelectContent>{WEEK_OPTIONS.map((w) => <SelectItem key={w} value={w.toString()}>Week {w}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Send Day</Label>
+                          <Select
+                            value={activeEmail.send_day || ""}
+                            onValueChange={(v) => {
+                              const sendDate = calcSendDate(semesterStart, activeEmail.send_week, v);
+                              updateMutation.mutate({ send_day: v, send_date: sendDate });
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Day" /></SelectTrigger>
+                            <SelectContent>{SEND_DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      {computedSendDate && (
+                        <p className="text-xs text-primary font-medium">📅 Auto-calculated send date: {computedSendDate}</p>
+                      )}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Series Name</Label>
+                        <Input
+                          className="h-8 text-sm"
+                          value={activeEmail.series_name || ""}
+                          onChange={(e) => updateMutation.mutate({ series_name: e.target.value, is_series: !!e.target.value })}
+                          placeholder="e.g. Post-Exam Check In"
+                          list="series-suggestions-edit"
+                        />
+                        <datalist id="series-suggestions-edit">
+                          {existingSeriesNames.map((s) => <option key={s as string} value={s as string} />)}
+                        </datalist>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Course Audience</Label>
+                        <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
+                          {courses?.map((course: any) => (
+                            <label key={course.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                              <Checkbox
+                                checked={(activeEmail.course_tags || []).includes(course.course_name)}
+                                onCheckedChange={(checked) => {
+                                  const tags = activeEmail.course_tags || [];
+                                  updateMutation.mutate({
+                                    course_tags: checked ? [...tags, course.course_name] : tags.filter((t: string) => t !== course.course_name),
+                                  });
+                                }}
+                              />
+                              <span>{course.course_name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-                    {!isEditingFinal && (
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(activeEmail.final_draft || ""); toast.success("Copied!"); }}>
-                          <Copy className="mr-1 h-3.5 w-3.5" /> Copy Final
-                        </Button>
-                        {activeEmail.status === "finalized" && (
+                {/* JOURNAL TAB */}
+                <TabsContent value="journal" className="space-y-3 mt-3">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Journal Your Email
+                      </CardTitle>
+                      <CardDescription className="text-xs">Write freely. 100% you — raw, authentic, human.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Textarea
+                        value={journalDraft}
+                        onChange={(e) => setJournalDraft(e.target.value)}
+                        rows={16}
+                        placeholder="Start writing your email draft here..."
+                        className="font-mono text-sm"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={saveJournal} disabled={!journalDraft.trim()}>Save Draft</Button>
+                        {activeEmail.journal_body && activeEmail.refinement_count < maxRefinements && (
+                          <Button size="sm" onClick={() => { refineMutation.mutate(); setActivePanel("refine"); }} disabled={refineMutation.isPending}>
+                            <Sparkles className="mr-1 h-3.5 w-3.5" />
+                            {activeEmail.refinement_count === 0 ? "Send to AI Editor" : `Refine (${remainingPasses} left)`}
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* REFINE TAB */}
+                <TabsContent value="refine" className="space-y-3 mt-3">
+                  {activeEmail.ai_refined_body ? (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" /> AI-Edited Draft
+                          <Badge variant="secondary" className="text-xs">Pass {activeEmail.refinement_count}/{maxRefinements}</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto">{activeEmail.ai_refined_body}</div>
+                        {remainingPasses > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-xs">Feedback for next pass:</Label>
+                            <Textarea value={refinementPrompt} onChange={(e) => setRefinementPrompt(e.target.value)} rows={3} placeholder="Tell the AI what to adjust..." className="text-sm" />
+                            <Button onClick={() => refineMutation.mutate()} disabled={!refinementPrompt.trim() || refineMutation.isPending} size="sm">
+                              <Sparkles className="mr-1 h-3.5 w-3.5" />
+                              {refineMutation.isPending ? "Refining..." : `Refine (${remainingPasses} left)`}
+                            </Button>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(activeEmail.ai_refined_body || ""); toast.success("Copied!"); }}>
+                            <Copy className="mr-1 h-3.5 w-3.5" /> Copy
+                          </Button>
+                          <Button size="sm" onClick={finalize}>
+                            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve & Finalize
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <Sparkles className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground">No AI draft yet. Journal your email first, then send to AI Editor.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Strategy Notes */}
+                  {activeEmail.ai_strategy_notes && (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2"><Send className="h-4 w-4" /> Strategy Notes</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto">{activeEmail.ai_strategy_notes}</div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+
+                {/* FINALIZE TAB */}
+                <TabsContent value="finalize" className="space-y-3 mt-3">
+                  {activeEmail.final_draft ? (
+                    <Card className="border-border bg-accent/30">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4" /> Final Draft
+                          </CardTitle>
+                          <div className="flex gap-1.5">
+                            {!isEditingFinal && (
+                              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setFinalDraftEdit(activeEmail.final_draft || ""); setIsEditingFinal(true); }}>
+                                Edit
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowFinalizedDialog(true)}>
+                              <Sparkles className="mr-1 h-3 w-3" /> AI Suggestions
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {isEditingFinal ? (
                           <>
+                            <Textarea value={finalDraftEdit} onChange={(e) => setFinalDraftEdit(e.target.value)} rows={14} className="font-mono text-sm" />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={saveFinalEdit}>Save Changes</Button>
+                              <Button variant="outline" size="sm" onClick={() => setIsEditingFinal(false)}>Cancel</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="rounded-md border bg-card p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto">{activeEmail.final_draft}</div>
+                        )}
+
+                        {!isEditingFinal && (
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(activeEmail.final_draft || ""); toast.success("Copied!"); }}>
+                              <Copy className="mr-1 h-3.5 w-3.5" /> Copy Text
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              const html = `<div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px;">${(activeEmail.final_draft || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`;
+                              navigator.clipboard.writeText(html);
+                              toast.success("HTML copied!");
+                            }}>
+                              <Code className="mr-1 h-3.5 w-3.5" /> Copy HTML
+                            </Button>
                             <Button size="sm" asChild variant="outline">
                               <a href="https://www.surviveaccounting.com/author/mass_emails?tab=history" target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open LearnWorlds
                               </a>
                             </Button>
-                            <Button size="sm" onClick={markAsSent}>
-                              <Send className="mr-1 h-3.5 w-3.5" /> Mark as Sent
-                            </Button>
-                          </>
+                          </div>
                         )}
-                        {activeEmail.status === "sent" && activeEmail.sent_at && (
-                          <span className="text-xs text-muted-foreground self-center">
-                            ✅ Sent {new Date(activeEmail.sent_at).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <CheckCircle2 className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground">Approve your AI draft to finalize.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </div>
       </div>
 
+      {/* AI Suggestions Dialog */}
+      <Dialog open={showFinalizedDialog} onOpenChange={setShowFinalizedDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>📧 Email Suggestions</DialogTitle>
+            <DialogDescription>AI-generated recommendations from strategy notes</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {activeEmail?.ai_strategy_notes ? (
+              <>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">🏆 Top 5 Subject Lines</h3>
+                  <div className="rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                    {extractSection(activeEmail.ai_strategy_notes, "Subject Line")}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">🎯 Top 5 CTAs</h3>
+                  <div className="rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                    {extractSection(activeEmail.ai_strategy_notes, "CTA")}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">📅 Schedule Send Date</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {computedSendDate
+                      ? `Auto-calculated: ${computedSendDate} (Week ${activeEmail.send_week}, ${activeEmail.send_day})`
+                      : "Set Week # and Send Day in the Plan tab to auto-calculate"}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">Run AI refinement first to get suggestions.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New Email</DialogTitle>
-            <DialogDescription>Plan your email — who it's for, what you're giving, what you hope to get back.</DialogDescription>
+            <DialogDescription>Create a new email — assign to a series or keep standalone.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Title / Subject</Label>
-              <Input value={newEmail.title} onChange={(e) => setNewEmail((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Post-Exam 1 Check-in — ACCY 201" />
+              <Label className="text-xs">Title / Subject</Label>
+              <Input value={newEmail.title} onChange={(e) => setNewEmail((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Post-Exam 1 Check-in" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Email Type</Label>
+                <Label className="text-xs">Email Type</Label>
                 <Select value={newEmail.email_type} onValueChange={(v) => setNewEmail((p) => ({ ...p, email_type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{emailTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Semester</Label>
+                <Label className="text-xs">Semester</Label>
                 <Select value={newEmail.semester} onValueChange={(v) => setNewEmail((p) => ({ ...p, semester: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{semesters.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -678,18 +731,23 @@ export default function EmailFactory() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Who's it for? (select courses)</Label>
-              <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+              <Label className="text-xs">Series Name <span className="text-muted-foreground">(optional)</span></Label>
+              <Input value={newEmail.series_name} onChange={(e) => setNewEmail((p) => ({ ...p, series_name: e.target.value }))} placeholder="e.g. Post-Exam Check Ins" list="series-suggestions" />
+              <datalist id="series-suggestions">
+                {existingSeriesNames.map((s) => <option key={s as string} value={s as string} />)}
+              </datalist>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Course Audience</Label>
+              <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
                 {courses?.map((course: any) => (
-                  <label key={course.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <label key={course.id} className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox
                       checked={newEmail.course_tags.includes(course.course_name)}
                       onCheckedChange={(checked) => {
                         setNewEmail((p) => ({
                           ...p,
-                          course_tags: checked
-                            ? [...p.course_tags, course.course_name]
-                            : p.course_tags.filter((t) => t !== course.course_name),
+                          course_tags: checked ? [...p.course_tags, course.course_name] : p.course_tags.filter((t) => t !== course.course_name),
                         }));
                       }}
                     />
@@ -698,78 +756,43 @@ export default function EmailFactory() {
                 ))}
               </div>
             </div>
-
-            {/* Series toggle */}
-            <div className="flex items-center gap-3 rounded-md border p-3">
-              <Switch checked={newEmail.is_series} onCheckedChange={(v) => setNewEmail((p) => ({ ...p, is_series: v }))} />
-              <div>
-                <Label className="text-sm">Part of a series?</Label>
-                <p className="text-xs text-muted-foreground">Link this email to a recurring campaign</p>
-              </div>
-            </div>
-            {newEmail.is_series && (
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Series Name</Label>
-                <Input
-                  value={newEmail.series_name}
-                  onChange={(e) => setNewEmail((p) => ({ ...p, series_name: e.target.value }))}
-                  placeholder="e.g. Post-Exam Giveaways"
-                  list="series-suggestions"
-                />
-                <datalist id="series-suggestions">
-                  {existingSeriesNames.map((s) => <option key={s as string} value={s as string} />)}
-                </datalist>
-              </div>
-            )}
-
-            {/* Scheduling */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Typical Send Day</Label>
-                <Select value={newEmail.send_day} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_day: v }))}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Day" /></SelectTrigger>
-                  <SelectContent>{SEND_DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Send Time</Label>
-                <Input type="time" className="h-9" value={newEmail.send_time} onChange={(e) => setNewEmail((p) => ({ ...p, send_time: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Week of Semester</Label>
+                <Label className="text-xs">Week #</Label>
                 <Select value={newEmail.send_week?.toString() || ""} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_week: v ? parseInt(v) : undefined }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Week" /></SelectTrigger>
                   <SelectContent>{WEEK_OPTIONS.map((w) => <SelectItem key={w} value={w.toString()}>Wk {w}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Purpose <span className="text-muted-foreground text-xs">(internal note)</span></Label>
-              <Textarea value={newEmail.purpose} onChange={(e) => setNewEmail((p) => ({ ...p, purpose: e.target.value }))} placeholder="e.g. Collect post-exam feedback and encourage engagement" rows={2} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>What are you giving? <span className="text-muted-foreground text-xs">(internal note)</span></Label>
-              <Textarea value={newEmail.giving} onChange={(e) => setNewEmail((p) => ({ ...p, giving: e.target.value }))} placeholder="e.g. $25 Venmo drawing, genuine care, study tips" rows={2} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>What do you hope to receive? <span className="text-muted-foreground text-xs">(internal note)</span></Label>
-              <Textarea value={newEmail.hoping_to_receive} onChange={(e) => setNewEmail((p) => ({ ...p, hoping_to_receive: e.target.value }))} placeholder="e.g. Honest exam feedback, question details, engagement" rows={2} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Local Flavor / Ole Miss Touches <span className="text-muted-foreground text-xs">(optional)</span></Label>
-              <Input value={newEmail.local_flavor} onChange={(e) => setNewEmail((p) => ({ ...p, local_flavor: e.target.value }))} placeholder="e.g. Mention Tarasque, the Square, game day vibes" />
+              <div className="space-y-1.5">
+                <Label className="text-xs">Send Day</Label>
+                <Select value={newEmail.send_day} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_day: v }))}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Day" /></SelectTrigger>
+                  <SelectContent>{SEND_DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={() => createMutation.mutate()} disabled={!newEmail.title.trim() || createMutation.isPending}>
               <ArrowRight className="mr-1 h-4 w-4" />
-              {createMutation.isPending ? "Creating..." : "Create & Start Writing"}
+              {createMutation.isPending ? "Creating..." : "Create Email"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppLayout>
   );
+}
+
+function extractSection(notes: string, keyword: string): string {
+  const lines = notes.split("\n");
+  const startIdx = lines.findIndex((l) => l.toLowerCase().includes(keyword.toLowerCase()));
+  if (startIdx === -1) return "Not found in strategy notes.";
+  const result: string[] = [];
+  for (let i = startIdx; i < Math.min(startIdx + 8, lines.length); i++) {
+    result.push(lines[i]);
+  }
+  return result.join("\n").trim();
 }

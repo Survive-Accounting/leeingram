@@ -59,15 +59,17 @@ const FlickerButton = ({
   subtitle,
   expanded,
   onClick,
+  flicker = false,
 }: {
   label: string;
   subtitle: string;
   expanded: boolean;
   onClick: () => void;
+  flicker?: boolean;
 }) => (
   <button
     onClick={onClick}
-    className="w-full text-left p-5 transition-all duration-300 cursor-pointer candle-flicker"
+    className={`w-full text-left p-5 transition-all duration-300 cursor-pointer ${flicker ? "candle-flicker" : ""}`}
     style={{
       background: expanded
         ? "linear-gradient(135deg, rgba(218,165,32,0.18) 0%, rgba(184,134,11,0.08) 100%)"
@@ -145,6 +147,7 @@ export default function DomainSelect() {
           subtitle="Start a timed work session across any domain"
           expanded={false}
           onClick={() => navigate("/focus")}
+          flicker
         />
 
         {/* Work */}

@@ -619,6 +619,8 @@ export type Database = {
           email_style_guide: string | null
           email_types: string[] | null
           id: string
+          semester_end_date: string | null
+          semester_start_date: string | null
           semesters: string[] | null
           style_guide: string | null
           updated_at: string
@@ -630,6 +632,8 @@ export type Database = {
           email_style_guide?: string | null
           email_types?: string[] | null
           id?: string
+          semester_end_date?: string | null
+          semester_start_date?: string | null
           semesters?: string[] | null
           style_guide?: string | null
           updated_at?: string
@@ -641,6 +645,8 @@ export type Database = {
           email_style_guide?: string | null
           email_types?: string[] | null
           id?: string
+          semester_end_date?: string | null
+          semester_start_date?: string | null
           semesters?: string[] | null
           style_guide?: string | null
           updated_at?: string

@@ -72,6 +72,22 @@ const CHANGELOG: ChangeEntry[] = [
       "Moved Choose Your Music from /domains to Focus Sprint",
     ],
   },
+  {
+    prompt: 9,
+    date: "2026-02-18",
+    title: "Email Factory overhaul, Focus Sprint blink, Content Roadmap button",
+    subTasks: [
+      "Made Focus Sprint the only blinking button on /domains",
+      "Added Create Lesson button to Content Roadmap",
+      "Rebuilt Email Factory with series-based sidebar",
+      "Added Plan/Journal/Refine/Finalize tab toggles",
+      "Added semester start/end date with auto-calculated send dates",
+      "Removed purpose/giving/hoping/local flavor fields",
+      "Increased AI refinement passes to 5",
+      "Added Copy HTML button for LearnWorlds pasting",
+      "Added AI Suggestions dialog (subject lines, CTAs, schedule date)",
+    ],
+  },
 ];
 
 export const PROMPT_COUNT = CHANGELOG.length;
