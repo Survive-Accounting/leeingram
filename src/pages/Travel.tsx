@@ -8,15 +8,48 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { format } from "date-fns";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const SEASONS = ["Winter", "Spring", "Summer", "Fall"] as const;
+
+const seasonToDate = (season: string, year: string): { start: string; end: string } => {
+  const y = parseInt(year);
+  switch (season) {
+    case "Winter": return { start: `${y}-01-01`, end: `${y}-03-31` };
+    case "Spring": return { start: `${y}-04-01`, end: `${y}-06-30` };
+    case "Summer": return { start: `${y}-07-01`, end: `${y}-09-30` };
+    case "Fall": return { start: `${y}-10-01`, end: `${y}-12-31` };
+    default: return { start: `${y}-01-01`, end: `${y}-12-31` };
+  }
+};
+
+const dateToSeason = (startDate: string | null): string => {
+  if (!startDate) return "";
+  const month = parseInt(startDate.substring(5, 7));
+  if (month <= 3) return "Winter";
+  if (month <= 6) return "Spring";
+  if (month <= 9) return "Summer";
+  return "Fall";
+};
+
+const getSeasonDisplay = (trip: any): string => {
+  if (!trip.start_date) return "No dates set";
+  const year = trip.start_date.substring(0, 4);
+  const startMonth = parseInt(trip.start_date.substring(5, 7));
+  const endMonth = trip.end_date ? parseInt(trip.end_date.substring(5, 7)) : null;
+  // Full year (Jan–Dec)
+  if (startMonth === 1 && endMonth === 12) return year;
+  const season = dateToSeason(trip.start_date);
+  return `${season} ${year}`;
+};
 
 export default function Travel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<any>(null);
-  const [form, setForm] = useState({ location: "", description: "", start_date: "", end_date: "", year_only: "" });
+  const [form, setForm] = useState({ location: "", description: "", season: "", year: "" });
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [pastOpen, setPastOpen] = useState(true);
 
@@ -30,8 +63,18 @@ export default function Travel() {
 
   const createTrip = useMutation({
     mutationFn: async () => {
-      const startDate = form.start_date || (form.year_only ? `${form.year_only}-01-01` : null);
-      const endDate = form.end_date || (form.year_only ? `${form.year_only}-12-31` : null);
+      let startDate: string | null = null;
+      let endDate: string | null = null;
+      if (form.year) {
+        if (form.season) {
+          const dates = seasonToDate(form.season, form.year);
+          startDate = dates.start;
+          endDate = dates.end;
+        } else {
+          startDate = `${form.year}-01-01`;
+          endDate = `${form.year}-12-31`;
+        }
+      }
       const { error } = await supabase.from("trips").insert({ user_id: user!.id, location: form.location, description: form.description || null, start_date: startDate, end_date: endDate });
       if (error) throw error;
     },
@@ -41,8 +84,18 @@ export default function Travel() {
   const updateTrip = useMutation({
     mutationFn: async () => {
       if (!editingTrip) return;
-      const startDate = form.start_date || (form.year_only ? `${form.year_only}-01-01` : null);
-      const endDate = form.end_date || (form.year_only ? `${form.year_only}-12-31` : null);
+      let startDate: string | null = null;
+      let endDate: string | null = null;
+      if (form.year) {
+        if (form.season) {
+          const dates = seasonToDate(form.season, form.year);
+          startDate = dates.start;
+          endDate = dates.end;
+        } else {
+          startDate = `${form.year}-01-01`;
+          endDate = `${form.year}-12-31`;
+        }
+      }
       const { error } = await supabase.from("trips").update({ location: form.location, description: form.description || null, start_date: startDate, end_date: endDate }).eq("id", editingTrip.id);
       if (error) throw error;
     },
@@ -57,43 +110,26 @@ export default function Travel() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["trips"] }),
   });
 
-  const resetForm = () => { setForm({ location: "", description: "", start_date: "", end_date: "", year_only: "" }); setEditingTrip(null); setOpen(false); };
+  const resetForm = () => { setForm({ location: "", description: "", season: "", year: "" }); setEditingTrip(null); setOpen(false); };
 
   const startEdit = (trip: any) => {
-    const yo = isYearOnly(trip);
     setEditingTrip(trip);
+    const year = trip.start_date?.substring(0, 4) || "";
+    const startMonth = trip.start_date ? parseInt(trip.start_date.substring(5, 7)) : 0;
+    const endMonth = trip.end_date ? parseInt(trip.end_date.substring(5, 7)) : 0;
+    const isFullYear = startMonth === 1 && endMonth === 12;
     setForm({
       location: trip.location,
       description: trip.description || "",
-      start_date: yo ? "" : (trip.start_date || ""),
-      end_date: yo ? "" : (trip.end_date || ""),
-      year_only: yo ? trip.start_date?.substring(0, 4) || "" : "",
+      year,
+      season: isFullYear ? "" : dateToSeason(trip.start_date),
     });
     setOpen(true);
   };
 
-  const isYearOnly = (trip: any) => {
-    if (!trip.start_date || !trip.end_date) return false;
-    const year = trip.start_date.substring(0, 4);
-    return trip.start_date === `${year}-01-01` && trip.end_date === `${year}-12-31`;
-  };
-
-  const formatDate = (d: string | null) => {
-    if (!d) return null;
-    try { return format(new Date(d + "T00:00:00"), "MMM d, yyyy"); } catch { return d; }
-  };
-
-  const getDateDisplay = (trip: any) => {
-    if (isYearOnly(trip)) return trip.description;
-    if (!trip.start_date) return "No dates set";
-    const start = formatDate(trip.start_date);
-    if (trip.end_date) return `${start} → ${formatDate(trip.end_date)}`;
-    return `${start} → Open-ended`;
-  };
-
   const now = new Date().toISOString().split("T")[0];
-  const upcoming = trips?.filter((t: any) => !t.start_date || t.start_date >= now || (t.start_date < now && !t.end_date && !isYearOnly(t))) || [];
-  const past = trips?.filter((t: any) => t.start_date && t.start_date < now && (t.end_date ? t.end_date < now : isYearOnly(t))) || [];
+  const upcoming = trips?.filter((t: any) => !t.end_date || t.end_date >= now) || [];
+  const past = trips?.filter((t: any) => t.end_date && t.end_date < now) || [];
 
   const TripCard = ({ trip }: { trip: any }) => (
     <div className="rounded-lg p-5" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}>
@@ -102,10 +138,10 @@ export default function Travel() {
           <MapPin className="h-4 w-4 mt-1 text-white/40 shrink-0" />
           <div>
             <h3 className="font-semibold text-white">{trip.location}</h3>
-            {trip.description && !isYearOnly(trip) && <p className="text-sm text-white/50 mt-0.5">{trip.description}</p>}
+            {trip.description && <p className="text-sm text-white/50 mt-0.5">{trip.description}</p>}
             <div className="flex items-center gap-1.5 mt-2 text-xs text-white/40">
               <Calendar className="h-3 w-3" />
-              {getDateDisplay(trip)}
+              {getSeasonDisplay(trip)}
             </div>
           </div>
         </div>
@@ -121,9 +157,9 @@ export default function Travel() {
     </div>
   );
 
-  const SectionHeader = ({ label, count, open, onToggle }: { label: string; count: number; open: boolean; onToggle: () => void }) => (
+  const SectionHeader = ({ label, count, isOpen, onToggle }: { label: string; count: number; isOpen: boolean; onToggle: () => void }) => (
     <button onClick={onToggle} className="flex items-center gap-2 w-full text-left mb-3">
-      <ChevronDown className={`h-4 w-4 text-white/50 transition-transform ${open ? "" : "-rotate-90"}`} />
+      <ChevronDown className={`h-4 w-4 text-white/50 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
       <span className="text-sm font-medium text-white/70">{label}</span>
       <span className="text-xs text-white/30">({count})</span>
     </button>
@@ -139,21 +175,30 @@ export default function Travel() {
             <Button size="sm" className="bg-white/10 border border-white/20 text-white hover:bg-white/20"><Plus className="mr-1 h-4 w-4" /> New Trip</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editingTrip ? "Edit Trip" : "Plan a Trip"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingTrip ? "Edit Trip" : "Log a Trip"}</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div><Label>Location</Label><Input value={form.location} onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Mexico City, Mexico" /></div>
               <div><Label>Description (optional)</Label><Input value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="What's this trip about?" /></div>
-              <div><Label>Year only (if you don't know exact dates)</Label><Input value={form.year_only} onChange={(e) => setForm(p => ({ ...p, year_only: e.target.value, start_date: "", end_date: "" }))} placeholder="e.g. 2022" maxLength={4} /></div>
-              {!form.year_only && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Start Date</Label><Input type="date" value={form.start_date} onChange={(e) => setForm(p => ({ ...p, start_date: e.target.value }))} /></div>
-                  <div><Label>End Date (optional)</Label><Input type="date" value={form.end_date} onChange={(e) => setForm(p => ({ ...p, end_date: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Season (optional)</Label>
+                  <Select value={form.season} onValueChange={(v) => setForm(p => ({ ...p, season: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Any / All year" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">All year</SelectItem>
+                      {SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+                <div>
+                  <Label>Year</Label>
+                  <Input value={form.year} onChange={(e) => setForm(p => ({ ...p, year: e.target.value }))} placeholder="e.g. 2022" maxLength={4} />
+                </div>
+              </div>
               {editingTrip ? (
                 <Button onClick={() => form.location && updateTrip.mutate()} disabled={!form.location || updateTrip.isPending} className="w-full">{updateTrip.isPending ? "Saving..." : "Save Changes"}</Button>
               ) : (
-                <Button onClick={() => form.location && createTrip.mutate()} disabled={!form.location || createTrip.isPending} className="w-full">{createTrip.isPending ? "Creating..." : "Create Trip"}</Button>
+                <Button onClick={() => form.location && createTrip.mutate()} disabled={!form.location || createTrip.isPending} className="w-full">{createTrip.isPending ? "Creating..." : "Add Trip"}</Button>
               )}
             </div>
           </DialogContent>
@@ -164,13 +209,13 @@ export default function Travel() {
         {!trips?.length ? (
           <div className="text-center py-16">
             <MapPin className="h-10 w-10 mx-auto mb-3 text-white/20" />
-            <p className="text-white/50">No trips yet. Start planning your next adventure.</p>
+            <p className="text-white/50">No trips yet. Start logging your adventures.</p>
           </div>
         ) : (
           <>
             {upcoming.length > 0 && (
               <Collapsible open={upcomingOpen} onOpenChange={setUpcomingOpen}>
-                <SectionHeader label="Upcoming" count={upcoming.length} open={upcomingOpen} onToggle={() => setUpcomingOpen(o => !o)} />
+                <SectionHeader label="Upcoming & Ongoing" count={upcoming.length} isOpen={upcomingOpen} onToggle={() => setUpcomingOpen(o => !o)} />
                 <CollapsibleContent>
                   <div className="grid gap-3">{upcoming.map((t: any) => <TripCard key={t.id} trip={t} />)}</div>
                 </CollapsibleContent>
@@ -178,7 +223,7 @@ export default function Travel() {
             )}
             {past.length > 0 && (
               <Collapsible open={pastOpen} onOpenChange={setPastOpen}>
-                <SectionHeader label="Past Trips" count={past.length} open={pastOpen} onToggle={() => setPastOpen(o => !o)} />
+                <SectionHeader label="Past Trips" count={past.length} isOpen={pastOpen} onToggle={() => setPastOpen(o => !o)} />
                 <CollapsibleContent>
                   <div className="grid gap-3">{past.map((t: any) => <TripCard key={t.id} trip={t} />)}</div>
                 </CollapsibleContent>
