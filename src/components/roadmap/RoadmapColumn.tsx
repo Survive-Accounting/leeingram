@@ -1,17 +1,8 @@
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
 import { RoadmapItemRow } from "./RoadmapItemRow";
 
@@ -21,7 +12,6 @@ interface RoadmapColumnProps {
   statusValue: string;
   onUpdate: (id: string, updates: Record<string, any>) => void;
   onDelete: (id: string) => void;
-  onReorder: (statusValue: string, oldIndex: number, newIndex: number) => void;
   variant?: "default" | "active" | "completed";
   semesterGroups?: Record<string, any[]>;
 }
@@ -32,22 +22,10 @@ export function RoadmapColumn({
   statusValue,
   onUpdate,
   onDelete,
-  onReorder,
   variant = "default",
   semesterGroups,
 }: RoadmapColumnProps) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = items.findIndex((i) => i.id === active.id);
-    const newIndex = items.findIndex((i) => i.id === over.id);
-    onReorder(statusValue, oldIndex, newIndex);
-  };
+  const { setNodeRef } = useDroppable({ id: statusValue });
 
   const headerStyles = {
     default: "bg-muted/50 border-border",
@@ -62,7 +40,10 @@ export function RoadmapColumn({
   };
 
   return (
-    <div className={`rounded-xl border p-3 ${headerStyles[variant]} flex flex-col min-h-[200px]`}>
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border p-3 ${headerStyles[variant]} flex flex-col min-h-[200px]`}
+    >
       <div className="flex items-center gap-2 mb-3 px-1">
         <h2 className={`text-sm font-semibold ${titleStyles[variant]}`}>
           {variant === "active" && "🔥 "}{label}
@@ -71,41 +52,37 @@ export function RoadmapColumn({
       </div>
 
       {semesterGroups ? (
-        <div className="space-y-4 flex-1">
-          {Object.entries(semesterGroups).map(([semester, semItems]) => (
-            <div key={semester}>
-              <div className="text-xs font-medium text-muted-foreground mb-1.5 px-1 uppercase tracking-wider">
-                {semester}
+        <div className="space-y-3 flex-1">
+          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+            {Object.entries(semesterGroups).map(([semester, semItems]) => (
+              <div key={semester}>
+                <div className="text-[10px] font-medium text-muted-foreground mb-1 px-1 uppercase tracking-wider">
+                  {semester}
+                </div>
+                <div className="space-y-1">
+                  {semItems.map((item: any) => (
+                    <RoadmapItemRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />
+                  ))}
+                </div>
               </div>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={semItems.map((i: any) => i.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-1.5">
-                    {semItems.map((item: any) => (
-                      <RoadmapItemRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </div>
-          ))}
+            ))}
+          </SortableContext>
           {Object.keys(semesterGroups).length === 0 && (
             <p className="text-xs text-muted-foreground/60 text-center py-6">No planned items</p>
           )}
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-1.5 flex-1">
-              {items.length === 0 ? (
-                <p className="text-xs text-muted-foreground/60 text-center py-6">No items</p>
-              ) : (
-                items.map((item) => (
-                  <RoadmapItemRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />
-                ))
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1 flex-1">
+            {items.length === 0 ? (
+              <p className="text-xs text-muted-foreground/60 text-center py-6">No items</p>
+            ) : (
+              items.map((item) => (
+                <RoadmapItemRow key={item.id} item={item} onUpdate={onUpdate} onDelete={onDelete} />
+              ))
+            )}
+          </div>
+        </SortableContext>
       )}
     </div>
   );

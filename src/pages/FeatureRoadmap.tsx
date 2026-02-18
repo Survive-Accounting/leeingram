@@ -14,10 +14,21 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { Plus, Lightbulb, Rocket, Filter, ChevronDown } from "lucide-react";
 import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS, SEED_IDEAS, IDEA_STATUS, ARCHIVED_STATUS } from "@/components/roadmap/RoadmapConstants";
 import { RoadmapColumn } from "@/components/roadmap/RoadmapColumn";
+import { VisionSection } from "@/components/roadmap/VisionSection";
 
 export default function FeatureRoadmap() {
   const { user } = useAuth();
@@ -36,6 +47,11 @@ export default function FeatureRoadmap() {
   });
 
   const [localOrder, setLocalOrder] = useState<Record<string, string[]>>({});
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["roadmap-items"],
@@ -133,7 +149,8 @@ export default function FeatureRoadmap() {
   const ideaItems = sortAndOrder(filtered.filter((i: any) => i.status === "idea"), "idea");
   const archivedItems = sortAndOrder(filtered.filter((i: any) => i.status === "archived" || i.status === "deferred"), "archived");
 
-  // Group planned items by semester
+  const allBoardItems = [...plannedItems, ...inProgressItems, ...completedItems];
+
   const plannedBySemester = useMemo(() => {
     const groups: Record<string, any[]> = {};
     for (const item of plannedItems) {
@@ -141,7 +158,6 @@ export default function FeatureRoadmap() {
       if (!groups[sem]) groups[sem] = [];
       groups[sem].push(item);
     }
-    // Sort by semester order
     const ordered: Record<string, any[]> = {};
     for (const sem of [...SEMESTERS, "Unscheduled"]) {
       if (groups[sem]) ordered[sem] = groups[sem];
@@ -149,21 +165,60 @@ export default function FeatureRoadmap() {
     return ordered;
   }, [plannedItems]);
 
-  const handleReorder = (statusValue: string, oldIndex: number, newIndex: number) => {
-    const listMap: Record<string, any[]> = {
-      planned: plannedItems,
-      in_progress: inProgressItems,
-      done: completedItems,
-      idea: ideaItems,
-      archived: archivedItems,
-    };
-    const list = listMap[statusValue];
-    if (!list) return;
-    const ids = list.map((i) => i.id);
-    const newIds = [...ids];
-    const [moved] = newIds.splice(oldIndex, 1);
-    newIds.splice(newIndex, 0, moved);
-    setLocalOrder((prev) => ({ ...prev, [statusValue]: newIds }));
+  // Cross-column drag and drop
+  const statusMap: Record<string, string> = {
+    planned: "planned",
+    in_progress: "in_progress",
+    done: "done",
+    idea: "idea",
+    archived: "archived",
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Check if dropped on a column (droppable area)
+    if (statusMap[overId]) {
+      // Moving to a different column
+      const item = filtered.find((i: any) => i.id === activeId);
+      if (item && item.status !== overId) {
+        handleUpdate(activeId, { status: overId });
+      }
+      return;
+    }
+
+    // Dropped on another item - find which column it's in
+    const overItem = filtered.find((i: any) => i.id === overId);
+    const activeItem = filtered.find((i: any) => i.id === activeId);
+    if (!overItem || !activeItem) return;
+
+    if (activeItem.status !== overItem.status) {
+      // Cross-column: update status
+      handleUpdate(activeId, { status: overItem.status });
+    } else {
+      // Same column: reorder
+      const statusKey = activeItem.status === "done" ? "done" : activeItem.status;
+      const listMap: Record<string, any[]> = {
+        planned: plannedItems,
+        in_progress: inProgressItems,
+        done: completedItems,
+        idea: ideaItems,
+        archived: archivedItems,
+      };
+      const list = listMap[statusKey];
+      if (!list) return;
+      const oldIndex = list.findIndex((i: any) => i.id === activeId);
+      const newIndex = list.findIndex((i: any) => i.id === overId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const ids = list.map((i: any) => i.id);
+        const reordered = arrayMove(ids, oldIndex, newIndex);
+        setLocalOrder((prev) => ({ ...prev, [statusKey]: reordered }));
+      }
+    }
   };
 
   const hasFilters = filterCategory !== "all" || filterPriority !== "all" || filterSemester !== "all";
@@ -232,39 +287,41 @@ export default function FeatureRoadmap() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Trello Board: 3 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <RoadmapColumn
-              label="Planned"
-              items={plannedItems}
-              statusValue="planned"
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onReorder={handleReorder}
-              semesterGroups={plannedBySemester}
-            />
-            <RoadmapColumn
-              label="Currently In Progress"
-              items={inProgressItems}
-              statusValue="in_progress"
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onReorder={handleReorder}
-              variant="active"
-            />
-            <RoadmapColumn
-              label="Completed Features"
-              items={completedItems}
-              statusValue="done"
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onReorder={handleReorder}
-              variant="completed"
-            />
-          </div>
+          {/* Trello Board with cross-column DnD */}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <RoadmapColumn
+                label="Planned"
+                items={plannedItems}
+                statusValue="planned"
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                semesterGroups={plannedBySemester}
+              />
+              <RoadmapColumn
+                label="In Progress"
+                items={inProgressItems}
+                statusValue="in_progress"
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                variant="active"
+              />
+              <RoadmapColumn
+                label="Completed"
+                items={completedItems}
+                statusValue="done"
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                variant="completed"
+              />
+            </div>
+          </DndContext>
 
           {/* Divider */}
           <div className="border-t border-border" />
+
+          {/* Toggleable sections */}
+          <VisionSection />
 
           {/* Ideas toggle */}
           <Collapsible open={ideasOpen} onOpenChange={setIdeasOpen}>
@@ -274,37 +331,37 @@ export default function FeatureRoadmap() {
               <Badge variant="secondary" className="text-xs">{ideaItems.length}</Badge>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <RoadmapColumn
-                label="Ideas"
-                items={ideaItems}
-                statusValue="idea"
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                onReorder={handleReorder}
-              />
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <RoadmapColumn
+                  label="Ideas"
+                  items={ideaItems}
+                  statusValue="idea"
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                />
+              </DndContext>
             </CollapsibleContent>
           </Collapsible>
 
           {/* Archived toggle */}
-          {archivedItems.length > 0 && (
-            <Collapsible open={archivedOpen} onOpenChange={setArchivedOpen}>
-              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${archivedOpen ? "rotate-180" : ""}`} />
-                <span className="text-sm font-semibold text-muted-foreground">📦 Archived</span>
-                <Badge variant="secondary" className="text-xs">{archivedItems.length}</Badge>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <Collapsible open={archivedOpen} onOpenChange={setArchivedOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${archivedOpen ? "rotate-180" : ""}`} />
+              <span className="text-sm font-semibold text-muted-foreground">📦 Archived</span>
+              <Badge variant="secondary" className="text-xs">{archivedItems.length}</Badge>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <RoadmapColumn
                   label="Archived"
                   items={archivedItems}
                   statusValue="archived"
                   onUpdate={handleUpdate}
                   onDelete={handleDelete}
-                  onReorder={handleReorder}
                 />
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+              </DndContext>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       )}
 
