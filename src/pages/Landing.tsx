@@ -53,16 +53,41 @@ export default function Landing() {
         ) : (
           <>
             <div className="mb-6 flex justify-center">
-              <img
-                src={leeHeadshot}
-                alt="Lee Ingram"
-                className="w-36 h-36 sm:w-44 sm:h-44 object-cover"
+              <div
+                className="relative w-40 h-40 sm:w-48 sm:h-48"
                 style={{
-                  filter: "drop-shadow(0 0 24px rgba(218,165,32,0.4))",
-                  WebkitMaskImage: "radial-gradient(circle, black 40%, transparent 72%)",
-                  maskImage: "radial-gradient(circle, black 40%, transparent 72%)",
+                  animation: "globe-spin 30s linear infinite",
                 }}
-              />
+              >
+                {/* Globe ring */}
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    border: "1.5px solid rgba(218,165,32,0.35)",
+                    boxShadow: "0 0 30px rgba(218,165,32,0.15), inset 0 0 20px rgba(218,165,32,0.08)",
+                  }}
+                />
+                {/* Tilted orbit ring */}
+                <div
+                  className="absolute inset-[-4px] rounded-full"
+                  style={{
+                    border: "1px solid rgba(218,165,32,0.2)",
+                    transform: "rotateX(60deg) rotateZ(23.5deg)",
+                  }}
+                />
+                {/* Headshot */}
+                <img
+                  src={leeHeadshot}
+                  alt="Lee Ingram"
+                  className="absolute inset-0 w-full h-full object-cover object-top rounded-full"
+                  style={{
+                    filter: "blur(0.4px) saturate(1.1) drop-shadow(0 0 24px rgba(218,165,32,0.4))",
+                    WebkitMaskImage: "radial-gradient(circle, black 35%, transparent 68%)",
+                    maskImage: "radial-gradient(circle, black 35%, transparent 68%)",
+                    padding: "8px",
+                  }}
+                />
+              </div>
             </div>
 
             <h1
