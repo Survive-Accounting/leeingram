@@ -56,8 +56,12 @@ export default function Landing() {
               <img
                 src={leeHeadshot}
                 alt="Lee Ingram"
-                className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-full"
-                style={{ filter: "drop-shadow(0 0 24px rgba(218,165,32,0.4))" }}
+                className="w-36 h-36 sm:w-44 sm:h-44 object-cover"
+                style={{
+                  filter: "drop-shadow(0 0 24px rgba(218,165,32,0.4))",
+                  WebkitMaskImage: "radial-gradient(circle, black 40%, transparent 72%)",
+                  maskImage: "radial-gradient(circle, black 40%, transparent 72%)",
+                }}
               />
             </div>
 
