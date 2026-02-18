@@ -121,16 +121,13 @@ export default function Landing() {
                 For over a decade, I've been building a tutoring platform...
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                It collapsed during COVID.
-              </p>
-              <p className="text-sm text-white/85 leading-relaxed">
-                I rebuilt it from the ground up — many times — until it worked.
+                It collapsed during COVID. Then, I rebuilt it from the ground up — many times — until it finally worked.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
                 Now, it supports a life built around travel, teaching, adventure, and creative freedom.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                Join the journey. I'm stoked to share it with you.
+                Join the journey.
               </p>
             </div>
 
