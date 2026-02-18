@@ -278,7 +278,8 @@ export default function TripPlanning() {
         .from("trip_tasks")
         .select("*")
         .eq("trip_id", tripId!)
-        .order("target_date", { ascending: true, nullsFirst: false });
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
       if (!taskData || taskData.length === 0) return [];
       const taskIds = taskData.map(t => t.id);
       const { data: linkData } = await supabase
