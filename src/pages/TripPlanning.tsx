@@ -186,7 +186,7 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, onAdvance, onMarkDone,
   return (
     <div ref={setNodeRef} className={`rounded-xl border p-3 ${headerStyles} flex flex-col min-h-[200px]`}>
       <div className="flex items-center gap-2 mb-3 px-1">
-        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+        <h2 className={cn("text-sm font-semibold", isAssigned ? "text-white" : "text-foreground")}>{label}</h2>
         <Badge variant="secondary" className="text-xs">{tasks.length}</Badge>
         {headerExtra}
       </div>
@@ -450,9 +450,9 @@ export default function TripPlanning() {
   // Determine if we should show all badges (only when "All Categories" filter)
   const showAllBadgesFlag = filterCategory === "all";
 
-  // Column data
-  const allTodos = filtered;
-  const unassignedTasks = filtered.filter(t => t.assigned_to === "unassigned" || t.assigned_to === "both");
+  // Column data — each task appears in exactly ONE column
+  const todoTasks = filtered.filter(t => t.assigned_to === "both");
+  const unassignedTasks = filtered.filter(t => t.assigned_to === "unassigned");
   const leeTasks = filtered.filter(t => t.assigned_to === "lee");
   const mkTasks = filtered.filter(t => t.assigned_to === "mk");
 
@@ -574,27 +574,15 @@ export default function TripPlanning() {
         )}
       </div>
 
-      {/* Progress Tracker */}
-      {!isLoading && filtered.length > 0 && (
+      {/* Progress Tracker — always shows ALL categories */}
+      {!isLoading && tasks && tasks.length > 0 && (
         <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-3">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium text-white/70">
-              {filterCategory !== "all" ? TRIP_CATEGORIES.find(c => c.value === filterCategory)?.label : "Overall"} Progress
-            </span>
+            <span className="text-xs font-medium text-white/70">Overall Progress</span>
             <span className="text-xs font-bold text-white">
               {(() => {
-                const total = filtered.length + (tasks?.filter(t => {
-                  if (t.status !== "done") return false;
-                  if (filterCategory !== "all" && t.category !== filterCategory) return false;
-                  if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
-                  return true;
-                }).length || 0);
-                const done = tasks?.filter(t => {
-                  if (t.status !== "done") return false;
-                  if (filterCategory !== "all" && t.category !== filterCategory) return false;
-                  if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
-                  return true;
-                }).length || 0;
+                const total = tasks.length;
+                const done = tasks.filter(t => t.status === "done").length;
                 return `${done} / ${total} done`;
               })()}
             </span>
@@ -604,14 +592,9 @@ export default function TripPlanning() {
               className="h-full rounded-full bg-emerald-500 transition-all duration-500"
               style={{
                 width: `${(() => {
-                  const doneCount = tasks?.filter(t => {
-                    if (t.status !== "done") return false;
-                    if (filterCategory !== "all" && t.category !== filterCategory) return false;
-                    if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
-                    return true;
-                  }).length || 0;
-                  const total = filtered.length + doneCount;
-                  return total > 0 ? (doneCount / total) * 100 : 0;
+                  const total = tasks.length;
+                  const done = tasks.filter(t => t.status === "done").length;
+                  return total > 0 ? (done / total) * 100 : 0;
                 })()}%`,
               }}
             />
@@ -647,7 +630,7 @@ export default function TripPlanning() {
             "grid grid-cols-1 gap-4",
             viewMode === "all" ? "md:grid-cols-4" : "md:grid-cols-3"
           )}>
-            <PlanColumn id="all" label="To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag}
+            <PlanColumn id="all" label="To Do's" tasks={todoTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag}
               headerExtra={filterCategory === "selling" ? (
                 <Button variant="ghost" size="sm" className="h-6 text-[10px] text-primary hover:text-primary ml-auto" onClick={() => setShowBulkAdd(true)}>
                   <Plus className="h-2.5 w-2.5 mr-0.5" /> Bulk Add
