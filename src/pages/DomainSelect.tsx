@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogOut, Music, Plus, Trash2, ExternalLink } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
+import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 
 const DOMAINS = [
   {
@@ -87,8 +88,8 @@ export default function DomainSelect() {
       />
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/55" />
-      {/* Subtle gradient overlay from bottom */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+      <NightSkyOverlay />
 
       {/* Sign out */}
       <div className="absolute top-4 right-4 z-10">

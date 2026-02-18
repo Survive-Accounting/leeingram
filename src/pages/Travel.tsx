@@ -51,7 +51,7 @@ export default function Travel() {
   const [editingTrip, setEditingTrip] = useState<any>(null);
   const [form, setForm] = useState({ location: "", description: "", season: "", year: "" });
   const [upcomingOpen, setUpcomingOpen] = useState(true);
-  const [pastOpen, setPastOpen] = useState(true);
+  const [pastOpen, setPastOpen] = useState(false);
 
   const { data: trips } = useQuery({
     queryKey: ["trips"],
