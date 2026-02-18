@@ -22,13 +22,9 @@ export const QUESTIONNAIRE_QUESTIONS = [
   "Key formulas, journal entries, or steps students must memorize?",
   "Memory tricks or shortcuts you use for students?",
   "Common mistakes & exam traps to watch for?",
-  "Which textbook problems should this lesson focus on? (Optional — fill after uploading resources)",
 ];
 
 export const FILE_TYPES = [
   "textbook",
   "solutions",
-  "tutoring",
-  "transcript",
-  "other",
 ] as const;
