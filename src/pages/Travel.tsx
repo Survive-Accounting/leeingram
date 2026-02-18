@@ -162,7 +162,7 @@ export default function Travel() {
               </Button>
               <Button variant="outline" size="sm" className="h-7 text-xs bg-white/5 border-white/20 text-white/70 hover:text-white hover:bg-white/10"
                 onClick={(e) => { e.stopPropagation(); navigate(`/travel/${trip.id}/exploring`); }}>
-                <Compass className="mr-1 h-3 w-3" /> Exploring
+                <Compass className="mr-1 h-3 w-3" /> Fun Thangs
               </Button>
             </div>
           </div>

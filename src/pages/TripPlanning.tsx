@@ -46,6 +46,7 @@ const TRIP_CATEGORIES = [
 ];
 
 const ASSIGNEES = [
+  { value: "unassigned", label: "Unassigned" },
   { value: "lee", label: "Lee" },
   { value: "mk", label: "MK" },
   { value: "both", label: "Both" },
@@ -59,6 +60,7 @@ const TASK_STATUSES = [
 
 const COLUMNS = [
   { id: "all", label: "All To Do's" },
+  { id: "unassigned", label: "Unassigned" },
   { id: "lee", label: "Lee" },
   { id: "mk", label: "MK" },
 ];
@@ -149,8 +151,8 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory }: {
   const isAssigned = id === "lee" || id === "mk";
 
   const headerStyles = isAssigned
-    ? "bg-amber-500/10 border-amber-500/40"
-    : "bg-muted/50 border-border";
+    ? "bg-amber-500/20 border-amber-500/40"
+    : "bg-background/80 border-border";
 
   const grouped = useMemo(() => {
     if (!groupByCategory) return null;
@@ -216,7 +218,7 @@ export default function TripPlanning() {
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
 
   // Form
-  const emptyForm = { title: "", description: "", category: "immigration", assigned_to: "both", target_date: undefined as Date | undefined, status: "todo", is_listed: false, is_sold: false, sold_price: "", links: [] as { url: string; label: string }[] };
+  const emptyForm = { title: "", description: "", category: "immigration", assigned_to: "unassigned", target_date: undefined as Date | undefined, status: "todo", is_listed: false, is_sold: false, sold_price: "", links: [] as { url: string; label: string }[] };
   const [form, setForm] = useState(emptyForm);
 
   const sensors = useSensors(
@@ -347,7 +349,8 @@ export default function TripPlanning() {
   }, [tasks, filterCategory, filterAssignee, filterDate]);
 
   // Column data
-  const allTodos = filtered.filter(t => t.assigned_to === "both");
+  const allTodos = filtered;
+  const unassignedTasks = filtered.filter(t => t.assigned_to === "unassigned" || t.assigned_to === "both");
   const leeTasks = filtered.filter(t => t.assigned_to === "lee");
   const mkTasks = filtered.filter(t => t.assigned_to === "mk");
 
@@ -364,7 +367,7 @@ export default function TripPlanning() {
     const activeId = active.id as string;
     const overId = over.id as string;
     // Dropped on column
-    const colMap: Record<string, string> = { all: "both", lee: "lee", mk: "mk" };
+    const colMap: Record<string, string> = { all: "both", unassigned: "unassigned", lee: "lee", mk: "mk" };
     if (colMap[overId] !== undefined) {
       const task = filtered.find(t => t.id === activeId);
       if (task && task.assigned_to !== colMap[overId]) {
@@ -437,8 +440,9 @@ export default function TripPlanning() {
         <p className="text-white/50 text-sm">Loading...</p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <PlanColumn id="all" label="All To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} groupByCategory />
+            <PlanColumn id="unassigned" label="Unassigned" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
             <PlanColumn id="lee" label="Lee" tasks={leeTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
             <PlanColumn id="mk" label="MK" tasks={mkTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
           </div>
