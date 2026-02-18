@@ -10,21 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Lightbulb, Rocket, Filter } from "lucide-react";
-import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS, SEED_IDEAS } from "@/components/roadmap/RoadmapConstants";
-import { RoadmapStatusGroup } from "@/components/roadmap/RoadmapStatusGroup";
+import { Plus, Lightbulb, Rocket, Filter, ChevronDown } from "lucide-react";
+import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS, SEED_IDEAS, IDEA_STATUS, ARCHIVED_STATUS } from "@/components/roadmap/RoadmapConstants";
+import { RoadmapColumn } from "@/components/roadmap/RoadmapColumn";
 
 export default function FeatureRoadmap() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
+  const [ideasOpen, setIdeasOpen] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
 
-  // Filters
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterSemester, setFilterSemester] = useState("all");
@@ -33,7 +35,6 @@ export default function FeatureRoadmap() {
     title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea",
   });
 
-  // Local ordering state per status group
   const [localOrder, setLocalOrder] = useState<Record<string, string[]>>({});
 
   const { data: items, isLoading } = useQuery({
@@ -102,7 +103,6 @@ export default function FeatureRoadmap() {
     deleteMutation.mutate(id);
   };
 
-  // Filter items
   const filtered = useMemo(() => {
     if (!items) return [];
     return items.filter((i: any) => {
@@ -113,29 +113,53 @@ export default function FeatureRoadmap() {
     });
   }, [items, filterCategory, filterPriority, filterSemester]);
 
-  // Group by status, sort by priority within each group
-  const grouped = useMemo(() => {
-    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    return STATUSES.map((s) => {
-      let groupItems = filtered.filter((i: any) => i.status === s.value);
-      // Sort by priority high→low
-      groupItems.sort((a: any, b: any) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9));
-      // Apply local drag order if exists
-      const order = localOrder[s.value];
-      if (order) {
-        const idMap = new Map(groupItems.map((i: any) => [i.id, i]));
-        const ordered = order.map((id) => idMap.get(id)).filter(Boolean);
-        const remaining = groupItems.filter((i: any) => !order.includes(i.id));
-        groupItems = [...ordered, ...remaining];
-      }
-      return { ...s, items: groupItems };
-    });
-  }, [filtered, localOrder]);
+  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  const sortAndOrder = (list: any[], statusValue: string) => {
+    let sorted = [...list].sort((a, b) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9));
+    const order = localOrder[statusValue];
+    if (order) {
+      const idMap = new Map(sorted.map((i) => [i.id, i]));
+      const ordered = order.map((id) => idMap.get(id)).filter(Boolean);
+      const remaining = sorted.filter((i) => !order.includes(i.id));
+      sorted = [...ordered, ...remaining];
+    }
+    return sorted;
+  };
+
+  const plannedItems = sortAndOrder(filtered.filter((i: any) => i.status === "planned"), "planned");
+  const inProgressItems = sortAndOrder(filtered.filter((i: any) => i.status === "in_progress"), "in_progress");
+  const completedItems = sortAndOrder(filtered.filter((i: any) => i.status === "done"), "done");
+  const ideaItems = sortAndOrder(filtered.filter((i: any) => i.status === "idea"), "idea");
+  const archivedItems = sortAndOrder(filtered.filter((i: any) => i.status === "archived" || i.status === "deferred"), "archived");
+
+  // Group planned items by semester
+  const plannedBySemester = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    for (const item of plannedItems) {
+      const sem = item.target_semester || "Unscheduled";
+      if (!groups[sem]) groups[sem] = [];
+      groups[sem].push(item);
+    }
+    // Sort by semester order
+    const ordered: Record<string, any[]> = {};
+    for (const sem of [...SEMESTERS, "Unscheduled"]) {
+      if (groups[sem]) ordered[sem] = groups[sem];
+    }
+    return ordered;
+  }, [plannedItems]);
 
   const handleReorder = (statusValue: string, oldIndex: number, newIndex: number) => {
-    const group = grouped.find((g) => g.value === statusValue);
-    if (!group) return;
-    const ids = group.items.map((i: any) => i.id);
+    const listMap: Record<string, any[]> = {
+      planned: plannedItems,
+      in_progress: inProgressItems,
+      done: completedItems,
+      idea: ideaItems,
+      archived: archivedItems,
+    };
+    const list = listMap[statusValue];
+    if (!list) return;
+    const ids = list.map((i) => i.id);
     const newIds = [...ids];
     const [moved] = newIds.splice(oldIndex, 1);
     newIds.splice(newIndex, 0, moved);
@@ -207,18 +231,80 @@ export default function FeatureRoadmap() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-1 max-w-3xl">
-          {grouped.map((group) => (
-            <RoadmapStatusGroup
-              key={group.value}
-              label={group.label}
-              items={group.items}
-              statusValue={group.value}
+        <div className="space-y-6">
+          {/* Trello Board: 3 columns */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <RoadmapColumn
+              label="Planned"
+              items={plannedItems}
+              statusValue="planned"
               onUpdate={handleUpdate}
               onDelete={handleDelete}
               onReorder={handleReorder}
+              semesterGroups={plannedBySemester}
             />
-          ))}
+            <RoadmapColumn
+              label="Currently In Progress"
+              items={inProgressItems}
+              statusValue="in_progress"
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onReorder={handleReorder}
+              variant="active"
+            />
+            <RoadmapColumn
+              label="Completed Features"
+              items={completedItems}
+              statusValue="done"
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onReorder={handleReorder}
+              variant="completed"
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border" />
+
+          {/* Ideas toggle */}
+          <Collapsible open={ideasOpen} onOpenChange={setIdeasOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${ideasOpen ? "rotate-180" : ""}`} />
+              <span className="text-sm font-semibold text-foreground">💡 Ideas</span>
+              <Badge variant="secondary" className="text-xs">{ideaItems.length}</Badge>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <RoadmapColumn
+                label="Ideas"
+                items={ideaItems}
+                statusValue="idea"
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                onReorder={handleReorder}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Archived toggle */}
+          {archivedItems.length > 0 && (
+            <Collapsible open={archivedOpen} onOpenChange={setArchivedOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer">
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${archivedOpen ? "rotate-180" : ""}`} />
+                <span className="text-sm font-semibold text-muted-foreground">📦 Archived</span>
+                <Badge variant="secondary" className="text-xs">{archivedItems.length}</Badge>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <RoadmapColumn
+                  label="Archived"
+                  items={archivedItems}
+                  statusValue="archived"
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  onReorder={handleReorder}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       )}
 

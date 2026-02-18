@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Trash2, Rocket, GripVertical, ChevronDown, Pencil, Check, X } from "lucide-react";
-import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS } from "./RoadmapConstants";
+import { Trash2, Rocket, GripVertical, ChevronDown, Pencil, Check, X, Archive } from "lucide-react";
+import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS, ARCHIVED_STATUS } from "./RoadmapConstants";
 
 interface RoadmapItemRowProps {
   item: any;
@@ -40,6 +40,8 @@ export function RoadmapItemRow({ item, onUpdate, onDelete }: RoadmapItemRowProps
 
   const priorityStyle = PRIORITIES.find((p) => p.value === item.priority)?.style || "";
 
+  const allStatuses = [...STATUSES, ARCHIVED_STATUS];
+
   const saveEdit = () => {
     onUpdate(item.id, { title: editTitle, description: editDesc });
     setEditing(false);
@@ -53,67 +55,44 @@ export function RoadmapItemRow({ item, onUpdate, onDelete }: RoadmapItemRowProps
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className="group">
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center gap-2">
+      <Card className="group border-border/60">
+        <CardContent className="p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5">
             <button
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground touch-none"
+              className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground touch-none shrink-0"
             >
-              <GripVertical className="h-4 w-4" />
+              <GripVertical className="h-3.5 w-3.5" />
             </button>
 
             <div className="flex-1 min-w-0">
               {editing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="h-8 text-sm"
-                  />
-                  <Textarea
-                    value={editDesc}
-                    onChange={(e) => setEditDesc(e.target.value)}
-                    rows={2}
-                    className="text-xs"
-                    placeholder="Description..."
-                  />
+                <div className="space-y-1.5">
+                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="h-7 text-xs" />
+                  <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={2} className="text-xs" placeholder="Description..." />
                 </div>
               ) : (
-                <h3 className="text-sm font-medium text-foreground leading-tight truncate">
-                  {item.title}
-                </h3>
+                <h3 className="text-xs font-medium text-foreground leading-tight truncate">{item.title}</h3>
               )}
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-0.5 shrink-0">
               {editing ? (
                 <>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveEdit}>
-                    <Check className="h-3.5 w-3.5 text-green-600" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}>
-                    <X className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={saveEdit}><Check className="h-3 w-3 text-green-600" /></Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={cancelEdit}><X className="h-3 w-3 text-destructive" /></Button>
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setEditing(true)}
-                  >
-                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditing(true)}>
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => onDelete(item.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => onUpdate(item.id, { status: "archived" })}>
+                    <Archive className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => onDelete(item.id)}>
+                    <Trash2 className="h-3 w-3 text-destructive" />
                   </Button>
                 </>
               )}
@@ -123,73 +102,55 @@ export function RoadmapItemRow({ item, onUpdate, onDelete }: RoadmapItemRowProps
           {!editing && item.description && (
             <Collapsible open={descOpen} onOpenChange={setDescOpen}>
               <CollapsibleTrigger asChild>
-                <button className="text-xs text-primary/70 hover:text-primary flex items-center gap-1">
-                  <ChevronDown className={`h-3 w-3 transition-transform ${descOpen ? "rotate-180" : ""}`} />
-                  {descOpen ? "Hide description" : "Show description"}
+                <button className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-0.5 pl-5">
+                  <ChevronDown className={`h-2.5 w-2.5 transition-transform ${descOpen ? "rotate-180" : ""}`} />
+                  {descOpen ? "Hide" : "Details"}
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <p className="text-xs text-muted-foreground mt-1 pl-6">{item.description}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">{item.description}</p>
               </CollapsibleContent>
             </Collapsible>
           )}
 
-          <div className="flex flex-wrap items-center gap-1.5 pl-6">
-            <Badge variant="outline" className={`text-xs ${priorityStyle}`}>
+          <div className="flex flex-wrap items-center gap-1 pl-5">
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityStyle}`}>
               {PRIORITIES.find((p) => p.value === item.priority)?.label}
             </Badge>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
               {CATEGORIES.find((c) => c.value === item.category)?.label || item.category}
             </Badge>
             {item.target_semester && (
-              <Badge variant="secondary" className="text-xs">{item.target_semester}</Badge>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{item.target_semester}</Badge>
             )}
 
-            <div className="flex gap-1.5 ml-auto">
-              <Select
-                value={item.status}
-                onValueChange={(v) => onUpdate(item.id, { status: v })}
-              >
-                <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
+            <div className="flex gap-1 ml-auto">
+              <Select value={item.status} onValueChange={(v) => onUpdate(item.id, { status: v })}>
+                <SelectTrigger className="h-6 text-[10px] w-[100px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {allStatuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select
-                value={item.category}
-                onValueChange={(v) => onUpdate(item.id, { category: v })}
-              >
-                <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
+              <Select value={item.category} onValueChange={(v) => onUpdate(item.id, { category: v })}>
+                <SelectTrigger className="h-6 text-[10px] w-[110px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select
-                value={item.priority}
-                onValueChange={(v) => onUpdate(item.id, { priority: v })}
-              >
-                <SelectTrigger className="h-7 text-xs w-[100px]"><SelectValue /></SelectTrigger>
+              <Select value={item.priority} onValueChange={(v) => onUpdate(item.id, { priority: v })}>
+                <SelectTrigger className="h-6 text-[10px] w-[85px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select
-                value={item.target_semester || ""}
-                onValueChange={(v) => onUpdate(item.id, { target_semester: v })}
-              >
-                <SelectTrigger className="h-7 text-xs w-[110px]"><SelectValue placeholder="Semester" /></SelectTrigger>
-                <SelectContent>
-                  {SEMESTERS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="pl-6">
+          <div className="pl-5">
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-xs h-7 border-primary/30 text-primary hover:bg-primary/10"
+              className="w-full text-[10px] h-6 border-primary/30 text-primary hover:bg-primary/10"
               onClick={() => {
                 const msg = `Let's build the "${item.title}" feature. Here's the description: ${item.description || "No description provided."}`;
                 navigator.clipboard.writeText(msg);
@@ -198,7 +159,7 @@ export function RoadmapItemRow({ item, onUpdate, onDelete }: RoadmapItemRowProps
                 );
               }}
             >
-              <Rocket className="mr-1 h-3 w-3" /> Let's Build This
+              <Rocket className="mr-1 h-2.5 w-2.5" /> Let's Build This
             </Button>
           </div>
         </CardContent>
