@@ -245,12 +245,12 @@ export default function TripPlanning() {
         .select("*")
         .eq("trip_id", tripId!)
         .order("target_date", { ascending: true, nullsFirst: false });
-      if (!taskData) return [];
+      if (!taskData || taskData.length === 0) return [];
       const taskIds = taskData.map(t => t.id);
       const { data: linkData } = await supabase
         .from("trip_task_links")
         .select("*")
-        .in("task_id", taskIds.length ? taskIds : ["none"]);
+        .in("task_id", taskIds);
       const linkMap: Record<string, any[]> = {};
       for (const l of (linkData || [])) {
         if (!linkMap[l.task_id]) linkMap[l.task_id] = [];
