@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
+import leeHeadshot from "@/assets/lee-headshot-styled.png";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 
 export default function Landing() {
@@ -51,6 +52,15 @@ export default function Landing() {
           </div>
         ) : (
           <>
+            <div className="mb-6 flex justify-center">
+              <img
+                src={leeHeadshot}
+                alt="Lee Ingram"
+                className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-full"
+                style={{ filter: "drop-shadow(0 0 24px rgba(218,165,32,0.4))" }}
+              />
+            </div>
+
             <h1
               className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-1"
               style={{ textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}
@@ -61,17 +71,20 @@ export default function Landing() {
 
             <div className="text-left space-y-4 mb-8 px-2">
               <p className="text-sm text-white/80 leading-relaxed">
-                For over a decade, I've been building a tutoring business — watching it fail, rebuilding it again, and slowly shaping it into something bigger.
+                <strong className="text-white">For over a decade, I've been building a tutoring business</strong> — watching it fail, rebuilding it again, and slowly shaping it into something bigger.
               </p>
               <p className="text-sm text-white/80 leading-relaxed">
                 Today, it supports a life built around travel, teaching, adventure, and creative freedom.
               </p>
-              <p className="text-sm text-white/70 leading-relaxed">Each month, I write about:</p>
-              <ul className="text-sm text-white/70 space-y-1.5 pl-1">
-                <li>• A "success" story earned the hard way</li>
-                <li>• The ups and downs of building solo</li>
-                <li>• Designing a business around the life I actually want</li>
-              </ul>
+
+              <div className="mt-2 pt-3 border-t border-white/10">
+                <p className="text-xs uppercase tracking-widest text-white/40 mb-2">Each month, I write about</p>
+                <ul className="text-sm text-white/70 space-y-1.5 pl-1">
+                  <li>• Designing a business around the life I actually want</li>
+                  <li>• 10 years of up's &amp; down's while building solo</li>
+                  <li>• A "success" story earned the long way</li>
+                </ul>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
