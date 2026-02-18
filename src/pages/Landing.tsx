@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
-import leeHeadshot from "@/assets/lee-headshot-styled.png";
+import leeHeadshot from "@/assets/lee-headshot-original.png";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { Copy, Share2, Check } from "lucide-react";
 
@@ -57,8 +57,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4">
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="absolute inset-0 bg-black/60" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+      <div className="absolute inset-0 bg-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
       <NightSkyOverlay />
 
       <div className="relative z-10 w-full max-w-md text-center">
@@ -101,21 +101,31 @@ export default function Landing() {
                 alt="Lee Ingram"
                 className="w-[7.2rem] h-[7.2rem] sm:w-[8.4rem] sm:h-[8.4rem] rounded-full object-cover object-top"
                 style={{
-                  filter: "blur(0.3px) saturate(1.05) drop-shadow(0 0 16px rgba(218,165,32,0.3))",
+                  filter: "contrast(0.95) saturate(0.85) brightness(1.05) drop-shadow(0 0 16px rgba(218,165,32,0.3))",
                   WebkitMaskImage: "radial-gradient(circle, black 55%, transparent 78%)",
                   maskImage: "radial-gradient(circle, black 55%, transparent 78%)",
                 }}
               />
             </div>
 
-            <div className="text-left space-y-4 mb-8 px-2">
-              <p className="text-sm text-white/80 leading-relaxed">
+            <div
+              className="text-left space-y-4 mb-8 rounded-xl px-5 py-5"
+              style={{
+                background: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <p className="text-sm text-white/85 leading-relaxed">
                 <strong className="text-white">For over a decade, I've been building a tutoring business</strong> — watching it fail, rebuilding it again, and slowly shaping it into something bigger.
               </p>
-              <p className="text-sm text-white/80 leading-relaxed">
+              <p className="text-sm text-white/85 leading-relaxed">
                 Today, it supports a life built around travel, teaching, adventure, and creative freedom.
               </p>
+            </div>
 
+            <div className="text-left mb-8 px-2">
               <div className="mt-2 pt-3 border-t border-white/10">
                 <p className="text-xs uppercase tracking-widest text-white/40 mb-2">Each month, I write about</p>
                 <ul className="text-sm text-white/70 space-y-1.5 pl-1">

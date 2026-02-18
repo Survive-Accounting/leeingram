@@ -27,13 +27,14 @@ export function NightSkyOverlay() {
     let nextShooter = 2000 + Math.random() * 4000;
 
     const spawnShooter = () => {
+      const startY = Math.random() * h * 0.2; // only top 20% of screen
       shooters.push({
         x: Math.random() * w * 0.8 + w * 0.1,
-        y: Math.random() * h * 0.3,
+        y: startY,
         vx: (Math.random() - 0.3) * 4,
-        vy: Math.random() * 2 + 1.5,
+        vy: Math.random() * 1.5 + 0.8,
         life: 0,
-        maxLife: 40 + Math.random() * 30,
+        maxLife: 35 + Math.random() * 25,
         len: 30 + Math.random() * 40,
       });
     };
