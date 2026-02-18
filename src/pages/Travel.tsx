@@ -66,7 +66,7 @@ export default function Travel() {
   };
 
   const now = new Date().toISOString().split("T")[0];
-  const upcoming = trips?.filter((t: any) => !t.start_date || t.start_date >= now || (!t.end_date && t.start_date >= now)) || [];
+  const upcoming = trips?.filter((t: any) => !t.start_date || t.start_date >= now || (t.start_date < now && !t.end_date && !isYearOnly(t))) || [];
   const past = trips?.filter((t: any) => t.start_date && t.start_date < now && (t.end_date ? t.end_date < now : isYearOnly(t))) || [];
 
   const TripCard = ({ trip }: { trip: any }) => (
