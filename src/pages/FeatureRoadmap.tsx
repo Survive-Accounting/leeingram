@@ -1,100 +1,40 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Lightbulb, Rocket, Clock, CheckCircle2, ArrowUpDown } from "lucide-react";
-
-const CATEGORIES = [
-  { value: "content", label: "Content Production" },
-  { value: "marketing", label: "Marketing" },
-  { value: "integrations", label: "Integrations" },
-  { value: "platform", label: "Platform / Tools" },
-  { value: "tracking", label: "Time & Focus Tracking" },
-  { value: "scaling", label: "Scaling / New Domains" },
-  { value: "general", label: "General" },
-];
-
-const PRIORITIES = [
-  { value: "high", label: "🔴 High", style: "bg-red-100 text-red-800 border-red-200" },
-  { value: "medium", label: "🟡 Medium", style: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  { value: "low", label: "🟢 Low", style: "bg-green-100 text-green-800 border-green-200" },
-];
-
-const STATUSES = [
-  { value: "idea", label: "💡 Idea", style: "bg-blue-100 text-blue-800 border-blue-200" },
-  { value: "planned", label: "📋 Planned", style: "bg-purple-100 text-purple-800 border-purple-200" },
-  { value: "in_progress", label: "🚧 In Progress", style: "bg-orange-100 text-orange-800 border-orange-200" },
-  { value: "done", label: "✅ Done", style: "bg-green-100 text-green-800 border-green-200" },
-  { value: "deferred", label: "⏸ Deferred", style: "bg-muted text-muted-foreground border-border" },
-];
-
-const SEMESTERS = [
-  "Spring 2026", "Summer 2026", "Fall 2026",
-  "Spring 2027", "Summer 2027", "Fall 2027",
-  "Spring 2028", "Summer 2028", "Fall 2028",
-  "Spring 2029", "Summer 2029", "Fall 2029",
-  "Spring 2030", "Summer 2030", "Fall 2030",
-];
-
-// Pre-populated seed ideas from the user's brainstorming
-const SEED_IDEAS = [
-  // Marketing
-  { title: "Promo Video Factory", description: "Create a sub-factory within Marketing for planning promotional videos tied to email campaigns and exam feedback content.", category: "marketing", priority: "high", target_semester: "Summer 2026" },
-  { title: "Email series templates library", description: "Build reusable email series templates (Post-Exam Giveaways, Welcome Sequences, Re-engagement) that auto-clone each semester.", category: "marketing", priority: "high", target_semester: "Spring 2026" },
-  { title: "Semester email calendar view", description: "Visual calendar showing all planned emails by week, day, and time across the semester for scheduling optimization.", category: "marketing", priority: "medium", target_semester: "Summer 2026" },
-  { title: "Summer & Winter email campaigns", description: "Design email strategies specifically for summer and winter break — retention, early bird promos, prep content.", category: "marketing", priority: "medium", target_semester: "Summer 2026" },
-  // Content
-  { title: "Exam feedback → video series pipeline", description: "Turn post-exam feedback emails into a recurring video series. Each exam generates a check-in email + a follow-up feedback video.", category: "content", priority: "high", target_semester: "Spring 2026" },
-  { title: "Content drop scheduling system", description: "Pattern-based scheduling: Saturdays for post-exam check-ins, Sundays for content drops, flexible weekday slots for other content.", category: "content", priority: "medium", target_semester: "Fall 2026" },
-  // Integrations
-  { title: "Google Sheets API integration", description: "Connect to Google Sheets API to auto-generate lesson worksheets from templates instead of manual placeholder URLs.", category: "integrations", priority: "high", target_semester: "Summer 2026" },
-  { title: "Mailgun email sending", description: "Send finalized emails directly from the platform via Mailgun instead of copy-pasting to LearnWorlds.", category: "integrations", priority: "medium", target_semester: "Fall 2026" },
-  { title: "Vimeo transcript import", description: "Pull video transcripts from Vimeo to auto-generate lesson summaries and study guides.", category: "integrations", priority: "low", target_semester: "Spring 2027" },
-  { title: "Descript automation", description: "Connect to Descript for automated video editing workflows — rough cut generation from outlines.", category: "integrations", priority: "low", target_semester: "Fall 2027" },
-  { title: "LearnWorlds publishing API", description: "Publish lessons and content directly to LearnWorlds from the platform.", category: "integrations", priority: "medium", target_semester: "Spring 2027" },
-  // Platform
-  { title: "Work session timer & focus tracker", description: "Built-in Pomodoro-style timer for tracking work sessions. Log time spent on content creation, filming, editing.", category: "tracking", priority: "medium", target_semester: "Fall 2026" },
-  { title: "Analytics dashboard", description: "Track content production velocity: lessons per week, emails sent, video output, time invested per course.", category: "platform", priority: "medium", target_semester: "Spring 2027" },
-  { title: "Style guide editor (teaching & email)", description: "Rich editor for maintaining both the teaching style guide and email style guide with version history.", category: "platform", priority: "low", target_semester: "Summer 2026" },
-  // Scaling
-  { title: "Scale to Arts Entrepreneurship", description: "Adapt the content factory framework for a new domain: Arts Entrepreneurship courses. Same pipeline, different subject matter.", category: "scaling", priority: "low", target_semester: "Fall 2028" },
-  { title: "Scale to QuickBooks training", description: "Expand into QuickBooks training content using the same lesson planning and video production pipeline.", category: "scaling", priority: "low", target_semester: "Spring 2029" },
-  { title: "Multi-instructor support", description: "Allow other instructors to use the platform with their own courses, style guides, and email factories.", category: "scaling", priority: "low", target_semester: "Spring 2030" },
-];
+import { Plus, Lightbulb, Rocket, Filter } from "lucide-react";
+import { CATEGORIES, PRIORITIES, STATUSES, SEMESTERS, SEED_IDEAS } from "@/components/roadmap/RoadmapConstants";
+import { RoadmapStatusGroup } from "@/components/roadmap/RoadmapStatusGroup";
 
 export default function FeatureRoadmap() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeCategory, setActiveCategory] = useState("all");
   const [showCreate, setShowCreate] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
 
+  // Filters
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [filterSemester, setFilterSemester] = useState("all");
+
   const [newItem, setNewItem] = useState({
-    title: "",
-    description: "",
-    category: "general",
-    priority: "medium",
-    target_semester: "",
-    status: "idea",
+    title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea",
   });
+
+  // Local ordering state per status group
+  const [localOrder, setLocalOrder] = useState<Record<string, string[]>>({});
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["roadmap-items"],
@@ -110,10 +50,7 @@ export default function FeatureRoadmap() {
 
   const createMutation = useMutation({
     mutationFn: async (item: typeof newItem) => {
-      const { error } = await supabase.from("roadmap_items").insert({
-        user_id: user!.id,
-        ...item,
-      });
+      const { error } = await supabase.from("roadmap_items").insert({ user_id: user!.id, ...item });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -157,25 +94,62 @@ export default function FeatureRoadmap() {
     setNewItem({ title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea" });
   };
 
-  const filtered = activeCategory === "all" ? items : items?.filter((i: any) => i.category === activeCategory);
+  const handleUpdate = (id: string, updates: Record<string, any>) => {
+    updateMutation.mutate({ id, updates });
+  };
 
-  // Group by status
-  const grouped = STATUSES.map((s) => ({
-    ...s,
-    items: filtered?.filter((i: any) => i.status === s.value) || [],
-  }));
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
 
-  const priorityStyle = (p: string) => PRIORITIES.find((pr) => pr.value === p)?.style || "";
-  const statusObj = (s: string) => STATUSES.find((st) => st.value === s);
+  // Filter items
+  const filtered = useMemo(() => {
+    if (!items) return [];
+    return items.filter((i: any) => {
+      if (filterCategory !== "all" && i.category !== filterCategory) return false;
+      if (filterPriority !== "all" && i.priority !== filterPriority) return false;
+      if (filterSemester !== "all" && i.target_semester !== filterSemester) return false;
+      return true;
+    });
+  }, [items, filterCategory, filterPriority, filterSemester]);
+
+  // Group by status, sort by priority within each group
+  const grouped = useMemo(() => {
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    return STATUSES.map((s) => {
+      let groupItems = filtered.filter((i: any) => i.status === s.value);
+      // Sort by priority high→low
+      groupItems.sort((a: any, b: any) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9));
+      // Apply local drag order if exists
+      const order = localOrder[s.value];
+      if (order) {
+        const idMap = new Map(groupItems.map((i: any) => [i.id, i]));
+        const ordered = order.map((id) => idMap.get(id)).filter(Boolean);
+        const remaining = groupItems.filter((i: any) => !order.includes(i.id));
+        groupItems = [...ordered, ...remaining];
+      }
+      return { ...s, items: groupItems };
+    });
+  }, [filtered, localOrder]);
+
+  const handleReorder = (statusValue: string, oldIndex: number, newIndex: number) => {
+    const group = grouped.find((g) => g.value === statusValue);
+    if (!group) return;
+    const ids = group.items.map((i: any) => i.id);
+    const newIds = [...ids];
+    const [moved] = newIds.splice(oldIndex, 1);
+    newIds.splice(newIndex, 0, moved);
+    setLocalOrder((prev) => ({ ...prev, [statusValue]: newIds }));
+  };
+
+  const hasFilters = filterCategory !== "all" || filterPriority !== "all" || filterSemester !== "all";
 
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Feature Roadmap</h1>
-          <p className="text-sm text-muted-foreground">
-            Brainstorm, prioritize, and schedule your platform's future
-          </p>
+          <p className="text-sm text-muted-foreground">Brainstorm, prioritize, and schedule your platform's future</p>
         </div>
         <div className="flex gap-2">
           {(!items || items.length === 0) && (
@@ -189,15 +163,36 @@ export default function FeatureRoadmap() {
         </div>
       </div>
 
-      {/* Category filter */}
-      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-4">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-          {CATEGORIES.map((c) => (
-            <TabsTrigger key={c.value} value={c.value} className="text-xs">{c.label}</TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="h-8 text-xs w-[150px]"><SelectValue placeholder="Category" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterPriority} onValueChange={setFilterPriority}>
+          <SelectTrigger className="h-8 text-xs w-[120px]"><SelectValue placeholder="Priority" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterSemester} onValueChange={setFilterSemester}>
+          <SelectTrigger className="h-8 text-xs w-[130px]"><SelectValue placeholder="Semester" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Semesters</SelectItem>
+            {SEMESTERS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterCategory("all"); setFilterPriority("all"); setFilterSemester("all"); }}>
+            Clear filters
+          </Button>
+        )}
+      </div>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
@@ -212,88 +207,17 @@ export default function FeatureRoadmap() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {grouped.filter((g) => g.items.length > 0).map((group) => (
-            <div key={group.value}>
-              <h2 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                {group.label}
-                <Badge variant="secondary" className="text-xs">{group.items.length}</Badge>
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {group.items.map((item: any) => (
-                  <Card key={item.id} className="group">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-sm font-medium text-foreground leading-tight">{item.title}</h3>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => deleteMutation.mutate(item.id)}
-                        >
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </div>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-1.5">
-                        <Badge variant="outline" className={`text-xs ${priorityStyle(item.priority)}`}>
-                          {PRIORITIES.find((p) => p.value === item.priority)?.label}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {CATEGORIES.find((c) => c.value === item.category)?.label || item.category}
-                        </Badge>
-                        {item.target_semester && (
-                          <Badge variant="secondary" className="text-xs">{item.target_semester}</Badge>
-                        )}
-                      </div>
-                      <div className="flex gap-1.5 pt-1">
-                        <Select
-                          value={item.status}
-                          onValueChange={(v) => updateMutation.mutate({ id: item.id, updates: { status: v } })}
-                        >
-                          <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={item.priority}
-                          onValueChange={(v) => updateMutation.mutate({ id: item.id, updates: { priority: v } })}
-                        >
-                          <SelectTrigger className="h-7 text-xs w-[100px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={item.target_semester || ""}
-                          onValueChange={(v) => updateMutation.mutate({ id: item.id, updates: { target_semester: v } })}
-                        >
-                          <SelectTrigger className="h-7 text-xs w-[110px]"><SelectValue placeholder="Semester" /></SelectTrigger>
-                          <SelectContent>
-                            {SEMESTERS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full mt-2 text-xs h-7 border-primary/30 text-primary hover:bg-primary/10"
-                        onClick={() => {
-                          const msg = `Let's build the "${item.title}" feature. Here's the description: ${item.description || "No description provided."}`;
-                          navigator.clipboard.writeText(msg);
-                          toast.success("Copied prompt to clipboard — paste it in chat to start building!");
-                        }}
-                      >
-                        <Rocket className="mr-1 h-3 w-3" /> Let's Build This
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+        <div className="space-y-1 max-w-3xl">
+          {grouped.map((group) => (
+            <RoadmapStatusGroup
+              key={group.value}
+              label={group.label}
+              items={group.items}
+              statusValue={group.value}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onReorder={handleReorder}
+            />
           ))}
         </div>
       )}
@@ -308,7 +232,15 @@ export default function FeatureRoadmap() {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label>Title</Label>
-              <Input value={newItem.title} onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Promo Video Factory" />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-sm pointer-events-none select-none">I want to</span>
+                <Input
+                  value={newItem.title}
+                  onChange={(e) => setNewItem((p) => ({ ...p, title: e.target.value }))}
+                  className="pl-[5.5rem]"
+                  placeholder="build a video factory for promos..."
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>
@@ -351,7 +283,7 @@ export default function FeatureRoadmap() {
           <DialogHeader>
             <DialogTitle>Load Brainstormed Ideas</DialogTitle>
             <DialogDescription>
-              This will add {SEED_IDEAS.length} feature ideas from your previous brainstorming sessions. You can edit, reprioritize, or delete any of them afterward.
+              This will add {SEED_IDEAS.length} feature ideas from your previous brainstorming sessions.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-60 overflow-y-auto space-y-1.5 text-sm">
