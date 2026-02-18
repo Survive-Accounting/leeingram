@@ -462,12 +462,14 @@ export default function TripPlanning() {
 
   // Drag - custom collision that prefers droppable columns
   const customCollision: CollisionDetection = (args) => {
-    // First check if pointer is over a droppable column
     const pointerCollisions = pointerWithin(args);
     const columnIds = ["all", "unassigned", "lee", "mk"];
+    // Prefer card-level hits for in-column reordering
+    const cardHit = pointerCollisions.find(c => !columnIds.includes(c.id as string));
+    if (cardHit) return [cardHit];
+    // Fall back to column hit for cross-column drops
     const columnHit = pointerCollisions.find(c => columnIds.includes(c.id as string));
     if (columnHit) return [columnHit];
-    // Fallback to closest center for card-level drops
     return rectIntersection(args);
   };
 
