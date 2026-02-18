@@ -118,16 +118,19 @@ export default function Landing() {
               }}
             >
               <p className="text-base sm:text-lg text-white font-bold leading-snug mb-1">
-                For over a decade, I've been building a tutoring platform
+                For over a decade, I've been building a tutoring platform...
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                — watching it fail during COVID, rebuilding it again, and slowly shaping it into something bigger.
+                It collapsed during COVID.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                Today, it supports a life built around travel, teaching, adventure, and creative freedom.
+                I rebuilt it from the ground up — many times — until it worked.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                Join me on the journey.
+                Now, it supports a life built around travel, teaching, adventure, and creative freedom.
+              </p>
+              <p className="text-sm text-white/85 leading-relaxed">
+                Join the journey. I'm stoked to share it with you.
               </p>
             </div>
 
