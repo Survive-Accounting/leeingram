@@ -27,9 +27,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
+import canvasConfetti from "canvas-confetti";
 import {
   Plus, Filter, ChevronDown, GripVertical, Pencil, Trash2, Check, X,
-  Link as LinkIcon, ExternalLink, CalendarIcon, Printer,
+  Link as LinkIcon, ExternalLink, CalendarIcon, Printer, ArrowRight, PartyPopper,
 } from "lucide-react";
 
 const TRIP_CATEGORIES = [
@@ -46,7 +47,7 @@ const TRIP_CATEGORIES = [
 ];
 
 const ASSIGNEES = [
-  { value: "unassigned", label: "Unassigned" },
+  { value: "unassigned", label: "To Assign" },
   { value: "lee", label: "Lee" },
   { value: "mk", label: "MK" },
   { value: "both", label: "Both" },
@@ -58,33 +59,48 @@ const TASK_STATUSES = [
   { value: "done", label: "Done" },
 ];
 
+// Column flow order for the arrow advance button
+const COLUMN_FLOW = ["todo", "unassigned", "lee", "mk"];
+
 const COLUMNS = [
-  { id: "all", label: "All To Do's" },
-  { id: "unassigned", label: "Unassigned" },
+  { id: "all", label: "To Do's" },
+  { id: "unassigned", label: "To Assign" },
   { id: "lee", label: "Lee" },
   { id: "mk", label: "MK" },
 ];
 
 // ─── Sortable Task Card ───
-function TaskCard({ task, onEdit, onDelete, isDragOverlay, showAllBadges }: {
-  task: any; onEdit: (t: any) => void; onDelete: (id: string) => void; isDragOverlay?: boolean; showAllBadges?: boolean;
+function TaskCard({ task, onEdit, onDelete, onAdvance, onMarkDone, isDragOverlay, showAllBadges, columnId }: {
+  task: any; onEdit: (t: any) => void; onDelete: (id: string) => void; onAdvance?: (t: any) => void; onMarkDone?: (t: any) => void; isDragOverlay?: boolean; showAllBadges?: boolean; columnId?: string;
 }) {
   const [descOpen, setDescOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id, disabled: isDragOverlay });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 };
   const catLabel = TRIP_CATEGORIES.find(c => c.value === task.category)?.label || task.category;
-  const statusLabel = TASK_STATUSES.find(s => s.value === task.status)?.label || task.status;
+
+  const isAssignedColumn = columnId === "lee" || columnId === "mk";
+  const canAdvance = columnId !== "lee" && columnId !== "mk" && !isDragOverlay;
 
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="group border-border/80 bg-card hover:border-border transition-colors">
         <div className="p-2.5 space-y-1">
-          <div className="flex items-center gap-1.5">
-            <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground touch-none shrink-0">
+          <div className="flex items-start gap-1.5">
+            <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground touch-none shrink-0 mt-0.5">
               <GripVertical className="h-3.5 w-3.5" />
             </button>
-            <span className="text-xs font-medium text-foreground leading-tight truncate flex-1">{task.title}</span>
+            <span className="text-xs font-medium text-foreground leading-tight flex-1">{task.title}</span>
             <div className="flex items-center gap-0.5 shrink-0">
+              {canAdvance && onAdvance && (
+                <Button variant="ghost" size="icon" className="h-5 w-5 text-primary hover:text-primary hover:bg-primary/10" onClick={() => onAdvance(task)} title="Move to next column">
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              )}
+              {isAssignedColumn && onMarkDone && (
+                <Button variant="ghost" size="icon" className="h-5 w-5 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" onClick={() => onMarkDone(task)} title="Mark done">
+                  <Check className="h-3 w-3" />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => onEdit(task)}>
                 <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
               </Button>
@@ -123,18 +139,20 @@ function TaskCard({ task, onEdit, onDelete, isDragOverlay, showAllBadges }: {
             </div>
           )}
           {/* Description toggle */}
-          {task.description && (
+          {task.description ? (
             <Collapsible open={descOpen} onOpenChange={setDescOpen}>
               <CollapsibleTrigger asChild>
                 <button className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-0.5 pl-5">
                   <ChevronDown className={`h-2.5 w-2.5 transition-transform ${descOpen ? "rotate-180" : ""}`} />
-                  {descOpen ? "Hide details" : "View Description"}
+                  {descOpen ? "Hide Description" : "Show Description"}
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <p className="text-[10px] text-muted-foreground mt-0.5 pl-5 leading-relaxed whitespace-pre-wrap">{task.description}</p>
               </CollapsibleContent>
             </Collapsible>
+          ) : (
+            <button className="text-[10px] text-muted-foreground/40 pl-5 cursor-default">No description</button>
           )}
         </div>
       </Card>
@@ -143,8 +161,8 @@ function TaskCard({ task, onEdit, onDelete, isDragOverlay, showAllBadges }: {
 }
 
 // ─── Droppable Column ───
-function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory, showAllBadges }: {
-  id: string; label: string; tasks: any[]; onEdit: (t: any) => void; onDelete: (id: string) => void; groupByCategory?: boolean; showAllBadges?: boolean;
+function PlanColumn({ id, label, tasks, onEdit, onDelete, onAdvance, onMarkDone, groupByCategory, showAllBadges, headerExtra }: {
+  id: string; label: string; tasks: any[]; onEdit: (t: any) => void; onDelete: (id: string) => void; onAdvance?: (t: any) => void; onMarkDone?: (t: any) => void; groupByCategory?: boolean; showAllBadges?: boolean; headerExtra?: React.ReactNode;
 }) {
   const { setNodeRef } = useDroppable({ id });
   const isAssigned = id === "lee" || id === "mk";
@@ -169,6 +187,7 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory, showA
       <div className="flex items-center gap-2 mb-3 px-1">
         <h2 className="text-sm font-semibold text-foreground">{label}</h2>
         <Badge variant="secondary" className="text-xs">{tasks.length}</Badge>
+        {headerExtra}
       </div>
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
         {grouped ? (
@@ -180,7 +199,7 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory, showA
                 <div key={cat.value}>
                   <div className="text-[10px] font-medium text-muted-foreground mb-1 px-1 uppercase tracking-wider">{cat.label}</div>
                   <div className="space-y-2">
-                    {items.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} showAllBadges={showAllBadges} />)}
+                    {items.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} onAdvance={onAdvance} onMarkDone={onMarkDone} showAllBadges={showAllBadges} columnId={id} />)}
                   </div>
                 </div>
               );
@@ -192,7 +211,7 @@ function PlanColumn({ id, label, tasks, onEdit, onDelete, groupByCategory, showA
             {tasks.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 text-center py-6">No items</p>
             ) : (
-              tasks.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} showAllBadges={showAllBadges} />)
+              tasks.map(t => <TaskCard key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} onAdvance={onAdvance} onMarkDone={onMarkDone} showAllBadges={showAllBadges} columnId={id} />)
             )}
           </div>
         )}
@@ -212,6 +231,13 @@ export default function TripPlanning() {
   const [activeItem, setActiveItem] = useState<any>(null);
   const [showDueDateManager, setShowDueDateManager] = useState(false);
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
+
+  // Celebration dialog
+  const [celebrateTask, setCelebrateTask] = useState<any>(null);
+
+  // Show completed modals
+  const [showLeeCompleted, setShowLeeCompleted] = useState(false);
+  const [showMkCompleted, setShowMkCompleted] = useState(false);
 
   // Filters
   const [filterCategory, setFilterCategory] = useState("all");
@@ -274,7 +300,6 @@ export default function TripPlanning() {
         sold_price: form.category === "selling" && form.is_sold && form.sold_price ? parseFloat(form.sold_price) : null,
       }).select().single();
       if (error) throw error;
-      // Insert links
       if (form.links.length > 0) {
         const linksToInsert = form.links.filter(l => l.url.trim()).map(l => ({ task_id: newTask.id, user_id: user!.id, url: l.url, label: l.label }));
         if (linksToInsert.length) await supabase.from("trip_task_links").insert(linksToInsert);
@@ -297,7 +322,6 @@ export default function TripPlanning() {
         sold_price: form.category === "selling" && form.is_sold && form.sold_price ? parseFloat(form.sold_price) : null,
       }).eq("id", editingTask.id);
       if (error) throw error;
-      // Replace links
       await supabase.from("trip_task_links").delete().eq("task_id", editingTask.id);
       const linksToInsert = form.links.filter(l => l.url.trim()).map(l => ({ task_id: editingTask.id, user_id: user!.id, url: l.url, label: l.label }));
       if (linksToInsert.length) await supabase.from("trip_task_links").insert(linksToInsert);
@@ -334,6 +358,42 @@ export default function TripPlanning() {
     setShowCreate(true);
   };
 
+  // Advance a task to the next column
+  const advanceTask = (task: any) => {
+    const currentAssigned = task.assigned_to;
+    // Flow: all(both) -> unassigned -> lee (default next)
+    // "both" or items in "all" column go to unassigned
+    if (currentAssigned === "both") {
+      quickUpdate.mutate({ id: task.id, updates: { assigned_to: "unassigned" } });
+    } else if (currentAssigned === "unassigned") {
+      quickUpdate.mutate({ id: task.id, updates: { assigned_to: "lee" } });
+    }
+    // lee/mk don't advance, they have "done" button instead
+  };
+
+  // Mark task as done with celebration
+  const handleMarkDone = (task: any) => {
+    setCelebrateTask(task);
+    // Fire confetti!
+    canvasConfetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"],
+    });
+  };
+
+  const confirmDone = () => {
+    if (!celebrateTask) return;
+    quickUpdate.mutate({ id: celebrateTask.id, updates: { status: "done", completed_at: new Date().toISOString() } });
+    setCelebrateTask(null);
+    toast.success("¡Completado!");
+  };
+
+  const cancelDone = () => {
+    setCelebrateTask(null);
+  };
+
   // Collect unique due dates from tasks, sorted soonest first
   const presetDueDates = useMemo(() => {
     if (!tasks) return [];
@@ -344,10 +404,11 @@ export default function TripPlanning() {
     return Array.from(dates).sort();
   }, [tasks]);
 
-  // Filtered tasks
+  // Filtered tasks (exclude done)
   const filtered = useMemo(() => {
     if (!tasks) return [];
     return tasks.filter(t => {
+      if (t.status === "done") return false;
       if (filterCategory !== "all" && t.category !== filterCategory) return false;
       if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
       if (filterDate) {
@@ -357,6 +418,28 @@ export default function TripPlanning() {
       return true;
     });
   }, [tasks, filterCategory, filterAssignee, filterDate]);
+
+  // Completed tasks for modals
+  const completedLee = useMemo(() => {
+    if (!tasks) return [];
+    return tasks.filter(t => t.status === "done" && t.assigned_to === "lee").sort((a, b) => {
+      const da = a.completed_at || a.updated_at;
+      const db = b.completed_at || b.updated_at;
+      return new Date(db).getTime() - new Date(da).getTime();
+    });
+  }, [tasks]);
+
+  const completedMk = useMemo(() => {
+    if (!tasks) return [];
+    return tasks.filter(t => t.status === "done" && t.assigned_to === "mk").sort((a, b) => {
+      const da = a.completed_at || a.updated_at;
+      const db = b.completed_at || b.updated_at;
+      return new Date(db).getTime() - new Date(da).getTime();
+    });
+  }, [tasks]);
+
+  // Determine if we should show all badges (only when "All Categories" filter)
+  const showAllBadgesFlag = filterCategory === "all";
 
   // Column data
   const allTodos = filtered;
@@ -376,7 +459,6 @@ export default function TripPlanning() {
     if (!over) return;
     const activeId = active.id as string;
     const overId = over.id as string;
-    // Dropped on column
     const colMap: Record<string, string> = { all: "both", unassigned: "unassigned", lee: "lee", mk: "mk" };
     if (colMap[overId] !== undefined) {
       const task = filtered.find(t => t.id === activeId);
@@ -385,7 +467,6 @@ export default function TripPlanning() {
       }
       return;
     }
-    // Dropped on another card — assign to that card's column
     const overTask = filtered.find(t => t.id === overId);
     const activeTask = filtered.find(t => t.id === activeId);
     if (overTask && activeTask && overTask.assigned_to !== activeTask.assigned_to) {
@@ -455,10 +536,22 @@ export default function TripPlanning() {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <PlanColumn id="all" label="All To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} groupByCategory showAllBadges />
-            <PlanColumn id="unassigned" label="Unassigned" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
-            <PlanColumn id="lee" label="Lee" tasks={leeTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
-            <PlanColumn id="mk" label="MK" tasks={mkTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} />
+            <PlanColumn id="all" label="To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag} />
+            <PlanColumn id="unassigned" label="To Assign" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} />
+            <PlanColumn id="lee" label="Lee" tasks={leeTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone}
+              headerExtra={completedLee.length > 0 ? (
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-emerald-400 hover:text-emerald-300 ml-auto" onClick={() => setShowLeeCompleted(true)}>
+                  <Check className="h-2.5 w-2.5 mr-0.5" /> Show Completed ({completedLee.length})
+                </Button>
+              ) : undefined}
+            />
+            <PlanColumn id="mk" label="MK" tasks={mkTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone}
+              headerExtra={completedMk.length > 0 ? (
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-emerald-400 hover:text-emerald-300 ml-auto" onClick={() => setShowMkCompleted(true)}>
+                  <Check className="h-2.5 w-2.5 mr-0.5" /> Show Completed ({completedMk.length})
+                </Button>
+              ) : undefined}
+            />
           </div>
           <DragOverlay dropAnimation={null}>
             {activeItem ? (
@@ -469,6 +562,71 @@ export default function TripPlanning() {
           </DragOverlay>
         </DndContext>
       )}
+
+      {/* ¡Claro que sí! Celebration Dialog */}
+      <Dialog open={!!celebrateTask} onOpenChange={(v) => { if (!v) cancelDone(); }}>
+        <DialogContent className="max-w-sm text-center">
+          <div className="py-6 space-y-4">
+            <PartyPopper className="h-12 w-12 mx-auto text-amber-400" />
+            <h2 className="text-2xl font-bold text-foreground">¡Claro que sí!</h2>
+            <p className="text-sm text-muted-foreground">
+              {celebrateTask?.title}
+            </p>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={confirmDone}>
+                <Check className="mr-2 h-4 w-4" /> Confirmed Complete
+              </Button>
+              <Button variant="outline" onClick={cancelDone}>
+                Still In Progress
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Show Completed - Lee */}
+      <Dialog open={showLeeCompleted} onOpenChange={setShowLeeCompleted}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Lee — Completed Tasks ({completedLee.length})</DialogTitle></DialogHeader>
+          <div className="space-y-2 mt-2">
+            {completedLee.map(t => (
+              <div key={t.id} className="flex items-start justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{t.title}</p>
+                  <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground">
+                    {t.completed_at && <span>Completed: {format(new Date(t.completed_at), "MMM d, yyyy")}</span>}
+                    {t.target_date && <span>Due: {format(new Date(t.target_date + "T00:00:00"), "MMM d, yyyy")}</span>}
+                  </div>
+                </div>
+                <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              </div>
+            ))}
+            {completedLee.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No completed tasks yet</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Show Completed - MK */}
+      <Dialog open={showMkCompleted} onOpenChange={setShowMkCompleted}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>MK — Completed Tasks ({completedMk.length})</DialogTitle></DialogHeader>
+          <div className="space-y-2 mt-2">
+            {completedMk.map(t => (
+              <div key={t.id} className="flex items-start justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{t.title}</p>
+                  <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground">
+                    {t.completed_at && <span>Completed: {format(new Date(t.completed_at), "MMM d, yyyy")}</span>}
+                    {t.target_date && <span>Due: {format(new Date(t.target_date + "T00:00:00"), "MMM d, yyyy")}</span>}
+                  </div>
+                </div>
+                <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              </div>
+            ))}
+            {completedMk.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No completed tasks yet</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate} onOpenChange={(v) => { if (!v) resetForm(); else setShowCreate(v); }}>
@@ -621,7 +779,6 @@ export default function TripPlanning() {
                 <Button size="sm" disabled={!newDueDate || !user} onClick={async () => {
                   if (!newDueDate || !user) return;
                   const dateStr = format(newDueDate, "yyyy-MM-dd");
-                  // Create a placeholder task to register this date
                   await supabase.from("trip_tasks").insert({
                     trip_id: tripId!, user_id: user.id, title: `[Due Date Milestone] ${format(newDueDate, "MMM d")}`,
                     category: "general", assigned_to: "unassigned", status: "todo",
