@@ -124,6 +124,7 @@ function TaskCard({ task, onEdit, onDelete, onAdvance, onMarkDone, isDragOverlay
           {/* Selling extras */}
           {task.category === "selling" && (
             <div className="flex items-center gap-2 pl-5">
+              {task.sold_price && !task.is_sold && <Badge variant="outline" className="text-[10px] px-1.5 py-0 leading-tight text-muted-foreground">${task.sold_price}</Badge>}
               {task.is_listed && <Badge className="text-[10px] px-1.5 py-0 bg-amber-500/20 text-amber-300 border-amber-500/30">Listed</Badge>}
               {task.is_sold && <Badge className="text-[10px] px-1.5 py-0 bg-emerald-500/20 text-emerald-300 border-emerald-500/30">Sold{task.sold_price ? ` $${task.sold_price}` : ""}</Badge>}
             </div>
@@ -231,8 +232,12 @@ export default function TripPlanning() {
   const [showDueDateManager, setShowDueDateManager] = useState(false);
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
 
-  // View mode: "all" shows all 4 columns, "review" shows To Do's + Lee + MK, "assign" shows To Assign + Lee + MK
-  const [viewMode, setViewMode] = useState<"all" | "review" | "assign">("all");
+  // View mode: "all" shows all 3 columns, "review" hides To Assign
+  const [viewMode, setViewMode] = useState<"all" | "review">("review");
+
+  // Bulk add selling
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkItems, setBulkItems] = useState<{ title: string; price: string }[]>([{ title: "", price: "" }]);
 
   // Celebration dialog
   const [celebrateTask, setCelebrateTask] = useState<any>(null);
@@ -532,13 +537,57 @@ export default function TripPlanning() {
         )}
       </div>
 
+      {/* Progress Tracker */}
+      {!isLoading && filtered.length > 0 && (
+        <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-white/70">
+              {filterCategory !== "all" ? TRIP_CATEGORIES.find(c => c.value === filterCategory)?.label : "Overall"} Progress
+            </span>
+            <span className="text-xs font-bold text-white">
+              {(() => {
+                const total = filtered.length + (tasks?.filter(t => {
+                  if (t.status !== "done") return false;
+                  if (filterCategory !== "all" && t.category !== filterCategory) return false;
+                  if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
+                  return true;
+                }).length || 0);
+                const done = tasks?.filter(t => {
+                  if (t.status !== "done") return false;
+                  if (filterCategory !== "all" && t.category !== filterCategory) return false;
+                  if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
+                  return true;
+                }).length || 0;
+                return `${done} / ${total} done`;
+              })()}
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+              style={{
+                width: `${(() => {
+                  const doneCount = tasks?.filter(t => {
+                    if (t.status !== "done") return false;
+                    if (filterCategory !== "all" && t.category !== filterCategory) return false;
+                    if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
+                    return true;
+                  }).length || 0;
+                  const total = filtered.length + doneCount;
+                  return total > 0 ? (doneCount / total) * 100 : 0;
+                })()}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* View Mode Toggle */}
       <div className="mb-4 flex items-center gap-1">
         <span className="text-[10px] text-white/40 mr-1 uppercase tracking-wider">View:</span>
         {[
+          { value: "review" as const, label: "To Do's → Assign" },
           { value: "all" as const, label: "All Columns" },
-          { value: "review" as const, label: "Review To Do's" },
-          { value: "assign" as const, label: "Assign Tasks" },
         ].map(v => (
           <Button
             key={v.value}
@@ -561,10 +610,14 @@ export default function TripPlanning() {
             "grid grid-cols-1 gap-4",
             viewMode === "all" ? "md:grid-cols-4" : "md:grid-cols-3"
           )}>
-            {(viewMode === "all" || viewMode === "review") && (
-              <PlanColumn id="all" label="To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag} />
-            )}
-            {(viewMode === "all" || viewMode === "assign") && (
+            <PlanColumn id="all" label="To Do's" tasks={allTodos} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} groupByCategory showAllBadges={showAllBadgesFlag}
+              headerExtra={filterCategory === "selling" ? (
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-primary hover:text-primary ml-auto" onClick={() => setShowBulkAdd(true)}>
+                  <Plus className="h-2.5 w-2.5 mr-0.5" /> Bulk Add
+                </Button>
+              ) : undefined}
+            />
+            {viewMode === "all" && (
               <PlanColumn id="unassigned" label="To Assign" tasks={unassignedTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone} />
             )}
             <PlanColumn id="lee" label="Lee" tasks={leeTasks} onEdit={startEdit} onDelete={(id) => deleteMutation.mutate(id)} onAdvance={advanceTask} onMarkDone={handleMarkDone}
@@ -822,6 +875,68 @@ export default function TripPlanning() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Add Selling Items Dialog */}
+      <Dialog open={showBulkAdd} onOpenChange={(v) => { if (!v) { setShowBulkAdd(false); setBulkItems([{ title: "", price: "" }]); } else setShowBulkAdd(true); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Bulk Add — Selling & Downsizing</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Quickly add items to sell. Enter a title and optional listing price for each.</p>
+          <div className="space-y-2 mt-2">
+            {bulkItems.map((item, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Input
+                  value={item.title}
+                  onChange={e => { const items = [...bulkItems]; items[i].title = e.target.value; setBulkItems(items); }}
+                  placeholder="Item name"
+                  className="flex-1 h-8 text-xs"
+                />
+                <div className="relative w-24">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                  <Input
+                    value={item.price}
+                    onChange={e => { const items = [...bulkItems]; items[i].price = e.target.value; setBulkItems(items); }}
+                    placeholder="0"
+                    type="number"
+                    className="h-8 text-xs pl-5"
+                  />
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setBulkItems(bulkItems.filter((_, j) => j !== i))} disabled={bulkItems.length <= 1}>
+                  <X className="h-3 w-3 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button variant="ghost" size="sm" className="h-7 text-xs w-full" onClick={() => setBulkItems([...bulkItems, { title: "", price: "" }])}>
+              <Plus className="h-3 w-3 mr-1" /> Add Another Row
+            </Button>
+          </div>
+          <Button
+            className="w-full mt-2"
+            disabled={!bulkItems.some(i => i.title.trim())}
+            onClick={async () => {
+              if (!user || !tripId) return;
+              const validItems = bulkItems.filter(i => i.title.trim());
+              const inserts = validItems.map((item, idx) => ({
+                trip_id: tripId,
+                user_id: user.id,
+                title: item.title.trim(),
+                category: "selling",
+                assigned_to: "unassigned",
+                status: "todo",
+                sold_price: item.price ? parseFloat(item.price) : null,
+                sort_order: idx,
+              }));
+              const { error } = await supabase.from("trip_tasks").insert(inserts);
+              if (error) { toast.error(error.message); return; }
+              queryClient.invalidateQueries({ queryKey: ["trip-tasks", tripId] });
+              setShowBulkAdd(false);
+              setBulkItems([{ title: "", price: "" }]);
+              toast.success(`Added ${validItems.length} items!`);
+            }}
+          >
+            Add {bulkItems.filter(i => i.title.trim()).length} Items
+          </Button>
         </DialogContent>
       </Dialog>
     </DomainLayout>
