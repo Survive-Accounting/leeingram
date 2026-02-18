@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SprintProvider } from "@/contexts/SprintContext";
+import Landing from "./pages/Landing";
 import SurviveHome from "./pages/SurviveHome";
 import ContentFactory from "./pages/ContentFactory";
 import ContentRoadmap from "./pages/ContentRoadmap";
@@ -29,7 +30,7 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
-  if (!session) return <Navigate to="/auth" replace />;
+  if (!session) return <Navigate to="/admin" replace />;
   return <>{children}</>;
 }
 
@@ -38,10 +39,15 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/auth" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
+      {/* Public landing / email grabber */}
+      <Route path="/" element={<Landing />} />
+      {/* Admin auth */}
+      <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
+      {/* Legacy redirect */}
+      <Route path="/auth" element={<Navigate to="/admin" replace />} />
       <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
       {/* Survive Accounting domain */}
-      <Route path="/" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
+      <Route path="/survive" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
       <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
       <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
       <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />

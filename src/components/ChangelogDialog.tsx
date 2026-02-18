@@ -88,6 +88,19 @@ const CHANGELOG: ChangeEntry[] = [
       "Added AI Suggestions dialog (subject lines, CTAs, schedule date)",
     ],
   },
+  {
+    prompt: 10,
+    date: "2026-02-18",
+    title: "Public landing page, /admin auth, subscriber dashboard, dark mode",
+    subTasks: [
+      "Created public email grabber landing page at /",
+      "Moved auth to /admin with Mt Cook aesthetic",
+      "Created newsletter_subscribers table with RLS",
+      "Added subscriber dashboard dialog on Leeingram page",
+      "Switched entire app to dark mode for mobile text readability",
+      "Updated Survive Accounting route to /survive",
+    ],
+  },
 ];
 
 export const PROMPT_COUNT = CHANGELOG.length;

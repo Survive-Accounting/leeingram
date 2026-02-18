@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Video, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, Video, ChevronDown, Trash2, Users } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { format } from "date-fns";
 
 const EPISODE_STATUSES = [
   { value: "idea", label: "💡 Idea" },
@@ -29,6 +30,7 @@ export default function Leeingram() {
   const queryClient = useQueryClient();
   const [showCreateSeason, setShowCreateSeason] = useState(false);
   const [showCreateEpisode, setShowCreateEpisode] = useState<string | null>(null);
+  const [showSubscribers, setShowSubscribers] = useState(false);
   const [newSeason, setNewSeason] = useState({ title: "", description: "", season_number: 1 });
   const [newEpisode, setNewEpisode] = useState({ title: "", description: "", episode_number: 1 });
 
@@ -45,6 +47,15 @@ export default function Leeingram() {
     queryKey: ["vlog-episodes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("vlog_episodes").select("*").order("episode_number");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: subscribers } = useQuery({
+    queryKey: ["newsletter-subscribers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("newsletter_subscribers").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -173,6 +184,54 @@ export default function Leeingram() {
           </div>
         )}
       </div>
+
+      {/* Newsletter Subscribers */}
+      <div className="max-w-2xl mx-auto mt-8">
+        <button
+          onClick={() => setShowSubscribers(true)}
+          className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+        >
+          <Users className="h-4 w-4" />
+          <span>Newsletter Subscribers</span>
+          {subscribers && <Badge variant="secondary" className="text-xs">{subscribers.length}</Badge>}
+        </button>
+      </div>
+
+      {/* Subscribers Dialog */}
+      <Dialog open={showSubscribers} onOpenChange={setShowSubscribers}>
+        <DialogContent className="max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Newsletter Subscribers</DialogTitle>
+            <DialogDescription>{subscribers?.length ?? 0} total signups</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            {subscribers?.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No subscribers yet. Share your landing page!</p>
+            ) : (
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Name</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Email</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Signed Up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subscribers?.map((sub) => (
+                      <tr key={sub.id} className="border-b last:border-0">
+                        <td className="px-3 py-2 text-foreground">{sub.name}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{sub.email}</td>
+                        <td className="px-3 py-2 text-muted-foreground text-xs">{format(new Date(sub.created_at), "MMM d, yyyy")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showCreateSeason} onOpenChange={setShowCreateSeason}>
         <DialogContent className="max-w-md">
