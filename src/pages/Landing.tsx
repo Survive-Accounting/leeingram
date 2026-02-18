@@ -118,7 +118,7 @@ export default function Landing() {
               }}
             >
               <p className="text-sm text-white/85 leading-relaxed">
-                <strong className="text-white">For over a decade, I've been building a tutoring business</strong> — watching it fail, rebuilding it again, and slowly shaping it into something bigger.
+                <strong className="text-white">For over a decade, I've been building a tutoring platform</strong> — watching it fail during COVID, rebuilding it again, and slowly shaping it into something bigger.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
                 Today, it supports a life built around travel, teaching, adventure, and creative freedom.
