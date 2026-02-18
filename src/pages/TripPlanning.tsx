@@ -247,6 +247,12 @@ export default function TripPlanning() {
   const [showLeeCompleted, setShowLeeCompleted] = useState(false);
   const [showMkCompleted, setShowMkCompleted] = useState(false);
 
+  // Print dialog
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [printCategory, setPrintCategory] = useState("all");
+  const [printAssignee, setPrintAssignee] = useState("all");
+  const [printDate, setPrintDate] = useState<string | undefined>(undefined);
+
   // Filters
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterAssignee, setFilterAssignee] = useState("all");
@@ -535,8 +541,8 @@ export default function TripPlanning() {
          <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => setShowDueDateManager(true)}>
             <CalendarIcon className="mr-1 h-3.5 w-3.5" /> Set Due Dates
           </Button>
-          <Button size="sm" variant="outline" disabled className="text-white/40 border-white/20">
-            <Printer className="mr-1 h-3.5 w-3.5" /> Print View (Coming Soon)
+          <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => setShowPrintDialog(true)}>
+            <Printer className="mr-1 h-3.5 w-3.5" /> Print View
           </Button>
           <Button size="sm" className="bg-white/10 border border-white/20 text-white hover:bg-white/20" onClick={() => setShowCreate(true)}>
             <Plus className="mr-1 h-4 w-4" /> Add Task
@@ -963,6 +969,104 @@ export default function TripPlanning() {
           >
             Add {bulkItems.filter(i => i.title.trim()).length} Items
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print View Dialog */}
+      <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Print View</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs mb-1 block">Category</Label>
+              <Select value={printCategory} onValueChange={setPrintCategory}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {TRIP_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">Person</Label>
+              <Select value={printAssignee} onValueChange={setPrintAssignee}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Everyone</SelectItem>
+                  {ASSIGNEES.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">Due Date</Label>
+              <Select value={printDate || "all"} onValueChange={v => setPrintDate(v === "all" ? undefined : v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Dates</SelectItem>
+                  {presetDueDates.map(d => (
+                    <SelectItem key={d} value={d}>{format(new Date(d + "T00:00:00"), "MMM d, yyyy")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={() => {
+              // Build printable content
+              if (!tasks) return;
+              const printTasks = tasks.filter(t => {
+                if (t.status === "done") return false;
+                if (printCategory !== "all" && t.category !== printCategory) return false;
+                if (printAssignee !== "all" && t.assigned_to !== printAssignee) return false;
+                if (printDate && t.target_date !== printDate) return false;
+                return true;
+              });
+
+              const catLabel = printCategory === "all" ? "All Categories" : TRIP_CATEGORIES.find(c => c.value === printCategory)?.label || printCategory;
+              const assignLabel = printAssignee === "all" ? "Everyone" : ASSIGNEES.find(a => a.value === printAssignee)?.label || printAssignee;
+              const dateLabel = printDate ? format(new Date(printDate + "T00:00:00"), "MMM d, yyyy") : "All Dates";
+
+              const grouped: Record<string, typeof printTasks> = {};
+              for (const t of printTasks) {
+                const cat = TRIP_CATEGORIES.find(c => c.value === t.category)?.label || t.category;
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(t);
+              }
+
+              const html = `<!DOCTYPE html><html><head><title>Trip Planning — Print</title><style>
+                body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px; color: #1a1a1a; }
+                h1 { font-size: 18px; margin-bottom: 4px; }
+                .subtitle { font-size: 12px; color: #666; margin-bottom: 20px; }
+                h2 { font-size: 14px; margin-top: 16px; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+                .task { padding: 4px 0; font-size: 12px; display: flex; gap: 8px; align-items: baseline; }
+                .task::before { content: "☐"; flex-shrink: 0; }
+                .meta { color: #888; font-size: 10px; }
+                @media print { body { padding: 0; } }
+              </style></head><body>
+              <h1>${trip?.location || "Trip"} — Tasks</h1>
+              <div class="subtitle">${catLabel} · ${assignLabel} · ${dateLabel} · ${printTasks.length} tasks</div>
+              ${Object.entries(grouped).map(([cat, items]) => `
+                <h2>${cat}</h2>
+                ${items.map(t => {
+                  const assignee = t.assigned_to === "both" ? "" : t.assigned_to === "unassigned" ? " [Unassigned]" : ` [${t.assigned_to === "lee" ? "Lee" : "MK"}]`;
+                  const date = t.target_date ? ` — ${format(new Date(t.target_date + "T00:00:00"), "MMM d")}` : "";
+                  return `<div class="task"><span>${t.title}${assignee ? `<span class="meta">${assignee}</span>` : ""}${date ? `<span class="meta">${date}</span>` : ""}</span></div>`;
+                }).join("")}
+              `).join("")}
+              </body></html>`;
+
+              const printWindow = window.open("", "_blank");
+              if (printWindow) {
+                printWindow.document.write(html);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 300);
+              }
+              setShowPrintDialog(false);
+            }}>
+              <Printer className="mr-1 h-3.5 w-3.5" /> Print
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </DomainLayout>
