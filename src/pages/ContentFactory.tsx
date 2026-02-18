@@ -122,6 +122,14 @@ export default function ContentFactory() {
           );
         })}
       </div>
+
+      <div className="mt-6 pt-4 border-t border-border">
+        <Button asChild variant="outline" className="w-full">
+          <Link to="/content-roadmap">
+            📋 Content Roadmap
+          </Link>
+        </Button>
+      </div>
     </AppLayout>
   );
 }

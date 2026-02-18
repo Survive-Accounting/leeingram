@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +28,8 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
-import { Plus, Lightbulb, Rocket, Filter, ChevronDown } from "lucide-react";
+import { Plus, Lightbulb, Rocket, Filter, ChevronDown, Trophy } from "lucide-react";
+import confetti from "canvas-confetti";
 import { CATEGORIES, PRIORITIES, SEMESTERS, SEED_IDEAS, DOMAINS } from "@/components/roadmap/RoadmapConstants";
 import { RoadmapColumn } from "@/components/roadmap/RoadmapColumn";
 import { RoadmapItemRow } from "@/components/roadmap/RoadmapItemRow";
@@ -36,20 +38,25 @@ import { VisionSection } from "@/components/roadmap/VisionSection";
 export default function IdeasRoadmap() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const initialDomain = searchParams.get("domain") || "all";
+
   const [showCreate, setShowCreate] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
   const [visionsOpen, setVisionsOpen] = useState(false);
   const [prioritiesOpen, setPrioritiesOpen] = useState(false);
   const [ideasOpen, setIdeasOpen] = useState(false);
   const [archivedOpen, setArchivedOpen] = useState(false);
+  const [confirmItem, setConfirmItem] = useState<any>(null);
+  const [showCompletedHistory, setShowCompletedHistory] = useState(false);
 
-  const [filterDomain, setFilterDomain] = useState("all");
+  const [filterDomain, setFilterDomain] = useState(initialDomain);
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterSemester, setFilterSemester] = useState("all");
 
   const [newItem, setNewItem] = useState({
-    title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea", domain: "general",
+    title: "", description: "", category: "general", priority: "medium", target_semester: "", status: "idea", domain: initialDomain !== "all" ? initialDomain : "general",
   });
 
   const [localOrder, setLocalOrder] = useState<Record<string, string[]>>({});
@@ -192,7 +199,11 @@ export default function IdeasRoadmap() {
     if (statusMap[overId]) {
       const item = filtered.find((i: any) => i.id === activeId);
       if (item && item.status !== overId) {
-        handleUpdate(activeId, { status: overId });
+        if (overId === "done") {
+          setConfirmItem(item);
+        } else {
+          handleUpdate(activeId, { status: overId });
+        }
       }
       return;
     }
@@ -202,7 +213,11 @@ export default function IdeasRoadmap() {
     if (!overItem || !activeItemData) return;
 
     if (activeItemData.status !== overItem.status) {
-      handleUpdate(activeId, { status: overItem.status });
+      if (overItem.status === "done") {
+        setConfirmItem(activeItemData);
+      } else {
+        handleUpdate(activeId, { status: overItem.status });
+      }
     } else {
       const statusKey = activeItemData.status;
       const listMap: Record<string, any[]> = {
@@ -218,6 +233,14 @@ export default function IdeasRoadmap() {
         setLocalOrder((prev) => ({ ...prev, [statusKey]: reordered }));
       }
     }
+  };
+
+  const confirmComplete = () => {
+    if (!confirmItem) return;
+    handleUpdate(confirmItem.id, { status: "done", completed_at: new Date().toISOString() });
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    toast.success("🎉 Whoop Whoop! Item completed!");
+    setConfirmItem(null);
   };
 
   const hasFilters = filterDomain !== "all" || filterCategory !== "all" || filterPriority !== "all" || filterSemester !== "all";
@@ -320,7 +343,13 @@ export default function IdeasRoadmap() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                   <RoadmapColumn label="Planned" items={plannedItems} statusValue="planned" onUpdate={handleUpdate} onDelete={handleDelete} semesterGroups={plannedBySemester} />
                   <RoadmapColumn label="In Progress" items={inProgressItems} statusValue="in_progress" onUpdate={handleUpdate} onDelete={handleDelete} variant="active" />
-                  <RoadmapColumn label="Completed" items={completedItems} statusValue="done" onUpdate={handleUpdate} onDelete={handleDelete} variant="completed" />
+                  <RoadmapColumn label="Completed" items={completedItems} statusValue="done" onUpdate={handleUpdate} onDelete={handleDelete} variant="completed" headerExtra={
+                    completedItems.length > 0 ? (
+                      <button onClick={() => setShowCompletedHistory(true)} className="ml-auto text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-0.5">
+                        <Trophy className="h-3 w-3" /> History
+                      </button>
+                    ) : null
+                  } />
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -443,6 +472,43 @@ export default function IdeasRoadmap() {
               <Rocket className="mr-1 h-4 w-4" /> Load All {SEED_IDEAS.length} Ideas
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Completion Dialog */}
+      <Dialog open={!!confirmItem} onOpenChange={(o) => !o && setConfirmItem(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>🎉 Whoop Whoop!</DialogTitle>
+            <DialogDescription>Confirm that "{confirmItem?.title}" is complete?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmItem(null)}>Still in Progress</Button>
+            <Button onClick={confirmComplete}>Confirm Completion</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Completed History Dialog */}
+      <Dialog open={showCompletedHistory} onOpenChange={setShowCompletedHistory}>
+        <DialogContent className="max-w-md max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Completed Items</DialogTitle>
+            <DialogDescription>All items confirmed as done.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {completedItems.map((item: any) => (
+              <div key={item.id} className="flex items-center justify-between border rounded-md p-2 text-xs">
+                <span className="font-medium text-foreground truncate">{item.title}</span>
+                {item.completed_at && (
+                  <span className="text-muted-foreground shrink-0 text-[10px]">
+                    {new Date(item.completed_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            ))}
+            {completedItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No completed items yet.</p>}
+          </div>
         </DialogContent>
       </Dialog>
     </AppLayout>

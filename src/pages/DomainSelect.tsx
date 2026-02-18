@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChangelogDialog } from "@/components/ChangelogDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -128,7 +129,8 @@ export default function DomainSelect() {
   const [familyTab, setFamilyTab] = useState<string | null>(null);
   const [showMusic, setShowMusic] = useState(false);
   const [newLink, setNewLink] = useState({ title: "", url: "" });
-  const promptCount = 0; // TODO: track actual prompt count
+  const promptCount = 7;
+  const [changelogOpen, setChangelogOpen] = useState(false);
 
   const { data: musicLinks } = useQuery({
     queryKey: ["music-links"],
@@ -213,7 +215,7 @@ export default function DomainSelect() {
         {/* Ideas */}
         <FlickerButton
           label="Ideas"
-          subtitle="Idea Factory → Roadmap"
+          subtitle=""
           expanded={false}
           onClick={() => navigate("/ideas")}
         />
@@ -222,7 +224,7 @@ export default function DomainSelect() {
         <div className="w-full space-y-2">
           <FlickerButton
             label="Family"
-            subtitle="Coming soon"
+            subtitle=""
             expanded={familyOpen}
             onClick={() => setFamilyOpen(!familyOpen)}
           />
@@ -263,9 +265,15 @@ export default function DomainSelect() {
           )}
         </div>
 
-        <p className="text-xs text-center" style={{ color: "rgba(255,255,255,0.15)" }}>
+        <button
+          onClick={() => setChangelogOpen(true)}
+          className="text-xs text-center cursor-pointer hover:underline"
+          style={{ color: "rgba(255,255,255,0.25)" }}
+        >
           Lovable Prompts = {promptCount} // Earned Wisdom, LLC
-        </p>
+        </button>
+
+        <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
 
         {/* Music Library */}
         <div className="w-full mt-2">
