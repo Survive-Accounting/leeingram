@@ -19,10 +19,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
-  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragOverlay,
-  type DragStartEvent, type DragEndEvent,
+  DndContext, closestCenter, pointerWithin, rectIntersection, PointerSensor, KeyboardSensor, useSensor, useSensors, DragOverlay,
+  type DragStartEvent, type DragEndEvent, type CollisionDetection,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
@@ -454,7 +454,17 @@ export default function TripPlanning() {
   const leeTasks = filtered.filter(t => t.assigned_to === "lee");
   const mkTasks = filtered.filter(t => t.assigned_to === "mk");
 
-  // Drag
+  // Drag - custom collision that prefers droppable columns
+  const customCollision: CollisionDetection = (args) => {
+    // First check if pointer is over a droppable column
+    const pointerCollisions = pointerWithin(args);
+    const columnIds = ["all", "unassigned", "lee", "mk"];
+    const columnHit = pointerCollisions.find(c => columnIds.includes(c.id as string));
+    if (columnHit) return [columnHit];
+    // Fallback to closest center for card-level drops
+    return rectIntersection(args);
+  };
+
   const handleDragStart = (e: DragStartEvent) => {
     const item = filtered.find(t => t.id === e.active.id);
     setActiveItem(item || null);
@@ -466,18 +476,42 @@ export default function TripPlanning() {
     if (!over) return;
     const activeId = active.id as string;
     const overId = over.id as string;
+    const columnIds = ["all", "unassigned", "lee", "mk"];
     const colMap: Record<string, string> = { all: "both", unassigned: "unassigned", lee: "lee", mk: "mk" };
-    if (colMap[overId] !== undefined) {
+
+    // Dropped on a column
+    if (columnIds.includes(overId)) {
       const task = filtered.find(t => t.id === activeId);
       if (task && task.assigned_to !== colMap[overId]) {
         quickUpdate.mutate({ id: activeId, updates: { assigned_to: colMap[overId] } });
       }
       return;
     }
+
+    // Dropped on another card — move to that card's column
     const overTask = filtered.find(t => t.id === overId);
     const activeTask = filtered.find(t => t.id === activeId);
-    if (overTask && activeTask && overTask.assigned_to !== activeTask.assigned_to) {
-      quickUpdate.mutate({ id: activeId, updates: { assigned_to: overTask.assigned_to } });
+    if (overTask && activeTask) {
+      // Determine which column the over-task belongs to
+      const overAssigned = overTask.assigned_to;
+      if (activeTask.assigned_to !== overAssigned) {
+        quickUpdate.mutate({ id: activeId, updates: { assigned_to: overAssigned } });
+      } else {
+        // Same column — reorder via sort_order
+        const sameTasks = filtered
+          .filter(t => t.assigned_to === overAssigned)
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        const oldIdx = sameTasks.findIndex(t => t.id === activeId);
+        const newIdx = sameTasks.findIndex(t => t.id === overId);
+        if (oldIdx !== -1 && newIdx !== -1 && oldIdx !== newIdx) {
+          const reordered = arrayMove(sameTasks, oldIdx, newIdx);
+          reordered.forEach((t, i) => {
+            if (t.sort_order !== i) {
+              quickUpdate.mutate({ id: t.id, updates: { sort_order: i } });
+            }
+          });
+        }
+      }
     }
   };
 
@@ -605,7 +639,7 @@ export default function TripPlanning() {
       {isLoading ? (
         <p className="text-white/50 text-sm">Loading...</p>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={customCollision} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className={cn(
             "grid grid-cols-1 gap-4",
             viewMode === "all" ? "md:grid-cols-4" : "md:grid-cols-3"
