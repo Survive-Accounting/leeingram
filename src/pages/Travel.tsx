@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DomainLayout } from "@/components/DomainLayout";
+import holboxBg from "@/assets/holbox-beach-bg.jpg";
 import { Plus, MapPin, Calendar, Trash2, ChevronDown, Pencil, ClipboardList, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -191,6 +192,7 @@ export default function Travel() {
     <DomainLayout
       title="Travel"
       tagline="Adventures & trip planning"
+      backgroundImage={holboxBg}
       actions={
         <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); else setOpen(v); }}>
           <DialogTrigger asChild>

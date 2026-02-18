@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DomainLayout } from "@/components/DomainLayout";
+import holboxBg from "@/assets/holbox-beach-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,6 +100,7 @@ export default function TripExploring() {
     <DomainLayout
       title={trip?.location ? `${trip.location} — Exploring` : "Exploring"}
       tagline="Places to discover"
+      backgroundImage={holboxBg}
       actions={
         <Button size="sm" className="bg-white/10 border border-white/20 text-white hover:bg-white/20" onClick={() => setShowCreate(true)}>
           <Plus className="mr-1 h-4 w-4" /> Add Place

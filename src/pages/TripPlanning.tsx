@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DomainLayout } from "@/components/DomainLayout";
+import holboxBg from "@/assets/holbox-beach-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -522,6 +523,7 @@ export default function TripPlanning() {
     <DomainLayout
       title={trip?.location ? `${trip.location} — Planning` : "Trip Planning"}
       tagline="Organize your move"
+      backgroundImage={holboxBg}
       actions={
         <div className="flex gap-2">
          <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => setShowDueDateManager(true)}>
