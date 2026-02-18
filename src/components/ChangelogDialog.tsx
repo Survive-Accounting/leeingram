@@ -63,7 +63,18 @@ const CHANGELOG: ChangeEntry[] = [
       "Created changelog dialog on Lovable Prompts link",
     ],
   },
+  {
+    prompt: 8,
+    date: "2026-02-18",
+    title: "Auto-tally prompts & move music to Focus Sprint",
+    subTasks: [
+      "Made Lovable Prompts count auto-tally from changelog entries",
+      "Moved Choose Your Music from /domains to Focus Sprint",
+    ],
+  },
 ];
+
+export const PROMPT_COUNT = CHANGELOG.length;
 
 export function ChangelogDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   return (
