@@ -124,7 +124,7 @@ export default function Landing() {
                 It collapsed during COVID. Then, I rebuilt it from the ground up — many times — until it finally worked.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                Now, it supports a life built around travel, teaching, adventure, and creative freedom.
+                Now, it supports a life devoted to teaching, exploring the world, and creative freedom.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
                 Subscribe to join the journey.
