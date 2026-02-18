@@ -31,8 +31,8 @@ export default function Travel() {
   const createTrip = useMutation({
     mutationFn: async () => {
       const startDate = form.start_date || (form.year_only ? `${form.year_only}-01-01` : null);
-      const desc = form.description || (form.year_only && !form.start_date ? form.year_only : null);
-      const { error } = await supabase.from("trips").insert({ user_id: user!.id, location: form.location, description: desc, start_date: startDate, end_date: form.end_date || null });
+      const endDate = form.end_date || (form.year_only ? `${form.year_only}-12-31` : null);
+      const { error } = await supabase.from("trips").insert({ user_id: user!.id, location: form.location, description: form.description || null, start_date: startDate, end_date: endDate });
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); resetForm(); },
@@ -42,8 +42,8 @@ export default function Travel() {
     mutationFn: async () => {
       if (!editingTrip) return;
       const startDate = form.start_date || (form.year_only ? `${form.year_only}-01-01` : null);
-      const desc = form.description || (form.year_only && !form.start_date ? form.year_only : null);
-      const { error } = await supabase.from("trips").update({ location: form.location, description: desc, start_date: startDate, end_date: form.end_date || null }).eq("id", editingTrip.id);
+      const endDate = form.end_date || (form.year_only ? `${form.year_only}-12-31` : null);
+      const { error } = await supabase.from("trips").update({ location: form.location, description: form.description || null, start_date: startDate, end_date: endDate }).eq("id", editingTrip.id);
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["trips"] }); resetForm(); },
@@ -60,23 +60,22 @@ export default function Travel() {
   const resetForm = () => { setForm({ location: "", description: "", start_date: "", end_date: "", year_only: "" }); setEditingTrip(null); setOpen(false); };
 
   const startEdit = (trip: any) => {
-    const yearOnly = isYearOnly(trip);
+    const yo = isYearOnly(trip);
     setEditingTrip(trip);
     setForm({
       location: trip.location,
-      description: yearOnly ? "" : (trip.description || ""),
-      start_date: yearOnly ? "" : (trip.start_date || ""),
-      end_date: trip.end_date || "",
-      year_only: yearOnly ? trip.start_date?.substring(0, 4) || "" : "",
+      description: trip.description || "",
+      start_date: yo ? "" : (trip.start_date || ""),
+      end_date: yo ? "" : (trip.end_date || ""),
+      year_only: yo ? trip.start_date?.substring(0, 4) || "" : "",
     });
     setOpen(true);
   };
 
   const isYearOnly = (trip: any) => {
-    if (!trip.start_date) return false;
-    const desc = trip.description?.trim();
+    if (!trip.start_date || !trip.end_date) return false;
     const year = trip.start_date.substring(0, 4);
-    return desc === year && trip.start_date.endsWith("-01-01") && !trip.end_date;
+    return trip.start_date === `${year}-01-01` && trip.end_date === `${year}-12-31`;
   };
 
   const formatDate = (d: string | null) => {
