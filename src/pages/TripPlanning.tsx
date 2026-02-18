@@ -669,12 +669,12 @@ export default function TripPlanning() {
         </DndContext>
       )}
 
-      {/* ¡Claro que sí! Celebration Dialog */}
+      {/* ¡Sí se puede! Celebration Dialog */}
       <Dialog open={!!celebrateTask} onOpenChange={(v) => { if (!v) cancelDone(); }}>
         <DialogContent className="max-w-sm text-center">
           <div className="py-6 space-y-4">
             <PartyPopper className="h-12 w-12 mx-auto text-amber-400" />
-            <h2 className="text-2xl font-bold text-foreground">¡Claro que sí!</h2>
+            <h2 className="text-2xl font-bold text-foreground">¡Sí se puede!</h2>
             <p className="text-sm text-muted-foreground">
               {celebrateTask?.title}
             </p>
