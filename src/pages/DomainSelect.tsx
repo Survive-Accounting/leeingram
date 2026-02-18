@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChangelogDialog } from "@/components/ChangelogDialog";
+import { ChangelogDialog, PROMPT_COUNT } from "@/components/ChangelogDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { LogOut, Music, Plus, Trash2, ExternalLink } from "lucide-react";
+import { LogOut } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 
@@ -120,41 +117,13 @@ const FlickerButton = ({
 );
 
 export default function DomainSelect() {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [workOpen, setWorkOpen] = useState(false);
   const [playOpen, setPlayOpen] = useState(false);
   const [familyOpen, setFamilyOpen] = useState(false);
   const [familyTab, setFamilyTab] = useState<string | null>(null);
-  const [showMusic, setShowMusic] = useState(false);
-  const [newLink, setNewLink] = useState({ title: "", url: "" });
-  const promptCount = 7;
   const [changelogOpen, setChangelogOpen] = useState(false);
-
-  const { data: musicLinks } = useQuery({
-    queryKey: ["music-links"],
-    queryFn: async () => {
-      const { data } = await supabase.from("music_links").select("*").order("created_at", { ascending: false });
-      return data || [];
-    },
-  });
-
-  const addLink = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("music_links").insert({ user_id: user!.id, title: newLink.title, youtube_url: newLink.url });
-      if (error) throw error;
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["music-links"] }); setNewLink({ title: "", url: "" }); },
-  });
-
-  const deleteLink = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("music_links").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["music-links"] }),
-  });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
@@ -270,41 +239,11 @@ export default function DomainSelect() {
           className="text-xs text-center cursor-pointer hover:underline"
           style={{ color: "rgba(255,255,255,0.25)" }}
         >
-          Lovable Prompts = {promptCount} // Earned Wisdom, LLC
+          Lovable Prompts = {PROMPT_COUNT} // Earned Wisdom, LLC
         </button>
 
         <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
 
-        {/* Music Library */}
-        <div className="w-full mt-2">
-          <button
-            onClick={() => setShowMusic(!showMusic)}
-            className="flex items-center gap-2 mx-auto text-xs uppercase tracking-widest transition-colors cursor-pointer"
-            style={{ color: showMusic ? "rgba(218,165,32,0.8)" : "rgba(255,255,255,0.3)" }}
-          >
-            <Music className="h-3.5 w-3.5" />
-            {showMusic ? "Hide Music Library" : "Choose Your Music"}
-          </button>
-
-          {showMusic && (
-            <div className="mt-4 space-y-3 animate-fade-in">
-              <div className="flex gap-2">
-                <Input value={newLink.title} onChange={(e) => setNewLink((p) => ({ ...p, title: e.target.value }))} placeholder="Title" className="flex-1 bg-transparent text-xs border-white/20 text-white placeholder:text-white/30" />
-                <Input value={newLink.url} onChange={(e) => setNewLink((p) => ({ ...p, url: e.target.value }))} placeholder="YouTube URL" className="flex-1 bg-transparent text-xs border-white/20 text-white placeholder:text-white/30" />
-                <button onClick={() => newLink.url && addLink.mutate()} className="px-3 transition-colors cursor-pointer rounded border border-white/20 text-white/70 hover:text-white hover:border-white/40">
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              {musicLinks && musicLinks.map((link: any) => (
-                <div key={link.id} className="flex items-center gap-2 p-2 text-xs rounded border border-white/10">
-                  <span className="flex-1 truncate text-white/60">{link.title || "Untitled"}</span>
-                  <a href={link.youtube_url} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white"><ExternalLink className="h-3 w-3" /></a>
-                  <button onClick={() => deleteLink.mutate(link.id)} className="cursor-pointer text-red-400/50 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       <style>{`
