@@ -2,8 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
+import leeHeadshot from "@/assets/lee-headshot-styled.png";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
-import { GlobeHeadshot } from "@/components/GlobeHeadshot";
 import { Copy, Share2, Check } from "lucide-react";
 
 export default function Landing() {
@@ -87,17 +87,26 @@ export default function Landing() {
             </div>
         ) : (
           <>
-            <div className="mb-6 flex justify-center">
-              <GlobeHeadshot />
-            </div>
-
             <h1
               className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-1"
               style={{ textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}
             >
               Solopreneur Journey
             </h1>
-            <p className="text-sm text-white/50 mb-8">A monthly letter from Lee Ingram</p>
+            <p className="text-sm text-white/50 mb-5">A monthly letter from Lee Ingram</p>
+
+            <div className="mb-5 flex justify-center">
+              <img
+                src={leeHeadshot}
+                alt="Lee Ingram"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover object-top"
+                style={{
+                  filter: "blur(0.3px) saturate(1.05) drop-shadow(0 0 16px rgba(218,165,32,0.3))",
+                  WebkitMaskImage: "radial-gradient(circle, black 40%, transparent 70%)",
+                  maskImage: "radial-gradient(circle, black 40%, transparent 70%)",
+                }}
+              />
+            </div>
 
             <div className="text-left space-y-4 mb-8 px-2">
               <p className="text-sm text-white/80 leading-relaxed">
@@ -112,7 +121,7 @@ export default function Landing() {
                 <ul className="text-sm text-white/70 space-y-1.5 pl-1">
                   <li>• Designing a business around the life I actually want</li>
                   <li>• 10 years of up's &amp; down's while building solo</li>
-                  <li>• A "success" story earned the long way</li>
+                  <li>• A "success" story earned the hard way</li>
                 </ul>
               </div>
             </div>
