@@ -15,18 +15,19 @@ export const PRIORITIES = [
 ];
 
 export const STATUSES = [
-  { value: "idea", label: "💡 Idea", style: "bg-blue-100 text-blue-800 border-blue-200" },
-  { value: "planned", label: "📋 Planned", style: "bg-purple-100 text-purple-800 border-purple-200" },
-  { value: "in_progress", label: "🚧 In Progress", style: "bg-orange-100 text-orange-800 border-orange-200" },
-  { value: "done", label: "✅ Done", style: "bg-green-100 text-green-800 border-green-200" },
-  { value: "deferred", label: "⏸ Deferred", style: "bg-muted text-muted-foreground border-border" },
+  { value: "planned", label: "Planned" },
+  { value: "in_progress", label: "Currently In Progress" },
+  { value: "done", label: "Completed Features" },
 ];
 
+export const IDEA_STATUS = { value: "idea", label: "Ideas" };
+export const ARCHIVED_STATUS = { value: "archived", label: "Archived" };
+
 export const SEMESTERS = [
-  "Spring 2026", "Summer 2026", "Fall 2026",
-  "Spring 2027", "Summer 2027", "Fall 2027",
-  "Spring 2028", "Summer 2028", "Fall 2028",
-  "Spring 2029", "Summer 2029", "Fall 2029",
+  "Spring 2026", "Summer 2026", "Fall 2026", "Winter 2027",
+  "Spring 2027", "Summer 2027", "Fall 2027", "Winter 2028",
+  "Spring 2028", "Summer 2028", "Fall 2028", "Winter 2029",
+  "Spring 2029", "Summer 2029", "Fall 2029", "Winter 2030",
   "Spring 2030", "Summer 2030", "Fall 2030",
 ];
 

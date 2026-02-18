@@ -20,58 +20,89 @@ const PLAY_DOMAINS = [
   { key: "writing", label: "Writing", tagline: "No destination", route: "/writing" },
 ];
 
-const NeonLabel = ({ text, color }: { text: string; color: string }) => (
-  <div className="relative inline-block mb-3 neon-breathe">
-    <span
-      className="text-xs font-bold uppercase tracking-[0.3em] relative z-10"
-      style={{
-        color,
-        textShadow: `0 0 7px ${color}, 0 0 20px ${color}, 0 0 40px ${color}`,
-      }}
-    >
-      {text}
-    </span>
-    <div
-      className="absolute -inset-3 rounded-lg -z-0 neon-swirl"
-      style={{
-        background: `radial-gradient(ellipse at center, ${color}20 0%, transparent 70%)`,
-      }}
-    />
-  </div>
-);
-
-const DomainButton = ({ domain, hovered, setHovered, navigate }: any) => (
+const DomainLink = ({ domain, navigate }: { domain: typeof WORK_DOMAINS[0]; navigate: any }) => (
   <button
     onClick={() => navigate(domain.route)}
-    onMouseEnter={() => setHovered(domain.key)}
-    onMouseLeave={() => setHovered(null)}
-    className="relative w-full text-left p-4 transition-all duration-300 cursor-pointer"
+    className="w-full text-left px-4 py-2.5 transition-all duration-200 cursor-pointer rounded-md group"
     style={{
-      background: hovered === domain.key ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
-      border: `1px solid ${hovered === domain.key ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.08)"}`,
+      background: "rgba(255,255,255,0.04)",
+      border: "1px solid rgba(255,255,255,0.06)",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+      e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+      e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+    }}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-sm font-semibold tracking-wide text-white/85 group-hover:text-white transition-colors">
+          {domain.label}
+        </h3>
+        <p className="text-xs mt-0.5 tracking-wider text-white/35">{domain.tagline}</p>
+      </div>
+      <span className="text-base text-white/20 group-hover:text-white/70 group-hover:translate-x-1 transition-all duration-200">→</span>
+    </div>
+  </button>
+);
+
+const FlickerButton = ({
+  label,
+  subtitle,
+  expanded,
+  onClick,
+}: {
+  label: string;
+  subtitle: string;
+  expanded: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left p-5 transition-all duration-300 cursor-pointer candle-flicker"
+    style={{
+      background: expanded
+        ? "linear-gradient(135deg, rgba(218,165,32,0.18) 0%, rgba(184,134,11,0.08) 100%)"
+        : "linear-gradient(135deg, rgba(218,165,32,0.10) 0%, rgba(184,134,11,0.04) 100%)",
+      border: `1px solid rgba(218,165,32,${expanded ? "0.55" : "0.35"})`,
       borderRadius: "6px",
-      boxShadow: hovered === domain.key ? "0 4px 20px rgba(0,0,0,0.3)" : "none",
       backdropFilter: "blur(12px)",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.borderColor = "rgba(218,165,32,0.65)";
+      e.currentTarget.style.background = "linear-gradient(135deg, rgba(218,165,32,0.2) 0%, rgba(184,134,11,0.1) 100%)";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.borderColor = `rgba(218,165,32,${expanded ? "0.55" : "0.35"})`;
+      e.currentTarget.style.background = expanded
+        ? "linear-gradient(135deg, rgba(218,165,32,0.18) 0%, rgba(184,134,11,0.08) 100%)"
+        : "linear-gradient(135deg, rgba(218,165,32,0.10) 0%, rgba(184,134,11,0.04) 100%)";
     }}
   >
     <div className="flex items-center justify-between">
       <div>
         <h3
-          className="text-sm font-semibold tracking-wide"
-          style={{ color: hovered === domain.key ? "#ffffff" : "rgba(255,255,255,0.85)" }}
+          className="text-base font-bold tracking-[0.15em] uppercase"
+          style={{
+            color: "rgba(218,165,32,0.95)",
+            textShadow: "0 0 12px rgba(218,165,32,0.4), 0 0 30px rgba(218,165,32,0.15)",
+          }}
         >
-          {domain.label}
+          {label}
         </h3>
-        <p className="text-xs mt-0.5 tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>
-          {domain.tagline}
+        <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(218,165,32,0.45)" }}>
+          {subtitle}
         </p>
       </div>
       <span
-        className="text-lg transition-all duration-300"
+        className="text-xl transition-transform duration-300"
         style={{
-          transform: hovered === domain.key ? "translateX(4px)" : "none",
-          opacity: hovered === domain.key ? 1 : 0.2,
-          color: "rgba(255,255,255,0.8)",
+          color: "rgba(218,165,32,0.5)",
+          textShadow: "0 0 8px rgba(218,165,32,0.3)",
+          transform: expanded ? "rotate(90deg)" : "none",
         }}
       >
         →
@@ -84,7 +115,8 @@ export default function DomainSelect() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [workOpen, setWorkOpen] = useState(false);
+  const [playOpen, setPlayOpen] = useState(false);
   const [showMusic, setShowMusic] = useState(false);
   const [newLink, setNewLink] = useState({ title: "", url: "" });
 
@@ -125,78 +157,47 @@ export default function DomainSelect() {
         </Button>
       </div>
 
-      <div className="flex flex-col items-center gap-6 z-10 w-full max-w-xl px-4">
+      <div className="flex flex-col items-center gap-4 z-10 w-full max-w-xl px-4">
         {/* Focus Sprint */}
-        <button
+        <FlickerButton
+          label="Focus Sprint"
+          subtitle="Start a timed work session across any domain"
+          expanded={false}
           onClick={() => navigate("/focus")}
-          className="w-full text-left p-5 mb-1 transition-all duration-300 cursor-pointer animate-pulse-subtle"
-          style={{
-            background: "linear-gradient(135deg, rgba(218,165,32,0.12) 0%, rgba(184,134,11,0.06) 100%)",
-            border: "1px solid rgba(218,165,32,0.4)",
-            borderRadius: "6px",
-            boxShadow: "0 0 20px rgba(218,165,32,0.1), inset 0 0 30px rgba(218,165,32,0.03)",
-            backdropFilter: "blur(12px)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = "0 0 35px rgba(218,165,32,0.25), inset 0 0 30px rgba(218,165,32,0.06)";
-            e.currentTarget.style.borderColor = "rgba(218,165,32,0.65)";
-            e.currentTarget.style.background = "linear-gradient(135deg, rgba(218,165,32,0.2) 0%, rgba(184,134,11,0.1) 100%)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = "0 0 20px rgba(218,165,32,0.1), inset 0 0 30px rgba(218,165,32,0.03)";
-            e.currentTarget.style.borderColor = "rgba(218,165,32,0.4)";
-            e.currentTarget.style.background = "linear-gradient(135deg, rgba(218,165,32,0.12) 0%, rgba(184,134,11,0.06) 100%)";
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold tracking-wide" style={{ color: "rgba(218,165,32,0.95)", textShadow: "0 0 12px rgba(218,165,32,0.4)" }}>
-                ⚡ Focus Sprint
-              </h3>
-              <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(218,165,32,0.5)" }}>
-                Start a timed work session across any domain
-              </p>
-            </div>
-            <span className="text-xl" style={{ color: "rgba(218,165,32,0.6)", textShadow: "0 0 8px rgba(218,165,32,0.3)" }}>→</span>
-          </div>
-        </button>
+        />
 
-        {/* Work Section */}
-        <div className="w-full">
-          <div
-            className="rounded-xl p-4 pt-3"
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <NeonLabel text="Work" color="rgba(100,180,255,0.9)" />
-            <div className="grid gap-2">
+        {/* Work */}
+        <div className="w-full space-y-2">
+          <FlickerButton
+            label="Work"
+            subtitle="Work less"
+            expanded={workOpen}
+            onClick={() => setWorkOpen(!workOpen)}
+          />
+          {workOpen && (
+            <div className="space-y-1.5 pl-2 pr-1 animate-fade-in">
               {WORK_DOMAINS.map((d) => (
-                <DomainButton key={d.key} domain={d} hovered={hovered} setHovered={setHovered} navigate={navigate} />
+                <DomainLink key={d.key} domain={d} navigate={navigate} />
               ))}
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Play Section */}
-        <div className="w-full">
-          <div
-            className="rounded-xl p-4 pt-3"
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <NeonLabel text="Play" color="rgba(255,130,200,0.9)" />
-            <div className="grid gap-2">
+        {/* Play */}
+        <div className="w-full space-y-2">
+          <FlickerButton
+            label="Play"
+            subtitle="Play more"
+            expanded={playOpen}
+            onClick={() => setPlayOpen(!playOpen)}
+          />
+          {playOpen && (
+            <div className="space-y-1.5 pl-2 pr-1 animate-fade-in">
               {PLAY_DOMAINS.map((d) => (
-                <DomainButton key={d.key} domain={d} hovered={hovered} setHovered={setHovered} navigate={navigate} />
+                <DomainLink key={d.key} domain={d} navigate={navigate} />
               ))}
             </div>
-          </div>
+          )}
         </div>
 
         <p className="text-xs text-center" style={{ color: "rgba(255,255,255,0.15)" }}>
@@ -236,25 +237,35 @@ export default function DomainSelect() {
       </div>
 
       <style>{`
-        @keyframes pulseSlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(218,165,32,0.1), inset 0 0 30px rgba(218,165,32,0.03); }
-          50% { box-shadow: 0 0 28px rgba(218,165,32,0.18), inset 0 0 30px rgba(218,165,32,0.05); }
+        @keyframes candleFlicker {
+          0%, 100% {
+            box-shadow: 0 0 15px rgba(218,165,32,0.08), inset 0 0 20px rgba(218,165,32,0.02);
+          }
+          10% {
+            box-shadow: 0 0 22px rgba(218,165,32,0.18), inset 0 0 25px rgba(218,165,32,0.04);
+          }
+          20% {
+            box-shadow: 0 0 12px rgba(218,165,32,0.06), inset 0 0 18px rgba(218,165,32,0.01);
+          }
+          35% {
+            box-shadow: 0 0 28px rgba(218,165,32,0.22), inset 0 0 30px rgba(218,165,32,0.05);
+          }
+          45% {
+            box-shadow: 0 0 14px rgba(218,165,32,0.09), inset 0 0 20px rgba(218,165,32,0.02);
+          }
+          60% {
+            box-shadow: 0 0 25px rgba(218,165,32,0.2), inset 0 0 28px rgba(218,165,32,0.04);
+          }
+          75% {
+            box-shadow: 0 0 10px rgba(218,165,32,0.05), inset 0 0 15px rgba(218,165,32,0.01);
+          }
+          85% {
+            box-shadow: 0 0 20px rgba(218,165,32,0.15), inset 0 0 22px rgba(218,165,32,0.03);
+          }
         }
-        .animate-pulse-subtle { animation: pulseSlow 3s ease-in-out infinite; }
-
-        @keyframes neonBreathe {
-          0%, 100% { transform: scale(1); filter: brightness(1); }
-          50% { transform: scale(1.04); filter: brightness(1.3); }
+        .candle-flicker {
+          animation: candleFlicker 2.5s ease-in-out infinite;
         }
-        .neon-breathe { animation: neonBreathe 4s ease-in-out infinite; }
-
-        @keyframes neonSwirl {
-          0% { transform: scale(1) rotate(0deg); opacity: 0.6; }
-          33% { transform: scale(1.15) rotate(2deg); opacity: 0.9; }
-          66% { transform: scale(0.95) rotate(-1deg); opacity: 0.5; }
-          100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
-        }
-        .neon-swirl { animation: neonSwirl 6s ease-in-out infinite; }
       `}</style>
     </div>
   );
