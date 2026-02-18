@@ -2,14 +2,32 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
-import leeHeadshot from "@/assets/lee-headshot-styled.png";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
+import { GlobeHeadshot } from "@/components/GlobeHeadshot";
+import { Copy, Share2, Check } from "lucide-react";
 
 export default function Landing() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareUrl = "https://surviveaccounting.lovable.app";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    toast.success("Link copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      await navigator.share({ title: "Solopreneur Journey", url: shareUrl });
+    } else {
+      handleCopy();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,49 +63,32 @@ export default function Landing() {
 
       <div className="relative z-10 w-full max-w-md text-center">
         {subscribed ? (
-          <div className="space-y-4 animate-fade-in">
-            <p className="text-3xl">🎉</p>
-            <h2 className="text-xl font-bold text-white">You're in.</h2>
-            <p className="text-sm text-white/60">Keep an eye on your inbox — the first letter is on its way.</p>
-          </div>
+            <div className="space-y-5 animate-fade-in">
+              <h2 className="text-xl font-bold text-white">Thanks for following my journey as a Solopreneur.</h2>
+              <p className="text-sm text-white/60">Keep an eye on your inbox — the first letter is coming soon.</p>
+              <div className="flex gap-3 justify-center pt-2">
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white transition-colors"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-black transition-all hover:opacity-90"
+                  style={{ background: "rgba(218,165,32,0.9)" }}
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+              </div>
+            </div>
         ) : (
           <>
             <div className="mb-6 flex justify-center">
-              <div
-                className="relative w-40 h-40 sm:w-48 sm:h-48"
-                style={{
-                  animation: "globe-spin 30s linear infinite",
-                }}
-              >
-                {/* Globe ring */}
-                <div
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    border: "1.5px solid rgba(218,165,32,0.35)",
-                    boxShadow: "0 0 30px rgba(218,165,32,0.15), inset 0 0 20px rgba(218,165,32,0.08)",
-                  }}
-                />
-                {/* Tilted orbit ring */}
-                <div
-                  className="absolute inset-[-4px] rounded-full"
-                  style={{
-                    border: "1px solid rgba(218,165,32,0.2)",
-                    transform: "rotateX(60deg) rotateZ(23.5deg)",
-                  }}
-                />
-                {/* Headshot */}
-                <img
-                  src={leeHeadshot}
-                  alt="Lee Ingram"
-                  className="absolute inset-0 w-full h-full object-cover object-top rounded-full"
-                  style={{
-                    filter: "blur(0.4px) saturate(1.1) drop-shadow(0 0 24px rgba(218,165,32,0.4))",
-                    WebkitMaskImage: "radial-gradient(circle, black 35%, transparent 68%)",
-                    maskImage: "radial-gradient(circle, black 35%, transparent 68%)",
-                    padding: "8px",
-                  }}
-                />
-              </div>
+              <GlobeHeadshot />
             </div>
 
             <h1
