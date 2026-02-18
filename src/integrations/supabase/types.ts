@@ -408,6 +408,7 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          domain: string
           id: string
           priority: string
           status: string
@@ -420,6 +421,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          domain?: string
           id?: string
           priority?: string
           status?: string
@@ -432,6 +434,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          domain?: string
           id?: string
           priority?: string
           status?: string

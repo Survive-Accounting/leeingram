@@ -15,9 +15,10 @@ interface RoadmapItemRowProps {
   item: any;
   onUpdate: (id: string, updates: Record<string, any>) => void;
   onDelete: (id: string) => void;
+  isDragOverlay?: boolean;
 }
 
-export function RoadmapItemRow({ item, onUpdate, onDelete }: RoadmapItemRowProps) {
+export function RoadmapItemRow({ item, onUpdate, onDelete, isDragOverlay }: RoadmapItemRowProps) {
   const [descOpen, setDescOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
@@ -30,12 +31,12 @@ export function RoadmapItemRow({ item, onUpdate, onDelete }: RoadmapItemRowProps
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: item.id, disabled: isDragOverlay });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   const priorityStyle = PRIORITIES.find((p) => p.value === item.priority)?.style || "";
