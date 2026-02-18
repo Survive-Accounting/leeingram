@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Home } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
+import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 
 interface DomainLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export function DomainLayout({ children, title, tagline, actions }: DomainLayout
       />
       <div className="fixed inset-0 bg-black/60" />
       <div className="fixed inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
+      <NightSkyOverlay />
 
       {/* Nav bar */}
       <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}>

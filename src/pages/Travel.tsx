@@ -131,8 +131,17 @@ export default function Travel() {
   const upcoming = trips?.filter((t: any) => !t.end_date || t.end_date >= now) || [];
   const past = trips?.filter((t: any) => t.end_date && t.end_date < now) || [];
 
-  const TripCard = ({ trip }: { trip: any }) => (
-    <div className="rounded-lg p-5" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}>
+  const TripCard = ({ trip, upcoming = false }: { trip: any; upcoming?: boolean }) => (
+    <div
+      className={`rounded-lg p-5 transition-all duration-300 ${upcoming ? "shadow-[0_0_20px_rgba(140,180,255,0.12)] border-[rgba(140,180,255,0.25)]" : ""}`}
+      style={{
+        background: upcoming ? "rgba(140,180,255,0.08)" : "rgba(255,255,255,0.06)",
+        border: upcoming ? undefined : "1px solid rgba(255,255,255,0.1)",
+        borderWidth: upcoming ? "1px" : undefined,
+        borderStyle: upcoming ? "solid" : undefined,
+        backdropFilter: "blur(12px)",
+      }}
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
           <MapPin className="h-4 w-4 mt-1 text-white/40 shrink-0" />
@@ -213,19 +222,19 @@ export default function Travel() {
           </div>
         ) : (
           <>
-            {upcoming.length > 0 && (
-              <Collapsible open={upcomingOpen} onOpenChange={setUpcomingOpen}>
-                <SectionHeader label="Upcoming & Ongoing" count={upcoming.length} isOpen={upcomingOpen} onToggle={() => setUpcomingOpen(o => !o)} />
-                <CollapsibleContent>
-                  <div className="grid gap-3">{upcoming.map((t: any) => <TripCard key={t.id} trip={t} />)}</div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
             {past.length > 0 && (
               <Collapsible open={pastOpen} onOpenChange={setPastOpen}>
                 <SectionHeader label="Past Trips" count={past.length} isOpen={pastOpen} onToggle={() => setPastOpen(o => !o)} />
                 <CollapsibleContent>
                   <div className="grid gap-3">{past.map((t: any) => <TripCard key={t.id} trip={t} />)}</div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+            {upcoming.length > 0 && (
+              <Collapsible open={upcomingOpen} onOpenChange={setUpcomingOpen}>
+                <SectionHeader label="Upcoming Trips" count={upcoming.length} isOpen={upcomingOpen} onToggle={() => setUpcomingOpen(o => !o)} />
+                <CollapsibleContent>
+                  <div className="grid gap-3">{upcoming.map((t: any) => <TripCard key={t.id} trip={t} upcoming />)}</div>
                 </CollapsibleContent>
               </Collapsible>
             )}
