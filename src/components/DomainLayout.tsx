@@ -8,9 +8,11 @@ interface DomainLayoutProps {
   title: string;
   tagline?: string;
   actions?: React.ReactNode;
+  backgroundImage?: string;
 }
 
-export function DomainLayout({ children, title, tagline, actions }: DomainLayoutProps) {
+export function DomainLayout({ children, title, tagline, actions, backgroundImage }: DomainLayoutProps) {
+  const bg = backgroundImage || aorakiBg;
   const navigate = useNavigate();
 
   return (
@@ -18,7 +20,7 @@ export function DomainLayout({ children, title, tagline, actions }: DomainLayout
       {/* Mountain background */}
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${aorakiBg})` }}
+        style={{ backgroundImage: `url(${bg})` }}
       />
       <div className="fixed inset-0 bg-black/60" />
       <div className="fixed inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
