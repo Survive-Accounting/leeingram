@@ -3,6 +3,7 @@ import { BookOpen, LogOut, Home, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
+import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -13,7 +14,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
       <div className="fixed inset-0 bg-black/60" />
       <div className="fixed inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
-
+      <NightSkyOverlay />
       <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
           <Link to="/domains" className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs uppercase tracking-widest">
