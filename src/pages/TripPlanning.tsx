@@ -451,7 +451,11 @@ export default function TripPlanning() {
   const showAllBadgesFlag = filterCategory === "all";
 
   // Column data — each task appears in exactly ONE column
-  const todoTasks = filtered.filter(t => t.assigned_to === "both");
+  // In "review" mode (To Assign hidden), unassigned tasks roll into To Do's
+  // In "all" mode, they split into separate columns
+  const todoTasks = viewMode === "review"
+    ? filtered.filter(t => t.assigned_to === "both" || t.assigned_to === "unassigned")
+    : filtered.filter(t => t.assigned_to === "both");
   const unassignedTasks = filtered.filter(t => t.assigned_to === "unassigned");
   const leeTasks = filtered.filter(t => t.assigned_to === "lee");
   const mkTasks = filtered.filter(t => t.assigned_to === "mk");
