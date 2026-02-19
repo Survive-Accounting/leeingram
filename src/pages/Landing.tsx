@@ -117,17 +117,19 @@ export default function Landing() {
                 border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              <p className="text-base sm:text-lg text-white font-bold leading-snug mb-1">
-                For over a decade, I've been building a tutoring platform...
+              <p className="text-base sm:text-lg text-white font-bold leading-snug mb-3">
+                For over a decade, I've been building a tutoring platform…
+              </p>
+              <div className="text-sm text-white/85 leading-relaxed space-y-0.5">
+                <p>It collapsed during COVID.</p>
+                <p>I rebuilt it from the ground up—multiple times.</p>
+                <p>Finally, it worked.</p>
+              </div>
+              <p className="text-sm text-white/85 leading-relaxed mt-3">
+                Now, it supports a life devoted to teaching, exploring the world, and creating freely.
               </p>
               <p className="text-sm text-white/85 leading-relaxed">
-                It collapsed during COVID. Then, I rebuilt it from the ground up — many times — until it finally worked.
-              </p>
-              <p className="text-sm text-white/85 leading-relaxed">
-                Now, it supports a life devoted to teaching, exploring the world, and creative freedom.
-              </p>
-              <p className="text-sm text-white/85 leading-relaxed">
-                Subscribe to join the journey.
+                Join the journey.
               </p>
             </div>
 
