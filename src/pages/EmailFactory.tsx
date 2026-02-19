@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   Plus, Mail, Send, Sparkles, FileText, ArrowRight, Trash2, Copy,
   CheckCircle2, ExternalLink, Calendar, Link2, ChevronLeft, ChevronDown, Code,
-  FolderPlus, Reply,
+  FolderPlus, Reply, MailPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { addDays, startOfWeek, format, parse } from "date-fns";
@@ -84,6 +84,7 @@ export default function EmailFactory() {
   const [editMode, setEditMode] = useState<"text" | "html">("text");
   const [showFinalizedDialog, setShowFinalizedDialog] = useState(false);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
+  const [followUpParentTitle, setFollowUpParentTitle] = useState("");
 
   const [newEmail, setNewEmail] = useState({
     title: "", email_type: "General", course_tags: [] as string[],
@@ -145,7 +146,6 @@ export default function EmailFactory() {
         standalone.push(e);
       }
     });
-    // Sort each chain by series_order then created_at
     Object.values(series).forEach(arr => arr.sort((a, b) => (a.series_order ?? 999) - (b.series_order ?? 999)));
     return { series, standalone };
   }, [emails]);
@@ -162,7 +162,6 @@ export default function EmailFactory() {
   const createMutation = useMutation({
     mutationFn: async () => {
       const sendDate = calcSendDate(semesterStart, newEmail.send_week, newEmail.send_day);
-      // If creating within a chain, compute next series_order
       let seriesOrder: number | null = null;
       if (newEmail.series_name) {
         const chainEmails = emails?.filter((e: any) => e.series_name === newEmail.series_name) || [];
@@ -185,9 +184,9 @@ export default function EmailFactory() {
       setEditingId(data.id);
       setActivePanel("journal");
       setJournalDraft("");
+      setFollowUpParentTitle("");
       setNewEmail({ title: "", email_type: "General", course_tags: [], semester: "Spring 2026", series_name: "", send_day: "", send_week: undefined });
       queryClient.invalidateQueries({ queryKey: ["emails"] });
-      // Auto-expand the chain
       if (data.series_name) {
         setExpandedSeries(prev => new Set([...prev, data.series_name]));
       }
@@ -286,14 +285,30 @@ export default function EmailFactory() {
     else setActivePanel("plan");
   };
 
-  const addFollowUp = (chainName: string) => {
-    const chainEmails = emails?.filter((e: any) => e.series_name === chainName) || [];
-    const nextOrder = chainEmails.length + 1;
+  /** Add a follow-up (reminder) for a specific email within a chain */
+  const addFollowUpToEmail = (parentEmail: any) => {
+    setFollowUpParentTitle(parentEmail.title);
     setNewEmail({
-      title: "", email_type: chainEmails[0]?.email_type || "General",
-      course_tags: chainEmails[0]?.course_tags || [],
-      semester: chainEmails[0]?.semester || "Spring 2026",
-      series_name: chainName, send_day: "", send_week: undefined,
+      title: `Follow-up: ${parentEmail.title}`,
+      email_type: parentEmail.email_type || "General",
+      course_tags: parentEmail.course_tags || [],
+      semester: parentEmail.semester || "Spring 2026",
+      series_name: parentEmail.series_name || "",
+      send_day: "", send_week: undefined,
+    });
+    setShowCreate(true);
+  };
+
+  /** Add a new email to a chain (not a follow-up to a specific email) */
+  const addEmailToChain = (chainName: string) => {
+    setFollowUpParentTitle("");
+    setNewEmail({
+      title: "",
+      email_type: "General",
+      course_tags: [],
+      semester: "Spring 2026",
+      series_name: chainName,
+      send_day: "", send_week: undefined,
     });
     setShowCreate(true);
   };
@@ -303,6 +318,7 @@ export default function EmailFactory() {
     setNewEmail(prev => ({ ...prev, series_name: newChainName.trim() }));
     setNewChainName("");
     setShowChainCreate(false);
+    setFollowUpParentTitle("");
     setShowCreate(true);
   };
 
@@ -323,12 +339,12 @@ export default function EmailFactory() {
     <AppLayout>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/marketing" className="text-muted-foreground hover:text-foreground">
+          <Link to="/marketing" className="text-foreground/60 hover:text-foreground">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Email Factory</h1>
-            <p className="text-sm text-muted-foreground">Give more than you receive</p>
+            <p className="text-sm text-foreground/60">Give more than you receive</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -340,7 +356,7 @@ export default function EmailFactory() {
           <Button variant="outline" size="sm" onClick={() => setShowChainCreate(true)}>
             <FolderPlus className="mr-1 h-4 w-4" /> New Chain
           </Button>
-          <Button onClick={() => { setNewEmail({ title: "", email_type: "General", course_tags: [], semester: "Spring 2026", series_name: "", send_day: "", send_week: undefined }); setShowCreate(true); }} size="sm">
+          <Button onClick={() => { setFollowUpParentTitle(""); setNewEmail({ title: "", email_type: "General", course_tags: [], semester: "Spring 2026", series_name: "", send_day: "", send_week: undefined }); setShowCreate(true); }} size="sm">
             <Plus className="mr-1 h-4 w-4" /> New Email
           </Button>
         </div>
@@ -348,11 +364,11 @@ export default function EmailFactory() {
 
       {/* Semester Dates */}
       <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
-        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Calendar className="h-4 w-4 text-foreground/50 shrink-0" />
         <div className="flex items-center gap-2 flex-wrap">
-          <Label className="text-xs text-muted-foreground whitespace-nowrap">Semester Start</Label>
+          <Label className="text-xs text-foreground/70 whitespace-nowrap">Semester Start</Label>
           <Input type="date" className="h-7 w-36 text-xs" value={semesterStart} onChange={(e) => setSemesterStart(e.target.value)} />
-          <Label className="text-xs text-muted-foreground whitespace-nowrap">End</Label>
+          <Label className="text-xs text-foreground/70 whitespace-nowrap">End</Label>
           <Input type="date" className="h-7 w-36 text-xs" value={semesterEnd} onChange={(e) => setSemesterEnd(e.target.value)} />
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={saveSemesterDates}>Save</Button>
         </div>
@@ -365,7 +381,7 @@ export default function EmailFactory() {
           {Object.entries(emailsBySeries.series).map(([seriesName, seriesEmails]) => (
             <Collapsible key={seriesName} open={expandedSeries.has(seriesName)} onOpenChange={() => toggleSeries(seriesName)}>
               <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 rounded-lg bg-muted/50 hover:bg-accent/50 transition-colors cursor-pointer text-left">
-                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform ${expandedSeries.has(seriesName) ? "" : "-rotate-90"}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-foreground/50 shrink-0 transition-transform ${expandedSeries.has(seriesName) ? "" : "-rotate-90"}`} />
                 <Link2 className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-sm font-medium text-foreground flex-1 truncate">{seriesName}</span>
                 <Badge variant="secondary" className="text-[10px]">{seriesEmails.length}</Badge>
@@ -373,33 +389,43 @@ export default function EmailFactory() {
               <CollapsibleContent>
                 <div className="space-y-1 pl-3 pt-1">
                   {seriesEmails.map((email: any, idx: number) => (
-                    <Card
-                      key={email.id}
-                      className={`cursor-pointer transition-colors hover:bg-accent/50 ${editingId === email.id ? "ring-2 ring-primary" : ""}`}
-                      onClick={() => openEmail(email)}
-                    >
-                      <CardContent className="p-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0 flex items-center gap-1.5">
-                            <span className="text-[10px] text-muted-foreground font-mono shrink-0">#{idx + 1}</span>
-                            <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
+                    <div key={email.id} className="space-y-0.5">
+                      <Card
+                        className={`cursor-pointer transition-colors hover:bg-accent/50 ${editingId === email.id ? "ring-2 ring-primary" : ""}`}
+                        onClick={() => openEmail(email)}
+                      >
+                        <CardContent className="p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex items-center gap-1.5">
+                              <span className="text-[10px] text-foreground/50 font-mono shrink-0">#{idx + 1}</span>
+                              <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Badge variant="outline" className={`text-[10px] ${STATUS_STYLES[email.status as EmailStatus] || ""}`}>
+                                {STATUS_LABELS[email.status as EmailStatus]}
+                              </Badge>
+                            </div>
                           </div>
-                          <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_STYLES[email.status as EmailStatus] || ""}`}>
-                            {STATUS_LABELS[email.status as EmailStatus]}
-                          </Badge>
-                        </div>
-                        {email.send_week && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Wk {email.send_week}{email.send_day ? ` · ${email.send_day}` : ""}</p>
-                        )}
-                      </CardContent>
-                    </Card>
+                          {email.send_week && (
+                            <p className="text-[10px] text-foreground/50 mt-0.5 pl-5">Wk {email.send_week}{email.send_day ? ` · ${email.send_day}` : ""}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                      {/* Per-email follow-up button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addFollowUpToEmail(email); }}
+                        className="flex items-center gap-1 ml-5 py-0.5 px-2 text-[10px] text-foreground/40 hover:text-foreground/70 hover:bg-accent/20 rounded transition-colors"
+                      >
+                        <Reply className="h-2.5 w-2.5" /> Add Follow-up
+                      </button>
+                    </div>
                   ))}
-                  {/* Add Follow-up button within chain */}
+                  {/* Add new email to chain */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); addFollowUp(seriesName); }}
-                    className="flex items-center gap-1.5 w-full py-1.5 px-2.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/30 rounded-md transition-colors"
+                    onClick={(e) => { e.stopPropagation(); addEmailToChain(seriesName); }}
+                    className="flex items-center gap-1.5 w-full py-1.5 px-2.5 text-[11px] text-foreground/50 hover:text-foreground hover:bg-accent/30 rounded-md transition-colors mt-1"
                   >
-                    <Reply className="h-3 w-3" /> Add Follow-up
+                    <MailPlus className="h-3 w-3" /> Add Email to Chain
                   </button>
                 </div>
               </CollapsibleContent>
@@ -407,7 +433,7 @@ export default function EmailFactory() {
           ))}
 
           {emailsBySeries.standalone.length > 0 && Object.keys(emailsBySeries.series).length > 0 && (
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 px-3 pt-2">Standalone</div>
+            <div className="text-[10px] uppercase tracking-widest text-foreground/40 px-3 pt-2">Standalone</div>
           )}
           {emailsBySeries.standalone.map((email: any) => (
             <Card
@@ -419,7 +445,7 @@ export default function EmailFactory() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
-                    <p className="text-[10px] text-muted-foreground">{email.email_type} · {email.semester}</p>
+                    <p className="text-[10px] text-foreground/50">{email.email_type}</p>
                   </div>
                   <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_STYLES[email.status as EmailStatus] || ""}`}>
                     {STATUS_LABELS[email.status as EmailStatus]}
@@ -430,7 +456,7 @@ export default function EmailFactory() {
           ))}
 
           {!isLoading && (!emails || emails.length === 0) && (
-            <p className="text-sm text-muted-foreground py-8 text-center">No emails yet. Create your first one!</p>
+            <p className="text-sm text-foreground/50 py-8 text-center">No emails yet. Create your first one!</p>
           )}
         </div>
 
@@ -439,8 +465,8 @@ export default function EmailFactory() {
           {!activeEmail ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <Mail className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                <p className="text-muted-foreground">Select an email or create a new one</p>
+                <Mail className="h-12 w-12 text-foreground/30 mb-4" />
+                <p className="text-foreground/60">Select an email or create a new one</p>
               </CardContent>
             </Card>
           ) : (
@@ -449,8 +475,8 @@ export default function EmailFactory() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-foreground">{activeEmail.title || "Untitled"}</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {activeEmail.email_type} · {activeEmail.semester}
+                  <p className="text-xs text-foreground/60">
+                    {activeEmail.email_type}
                     {activeEmail.series_name && ` · 📧 ${activeEmail.series_name}`}
                     {computedSendDate && ` · 📅 ${computedSendDate}`}
                   </p>
@@ -491,7 +517,7 @@ export default function EmailFactory() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs text-foreground">Semester</Label>
+                          <Label className="text-xs text-foreground">Semester <span className="text-foreground/40">(optional)</span></Label>
                           <Select value={activeEmail.semester} onValueChange={(v) => updateMutation.mutate({ semester: v })}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>{semesters.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -500,7 +526,7 @@ export default function EmailFactory() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs text-foreground">Week #</Label>
+                          <Label className="text-xs text-foreground">Week # <span className="text-foreground/40">(optional)</span></Label>
                           <Select
                             value={activeEmail.send_week?.toString() || ""}
                             onValueChange={(v) => {
@@ -514,7 +540,7 @@ export default function EmailFactory() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs text-foreground">Send Day</Label>
+                          <Label className="text-xs text-foreground">Send Day <span className="text-foreground/40">(optional)</span></Label>
                           <Select
                             value={activeEmail.send_day || ""}
                             onValueChange={(v) => {
@@ -570,10 +596,10 @@ export default function EmailFactory() {
                 <TabsContent value="journal" className="space-y-3 mt-3">
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
+                      <CardTitle className="text-sm flex items-center gap-2 text-foreground">
                         <FileText className="h-4 w-4" /> Journal Your Email
                       </CardTitle>
-                      <CardDescription className="text-xs">Write freely. 100% you — raw, authentic, human.</CardDescription>
+                      <CardDescription className="text-xs text-foreground/60">Write freely. 100% you — raw, authentic, human.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <Textarea
@@ -601,7 +627,7 @@ export default function EmailFactory() {
                   {activeEmail.ai_refined_body ? (
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
+                        <CardTitle className="text-sm flex items-center gap-2 text-foreground">
                           <Sparkles className="h-4 w-4" /> AI-Edited Draft
                           <Badge variant="secondary" className="text-xs">Pass {activeEmail.refinement_count}/{maxRefinements}</Badge>
                         </CardTitle>
@@ -631,8 +657,8 @@ export default function EmailFactory() {
                   ) : (
                     <Card>
                       <CardContent className="py-12 text-center">
-                        <Sparkles className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">No AI draft yet. Journal your email first, then send to AI Editor.</p>
+                        <Sparkles className="h-8 w-8 text-foreground/30 mx-auto mb-3" />
+                        <p className="text-sm text-foreground/60">No AI draft yet. Journal your email first, then send to AI Editor.</p>
                       </CardContent>
                     </Card>
                   )}
@@ -641,7 +667,7 @@ export default function EmailFactory() {
                   {activeEmail.ai_strategy_notes && (
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2"><Send className="h-4 w-4" /> Strategy Notes</CardTitle>
+                        <CardTitle className="text-sm flex items-center gap-2 text-foreground"><Send className="h-4 w-4" /> Strategy Notes</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto text-foreground">{activeEmail.ai_strategy_notes}</div>
@@ -656,7 +682,7 @@ export default function EmailFactory() {
                     <Card className="border-border bg-accent/30">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm flex items-center gap-2">
+                          <CardTitle className="text-sm flex items-center gap-2 text-foreground">
                             <CheckCircle2 className="h-4 w-4" /> Final Draft
                           </CardTitle>
                           <div className="flex gap-1.5">
@@ -664,7 +690,7 @@ export default function EmailFactory() {
                               <div className="flex items-center rounded-md border border-border overflow-hidden">
                                 <button
                                   onClick={() => setEditMode("text")}
-                                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${editMode === "text" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${editMode === "text" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/60 hover:text-foreground"}`}
                                 >
                                   Text
                                 </button>
@@ -676,7 +702,7 @@ export default function EmailFactory() {
                                     }
                                     setEditMode("html");
                                   }}
-                                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${editMode === "html" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${editMode === "html" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/60 hover:text-foreground"}`}
                                 >
                                   HTML
                                 </button>
@@ -699,7 +725,7 @@ export default function EmailFactory() {
                             <Textarea value={finalDraftEdit} onChange={(e) => setFinalDraftEdit(e.target.value)} rows={14} className={`text-sm ${editMode === "html" ? "font-mono text-xs" : ""}`} />
                             {editMode === "html" && (
                               <div className="space-y-1.5">
-                                <Label className="text-xs text-muted-foreground">Preview</Label>
+                                <Label className="text-xs text-foreground/60">Preview</Label>
                                 <div className="rounded-md border bg-white p-4 text-sm max-h-[200px] overflow-y-auto text-black" dangerouslySetInnerHTML={{ __html: finalDraftEdit }} />
                               </div>
                             )}
@@ -709,7 +735,6 @@ export default function EmailFactory() {
                             </div>
                           </>
                         ) : (
-                          /* Preview mode: render HTML if content looks like HTML, otherwise plain text */
                           looksLikeHtml(activeEmail.final_draft || "")
                             ? <div className="rounded-md border bg-white p-4 text-sm max-h-[400px] overflow-y-auto text-black" dangerouslySetInnerHTML={{ __html: activeEmail.final_draft }} />
                             : <div className="rounded-md border bg-card p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto text-foreground">{activeEmail.final_draft}</div>
@@ -737,11 +762,14 @@ export default function EmailFactory() {
                           </div>
                         )}
 
-                        {/* Add Follow-up button */}
+                        {/* Add Follow-up to this specific email */}
                         {!isEditingFinal && activeEmail.series_name && (
-                          <div className="pt-2 border-t border-border">
-                            <Button variant="outline" size="sm" className="w-full" onClick={() => addFollowUp(activeEmail.series_name!)}>
-                              <Reply className="mr-1.5 h-3.5 w-3.5" /> Add Follow-up to "{activeEmail.series_name}"
+                          <div className="pt-2 border-t border-border flex gap-2">
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => addFollowUpToEmail(activeEmail)}>
+                              <Reply className="mr-1.5 h-3.5 w-3.5" /> Add Follow-up to This Email
+                            </Button>
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => addEmailToChain(activeEmail.series_name!)}>
+                              <MailPlus className="mr-1.5 h-3.5 w-3.5" /> Add Email to Chain
                             </Button>
                           </div>
                         )}
@@ -750,8 +778,8 @@ export default function EmailFactory() {
                   ) : (
                     <Card>
                       <CardContent className="py-12 text-center">
-                        <CheckCircle2 className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">Approve your AI draft to finalize.</p>
+                        <CheckCircle2 className="h-8 w-8 text-foreground/30 mx-auto mb-3" />
+                        <p className="text-sm text-foreground/60">Approve your AI draft to finalize.</p>
                       </CardContent>
                     </Card>
                   )}
@@ -786,7 +814,7 @@ export default function EmailFactory() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-foreground">📅 Schedule Send Date</h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-foreground/60">
                     {computedSendDate
                       ? `Auto-calculated: ${computedSendDate} (Week ${activeEmail.send_week}, ${activeEmail.send_day})`
                       : "Set Week # and Send Day in the Plan tab to auto-calculate"}
@@ -794,7 +822,7 @@ export default function EmailFactory() {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">Run AI refinement first to get suggestions.</p>
+              <p className="text-sm text-foreground/60 text-center py-4">Run AI refinement first to get suggestions.</p>
             )}
           </div>
         </DialogContent>
@@ -804,43 +832,38 @@ export default function EmailFactory() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New Email</DialogTitle>
+            <DialogTitle>
+              {followUpParentTitle ? "New Follow-up" : newEmail.series_name ? "New Email in Chain" : "New Email"}
+            </DialogTitle>
             <DialogDescription>
-              {newEmail.series_name
-                ? `Adding to chain: "${newEmail.series_name}"`
-                : "Create a new email — assign to a chain or keep standalone."}
+              {followUpParentTitle
+                ? `Follow-up / reminder for: "${followUpParentTitle}"`
+                : newEmail.series_name
+                  ? `Adding to chain: "${newEmail.series_name}"`
+                  : "Create a new email — assign to a chain or keep standalone."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-foreground">Title / Subject</Label>
-              <Input value={newEmail.title} onChange={(e) => setNewEmail((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Post-Exam 1 Check-in" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-foreground">Email Type</Label>
-                <Select value={newEmail.email_type} onValueChange={(v) => setNewEmail((p) => ({ ...p, email_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{emailTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-foreground">Semester</Label>
-                <Select value={newEmail.semester} onValueChange={(v) => setNewEmail((p) => ({ ...p, semester: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{semesters.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+              <Input value={newEmail.title} onChange={(e) => setNewEmail((p) => ({ ...p, title: e.target.value }))} placeholder={followUpParentTitle ? `e.g. Reminder: ${followUpParentTitle}` : "e.g. Post-Exam 1 Check-in"} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-foreground">Chain Name <span className="text-muted-foreground">(optional)</span></Label>
+              <Label className="text-xs text-foreground">Email Type</Label>
+              <Select value={newEmail.email_type} onValueChange={(v) => setNewEmail((p) => ({ ...p, email_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{emailTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-foreground">Chain Name <span className="text-foreground/40">(optional)</span></Label>
               <Input value={newEmail.series_name} onChange={(e) => setNewEmail((p) => ({ ...p, series_name: e.target.value }))} placeholder="e.g. Post-Exam Check Ins" list="series-suggestions" />
               <datalist id="series-suggestions">
                 {existingSeriesNames.map((s) => <option key={s as string} value={s as string} />)}
               </datalist>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-foreground">Course Audience</Label>
+              <Label className="text-xs text-foreground">Course Audience <span className="text-foreground/40">(optional)</span></Label>
               <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
                 {courses?.map((course: any) => (
                   <label key={course.id} className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
@@ -860,14 +883,14 @@ export default function EmailFactory() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-foreground">Week #</Label>
+                <Label className="text-xs text-foreground">Week # <span className="text-foreground/40">(optional)</span></Label>
                 <Select value={newEmail.send_week?.toString() || ""} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_week: v ? parseInt(v) : undefined }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Week" /></SelectTrigger>
                   <SelectContent>{WEEK_OPTIONS.map((w) => <SelectItem key={w} value={w.toString()}>Wk {w}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-foreground">Send Day</Label>
+                <Label className="text-xs text-foreground">Send Day <span className="text-foreground/40">(optional)</span></Label>
                 <Select value={newEmail.send_day} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_day: v }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Day" /></SelectTrigger>
                   <SelectContent>{SEND_DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
@@ -879,7 +902,7 @@ export default function EmailFactory() {
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={() => createMutation.mutate()} disabled={!newEmail.title.trim() || createMutation.isPending}>
               <ArrowRight className="mr-1 h-4 w-4" />
-              {createMutation.isPending ? "Creating..." : "Create Email"}
+              {createMutation.isPending ? "Creating..." : followUpParentTitle ? "Create Follow-up" : "Create Email"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -890,7 +913,7 @@ export default function EmailFactory() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>New Email Chain</DialogTitle>
-            <DialogDescription>Create a sequenced folder of related emails.</DialogDescription>
+            <DialogDescription>Create a reusable sequence of related emails.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
