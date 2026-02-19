@@ -13,6 +13,7 @@ export default function Landing() {
   const [subscribed, setSubscribed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [storyOpen, setStoryOpen] = useState(false);
+  const [formGlow, setFormGlow] = useState(false);
   const shareUrl = "https://surviveaccounting.lovable.app";
 
   const handleCopy = () => {
@@ -127,7 +128,7 @@ export default function Landing() {
                 className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white/70 transition-colors mt-2 mb-1"
               >
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${storyOpen ? "rotate-180" : ""}`} />
-                <span>"how's it going?"</span>
+                <span>"How's it going, Lee?"</span>
               </button>
 
               {storyOpen && (
@@ -145,10 +146,21 @@ export default function Landing() {
                   </p>
                 </div>
               )}
+            </div>
 
-              <p className="text-sm text-white/85 leading-relaxed mt-3">
-                📬 Get the next letter.
-              </p>
+            <div className="mb-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormGlow(true);
+                  setTimeout(() => setFormGlow(false), 1500);
+                  document.getElementById("subscribe-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                className="rounded-full px-5 py-2.5 text-sm font-semibold text-black transition-all hover:scale-105 active:scale-95"
+                style={{ background: "rgba(218,165,32,0.9)" }}
+              >
+                📬 Get the next letter
+              </button>
             </div>
 
             <div className="text-left mb-8 px-2">
@@ -162,7 +174,7 @@ export default function Landing() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form id="subscribe-form" onSubmit={handleSubmit} className={`space-y-3 rounded-xl p-3 transition-all duration-700 ${formGlow ? "ring-2 ring-[rgba(218,165,32,0.7)] shadow-[0_0_24px_rgba(218,165,32,0.4)]" : ""}`}>
               <input
                 type="text"
                 placeholder="Your Name"
