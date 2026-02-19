@@ -125,14 +125,14 @@ export default function Landing() {
 
               <button
                 onClick={() => setStoryOpen(!storyOpen)}
-                className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white/70 transition-colors mt-2 mb-1"
+                className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white/70 transition-colors mt-3 mb-1"
               >
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${storyOpen ? "rotate-180" : ""}`} />
                 <span>"How's it going, Lee?"</span>
               </button>
 
               {storyOpen && (
-                <div className="animate-fade-in space-y-3 mt-2">
+                <div className="animate-fade-in space-y-4 mt-3">
                   <div className="text-sm text-white/85 leading-relaxed space-y-0.5">
                     <p>💥 It collapsed during COVID.</p>
                     <p>🔄 I rebuilt it from the ground up—multiple times.</p>
