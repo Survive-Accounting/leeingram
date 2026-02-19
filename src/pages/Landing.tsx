@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import leeHeadshot from "@/assets/lee-headshot-original.png";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
-import { Copy, Share2, Check } from "lucide-react";
+import { Copy, Share2, Check, ChevronDown } from "lucide-react";
 
 export default function Landing() {
   const [name, setName] = useState("");
@@ -12,6 +12,7 @@ export default function Landing() {
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [storyOpen, setStoryOpen] = useState(false);
   const shareUrl = "https://surviveaccounting.lovable.app";
 
   const handleCopy = () => {
@@ -117,19 +118,36 @@ export default function Landing() {
                 border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              <p className="text-base sm:text-lg text-white font-bold leading-snug mb-3">
+              <p className="text-base sm:text-lg text-white font-bold leading-snug mb-1">
                 For over a decade, I've been building a tutoring platform…
               </p>
-              <div className="text-sm text-white/85 leading-relaxed space-y-0.5">
-                <p>It collapsed during COVID.</p>
-                <p>I rebuilt it from the ground up—multiple times.</p>
-                <p>Finally, it worked.</p>
-              </div>
+
+              <button
+                onClick={() => setStoryOpen(!storyOpen)}
+                className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white/70 transition-colors mt-2 mb-1"
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${storyOpen ? "rotate-180" : ""}`} />
+                <span>"how's it going?"</span>
+              </button>
+
+              {storyOpen && (
+                <div className="animate-fade-in space-y-3 mt-2">
+                  <div className="text-sm text-white/85 leading-relaxed space-y-0.5">
+                    <p>💥 It collapsed during COVID.</p>
+                    <p>🔄 I rebuilt it from the ground up—multiple times.</p>
+                    <p>🌱 <em>Finally,</em> it's starting to scale.</p>
+                  </div>
+                  <p className="text-sm text-white/85 leading-relaxed">
+                    Now, it supports a life devoted to teaching, exploring the world, and creating freely.
+                  </p>
+                  <p className="text-sm text-white/85 leading-relaxed">
+                    I've learned a ton along the way. I share it for free in this monthly letter.
+                  </p>
+                </div>
+              )}
+
               <p className="text-sm text-white/85 leading-relaxed mt-3">
-                Now, it supports a life devoted to teaching, exploring the world, and creating freely.
-              </p>
-              <p className="text-sm text-white/85 leading-relaxed">
-                Join the journey.
+                📬 Get the next letter.
               </p>
             </div>
 
