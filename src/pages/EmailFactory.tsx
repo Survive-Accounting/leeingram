@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import {
   Plus, Mail, Send, Sparkles, FileText, ArrowRight, Trash2, Copy,
   CheckCircle2, ExternalLink, Calendar, Link2, ChevronLeft, ChevronDown, Code,
+  FolderPlus, Reply,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { addDays, startOfWeek, format, parse } from "date-fns";
@@ -31,10 +32,10 @@ const STATUS_LABELS: Record<EmailStatus, string> = {
 };
 
 const STATUS_STYLES: Record<EmailStatus, string> = {
-  planning: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  journaling: "bg-blue-100 text-blue-800 border-blue-200",
-  refining: "bg-purple-100 text-purple-800 border-purple-200",
-  finalized: "bg-green-100 text-green-800 border-green-200",
+  planning: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  journaling: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  refining: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  finalized: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   sent: "bg-muted text-muted-foreground border-border",
 };
 
@@ -54,7 +55,7 @@ function calcSendDate(semesterStart: string | null | undefined, weekNum: number 
   if (!semesterStart || !weekNum || !sendDay) return null;
   try {
     const start = new Date(semesterStart + "T00:00:00");
-    const weekStart = startOfWeek(start, { weekStartsOn: 1 }); // Monday
+    const weekStart = startOfWeek(start, { weekStartsOn: 1 });
     const targetWeekStart = addDays(weekStart, (weekNum - 1) * 7);
     const dayIdx = DAY_INDEX[sendDay];
     if (dayIdx === undefined) return null;
@@ -64,10 +65,16 @@ function calcSendDate(semesterStart: string | null | undefined, weekNum: number 
   } catch { return null; }
 }
 
+function looksLikeHtml(text: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(text);
+}
+
 export default function EmailFactory() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [showChainCreate, setShowChainCreate] = useState(false);
+  const [newChainName, setNewChainName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<"plan" | "journal" | "refine" | "finalize">("plan");
   const [journalDraft, setJournalDraft] = useState("");
@@ -125,7 +132,7 @@ export default function EmailFactory() {
 
   const activeEmail = emails?.find((e: any) => e.id === editingId);
 
-  // Group emails by series
+  // Group emails by series (chains)
   const emailsBySeries = useMemo(() => {
     if (!emails) return { series: {} as Record<string, any[]>, standalone: [] as any[] };
     const series: Record<string, any[]> = {};
@@ -138,6 +145,8 @@ export default function EmailFactory() {
         standalone.push(e);
       }
     });
+    // Sort each chain by series_order then created_at
+    Object.values(series).forEach(arr => arr.sort((a, b) => (a.series_order ?? 999) - (b.series_order ?? 999)));
     return { series, standalone };
   }, [emails]);
 
@@ -153,11 +162,18 @@ export default function EmailFactory() {
   const createMutation = useMutation({
     mutationFn: async () => {
       const sendDate = calcSendDate(semesterStart, newEmail.send_week, newEmail.send_day);
+      // If creating within a chain, compute next series_order
+      let seriesOrder: number | null = null;
+      if (newEmail.series_name) {
+        const chainEmails = emails?.filter((e: any) => e.series_name === newEmail.series_name) || [];
+        seriesOrder = chainEmails.length + 1;
+      }
       const { data, error } = await supabase.from("emails").insert({
         user_id: user!.id, title: newEmail.title, email_type: newEmail.email_type,
         audience: newEmail.course_tags.length > 0 ? newEmail.course_tags.join(", ") + " students" : "All students",
         course_tags: newEmail.course_tags, semester: newEmail.semester, status: "planning",
         is_series: !!newEmail.series_name, series_name: newEmail.series_name || null,
+        series_order: seriesOrder,
         send_day: newEmail.send_day || null, send_week: newEmail.send_week ?? null,
         send_date: sendDate, max_refinements: 5,
       }).select().single();
@@ -171,6 +187,10 @@ export default function EmailFactory() {
       setJournalDraft("");
       setNewEmail({ title: "", email_type: "General", course_tags: [], semester: "Spring 2026", series_name: "", send_day: "", send_week: undefined });
       queryClient.invalidateQueries({ queryKey: ["emails"] });
+      // Auto-expand the chain
+      if (data.series_name) {
+        setExpandedSeries(prev => new Set([...prev, data.series_name]));
+      }
     },
     onError: (e) => toast.error("Failed: " + e.message),
   });
@@ -237,6 +257,7 @@ export default function EmailFactory() {
   const saveFinalEdit = () => {
     updateMutation.mutate({ final_draft: finalDraftEdit });
     setIsEditingFinal(false);
+    setEditMode("text");
     toast.success("Final draft updated!");
   };
 
@@ -257,12 +278,32 @@ export default function EmailFactory() {
     setJournalDraft(email.journal_body || "");
     setFinalDraftEdit(email.final_draft || "");
     setIsEditingFinal(false);
+    setEditMode("text");
     setRefinementPrompt("");
-    // Auto-select the right tab based on status
     if (email.status === "finalized" || email.status === "sent") setActivePanel("finalize");
     else if (email.status === "refining") setActivePanel("refine");
     else if (email.status === "journaling") setActivePanel("journal");
     else setActivePanel("plan");
+  };
+
+  const addFollowUp = (chainName: string) => {
+    const chainEmails = emails?.filter((e: any) => e.series_name === chainName) || [];
+    const nextOrder = chainEmails.length + 1;
+    setNewEmail({
+      title: "", email_type: chainEmails[0]?.email_type || "General",
+      course_tags: chainEmails[0]?.course_tags || [],
+      semester: chainEmails[0]?.semester || "Spring 2026",
+      series_name: chainName, send_day: "", send_week: undefined,
+    });
+    setShowCreate(true);
+  };
+
+  const createChain = () => {
+    if (!newChainName.trim()) return;
+    setNewEmail(prev => ({ ...prev, series_name: newChainName.trim() }));
+    setNewChainName("");
+    setShowChainCreate(false);
+    setShowCreate(true);
   };
 
   const remainingPasses = activeEmail ? Math.max(0, maxRefinements - (activeEmail.refinement_count ?? 0)) : 0;
@@ -296,7 +337,10 @@ export default function EmailFactory() {
               <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> LearnWorlds
             </a>
           </Button>
-          <Button onClick={() => setShowCreate(true)} size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowChainCreate(true)}>
+            <FolderPlus className="mr-1 h-4 w-4" /> New Chain
+          </Button>
+          <Button onClick={() => { setNewEmail({ title: "", email_type: "General", course_tags: [], semester: "Spring 2026", series_name: "", send_day: "", send_week: undefined }); setShowCreate(true); }} size="sm">
             <Plus className="mr-1 h-4 w-4" /> New Email
           </Button>
         </div>
@@ -315,8 +359,9 @@ export default function EmailFactory() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-        {/* Sidebar: Series + Standalone */}
+        {/* Sidebar: Chains + Standalone */}
         <div className="space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
+          {/* Chains (series) */}
           {Object.entries(emailsBySeries.series).map(([seriesName, seriesEmails]) => (
             <Collapsible key={seriesName} open={expandedSeries.has(seriesName)} onOpenChange={() => toggleSeries(seriesName)}>
               <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 rounded-lg bg-muted/50 hover:bg-accent/50 transition-colors cursor-pointer text-left">
@@ -327,7 +372,7 @@ export default function EmailFactory() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="space-y-1 pl-3 pt-1">
-                  {seriesEmails.map((email: any) => (
+                  {seriesEmails.map((email: any, idx: number) => (
                     <Card
                       key={email.id}
                       className={`cursor-pointer transition-colors hover:bg-accent/50 ${editingId === email.id ? "ring-2 ring-primary" : ""}`}
@@ -335,17 +380,27 @@ export default function EmailFactory() {
                     >
                       <CardContent className="p-2.5">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
+                          <div className="min-w-0 flex items-center gap-1.5">
+                            <span className="text-[10px] text-muted-foreground font-mono shrink-0">#{idx + 1}</span>
+                            <p className="text-xs font-medium truncate text-foreground">{email.title || "Untitled"}</p>
+                          </div>
                           <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_STYLES[email.status as EmailStatus] || ""}`}>
                             {STATUS_LABELS[email.status as EmailStatus]}
                           </Badge>
                         </div>
                         {email.send_week && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">Wk {email.send_week}{email.send_day ? ` · ${email.send_day}` : ""}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 pl-5">Wk {email.send_week}{email.send_day ? ` · ${email.send_day}` : ""}</p>
                         )}
                       </CardContent>
                     </Card>
                   ))}
+                  {/* Add Follow-up button within chain */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); addFollowUp(seriesName); }}
+                    className="flex items-center gap-1.5 w-full py-1.5 px-2.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/30 rounded-md transition-colors"
+                  >
+                    <Reply className="h-3 w-3" /> Add Follow-up
+                  </button>
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -424,19 +479,19 @@ export default function EmailFactory() {
                   <Card>
                     <CardContent className="p-4 space-y-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Title</Label>
+                        <Label className="text-xs text-foreground">Title</Label>
                         <Input className="h-8 text-sm" value={activeEmail.title || ""} onChange={(e) => updateMutation.mutate({ title: e.target.value })} />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Email Type</Label>
+                          <Label className="text-xs text-foreground">Email Type</Label>
                           <Select value={activeEmail.email_type} onValueChange={(v) => updateMutation.mutate({ email_type: v })}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>{emailTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Semester</Label>
+                          <Label className="text-xs text-foreground">Semester</Label>
                           <Select value={activeEmail.semester} onValueChange={(v) => updateMutation.mutate({ semester: v })}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>{semesters.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -445,7 +500,7 @@ export default function EmailFactory() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Week #</Label>
+                          <Label className="text-xs text-foreground">Week #</Label>
                           <Select
                             value={activeEmail.send_week?.toString() || ""}
                             onValueChange={(v) => {
@@ -459,7 +514,7 @@ export default function EmailFactory() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Send Day</Label>
+                          <Label className="text-xs text-foreground">Send Day</Label>
                           <Select
                             value={activeEmail.send_day || ""}
                             onValueChange={(v) => {
@@ -476,12 +531,12 @@ export default function EmailFactory() {
                         <p className="text-xs text-primary font-medium">📅 Auto-calculated send date: {computedSendDate}</p>
                       )}
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Series Name</Label>
+                        <Label className="text-xs text-foreground">Chain Name</Label>
                         <Input
                           className="h-8 text-sm"
                           value={activeEmail.series_name || ""}
                           onChange={(e) => updateMutation.mutate({ series_name: e.target.value, is_series: !!e.target.value })}
-                          placeholder="e.g. Post-Exam Check In"
+                          placeholder="e.g. Post-Exam Check Ins"
                           list="series-suggestions-edit"
                         />
                         <datalist id="series-suggestions-edit">
@@ -489,10 +544,10 @@ export default function EmailFactory() {
                         </datalist>
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Course Audience</Label>
+                        <Label className="text-xs text-foreground">Course Audience</Label>
                         <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
                           {courses?.map((course: any) => (
-                            <label key={course.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                            <label key={course.id} className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
                               <Checkbox
                                 checked={(activeEmail.course_tags || []).includes(course.course_name)}
                                 onCheckedChange={(checked) => {
@@ -552,10 +607,10 @@ export default function EmailFactory() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto">{activeEmail.ai_refined_body}</div>
+                        <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto text-foreground">{activeEmail.ai_refined_body}</div>
                         {remainingPasses > 0 && (
                           <div className="space-y-2">
-                            <Label className="text-xs">Feedback for next pass:</Label>
+                            <Label className="text-xs text-foreground">Feedback for next pass:</Label>
                             <Textarea value={refinementPrompt} onChange={(e) => setRefinementPrompt(e.target.value)} rows={3} placeholder="Tell the AI what to adjust..." className="text-sm" />
                             <Button onClick={() => refineMutation.mutate()} disabled={!refinementPrompt.trim() || refineMutation.isPending} size="sm">
                               <Sparkles className="mr-1 h-3.5 w-3.5" />
@@ -589,7 +644,7 @@ export default function EmailFactory() {
                         <CardTitle className="text-sm flex items-center gap-2"><Send className="h-4 w-4" /> Strategy Notes</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto">{activeEmail.ai_strategy_notes}</div>
+                        <div className="rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto text-foreground">{activeEmail.ai_strategy_notes}</div>
                       </CardContent>
                     </Card>
                   )}
@@ -600,7 +655,7 @@ export default function EmailFactory() {
                   {activeEmail.final_draft ? (
                     <Card className="border-border bg-accent/30">
                       <CardHeader className="pb-2">
-                          <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                           <CardTitle className="text-sm flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" /> Final Draft
                           </CardTitle>
@@ -616,7 +671,6 @@ export default function EmailFactory() {
                                 <button
                                   onClick={() => {
                                     if (editMode === "text") {
-                                      // Convert plain text to HTML when switching
                                       const html = `<div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px;">${finalDraftEdit.split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("\n")}</div>`;
                                       setFinalDraftEdit(html);
                                     }
@@ -646,7 +700,7 @@ export default function EmailFactory() {
                             {editMode === "html" && (
                               <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">Preview</Label>
-                                <div className="rounded-md border bg-card p-4 text-sm max-h-[200px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: finalDraftEdit }} />
+                                <div className="rounded-md border bg-white p-4 text-sm max-h-[200px] overflow-y-auto text-black" dangerouslySetInnerHTML={{ __html: finalDraftEdit }} />
                               </div>
                             )}
                             <div className="flex gap-2">
@@ -655,7 +709,10 @@ export default function EmailFactory() {
                             </div>
                           </>
                         ) : (
-                          <div className="rounded-md border bg-card p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto">{activeEmail.final_draft}</div>
+                          /* Preview mode: render HTML if content looks like HTML, otherwise plain text */
+                          looksLikeHtml(activeEmail.final_draft || "")
+                            ? <div className="rounded-md border bg-white p-4 text-sm max-h-[400px] overflow-y-auto text-black" dangerouslySetInnerHTML={{ __html: activeEmail.final_draft }} />
+                            : <div className="rounded-md border bg-card p-4 text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto text-foreground">{activeEmail.final_draft}</div>
                         )}
 
                         {!isEditingFinal && (
@@ -664,7 +721,9 @@ export default function EmailFactory() {
                               <Copy className="mr-1 h-3.5 w-3.5" /> Copy Text
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => {
-                              const html = `<div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px;">${(activeEmail.final_draft || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`;
+                              const html = looksLikeHtml(activeEmail.final_draft || "")
+                                ? activeEmail.final_draft || ""
+                                : `<div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px;">${(activeEmail.final_draft || "").split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("")}</div>`;
                               navigator.clipboard.writeText(html);
                               toast.success("HTML copied!");
                             }}>
@@ -674,6 +733,15 @@ export default function EmailFactory() {
                               <a href="https://www.surviveaccounting.com/author/mass_emails?tab=history" target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open LearnWorlds
                               </a>
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Add Follow-up button */}
+                        {!isEditingFinal && activeEmail.series_name && (
+                          <div className="pt-2 border-t border-border">
+                            <Button variant="outline" size="sm" className="w-full" onClick={() => addFollowUp(activeEmail.series_name!)}>
+                              <Reply className="mr-1.5 h-3.5 w-3.5" /> Add Follow-up to "{activeEmail.series_name}"
                             </Button>
                           </div>
                         )}
@@ -706,13 +774,13 @@ export default function EmailFactory() {
               <>
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-foreground">🏆 Top 5 Subject Lines</h3>
-                  <div className="rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                  <div className="rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap text-foreground">
                     {extractSection(activeEmail.ai_strategy_notes, "Subject Line")}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-foreground">🎯 Top 5 CTAs</h3>
-                  <div className="rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                  <div className="rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap text-foreground">
                     {extractSection(activeEmail.ai_strategy_notes, "CTA")}
                   </div>
                 </div>
@@ -732,28 +800,32 @@ export default function EmailFactory() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Dialog */}
+      {/* Create Email Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New Email</DialogTitle>
-            <DialogDescription>Create a new email — assign to a series or keep standalone.</DialogDescription>
+            <DialogDescription>
+              {newEmail.series_name
+                ? `Adding to chain: "${newEmail.series_name}"`
+                : "Create a new email — assign to a chain or keep standalone."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Title / Subject</Label>
+              <Label className="text-xs text-foreground">Title / Subject</Label>
               <Input value={newEmail.title} onChange={(e) => setNewEmail((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Post-Exam 1 Check-in" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Email Type</Label>
+                <Label className="text-xs text-foreground">Email Type</Label>
                 <Select value={newEmail.email_type} onValueChange={(v) => setNewEmail((p) => ({ ...p, email_type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{emailTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Semester</Label>
+                <Label className="text-xs text-foreground">Semester</Label>
                 <Select value={newEmail.semester} onValueChange={(v) => setNewEmail((p) => ({ ...p, semester: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{semesters.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -761,17 +833,17 @@ export default function EmailFactory() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Series Name <span className="text-muted-foreground">(optional)</span></Label>
+              <Label className="text-xs text-foreground">Chain Name <span className="text-muted-foreground">(optional)</span></Label>
               <Input value={newEmail.series_name} onChange={(e) => setNewEmail((p) => ({ ...p, series_name: e.target.value }))} placeholder="e.g. Post-Exam Check Ins" list="series-suggestions" />
               <datalist id="series-suggestions">
                 {existingSeriesNames.map((s) => <option key={s as string} value={s as string} />)}
               </datalist>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Course Audience</Label>
+              <Label className="text-xs text-foreground">Course Audience</Label>
               <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
                 {courses?.map((course: any) => (
-                  <label key={course.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <label key={course.id} className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
                     <Checkbox
                       checked={newEmail.course_tags.includes(course.course_name)}
                       onCheckedChange={(checked) => {
@@ -788,14 +860,14 @@ export default function EmailFactory() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Week #</Label>
+                <Label className="text-xs text-foreground">Week #</Label>
                 <Select value={newEmail.send_week?.toString() || ""} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_week: v ? parseInt(v) : undefined }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Week" /></SelectTrigger>
                   <SelectContent>{WEEK_OPTIONS.map((w) => <SelectItem key={w} value={w.toString()}>Wk {w}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Send Day</Label>
+                <Label className="text-xs text-foreground">Send Day</Label>
                 <Select value={newEmail.send_day} onValueChange={(v) => setNewEmail((p) => ({ ...p, send_day: v }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Day" /></SelectTrigger>
                   <SelectContent>{SEND_DAYS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
@@ -808,6 +880,28 @@ export default function EmailFactory() {
             <Button onClick={() => createMutation.mutate()} disabled={!newEmail.title.trim() || createMutation.isPending}>
               <ArrowRight className="mr-1 h-4 w-4" />
               {createMutation.isPending ? "Creating..." : "Create Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Chain Dialog */}
+      <Dialog open={showChainCreate} onOpenChange={setShowChainCreate}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>New Email Chain</DialogTitle>
+            <DialogDescription>Create a sequenced folder of related emails.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-foreground">Chain Name</Label>
+              <Input value={newChainName} onChange={(e) => setNewChainName(e.target.value)} placeholder="e.g. Post-Exam Check Ins" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChainCreate(false)}>Cancel</Button>
+            <Button onClick={createChain} disabled={!newChainName.trim()}>
+              <FolderPlus className="mr-1 h-4 w-4" /> Create & Add First Email
             </Button>
           </DialogFooter>
         </DialogContent>
