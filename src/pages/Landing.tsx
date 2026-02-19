@@ -139,10 +139,13 @@ export default function Landing() {
                     <p>🌱 <em>Finally,</em> it's starting to scale.</p>
                   </div>
                   <p className="text-sm text-white/85 leading-relaxed">
-                    Now, it supports a life devoted to teaching, exploring the world, and creating freely.
+                    Now, it supports a life devoted to teaching remotely, exploring the world, and creating helpful content for college students.
                   </p>
                   <p className="text-sm text-white/85 leading-relaxed">
-                    I've learned a ton along the way. I share it for free in this monthly letter.
+                    I've learned a ton along the way — and I share those lessons in this monthly letter.
+                  </p>
+                  <p className="text-sm text-white/85 leading-relaxed">
+                    Join the journey.
                   </p>
                 </div>
               )}
@@ -169,7 +172,7 @@ export default function Landing() {
                 <ul className="text-sm text-white/70 space-y-1.5 pl-1">
                   <li>• Designing a business around the life I actually want</li>
                   <li>• 10 years of up's &amp; down's while building solo</li>
-                  <li>• A "success" story earned the hard way</li>
+                  <li>• A "success story" earned the hard way</li>
                 </ul>
               </div>
             </div>
