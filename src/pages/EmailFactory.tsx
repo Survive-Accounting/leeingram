@@ -74,6 +74,7 @@ export default function EmailFactory() {
   const [refinementPrompt, setRefinementPrompt] = useState("");
   const [finalDraftEdit, setFinalDraftEdit] = useState("");
   const [isEditingFinal, setIsEditingFinal] = useState(false);
+  const [editMode, setEditMode] = useState<"text" | "html">("text");
   const [showFinalizedDialog, setShowFinalizedDialog] = useState(false);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
 
@@ -599,13 +600,36 @@ export default function EmailFactory() {
                   {activeEmail.final_draft ? (
                     <Card className="border-border bg-accent/30">
                       <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between">
                           <CardTitle className="text-sm flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" /> Final Draft
                           </CardTitle>
                           <div className="flex gap-1.5">
+                            {isEditingFinal && (
+                              <div className="flex items-center rounded-md border border-border overflow-hidden">
+                                <button
+                                  onClick={() => setEditMode("text")}
+                                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${editMode === "text" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                                >
+                                  Text
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (editMode === "text") {
+                                      // Convert plain text to HTML when switching
+                                      const html = `<div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px;">${finalDraftEdit.split("\n").map((p: string) => p.trim() ? `<p>${p}</p>` : "").join("\n")}</div>`;
+                                      setFinalDraftEdit(html);
+                                    }
+                                    setEditMode("html");
+                                  }}
+                                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${editMode === "html" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                                >
+                                  HTML
+                                </button>
+                              </div>
+                            )}
                             {!isEditingFinal && (
-                              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setFinalDraftEdit(activeEmail.final_draft || ""); setIsEditingFinal(true); }}>
+                              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setFinalDraftEdit(activeEmail.final_draft || ""); setEditMode("text"); setIsEditingFinal(true); }}>
                                 Edit
                               </Button>
                             )}
@@ -618,10 +642,16 @@ export default function EmailFactory() {
                       <CardContent className="space-y-3">
                         {isEditingFinal ? (
                           <>
-                            <Textarea value={finalDraftEdit} onChange={(e) => setFinalDraftEdit(e.target.value)} rows={14} className="font-mono text-sm" />
+                            <Textarea value={finalDraftEdit} onChange={(e) => setFinalDraftEdit(e.target.value)} rows={14} className={`text-sm ${editMode === "html" ? "font-mono text-xs" : ""}`} />
+                            {editMode === "html" && (
+                              <div className="space-y-1.5">
+                                <Label className="text-xs text-muted-foreground">Preview</Label>
+                                <div className="rounded-md border bg-card p-4 text-sm max-h-[200px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: finalDraftEdit }} />
+                              </div>
+                            )}
                             <div className="flex gap-2">
                               <Button size="sm" onClick={saveFinalEdit}>Save Changes</Button>
-                              <Button variant="outline" size="sm" onClick={() => setIsEditingFinal(false)}>Cancel</Button>
+                              <Button variant="outline" size="sm" onClick={() => { setIsEditingFinal(false); setEditMode("text"); }}>Cancel</Button>
                             </div>
                           </>
                         ) : (
