@@ -121,6 +121,11 @@ export function RoadmapItemRow({ item, onUpdate, onDelete, isDragOverlay }: Road
               {item.target_semester && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 leading-tight">{item.target_semester}</Badge>
               )}
+              {(item as any).content_tags?.map((tag: string) => (
+                <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 leading-tight bg-primary/10 text-primary border-primary/20">
+                  {tag === "blog_post" ? "📝 Blog" : tag === "video" ? "🎬 Video" : tag === "monetizable" ? "💰 $$$" : tag}
+                </Badge>
+              ))}
             </div>
           )}
 

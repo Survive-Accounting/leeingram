@@ -452,11 +452,13 @@ export type Database = {
         Row: {
           category: string
           completed_at: string | null
+          content_tags: string[] | null
           created_at: string
           description: string | null
           domain: string
           id: string
           priority: string
+          series_id: string | null
           status: string
           target_semester: string | null
           title: string
@@ -466,11 +468,13 @@ export type Database = {
         Insert: {
           category?: string
           completed_at?: string | null
+          content_tags?: string[] | null
           created_at?: string
           description?: string | null
           domain?: string
           id?: string
           priority?: string
+          series_id?: string | null
           status?: string
           target_semester?: string | null
           title: string
@@ -480,18 +484,28 @@ export type Database = {
         Update: {
           category?: string
           completed_at?: string | null
+          content_tags?: string[] | null
           created_at?: string
           description?: string | null
           domain?: string
           id?: string
           priority?: string
+          series_id?: string | null
           status?: string
           target_semester?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_items_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "vlog_seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sprint_activity_log: {
         Row: {
@@ -867,6 +881,7 @@ export type Database = {
           id: string
           season_number: number
           series_name: string
+          target_semester: string | null
           title: string
           user_id: string
         }
@@ -876,6 +891,7 @@ export type Database = {
           id?: string
           season_number: number
           series_name?: string
+          target_semester?: string | null
           title: string
           user_id: string
         }
@@ -885,6 +901,7 @@ export type Database = {
           id?: string
           season_number?: number
           series_name?: string
+          target_semester?: string | null
           title?: string
           user_id?: string
         }
