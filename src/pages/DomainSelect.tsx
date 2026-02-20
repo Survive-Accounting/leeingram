@@ -130,8 +130,16 @@ export default function DomainSelect() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="absolute inset-0 bg-black/55" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+      <div className="absolute inset-0 bg-black/38" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+      {/* Subtle warm atmospheric glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at 50% 55%, rgba(218,165,32,0.05) 0%, transparent 55%)",
+          pointerEvents: "none",
+        }}
+      />
       <NightSkyOverlay />
 
       <div className="absolute top-4 right-4 z-10">

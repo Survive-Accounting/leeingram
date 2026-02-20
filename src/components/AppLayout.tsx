@@ -12,8 +12,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen relative">
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="fixed inset-0 bg-black/60" />
-      <div className="fixed inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
+      <div className="fixed inset-0 bg-black/40" />
+      <div className="fixed inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
       <NightSkyOverlay />
       <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
