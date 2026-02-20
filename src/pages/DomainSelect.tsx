@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
-import { SkyOverlay } from "@/components/SkyOverlay";
+
 
 const WORK_DOMAINS = [
   { key: "survive", label: "Survive Accounting", route: "/survive" },
@@ -102,14 +102,12 @@ export default function DomainSelect() {
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      {/* Blue sky gradient */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(100,160,220,0.35) 0%, rgba(70,130,190,0.15) 30%, transparent 55%, rgba(30,50,80,0.2) 100%)" }} />
-      {/* Vignette */}
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 40%, transparent 50%, rgba(0,0,0,0.15) 100%)" }} />
+      {/* Clear sky — sunlight warmth from upper-right */}
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 75% 15%, rgba(255,220,140,0.18) 0%, transparent 50%), linear-gradient(to bottom, rgba(120,180,240,0.12) 0%, transparent 40%)" }} />
+      {/* Gentle vignette */}
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,0.1) 100%)" }} />
       {/* Water shimmer */}
-      <div className="absolute bottom-0 left-0 right-0 h-[18%]" style={{ background: "linear-gradient(to top, rgba(100,140,180,0.12) 0%, transparent 100%)", animation: "waterShimmer 4s ease-in-out infinite" }} />
-
-      <SkyOverlay />
+      <div className="absolute bottom-0 left-0 right-0 h-[18%]" style={{ background: "linear-gradient(to top, rgba(100,140,180,0.1) 0%, transparent 100%)", animation: "waterShimmer 4s ease-in-out infinite" }} />
 
       <div className="absolute top-4 right-4 z-10">
         <Button variant="ghost" size="sm" onClick={signOut} className="text-white/60 hover:text-white hover:bg-white/10">
@@ -121,24 +119,24 @@ export default function DomainSelect() {
       <div className="z-10 flex flex-col items-center gap-3 w-full max-w-md px-4">
         {/* Peak — Ideas */}
         <div className="flex justify-center">
-          <MountainBtn label="💡 Ideas" onClick={() => navigate("/ideas")} className="px-12 py-4" />
+          <MountainBtn label="Ideas" onClick={() => navigate("/ideas")} className="px-12 py-4" />
         </div>
 
         {/* Mid-range — Family / Play / Work */}
         <div className="flex justify-center gap-2.5 w-full">
           <MountainBtn
-            label="👨‍👩‍👧"
+            label="Family"
             onClick={() => toggle("family")}
             className="flex-1 py-4"
             style={{ borderRadius: "8px 4px 8px 12px" }}
           />
           <MountainBtn
-            label="🎮 Play"
+            label="Play"
             onClick={() => toggle("play")}
             className="flex-1 py-4"
           />
           <MountainBtn
-            label="💼 Work"
+            label="Work"
             onClick={() => toggle("work")}
             className="flex-1 py-4"
             style={{ borderRadius: "4px 8px 12px 8px" }}
@@ -165,7 +163,7 @@ export default function DomainSelect() {
 
         {/* Foundation — Focus Sprint */}
         <MountainBtn
-          label="🔥 Focus Sprint"
+          label="Focus Sprint"
           onClick={() => navigate("/focus")}
           className="w-full py-5"
           flicker
