@@ -1,7 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Home } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Home } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
+import { FocusSprintDialog } from "@/components/FocusSprintDialog";
+import { useSprint } from "@/contexts/SprintContext";
 
 interface DomainLayoutProps {
   children: React.ReactNode;
@@ -14,17 +17,29 @@ interface DomainLayoutProps {
 export function DomainLayout({ children, title, tagline, actions, backgroundImage }: DomainLayoutProps) {
   const bg = backgroundImage || aorakiBg;
   const navigate = useNavigate();
+  const { sprintState } = useSprint();
+
+  // Show dialog on mount only if no active sprint
+  const [dialogOpen, setDialogOpen] = useState(!sprintState);
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+  };
 
   return (
     <div className="min-h-screen relative">
-      {/* Mountain background */}
+      {/* Mountain background — ominous but inviting */}
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${bg})` }}
       />
-      <div className="fixed inset-0 bg-black/60" />
-      <div className="fixed inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
+      {/* Lighter overlay — ominous dusk, not pitch black */}
+      <div className="fixed inset-0 bg-black/40" />
+      <div className="fixed inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
       <NightSkyOverlay />
+
+      {/* Focus Sprint dialog on domain entry */}
+      <FocusSprintDialog open={dialogOpen} onClose={handleDialogClose} />
 
       {/* Nav bar */}
       <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}>

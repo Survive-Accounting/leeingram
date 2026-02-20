@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import leeHeadshot from "@/assets/lee-headshot-original.png";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
-import { Copy, Share2, Check, ChevronDown } from "lucide-react";
+import { Copy, Share2, Check, ChevronDown, LogIn } from "lucide-react";
 
 export default function Landing() {
   const [name, setName] = useState("");
@@ -58,10 +59,33 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4">
+      {/* Background — ominous but inviting: lighter overlay, richer atmosphere */}
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="absolute inset-0 bg-black/70" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-black/45" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+      {/* Subtle warm horizon glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at 50% 60%, rgba(218,165,32,0.06) 0%, transparent 60%)",
+          pointerEvents: "none",
+        }}
+      />
       <NightSkyOverlay />
+
+      {/* Admin Login — top right */}
+      <div className="absolute top-4 right-4 z-10">
+        <Link
+          to="/admin"
+          className="flex items-center gap-1.5 text-xs uppercase tracking-widest transition-colors"
+          style={{ color: "rgba(255,255,255,0.28)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.28)"; }}
+        >
+          <LogIn className="w-3.5 h-3.5" />
+          Admin Login
+        </Link>
+      </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
         {subscribed ? (
@@ -113,7 +137,7 @@ export default function Landing() {
             <div
               className="text-left space-y-4 mb-8 rounded-xl px-5 py-5"
               style={{
-                background: "rgba(0,0,0,0.45)",
+                background: "rgba(0,0,0,0.38)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.08)",
@@ -151,7 +175,8 @@ export default function Landing() {
               )}
             </div>
 
-            <div className="mb-8 flex justify-center">
+            {/* CTA button — "Get the first letter" */}
+            <div className="mb-3 flex flex-col items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -162,8 +187,11 @@ export default function Landing() {
                 className="rounded-full px-5 py-2.5 text-sm font-semibold text-black transition-all hover:scale-105 active:scale-95"
                 style={{ background: "rgba(218,165,32,0.9)" }}
               >
-                📬 Get the next letter
+                📬 Get the first letter
               </button>
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)" }}>
+                coming April 1st
+              </p>
             </div>
 
             <div className="text-left mb-8 px-2">
