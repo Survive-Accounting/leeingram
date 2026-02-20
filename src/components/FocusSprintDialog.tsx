@@ -42,7 +42,7 @@ export function FocusSprintDialog({ open, onClose }: FocusSprintDialogProps) {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        className="border-0 p-0 max-w-md w-full overflow-hidden"
+        className="border-0 p-0 max-w-md w-full overflow-hidden [&>button]:hidden"
         style={{
           background: "rgba(10,10,18,0.96)",
           backdropFilter: "blur(24px)",
@@ -98,7 +98,7 @@ export function FocusSprintDialog({ open, onClose }: FocusSprintDialogProps) {
                 boxShadow: "0 4px 24px rgba(218,165,32,0.4), 0 0 40px rgba(218,165,32,0.15)",
               }}
             >
-              🧠 Launch Focus Sprint
+              Launch Focus Sprint
             </button>
 
             <button
@@ -126,10 +126,10 @@ export function FocusSprintDialog({ open, onClose }: FocusSprintDialogProps) {
             <div className="relative space-y-2">
               <p className="text-4xl">⛰️</p>
               <h2
-                className="text-lg font-bold tracking-wide"
+                className="text-lg font-bold tracking-wide leading-snug"
                 style={{ color: "rgba(255,255,255,0.9)" }}
               >
-                The mountain doesn't wait.
+                A journey of a thousand miles begins with the first step.
               </h2>
               <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>
                 The best journeys start with intention.
@@ -149,7 +149,7 @@ export function FocusSprintDialog({ open, onClose }: FocusSprintDialogProps) {
                   transition: "all 0.4s ease",
                 }}
               >
-                🧠 Go back to Focus Sprint
+                Go back to Focus Sprint
               </button>
 
               <div className="space-y-1">
