@@ -5,142 +5,111 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
-import { NightSkyOverlay } from "@/components/NightSkyOverlay";
+import { SkyOverlay } from "@/components/SkyOverlay";
 
 const WORK_DOMAINS = [
-  { key: "survive", label: "Survive Accounting", tagline: "Nationwide exam prep platform", route: "/survive" },
-  { key: "prof_ingram", label: "Prof Ingram", tagline: "Arts Entrepreneurship & Quickbooks", route: "/prof-ingram" },
-  { key: "leeingram", label: "Leeingram.co", tagline: "What's my next big project?", route: "/leeingram" },
+  { key: "survive", label: "Survive Accounting", route: "/survive" },
+  { key: "prof_ingram", label: "Prof Ingram", route: "/prof-ingram" },
+  { key: "leeingram", label: "Leeingram.co", route: "/leeingram" },
 ];
-
 const PLAY_DOMAINS = [
-  { key: "travel", label: "Travel", tagline: "Adventures & trip planning", route: "/travel" },
-  { key: "writing", label: "Writing", tagline: "No destination", route: "/writing" },
+  { key: "travel", label: "Travel", route: "/travel" },
+  { key: "writing", label: "Writing", route: "/writing" },
 ];
+const FAMILY_TABS = ["Me", "McKenzie", "Baby", "Us"];
 
-const FAMILY_TABS = [
-  { key: "me", label: "Me" },
-  { key: "mckenzie", label: "McKenzie" },
-  { key: "baby", label: "Baby" },
-  { key: "us", label: "Us" },
-];
-
-const DomainLink = ({ domain, navigate }: { domain: typeof WORK_DOMAINS[0]; navigate: any }) => (
-  <button
-    onClick={() => navigate(domain.route)}
-    className="w-full text-left px-4 py-2.5 transition-all duration-200 cursor-pointer rounded-md group"
-    style={{
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.06)",
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-      e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-      e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
-    }}
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-sm font-semibold tracking-wide text-white/85 group-hover:text-white transition-colors">
-          {domain.label}
-        </h3>
-        <p className="text-xs mt-0.5 tracking-wider text-white/35">{domain.tagline}</p>
-      </div>
-      <span className="text-base text-white/20 group-hover:text-white/70 group-hover:translate-x-1 transition-all duration-200">→</span>
-    </div>
-  </button>
-);
-
-const FlickerButton = ({
-  label,
-  subtitle,
-  expanded,
-  onClick,
-  flicker = false,
-}: {
-  label: string;
-  subtitle: string;
-  expanded: boolean;
-  onClick: () => void;
-  flicker?: boolean;
-}) => (
+const SubLink = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button
     onClick={onClick}
-    className={`w-full text-left p-5 transition-all duration-300 cursor-pointer ${flicker ? "candle-flicker" : ""}`}
+    className="w-full text-left px-3 py-2 rounded-md transition-all duration-200 group"
     style={{
-      background: expanded
-        ? "linear-gradient(135deg, rgba(218,165,32,0.18) 0%, rgba(184,134,11,0.08) 100%)"
-        : "linear-gradient(135deg, rgba(218,165,32,0.10) 0%, rgba(184,134,11,0.04) 100%)",
-      border: `1px solid rgba(218,165,32,${expanded ? "0.55" : "0.35"})`,
-      borderRadius: "6px",
-      backdropFilter: "blur(12px)",
+      background: "rgba(60,50,40,0.3)",
+      border: "1px solid rgba(180,160,130,0.15)",
     }}
     onMouseEnter={(e) => {
-      e.currentTarget.style.borderColor = "rgba(218,165,32,0.65)";
-      e.currentTarget.style.background = "linear-gradient(135deg, rgba(218,165,32,0.2) 0%, rgba(184,134,11,0.1) 100%)";
+      e.currentTarget.style.background = "rgba(80,65,45,0.45)";
+      e.currentTarget.style.borderColor = "rgba(218,165,32,0.4)";
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.borderColor = `rgba(218,165,32,${expanded ? "0.55" : "0.35"})`;
-      e.currentTarget.style.background = expanded
-        ? "linear-gradient(135deg, rgba(218,165,32,0.18) 0%, rgba(184,134,11,0.08) 100%)"
-        : "linear-gradient(135deg, rgba(218,165,32,0.10) 0%, rgba(184,134,11,0.04) 100%)";
+      e.currentTarget.style.background = "rgba(60,50,40,0.3)";
+      e.currentTarget.style.borderColor = "rgba(180,160,130,0.15)";
     }}
   >
-    <div className="flex items-center justify-between">
-      <div>
-        <h3
-          className="text-base font-bold tracking-[0.15em] uppercase"
-          style={{
-            color: "rgba(218,165,32,0.95)",
-            textShadow: "0 0 12px rgba(218,165,32,0.4), 0 0 30px rgba(218,165,32,0.15)",
-          }}
-        >
-          {label}
-        </h3>
-        <p className="text-xs mt-1 tracking-wider" style={{ color: "rgba(218,165,32,0.45)" }}>
-          {subtitle}
-        </p>
-      </div>
-      <span
-        className="text-xl transition-transform duration-300"
-        style={{
-          color: "rgba(218,165,32,0.5)",
-          textShadow: "0 0 8px rgba(218,165,32,0.3)",
-          transform: expanded ? "rotate(90deg)" : "none",
-        }}
-      >
-        →
-      </span>
-    </div>
+    <span className="text-xs font-semibold tracking-wide" style={{ color: "rgba(245,235,210,0.85)" }}>
+      {label}
+    </span>
   </button>
 );
 
 export default function DomainSelect() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const [workOpen, setWorkOpen] = useState(false);
-  const [playOpen, setPlayOpen] = useState(false);
-  const [familyOpen, setFamilyOpen] = useState(false);
-  const [familyTab, setFamilyTab] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [changelogOpen, setChangelogOpen] = useState(false);
+
+  const toggle = (key: string) => setExpanded(expanded === key ? null : key);
+
+  const MountainBtn = ({
+    label,
+    onClick,
+    className = "",
+    style = {},
+    flicker = false,
+  }: {
+    label: string;
+    onClick: () => void;
+    className?: string;
+    style?: React.CSSProperties;
+    flicker?: boolean;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`relative cursor-pointer transition-all duration-300 ${flicker ? "candle-flicker" : ""} ${className}`}
+      style={{
+        background: "rgba(60,50,40,0.35)",
+        border: "1px solid rgba(180,160,130,0.25)",
+        backdropFilter: "blur(8px)",
+        borderRadius: "8px",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(80,65,45,0.5)";
+        e.currentTarget.style.borderColor = "rgba(218,165,32,0.5)";
+        e.currentTarget.style.boxShadow = "0 6px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 20px rgba(218,165,32,0.1)";
+        e.currentTarget.style.transform = "translateY(-1px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = style.background as string || "rgba(60,50,40,0.35)";
+        e.currentTarget.style.borderColor = style.borderColor as string || "rgba(180,160,130,0.25)";
+        e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+    >
+      <span
+        className="font-bold tracking-[0.18em] uppercase text-sm"
+        style={{
+          color: "rgba(245,235,210,0.95)",
+          textShadow: "0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(218,165,32,0.15)",
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Background */}
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="absolute inset-0 bg-black/38" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-      {/* Subtle warm atmospheric glow */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: "radial-gradient(ellipse at 50% 55%, rgba(218,165,32,0.05) 0%, transparent 55%)",
-          pointerEvents: "none",
-        }}
-      />
-      <NightSkyOverlay />
+      {/* Blue sky gradient */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(100,160,220,0.35) 0%, rgba(70,130,190,0.15) 30%, transparent 55%, rgba(30,50,80,0.2) 100%)" }} />
+      {/* Vignette */}
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 40%, transparent 50%, rgba(0,0,0,0.15) 100%)" }} />
+      {/* Water shimmer */}
+      <div className="absolute bottom-0 left-0 right-0 h-[18%]" style={{ background: "linear-gradient(to top, rgba(100,140,180,0.12) 0%, transparent 100%)", animation: "waterShimmer 4s ease-in-out infinite" }} />
+
+      <SkyOverlay />
 
       <div className="absolute top-4 right-4 z-10">
         <Button variant="ghost" size="sm" onClick={signOut} className="text-white/60 hover:text-white hover:bg-white/10">
@@ -148,144 +117,91 @@ export default function DomainSelect() {
         </Button>
       </div>
 
-      <div className="flex flex-col items-center gap-4 z-10 w-full max-w-xl px-4">
-        {/* Focus Sprint */}
-        <FlickerButton
-          label="Focus Sprint"
-          subtitle="Start a timed work session across any domain"
-          expanded={false}
+      {/* Mountain-shaped button layout */}
+      <div className="z-10 flex flex-col items-center gap-3 w-full max-w-md px-4">
+        {/* Peak — Ideas */}
+        <div className="flex justify-center">
+          <MountainBtn label="💡 Ideas" onClick={() => navigate("/ideas")} className="px-12 py-4" />
+        </div>
+
+        {/* Mid-range — Family / Play / Work */}
+        <div className="flex justify-center gap-2.5 w-full">
+          <MountainBtn
+            label="👨‍👩‍👧"
+            onClick={() => toggle("family")}
+            className="flex-1 py-4"
+            style={{ borderRadius: "8px 4px 8px 12px" }}
+          />
+          <MountainBtn
+            label="🎮 Play"
+            onClick={() => toggle("play")}
+            className="flex-1 py-4"
+          />
+          <MountainBtn
+            label="💼 Work"
+            onClick={() => toggle("work")}
+            className="flex-1 py-4"
+            style={{ borderRadius: "4px 8px 12px 8px" }}
+          />
+        </div>
+
+        {/* Expand panel */}
+        {expanded && (
+          <div className="w-full space-y-1.5 animate-fade-in px-1">
+            {expanded === "work" &&
+              WORK_DOMAINS.map((d) => (
+                <SubLink key={d.key} label={d.label} onClick={() => navigate(d.route)} />
+              ))}
+            {expanded === "play" &&
+              PLAY_DOMAINS.map((d) => (
+                <SubLink key={d.key} label={d.label} onClick={() => navigate(d.route)} />
+              ))}
+            {expanded === "family" &&
+              FAMILY_TABS.map((t) => (
+                <SubLink key={t} label={t} onClick={() => {}} />
+              ))}
+          </div>
+        )}
+
+        {/* Foundation — Focus Sprint */}
+        <MountainBtn
+          label="🔥 Focus Sprint"
           onClick={() => navigate("/focus")}
+          className="w-full py-5"
           flicker
+          style={{
+            borderRadius: "4px 4px 16px 16px",
+            background: "linear-gradient(135deg, rgba(100,75,40,0.4) 0%, rgba(60,50,40,0.35) 100%)",
+            borderColor: "rgba(218,165,32,0.35)",
+          }}
         />
+      </div>
 
-        {/* Work */}
-        <div className="w-full space-y-2">
-          <FlickerButton
-            label="Work"
-            subtitle="Work less"
-            expanded={workOpen}
-            onClick={() => setWorkOpen(!workOpen)}
-          />
-          {workOpen && (
-            <div className="space-y-1.5 pl-2 pr-1 animate-fade-in">
-              {WORK_DOMAINS.map((d) => (
-                <DomainLink key={d.key} domain={d} navigate={navigate} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Play */}
-        <div className="w-full space-y-2">
-          <FlickerButton
-            label="Play"
-            subtitle="Play more"
-            expanded={playOpen}
-            onClick={() => setPlayOpen(!playOpen)}
-          />
-          {playOpen && (
-            <div className="space-y-1.5 pl-2 pr-1 animate-fade-in">
-              {PLAY_DOMAINS.map((d) => (
-                <DomainLink key={d.key} domain={d} navigate={navigate} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Ideas */}
-        <FlickerButton
-          label="Ideas"
-          subtitle=""
-          expanded={false}
-          onClick={() => navigate("/ideas")}
-        />
-
-        {/* Family */}
-        <div className="w-full space-y-2">
-          <FlickerButton
-            label="Family"
-            subtitle=""
-            expanded={familyOpen}
-            onClick={() => setFamilyOpen(!familyOpen)}
-          />
-          {familyOpen && (
-            <div className="space-y-1.5 pl-2 pr-1 animate-fade-in">
-              {FAMILY_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFamilyTab(tab.key)}
-                  className="w-full text-left px-4 py-2.5 transition-all duration-200 cursor-pointer rounded-md group"
-                  style={{
-                    background: familyTab === tab.key ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${familyTab === tab.key ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)"}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = familyTab === tab.key ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)";
-                    e.currentTarget.style.borderColor = familyTab === tab.key ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)";
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold tracking-wide text-white/85 group-hover:text-white transition-colors">
-                      {tab.label}
-                    </h3>
-                    <span className="text-[10px] uppercase tracking-widest text-white/30">Coming Soon</span>
-                  </div>
-                </button>
-              ))}
-              {familyTab === "us" && (
-                <div className="p-3 rounded-md text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <p className="text-xs text-white/40 italic">💰 Money Meetings Dashboard — coming soon</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
+      {/* Footer */}
+      <div className="z-10 mt-6">
         <button
           onClick={() => setChangelogOpen(true)}
           className="text-xs text-center cursor-pointer hover:underline"
-          style={{ color: "rgba(255,255,255,0.25)" }}
+          style={{ color: "rgba(255,255,255,0.3)" }}
         >
           Lovable Prompts = {PROMPT_COUNT} // Earned Wisdom, LLC
         </button>
-
-        <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
-
       </div>
+
+      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
 
       <style>{`
         @keyframes candleFlicker {
-          0%, 100% {
-            box-shadow: 0 0 15px rgba(218,165,32,0.08), inset 0 0 20px rgba(218,165,32,0.02);
-          }
-          10% {
-            box-shadow: 0 0 22px rgba(218,165,32,0.18), inset 0 0 25px rgba(218,165,32,0.04);
-          }
-          20% {
-            box-shadow: 0 0 12px rgba(218,165,32,0.06), inset 0 0 18px rgba(218,165,32,0.01);
-          }
-          35% {
-            box-shadow: 0 0 28px rgba(218,165,32,0.22), inset 0 0 30px rgba(218,165,32,0.05);
-          }
-          45% {
-            box-shadow: 0 0 14px rgba(218,165,32,0.09), inset 0 0 20px rgba(218,165,32,0.02);
-          }
-          60% {
-            box-shadow: 0 0 25px rgba(218,165,32,0.2), inset 0 0 28px rgba(218,165,32,0.04);
-          }
-          75% {
-            box-shadow: 0 0 10px rgba(218,165,32,0.05), inset 0 0 15px rgba(218,165,32,0.01);
-          }
-          85% {
-            box-shadow: 0 0 20px rgba(218,165,32,0.15), inset 0 0 22px rgba(218,165,32,0.03);
-          }
+          0%, 100% { box-shadow: 0 0 15px rgba(218,165,32,0.08), inset 0 0 20px rgba(218,165,32,0.02); }
+          10% { box-shadow: 0 0 22px rgba(218,165,32,0.18), inset 0 0 25px rgba(218,165,32,0.04); }
+          35% { box-shadow: 0 0 28px rgba(218,165,32,0.22), inset 0 0 30px rgba(218,165,32,0.05); }
+          60% { box-shadow: 0 0 25px rgba(218,165,32,0.2), inset 0 0 28px rgba(218,165,32,0.04); }
+          75% { box-shadow: 0 0 10px rgba(218,165,32,0.05), inset 0 0 15px rgba(218,165,32,0.01); }
         }
-        .candle-flicker {
-          animation: candleFlicker 2.5s ease-in-out infinite;
+        .candle-flicker { animation: candleFlicker 2.5s ease-in-out infinite; }
+        @keyframes waterShimmer {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
