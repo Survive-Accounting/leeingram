@@ -41,15 +41,16 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Public landing / email grabber */}
-      <Route path="/" element={<Landing />} />
+      {/* Survive Accounting — home page */}
+      <Route path="/" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
+      <Route path="/survive" element={<Navigate to="/" replace />} />
+      {/* Public landing */}
+      <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       {/* Legacy redirect */}
       <Route path="/auth" element={<Navigate to="/admin" replace />} />
       <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
-      {/* Survive Accounting domain */}
-      <Route path="/survive" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
       <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
       <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
       <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
