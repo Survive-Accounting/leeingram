@@ -26,6 +26,7 @@ import TripPlanning from "./pages/TripPlanning";
 import TripExploring from "./pages/TripExploring";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { SprintTimerBar } from "@/components/SprintTimerBar";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <SprintProvider>
+            <SprintTimerBar />
             <AppRoutes />
           </SprintProvider>
         </AuthProvider>
