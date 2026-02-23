@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { Plus, Sparkles, Loader2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Props {
   chapterId: string;
@@ -325,32 +328,15 @@ function LessonDetailDialog({
           {/* Assign Problems */}
           <div>
             <p className="text-sm font-medium mb-2">Assigned Problems</p>
-            {assignedPairs?.length ? (
-              <div className="space-y-1 mb-2">
-                {assignedPairs.map((ap: any) => (
-                  <div key={ap.id} className="flex items-center justify-between rounded border border-border px-2 py-1.5">
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs font-mono font-medium">{ap.problem_pairs?.problem_code}</span>
-                      <span className="text-xs text-muted-foreground">{ap.problem_pairs?.description || ""}</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 text-[10px] text-destructive hover:text-destructive"
-                      onClick={() => unassignProblem.mutate(ap.problem_pair_id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground mb-2">No problems assigned yet.</p>
-            )}
+            <AssignedProblemsSection
+              assignedPairs={assignedPairs ?? []}
+              lessonId={lessonId}
+              chapterId={chapterId}
+              onUnassign={(id) => unassignProblem.mutate(id)}
+            />
 
             {unassigned.length > 0 && (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-2">
                 {unassigned.map((p) => (
                   <Button
                     key={p.id}
@@ -439,5 +425,80 @@ function OutputsDisplay({ outputs, lessonId }: { outputs: any; lessonId: string 
         </div>
       ))}
     </div>
+  );
+}
+
+/* ── Sortable assigned problems ── */
+
+function SortableItem({ ap, onUnassign }: { ap: any; onUnassign: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ap.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between rounded border border-border px-2 py-1.5 bg-background">
+      <div className="flex items-center gap-2">
+        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none">
+          <GripVertical className="h-3 w-3 text-muted-foreground" />
+        </button>
+        <span className="text-xs font-mono font-medium">{ap.problem_pairs?.problem_code}</span>
+        <span className="text-xs text-muted-foreground">{ap.problem_pairs?.description || ""}</span>
+      </div>
+      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive hover:text-destructive" onClick={() => onUnassign(ap.problem_pair_id)}>
+        Remove
+      </Button>
+    </div>
+  );
+}
+
+function AssignedProblemsSection({
+  assignedPairs,
+  lessonId,
+  chapterId,
+  onUnassign,
+}: {
+  assignedPairs: any[];
+  lessonId: string;
+  chapterId: string;
+  onUnassign: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor));
+
+  const reorderMutation = useMutation({
+    mutationFn: async (items: { id: string; order: number }[]) => {
+      await Promise.all(
+        items.map((item) =>
+          supabase.from("lesson_problem_pairs").update({ sequence_order: item.order }).eq("id", item.id)
+        )
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lesson-assigned-pairs", lessonId] }),
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = assignedPairs.findIndex((p) => p.id === active.id);
+    const newIndex = assignedPairs.findIndex((p) => p.id === over.id);
+    const reordered = arrayMove(assignedPairs, oldIndex, newIndex);
+    // Optimistic update via query cache
+    qc.setQueryData(["lesson-assigned-pairs", lessonId], reordered);
+    reorderMutation.mutate(reordered.map((item, i) => ({ id: item.id, order: i })));
+  };
+
+  if (!assignedPairs.length) {
+    return <p className="text-xs text-muted-foreground mb-2">No problems assigned yet.</p>;
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={assignedPairs.map((ap) => ap.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-1 mb-2">
+          {assignedPairs.map((ap) => (
+            <SortableItem key={ap.id} ap={ap} onUnassign={onUnassign} />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }
