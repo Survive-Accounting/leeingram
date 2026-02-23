@@ -69,7 +69,7 @@ export default function ContentFactory() {
 
           return (
             <Collapsible key={course.id}>
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden border-white/10 bg-white/[0.07]">
                 <CollapsibleTrigger className="w-full text-left">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
