@@ -10,6 +10,7 @@ import SurviveHome from "./pages/SurviveHome";
 import ContentFactory from "./pages/ContentFactory";
 import ContentRoadmap from "./pages/ContentRoadmap";
 import ChapterPage from "./pages/ChapterPage";
+import ChapterWorkspace from "./pages/ChapterWorkspace";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
 import FocusTimer from "./pages/FocusTimer";
 import CreateLesson from "./pages/CreateLesson";
@@ -55,6 +56,7 @@ const AppRoutes = () => {
       <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
       <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
       <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
+      <Route path="/workspace/:chapterId" element={<ProtectedRoute><ChapterWorkspace /></ProtectedRoute>} />
       <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
       <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
       <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />

@@ -3,13 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function ContentFactory() {
-  const { data: courses, isLoading: coursesLoading } = useQuery({
+  const { data: courses, isLoading } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
       const { data, error } = await supabase.from("courses").select("*").order("created_at");
@@ -21,10 +21,7 @@ export default function ContentFactory() {
   const { data: chapters } = useQuery({
     queryKey: ["chapters"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("*")
-        .order("chapter_number");
+      const { data, error } = await supabase.from("chapters").select("*").order("chapter_number");
       if (error) throw error;
       return data;
     },
@@ -39,10 +36,19 @@ export default function ContentFactory() {
     },
   });
 
-  const getChapterLessonCount = (chapterId: string) =>
-    lessons?.filter((l) => l.chapter_id === chapterId).length ?? 0;
+  const { data: problemPairs } = useQuery({
+    queryKey: ["all-problem-pairs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("problem_pairs").select("id, chapter_id");
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  if (coursesLoading) {
+  const getChapterLessons = (chapterId: string) => lessons?.filter((l) => l.chapter_id === chapterId) ?? [];
+  const getChapterProblems = (chapterId: string) => problemPairs?.filter((p) => p.chapter_id === chapterId).length ?? 0;
+
+  if (isLoading) {
     return (
       <AppLayout>
         <div className="text-muted-foreground">Loading...</div>
@@ -52,25 +58,14 @@ export default function ContentFactory() {
 
   return (
     <AppLayout>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Content Factory</h1>
-          <p className="text-sm text-muted-foreground">Manage your accounting course lessons</p>
-        </div>
-        <Button asChild>
-          <Link to="/create-lesson">
-            <Plus className="mr-1 h-4 w-4" /> Create Lesson
-          </Link>
-        </Button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Content Factory</h1>
+        <p className="text-sm text-muted-foreground">High-speed chapter planning & lesson production</p>
       </div>
 
       <div className="space-y-3">
         {courses?.map((course) => {
           const courseChapters = chapters?.filter((ch) => ch.course_id === course.id) ?? [];
-          const totalLessons = courseChapters.reduce(
-            (sum, ch) => sum + getChapterLessonCount(ch.id),
-            0
-          );
 
           return (
             <Collapsible key={course.id}>
@@ -83,9 +78,7 @@ export default function ContentFactory() {
                         <CardTitle className="text-lg">{course.course_name}</CardTitle>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                          {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
-                        </Badge>
+                        <Badge variant="secondary">{courseChapters.length} ch</Badge>
                         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=closed]>&]:rotate-[-90deg]" />
                       </div>
                     </div>
@@ -94,23 +87,35 @@ export default function ContentFactory() {
                 <CollapsibleContent>
                   <CardContent className="space-y-1 pt-0">
                     {courseChapters.map((ch) => {
-                      const count = getChapterLessonCount(ch.id);
+                      const chLessons = getChapterLessons(ch.id);
+                      const probCount = getChapterProblems(ch.id);
+                      const readyPct = chLessons.length
+                        ? Math.round((chLessons.filter((l) => l.status_ready_to_film).length / chLessons.length) * 100)
+                        : 0;
+                      const filmedPct = chLessons.length
+                        ? Math.round((chLessons.filter((l) => l.status_filmed).length / chLessons.length) * 100)
+                        : 0;
+
                       return (
                         <Link
                           key={ch.id}
-                          to={`/chapter/${ch.id}`}
-                          className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
+                          to={`/workspace/${ch.id}`}
+                          className="flex items-center justify-between rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent group"
                         >
                           <span className="text-foreground">
                             Ch {ch.chapter_number} — {ch.chapter_name}
                           </span>
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            {count > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {count}
-                              </Badge>
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            {probCount > 0 && (
+                              <Badge variant="outline" className="text-[10px]">{probCount} prob</Badge>
                             )}
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            {chLessons.length > 0 && (
+                              <Badge variant="outline" className="text-[10px]">{chLessons.length} lessons</Badge>
+                            )}
+                            {filmedPct > 0 && (
+                              <span className="text-[10px]">{filmedPct}% filmed</span>
+                            )}
+                            <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </span>
                         </Link>
                       );
@@ -121,14 +126,6 @@ export default function ContentFactory() {
             </Collapsible>
           );
         })}
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-border">
-        <Button asChild variant="outline" className="w-full">
-          <Link to="/content-roadmap">
-            📋 Content Roadmap
-          </Link>
-        </Button>
       </div>
     </AppLayout>
   );
