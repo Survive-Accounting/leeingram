@@ -777,9 +777,19 @@ export default function EmailFactory() {
                     </Card>
                   ) : (
                     <Card>
-                      <CardContent className="py-12 text-center">
+                      <CardContent className="py-12 text-center space-y-4">
                         <CheckCircle2 className="h-8 w-8 text-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-foreground/60">Approve your AI draft to finalize.</p>
+                        <p className="text-sm text-foreground/60">No final draft yet. Refine with AI first, or skip straight to writing.</p>
+                        <Button size="sm" onClick={() => {
+                          const draft = activeEmail?.ai_refined_body || activeEmail?.journal_body || "";
+                          updateMutation.mutate({ final_draft: draft, status: "finalized" });
+                          setFinalDraftEdit(draft);
+                          setIsEditingFinal(true);
+                          setEditMode("text");
+                          toast.success("Finalize mode — write your draft!");
+                        }}>
+                          <ArrowRight className="mr-1 h-3.5 w-3.5" /> Skip to Finalize
+                        </Button>
                       </CardContent>
                     </Card>
                   )}
