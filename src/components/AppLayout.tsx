@@ -38,7 +38,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="relative z-10 mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-6">
+        <div className="rounded-xl p-5" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
