@@ -90,6 +90,7 @@ export type Database = {
           course_id: string
           created_at: string
           id: string
+          target_lessons: number | null
         }
         Insert: {
           chapter_name: string
@@ -97,6 +98,7 @@ export type Database = {
           course_id: string
           created_at?: string
           id?: string
+          target_lessons?: number | null
         }
         Update: {
           chapter_name?: string
@@ -104,6 +106,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
+          target_lessons?: number | null
         }
         Relationships: [
           {
@@ -320,6 +323,50 @@ export type Database = {
           },
         ]
       }
+      lesson_outputs: {
+        Row: {
+          canva_slide_blocks: string | null
+          generated_at: string | null
+          id: string
+          lesson_id: string
+          lesson_summary: string | null
+          problem_breakdown: string | null
+          rewritten_exam_problems: string | null
+          slide_script: string | null
+          video_outline: string | null
+        }
+        Insert: {
+          canva_slide_blocks?: string | null
+          generated_at?: string | null
+          id?: string
+          lesson_id: string
+          lesson_summary?: string | null
+          problem_breakdown?: string | null
+          rewritten_exam_problems?: string | null
+          slide_script?: string | null
+          video_outline?: string | null
+        }
+        Update: {
+          canva_slide_blocks?: string | null
+          generated_at?: string | null
+          id?: string
+          lesson_id?: string
+          lesson_summary?: string | null
+          problem_breakdown?: string | null
+          rewritten_exam_problems?: string | null
+          slide_script?: string | null
+          video_outline?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_outputs_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_plans: {
         Row: {
           created_at: string
@@ -361,30 +408,99 @@ export type Database = {
           },
         ]
       }
+      lesson_problem_pairs: {
+        Row: {
+          id: string
+          lesson_id: string
+          problem_pair_id: string
+          sequence_order: number
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          problem_pair_id: string
+          sequence_order?: number
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          problem_pair_id?: string
+          sequence_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_problem_pairs_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_problem_pairs_problem_pair_id_fkey"
+            columns: ["problem_pair_id"]
+            isOneToOne: false
+            referencedRelation: "problem_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           chapter_id: string
+          concept_explanation: string | null
           course_id: string
           created_at: string
           id: string
+          lesson_order: number | null
           lesson_status: Database["public"]["Enums"]["lesson_status"]
           lesson_title: string
+          must_memorize: string | null
+          shortcuts: string | null
+          status_filmed: boolean | null
+          status_planned: boolean | null
+          status_posted: boolean | null
+          status_quiz_created: boolean | null
+          status_ready_to_film: boolean | null
+          topic: string | null
+          traps: string | null
         }
         Insert: {
           chapter_id: string
+          concept_explanation?: string | null
           course_id: string
           created_at?: string
           id?: string
+          lesson_order?: number | null
           lesson_status?: Database["public"]["Enums"]["lesson_status"]
           lesson_title: string
+          must_memorize?: string | null
+          shortcuts?: string | null
+          status_filmed?: boolean | null
+          status_planned?: boolean | null
+          status_posted?: boolean | null
+          status_quiz_created?: boolean | null
+          status_ready_to_film?: boolean | null
+          topic?: string | null
+          traps?: string | null
         }
         Update: {
           chapter_id?: string
+          concept_explanation?: string | null
           course_id?: string
           created_at?: string
           id?: string
+          lesson_order?: number | null
           lesson_status?: Database["public"]["Enums"]["lesson_status"]
           lesson_title?: string
+          must_memorize?: string | null
+          shortcuts?: string | null
+          status_filmed?: boolean | null
+          status_planned?: boolean | null
+          status_posted?: boolean | null
+          status_quiz_created?: boolean | null
+          status_ready_to_film?: boolean | null
+          topic?: string | null
+          traps?: string | null
         }
         Relationships: [
           {
@@ -447,6 +563,91 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      problem_assets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          page_index: number
+          problem_pair_id: string
+        }
+        Insert: {
+          asset_type?: string
+          created_at?: string
+          file_name?: string
+          file_url: string
+          id?: string
+          page_index?: number
+          problem_pair_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          page_index?: number
+          problem_pair_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_assets_problem_pair_id_fkey"
+            columns: ["problem_pair_id"]
+            isOneToOne: false
+            referencedRelation: "problem_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_pairs: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          number: number
+          problem_code: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          number: number
+          problem_code: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          number?: number
+          problem_code?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_pairs_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       roadmap_items: {
         Row: {
