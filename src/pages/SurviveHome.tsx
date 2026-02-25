@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { DomainLayout } from "@/components/DomainLayout";
-import { Factory, Mail, Lightbulb } from "lucide-react";
+import { Factory, Mail, Lightbulb, BookOpen } from "lucide-react";
 
 const FACTORIES = [
   {
@@ -17,6 +17,14 @@ const FACTORIES = [
     description: "Email campaigns, promo videos, and student engagement",
     icon: Mail,
     route: "/marketing",
+    available: true,
+  },
+  {
+    key: "problem-bank",
+    label: "Problem Bank",
+    description: "Browse, create, and manage textbook problems and solutions",
+    icon: BookOpen,
+    route: "/problem-bank",
     available: true,
   },
   {
