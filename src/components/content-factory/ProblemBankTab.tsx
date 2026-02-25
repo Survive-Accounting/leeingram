@@ -10,9 +10,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+
+const REJECTION_REASONS = [
+  "Too easy",
+  "Too hard",
+  "Off-topic",
+  "Bad wording / unclear",
+  "Wrong mechanics / incorrect accounting",
+  "Too long",
+  "Not aligned with exam style",
+] as const;
 
 interface Props {
   chapterId: string;
@@ -56,6 +67,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [candidates, setCandidates] = useState<any[]>([]);
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
   const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
+
+  // Rejection feedback state
+  const [rejectingIndex, setRejectingIndex] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectNote, setRejectNote] = useState("");
 
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", chapterId],
@@ -172,8 +188,29 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
 
-  const resetForm = () => {
-    setFormType("exercise");
+  const rejectMutation = useMutation({
+    mutationFn: async ({ candidate, problem, reason, note }: { candidate: any; problem: ChapterProblem; reason: string; note: string }) => {
+      const { error } = await supabase.from("variant_feedback").insert({
+        source_problem_id: problem.id,
+        variant_data: candidate,
+        rejection_reason: reason,
+        free_text_note: note || null,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      if (rejectingIndex !== null) {
+        setCandidates((prev) => prev.filter((_, i) => i !== rejectingIndex));
+      }
+      setRejectingIndex(null);
+      setRejectReason("");
+      setRejectNote("");
+      toast.success("Variant rejected — feedback saved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+    const resetForm = () => {
     setFormLabel("");
     setFormTitle("");
     setFormProblem("");
@@ -361,7 +398,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => setCandidates((prev) => prev.filter((_, i) => i !== idx))}
+                        onClick={() => { setRejectingIndex(idx); setRejectReason(""); setRejectNote(""); }}
                         disabled={approveMutation.isPending}
                       >
                         <X className="h-3 w-3 mr-1" /> Reject
@@ -370,9 +407,54 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   </div>
                 ))}
               </div>
+              <p className="text-[10px] text-muted-foreground/60 italic mt-3">
+                Future: use feedback to bias future generations.
+              </p>
             </div>
           )}
         </div>
+
+        {/* Rejection Feedback Dialog */}
+        <Dialog open={rejectingIndex !== null} onOpenChange={(o) => { if (!o) setRejectingIndex(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Why reject this variant?</DialogTitle>
+              <DialogDescription>Select a reason and optionally add a note. This feedback will improve future generations.</DialogDescription>
+            </DialogHeader>
+            <RadioGroup value={rejectReason} onValueChange={setRejectReason} className="space-y-2">
+              {REJECTION_REASONS.map((r) => (
+                <div key={r} className="flex items-center gap-2">
+                  <RadioGroupItem value={r} id={`reason-${r}`} />
+                  <Label htmlFor={`reason-${r}`} className="text-xs cursor-pointer">{r}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+            <div>
+              <Label className="text-xs">Note (optional)</Label>
+              <Textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} rows={2} className="text-xs mt-1" placeholder="Any additional context…" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setRejectingIndex(null)}>Cancel</Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={!rejectReason || rejectMutation.isPending}
+                onClick={() => {
+                  if (rejectingIndex !== null && viewingProblem) {
+                    rejectMutation.mutate({
+                      candidate: candidates[rejectingIndex],
+                      problem: viewingProblem,
+                      reason: rejectReason,
+                      note: rejectNote,
+                    });
+                  }
+                }}
+              >
+                {rejectMutation.isPending ? "Saving…" : "Reject Variant"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
