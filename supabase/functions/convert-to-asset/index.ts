@@ -125,24 +125,53 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch 3 random active company names
-    const { data: companyNames } = await supabase
-      .from("company_names")
-      .select("name, style")
-      .eq("active", true);
-    
-    const shuffled = (companyNames || []).sort(() => Math.random() - 0.5);
-    const selectedCompanies = shuffled.slice(0, 3);
-    const companyList = selectedCompanies.length >= 3
-      ? selectedCompanies.map((c: any) => `${c.name} (${c.style})`).join(", ")
-      : "Riverstone Corp (realistic), Moonbeam Industries (playful), Granite Financial (realistic)";
+    // Fetch user's variant generation settings
+    const userId = claimsData.claims.sub;
+    const { data: genSettings } = await supabase
+      .from("variant_generation_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const teachingTone: string[] = genSettings?.teaching_tone || [
+      "Neutral but memorable", "Mix of playful and professional",
+      "No campus-specific language", "No fluff or storytelling filler",
+    ];
+    const examRealism: string[] = genSettings?.exam_realism || [
+      "All generated problems must be exam-style", "No bolded numbers",
+      "Round all calculations to whole dollars", "Use short, concise sentences",
+    ];
+    const useCompanyNames = genSettings?.use_company_names ?? true;
+
+    // Fetch random active company names
+    let companyList = "Riverstone Corp (realistic), Moonbeam Industries (playful), Granite Financial (realistic)";
+    if (useCompanyNames) {
+      const { data: companyNames } = await supabase
+        .from("company_names")
+        .select("name, style")
+        .eq("active", true);
+      const shuffled = (companyNames || []).sort(() => Math.random() - 0.5);
+      const selectedCompanies = shuffled.slice(0, 3);
+      if (selectedCompanies.length >= 3) {
+        companyList = selectedCompanies.map((c: any) => `${c.name} (${c.style})`).join(", ");
+      }
+    }
+
+    // Merge saved tricky toggles with per-request overrides
+    const savedTrickyToggles: string[] = [];
+    if (genSettings?.tricky_partial_period) savedTrickyToggles.push("Partial period / stub period");
+    if (genSettings?.tricky_missing_info) savedTrickyToggles.push("Missing information requiring inference");
+    if (genSettings?.tricky_sign_reversal) savedTrickyToggles.push("Premium vs discount sign reversal traps");
+    if (genSettings?.tricky_multi_step_decoy) savedTrickyToggles.push("Multi-step with decoy step");
+    if (genSettings?.tricky_numerical_decoys) savedTrickyToggles.push("Decoy numerical values");
+    if (genSettings?.tricky_je_direction_trap) savedTrickyToggles.push("Journal entry debit/credit direction traps");
+    const allToggles = [...new Set([...savedTrickyToggles, ...(difficultyToggles || [])])];
 
     // Build difficulty toggles instruction
-    const toggles: string[] = difficultyToggles || [];
     let difficultySection = "";
-    if (toggles.length > 0) {
+    if (allToggles.length > 0) {
       difficultySection = `\nEXAM DIFFICULTY PATTERNS (incorporate at least one per variant):
-${toggles.map((t: string) => `- ${t}`).join("\n")}
+${allToggles.map((t: string) => `- ${t}`).join("\n")}
 
 For each variant, include an "exam_trap_note" explaining what makes this variant tricky.`;
     }
@@ -152,20 +181,24 @@ For each variant, include an "exam_trap_note" explaining what makes this variant
 - Generate a consolidated JE per event
 - Use grid format: Account | Debit | Credit
 - If date-based events, use timeline-based JE
+- Format for easy Google Sheets copy/paste
 - Do NOT include explanations for JE entries — students rely on video walkthroughs.`
       : "JOURNAL ENTRY: Leave journal_entry_block as null. This problem does not require a journal entry.";
 
     const systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
+
+TEACHING TONE:
+${teachingTone.map((t: string) => `- ${t}`).join("\n")}
+
+EXAM REALISM RULES:
+${examRealism.map((r: string) => `- ${r}`).join("\n")}
 
 CORE RULES:
 - Generate exactly 3 exam-style practice problem variants from the source.
 - Each variant must teach the SAME core accounting concept as the source.
 - Use DIFFERENT numerical values across all 3 variants.
 - Each variant MUST use a different company name and short scenario.
-- Use concise wording and short sentences. No fluff, no bolding, no unnecessary narrative.
-- Every problem must include: "Round all calculations to the nearest whole dollar."
-- Reflect exam-style structure similar to textbook/homework problems.
-- Variants should feel clean and solvable on first pass.
+- All scenarios must feel realistic and finance/accounting related.
 - Do NOT include "Survive Accounting" in student-facing text.
 
 COMPANY NAMES TO USE (one per variant, in order):
@@ -178,6 +211,7 @@ ${journalInstruction}
 SOLUTION STORAGE — For every variant, provide BOTH:
 1. answer_only: Final numeric answers + JE summary (concise)
 2. survive_solution_text: Fully worked steps with all internal solution logic (step-by-step)
+- Do not generate written teaching explanations — student-facing explanation will be video-linked.
 
 OUTPUT: Return exactly 3 candidates using tool calling.`;
 

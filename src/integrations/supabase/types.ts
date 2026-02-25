@@ -1345,6 +1345,90 @@ export type Database = {
           },
         ]
       }
+      variant_generation_settings: {
+        Row: {
+          created_at: string
+          default_difficulty: string
+          exam_realism: Json
+          id: string
+          je_answer_only: boolean
+          je_canva_export: boolean
+          je_fully_worked: boolean
+          je_google_sheets_format: boolean
+          no_written_explanation: boolean
+          require_different_company: boolean
+          require_different_scenario: boolean
+          require_different_values: boolean
+          store_solution_internally: boolean
+          teaching_tone: Json
+          tricky_je_direction_trap: boolean
+          tricky_missing_info: boolean
+          tricky_multi_step_decoy: boolean
+          tricky_numerical_decoys: boolean
+          tricky_partial_period: boolean
+          tricky_sign_reversal: boolean
+          updated_at: string
+          use_company_names: boolean
+          user_id: string
+          variants_per_request: number
+          video_linked_explanation: boolean
+        }
+        Insert: {
+          created_at?: string
+          default_difficulty?: string
+          exam_realism?: Json
+          id?: string
+          je_answer_only?: boolean
+          je_canva_export?: boolean
+          je_fully_worked?: boolean
+          je_google_sheets_format?: boolean
+          no_written_explanation?: boolean
+          require_different_company?: boolean
+          require_different_scenario?: boolean
+          require_different_values?: boolean
+          store_solution_internally?: boolean
+          teaching_tone?: Json
+          tricky_je_direction_trap?: boolean
+          tricky_missing_info?: boolean
+          tricky_multi_step_decoy?: boolean
+          tricky_numerical_decoys?: boolean
+          tricky_partial_period?: boolean
+          tricky_sign_reversal?: boolean
+          updated_at?: string
+          use_company_names?: boolean
+          user_id: string
+          variants_per_request?: number
+          video_linked_explanation?: boolean
+        }
+        Update: {
+          created_at?: string
+          default_difficulty?: string
+          exam_realism?: Json
+          id?: string
+          je_answer_only?: boolean
+          je_canva_export?: boolean
+          je_fully_worked?: boolean
+          je_google_sheets_format?: boolean
+          no_written_explanation?: boolean
+          require_different_company?: boolean
+          require_different_scenario?: boolean
+          require_different_values?: boolean
+          store_solution_internally?: boolean
+          teaching_tone?: Json
+          tricky_je_direction_trap?: boolean
+          tricky_missing_info?: boolean
+          tricky_multi_step_decoy?: boolean
+          tricky_numerical_decoys?: boolean
+          tricky_partial_period?: boolean
+          tricky_sign_reversal?: boolean
+          updated_at?: string
+          use_company_names?: boolean
+          user_id?: string
+          variants_per_request?: number
+          video_linked_explanation?: boolean
+        }
+        Relationships: []
+      }
       vlog_episodes: {
         Row: {
           created_at: string
