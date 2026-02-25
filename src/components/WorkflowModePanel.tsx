@@ -98,8 +98,18 @@ function saveChecked(chapterId: string, checked: Record<string, boolean>) {
 /* ── component ───────────────────────────────────────────── */
 
 export function WorkflowModePanel() {
-  /* fetch chapters for the selector */
-  const { data: chapters } = useQuery({
+  /* fetch courses */
+  const { data: courses } = useQuery({
+    queryKey: ["courses"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("courses").select("id, course_name, slug").order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  /* fetch chapters */
+  const { data: allChapters } = useQuery({
     queryKey: ["chapters"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -111,9 +121,21 @@ export function WorkflowModePanel() {
     },
   });
 
+  const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [selectedChapter, setSelectedChapter] = useState<string>("");
   const [openPhases, setOpenPhases] = useState<Record<number, boolean>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  /* filter chapters by selected course */
+  const filteredChapters = useMemo(
+    () => (allChapters ?? []).filter((ch) => ch.course_id === selectedCourse),
+    [allChapters, selectedCourse]
+  );
+
+  /* reset chapter when course changes */
+  useEffect(() => {
+    setSelectedChapter("");
+  }, [selectedCourse]);
 
   /* load persisted state when chapter changes */
   useEffect(() => {
@@ -141,10 +163,10 @@ export function WorkflowModePanel() {
   const progressPercent = TOTAL_STEPS > 0 ? (completedCount / TOTAL_STEPS) * 100 : 0;
 
   const chapterLabel = useMemo(() => {
-    if (!selectedChapter || !chapters) return "None selected";
-    const ch = chapters.find((c) => c.id === selectedChapter);
+    if (!selectedChapter || !allChapters) return "None selected";
+    const ch = allChapters.find((c) => c.id === selectedChapter);
     return ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "None selected";
-  }, [selectedChapter, chapters]);
+  }, [selectedChapter, allChapters]);
 
   return (
     <aside
@@ -157,13 +179,27 @@ export function WorkflowModePanel() {
           Chapter Production Workflow
         </h2>
 
-        {/* Chapter selector */}
-        <Select value={selectedChapter} onValueChange={setSelectedChapter}>
+        {/* Course selector */}
+        <Select value={selectedCourse} onValueChange={setSelectedCourse}>
           <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs h-8">
-            <SelectValue placeholder="Select chapter…" />
+            <SelectValue placeholder="Select course…" />
           </SelectTrigger>
           <SelectContent>
-            {(chapters ?? []).map((ch) => (
+            {(courses ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.course_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Chapter selector */}
+        <Select value={selectedChapter} onValueChange={setSelectedChapter} disabled={!selectedCourse}>
+          <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs h-8">
+            <SelectValue placeholder={selectedCourse ? "Select chapter…" : "Select a course first"} />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredChapters.map((ch) => (
               <SelectItem key={ch.id} value={ch.id}>
                 Ch {ch.chapter_number} — {ch.chapter_name}
               </SelectItem>
