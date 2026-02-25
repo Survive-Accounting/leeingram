@@ -136,26 +136,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 </div>
               </div>
 
-              {/* Workflow Steps toggle */}
-              {showStepsPanel && (
-                <div className="pt-3 mt-3 border-t border-white/10">
-                  <button
-                    onClick={() => setPanelOpen((p) => !p)}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs w-full transition-colors",
-                      panelOpen
-                        ? "bg-primary/20 text-primary font-medium"
-                        : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                    )}
-                  >
-                    <ListChecks className="h-4 w-4 shrink-0" />
-                    <span>Workflow</span>
-                  </button>
-                </div>
-              )}
             </nav>
-
-            {showStepsPanel && panelOpen && <WorkflowStepsPanel />}
           </>
         )}
 
