@@ -66,11 +66,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <h1 className="font-semibold text-white text-sm">Survive Accounting</h1>
           <span className="text-xs text-white/40 hidden sm:inline">Scalable Teaching Assets</span>
           <div className="ml-auto flex items-center gap-2">
-            {workflowMode && (
-              <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-white/50 hover:text-white hover:bg-white/10">
-                <Workflow className="mr-1 h-3.5 w-3.5" /> Dashboard View
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-white/50 hover:text-white hover:bg-white/10">
+              <Workflow className="mr-1 h-3.5 w-3.5" /> {workflowMode ? "Dashboard View" : "Workflow View"}
+            </Button>
             <Button variant="ghost" size="sm" asChild className="text-white/50 hover:text-white hover:bg-white/10">
               <Link to="/style-guide">
                 <Settings className="mr-1 h-3.5 w-3.5" /> Preferences
@@ -174,16 +172,6 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {children}
           </div>
 
-          {/* Workflow Mode toggle */}
-          {!workflowMode && (
-            <button
-              onClick={toggleWorkflowMode}
-              className="fixed bottom-5 left-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg transition-all bg-white/10 text-white/70 hover:bg-white/20 hover:text-white backdrop-blur-md border border-white/10"
-            >
-              <Workflow className="h-4 w-4" />
-              Enter Workflow Mode
-            </button>
-          )}
         </main>
       </div>
     </div>
