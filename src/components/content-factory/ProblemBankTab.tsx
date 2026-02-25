@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Plus, Check, Image, Filter } from "lucide-react";
+import { Plus, Check, Image, Filter, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePasteArea } from "./ImagePasteArea";
+import { BatchAddDialog } from "./BatchAddDialog";
 
 interface Props {
   chapterId: string;
@@ -21,6 +22,7 @@ interface Props {
 export function ProblemBankTab({ chapterId, chapterNumber }: Props) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
@@ -172,9 +174,14 @@ export function ProblemBankTab({ chapterId, chapterNumber }: Props) {
             </SelectContent>
           </Select>
         </div>
-        <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
-          <Plus className="mr-1 h-3.5 w-3.5" /> Add Pair
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setBatchOpen(true)}>
+            <Layers className="mr-1 h-3.5 w-3.5" /> Batch Add
+          </Button>
+          <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Plus className="mr-1 h-3.5 w-3.5" /> Add Pair
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
@@ -322,6 +329,9 @@ export function ProblemBankTab({ chapterId, chapterNumber }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Batch Dialog */}
+      <BatchAddDialog open={batchOpen} onOpenChange={setBatchOpen} chapterId={chapterId} chapterNumber={chapterNumber} />
 
       {/* Detail Dialog */}
       <Dialog open={!!detailId} onOpenChange={(o) => !o && setDetailId(null)}>
