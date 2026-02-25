@@ -41,13 +41,83 @@ serve(async (req) => {
     if (mode === "save") {
       const { problemId, courseId, chapterId, candidate, requiresJournalEntry } = body;
 
+      // ── Auto-generate Instance ID ──
+      // 1. Get course code
+      const { data: course, error: courseErr } = await supabase
+        .from("courses")
+        .select("code")
+        .eq("id", courseId)
+        .single();
+      if (courseErr || !course) throw new Error("Course not found");
+
+      // 2. Get chapter number
+      const { data: chapter, error: chErr } = await supabase
+        .from("chapters")
+        .select("chapter_number")
+        .eq("id", chapterId)
+        .single();
+      if (chErr || !chapter) throw new Error("Chapter not found");
+
+      const courseCode = course.code || "UNK";
+      const chNum = chapter.chapter_number;
+
+      // 3. Count existing variants from same source group to determine variant letter
+      const { count: existingVariants } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("base_raw_problem_id", problemId);
+      const variantLetter = String.fromCharCode(65 + (existingVariants || 0)); // A, B, C...
+
+      // 4. Get next sequential number for this chapter (across all source groups)
+      const { count: chapterAssetCount } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("chapter_id", chapterId);
+      
+      // If this is the first variant from this source, increment the chapter sequence
+      // Otherwise reuse the same sequence number
+      let seqNum: number;
+      if ((existingVariants || 0) === 0) {
+        // New source group — next sequential number
+        // Count distinct base_raw_problem_ids in this chapter that already have assets
+        const { data: distinctSources } = await supabase
+          .from("teaching_assets")
+          .select("base_raw_problem_id")
+          .eq("chapter_id", chapterId)
+          .not("base_raw_problem_id", "is", null);
+        const uniqueSources = new Set((distinctSources || []).map((d: any) => d.base_raw_problem_id));
+        seqNum = uniqueSources.size + 1;
+      } else {
+        // Existing source group — find the seq number from sibling asset names
+        const { data: siblings } = await supabase
+          .from("teaching_assets")
+          .select("asset_name")
+          .eq("base_raw_problem_id", problemId)
+          .limit(1);
+        const match = siblings?.[0]?.asset_name?.match(/_P(\d+)/);
+        if (match) {
+          seqNum = parseInt(match[1], 10);
+        } else {
+          // Fallback
+          const { data: allDistinct } = await supabase
+            .from("teaching_assets")
+            .select("base_raw_problem_id")
+            .eq("chapter_id", chapterId)
+            .not("base_raw_problem_id", "is", null);
+          const uniq = new Set((allDistinct || []).map((d: any) => d.base_raw_problem_id));
+          seqNum = uniq.size + 1;
+        }
+      }
+
+      const instanceId = `${courseCode}_CH${chNum}_P${String(seqNum).padStart(3, "0")}${variantLetter}`;
+
       const { data: newAsset, error: insertErr } = await supabase
         .from("teaching_assets")
         .insert({
           course_id: courseId,
           chapter_id: chapterId,
           base_raw_problem_id: problemId,
-          asset_name: candidate.asset_name,
+          asset_name: instanceId,
           tags: candidate.tags || [],
           survive_problem_text: candidate.survive_problem_text,
           journal_entry_block: requiresJournalEntry ? (candidate.journal_entry_block || null) : null,

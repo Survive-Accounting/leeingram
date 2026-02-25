@@ -352,11 +352,8 @@ export default function AssetsLibrary() {
       toast.error("Select a course and chapter");
       return;
     }
-    if (!form.asset_name.trim()) {
-      toast.error("Asset name is required");
-      return;
-    }
-    saveMutation.mutate(editingId ? { ...form, id: editingId } : form);
+    // For new assets, auto-name is generated server-side; for edits, name is read-only
+    saveMutation.mutate(editingId ? { ...form, id: editingId } : { ...form, asset_name: form.asset_name || "AUTO" });
   };
 
   const patch = (k: keyof AssetForm, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -543,7 +540,7 @@ export default function AssetsLibrary() {
                   onCheckedChange={toggleAll}
                 />
               </TableHead>
-              <TableHead className="text-xs">Asset Name</TableHead>
+              <TableHead className="text-xs">Instance ID</TableHead>
               <TableHead className="text-xs">Tags</TableHead>
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-28">Actions</TableHead>
@@ -563,7 +560,7 @@ export default function AssetsLibrary() {
                       onCheckedChange={() => toggleSelect(a.id)}
                     />
                   </TableCell>
-                  <TableCell className="text-xs font-medium">{a.asset_name}</TableCell>
+                  <TableCell className="text-xs font-mono font-medium">{a.asset_name}</TableCell>
                   <TableCell className="text-xs">
                     <div className="flex flex-wrap gap-1">
                       {(a.tags ?? []).slice(0, 3).map((t) => (
@@ -676,10 +673,12 @@ export default function AssetsLibrary() {
             </div>
           </div>
 
-          <div>
-            <Label className="text-xs">Asset Name</Label>
-            <Input value={form.asset_name} onChange={(e) => patch("asset_name", e.target.value)} placeholder="Bond Amortization — Premium" className="h-8 text-xs" />
-          </div>
+          {editingId && (
+            <div>
+              <Label className="text-xs">Instance ID</Label>
+              <Input value={form.asset_name} readOnly disabled className="h-8 text-xs bg-white/[0.03] opacity-70" />
+            </div>
+          )}
 
           <div>
             <Label className="text-xs">Tags</Label>
