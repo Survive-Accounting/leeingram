@@ -1,11 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Factory, Inbox, Library, Package, Video } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+const QUICK_NAV = [
+  { label: "Asset Factory", path: "/content", icon: Factory },
+  { label: "Problem Inbox", path: "/problem-bank", icon: Inbox },
+  { label: "Assets Library", path: "/assets-library", icon: Library },
+  { label: "Export Sets", path: "/export-sets", icon: Package },
+  { label: "Filming", path: "/filming", icon: Video },
+];
 
 /* ── workflow phases ─────────────────────────────────────── */
 
@@ -103,7 +112,7 @@ export function WorkflowModePanel() {
   });
 
   const [selectedChapter, setSelectedChapter] = useState<string>("");
-  const [openPhases, setOpenPhases] = useState<Record<number, boolean>>({ 0: true });
+  const [openPhases, setOpenPhases] = useState<Record<number, boolean>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
   /* load persisted state when chapter changes */
@@ -249,6 +258,39 @@ export function WorkflowModePanel() {
           );
         })}
       </div>
+
+      {/* ── quick nav ─────────────────────── */}
+      <QuickNav />
     </aside>
+  );
+}
+
+function QuickNav() {
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
+
+  return (
+    <div className="border-t border-white/10 px-2 py-2 space-y-0.5">
+      <span className="text-[10px] uppercase tracking-widest text-white/30 px-2 mb-1 block">Navigate</span>
+      {QUICK_NAV.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(item.path);
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] transition-colors",
+              active
+                ? "bg-white/15 text-white font-medium"
+                : "text-white/45 hover:text-white hover:bg-white/8"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }
