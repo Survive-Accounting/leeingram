@@ -29,7 +29,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   );
 
   const [panelOpen, setPanelOpen] = useState(true);
-  const [workflowMode, setWorkflowMode] = useState(() => localStorage.getItem("wf-mode-active") === "true");
+  const [workflowMode, setWorkflowMode] = useState(() => localStorage.getItem("wf-mode-active") !== "false");
 
   const toggleWorkflowMode = () => {
     setWorkflowMode((prev) => {
@@ -66,6 +66,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <h1 className="font-semibold text-white text-sm">Survive Accounting</h1>
           <span className="text-xs text-white/40 hidden sm:inline">Scalable Teaching Assets</span>
           <div className="ml-auto flex items-center gap-2">
+            {workflowMode && (
+              <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-white/50 hover:text-white hover:bg-white/10">
+                <Workflow className="mr-1 h-3.5 w-3.5" /> Dashboard View
+              </Button>
+            )}
             <Button variant="ghost" size="sm" asChild className="text-white/50 hover:text-white hover:bg-white/10">
               <Link to="/style-guide">
                 <Settings className="mr-1 h-3.5 w-3.5" /> Preferences
@@ -79,10 +84,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       </header>
 
       <div className="relative z-10 flex min-h-[calc(100vh-3.5rem)]">
-        {workflowMode ? (
-          /* ── Workflow Mode: full-height checklist replaces sidebar ── */
-          <WorkflowModePanel />
-        ) : (
+        {/* Workflow Mode: show checklist panel + compact nav */}
+        {workflowMode && <WorkflowModePanel />}
+
+        {!workflowMode && (
           <>
             {/* Sidebar */}
             <nav
@@ -152,7 +157,6 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               )}
             </nav>
 
-            {/* Workflow Steps Panel */}
             {showStepsPanel && panelOpen && <WorkflowStepsPanel />}
           </>
         )}
@@ -170,19 +174,16 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {children}
           </div>
 
-          {/* Workflow Mode toggle — bottom-left of main area */}
-          <button
-            onClick={toggleWorkflowMode}
-            className={cn(
-              "fixed bottom-5 left-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg transition-all",
-              workflowMode
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white backdrop-blur-md border border-white/10"
-            )}
-          >
-            <Workflow className="h-4 w-4" />
-            {workflowMode ? "Return to Dashboard" : "Enter Workflow Mode"}
-          </button>
+          {/* Workflow Mode toggle */}
+          {!workflowMode && (
+            <button
+              onClick={toggleWorkflowMode}
+              className="fixed bottom-5 left-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg transition-all bg-white/10 text-white/70 hover:bg-white/20 hover:text-white backdrop-blur-md border border-white/10"
+            >
+              <Workflow className="h-4 w-4" />
+              Enter Workflow Mode
+            </button>
+          )}
         </main>
       </div>
     </div>

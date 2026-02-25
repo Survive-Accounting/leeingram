@@ -93,7 +93,7 @@ export default function ContentFactory() {
           const courseChapters = chapters?.filter((ch) => ch.course_id === course.id) ?? [];
 
           return (
-            <Collapsible key={course.id} defaultOpen={isStarred}>
+            <Collapsible key={course.id}>
               <Card
                 className={cn(
                   "overflow-hidden transition-all duration-300",
