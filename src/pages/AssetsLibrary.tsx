@@ -302,7 +302,7 @@ export default function AssetsLibrary() {
             <Library className="h-5 w-5 text-primary" />
             Assets Library
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Read-only vault of approved scalable teaching assets. Assets are created through Problem Inbox approval only.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Approved assets ready for LearnWorlds export, eBook linking, and filming.</p>
         </div>
         <div className="flex gap-2">
           {selectedIds.size > 0 && (

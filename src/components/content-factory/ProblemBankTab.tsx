@@ -1,415 +1,509 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Plus, Check, Image, Filter, Layers } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { ImagePasteArea } from "./ImagePasteArea";
-import { BatchAddDialog } from "./BatchAddDialog";
+import { Link } from "react-router-dom";
 
 interface Props {
   chapterId: string;
   chapterNumber: number;
+  courseId: string;
 }
 
-export function ProblemBankTab({ chapterId, chapterNumber }: Props) {
+type ChapterProblem = {
+  id: string;
+  course_id: string;
+  chapter_id: string;
+  problem_type: "exercise" | "problem" | "custom";
+  source_label: string;
+  title: string;
+  problem_text: string;
+  solution_text: string;
+  journal_entry_text: string | null;
+  difficulty_internal: "easy" | "medium" | "hard" | "tricky" | null;
+  status: string;
+  created_at: string;
+};
+
+export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const qc = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [batchOpen, setBatchOpen] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>("all");
+  const [addOpen, setAddOpen] = useState(false);
+  const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Form state
-  const [type, setType] = useState<"Exercise" | "Problem">("Exercise");
-  const [number, setNumber] = useState("");
-  const [description, setDescription] = useState("");
-  const [problemFiles, setProblemFiles] = useState<File[]>([]);
-  const [solutionFiles, setSolutionFiles] = useState<File[]>([]);
+  // Add form
+  const [formType, setFormType] = useState<"exercise" | "problem" | "custom">("exercise");
+  const [formLabel, setFormLabel] = useState("");
+  const [formTitle, setFormTitle] = useState("");
+  const [formProblem, setFormProblem] = useState("");
+  const [formSolution, setFormSolution] = useState("");
+  const [formJE, setFormJE] = useState("");
 
-  const { data: pairs } = useQuery({
-    queryKey: ["problem-pairs", chapterId],
+  // Generate state
+  const [afDifficulty, setAfDifficulty] = useState("standard");
+  const [afNotes, setAfNotes] = useState("");
+  const [afRequiresJE, setAfRequiresJE] = useState(false);
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
+
+  const { data: problems, isLoading } = useQuery({
+    queryKey: ["chapter-problems", chapterId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("problem_pairs")
+        .from("chapter_problems")
         .select("*")
         .eq("chapter_id", chapterId)
-        .order("type")
-        .order("number");
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as ChapterProblem[];
     },
   });
-
-  const { data: assets } = useQuery({
-    queryKey: ["problem-assets", chapterId],
-    queryFn: async () => {
-      if (!pairs?.length) return [];
-      const ids = pairs.map((p) => p.id);
-      const { data, error } = await supabase
-        .from("problem_assets")
-        .select("*")
-        .in("problem_pair_id", ids);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pairs?.length,
-  });
-
-  const { data: lessonPairs } = useQuery({
-    queryKey: ["lesson-problem-pairs", chapterId],
-    queryFn: async () => {
-      if (!pairs?.length) return [];
-      const ids = pairs.map((p) => p.id);
-      const { data, error } = await supabase
-        .from("lesson_problem_pairs")
-        .select("problem_pair_id")
-        .in("problem_pair_id", ids);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pairs?.length,
-  });
-
-  const assignedIds = new Set(lessonPairs?.map((lp) => lp.problem_pair_id) ?? []);
-
-  const uploadImages = useCallback(async (pairId: string, files: File[], assetType: string) => {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const path = `${chapterId}/${pairId}/${assetType}_${i}_${Date.now()}.${file.name.split(".").pop() || "png"}`;
-      const { error: upErr } = await supabase.storage.from("problem-assets").upload(path, file);
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("problem-assets").getPublicUrl(path);
-      const { error: dbErr } = await supabase.from("problem_assets").insert({
-        problem_pair_id: pairId,
-        asset_type: assetType,
-        file_url: urlData.publicUrl,
-        file_name: file.name,
-        page_index: i,
-      });
-      if (dbErr) throw dbErr;
-    }
-  }, [chapterId]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const num = parseInt(number);
-      if (!num) throw new Error("Enter a valid number");
-      const code = `${type === "Exercise" ? "E" : "P"}${chapterNumber}-${num}`;
-      const { data: pair, error } = await supabase
-        .from("problem_pairs")
-        .insert({ chapter_id: chapterId, type, number: num, problem_code: code, description })
-        .select()
-        .single();
+      if (!formLabel.trim()) throw new Error("Source label is required");
+      const { error } = await supabase.from("chapter_problems").insert({
+        course_id: courseId,
+        chapter_id: chapterId,
+        problem_type: formType,
+        source_label: formLabel.trim(),
+        title: formTitle.trim(),
+        problem_text: formProblem,
+        solution_text: formSolution,
+        journal_entry_text: formJE || null,
+        status: "imported",
+      });
       if (error) throw error;
-      if (problemFiles.length) await uploadImages(pair.id, problemFiles, "problem_image");
-      if (solutionFiles.length) await uploadImages(pair.id, solutionFiles, "solution_image");
-      return pair;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["problem-pairs", chapterId] });
-      qc.invalidateQueries({ queryKey: ["problem-assets", chapterId] });
-      toast.success("Problem pair added");
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      toast.success("Source problem added");
       resetForm();
-      setDialogOpen(false);
+      setAddOpen(false);
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const reviewMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("problem_pairs").update({ status: "reviewed" }).eq("id", id);
+      const { error } = await supabase.from("chapter_problems").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["problem-pairs", chapterId] });
-      toast.success("Marked reviewed");
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      setDeleteId(null);
+      toast.success("Problem deleted");
     },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async (problem: ChapterProblem) => {
+      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+        body: {
+          mode: "candidates",
+          problemId: problem.id,
+          courseId: problem.course_id,
+          chapterId: problem.chapter_id,
+          sourceLabel: problem.source_label,
+          title: problem.title,
+          problemText: problem.problem_text,
+          solutionText: problem.solution_text,
+          journalEntryText: problem.journal_entry_text,
+          difficulty: afDifficulty,
+          notes: afNotes,
+          requiresJournalEntry: afRequiresJE,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      setCandidates((prev) => [...prev, ...(data.candidates || [])]);
+      if (viewingProblem) {
+        supabase.from("chapter_problems").update({ status: "generated" }).eq("id", viewingProblem.id).then(() => {
+          qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+        });
+        setViewingProblem({ ...viewingProblem, status: "generated" });
+      }
+      toast.success(`Generated ${data.candidates?.length || 0} candidates`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async ({ candidate, problem }: { candidate: any; problem: ChapterProblem }) => {
+      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+        body: {
+          mode: "save",
+          problemId: problem.id,
+          courseId: problem.course_id,
+          chapterId: problem.chapter_id,
+          candidate,
+          requiresJournalEntry: afRequiresJE,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      setGeneratedAssetId(data.asset?.id ?? null);
+      setSavingIndex(null);
+      if (viewingProblem) {
+        setViewingProblem({ ...viewingProblem, status: "approved" });
+      }
+      toast.success("Variant approved & saved to Assets Library!");
+    },
+    onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
 
   const resetForm = () => {
-    setType("Exercise");
-    setNumber("");
-    setDescription("");
-    setProblemFiles([]);
-    setSolutionFiles([]);
+    setFormType("exercise");
+    setFormLabel("");
+    setFormTitle("");
+    setFormProblem("");
+    setFormSolution("");
+    setFormJE("");
   };
 
-  const filtered = pairs?.filter((p) => {
-    if (filter === "exercise") return p.type === "Exercise";
-    if (filter === "problem") return p.type === "Problem";
-    if (filter === "reviewed") return p.status === "reviewed" || p.status === "assigned";
-    if (filter === "unassigned") return !assignedIds.has(p.id);
-    if (filter === "assigned") return assignedIds.has(p.id);
-    return true;
-  });
+  const openDetail = (p: ChapterProblem) => {
+    setViewingProblem(p);
+    setAfDifficulty("standard");
+    setAfNotes("");
+    setAfRequiresJE(!!p.journal_entry_text);
+    setCandidates([]);
+    setSavingIndex(null);
+    setGeneratedAssetId(null);
+  };
 
-  const getAssets = (pairId: string, assetType: string) =>
-    assets?.filter((a) => a.problem_pair_id === pairId && a.asset_type === assetType) ?? [];
+  const statusStyle = (status: string) => ({
+    imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    raw: "bg-muted text-muted-foreground",
+    generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    approved: "bg-green-500/20 text-green-400 border-green-500/30",
+    converted: "bg-green-500/20 text-green-400 border-green-500/30",
+  }[status] ?? "bg-muted text-muted-foreground");
 
-  const detailPair = pairs?.find((p) => p.id === detailId);
+  const statusLabel = (status: string) => ({
+    imported: "SOURCE",
+    raw: "SOURCE",
+    generated: "GENERATED",
+    approved: "APPROVED",
+    converted: "APPROVED",
+  }[status] ?? status.toUpperCase());
 
+  // ─── Detail / Generate View ───
+  if (viewingProblem) {
+    const p = viewingProblem;
+    return (
+      <div className="space-y-5">
+        <Button variant="ghost" size="sm" onClick={() => setViewingProblem(null)} className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3 w-3 mr-1" /> Back to Problems
+        </Button>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-mono text-muted-foreground">{p.source_label}</span>
+              <Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge>
+              <Badge variant="outline" className={`text-[10px] ${statusStyle(p.status)}`}>
+                {statusLabel(p.status)}
+              </Badge>
+            </div>
+            <h2 className="text-lg font-bold text-foreground">{p.title || p.source_label}</h2>
+          </div>
+        </div>
+
+        {/* Source Material */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h3>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{p.problem_text || "—"}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h3>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{p.solution_text || "—"}</p>
+          </div>
+        </div>
+
+        {p.journal_entry_text && (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry</h3>
+            <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{p.journal_entry_text}</pre>
+          </div>
+        )}
+
+        {/* Generate Variants Panel */}
+        <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Generate Practice Variants</h3>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3 mb-4">
+            <div>
+              <Label className="text-xs">Difficulty</Label>
+              <Select value={afDifficulty} onValueChange={setAfDifficulty}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="slightly_harder">Slightly Harder</SelectItem>
+                  <SelectItem value="tricky">Tricky</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label className="text-xs">Notes for AI (optional)</Label>
+              <Input value={afNotes} onChange={(e) => setAfNotes(e.target.value)} placeholder="e.g., Focus on premium bonds" className="h-8 text-xs" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <Checkbox id="je-toggle" checked={afRequiresJE} onCheckedChange={(v) => setAfRequiresJE(v === true)} />
+            <Label htmlFor="je-toggle" className="text-xs cursor-pointer">Journal entry required</Label>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button size="sm" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending}>
+              {generateMutation.isPending ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
+              ) : (
+                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate 3 Variants</>
+              )}
+            </Button>
+
+            {candidates.length > 0 && (
+              <Button size="sm" variant="outline" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending}>
+                <Sparkles className="h-3.5 w-3.5 mr-1" /> Generate 3 More
+              </Button>
+            )}
+
+            {generatedAssetId && (
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/assets-library">
+                  <ExternalLink className="h-3 w-3 mr-1" /> View in Assets Library
+                </Link>
+              </Button>
+            )}
+          </div>
+
+          {/* Candidates */}
+          {candidates.length > 0 && (
+            <div className="mt-5 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Generated Variants ({candidates.length})
+              </h4>
+              <div className="grid gap-4 md:grid-cols-3">
+                {candidates.map((c: any, idx: number) => (
+                  <div key={idx} className="rounded-lg border border-border bg-card p-4 space-y-3 flex flex-col">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Variant {idx + 1}</p>
+                      <h5 className="text-sm font-semibold text-foreground">{c.asset_name}</h5>
+                    </div>
+
+                    {c.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {c.tags.map((t: string) => (
+                          <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Practice Problem</p>
+                      <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_problem_text}</p>
+                    </div>
+
+                    {c.journal_entry_block && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Journal Entry</p>
+                        <pre className="text-xs text-foreground whitespace-pre-wrap font-mono line-clamp-4">{c.journal_entry_block}</pre>
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Solution</p>
+                      <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_solution_text}</p>
+                    </div>
+
+                    <div className="flex gap-2 mt-auto pt-2">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setSavingIndex(idx);
+                          approveMutation.mutate({ candidate: c, problem: p });
+                        }}
+                        disabled={approveMutation.isPending}
+                      >
+                        {savingIndex === idx && approveMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <><Check className="h-3 w-3 mr-1" /> Approve</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => setCandidates((prev) => prev.filter((_, i) => i !== idx))}
+                        disabled={approveMutation.isPending}
+                      >
+                        <X className="h-3 w-3 mr-1" /> Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Table View ───
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="exercise">Exercises</SelectItem>
-              <SelectItem value="problem">Problems</SelectItem>
-              <SelectItem value="reviewed">Reviewed</SelectItem>
-              <SelectItem value="assigned">Assigned</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setBatchOpen(true)}>
-            <Layers className="mr-1 h-3.5 w-3.5" /> Batch Add
-          </Button>
-          <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
-            <Plus className="mr-1 h-3.5 w-3.5" /> Add Pair
-          </Button>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Uploaded textbook problems waiting to be transformed into Survive assets.
+        </p>
+        <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>
+          <Plus className="mr-1 h-3.5 w-3.5" /> Add Source
+        </Button>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-24">Code</TableHead>
-              <TableHead className="w-20">Type</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="w-16 text-center">Prob</TableHead>
-              <TableHead className="w-16 text-center">Sol</TableHead>
-              <TableHead className="w-24">Status</TableHead>
-              <TableHead className="w-20 text-center">Used</TableHead>
-              <TableHead className="w-16" />
+              <TableHead className="text-xs w-24">Label</TableHead>
+              <TableHead className="text-xs">Title</TableHead>
+              <TableHead className="text-xs w-20">Type</TableHead>
+              <TableHead className="text-xs w-28">Status</TableHead>
+              <TableHead className="text-xs w-32">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!filtered?.length && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  No problem pairs yet. Click "+ Add Pair" to start.
-                </TableCell>
-              </TableRow>
+            {isLoading ? (
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">Loading…</TableCell></TableRow>
+            ) : !problems?.length ? (
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">No source problems yet. Click "+ Add Source" to start.</TableCell></TableRow>
+            ) : (
+              problems.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-mono text-xs font-medium">{p.source_label}</TableCell>
+                  <TableCell className="text-xs truncate max-w-[200px]">{p.title || "—"}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-[10px] ${statusStyle(p.status)}`}>
+                      {statusLabel(p.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {(p.status === "raw" || p.status === "imported") && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
+                          <Sparkles className="h-3 w-3 mr-1" /> Generate
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
-            {filtered?.map((p) => (
-              <TableRow
-                key={p.id}
-                className="cursor-pointer"
-                onClick={() => setDetailId(p.id)}
-              >
-                <TableCell className="font-mono text-xs font-medium">{p.problem_code}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-[10px]">{p.type}</Badge>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
-                  {p.description || "—"}
-                </TableCell>
-                <TableCell className="text-center">
-                  {getAssets(p.id, "problem_image").length > 0 ? (
-                    <Image className="h-3.5 w-3.5 text-primary mx-auto" />
-                  ) : (
-                    <span className="text-muted-foreground/30">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-center">
-                  {getAssets(p.id, "solution_image").length > 0 ? (
-                    <Image className="h-3.5 w-3.5 text-primary mx-auto" />
-                  ) : (
-                    <span className="text-muted-foreground/30">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] ${
-                      p.status === "reviewed"
-                        ? "border-green-500/30 text-green-400"
-                        : p.status === "assigned"
-                        ? "border-primary/30 text-primary"
-                        : "border-border text-muted-foreground"
-                    }`}
-                  >
-                    {p.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center text-xs">
-                  {assignedIds.has(p.id) ? <Check className="h-3.5 w-3.5 text-green-400 mx-auto" /> : "—"}
-                </TableCell>
-                <TableCell>
-                  {p.status === "uploaded" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs"
-                      onClick={(e) => { e.stopPropagation(); reviewMutation.mutate(p.id); }}
-                    >
-                      Review
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
           </TableBody>
         </Table>
       </div>
 
-      {/* Add Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      {/* Add Source Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Exercise / Problem Pair</DialogTitle>
+            <DialogTitle>Add Source Problem</DialogTitle>
+            <DialogDescription>Enter the textbook problem details. This creates a SOURCE record for variant generation.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">Type</Label>
-                <Select value={type} onValueChange={(v) => setType(v as "Exercise" | "Problem")}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <Select value={formType} onValueChange={(v) => setFormType(v as any)}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Exercise">Exercise</SelectItem>
-                    <SelectItem value="Problem">Problem</SelectItem>
+                    <SelectItem value="exercise">Exercise</SelectItem>
+                    <SelectItem value="problem">Problem</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Number</Label>
-                <Input
-                  type="number"
-                  value={number}
-                  onChange={(e) => setNumber(e.target.value)}
-                  placeholder="e.g. 4"
-                  className="h-9"
-                />
+                <Label className="text-xs">Source Label</Label>
+                <Input value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="E13-4" className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Bond amortization" className="h-8 text-xs" />
               </div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              Code: <span className="font-mono font-medium text-foreground">{type === "Exercise" ? "E" : "P"}{chapterNumber}-{number || "?"}</span>
+            <div>
+              <Label className="text-xs">Problem Text</Label>
+              <Textarea value={formProblem} onChange={(e) => setFormProblem(e.target.value)} rows={4} className="text-xs" placeholder="Paste the original problem text…" />
             </div>
             <div>
-              <Label className="text-xs">Description (optional)</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description..."
-                className="min-h-[50px]"
-              />
+              <Label className="text-xs">Solution Text</Label>
+              <Textarea value={formSolution} onChange={(e) => setFormSolution(e.target.value)} rows={4} className="text-xs" placeholder="Paste the solution…" />
             </div>
-            <ImagePasteArea
-              label="Paste Problem Screenshot(s) — Ctrl+V or drag"
-              files={problemFiles}
-              onAdd={(f) => setProblemFiles((prev) => [...prev, ...f])}
-              onRemove={(i) => setProblemFiles((prev) => prev.filter((_, idx) => idx !== i))}
-            />
-            <ImagePasteArea
-              label="Paste Solution Screenshot(s) — Ctrl+V or drag"
-              files={solutionFiles}
-              onAdd={(f) => setSolutionFiles((prev) => [...prev, ...f])}
-              onRemove={(i) => setSolutionFiles((prev) => prev.filter((_, idx) => idx !== i))}
-            />
+            <div>
+              <Label className="text-xs">Journal Entry (optional)</Label>
+              <Textarea value={formJE} onChange={(e) => setFormJE(e.target.value)} rows={3} className="text-xs font-mono" placeholder="Debit: Account — Amount&#10;Credit: Account — Amount" />
+            </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Saving..." : "Save Pair"}
+            <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Saving…" : "Save Source"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Batch Dialog */}
-      <BatchAddDialog open={batchOpen} onOpenChange={setBatchOpen} chapterId={chapterId} chapterNumber={chapterNumber} />
-
-      {/* Detail Dialog */}
-      <Dialog open={!!detailId} onOpenChange={(o) => !o && setDetailId(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          {detailPair && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-mono">{detailPair.problem_code}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Description</p>
-                  <p className="text-sm">{detailPair.description || "No description"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Notes</p>
-                  <NotesEditor pairId={detailPair.id} initial={detailPair.notes ?? ""} chapterId={chapterId} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Problem Images</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAssets(detailPair.id, "problem_image").map((a) => (
-                      <img key={a.id} src={a.file_url} alt="" className="rounded border border-border w-full" />
-                    ))}
-                    {getAssets(detailPair.id, "problem_image").length === 0 && (
-                      <p className="text-xs text-muted-foreground col-span-2">None uploaded</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Solution Images</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {getAssets(detailPair.id, "solution_image").map((a) => (
-                      <img key={a.id} src={a.file_url} alt="" className="rounded border border-border w-full" />
-                    ))}
-                    {getAssets(detailPair.id, "solution_image").length === 0 && (
-                      <p className="text-xs text-muted-foreground col-span-2">None uploaded</p>
-                    )}
-                  </div>
-                </div>
-                {detailPair.status === "uploaded" && (
-                  <Button size="sm" onClick={() => { reviewMutation.mutate(detailPair.id); setDetailId(null); }}>
-                    <Check className="mr-1 h-3.5 w-3.5" /> Mark Reviewed
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
+      {/* Delete confirmation */}
+      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Problem</DialogTitle>
+            <DialogDescription>This will permanently remove this source problem. Continue?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" size="sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function NotesEditor({ pairId, initial, chapterId }: { pairId: string; initial: string; chapterId: string }) {
-  const [notes, setNotes] = useState(initial);
-  const qc = useQueryClient();
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("problem_pairs").update({ notes }).eq("id", pairId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["problem-pairs", chapterId] });
-      toast.success("Notes saved");
-    },
-  });
-
-  return (
-    <div className="space-y-1">
-      <Textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Add notes..."
-        className="min-h-[60px] text-sm"
-        onBlur={() => notes !== initial && saveMutation.mutate()}
-      />
     </div>
   );
 }
