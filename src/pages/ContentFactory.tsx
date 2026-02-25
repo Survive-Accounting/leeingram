@@ -84,7 +84,7 @@ export default function ContentFactory() {
     <SurviveSidebarLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Asset Factory</h1>
-        <p className="text-sm text-muted-foreground">High-speed chapter planning & lesson production</p>
+        <p className="text-sm text-muted-foreground">Generate and refine practice problem variants from textbook source material.</p>
       </div>
 
       <div className="space-y-3">

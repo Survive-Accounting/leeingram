@@ -473,7 +473,10 @@ export default function ProblemBank() {
   return (
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Problem Inbox</h1>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Problem Inbox</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Imported textbook problems awaiting AI transformation into scalable teaching assets.</p>
+        </div>
         <Button size="sm" onClick={openNew}>
           <Plus className="h-3.5 w-3.5 mr-1" /> New Problem
         </Button>

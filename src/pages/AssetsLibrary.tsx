@@ -437,10 +437,13 @@ export default function AssetsLibrary() {
   return (
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Library className="h-5 w-5 text-primary" />
-          Assets Library
-        </h1>
+        <div>
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Library className="h-5 w-5 text-primary" />
+            Assets Library
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Approved practice problems ready for LearnWorlds export, filming, and eBook linking.</p>
+        </div>
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
             <>
