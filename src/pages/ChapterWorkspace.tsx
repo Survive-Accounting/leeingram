@@ -26,30 +26,28 @@ export default function ChapterWorkspace() {
     enabled: !!chapterId,
   });
 
-  const { data: problems } = useQuery({
-    queryKey: ["problem-pairs", chapterId],
+
+  // Use chapter_problems for status tracking
+  const { data: chapterProblems } = useQuery({
+    queryKey: ["chapter-problems-stats", chapterId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("problem_pairs")
-        .select("*")
-        .eq("chapter_id", chapterId!)
-        .order("type")
-        .order("number");
+        .from("chapter_problems")
+        .select("status")
+        .eq("chapter_id", chapterId!);
       if (error) throw error;
       return data;
     },
     enabled: !!chapterId,
   });
 
-  // Lessons query kept for LW Status tab
-  const { data: lessons } = useQuery({
-    queryKey: ["workspace-lessons", chapterId],
+  const { data: chapterAssets } = useQuery({
+    queryKey: ["chapter-assets-stats", chapterId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lessons")
-        .select("*")
-        .eq("chapter_id", chapterId!)
-        .order("lesson_order");
+        .from("teaching_assets")
+        .select("id")
+        .eq("chapter_id", chapterId!);
       if (error) throw error;
       return data;
     },
@@ -67,21 +65,18 @@ export default function ChapterWorkspace() {
   const course = chapter.courses as { course_name: string; id: string };
   const chapterNum = chapter.chapter_number;
 
-  const totalProblems = problems?.length ?? 0;
-  const reviewedProblems = problems?.filter((p) => p.status === "reviewed" || p.status === "assigned").length ?? 0;
-  const approvedProblems = problems?.filter((p) => p.status === "approved").length ?? 0;
-  const lwReady = problems?.filter((p) => p.status === "lw_ready").length ?? 0;
-  const filmed = problems?.filter((p) => p.status === "filmed").length ?? 0;
-  const deployed = problems?.filter((p) => p.status === "deployed").length ?? 0;
+  const totalSource = chapterProblems?.length ?? 0;
+  const generated = chapterProblems?.filter((p) => p.status === "generated" || p.status === "approved").length ?? 0;
+  const approved = chapterAssets?.length ?? 0;
 
   const stats = [
-    { label: "SOURCE", value: totalProblems, max: totalProblems || 1 },
-    { label: "GENERATED", value: reviewedProblems, max: totalProblems || 1 },
-    { label: "APPROVED", value: approvedProblems, max: totalProblems || 1 },
-    { label: "LW READY", value: lwReady, max: totalProblems || 1 },
-    { label: "FILM READY", value: 0, max: totalProblems || 1 },
-    { label: "FILMED", value: filmed, max: totalProblems || 1 },
-    { label: "DEPLOYED", value: deployed, max: totalProblems || 1 },
+    { label: "SOURCE", value: totalSource, max: totalSource || 1 },
+    { label: "GENERATED", value: generated, max: totalSource || 1 },
+    { label: "APPROVED", value: approved, max: totalSource || 1 },
+    { label: "LW READY", value: 0, max: totalSource || 1 },
+    { label: "FILM READY", value: 0, max: totalSource || 1 },
+    { label: "FILMED", value: 0, max: totalSource || 1 },
+    { label: "DEPLOYED", value: 0, max: totalSource || 1 },
   ];
 
   return (
@@ -118,7 +113,7 @@ export default function ChapterWorkspace() {
         </TabsList>
 
         <TabsContent value="problems">
-          <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} />
+          <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="lw-status">

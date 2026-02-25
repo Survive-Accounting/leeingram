@@ -475,7 +475,7 @@ export default function ProblemBank() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">Problem Inbox</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Imported textbook problems awaiting AI transformation into scalable teaching assets.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Uploaded textbook problems waiting to be transformed into Survive assets.</p>
         </div>
         <Button size="sm" onClick={openNew}>
           <Plus className="h-3.5 w-3.5 mr-1" /> New Problem
