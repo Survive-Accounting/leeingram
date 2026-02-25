@@ -49,9 +49,11 @@ export type Database = {
           id: string
           journal_entry_text: string | null
           problem_screenshot_url: string | null
+          problem_screenshot_urls: string[]
           problem_text: string
           problem_type: Database["public"]["Enums"]["problem_type"]
           solution_screenshot_url: string | null
+          solution_screenshot_urls: string[]
           solution_text: string
           source_label: string
           status: string
@@ -67,9 +69,11 @@ export type Database = {
           id?: string
           journal_entry_text?: string | null
           problem_screenshot_url?: string | null
+          problem_screenshot_urls?: string[]
           problem_text?: string
           problem_type?: Database["public"]["Enums"]["problem_type"]
           solution_screenshot_url?: string | null
+          solution_screenshot_urls?: string[]
           solution_text?: string
           source_label?: string
           status?: string
@@ -85,9 +89,11 @@ export type Database = {
           id?: string
           journal_entry_text?: string | null
           problem_screenshot_url?: string | null
+          problem_screenshot_urls?: string[]
           problem_text?: string
           problem_type?: Database["public"]["Enums"]["problem_type"]
           solution_screenshot_url?: string | null
+          solution_screenshot_urls?: string[]
           solution_text?: string
           source_label?: string
           status?: string

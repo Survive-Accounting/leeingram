@@ -112,7 +112,7 @@ export default function ChapterWorkspace() {
     <SurviveSidebarLayout>
       <div className="mb-3">
         <Link to="/content" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-3 w-3" /> Asset Factory
+          <ArrowLeft className="h-3 w-3" /> Variant Generator
         </Link>
       </div>
 

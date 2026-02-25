@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 
 const QUICK_NAV = [
-  { label: "Asset Factory", path: "/content", icon: Factory },
-  { label: "Problem Inbox", path: "/problem-bank", icon: Inbox },
+  { label: "Problem Import", path: "/problem-bank", icon: Inbox },
+  { label: "Variant Generator", path: "/content", icon: Factory },
   { label: "Assets Library", path: "/assets-library", icon: Library },
   { label: "Export Sets", path: "/export-sets", icon: Package },
-  { label: "Filming", path: "/filming", icon: Video },
+  { label: "Filming Queue", path: "/filming", icon: Video },
 ];
 
 /* ── workflow phases ─────────────────────────────────────── */
