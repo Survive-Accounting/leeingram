@@ -14,6 +14,8 @@ import ChapterWorkspace from "./pages/ChapterWorkspace";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
 import ProblemBank from "./pages/ProblemBank";
 import AssetsLibrary from "./pages/AssetsLibrary";
+import ExportSets from "./pages/ExportSets";
+import ExportSetDetail from "./pages/ExportSetDetail";
 import FilmingControlPanel from "./pages/FilmingControlPanel";
 import TutoringControlPanel from "./pages/TutoringControlPanel";
 import FocusTimer from "./pages/FocusTimer";
@@ -68,6 +70,8 @@ const AppRoutes = () => {
       <Route path="/ideas" element={<ProtectedRoute><IdeasRoadmap /></ProtectedRoute>} />
       <Route path="/problem-bank" element={<ProtectedRoute><ProblemBank /></ProtectedRoute>} />
       <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
+      <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
+      <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
       <Route path="/filming" element={<ProtectedRoute><FilmingControlPanel /></ProtectedRoute>} />
       <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
       <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />

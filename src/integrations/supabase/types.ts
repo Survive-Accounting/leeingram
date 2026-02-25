@@ -304,6 +304,81 @@ export type Database = {
         }
         Relationships: []
       }
+      export_set_items: {
+        Row: {
+          export_set_id: string
+          id: string
+          order_index: number
+          teaching_asset_id: string
+        }
+        Insert: {
+          export_set_id: string
+          id?: string
+          order_index?: number
+          teaching_asset_id: string
+        }
+        Update: {
+          export_set_id?: string
+          id?: string
+          order_index?: number
+          teaching_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_set_items_export_set_id_fkey"
+            columns: ["export_set_id"]
+            isOneToOne: false
+            referencedRelation: "export_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_set_items_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_sets: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_sets_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_sets_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       focus_sessions: {
         Row: {
           actual_minutes: number | null

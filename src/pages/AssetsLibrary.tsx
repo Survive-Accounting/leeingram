@@ -11,9 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Search, Eye, Library, X, Download, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, Library, X, Download, Loader2, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Link } from "react-router-dom";
 
 type TeachingAsset = {
   id: string;
@@ -84,6 +85,11 @@ export default function AssetsLibrary() {
   const [journalOption, setJournalOption] = useState<JournalOption>("feedback");
   const [isExporting, setIsExporting] = useState(false);
 
+  // Add to Export Set state
+  const [addToSetOpen, setAddToSetOpen] = useState(false);
+  const [selectedSetId, setSelectedSetId] = useState<string>("__new__");
+  const [newSetName, setNewSetName] = useState("");
+
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -118,6 +124,56 @@ export default function AssetsLibrary() {
       return data as TeachingAsset[];
     },
   });
+
+  const { data: exportSets } = useQuery({
+    queryKey: ["export-sets"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("export_sets").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const addToSetMutation = useMutation({
+    mutationFn: async ({ setId, assetIds }: { setId: string; assetIds: string[] }) => {
+      const { data: existing } = await supabase
+        .from("export_set_items")
+        .select("order_index")
+        .eq("export_set_id", setId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+      let nextOrder = (existing?.[0]?.order_index ?? -1) + 1;
+      const rows = assetIds.map((id, i) => ({
+        export_set_id: setId,
+        teaching_asset_id: id,
+        order_index: nextOrder + i,
+      }));
+      const { error } = await supabase.from("export_set_items").insert(rows as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["export-sets"] });
+      qc.invalidateQueries({ queryKey: ["export-set-items"] });
+      setAddToSetOpen(false);
+      setSelectedIds(new Set());
+      toast.success("Assets added to export set");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const handleAddToSet = async () => {
+    const assetIds = Array.from(selectedIds);
+    if (!assetIds.length) return;
+    let targetSetId = selectedSetId;
+    if (selectedSetId === "__new__") {
+      if (!newSetName.trim()) { toast.error("Enter a set name"); return; }
+      const { data, error } = await supabase.from("export_sets").insert({ name: newSetName.trim() } as any).select("id").single();
+      if (error) { toast.error(error.message); return; }
+      targetSetId = data.id;
+      qc.invalidateQueries({ queryKey: ["export-sets"] });
+    }
+    addToSetMutation.mutate({ setId: targetSetId, assetIds });
+  };
 
   const saveMutation = useMutation({
     mutationFn: async (data: AssetForm & { id?: string }) => {
@@ -385,9 +441,14 @@ export default function AssetsLibrary() {
         </h1>
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
-            <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
-              <Download className="h-3.5 w-3.5 mr-1" /> Export Selected ({selectedIds.size})
-            </Button>
+            <>
+              <Button size="sm" variant="outline" onClick={() => { setSelectedSetId("__new__"); setNewSetName(""); setAddToSetOpen(true); }}>
+                <FolderPlus className="h-3.5 w-3.5 mr-1" /> Add to Export Set
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
+                <Download className="h-3.5 w-3.5 mr-1" /> Export Selected ({selectedIds.size})
+              </Button>
+            </>
           )}
           <Button size="sm" onClick={openNew}>
             <Plus className="h-3.5 w-3.5 mr-1" /> New Asset
@@ -640,6 +701,42 @@ export default function AssetsLibrary() {
             <Button variant="outline" size="sm" onClick={() => setDeleteId(null)}>Cancel</Button>
             <Button variant="destructive" size="sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Export Set Dialog */}
+      <Dialog open={addToSetOpen} onOpenChange={setAddToSetOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add to Export Set</DialogTitle>
+            <DialogDescription>Add {selectedIds.size} asset{selectedIds.size !== 1 ? "s" : ""} to an export set.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Export Set</Label>
+              <Select value={selectedSetId} onValueChange={setSelectedSetId}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__new__">+ Create New Set</SelectItem>
+                  {exportSets?.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedSetId === "__new__" && (
+              <div>
+                <Label className="text-xs">New Set Name</Label>
+                <Input value={newSetName} onChange={(e) => setNewSetName(e.target.value)} placeholder="e.g. Ch 8 Bonds Quiz" className="h-8 text-xs" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAddToSetOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleAddToSet} disabled={addToSetMutation.isPending}>
+              {addToSetMutation.isPending ? "Adding…" : "Add to Set"}
             </Button>
           </DialogFooter>
         </DialogContent>

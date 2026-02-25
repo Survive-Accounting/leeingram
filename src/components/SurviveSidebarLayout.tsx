@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Factory, Inbox, Library, Video, GraduationCap, LogOut, Settings } from "lucide-react";
+import { Home, Factory, Inbox, Library, Video, GraduationCap, LogOut, Settings, Package } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
@@ -10,8 +10,8 @@ const NAV_ITEMS = [
   { label: "Asset Factory", path: "/content", icon: Factory },
   { label: "Problem Inbox", path: "/problem-bank", icon: Inbox },
   { label: "Assets Library", path: "/assets-library", icon: Library },
+  { label: "Export Sets", path: "/export-sets", icon: Package },
   { label: "Filming Control Panel", path: "/filming", icon: Video },
-  { label: "Tutoring Control Panel", path: "/tutoring", icon: GraduationCap },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
