@@ -4,17 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Search, Eye, Library, X, Download, Loader2, FolderPlus, FileText } from "lucide-react";
+import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 
 type TeachingAsset = {
@@ -34,28 +32,6 @@ type TeachingAsset = {
   updated_at: string;
 };
 
-type AssetDifficulty = "standard" | "harder" | "tricky";
-type AssetTypeEnum = "practice_problem" | "journal_entry" | "concept_review" | "exam_prep";
-
-type AssetForm = Omit<TeachingAsset, "id" | "created_at" | "updated_at"> & {
-  asset_type: AssetTypeEnum;
-  difficulty: AssetDifficulty | null;
-};
-
-const EMPTY_FORM: AssetForm = {
-  course_id: "",
-  chapter_id: "",
-  base_raw_problem_id: null,
-  asset_name: "",
-  tags: [],
-  survive_problem_text: "",
-  journal_entry_block: null,
-  survive_solution_text: "",
-  difficulty: null,
-  source_ref: null,
-  asset_type: "practice_problem" as const,
-};
-
 type JournalOption = "question" | "feedback" | "none";
 
 function escapeCSV(val: string): string {
@@ -71,12 +47,8 @@ export default function AssetsLibrary() {
   const [courseFilter, setCourseFilter] = useState<string>("all");
   const [chapterFilter, setChapterFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingAsset, setViewingAsset] = useState<TeachingAsset | null>(null);
-  const [form, setForm] = useState<AssetForm>(EMPTY_FORM);
-  const [tagInput, setTagInput] = useState("");
 
   // Selection & Export state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -177,25 +149,6 @@ export default function AssetsLibrary() {
     addToSetMutation.mutate({ setId: targetSetId, assetIds });
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: AssetForm & { id?: string }) => {
-      if (data.id) {
-        const { id, ...rest } = data;
-        const { error } = await supabase.from("teaching_assets").update(rest as any).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("teaching_assets").insert(data as any);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
-      setDialogOpen(false);
-      toast.success(editingId ? "Asset updated" : "Asset created");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("teaching_assets").delete().eq("id", id);
@@ -230,14 +183,9 @@ export default function AssetsLibrary() {
   const handleExport = async () => {
     if (!assets) return;
     const selected = assets.filter((a) => selectedIds.has(a.id));
-    if (selected.length === 0) {
-      toast.error("No assets selected");
-      return;
-    }
-
+    if (selected.length === 0) { toast.error("No assets selected"); return; }
     setIsExporting(true);
     try {
-      // Call edge function for distractor generation
       const { data, error } = await supabase.functions.invoke("generate-distractors", {
         body: {
           assets: selected.map((a) => ({
@@ -249,55 +197,27 @@ export default function AssetsLibrary() {
           journalOption,
         },
       });
-
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-
       const distractors: any[] = data.distractors || [];
-
-      // Build CSV rows - LearnWorlds format: Group, Type, Question, CorAns, Answer1-4, (empty 5-7), CorrectExplanation, IncorrectExplanation
       const header = "Group,Type,Question,CorAns,Answer1,Answer2,Answer3,Answer4,Answer5,Answer6,Answer7,CorrectExplanation,IncorrectExplanation";
       const rows = selected.map((asset, idx) => {
         const d = distractors[idx] || {};
-
-        // Build question text
         let questionText = asset.survive_problem_text;
-        if (journalOption === "question" && asset.journal_entry_block) {
-          questionText += "\n\n" + asset.journal_entry_block;
-        }
-
-        // Build feedback
+        if (journalOption === "question" && asset.journal_entry_block) questionText += "\n\n" + asset.journal_entry_block;
         let correctFeedback = asset.survive_solution_text;
-        if (journalOption === "feedback" && asset.journal_entry_block) {
-          correctFeedback = asset.journal_entry_block + "\n\n" + asset.survive_solution_text;
-        }
+        if (journalOption === "feedback" && asset.journal_entry_block) correctFeedback = asset.journal_entry_block + "\n\n" + asset.survive_solution_text;
         const incorrectFeedback = asset.survive_solution_text;
-
-        // Randomize answer position (correct = random 1-4)
         const correctPos = Math.floor(Math.random() * 4) + 1;
         const answers = ["", "", "", ""];
         answers[correctPos - 1] = d.correct_answer || asset.journal_entry_block || "Correct answer";
         let dIdx = 0;
         const distractorList = [d.distractor_1, d.distractor_2, d.distractor_3].filter(Boolean);
         for (let i = 0; i < 4; i++) {
-          if (i !== correctPos - 1) {
-            answers[i] = distractorList[dIdx] || `Option ${i + 1}`;
-            dIdx++;
-          }
+          if (i !== correctPos - 1) { answers[i] = distractorList[dIdx] || `Option ${i + 1}`; dIdx++; }
         }
-
-        return [
-          exportName,
-          exportQuestionType,
-          questionText,
-          String(correctPos),
-          ...answers,
-          "", "", "", // Answer5-7 empty
-          correctFeedback,
-          incorrectFeedback,
-        ].map(escapeCSV).join(",");
+        return [exportName, exportQuestionType, questionText, String(correctPos), ...answers, "", "", "", correctFeedback, incorrectFeedback].map(escapeCSV).join(",");
       });
-
       const csv = header + "\n" + rows.join("\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -306,7 +226,6 @@ export default function AssetsLibrary() {
       link.download = `${exportName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd")}.csv`;
       link.click();
       URL.revokeObjectURL(url);
-
       toast.success(`Exported ${selected.length} assets to CSV`);
       setExportOpen(false);
       setSelectedIds(new Set());
@@ -315,59 +234,6 @@ export default function AssetsLibrary() {
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const openNew = () => {
-    setEditingId(null);
-    setForm({
-      ...EMPTY_FORM,
-      course_id: courseFilter !== "all" ? courseFilter : courses?.[0]?.id ?? "",
-      chapter_id: chapterFilter !== "all" ? chapterFilter : "",
-    });
-    setTagInput("");
-    setDialogOpen(true);
-  };
-
-  const openEdit = (a: TeachingAsset) => {
-    setEditingId(a.id);
-    setForm({
-      course_id: a.course_id,
-      chapter_id: a.chapter_id,
-      base_raw_problem_id: a.base_raw_problem_id,
-      asset_name: a.asset_name,
-      tags: a.tags ?? [],
-      survive_problem_text: a.survive_problem_text,
-      journal_entry_block: a.journal_entry_block,
-      survive_solution_text: a.survive_solution_text,
-      difficulty: a.difficulty as AssetDifficulty | null,
-      source_ref: a.source_ref,
-      asset_type: a.asset_type as AssetTypeEnum,
-    });
-    setTagInput("");
-    setDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!form.course_id || !form.chapter_id) {
-      toast.error("Select a course and chapter");
-      return;
-    }
-    // For new assets, auto-name is generated server-side; for edits, name is read-only
-    saveMutation.mutate(editingId ? { ...form, id: editingId } : { ...form, asset_name: form.asset_name || "AUTO" });
-  };
-
-  const patch = (k: keyof AssetForm, v: any) => setForm((f) => ({ ...f, [k]: v }));
-
-  const addTag = () => {
-    const t = tagInput.trim();
-    if (t && !form.tags.includes(t)) {
-      patch("tags", [...form.tags, t]);
-    }
-    setTagInput("");
-  };
-
-  const removeTag = (tag: string) => {
-    patch("tags", form.tags.filter((t) => t !== tag));
   };
 
   const chapterLabel = (chId: string) => {
@@ -419,9 +285,6 @@ export default function AssetsLibrary() {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button size="sm" variant="outline" onClick={() => { openEdit(viewingAsset); setViewingAsset(null); }}>
-              <Pencil className="h-3 w-3 mr-1" /> Edit
-            </Button>
             <Button size="sm" variant="destructive" onClick={() => { setDeleteId(viewingAsset.id); setViewingAsset(null); }}>
               <Trash2 className="h-3 w-3 mr-1" /> Delete
             </Button>
@@ -439,7 +302,7 @@ export default function AssetsLibrary() {
             <Library className="h-5 w-5 text-primary" />
             Assets Library
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Approved practice problems ready for LearnWorlds export, filming, and eBook linking.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Read-only vault of approved scalable teaching assets. Assets are created through Problem Inbox approval only.</p>
         </div>
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
@@ -486,9 +349,6 @@ export default function AssetsLibrary() {
               </Button>
             </>
           )}
-          <Button size="sm" onClick={openNew}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> New Asset
-          </Button>
         </div>
       </div>
 
@@ -543,7 +403,7 @@ export default function AssetsLibrary() {
               <TableHead className="text-xs">Instance ID</TableHead>
               <TableHead className="text-xs">Tags</TableHead>
               <TableHead className="text-xs">Created</TableHead>
-              <TableHead className="text-xs w-28">Actions</TableHead>
+              <TableHead className="text-xs w-20">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -578,9 +438,6 @@ export default function AssetsLibrary() {
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAsset(a)}>
                         <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(a)}>
-                        <Pencil className="h-3 w-3" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(a.id)}>
                         <Trash2 className="h-3 w-3" />
@@ -637,92 +494,6 @@ export default function AssetsLibrary() {
             <Button variant="outline" size="sm" onClick={() => setExportOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleExport} disabled={isExporting}>
               {isExporting ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</> : <><Download className="h-3.5 w-3.5 mr-1" /> Export CSV</>}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New / Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Asset" : "New Teaching Asset"}</DialogTitle>
-            <DialogDescription>Define a reusable teaching asset with problem, solution, and tags.</DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Course</Label>
-              <Select value={form.course_id} onValueChange={(v) => { patch("course_id", v); patch("chapter_id", ""); }}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select course" /></SelectTrigger>
-                <SelectContent>
-                  {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Chapter</Label>
-              <Select value={form.chapter_id} onValueChange={(v) => patch("chapter_id", v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select chapter" /></SelectTrigger>
-                <SelectContent>
-                  {chapters?.filter((c) => !form.course_id || c.course_id === form.course_id).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {editingId && (
-            <div>
-              <Label className="text-xs">Instance ID</Label>
-              <Input value={form.asset_name} readOnly disabled className="h-8 text-xs bg-white/[0.03] opacity-70" />
-            </div>
-          )}
-
-          <div>
-            <Label className="text-xs">Tags</Label>
-            <div className="flex gap-2 mb-1.5">
-              <Input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                placeholder="Type a tag and press Enter"
-                className="h-8 text-xs flex-1"
-              />
-              <Button type="button" size="sm" variant="outline" onClick={addTag} className="h-8 text-xs">Add</Button>
-            </div>
-            {form.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {form.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs gap-1">
-                    {tag}
-                    <button onClick={() => removeTag(tag)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <Label className="text-xs">Survive Problem Text</Label>
-            <Textarea value={form.survive_problem_text} onChange={(e) => patch("survive_problem_text", e.target.value)} rows={5} className="text-xs" placeholder="The owned practice problem students will see…" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Journal Entry Block (optional)</Label>
-            <Textarea value={form.journal_entry_block ?? ""} onChange={(e) => patch("journal_entry_block", e.target.value || null)} rows={4} className="text-xs font-mono" placeholder="Date | Account | Debit | Credit" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Survive Solution Text</Label>
-            <Textarea value={form.survive_solution_text} onChange={(e) => patch("survive_solution_text", e.target.value)} rows={5} className="text-xs" placeholder="Full step-by-step solution…" />
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
