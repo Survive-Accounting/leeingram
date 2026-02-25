@@ -1,13 +1,21 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Star } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+
+const STARRED_KEY = "asset-factory-starred-course";
 
 export default function ContentFactory() {
+  const [starredId, setStarredId] = useState<string | null>(
+    () => localStorage.getItem(STARRED_KEY)
+  );
+
   const { data: courses, isLoading } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -47,6 +55,16 @@ export default function ContentFactory() {
   const getChapterLessons = (chapterId: string) => lessons?.filter((l) => l.chapter_id === chapterId) ?? [];
   const getChapterProblems = (chapterId: string) => problemPairs?.filter((p) => p.chapter_id === chapterId).length ?? 0;
 
+  const toggleStar = (courseId: string) => {
+    if (starredId === courseId) {
+      setStarredId(null);
+      localStorage.removeItem(STARRED_KEY);
+    } else {
+      setStarredId(courseId);
+      localStorage.setItem(STARRED_KEY, courseId);
+    }
+  };
+
   if (isLoading) {
     return (
       <SurviveSidebarLayout>
@@ -54,6 +72,13 @@ export default function ContentFactory() {
       </SurviveSidebarLayout>
     );
   }
+
+  // Sort: starred course first
+  const sortedCourses = courses ? [...courses].sort((a, b) => {
+    if (a.id === starredId) return -1;
+    if (b.id === starredId) return 1;
+    return 0;
+  }) : [];
 
   return (
     <SurviveSidebarLayout>
@@ -63,21 +88,44 @@ export default function ContentFactory() {
       </div>
 
       <div className="space-y-3">
-        {courses?.map((course) => {
+        {sortedCourses.map((course) => {
+          const isStarred = course.id === starredId;
           const courseChapters = chapters?.filter((ch) => ch.course_id === course.id) ?? [];
 
           return (
-            <Collapsible key={course.id}>
-              <Card className="overflow-hidden border-white/10 bg-white/[0.07]">
+            <Collapsible key={course.id} defaultOpen={isStarred}>
+              <Card
+                className={cn(
+                  "overflow-hidden transition-all duration-300",
+                  isStarred
+                    ? "border-amber-400/60 bg-amber-400/[0.06] shadow-[0_0_24px_-4px_rgba(251,191,36,0.25)] scale-[1.02]"
+                    : "border-white/10 bg-white/[0.07] opacity-60"
+                )}
+                style={!starredId ? { opacity: 1 } : undefined}
+              >
                 <CollapsibleTrigger className="w-full text-left">
-                  <CardHeader className="pb-3">
+                  <CardHeader className={cn("pb-3", isStarred && "pb-4")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">{course.course_name}</CardTitle>
+                        <BookOpen className={cn("h-5 w-5", isStarred ? "text-amber-400" : "text-primary")} />
+                        <CardTitle className={cn(isStarred ? "text-xl" : "text-lg")}>
+                          {course.course_name}
+                        </CardTitle>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary">{courseChapters.length} ch</Badge>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleStar(course.id); }}
+                          className={cn(
+                            "p-1 rounded-md transition-colors",
+                            isStarred
+                              ? "text-amber-400 hover:text-amber-300"
+                              : "text-muted-foreground/40 hover:text-amber-400/70"
+                          )}
+                          title={isStarred ? "Unstar this course" : "Star as focus course"}
+                        >
+                          <Star className={cn("h-4 w-4", isStarred && "fill-amber-400")} />
+                        </button>
                         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=closed]>&]:rotate-[-90deg]" />
                       </div>
                     </div>
