@@ -61,6 +61,8 @@ export default function ProblemBank() {
   const [afNotes, setAfNotes] = useState("");
   const [afRequiresJE, setAfRequiresJE] = useState(false);
   const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
 
   const { data: courses } = useQuery({
     queryKey: ["courses"],
@@ -130,10 +132,11 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const generateMutation = useMutation({
+  const generateCandidatesMutation = useMutation({
     mutationFn: async (problem: ChapterProblem) => {
       const { data, error } = await supabase.functions.invoke("convert-to-asset", {
         body: {
+          mode: "candidates",
           problemId: problem.id,
           courseId: problem.course_id,
           chapterId: problem.chapter_id,
@@ -152,15 +155,40 @@ export default function ProblemBank() {
       return data;
     },
     onSuccess: (data) => {
+      setCandidates(data.candidates || []);
+      toast.success(`Generated ${data.candidates?.length || 0} candidates`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveCandidateMutation = useMutation({
+    mutationFn: async ({ candidate, problem }: { candidate: any; problem: ChapterProblem }) => {
+      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+        body: {
+          mode: "save",
+          problemId: problem.id,
+          courseId: problem.course_id,
+          chapterId: problem.chapter_id,
+          candidate,
+          requiresJournalEntry: afRequiresJE,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
       setGeneratedAssetId(data.asset?.id ?? null);
+      setCandidates([]);
+      setSavingIndex(null);
       if (viewingProblem) {
         setViewingProblem({ ...viewingProblem, status: "converted" });
       }
-      toast.success("Teaching Asset generated successfully!");
+      toast.success("Teaching Asset saved!");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
 
   const openNew = () => {
@@ -195,6 +223,8 @@ export default function ProblemBank() {
     setAfNotes("");
     setAfRequiresJE(false);
     setGeneratedAssetId(null);
+    setCandidates([]);
+    setSavingIndex(null);
   };
 
   const handleSave = () => {
@@ -309,16 +339,16 @@ export default function ProblemBank() {
               </Label>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Button
                 size="sm"
-                onClick={() => generateMutation.mutate(p)}
-                disabled={generateMutation.isPending}
+                onClick={() => generateCandidatesMutation.mutate(p)}
+                disabled={generateCandidatesMutation.isPending}
               >
-                {generateMutation.isPending ? (
-                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
+                {generateCandidatesMutation.isPending ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating 3 Candidates…</>
                 ) : (
-                  <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate Teaching Asset</>
+                  <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate 3 Candidates</>
                 )}
               </Button>
 
@@ -330,6 +360,80 @@ export default function ProblemBank() {
                 </Button>
               )}
             </div>
+
+            {/* ─── Candidates Comparison ─── */}
+            {candidates.length > 0 && (
+              <div className="mt-5 space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Pick the best candidate
+                </h3>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {candidates.map((c: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-white/15 bg-white/[0.04] p-4 space-y-3 flex flex-col"
+                    >
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Candidate {idx + 1}</p>
+                        <h4 className="text-sm font-semibold text-foreground">{c.asset_name}</h4>
+                      </div>
+
+                      {c.tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {c.tags.map((t: string) => (
+                            <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Problem</p>
+                        <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_problem_text}</p>
+                      </div>
+
+                      {c.journal_entry_block && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Journal Entry</p>
+                          <pre className="text-xs text-foreground whitespace-pre-wrap font-mono line-clamp-4">{c.journal_entry_block}</pre>
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Solution</p>
+                        <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_solution_text}</p>
+                      </div>
+
+                      <div className="flex gap-2 mt-auto pt-2">
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            setSavingIndex(idx);
+                            saveCandidateMutation.mutate({ candidate: c, problem: p });
+                          }}
+                          disabled={saveCandidateMutation.isPending}
+                        >
+                          {savingIndex === idx && saveCandidateMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Save this Asset"
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-muted-foreground"
+                          onClick={() => setCandidates((prev) => prev.filter((_, i) => i !== idx))}
+                          disabled={saveCandidateMutation.isPending}
+                        >
+                          Discard
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </SurviveSidebarLayout>
