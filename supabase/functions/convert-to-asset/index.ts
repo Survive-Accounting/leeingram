@@ -61,7 +61,7 @@ serve(async (req) => {
       // Update raw problem status
       const { error: updateErr } = await supabase
         .from("chapter_problems")
-        .update({ status: "converted" })
+        .update({ status: "approved" })
         .eq("id", problemId);
       if (updateErr) console.error("Failed to update problem status:", updateErr);
 
