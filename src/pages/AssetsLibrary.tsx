@@ -11,10 +11,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Search, Eye, Library, X, Download, Loader2, FolderPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, Library, X, Download, Loader2, FolderPlus, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { generateEbookDocx } from "@/lib/generateEbookDocx";
 
 type TeachingAsset = {
   id: string;
@@ -89,6 +90,7 @@ export default function AssetsLibrary() {
   const [addToSetOpen, setAddToSetOpen] = useState(false);
   const [selectedSetId, setSelectedSetId] = useState<string>("__new__");
   const [newSetName, setNewSetName] = useState("");
+  const [isGeneratingEbook, setIsGeneratingEbook] = useState(false);
 
   const { data: courses } = useQuery({
     queryKey: ["courses"],
@@ -442,6 +444,40 @@ export default function AssetsLibrary() {
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
             <>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isGeneratingEbook}
+                onClick={async () => {
+                  if (!assets) return;
+                  const selected = assets.filter((a) => selectedIds.has(a.id));
+                  if (!selected.length) return;
+                  setIsGeneratingEbook(true);
+                  try {
+                    const chapterMap = new Map(chapters?.map((c) => [c.id, c]) ?? []);
+                    const courseMap = new Map(courses?.map((c) => [c.id, c]) ?? []);
+                    const ebookAssets = selected.map((a) => ({
+                      id: a.id,
+                      asset_name: a.asset_name,
+                      survive_problem_text: a.survive_problem_text,
+                      survive_solution_text: a.survive_solution_text,
+                      journal_entry_block: a.journal_entry_block,
+                      course_slug: courseMap.get(a.course_id)?.slug ?? "COURSE",
+                      chapter_number: chapterMap.get(a.chapter_id)?.chapter_number ?? 0,
+                      chapter_name: chapterMap.get(a.chapter_id)?.chapter_name ?? "",
+                    }));
+                    await generateEbookDocx(ebookAssets);
+                    toast.success(`Generated eBook with ${selected.length} problems`);
+                  } catch (e: any) {
+                    toast.error(e.message || "eBook generation failed");
+                  } finally {
+                    setIsGeneratingEbook(false);
+                  }
+                }}
+              >
+                {isGeneratingEbook ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileText className="h-3.5 w-3.5 mr-1" />}
+                Generate LearnWorlds eBook (Coming Soon)
+              </Button>
               <Button size="sm" variant="outline" onClick={() => { setSelectedSetId("__new__"); setNewSetName(""); setAddToSetOpen(true); }}>
                 <FolderPlus className="h-3.5 w-3.5 mr-1" /> Add to Export Set
               </Button>
