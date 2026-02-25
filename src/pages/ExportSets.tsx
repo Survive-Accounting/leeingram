@@ -60,10 +60,13 @@ export default function ExportSets() {
   return (
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Package className="h-5 w-5 text-primary" />
-          Export Sets
-        </h1>
+        <div>
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Export Sets
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Batch export approved assets into CSV + PDF formats for LearnWorlds Question Bank.</p>
+        </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="h-3.5 w-3.5 mr-1" /> New Set
         </Button>
