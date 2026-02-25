@@ -1,5 +1,6 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,9 +9,14 @@ import { ArrowLeft } from "lucide-react";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { LessonsTab } from "@/components/content-factory/LessonsTab";
 import { ExportsTab } from "@/components/content-factory/ExportsTab";
+import { useProductionSession } from "@/hooks/useProductionSession";
 
 export default function ChapterWorkspace() {
   const { chapterId } = useParams<{ chapterId: string }>();
+  const [searchParams] = useSearchParams();
+  const { saveSession } = useProductionSession();
+  const initialTab = searchParams.get("tab") || "problems";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const { data: chapter } = useQuery({
     queryKey: ["chapter", chapterId],
@@ -54,16 +60,39 @@ export default function ChapterWorkspace() {
     enabled: !!chapterId,
   });
 
-  if (!chapter) {
+  const course = chapter?.courses as { course_name: string; id: string } | undefined;
+  const chapterNum = chapter?.chapter_number ?? 0;
+
+  // Determine last active phase from stats
+  const determinePhase = () => {
+    if ((chapterAssets?.length ?? 0) > 0) return "Approved";
+    if ((chapterProblems?.filter(p => p.status === "generated" || p.status === "approved").length ?? 0) > 0) return "Generated";
+    if ((chapterProblems?.length ?? 0) > 0) return "Source";
+    return "Source";
+  };
+
+  // Persist session whenever chapter/tab changes
+  useEffect(() => {
+    if (chapter && course) {
+      saveSession({
+        courseId: course.id,
+        courseName: course.course_name,
+        chapterId: chapter.id,
+        chapterName: chapter.chapter_name,
+        chapterNumber: chapterNum,
+        activeTab,
+        lastPhase: determinePhase(),
+      });
+    }
+  }, [chapter, activeTab]);
+
+  if (!chapter || !course) {
     return (
       <SurviveSidebarLayout>
         <div className="text-muted-foreground">Loading workspace...</div>
       </SurviveSidebarLayout>
     );
   }
-
-  const course = chapter.courses as { course_name: string; id: string };
-  const chapterNum = chapter.chapter_number;
 
   const totalSource = chapterProblems?.length ?? 0;
   const generated = chapterProblems?.filter((p) => p.status === "generated" || p.status === "approved").length ?? 0;
@@ -105,7 +134,7 @@ export default function ChapterWorkspace() {
         ))}
       </div>
 
-      <Tabs defaultValue="problems" className="space-y-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Problems</TabsTrigger>
           <TabsTrigger value="lw-status">LearnWorlds Status</TabsTrigger>

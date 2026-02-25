@@ -4,14 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { BookOpen, ChevronDown, ChevronRight, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "react-router-dom";
+import { BookOpen, ChevronDown, ChevronRight, Star, ArrowRight, X } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useProductionSession } from "@/hooks/useProductionSession";
 
 const STARRED_KEY = "asset-factory-starred-course";
 
 export default function ContentFactory() {
+  const navigate = useNavigate();
+  const { getSession, clearSession } = useProductionSession();
+  const lastSession = getSession();
+
   const [starredId, setStarredId] = useState<string | null>(
     () => localStorage.getItem(STARRED_KEY)
   );
@@ -86,6 +92,41 @@ export default function ContentFactory() {
         <h1 className="text-2xl font-bold text-foreground">Asset Factory</h1>
         <p className="text-sm text-muted-foreground">Generate and refine practice problem variants from textbook source material.</p>
       </div>
+
+      {/* Continue Where You Left Off */}
+      {lastSession && (
+        <Card className="mb-5 border-primary/30 bg-primary/[0.05] shadow-[0_0_20px_-6px_hsl(var(--primary)/0.2)]">
+          <CardHeader className="pb-2 pt-4 px-5">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Continue Where You Left Off</CardTitle>
+              <button
+                onClick={() => { clearSession(); window.location.reload(); }}
+                className="p-1 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                title="Clear last session"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-5 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-foreground">{lastSession.courseName}</p>
+                <p className="text-xs text-muted-foreground">
+                  Ch {lastSession.chapterNumber} — {lastSession.chapterName}
+                </p>
+                <Badge variant="outline" className="text-[10px] mt-1">{lastSession.lastPhase}</Badge>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => navigate(`/workspace/${lastSession.chapterId}?tab=${lastSession.activeTab}`)}
+              >
+                Resume Work <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-3">
         {sortedCourses.map((course) => {
