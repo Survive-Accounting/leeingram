@@ -186,18 +186,21 @@ export type Database = {
       }
       courses: {
         Row: {
+          code: string
           course_name: string
           created_at: string
           id: string
           slug: string
         }
         Insert: {
+          code?: string
           course_name: string
           created_at?: string
           id?: string
           slug: string
         }
         Update: {
+          code?: string
           course_name?: string
           created_at?: string
           id?: string
