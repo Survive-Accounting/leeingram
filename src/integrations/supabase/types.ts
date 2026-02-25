@@ -184,6 +184,33 @@ export type Database = {
           },
         ]
       }
+      company_names: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          style: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          style?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          style?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           code: string
@@ -1282,6 +1309,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      variant_feedback: {
+        Row: {
+          created_at: string
+          free_text_note: string | null
+          id: string
+          rejection_reason: string
+          source_problem_id: string
+          variant_data: Json
+        }
+        Insert: {
+          created_at?: string
+          free_text_note?: string | null
+          id?: string
+          rejection_reason: string
+          source_problem_id: string
+          variant_data?: Json
+        }
+        Update: {
+          created_at?: string
+          free_text_note?: string | null
+          id?: string
+          rejection_reason?: string
+          source_problem_id?: string
+          variant_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variant_feedback_source_problem_id_fkey"
+            columns: ["source_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vlog_episodes: {
         Row: {
