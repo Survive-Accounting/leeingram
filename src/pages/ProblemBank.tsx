@@ -11,9 +11,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Search, Eye, ArrowLeft, Sparkles, ExternalLink, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Pencil, Trash2, Search, Eye, ArrowLeft, Sparkles, ExternalLink, Loader2, ClipboardPaste, Tag, Image } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { ClipboardIntakePanel } from "@/components/content-factory/ClipboardIntakePanel";
 
 type ChapterProblem = {
   id: string;
@@ -28,6 +30,8 @@ type ChapterProblem = {
   difficulty_internal: "easy" | "medium" | "hard" | "tricky" | null;
   status: string;
   created_at: string;
+  problem_screenshot_url: string | null;
+  solution_screenshot_url: string | null;
 };
 
 type AssetForm = Omit<ChapterProblem, "id" | "created_at" | "status">;
@@ -42,6 +46,8 @@ const EMPTY_FORM: AssetForm = {
   solution_text: "",
   journal_entry_text: null,
   difficulty_internal: null,
+  problem_screenshot_url: null,
+  solution_screenshot_url: null,
 };
 
 export default function ProblemBank() {
@@ -99,6 +105,8 @@ export default function ProblemBank() {
       return data as ChapterProblem[];
     },
   });
+
+  const rawItems = problems?.filter((p) => p.status === "raw") ?? [];
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof form & { id?: string }) => {
@@ -226,6 +234,8 @@ export default function ProblemBank() {
       solution_text: p.solution_text,
       journal_entry_text: p.journal_entry_text,
       difficulty_internal: p.difficulty_internal,
+      problem_screenshot_url: p.problem_screenshot_url,
+      solution_screenshot_url: p.solution_screenshot_url,
     });
     setDialogOpen(true);
   };
@@ -307,13 +317,31 @@ export default function ProblemBank() {
             </div>
           </div>
 
-          {/* Problem & Solution */}
+          {/* Screenshots */}
+          {(p.problem_screenshot_url || p.solution_screenshot_url) && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {p.problem_screenshot_url && (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem Screenshot</h2>
+                  <img src={p.problem_screenshot_url} alt="Problem screenshot" className="rounded border border-border w-full object-contain max-h-64" />
+                </div>
+              )}
+              {p.solution_screenshot_url && (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution Screenshot</h2>
+                  <img src={p.solution_screenshot_url} alt="Solution screenshot" className="rounded border border-border w-full object-contain max-h-64" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Problem & Solution Text */}
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h2>
               <p className="text-sm text-foreground whitespace-pre-wrap">{p.problem_text || "—"}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h2>
               <p className="text-sm text-foreground whitespace-pre-wrap">{p.solution_text || "—"}</p>
             </div>
@@ -477,6 +505,68 @@ export default function ProblemBank() {
           <h1 className="text-xl font-bold text-foreground">Problem Inbox</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Uploaded textbook problems waiting to be transformed into Survive assets.</p>
         </div>
+      </div>
+
+      <Tabs defaultValue="intake" className="space-y-4">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="intake" className="gap-1"><ClipboardPaste className="h-3 w-3" /> Clipboard Intake</TabsTrigger>
+          <TabsTrigger value="raw-queue" className="gap-1"><Image className="h-3 w-3" /> Raw Queue{rawItems.length > 0 && ` (${rawItems.length})`}</TabsTrigger>
+          <TabsTrigger value="all" className="gap-1"><Tag className="h-3 w-3" /> All Problems</TabsTrigger>
+        </TabsList>
+
+        {/* ─── Clipboard Intake Tab ─── */}
+        <TabsContent value="intake">
+          <ClipboardIntakePanel onSaved={() => qc.invalidateQueries({ queryKey: ["chapter-problems"] })} />
+        </TabsContent>
+
+        {/* ─── Raw Intake Queue Tab ─── */}
+        <TabsContent value="raw-queue">
+          <div className="space-y-3">
+            {rawItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No raw items. Use Clipboard Intake to add screenshots.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {rawItems.map((p) => (
+                  <div key={p.id} className="rounded-lg border border-border bg-card p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">Raw</Badge>
+                      <Badge variant="outline" className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">Needs Tagging</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {p.problem_screenshot_url ? (
+                        <img src={p.problem_screenshot_url} alt="Problem" className="rounded border border-border w-full h-24 object-cover" />
+                      ) : (
+                        <div className="rounded border border-border w-full h-24 flex items-center justify-center text-muted-foreground/30"><Image className="h-6 w-6" /></div>
+                      )}
+                      {p.solution_screenshot_url ? (
+                        <img src={p.solution_screenshot_url} alt="Solution" className="rounded border border-border w-full h-24 object-cover" />
+                      ) : (
+                        <div className="rounded border border-border w-full h-24 flex items-center justify-center text-muted-foreground/30"><Image className="h-6 w-6" /></div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{chapterName(p.chapter_id)}</p>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => openEdit(p)}>
+                        <Tag className="h-3 w-3 mr-1" /> Tag & Label
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ─── All Problems Tab ─── */}
+        <TabsContent value="all">
+      <div className="flex items-center justify-between mb-3">
+        <div />
         <Button size="sm" onClick={openNew}>
           <Plus className="h-3.5 w-3.5 mr-1" /> New Problem
         </Button>
@@ -603,6 +693,8 @@ export default function ProblemBank() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
+      </Tabs>
 
       {/* New / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
