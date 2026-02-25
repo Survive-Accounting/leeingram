@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Search, Eye, Library, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, Library, X, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -24,11 +25,20 @@ type TeachingAsset = {
   survive_problem_text: string;
   journal_entry_block: string | null;
   survive_solution_text: string;
+  difficulty: string | null;
+  source_ref: string | null;
+  asset_type: string;
   created_at: string;
   updated_at: string;
 };
 
-type AssetForm = Omit<TeachingAsset, "id" | "created_at" | "updated_at">;
+type AssetDifficulty = "standard" | "harder" | "tricky";
+type AssetTypeEnum = "practice_problem" | "journal_entry" | "concept_review" | "exam_prep";
+
+type AssetForm = Omit<TeachingAsset, "id" | "created_at" | "updated_at"> & {
+  asset_type: AssetTypeEnum;
+  difficulty: AssetDifficulty | null;
+};
 
 const EMPTY_FORM: AssetForm = {
   course_id: "",
@@ -39,7 +49,20 @@ const EMPTY_FORM: AssetForm = {
   survive_problem_text: "",
   journal_entry_block: null,
   survive_solution_text: "",
+  difficulty: null,
+  source_ref: null,
+  asset_type: "practice_problem" as const,
 };
+
+type JournalOption = "question" | "feedback" | "none";
+
+function escapeCSV(val: string): string {
+  if (!val) return "";
+  if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+    return '"' + val.replace(/"/g, '""') + '"';
+  }
+  return val;
+}
 
 export default function AssetsLibrary() {
   const qc = useQueryClient();
@@ -52,6 +75,14 @@ export default function AssetsLibrary() {
   const [viewingAsset, setViewingAsset] = useState<TeachingAsset | null>(null);
   const [form, setForm] = useState<AssetForm>(EMPTY_FORM);
   const [tagInput, setTagInput] = useState("");
+
+  // Selection & Export state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportName, setExportName] = useState("LearnWorlds Export");
+  const [exportQuestionType, setExportQuestionType] = useState("TMC");
+  const [journalOption, setJournalOption] = useState<JournalOption>("feedback");
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: courses } = useQuery({
     queryKey: ["courses"],
@@ -92,10 +123,10 @@ export default function AssetsLibrary() {
     mutationFn: async (data: AssetForm & { id?: string }) => {
       if (data.id) {
         const { id, ...rest } = data;
-        const { error } = await supabase.from("teaching_assets").update(rest).eq("id", id);
+        const { error } = await supabase.from("teaching_assets").update(rest as any).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("teaching_assets").insert(data);
+        const { error } = await supabase.from("teaching_assets").insert(data as any);
         if (error) throw error;
       }
     },
@@ -120,6 +151,114 @@ export default function AssetsLibrary() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!assets) return;
+    if (selectedIds.size === assets.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(assets.map((a) => a.id)));
+    }
+  };
+
+  const handleExport = async () => {
+    if (!assets) return;
+    const selected = assets.filter((a) => selectedIds.has(a.id));
+    if (selected.length === 0) {
+      toast.error("No assets selected");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Call edge function for distractor generation
+      const { data, error } = await supabase.functions.invoke("generate-distractors", {
+        body: {
+          assets: selected.map((a) => ({
+            asset_name: a.asset_name,
+            survive_problem_text: a.survive_problem_text,
+            journal_entry_block: a.journal_entry_block,
+            survive_solution_text: a.survive_solution_text,
+          })),
+          journalOption,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const distractors: any[] = data.distractors || [];
+
+      // Build CSV rows - LearnWorlds format: Group, Type, Question, CorAns, Answer1-4, (empty 5-7), CorrectExplanation, IncorrectExplanation
+      const header = "Group,Type,Question,CorAns,Answer1,Answer2,Answer3,Answer4,Answer5,Answer6,Answer7,CorrectExplanation,IncorrectExplanation";
+      const rows = selected.map((asset, idx) => {
+        const d = distractors[idx] || {};
+
+        // Build question text
+        let questionText = asset.survive_problem_text;
+        if (journalOption === "question" && asset.journal_entry_block) {
+          questionText += "\n\n" + asset.journal_entry_block;
+        }
+
+        // Build feedback
+        let correctFeedback = asset.survive_solution_text;
+        if (journalOption === "feedback" && asset.journal_entry_block) {
+          correctFeedback = asset.journal_entry_block + "\n\n" + asset.survive_solution_text;
+        }
+        const incorrectFeedback = asset.survive_solution_text;
+
+        // Randomize answer position (correct = random 1-4)
+        const correctPos = Math.floor(Math.random() * 4) + 1;
+        const answers = ["", "", "", ""];
+        answers[correctPos - 1] = d.correct_answer || asset.journal_entry_block || "Correct answer";
+        let dIdx = 0;
+        const distractorList = [d.distractor_1, d.distractor_2, d.distractor_3].filter(Boolean);
+        for (let i = 0; i < 4; i++) {
+          if (i !== correctPos - 1) {
+            answers[i] = distractorList[dIdx] || `Option ${i + 1}`;
+            dIdx++;
+          }
+        }
+
+        return [
+          exportName,
+          exportQuestionType,
+          questionText,
+          String(correctPos),
+          ...answers,
+          "", "", "", // Answer5-7 empty
+          correctFeedback,
+          incorrectFeedback,
+        ].map(escapeCSV).join(",");
+      });
+
+      const csv = header + "\n" + rows.join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${exportName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd")}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${selected.length} assets to CSV`);
+      setExportOpen(false);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const openNew = () => {
     setEditingId(null);
     setForm({
@@ -142,6 +281,9 @@ export default function AssetsLibrary() {
       survive_problem_text: a.survive_problem_text,
       journal_entry_block: a.journal_entry_block,
       survive_solution_text: a.survive_solution_text,
+      difficulty: a.difficulty as AssetDifficulty | null,
+      source_ref: a.source_ref,
+      asset_type: a.asset_type as AssetTypeEnum,
     });
     setTagInput("");
     setDialogOpen(true);
@@ -241,9 +383,16 @@ export default function AssetsLibrary() {
           <Library className="h-5 w-5 text-primary" />
           Assets Library
         </h1>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> New Asset
-        </Button>
+        <div className="flex gap-2">
+          {selectedIds.size > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-3.5 w-3.5 mr-1" /> Export Selected ({selectedIds.size})
+            </Button>
+          )}
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> New Asset
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -288,6 +437,12 @@ export default function AssetsLibrary() {
         <Table>
           <TableHeader>
             <TableRow className="border-white/10">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={assets && assets.length > 0 && selectedIds.size === assets.length}
+                  onCheckedChange={toggleAll}
+                />
+              </TableHead>
               <TableHead className="text-xs">Asset Name</TableHead>
               <TableHead className="text-xs">Tags</TableHead>
               <TableHead className="text-xs">Created</TableHead>
@@ -296,12 +451,18 @@ export default function AssetsLibrary() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">No assets found</TableCell></TableRow>
             ) : (
               assets.map((a) => (
                 <TableRow key={a.id} className="border-white/10">
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(a.id)}
+                      onCheckedChange={() => toggleSelect(a.id)}
+                    />
+                  </TableCell>
                   <TableCell className="text-xs font-medium">{a.asset_name}</TableCell>
                   <TableCell className="text-xs">
                     <div className="flex flex-wrap gap-1">
@@ -335,6 +496,54 @@ export default function AssetsLibrary() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Export Dialog */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export to LearnWorlds CSV</DialogTitle>
+            <DialogDescription>Configure the export for {selectedIds.size} selected asset{selectedIds.size !== 1 ? "s" : ""}.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Export Name (Group)</Label>
+              <Input value={exportName} onChange={(e) => setExportName(e.target.value)} className="h-8 text-xs" placeholder="e.g. Ch 8 Bonds" />
+            </div>
+
+            <div>
+              <Label className="text-xs">Question Type</Label>
+              <Select value={exportQuestionType} onValueChange={setExportQuestionType}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TMC">Multiple Choice (TMC)</SelectItem>
+                  <SelectItem value="TMCMA">Multiple Answers (TMCMA)</SelectItem>
+                  <SelectItem value="TTF">True/False (TTF)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs">Include Journal Entry as:</Label>
+              <Select value={journalOption} onValueChange={(v) => setJournalOption(v as JournalOption)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="question">Part of question text</SelectItem>
+                  <SelectItem value="feedback">Part of feedback</SelectItem>
+                  <SelectItem value="none">Not included</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setExportOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</> : <><Download className="h-3.5 w-3.5 mr-1" /> Export CSV</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* New / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

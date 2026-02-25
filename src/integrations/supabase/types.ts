@@ -919,12 +919,15 @@ export type Database = {
       teaching_assets: {
         Row: {
           asset_name: string
+          asset_type: Database["public"]["Enums"]["asset_type"]
           base_raw_problem_id: string | null
           chapter_id: string
           course_id: string
           created_at: string
+          difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
           id: string
           journal_entry_block: string | null
+          source_ref: string | null
           survive_problem_text: string
           survive_solution_text: string
           tags: string[]
@@ -932,12 +935,15 @@ export type Database = {
         }
         Insert: {
           asset_name?: string
+          asset_type?: Database["public"]["Enums"]["asset_type"]
           base_raw_problem_id?: string | null
           chapter_id: string
           course_id: string
           created_at?: string
+          difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           id?: string
           journal_entry_block?: string | null
+          source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
           tags?: string[]
@@ -945,12 +951,15 @@ export type Database = {
         }
         Update: {
           asset_name?: string
+          asset_type?: Database["public"]["Enums"]["asset_type"]
           base_raw_problem_id?: string | null
           chapter_id?: string
           course_id?: string
           created_at?: string
+          difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           id?: string
           journal_entry_block?: string | null
+          source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
           tags?: string[]
@@ -1281,6 +1290,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      asset_difficulty: "standard" | "harder" | "tricky"
+      asset_type:
+        | "practice_problem"
+        | "journal_entry"
+        | "concept_review"
+        | "exam_prep"
       difficulty_level: "easy" | "medium" | "hard" | "tricky"
       file_type: "textbook" | "solutions" | "tutoring" | "transcript" | "other"
       lesson_status:
@@ -1417,6 +1432,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      asset_difficulty: ["standard", "harder", "tricky"],
+      asset_type: [
+        "practice_problem",
+        "journal_entry",
+        "concept_review",
+        "exam_prep",
+      ],
       difficulty_level: ["easy", "medium", "hard", "tricky"],
       file_type: ["textbook", "solutions", "tutoring", "transcript", "other"],
       lesson_status: [
