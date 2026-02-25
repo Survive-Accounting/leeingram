@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.generate-lesson-outputs]
 verify_jwt = false
+
+[functions.convert-to-asset]
+verify_jwt = false
