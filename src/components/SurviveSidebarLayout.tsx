@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, ListChecks } from "lucide-react";
+import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, ListChecks, Workflow } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { WorkflowStepsPanel } from "@/components/WorkflowStepsPanel";
+import { WorkflowModePanel } from "@/components/WorkflowModePanel";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -28,6 +29,15 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   );
 
   const [panelOpen, setPanelOpen] = useState(true);
+  const [workflowMode, setWorkflowMode] = useState(() => localStorage.getItem("wf-mode-active") === "true");
+
+  const toggleWorkflowMode = () => {
+    setWorkflowMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("wf-mode-active", String(next));
+      return next;
+    });
+  };
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
@@ -69,79 +79,86 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       </header>
 
       <div className="relative z-10 flex min-h-[calc(100vh-3.5rem)]">
-        {/* Sidebar */}
-        <nav
-          className="w-56 shrink-0 border-r border-white/10 py-4 px-2 space-y-1 flex flex-col"
-          style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.25)" }}
-        >
-          <div className="space-y-1 flex-1">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-white/15 text-white font-medium"
-                      : "text-white/50 hover:text-white hover:bg-white/8"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+        {workflowMode ? (
+          /* ── Workflow Mode: full-height checklist replaces sidebar ── */
+          <WorkflowModePanel />
+        ) : (
+          <>
+            {/* Sidebar */}
+            <nav
+              className="w-56 shrink-0 border-r border-white/10 py-4 px-2 space-y-1 flex flex-col"
+              style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.25)" }}
+            >
+              <div className="space-y-1 flex-1">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                        active
+                          ? "bg-white/15 text-white font-medium"
+                          : "text-white/50 hover:text-white hover:bg-white/8"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
 
-            {/* Secondary links */}
-            <div className="pt-4 mt-4 border-t border-white/10 space-y-1">
-              <Link
-                to="/marketing"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                  isActive("/marketing") ? "bg-white/15 text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                )}
-              >
-                Marketing
-              </Link>
-              <Link
-                to="/ideas?domain=survive"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                  location.pathname === "/ideas" ? "bg-white/15 text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                )}
-              >
-                Ideas
-              </Link>
-            </div>
-          </div>
+                {/* Secondary links */}
+                <div className="pt-4 mt-4 border-t border-white/10 space-y-1">
+                  <Link
+                    to="/marketing"
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
+                      isActive("/marketing") ? "bg-white/15 text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                    )}
+                  >
+                    Marketing
+                  </Link>
+                  <Link
+                    to="/ideas?domain=survive"
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
+                      location.pathname === "/ideas" ? "bg-white/15 text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                    )}
+                  >
+                    Ideas
+                  </Link>
+                </div>
+              </div>
 
-          {/* Workflow Steps toggle */}
-          {showStepsPanel && (
-            <div className="pt-3 mt-3 border-t border-white/10">
-              <button
-                onClick={() => setPanelOpen((p) => !p)}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs w-full transition-colors",
-                  panelOpen
-                    ? "bg-primary/20 text-primary font-medium"
-                    : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                )}
-              >
-                <ListChecks className="h-4 w-4 shrink-0" />
-                <span>Workflow</span>
-              </button>
-            </div>
-          )}
-        </nav>
+              {/* Workflow Steps toggle */}
+              {showStepsPanel && (
+                <div className="pt-3 mt-3 border-t border-white/10">
+                  <button
+                    onClick={() => setPanelOpen((p) => !p)}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs w-full transition-colors",
+                      panelOpen
+                        ? "bg-primary/20 text-primary font-medium"
+                        : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                    )}
+                  >
+                    <ListChecks className="h-4 w-4 shrink-0" />
+                    <span>Workflow</span>
+                  </button>
+                </div>
+              )}
+            </nav>
 
-        {/* Workflow Steps Panel */}
-        {showStepsPanel && panelOpen && <WorkflowStepsPanel />}
+            {/* Workflow Steps Panel */}
+            {showStepsPanel && panelOpen && <WorkflowStepsPanel />}
+          </>
+        )}
 
         {/* Main content */}
-        <main className="flex-1 px-6 py-6 overflow-auto">
+        <main className="flex-1 px-6 py-6 overflow-auto relative">
           <div
             className="rounded-xl p-5"
             style={{
@@ -152,6 +169,20 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           >
             {children}
           </div>
+
+          {/* Workflow Mode toggle — bottom-left of main area */}
+          <button
+            onClick={toggleWorkflowMode}
+            className={cn(
+              "fixed bottom-5 left-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg transition-all",
+              workflowMode
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white backdrop-blur-md border border-white/10"
+            )}
+          >
+            <Workflow className="h-4 w-4" />
+            {workflowMode ? "Return to Dashboard" : "Enter Workflow Mode"}
+          </button>
         </main>
       </div>
     </div>
