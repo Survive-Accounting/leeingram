@@ -107,7 +107,7 @@ export default function ProblemBank() {
         const { error } = await supabase.from("chapter_problems").update(rest).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("chapter_problems").insert(data);
+        const { error } = await supabase.from("chapter_problems").insert({ ...data, status: "imported" });
         if (error) throw error;
       }
     },
@@ -156,6 +156,13 @@ export default function ProblemBank() {
     },
     onSuccess: (data) => {
       setCandidates(data.candidates || []);
+      // Update status to "generated"
+      if (viewingProblem) {
+        supabase.from("chapter_problems").update({ status: "generated" }).eq("id", viewingProblem.id).then(() => {
+          qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+        });
+        setViewingProblem({ ...viewingProblem, status: "generated" });
+      }
       toast.success(`Generated ${data.candidates?.length || 0} candidates`);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -178,15 +185,21 @@ export default function ProblemBank() {
       return data;
     },
     onSuccess: (data) => {
+      // Update status to "approved"
+      if (viewingProblem) {
+        supabase.from("chapter_problems").update({ status: "approved" }).eq("id", viewingProblem.id).then(() => {
+          qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+        });
+      }
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
       setGeneratedAssetId(data.asset?.id ?? null);
       setCandidates([]);
       setSavingIndex(null);
       if (viewingProblem) {
-        setViewingProblem({ ...viewingProblem, status: "converted" });
+        setViewingProblem({ ...viewingProblem, status: "approved" });
       }
-      toast.success("Teaching Asset saved!");
+      toast.success("Teaching Asset saved & approved!");
     },
     onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
@@ -245,7 +258,23 @@ export default function ProblemBank() {
   // ─── Detail View ───
   if (viewingProblem) {
     const p = viewingProblem;
-    const isConverted = p.status === "converted";
+    const isConverted = p.status === "converted" || p.status === "approved";
+
+    const statusColor = {
+      imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      raw: "bg-muted text-muted-foreground",
+      generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+      approved: "bg-green-500/20 text-green-400 border-green-500/30",
+      converted: "bg-green-500/20 text-green-400 border-green-500/30",
+    }[p.status] ?? "bg-muted text-muted-foreground";
+
+    const statusLabel = {
+      imported: "Imported",
+      raw: "Raw",
+      generated: "Generated",
+      approved: "Approved",
+      converted: "Approved",
+    }[p.status] ?? p.status;
 
     return (
       <SurviveSidebarLayout>
@@ -262,10 +291,10 @@ export default function ProblemBank() {
                 <span className="text-xs font-mono text-muted-foreground">{p.source_label}</span>
                 <Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge>
                 <Badge
-                  variant={isConverted ? "default" : "secondary"}
-                  className="text-[10px]"
+                  variant="outline"
+                  className={`text-[10px] ${statusColor}`}
                 >
-                  {isConverted ? "Converted" : "Raw"}
+                  {statusLabel}
                 </Badge>
               </div>
               <h1 className="text-xl font-bold text-foreground">{p.title}</h1>
@@ -524,16 +553,36 @@ export default function ProblemBank() {
                   <TableCell className="text-xs">{p.title}</TableCell>
                   <TableCell className="text-xs capitalize">{p.problem_type}</TableCell>
                   <TableCell className="text-xs">
-                    <Badge
-                      variant={p.status === "converted" ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {p.status === "converted" ? "Converted" : "Raw"}
-                    </Badge>
+                    {(() => {
+                      const sc = {
+                        imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                        raw: "bg-muted text-muted-foreground",
+                        generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+                        approved: "bg-green-500/20 text-green-400 border-green-500/30",
+                        converted: "bg-green-500/20 text-green-400 border-green-500/30",
+                      }[p.status] ?? "bg-muted text-muted-foreground";
+                      const sl = {
+                        imported: "Imported",
+                        raw: "Raw",
+                        generated: "Generated",
+                        approved: "Approved",
+                        converted: "Approved",
+                      }[p.status] ?? p.status;
+                      return (
+                        <Badge variant="outline" className={`text-[10px] ${sc}`}>
+                          {sl}
+                        </Badge>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-xs">{chapterName(p.chapter_id)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      {(p.status === "raw" || p.status === "imported") && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
+                          <Sparkles className="h-3 w-3 mr-1" /> Generate
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
                         <Eye className="h-3 w-3" />
                       </Button>
