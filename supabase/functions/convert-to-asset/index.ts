@@ -42,44 +42,25 @@ serve(async (req) => {
       const { problemId, courseId, chapterId, candidate, requiresJournalEntry } = body;
 
       // ── Auto-generate Instance ID ──
-      // 1. Get course code
       const { data: course, error: courseErr } = await supabase
-        .from("courses")
-        .select("code")
-        .eq("id", courseId)
-        .single();
+        .from("courses").select("code").eq("id", courseId).single();
       if (courseErr || !course) throw new Error("Course not found");
 
-      // 2. Get chapter number
       const { data: chapter, error: chErr } = await supabase
-        .from("chapters")
-        .select("chapter_number")
-        .eq("id", chapterId)
-        .single();
+        .from("chapters").select("chapter_number").eq("id", chapterId).single();
       if (chErr || !chapter) throw new Error("Chapter not found");
 
       const courseCode = course.code || "UNK";
       const chNum = chapter.chapter_number;
 
-      // 3. Count existing variants from same source group to determine variant letter
       const { count: existingVariants } = await supabase
         .from("teaching_assets")
         .select("id", { count: "exact", head: true })
         .eq("base_raw_problem_id", problemId);
-      const variantLetter = String.fromCharCode(65 + (existingVariants || 0)); // A, B, C...
+      const variantLetter = String.fromCharCode(65 + (existingVariants || 0));
 
-      // 4. Get next sequential number for this chapter (across all source groups)
-      const { count: chapterAssetCount } = await supabase
-        .from("teaching_assets")
-        .select("id", { count: "exact", head: true })
-        .eq("chapter_id", chapterId);
-      
-      // If this is the first variant from this source, increment the chapter sequence
-      // Otherwise reuse the same sequence number
       let seqNum: number;
       if ((existingVariants || 0) === 0) {
-        // New source group — next sequential number
-        // Count distinct base_raw_problem_ids in this chapter that already have assets
         const { data: distinctSources } = await supabase
           .from("teaching_assets")
           .select("base_raw_problem_id")
@@ -88,25 +69,13 @@ serve(async (req) => {
         const uniqueSources = new Set((distinctSources || []).map((d: any) => d.base_raw_problem_id));
         seqNum = uniqueSources.size + 1;
       } else {
-        // Existing source group — find the seq number from sibling asset names
         const { data: siblings } = await supabase
           .from("teaching_assets")
           .select("asset_name")
           .eq("base_raw_problem_id", problemId)
           .limit(1);
         const match = siblings?.[0]?.asset_name?.match(/_P(\d+)/);
-        if (match) {
-          seqNum = parseInt(match[1], 10);
-        } else {
-          // Fallback
-          const { data: allDistinct } = await supabase
-            .from("teaching_assets")
-            .select("base_raw_problem_id")
-            .eq("chapter_id", chapterId)
-            .not("base_raw_problem_id", "is", null);
-          const uniq = new Set((allDistinct || []).map((d: any) => d.base_raw_problem_id));
-          seqNum = uniq.size + 1;
-        }
+        seqNum = match ? parseInt(match[1], 10) : 1;
       }
 
       const instanceId = `${courseCode}_CH${chNum}_P${String(seqNum).padStart(3, "0")}${variantLetter}`;
@@ -122,13 +91,13 @@ serve(async (req) => {
           survive_problem_text: candidate.survive_problem_text,
           journal_entry_block: requiresJournalEntry ? (candidate.journal_entry_block || null) : null,
           survive_solution_text: candidate.survive_solution_text,
+          source_ref: candidate.answer_only || null,
         })
         .select()
         .single();
 
       if (insertErr) throw insertErr;
 
-      // Update raw problem status
       const { error: updateErr } = await supabase
         .from("chapter_problems")
         .update({ status: "approved" })
@@ -140,7 +109,7 @@ serve(async (req) => {
       });
     }
 
-    // ─── MODE: candidates (default) ─── Generate 3 candidates without saving
+    // ─── MODE: candidates (default) ─── Generate 3 variants with V2 prompt
     const {
       problemId,
       sourceLabel,
@@ -148,43 +117,71 @@ serve(async (req) => {
       problemText,
       solutionText,
       journalEntryText,
-      difficulty,
       notes,
       requiresJournalEntry,
+      difficultyToggles,
     } = body;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const difficultyInstruction = difficulty === "tricky"
-      ? "Make the problem TRICKY — include one subtle exam-relevant twist that tests deeper understanding."
-      : difficulty === "slightly_harder"
-      ? "Make the problem slightly harder than the original — add one extra step or a less obvious detail."
-      : "Keep the problem at a standard difficulty level, similar to the original.";
+    // Fetch 3 random active company names
+    const { data: companyNames } = await supabase
+      .from("company_names")
+      .select("name, style")
+      .eq("active", true);
+    
+    const shuffled = (companyNames || []).sort(() => Math.random() - 0.5);
+    const selectedCompanies = shuffled.slice(0, 3);
+    const companyList = selectedCompanies.length >= 3
+      ? selectedCompanies.map((c: any) => `${c.name} (${c.style})`).join(", ")
+      : "Riverstone Corp (realistic), Moonbeam Industries (playful), Granite Financial (realistic)";
+
+    // Build difficulty toggles instruction
+    const toggles: string[] = difficultyToggles || [];
+    let difficultySection = "";
+    if (toggles.length > 0) {
+      difficultySection = `\nEXAM DIFFICULTY PATTERNS (incorporate at least one per variant):
+${toggles.map((t: string) => `- ${t}`).join("\n")}
+
+For each variant, include an "exam_trap_note" explaining what makes this variant tricky.`;
+    }
 
     const journalInstruction = requiresJournalEntry
-      ? `JOURNAL ENTRY BLOCK:
-Generate a journal entry formatted for Google Sheets copy/paste:
-Debit: Account — Amount
-Credit: Account — Amount
-(multiple lines as needed for the problem)`
-      : "JOURNAL ENTRY BLOCK: Leave empty (null). This problem does not require a journal entry.";
+      ? `JOURNAL ENTRY HANDLING:
+- Generate a consolidated JE per event
+- Use grid format: Account | Debit | Credit
+- If date-based events, use timeline-based JE
+- Do NOT include explanations for JE entries — students rely on video walkthroughs.`
+      : "JOURNAL ENTRY: Leave journal_entry_block as null. This problem does not require a journal entry.";
 
     const systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
-Your job: Take a raw textbook problem and create THREE different ORIGINAL practice problems that each teach the same concept but use completely different numbers, names, and scenario details. NEVER copy the original problem text. Each candidate should feel distinct.
+CORE RULES:
+- Generate exactly 3 exam-style practice problem variants from the source.
+- Each variant must teach the SAME core accounting concept as the source.
+- Use DIFFERENT numerical values across all 3 variants.
+- Each variant MUST use a different company name and short scenario.
+- Use concise wording and short sentences. No fluff, no bolding, no unnecessary narrative.
+- Every problem must include: "Round all calculations to the nearest whole dollar."
+- Reflect exam-style structure similar to textbook/homework problems.
+- Variants should feel clean and solvable on first pass.
+- Do NOT include "Survive Accounting" in student-facing text.
 
-Rules:
-- Each problem must test the SAME underlying concept
-- Use completely different numbers, company names, and details across all three
-- ${difficultyInstruction}
-- Solutions must be tutor-style: concise, complete, step-by-step
-- Tags should be 2-6 concise keywords about the concept
-- Each candidate should have a slightly different angle or scenario
+COMPANY NAMES TO USE (one per variant, in order):
+${companyList}
 
-OUTPUT FORMAT — Return exactly 3 candidates using tool calling.`;
+${difficultySection}
 
-    const userPrompt = `Raw Problem: ${sourceLabel} — ${title}
+${journalInstruction}
+
+SOLUTION STORAGE — For every variant, provide BOTH:
+1. answer_only: Final numeric answers + JE summary (concise)
+2. survive_solution_text: Fully worked steps with all internal solution logic (step-by-step)
+
+OUTPUT: Return exactly 3 candidates using tool calling.`;
+
+    const userPrompt = `Source Problem: ${sourceLabel} — ${title}
 
 Original Problem Text:
 ${problemText || "Not provided"}
@@ -196,9 +193,7 @@ ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-${journalInstruction}
-
-Generate 3 candidate teaching assets.`;
+Generate 3 exam-style practice variants.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -226,13 +221,15 @@ Generate 3 candidate teaching assets.`;
                     items: {
                       type: "object",
                       properties: {
-                        asset_name: { type: "string", description: "Short, clear name" },
+                        asset_name: { type: "string", description: "Short clear name for this variant" },
                         tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
-                        survive_problem_text: { type: "string", description: "Original practice problem" },
-                        journal_entry_block: { type: "string", description: "Debit/Credit lines or null" },
-                        survive_solution_text: { type: "string", description: "Tutor-style solution" },
+                        survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
+                        journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
+                        answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
+                        survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
+                        exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
                       },
-                      required: ["asset_name", "tags", "survive_problem_text", "survive_solution_text"],
+                      required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
                       additionalProperties: false,
                     },
                     description: "Exactly 3 candidate teaching assets",

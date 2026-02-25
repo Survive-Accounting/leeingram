@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -20,9 +22,18 @@ const REJECTION_REASONS = [
   "Too hard",
   "Off-topic",
   "Bad wording / unclear",
-  "Wrong mechanics / incorrect accounting",
+  "Incorrect accounting mechanics",
   "Too long",
   "Not aligned with exam style",
+] as const;
+
+const DIFFICULTY_TOGGLES = [
+  { id: "partial_period", label: "Partial Period / Stub Period" },
+  { id: "missing_info", label: "Missing Information (requires inference)" },
+  { id: "common_trap", label: "Common Trap (premium vs discount, debit vs credit reversal)" },
+  { id: "multi_step_decoy", label: "Multi-Step with Decoy Step" },
+  { id: "je_direction_trap", label: "Journal Entry Direction Trap (account known, debit/credit uncertain)" },
+  { id: "numerical_decoys", label: "Numerical Decoys (misleading but irrelevant values)" },
 ] as const;
 
 interface Props {
@@ -61,12 +72,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [formJE, setFormJE] = useState("");
 
   // Generate state
-  const [afDifficulty, setAfDifficulty] = useState("standard");
   const [afNotes, setAfNotes] = useState("");
   const [afRequiresJE, setAfRequiresJE] = useState(false);
+  const [activeDiffToggles, setActiveDiffToggles] = useState<string[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
   const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
+  const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set());
 
   // Rejection feedback state
   const [rejectingIndex, setRejectingIndex] = useState<number | null>(null);
@@ -137,9 +149,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           problemText: problem.problem_text,
           solutionText: problem.solution_text,
           journalEntryText: problem.journal_entry_text,
-          difficulty: afDifficulty,
           notes: afNotes,
           requiresJournalEntry: afRequiresJE,
+          difficultyToggles: activeDiffToggles.length > 0
+            ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
+            : undefined,
         },
       });
       if (error) throw error;
@@ -154,7 +168,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         });
         setViewingProblem({ ...viewingProblem, status: "generated" });
       }
-      toast.success(`Generated ${data.candidates?.length || 0} candidates`);
+      toast.success(`Generated ${data.candidates?.length || 0} variants`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -210,22 +224,31 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-    const resetForm = () => {
-    setFormLabel("");
-    setFormTitle("");
-    setFormProblem("");
-    setFormSolution("");
-    setFormJE("");
+  const resetForm = () => {
+    setFormLabel(""); setFormTitle(""); setFormProblem(""); setFormSolution(""); setFormJE("");
   };
 
   const openDetail = (p: ChapterProblem) => {
     setViewingProblem(p);
-    setAfDifficulty("standard");
     setAfNotes("");
     setAfRequiresJE(!!p.journal_entry_text);
+    setActiveDiffToggles([]);
     setCandidates([]);
     setSavingIndex(null);
     setGeneratedAssetId(null);
+    setExpandedSolutions(new Set());
+  };
+
+  const toggleDifficulty = (id: string) => {
+    setActiveDiffToggles(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSolutionExpand = (idx: number) => {
+    setExpandedSolutions(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
   };
 
   const statusStyle = (status: string) => ({
@@ -237,11 +260,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   }[status] ?? "bg-muted text-muted-foreground");
 
   const statusLabel = (status: string) => ({
-    imported: "SOURCE",
-    raw: "SOURCE",
-    generated: "GENERATED",
-    approved: "APPROVED",
-    converted: "APPROVED",
+    imported: "SOURCE", raw: "SOURCE", generated: "GENERATED", approved: "APPROVED", converted: "APPROVED",
   }[status] ?? status.toUpperCase());
 
   // ─── Detail / Generate View ───
@@ -289,31 +308,47 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-5">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Generate Practice Variants</h3>
+            <h3 className="text-sm font-semibold text-foreground">AI Variant Maker V2</h3>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3 mb-4">
+          <div className="grid gap-3 md:grid-cols-2 mb-4">
             <div>
-              <Label className="text-xs">Difficulty</Label>
-              <Select value={afDifficulty} onValueChange={setAfDifficulty}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="slightly_harder">Slightly Harder</SelectItem>
-                  <SelectItem value="tricky">Tricky</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2">
               <Label className="text-xs">Notes for AI (optional)</Label>
               <Input value={afNotes} onChange={(e) => setAfNotes(e.target.value)} placeholder="e.g., Focus on premium bonds" className="h-8 text-xs" />
             </div>
+            <div className="flex items-center gap-2 pt-5">
+              <Checkbox id="je-toggle" checked={afRequiresJE} onCheckedChange={(v) => setAfRequiresJE(v === true)} />
+              <Label htmlFor="je-toggle" className="text-xs cursor-pointer">Journal entry required</Label>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            <Checkbox id="je-toggle" checked={afRequiresJE} onCheckedChange={(v) => setAfRequiresJE(v === true)} />
-            <Label htmlFor="je-toggle" className="text-xs cursor-pointer">Journal entry required</Label>
-          </div>
+          {/* Exam Difficulty Options */}
+          <Collapsible className="mb-4">
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+              <AlertTriangle className="h-3 w-3" />
+              Exam Difficulty Options
+              {activeDiffToggles.length > 0 && (
+                <Badge variant="outline" className="text-[10px] ml-1">{activeDiffToggles.length} active</Badge>
+              )}
+              <ChevronDown className="h-3 w-3" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-2 pl-5">
+              <p className="text-[10px] text-muted-foreground mb-2">
+                All OFF by default. Toggle ON to add exam-style traps to generated variants.
+              </p>
+              {DIFFICULTY_TOGGLES.map((toggle) => (
+                <div key={toggle.id} className="flex items-center gap-2">
+                  <Switch
+                    id={`diff-${toggle.id}`}
+                    checked={activeDiffToggles.includes(toggle.id)}
+                    onCheckedChange={() => toggleDifficulty(toggle.id)}
+                    className="scale-75"
+                  />
+                  <Label htmlFor={`diff-${toggle.id}`} className="text-xs cursor-pointer">{toggle.label}</Label>
+                </div>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
 
           <div className="flex items-center gap-3 flex-wrap">
             <Button size="sm" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending}>
@@ -326,7 +361,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
             {candidates.length > 0 && (
               <Button size="sm" variant="outline" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending}>
-                <Sparkles className="h-3.5 w-3.5 mr-1" /> Generate 3 More
+                <Sparkles className="h-3.5 w-3.5 mr-1" /> Regenerate 3 More
               </Button>
             )}
 
@@ -345,7 +380,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Generated Variants ({candidates.length})
               </h4>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
                 {candidates.map((c: any, idx: number) => (
                   <div key={idx} className="rounded-lg border border-border bg-card p-4 space-y-3 flex flex-col">
                     <div>
@@ -361,22 +396,46 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       </div>
                     )}
 
+                    {/* Practice Problem Text */}
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Practice Problem</p>
-                      <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_problem_text}</p>
+                      <p className="text-xs text-foreground whitespace-pre-wrap">{c.survive_problem_text}</p>
                     </div>
 
+                    {/* Journal Entry Block */}
                     {c.journal_entry_block && (
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Journal Entry</p>
-                        <pre className="text-xs text-foreground whitespace-pre-wrap font-mono line-clamp-4">{c.journal_entry_block}</pre>
+                        <pre className="text-xs text-foreground whitespace-pre-wrap font-mono bg-muted/50 rounded p-2">{c.journal_entry_block}</pre>
                       </div>
                     )}
 
+                    {/* Answer Only */}
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Solution</p>
-                      <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_solution_text}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Answer Only</p>
+                      <p className="text-xs text-foreground whitespace-pre-wrap bg-muted/30 rounded p-2">{c.answer_only || "—"}</p>
                     </div>
+
+                    {/* Fully Worked Steps (collapsible) */}
+                    <Collapsible open={expandedSolutions.has(idx)} onOpenChange={() => toggleSolutionExpand(idx)}>
+                      <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider hover:text-foreground">
+                        {expandedSolutions.has(idx) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        Fully Worked Steps (internal)
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-1">
+                        <p className="text-xs text-foreground whitespace-pre-wrap bg-muted/30 rounded p-2">{c.survive_solution_text}</p>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Exam Trap Note */}
+                    {c.exam_trap_note && (
+                      <div className="rounded border border-amber-500/30 bg-amber-500/10 p-2">
+                        <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" /> Exam Trap Note
+                        </p>
+                        <p className="text-xs text-foreground">{c.exam_trap_note}</p>
+                      </div>
+                    )}
 
                     <div className="flex gap-2 mt-auto pt-2">
                       <Button
