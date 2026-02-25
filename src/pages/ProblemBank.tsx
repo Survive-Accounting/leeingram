@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/AppLayout";
+import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -156,16 +156,15 @@ export default function ProblemBank() {
 
   const patch = (k: string, v: string | null) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Get chapter name helper
   const chapterName = (chId: string) => {
     const ch = chapters?.find((c) => c.id === chId);
     return ch ? `Ch ${ch.chapter_number}` : "";
   };
 
   return (
-    <AppLayout>
+    <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Problem Bank</h1>
+        <h1 className="text-xl font-bold text-foreground">Problem Inbox</h1>
         <Button size="sm" onClick={openNew}>
           <Plus className="h-3.5 w-3.5 mr-1" /> New Problem
         </Button>
@@ -365,6 +364,6 @@ export default function ProblemBank() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </SurviveSidebarLayout>
   );
 }
