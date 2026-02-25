@@ -13,6 +13,9 @@ import ChapterPage from "./pages/ChapterPage";
 import ChapterWorkspace from "./pages/ChapterWorkspace";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
 import ProblemBank from "./pages/ProblemBank";
+import AssetsLibrary from "./pages/AssetsLibrary";
+import FilmingControlPanel from "./pages/FilmingControlPanel";
+import TutoringControlPanel from "./pages/TutoringControlPanel";
 import FocusTimer from "./pages/FocusTimer";
 import CreateLesson from "./pages/CreateLesson";
 import LessonDetail from "./pages/LessonDetail";
@@ -44,8 +47,9 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Survive Accounting — home page */}
-      <Route path="/" element={<ProtectedRoute><SurviveHome /></ProtectedRoute>} />
+      {/* Survive Accounting — default to Asset Factory */}
+      <Route path="/" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+      <Route path="/survive" element={<Navigate to="/content" replace />} />
       <Route path="/survive" element={<Navigate to="/" replace />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
@@ -63,6 +67,9 @@ const AppRoutes = () => {
       <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />
       <Route path="/ideas" element={<ProtectedRoute><IdeasRoadmap /></ProtectedRoute>} />
       <Route path="/problem-bank" element={<ProtectedRoute><ProblemBank /></ProtectedRoute>} />
+      <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
+      <Route path="/filming" element={<ProtectedRoute><FilmingControlPanel /></ProtectedRoute>} />
+      <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
       <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />
       <Route path="/focus" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
       <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />

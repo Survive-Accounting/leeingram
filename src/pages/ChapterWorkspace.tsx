@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/AppLayout";
+import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft } from "lucide-react";
@@ -57,9 +57,9 @@ export default function ChapterWorkspace() {
 
   if (!chapter) {
     return (
-      <AppLayout>
+      <SurviveSidebarLayout>
         <div className="text-muted-foreground">Loading workspace...</div>
-      </AppLayout>
+      </SurviveSidebarLayout>
     );
   }
 
@@ -83,7 +83,7 @@ export default function ChapterWorkspace() {
   ];
 
   return (
-    <AppLayout>
+    <SurviveSidebarLayout>
       <div className="mb-3">
         <Link to="/content" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-3 w-3" /> Content Factory
@@ -127,6 +127,6 @@ export default function ChapterWorkspace() {
           <ExportsTab chapterId={chapterId!} chapterNumber={chapterNum} />
         </TabsContent>
       </Tabs>
-    </AppLayout>
+    </SurviveSidebarLayout>
   );
 }

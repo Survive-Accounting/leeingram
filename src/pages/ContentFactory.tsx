@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/AppLayout";
+import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -50,16 +49,16 @@ export default function ContentFactory() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <SurviveSidebarLayout>
         <div className="text-muted-foreground">Loading...</div>
-      </AppLayout>
+      </SurviveSidebarLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <SurviveSidebarLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Content Factory</h1>
+        <h1 className="text-2xl font-bold text-foreground">Asset Factory</h1>
         <p className="text-sm text-muted-foreground">High-speed chapter planning & lesson production</p>
       </div>
 
@@ -89,9 +88,6 @@ export default function ContentFactory() {
                     {courseChapters.map((ch) => {
                       const chLessons = getChapterLessons(ch.id);
                       const probCount = getChapterProblems(ch.id);
-                      const readyPct = chLessons.length
-                        ? Math.round((chLessons.filter((l) => l.status_ready_to_film).length / chLessons.length) * 100)
-                        : 0;
                       const filmedPct = chLessons.length
                         ? Math.round((chLessons.filter((l) => l.status_filmed).length / chLessons.length) * 100)
                         : 0;
@@ -127,6 +123,6 @@ export default function ContentFactory() {
           );
         })}
       </div>
-    </AppLayout>
+    </SurviveSidebarLayout>
   );
 }
