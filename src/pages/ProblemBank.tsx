@@ -1,21 +1,18 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Search, Eye, ArrowLeft, Sparkles, ExternalLink, Loader2, ClipboardPaste, Tag, Image } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Loader2, Tag, Image, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
-import { ClipboardIntakePanel } from "@/components/content-factory/ClipboardIntakePanel";
+import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 
 type ChapterProblem = {
   id: string;
@@ -32,43 +29,49 @@ type ChapterProblem = {
   created_at: string;
   problem_screenshot_url: string | null;
   solution_screenshot_url: string | null;
+  problem_screenshot_urls: string[];
+  solution_screenshot_urls: string[];
 };
 
-type AssetForm = Omit<ChapterProblem, "id" | "created_at" | "status">;
+const STATUS_STYLES: Record<string, string> = {
+  raw: "bg-muted text-muted-foreground",
+  tagged: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  ready: "bg-green-500/20 text-green-400 border-green-500/30",
+  imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  approved: "bg-green-500/20 text-green-400 border-green-500/30",
+};
 
-const EMPTY_FORM: AssetForm = {
-  course_id: "",
-  chapter_id: "",
-  problem_type: "exercise",
-  source_label: "",
-  title: "",
-  problem_text: "",
-  solution_text: "",
-  journal_entry_text: null,
-  difficulty_internal: null,
-  problem_screenshot_url: null,
-  solution_screenshot_url: null,
+const STATUS_LABELS: Record<string, string> = {
+  raw: "Raw",
+  tagged: "Tagged",
+  ready: "Ready",
+  imported: "Imported",
+  generated: "Generated",
+  approved: "Approved",
 };
 
 export default function ProblemBank() {
   const qc = useQueryClient();
   const [courseFilter, setCourseFilter] = useState<string>("all");
   const [chapterFilter, setChapterFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProblem, setEditingProblem] = useState<ChapterProblem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Asset Factory state
-  const [afDifficulty, setAfDifficulty] = useState("standard");
-  const [afNotes, setAfNotes] = useState("");
-  const [afRequiresJE, setAfRequiresJE] = useState(false);
-  const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<any[]>([]);
-  const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  // Add Source Problem form state
+  const [problemFiles, setProblemFiles] = useState<File[]>([]);
+  const [solutionFiles, setSolutionFiles] = useState<File[]>([]);
+  const [formType, setFormType] = useState<string>("");
+  const [formLabel, setFormLabel] = useState("");
+  const [formTitle, setFormTitle] = useState("");
+
+  // Edit form state
+  const [editType, setEditType] = useState<string>("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editTitle, setEditTitle] = useState("");
 
   const { data: courses } = useQuery({
     queryKey: ["courses"],
@@ -91,38 +94,87 @@ export default function ProblemBank() {
   });
 
   const { data: problems, isLoading } = useQuery({
-    queryKey: ["chapter-problems", courseFilter, chapterFilter, typeFilter, search],
+    queryKey: ["chapter-problems", courseFilter, chapterFilter],
     queryFn: async () => {
       let q = supabase.from("chapter_problems").select("*").order("created_at", { ascending: false });
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
-      if (typeFilter !== "all") q = q.eq("problem_type", typeFilter as any);
-      if (search.trim()) {
-        q = q.or(`title.ilike.%${search.trim()}%,source_label.ilike.%${search.trim()}%`);
-      }
       const { data, error } = await q;
       if (error) throw error;
-      return data as ChapterProblem[];
+      return (data as any[]).map((d) => ({
+        ...d,
+        problem_screenshot_urls: d.problem_screenshot_urls ?? [],
+        solution_screenshot_urls: d.solution_screenshot_urls ?? [],
+      })) as ChapterProblem[];
     },
   });
 
-  const rawItems = problems?.filter((p) => p.status === "raw") ?? [];
+  const uploadFile = async (file: File, prefix: string): Promise<string> => {
+    const ext = file.name?.split(".").pop() || "png";
+    const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("problem-assets").upload(path, file, { contentType: file.type });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("problem-assets").getPublicUrl(path);
+    return urlData.publicUrl;
+  };
 
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof form & { id?: string }) => {
-      if (data.id) {
-        const { id, ...rest } = data;
-        const { error } = await supabase.from("chapter_problems").update(rest).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("chapter_problems").insert({ ...data, status: "imported" });
-        if (error) throw error;
-      }
+    mutationFn: async () => {
+      if (courseFilter === "all" || chapterFilter === "all") throw new Error("Select a course and chapter first");
+      if (problemFiles.length === 0) throw new Error("Add at least one problem screenshot");
+
+      const problemUrls = await Promise.all(problemFiles.map((f) => uploadFile(f, "intake-problems")));
+      const solutionUrls = await Promise.all(solutionFiles.map((f) => uploadFile(f, "intake-solutions")));
+
+      const { error } = await supabase.from("chapter_problems").insert({
+        course_id: courseFilter,
+        chapter_id: chapterFilter,
+        status: "raw",
+        problem_screenshot_url: problemUrls[0] || null,
+        solution_screenshot_url: solutionUrls[0] || null,
+        problem_screenshot_urls: problemUrls,
+        solution_screenshot_urls: solutionUrls,
+        problem_type: (formType || "exercise") as any,
+        source_label: formLabel,
+        title: formTitle,
+        problem_text: "",
+        solution_text: "",
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
-      setDialogOpen(false);
-      toast.success(editingId ? "Problem updated" : "Problem created");
+      setAddDialogOpen(false);
+      setProblemFiles([]);
+      setSolutionFiles([]);
+      setFormType("");
+      setFormLabel("");
+      setFormTitle("");
+      toast.success("Source problem saved to Raw queue");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingProblem) return;
+      const updates: any = {
+        problem_type: editType || "exercise",
+        source_label: editLabel,
+        title: editTitle,
+      };
+      // If label or title filled, auto-upgrade to tagged
+      if ((editLabel || editTitle) && editingProblem.status === "raw") {
+        updates.status = "tagged";
+      }
+      const { error } = await supabase.from("chapter_problems").update(updates).eq("id", editingProblem.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      setEditDialogOpen(false);
+      setEditingProblem(null);
+      toast.success("Problem updated");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -140,646 +192,286 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const generateCandidatesMutation = useMutation({
-    mutationFn: async (problem: ChapterProblem) => {
-      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
-        body: {
-          mode: "candidates",
-          problemId: problem.id,
-          courseId: problem.course_id,
-          chapterId: problem.chapter_id,
-          sourceLabel: problem.source_label,
-          title: problem.title,
-          problemText: problem.problem_text,
-          solutionText: problem.solution_text,
-          journalEntryText: problem.journal_entry_text,
-          difficulty: afDifficulty,
-          notes: afNotes,
-          requiresJournalEntry: afRequiresJE,
-        },
-      });
+  const bulkMarkReady = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("chapter_problems").update({ status: "ready" }).in("id", ids);
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
     },
-    onSuccess: (data) => {
-      setCandidates(data.candidates || []);
-      // Update status to "generated"
-      if (viewingProblem) {
-        supabase.from("chapter_problems").update({ status: "generated" }).eq("id", viewingProblem.id).then(() => {
-          qc.invalidateQueries({ queryKey: ["chapter-problems"] });
-        });
-        setViewingProblem({ ...viewingProblem, status: "generated" });
-      }
-      toast.success(`Generated ${data.candidates?.length || 0} candidates`);
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      setSelectedIds(new Set());
+      toast.success("Marked as Ready");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const saveCandidateMutation = useMutation({
-    mutationFn: async ({ candidate, problem }: { candidate: any; problem: ChapterProblem }) => {
-      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
-        body: {
-          mode: "save",
-          problemId: problem.id,
-          courseId: problem.course_id,
-          chapterId: problem.chapter_id,
-          candidate,
-          requiresJournalEntry: afRequiresJE,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data) => {
-      // Update status to "approved"
-      if (viewingProblem) {
-        supabase.from("chapter_problems").update({ status: "approved" }).eq("id", viewingProblem.id).then(() => {
-          qc.invalidateQueries({ queryKey: ["chapter-problems"] });
-        });
-      }
-      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
-      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
-      setGeneratedAssetId(data.asset?.id ?? null);
-      setCandidates([]);
-      setSavingIndex(null);
-      if (viewingProblem) {
-        setViewingProblem({ ...viewingProblem, status: "approved" });
-      }
-      toast.success("Teaching Asset saved & approved!");
-    },
-    onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
-  });
-
-  const openNew = () => {
-    setEditingId(null);
-    setForm({
-      ...EMPTY_FORM,
-      course_id: courseFilter !== "all" ? courseFilter : courses?.[0]?.id ?? "",
-      chapter_id: chapterFilter !== "all" ? chapterFilter : "",
-    });
-    setDialogOpen(true);
+  const markReady = async (id: string) => {
+    const { error } = await supabase.from("chapter_problems").update({ status: "ready" }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+    toast.success("Marked as Ready");
   };
 
   const openEdit = (p: ChapterProblem) => {
-    setEditingId(p.id);
-    setForm({
-      course_id: p.course_id,
-      chapter_id: p.chapter_id,
-      problem_type: p.problem_type,
-      source_label: p.source_label,
-      title: p.title,
-      problem_text: p.problem_text,
-      solution_text: p.solution_text,
-      journal_entry_text: p.journal_entry_text,
-      difficulty_internal: p.difficulty_internal,
-      problem_screenshot_url: p.problem_screenshot_url,
-      solution_screenshot_url: p.solution_screenshot_url,
+    setEditingProblem(p);
+    setEditType(p.problem_type);
+    setEditLabel(p.source_label);
+    setEditTitle(p.title);
+    setEditDialogOpen(true);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
     });
-    setDialogOpen(true);
   };
-
-  const openDetail = (p: ChapterProblem) => {
-    setViewingProblem(p);
-    setAfDifficulty("standard");
-    setAfNotes("");
-    setAfRequiresJE(false);
-    setGeneratedAssetId(null);
-    setCandidates([]);
-    setSavingIndex(null);
-  };
-
-  const handleSave = () => {
-    if (!form.course_id || !form.chapter_id) {
-      toast.error("Select a course and chapter");
-      return;
-    }
-    saveMutation.mutate(editingId ? { ...form, id: editingId } : form);
-  };
-
-  const patch = (k: string, v: string | null) => setForm((f) => ({ ...f, [k]: v }));
 
   const chapterName = (chId: string) => {
     const ch = chapters?.find((c) => c.id === chId);
     return ch ? `Ch ${ch.chapter_number}` : "";
   };
 
-  // ─── Detail View ───
-  if (viewingProblem) {
-    const p = viewingProblem;
-    const isConverted = p.status === "converted" || p.status === "approved";
+  const imgCount = (urls: string[], legacy: string | null) => {
+    if (urls.length > 0) return urls.length;
+    return legacy ? 1 : 0;
+  };
 
-    const statusColor = {
-      imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      raw: "bg-muted text-muted-foreground",
-      generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-      approved: "bg-green-500/20 text-green-400 border-green-500/30",
-      converted: "bg-green-500/20 text-green-400 border-green-500/30",
-    }[p.status] ?? "bg-muted text-muted-foreground";
+  const canAdd = courseFilter !== "all" && chapterFilter !== "all";
 
-    const statusLabel = {
-      imported: "Imported",
-      raw: "Raw",
-      generated: "Generated",
-      approved: "Approved",
-      converted: "Approved",
-    }[p.status] ?? p.status;
-
-    return (
-      <SurviveSidebarLayout>
-        <div className="mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setViewingProblem(null)} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-3 w-3 mr-1" /> Back to Problem Inbox
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-mono text-muted-foreground">{p.source_label}</span>
-                <Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] ${statusColor}`}
-                >
-                  {statusLabel}
-                </Badge>
-              </div>
-              <h1 className="text-xl font-bold text-foreground">{p.title}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">{chapterName(p.chapter_id)}</p>
-            </div>
-            <div className="flex gap-1.5">
-              <Button size="sm" variant="outline" onClick={() => { openEdit(p); setViewingProblem(null); }}>
-                <Pencil className="h-3 w-3 mr-1" /> Edit
-              </Button>
-            </div>
-          </div>
-
-          {/* Screenshots */}
-          {(p.problem_screenshot_url || p.solution_screenshot_url) && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {p.problem_screenshot_url && (
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem Screenshot</h2>
-                  <img src={p.problem_screenshot_url} alt="Problem screenshot" className="rounded border border-border w-full object-contain max-h-64" />
-                </div>
-              )}
-              {p.solution_screenshot_url && (
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution Screenshot</h2>
-                  <img src={p.solution_screenshot_url} alt="Solution screenshot" className="rounded border border-border w-full object-contain max-h-64" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Problem & Solution Text */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h2>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{p.problem_text || "—"}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h2>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{p.solution_text || "—"}</p>
-            </div>
-          </div>
-
-          {p.journal_entry_text && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry</h2>
-              <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{p.journal_entry_text}</pre>
-            </div>
-          )}
-
-          {/* ─── Asset Factory ─── */}
-          <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Asset Factory</h2>
-              {isConverted && <Badge variant="default" className="text-[10px]">Already converted</Badge>}
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3 mb-4">
-              <div>
-                <Label className="text-xs">Difficulty</Label>
-                <Select value={afDifficulty} onValueChange={setAfDifficulty}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="slightly_harder">Slightly Harder</SelectItem>
-                    <SelectItem value="tricky">Tricky</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-2">
-                <Label className="text-xs">Notes for AI (optional)</Label>
-                <Input
-                  value={afNotes}
-                  onChange={(e) => setAfNotes(e.target.value)}
-                  placeholder="e.g., Focus on premium bonds, use small numbers"
-                  className="h-8 text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 mb-4">
-              <Checkbox
-                id="requires-je"
-                checked={afRequiresJE}
-                onCheckedChange={(v) => setAfRequiresJE(v === true)}
-              />
-              <Label htmlFor="requires-je" className="text-xs cursor-pointer">
-                This concept requires a journal entry
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button
-                size="sm"
-                onClick={() => generateCandidatesMutation.mutate(p)}
-                disabled={generateCandidatesMutation.isPending}
-              >
-                {generateCandidatesMutation.isPending ? (
-                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating 3 Candidates…</>
-                ) : (
-                  <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate 3 Candidates</>
-                )}
-              </Button>
-
-              {generatedAssetId && (
-                <Button size="sm" variant="outline" asChild>
-                  <Link to="/assets-library">
-                    <ExternalLink className="h-3 w-3 mr-1" /> Open Asset
-                  </Link>
-                </Button>
-              )}
-            </div>
-
-            {/* ─── Candidates Comparison ─── */}
-            {candidates.length > 0 && (
-              <div className="mt-5 space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Pick the best candidate
-                </h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {candidates.map((c: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="rounded-lg border border-white/15 bg-white/[0.04] p-4 space-y-3 flex flex-col"
-                    >
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Candidate {idx + 1}</p>
-                        <h4 className="text-sm font-semibold text-foreground">{c.asset_name}</h4>
-                      </div>
-
-                      {c.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {c.tags.map((t: string) => (
-                            <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Problem</p>
-                        <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_problem_text}</p>
-                      </div>
-
-                      {c.journal_entry_block && (
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Journal Entry</p>
-                          <pre className="text-xs text-foreground whitespace-pre-wrap font-mono line-clamp-4">{c.journal_entry_block}</pre>
-                        </div>
-                      )}
-
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Solution</p>
-                        <p className="text-xs text-foreground whitespace-pre-wrap line-clamp-6">{c.survive_solution_text}</p>
-                      </div>
-
-                      <div className="flex gap-2 mt-auto pt-2">
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            setSavingIndex(idx);
-                            saveCandidateMutation.mutate({ candidate: c, problem: p });
-                          }}
-                          disabled={saveCandidateMutation.isPending}
-                        >
-                          {savingIndex === idx && saveCandidateMutation.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            "Save this Asset"
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-muted-foreground"
-                          onClick={() => setCandidates((prev) => prev.filter((_, i) => i !== idx))}
-                          disabled={saveCandidateMutation.isPending}
-                        >
-                          Discard
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </SurviveSidebarLayout>
-    );
-  }
-
-  // ─── Table View ───
   return (
     <SurviveSidebarLayout>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-foreground">Problem Import</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
+        </p>
+      </div>
+
+      {/* Course + Chapter selectors */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Problem Inbox</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Uploaded textbook problems waiting to be transformed into Survive assets.</p>
+          <Label className="text-xs">Course (required)</Label>
+          <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
+            <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10"><SelectValue placeholder="Select course" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">— Select Course —</SelectItem>
+              {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Chapter (required)</Label>
+          <Select value={chapterFilter} onValueChange={setChapterFilter}>
+            <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10"><SelectValue placeholder="Select chapter" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">— Select Chapter —</SelectItem>
+              {chapters?.map((c) => <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <Tabs defaultValue="intake" className="space-y-4">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="intake" className="gap-1"><ClipboardPaste className="h-3 w-3" /> Clipboard Intake</TabsTrigger>
-          <TabsTrigger value="raw-queue" className="gap-1"><Image className="h-3 w-3" /> Raw Queue{rawItems.length > 0 && ` (${rawItems.length})`}</TabsTrigger>
-          <TabsTrigger value="all" className="gap-1"><Tag className="h-3 w-3" /> All Problems</TabsTrigger>
-        </TabsList>
-
-        {/* ─── Clipboard Intake Tab ─── */}
-        <TabsContent value="intake">
-          <ClipboardIntakePanel onSaved={() => qc.invalidateQueries({ queryKey: ["chapter-problems"] })} />
-        </TabsContent>
-
-        {/* ─── Raw Intake Queue Tab ─── */}
-        <TabsContent value="raw-queue">
-          <div className="space-y-3">
-            {rawItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No raw items. Use Clipboard Intake to add screenshots.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {rawItems.map((p) => (
-                  <div key={p.id} className="rounded-lg border border-border bg-card p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">Raw</Badge>
-                      <Badge variant="outline" className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">Needs Tagging</Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {p.problem_screenshot_url ? (
-                        <img src={p.problem_screenshot_url} alt="Problem" className="rounded border border-border w-full h-24 object-cover" />
-                      ) : (
-                        <div className="rounded border border-border w-full h-24 flex items-center justify-center text-muted-foreground/30"><Image className="h-6 w-6" /></div>
-                      )}
-                      {p.solution_screenshot_url ? (
-                        <img src={p.solution_screenshot_url} alt="Solution" className="rounded border border-border w-full h-24 object-cover" />
-                      ) : (
-                        <div className="rounded border border-border w-full h-24 flex items-center justify-center text-muted-foreground/30"><Image className="h-6 w-6" /></div>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">{chapterName(p.chapter_id)}</p>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => openEdit(p)}>
-                        <Tag className="h-3 w-3 mr-1" /> Tag & Label
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* ─── All Problems Tab ─── */}
-        <TabsContent value="all">
+      {/* Add button + bulk actions */}
       <div className="flex items-center justify-between mb-3">
-        <div />
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> New Problem
+        <div className="flex gap-2">
+          {selectedIds.size > 0 && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Bulk Mark Ready ({selectedIds.size})
+              </Button>
+            </>
+          )}
+        </div>
+        <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canAdd}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add Source Problem
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-        <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
-          <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10">
-            <SelectValue placeholder="All Courses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Courses</SelectItem>
-            {courses?.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {!canAdd && (
+        <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter above to view and add source problems.</p>
+      )}
 
-        <Select value={chapterFilter} onValueChange={setChapterFilter}>
-          <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10">
-            <SelectValue placeholder="All Chapters" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Chapters</SelectItem>
-            {chapters?.map((c) => (
-              <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="exercise">Exercise</SelectItem>
-            <SelectItem value="problem">Problem</SelectItem>
-            <SelectItem value="custom">Custom</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search label or title…"
-            className="h-8 text-xs pl-7 bg-white/[0.07] border-white/10"
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-lg overflow-hidden border border-white/10 bg-white/[0.04]">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-white/10">
-              <TableHead className="text-xs">Label</TableHead>
-              <TableHead className="text-xs">Title</TableHead>
-              <TableHead className="text-xs">Type</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
-              <TableHead className="text-xs">Chapter</TableHead>
-              <TableHead className="text-xs w-28">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
-            ) : !problems?.length ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">No problems found</TableCell></TableRow>
-            ) : (
-              problems.map((p) => (
-                <TableRow key={p.id} className="border-white/10">
-                  <TableCell className="text-xs font-mono">{p.source_label}</TableCell>
-                  <TableCell className="text-xs">{p.title}</TableCell>
-                  <TableCell className="text-xs capitalize">{p.problem_type}</TableCell>
-                  <TableCell className="text-xs">
-                    {(() => {
-                      const sc = {
-                        imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-                        raw: "bg-muted text-muted-foreground",
-                        generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-                        approved: "bg-green-500/20 text-green-400 border-green-500/30",
-                        converted: "bg-green-500/20 text-green-400 border-green-500/30",
-                      }[p.status] ?? "bg-muted text-muted-foreground";
-                      const sl = {
-                        imported: "Imported",
-                        raw: "Raw",
-                        generated: "Generated",
-                        approved: "Approved",
-                        converted: "Approved",
-                      }[p.status] ?? p.status;
-                      return (
-                        <Badge variant="outline" className={`text-[10px] ${sc}`}>
-                          {sl}
-                        </Badge>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell className="text-xs">{chapterName(p.chapter_id)}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {(p.status === "raw" || p.status === "imported") && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
-                          <Sparkles className="h-3 w-3 mr-1" /> Generate
+      {/* Source problems table */}
+      {canAdd && (
+        <div className="rounded-lg overflow-hidden border border-white/10 bg-white/[0.04]">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-white/10">
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={problems && problems.length > 0 && selectedIds.size === problems.length}
+                    onCheckedChange={() => {
+                      if (!problems) return;
+                      if (selectedIds.size === problems.length) setSelectedIds(new Set());
+                      else setSelectedIds(new Set(problems.map((p) => p.id)));
+                    }}
+                  />
+                </TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Label</TableHead>
+                <TableHead className="text-xs">Title</TableHead>
+                <TableHead className="text-xs">Type</TableHead>
+                <TableHead className="text-xs"># Prob Imgs</TableHead>
+                <TableHead className="text-xs"># Sol Imgs</TableHead>
+                <TableHead className="text-xs w-36">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
+              ) : !problems?.length ? (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No source problems yet. Click "+ Add Source Problem" to start.</TableCell></TableRow>
+              ) : (
+                problems.map((p) => (
+                  <TableRow key={p.id} className="border-white/10">
+                    <TableCell>
+                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] ${STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground"}`}>
+                        {STATUS_LABELS[p.status] ?? p.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">{p.source_label || "—"}</TableCell>
+                    <TableCell className="text-xs">{p.title || "—"}</TableCell>
+                    <TableCell className="text-xs capitalize">{p.problem_type}</TableCell>
+                    <TableCell className="text-xs">{imgCount(p.problem_screenshot_urls, p.problem_screenshot_url)}</TableCell>
+                    <TableCell className="text-xs">{imgCount(p.solution_screenshot_urls, p.solution_screenshot_url)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {(p.status === "raw" || p.status === "tagged") && (
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markReady(p.id)}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Ready
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
+                          <Pencil className="h-3 w-3" />
                         </Button>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-        </TabsContent>
-      </Tabs>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-      {/* New / Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Add Source Problem Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Problem" : "New Problem"}</DialogTitle>
-            <DialogDescription>Fill in the problem details below.</DialogDescription>
+            <DialogTitle>Add Source Problem</DialogTitle>
+            <DialogDescription>Paste or drop screenshots. Label/title/type are optional — you can tag later.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
             <div>
-              <Label className="text-xs">Course</Label>
-              <Select value={form.course_id} onValueChange={(v) => { patch("course_id", v); patch("chapter_id", ""); }}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select course" /></SelectTrigger>
-                <SelectContent>
-                  {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Problem Screenshots (paste Ctrl+V or drag & drop)</Label>
+              <ImagePasteArea
+                label="Paste or drop problem images"
+                files={problemFiles}
+                onAdd={(files) => setProblemFiles((prev) => [...prev, ...files])}
+                onRemove={(i) => setProblemFiles((prev) => prev.filter((_, idx) => idx !== i))}
+              />
             </div>
+
             <div>
-              <Label className="text-xs">Chapter</Label>
-              <Select value={form.chapter_id} onValueChange={(v) => patch("chapter_id", v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select chapter" /></SelectTrigger>
-                <SelectContent>
-                  {chapters?.filter((c) => !form.course_id || c.course_id === form.course_id).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs mb-1 block">Solution Screenshots (optional)</Label>
+              <ImagePasteArea
+                label="Paste or drop solution images"
+                files={solutionFiles}
+                onAdd={(files) => setSolutionFiles((prev) => [...prev, ...files])}
+                onRemove={(i) => setSolutionFiles((prev) => prev.filter((_, idx) => idx !== i))}
+              />
             </div>
-            <div>
-              <Label className="text-xs">Type</Label>
-              <Select value={form.problem_type} onValueChange={(v) => patch("problem_type", v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="exercise">Exercise</SelectItem>
-                  <SelectItem value="problem">Problem</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Type (optional)</Label>
+                <Select value={formType} onValueChange={setFormType}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exercise">Exercise</SelectItem>
+                    <SelectItem value="problem">Problem</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Label (optional)</Label>
+                <Input value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="E13-3 or P13-4" className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Title (optional)</Label>
+                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Bond amortization" className="h-8 text-xs" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Source Label</Label>
-              <Input value={form.source_label} onChange={(e) => patch("source_label", e.target.value)} placeholder="E13-4" className="h-8 text-xs" />
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs">Title</Label>
-            <Input value={form.title} onChange={(e) => patch("title", e.target.value)} placeholder="Bond amortization premium" className="h-8 text-xs" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Problem Text</Label>
-            <Textarea value={form.problem_text} onChange={(e) => patch("problem_text", e.target.value)} rows={4} className="text-xs" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Solution Text</Label>
-            <Textarea value={form.solution_text} onChange={(e) => patch("solution_text", e.target.value)} rows={4} className="text-xs" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Journal Entry (optional)</Label>
-            <Textarea value={form.journal_entry_text ?? ""} onChange={(e) => patch("journal_entry_text", e.target.value || null)} rows={3} className="text-xs" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Difficulty</Label>
-            <Select value={form.difficulty_internal ?? "none"} onValueChange={(v) => patch("difficulty_internal", v === "none" ? null : v)}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Not set" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Not set</SelectItem>
-                <SelectItem value="easy">Easy</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="hard">Hard</SelectItem>
-                <SelectItem value="tricky">Tricky</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "Saving…" : "Save"}
+            <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || problemFiles.length === 0}>
+              {saveMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save Source Problem"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Source Problem</DialogTitle>
+            <DialogDescription>Update label, title, and type. Saving with label/title auto-tags the item.</DialogDescription>
+          </DialogHeader>
+
+          {editingProblem && (
+            <>
+              {/* Show thumbnails */}
+              {(editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) && (
+                <div className="flex gap-2 flex-wrap">
+                  {(editingProblem.problem_screenshot_urls.length > 0
+                    ? editingProblem.problem_screenshot_urls
+                    : [editingProblem.problem_screenshot_url].filter(Boolean)
+                  ).map((url, i) => (
+                    <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Type</Label>
+                  <Select value={editType} onValueChange={setEditType}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exercise">Exercise</SelectItem>
+                      <SelectItem value="problem">Problem</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Label</Label>
+                  <Input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="E13-3" className="h-8 text-xs" />
+                </div>
+                <div>
+                  <Label className="text-xs">Title</Label>
+                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Bond premium" className="h-8 text-xs" />
+                </div>
+              </div>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -790,7 +482,7 @@ export default function ProblemBank() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete Problem</DialogTitle>
-            <DialogDescription>This will permanently remove this problem. Continue?</DialogDescription>
+            <DialogDescription>This will permanently remove this source problem. Continue?</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setDeleteId(null)}>Cancel</Button>

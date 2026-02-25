@@ -10,11 +10,11 @@ import { WorkflowModePanel } from "@/components/WorkflowModePanel";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Asset Factory", path: "/content", icon: Factory },
-  { label: "Problem Inbox", path: "/problem-bank", icon: Inbox },
-  { label: "Assets Library", path: "/assets-library", icon: Library },
-  { label: "Export Sets", path: "/export-sets", icon: Package },
-  { label: "Filming Control Panel", path: "/filming", icon: Video },
+  { label: "Problem Import", sub: "Paste source screenshots", path: "/problem-bank", icon: Inbox },
+  { label: "Variant Generator", sub: "Generate exam-style variants", path: "/content", icon: Factory },
+  { label: "Assets Library", sub: "Approved problems vault", path: "/assets-library", icon: Library },
+  { label: "Export Sets", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package },
+  { label: "Filming Queue", sub: "Video walkthrough tracking", path: "/filming", icon: Video },
 ];
 
 const STEPS_PAGES = ["/problem-bank", "/assets-library", "/export-sets", "/content", "/filming"];
@@ -101,14 +101,17 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                       key={item.path}
                       to={item.path}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                        "flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors",
                         active
                           ? "bg-white/15 text-white font-medium"
                           : "text-white/50 hover:text-white hover:bg-white/8"
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
+                      <div className="min-w-0">
+                        <span className="text-sm block">{item.label}</span>
+                        {item.sub && <span className="text-[10px] text-white/30 block leading-tight">{item.sub}</span>}
+                      </div>
                     </Link>
                   );
                 })}

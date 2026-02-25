@@ -89,8 +89,8 @@ export default function ContentFactory() {
   return (
     <SurviveSidebarLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Asset Factory</h1>
-        <p className="text-sm text-muted-foreground">Generate and refine practice problem variants from textbook source material.</p>
+        <h1 className="text-2xl font-bold text-foreground">Variant Generator</h1>
+        <p className="text-sm text-muted-foreground">Generate 3 exam-style Survive variants from a selected source problem.</p>
       </div>
 
       {/* Continue Where You Left Off */}

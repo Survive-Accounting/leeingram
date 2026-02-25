@@ -65,7 +65,7 @@ export default function ExportSets() {
             <Package className="h-5 w-5 text-primary" />
             Export Sets
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Batch export approved assets into CSV + PDF formats for LearnWorlds Question Bank.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Bundle approved problems into a CSV for LearnWorlds Question Bank import.</p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="h-3.5 w-3.5 mr-1" /> New Set
