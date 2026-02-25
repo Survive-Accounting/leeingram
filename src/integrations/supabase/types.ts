@@ -52,6 +52,7 @@ export type Database = {
           problem_type: Database["public"]["Enums"]["problem_type"]
           solution_text: string
           source_label: string
+          status: string
           title: string
         }
         Insert: {
@@ -67,6 +68,7 @@ export type Database = {
           problem_type?: Database["public"]["Enums"]["problem_type"]
           solution_text?: string
           source_label?: string
+          status?: string
           title?: string
         }
         Update: {
@@ -82,6 +84,7 @@ export type Database = {
           problem_type?: Database["public"]["Enums"]["problem_type"]
           solution_text?: string
           source_label?: string
+          status?: string
           title?: string
         }
         Relationships: [

@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, ArrowLeft, Sparkles, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 type ChapterProblem = {
   id: string;
@@ -23,10 +26,13 @@ type ChapterProblem = {
   solution_text: string;
   journal_entry_text: string | null;
   difficulty_internal: "easy" | "medium" | "hard" | "tricky" | null;
+  status: string;
   created_at: string;
 };
 
-const EMPTY_FORM: Omit<ChapterProblem, "id" | "created_at"> = {
+type AssetForm = Omit<ChapterProblem, "id" | "created_at" | "status">;
+
+const EMPTY_FORM: AssetForm = {
   course_id: "",
   chapter_id: "",
   problem_type: "exercise",
@@ -48,8 +54,14 @@ export default function ProblemBank() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
 
-  // Fetch courses
+  // Asset Factory state
+  const [afDifficulty, setAfDifficulty] = useState("standard");
+  const [afNotes, setAfNotes] = useState("");
+  const [afRequiresJE, setAfRequiresJE] = useState(false);
+  const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
+
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -59,7 +71,6 @@ export default function ProblemBank() {
     },
   });
 
-  // Fetch chapters (filtered by course if selected)
   const { data: chapters } = useQuery({
     queryKey: ["chapters", courseFilter],
     queryFn: async () => {
@@ -71,14 +82,13 @@ export default function ProblemBank() {
     },
   });
 
-  // Fetch problems
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", courseFilter, chapterFilter, typeFilter, search],
     queryFn: async () => {
       let q = supabase.from("chapter_problems").select("*").order("created_at", { ascending: false });
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
-      if (typeFilter !== "all") q = q.eq("problem_type", typeFilter as "exercise" | "problem" | "custom");
+      if (typeFilter !== "all") q = q.eq("problem_type", typeFilter as any);
       if (search.trim()) {
         q = q.or(`title.ilike.%${search.trim()}%,source_label.ilike.%${search.trim()}%`);
       }
@@ -120,6 +130,39 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const generateMutation = useMutation({
+    mutationFn: async (problem: ChapterProblem) => {
+      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+        body: {
+          problemId: problem.id,
+          courseId: problem.course_id,
+          chapterId: problem.chapter_id,
+          sourceLabel: problem.source_label,
+          title: problem.title,
+          problemText: problem.problem_text,
+          solutionText: problem.solution_text,
+          journalEntryText: problem.journal_entry_text,
+          difficulty: afDifficulty,
+          notes: afNotes,
+          requiresJournalEntry: afRequiresJE,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      setGeneratedAssetId(data.asset?.id ?? null);
+      if (viewingProblem) {
+        setViewingProblem({ ...viewingProblem, status: "converted" });
+      }
+      toast.success("Teaching Asset generated successfully!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const openNew = () => {
     setEditingId(null);
     setForm({
@@ -146,6 +189,14 @@ export default function ProblemBank() {
     setDialogOpen(true);
   };
 
+  const openDetail = (p: ChapterProblem) => {
+    setViewingProblem(p);
+    setAfDifficulty("standard");
+    setAfNotes("");
+    setAfRequiresJE(false);
+    setGeneratedAssetId(null);
+  };
+
   const handleSave = () => {
     if (!form.course_id || !form.chapter_id) {
       toast.error("Select a course and chapter");
@@ -161,6 +212,131 @@ export default function ProblemBank() {
     return ch ? `Ch ${ch.chapter_number}` : "";
   };
 
+  // ─── Detail View ───
+  if (viewingProblem) {
+    const p = viewingProblem;
+    const isConverted = p.status === "converted";
+
+    return (
+      <SurviveSidebarLayout>
+        <div className="mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setViewingProblem(null)} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-3 w-3 mr-1" /> Back to Problem Inbox
+          </Button>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-mono text-muted-foreground">{p.source_label}</span>
+                <Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge>
+                <Badge
+                  variant={isConverted ? "default" : "secondary"}
+                  className="text-[10px]"
+                >
+                  {isConverted ? "Converted" : "Raw"}
+                </Badge>
+              </div>
+              <h1 className="text-xl font-bold text-foreground">{p.title}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">{chapterName(p.chapter_id)}</p>
+            </div>
+            <div className="flex gap-1.5">
+              <Button size="sm" variant="outline" onClick={() => { openEdit(p); setViewingProblem(null); }}>
+                <Pencil className="h-3 w-3 mr-1" /> Edit
+              </Button>
+            </div>
+          </div>
+
+          {/* Problem & Solution */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h2>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{p.problem_text || "—"}</p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h2>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{p.solution_text || "—"}</p>
+            </div>
+          </div>
+
+          {p.journal_entry_text && (
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry</h2>
+              <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{p.journal_entry_text}</pre>
+            </div>
+          )}
+
+          {/* ─── Asset Factory ─── */}
+          <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Asset Factory</h2>
+              {isConverted && <Badge variant="default" className="text-[10px]">Already converted</Badge>}
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3 mb-4">
+              <div>
+                <Label className="text-xs">Difficulty</Label>
+                <Select value={afDifficulty} onValueChange={setAfDifficulty}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="slightly_harder">Slightly Harder</SelectItem>
+                    <SelectItem value="tricky">Tricky</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label className="text-xs">Notes for AI (optional)</Label>
+                <Input
+                  value={afNotes}
+                  onChange={(e) => setAfNotes(e.target.value)}
+                  placeholder="e.g., Focus on premium bonds, use small numbers"
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4">
+              <Checkbox
+                id="requires-je"
+                checked={afRequiresJE}
+                onCheckedChange={(v) => setAfRequiresJE(v === true)}
+              />
+              <Label htmlFor="requires-je" className="text-xs cursor-pointer">
+                This concept requires a journal entry
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                onClick={() => generateMutation.mutate(p)}
+                disabled={generateMutation.isPending}
+              >
+                {generateMutation.isPending ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
+                ) : (
+                  <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate Teaching Asset</>
+                )}
+              </Button>
+
+              {generatedAssetId && (
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/assets-library">
+                    <ExternalLink className="h-3 w-3 mr-1" /> Open Asset
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </SurviveSidebarLayout>
+    );
+  }
+
+  // ─── Table View ───
   return (
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
@@ -227,24 +403,36 @@ export default function ProblemBank() {
               <TableHead className="text-xs">Label</TableHead>
               <TableHead className="text-xs">Title</TableHead>
               <TableHead className="text-xs">Type</TableHead>
+              <TableHead className="text-xs">Status</TableHead>
               <TableHead className="text-xs">Chapter</TableHead>
-              <TableHead className="text-xs w-24">Actions</TableHead>
+              <TableHead className="text-xs w-28">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
             ) : !problems?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">No problems found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">No problems found</TableCell></TableRow>
             ) : (
               problems.map((p) => (
                 <TableRow key={p.id} className="border-white/10">
                   <TableCell className="text-xs font-mono">{p.source_label}</TableCell>
                   <TableCell className="text-xs">{p.title}</TableCell>
                   <TableCell className="text-xs capitalize">{p.problem_type}</TableCell>
+                  <TableCell className="text-xs">
+                    <Badge
+                      variant={p.status === "converted" ? "default" : "secondary"}
+                      className="text-[10px]"
+                    >
+                      {p.status === "converted" ? "Converted" : "Raw"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-xs">{chapterName(p.chapter_id)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
                         <Pencil className="h-3 w-3" />
                       </Button>
