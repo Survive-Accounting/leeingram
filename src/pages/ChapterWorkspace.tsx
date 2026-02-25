@@ -41,6 +41,7 @@ export default function ChapterWorkspace() {
     enabled: !!chapterId,
   });
 
+  // Lessons query kept for LW Status tab
   const { data: lessons } = useQuery({
     queryKey: ["workspace-lessons", chapterId],
     queryFn: async () => {
@@ -68,18 +69,18 @@ export default function ChapterWorkspace() {
 
   const totalProblems = problems?.length ?? 0;
   const reviewedProblems = problems?.filter((p) => p.status === "reviewed" || p.status === "assigned").length ?? 0;
-  const totalLessons = lessons?.length ?? 0;
-  const readyToFilm = lessons?.filter((l) => l.status_ready_to_film).length ?? 0;
-  const filmed = lessons?.filter((l) => l.status_filmed).length ?? 0;
-  const posted = lessons?.filter((l) => l.status_posted).length ?? 0;
+  const approvedProblems = problems?.filter((p) => p.status === "approved").length ?? 0;
+  const lwReady = problems?.filter((p) => p.status === "lw_ready").length ?? 0;
+  const filmed = problems?.filter((p) => p.status === "filmed").length ?? 0;
+  const deployed = problems?.filter((p) => p.status === "deployed").length ?? 0;
 
   const stats = [
-    { label: "Problems", value: totalProblems, max: totalProblems || 1 },
-    { label: "Reviewed", value: reviewedProblems, max: totalProblems || 1 },
-    { label: "Lessons", value: totalLessons, max: chapter.target_lessons ?? 5 },
-    { label: "Ready", value: readyToFilm, max: totalLessons || 1 },
-    { label: "Filmed", value: filmed, max: totalLessons || 1 },
-    { label: "Posted", value: posted, max: totalLessons || 1 },
+    { label: "Source", value: totalProblems, max: totalProblems || 1 },
+    { label: "Approved", value: approvedProblems, max: totalProblems || 1 },
+    { label: "LW Ready", value: lwReady, max: totalProblems || 1 },
+    { label: "Film Ready", value: reviewedProblems, max: totalProblems || 1 },
+    { label: "Filmed", value: filmed, max: totalProblems || 1 },
+    { label: "Deployed", value: deployed, max: totalProblems || 1 },
   ];
 
   return (
@@ -110,8 +111,8 @@ export default function ChapterWorkspace() {
 
       <Tabs defaultValue="problems" className="space-y-3">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="problems">Problem Bank</TabsTrigger>
-          <TabsTrigger value="lessons">Lessons</TabsTrigger>
+          <TabsTrigger value="problems">Problems</TabsTrigger>
+          <TabsTrigger value="lw-status">LearnWorlds Status</TabsTrigger>
           <TabsTrigger value="exports">Exports</TabsTrigger>
         </TabsList>
 
@@ -119,7 +120,7 @@ export default function ChapterWorkspace() {
           <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} />
         </TabsContent>
 
-        <TabsContent value="lessons">
+        <TabsContent value="lw-status">
           <LessonsTab chapterId={chapterId!} courseId={course.id} chapterNumber={chapterNum} targetLessons={chapter.target_lessons ?? 5} />
         </TabsContent>
 

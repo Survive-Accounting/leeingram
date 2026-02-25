@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronDown, ChevronRight, Factory, Inbox, Library, Package, Video } from "lucide-react";
+import { ChevronDown, ChevronRight, Factory, Inbox, Library, Package, Video, Info } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,53 +23,67 @@ interface Phase {
   steps: string[];
 }
 
-const PHASES: Phase[] = [
+interface PhaseWithTooltip extends Phase {
+  tooltip?: string;
+}
+
+const PHASES: PhaseWithTooltip[] = [
   {
-    title: "Phase 1 — Problem Generation",
+    title: "SOURCE",
     steps: [
-      "Select Chapter",
-      "Upload Problem/Solution Source",
-      "Generate Practice Problem",
-      "Review Problem Text",
-      "Confirm Journal Entry Required (if applicable)",
-      "Save to Problem Bank",
+      "Upload textbook problem + solution pair",
+      "Generate AI practice variant(s)",
+      "Review draft versions",
     ],
   },
   {
-    title: "Phase 2 — LearnWorlds Preparation",
+    title: "APPROVED",
+    tooltip: "Final Survive Accounting teaching version selected from AI/textbook drafts.",
     steps: [
-      "Export Question CSV",
-      "Export Worksheet PDF",
-      "Confirm Naming Convention",
-      "Assign Chapter + Exercise Ref",
-      "Assign Concept Tag",
+      "Select final teaching version",
+      "Edit problem text & solution",
+      "Confirm ready for camera & tutoring",
     ],
   },
   {
-    title: "Phase 3 — LearnWorlds Import",
+    title: "LW READY",
     steps: [
-      "Upload to Question Bank",
-      "Create 1Q Practice Assessment",
-      "Add Problem Section to eBook",
-      "Add Video Placeholder Block",
-      "Embed Practice Assessment",
+      "Format question text for Question Bank",
+      "Add answer choices & correct answer",
+      "Add feedback / explanation",
+      "Export CSV for import",
     ],
   },
   {
-    title: "Phase 4 — Filming",
+    title: "EBOOK LINKED",
     steps: [
-      "Film Micro Walkthrough (OBS)",
-      "Upload Video to LW Video Library",
-      "Replace Video Placeholder in eBook",
+      "Add video placeholder block in eBook",
+      "Embed practice assessment in eBook",
+      "Verify eBook section structure",
     ],
   },
   {
-    title: "Phase 5 — Finalization",
+    title: "FILM READY",
     steps: [
-      "Verify Assessment Loads",
-      "Verify Video Plays",
-      "Mark Problem as Complete",
-      "Ready for Student Use",
+      "Confirm walkthrough script / outline",
+      "Queue for OBS recording session",
+    ],
+  },
+  {
+    title: "FILMED",
+    steps: [
+      "Record walkthrough video (OBS)",
+      "Upload to LearnWorlds Video Library",
+      "Replace video placeholder in eBook",
+    ],
+  },
+  {
+    title: "DEPLOYED",
+    steps: [
+      "Link into Topic Quiz",
+      "Link into Practice Exam (if applicable)",
+      "Verify assessment loads",
+      "Mark problem as complete",
     ],
   },
 ];
@@ -176,7 +190,7 @@ export function WorkflowModePanel() {
       {/* ── header ─────────────────────── */}
       <div className="px-4 pt-4 pb-3 border-b border-white/10 space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-white/50">
-          Chapter Production Workflow
+          Chapter Production Pipeline
         </h2>
 
         {/* Course selector */}
@@ -245,6 +259,14 @@ export function WorkflowModePanel() {
                   <ChevronRight className="h-3.5 w-3.5 text-white/40 shrink-0" />
                 )}
                 <span className="text-xs font-medium text-white/80 flex-1">{phase.title}</span>
+                {(phase as PhaseWithTooltip).tooltip && (
+                  <span className="relative group">
+                    <Info className="h-3 w-3 text-white/30 hover:text-white/60 transition-colors cursor-help" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block w-48 text-[10px] text-white/80 bg-black/90 border border-white/10 rounded-md px-2 py-1.5 z-50 text-center">
+                      {(phase as PhaseWithTooltip).tooltip}
+                    </span>
+                  </span>
+                )}
                 <span className="text-[10px] tabular-nums text-white/30">
                   {phaseDone}/{phase.steps.length}
                 </span>
