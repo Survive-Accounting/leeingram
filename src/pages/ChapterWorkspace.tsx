@@ -75,12 +75,13 @@ export default function ChapterWorkspace() {
   const deployed = problems?.filter((p) => p.status === "deployed").length ?? 0;
 
   const stats = [
-    { label: "Source", value: totalProblems, max: totalProblems || 1 },
-    { label: "Approved", value: approvedProblems, max: totalProblems || 1 },
-    { label: "LW Ready", value: lwReady, max: totalProblems || 1 },
-    { label: "Film Ready", value: reviewedProblems, max: totalProblems || 1 },
-    { label: "Filmed", value: filmed, max: totalProblems || 1 },
-    { label: "Deployed", value: deployed, max: totalProblems || 1 },
+    { label: "SOURCE", value: totalProblems, max: totalProblems || 1 },
+    { label: "GENERATED", value: reviewedProblems, max: totalProblems || 1 },
+    { label: "APPROVED", value: approvedProblems, max: totalProblems || 1 },
+    { label: "LW READY", value: lwReady, max: totalProblems || 1 },
+    { label: "FILM READY", value: 0, max: totalProblems || 1 },
+    { label: "FILMED", value: filmed, max: totalProblems || 1 },
+    { label: "DEPLOYED", value: deployed, max: totalProblems || 1 },
   ];
 
   return (
@@ -99,7 +100,7 @@ export default function ChapterWorkspace() {
       </div>
 
       {/* Progress strip */}
-      <div className="grid grid-cols-6 gap-2 mb-5">
+      <div className="grid grid-cols-7 gap-2 mb-5">
         {stats.map((s) => (
           <div key={s.label} className="text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{s.label}</p>
