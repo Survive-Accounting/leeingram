@@ -12,6 +12,7 @@ import ContentRoadmap from "./pages/ContentRoadmap";
 import ChapterPage from "./pages/ChapterPage";
 import ChapterWorkspace from "./pages/ChapterWorkspace";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
+import ProblemBank from "./pages/ProblemBank";
 import FocusTimer from "./pages/FocusTimer";
 import CreateLesson from "./pages/CreateLesson";
 import LessonDetail from "./pages/LessonDetail";
@@ -61,6 +62,7 @@ const AppRoutes = () => {
       <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
       <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />
       <Route path="/ideas" element={<ProtectedRoute><IdeasRoadmap /></ProtectedRoute>} />
+      <Route path="/problem-bank" element={<ProtectedRoute><ProblemBank /></ProtectedRoute>} />
       <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />
       <Route path="/focus" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
       <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />

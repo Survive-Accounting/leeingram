@@ -38,6 +38,69 @@ export type Database = {
         }
         Relationships: []
       }
+      chapter_problems: {
+        Row: {
+          chapter_id: string
+          course_id: string
+          created_at: string
+          difficulty_internal:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          id: string
+          journal_entry_text: string | null
+          problem_text: string
+          problem_type: Database["public"]["Enums"]["problem_type"]
+          solution_text: string
+          source_label: string
+          title: string
+        }
+        Insert: {
+          chapter_id: string
+          course_id: string
+          created_at?: string
+          difficulty_internal?:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          id?: string
+          journal_entry_text?: string | null
+          problem_text?: string
+          problem_type?: Database["public"]["Enums"]["problem_type"]
+          solution_text?: string
+          source_label?: string
+          title?: string
+        }
+        Update: {
+          chapter_id?: string
+          course_id?: string
+          created_at?: string
+          difficulty_internal?:
+            | Database["public"]["Enums"]["difficulty_level"]
+            | null
+          id?: string
+          journal_entry_text?: string | null
+          problem_text?: string
+          problem_type?: Database["public"]["Enums"]["problem_type"]
+          solution_text?: string
+          source_label?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_problems_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_problems_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_resources: {
         Row: {
           chapter_id: string
@@ -649,6 +712,41 @@ export type Database = {
           },
         ]
       }
+      problem_variants: {
+        Row: {
+          base_problem_id: string
+          created_at: string
+          id: string
+          variant_label: string
+          variant_problem_text: string
+          variant_solution_text: string
+        }
+        Insert: {
+          base_problem_id: string
+          created_at?: string
+          id?: string
+          variant_label?: string
+          variant_problem_text?: string
+          variant_solution_text?: string
+        }
+        Update: {
+          base_problem_id?: string
+          created_at?: string
+          id?: string
+          variant_label?: string
+          variant_problem_text?: string
+          variant_solution_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_variants_base_problem_id_fkey"
+            columns: ["base_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roadmap_items: {
         Row: {
           category: string
@@ -1116,6 +1214,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      difficulty_level: "easy" | "medium" | "hard" | "tricky"
       file_type: "textbook" | "solutions" | "tutoring" | "transcript" | "other"
       lesson_status:
         | "Planning"
@@ -1123,6 +1222,7 @@ export type Database = {
         | "Filming"
         | "Editing"
         | "Published"
+      problem_type: "exercise" | "problem" | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1250,6 +1350,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      difficulty_level: ["easy", "medium", "hard", "tricky"],
       file_type: ["textbook", "solutions", "tutoring", "transcript", "other"],
       lesson_status: [
         "Planning",
@@ -1258,6 +1359,7 @@ export const Constants = {
         "Editing",
         "Published",
       ],
+      problem_type: ["exercise", "problem", "custom"],
     },
   },
 } as const
