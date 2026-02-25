@@ -913,6 +913,70 @@ export type Database = {
           },
         ]
       }
+      teaching_assets: {
+        Row: {
+          asset_name: string
+          base_raw_problem_id: string | null
+          chapter_id: string
+          course_id: string
+          created_at: string
+          id: string
+          journal_entry_block: string | null
+          survive_problem_text: string
+          survive_solution_text: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          asset_name?: string
+          base_raw_problem_id?: string | null
+          chapter_id: string
+          course_id: string
+          created_at?: string
+          id?: string
+          journal_entry_block?: string | null
+          survive_problem_text?: string
+          survive_solution_text?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          asset_name?: string
+          base_raw_problem_id?: string | null
+          chapter_id?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          journal_entry_block?: string | null
+          survive_problem_text?: string
+          survive_solution_text?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teaching_assets_base_raw_problem_id_fkey"
+            columns: ["base_raw_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_assets_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_assets_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_explore_items: {
         Row: {
           category: string
