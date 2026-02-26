@@ -11,6 +11,7 @@ import { Plus, Trash2, FolderOpen, Package } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 
 export default function ExportSets() {
   const qc = useQueryClient();
@@ -67,9 +68,12 @@ export default function ExportSets() {
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">Bundle approved problems into a CSV for LearnWorlds Question Bank import.</p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> New Set
-        </Button>
+        <div className="flex items-center gap-3">
+          <WorkspaceSelector />
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> New Set
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg overflow-hidden border border-white/10 bg-white/[0.04]">

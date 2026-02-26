@@ -10,13 +10,15 @@ import { BookOpen, ChevronDown, ChevronRight, Star, ArrowRight, X } from "lucide
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useProductionSession } from "@/hooks/useProductionSession";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
 const STARRED_KEY = "asset-factory-starred-course";
 
 export default function ContentFactory() {
   const navigate = useNavigate();
   const { getSession, clearSession } = useProductionSession();
-  const lastSession = getSession();
+  const { workspace } = useActiveWorkspace();
+  const lastSession = workspace || getSession();
 
   const [starredId, setStarredId] = useState<string | null>(
     () => localStorage.getItem(STARRED_KEY)
@@ -94,7 +96,7 @@ export default function ContentFactory() {
       </div>
 
       {/* Continue Where You Left Off */}
-      {lastSession && (
+      {lastSession && lastSession.chapterId && (
         <Card className="mb-5 border-primary/30 bg-primary/[0.05] shadow-[0_0_20px_-6px_hsl(var(--primary)/0.2)]">
           <CardHeader className="pb-2 pt-4 px-5">
             <div className="flex items-center justify-between">
@@ -115,11 +117,16 @@ export default function ContentFactory() {
                 <p className="text-xs text-muted-foreground">
                   Ch {lastSession.chapterNumber} — {lastSession.chapterName}
                 </p>
-                <Badge variant="outline" className="text-[10px] mt-1">{lastSession.lastPhase}</Badge>
+                {"lastPhase" in lastSession && (lastSession as any).lastPhase && (
+                  <Badge variant="outline" className="text-[10px] mt-1">{(lastSession as any).lastPhase}</Badge>
+                )}
               </div>
               <Button
                 size="sm"
-                onClick={() => navigate(`/workspace/${lastSession.chapterId}?tab=${lastSession.activeTab}`)}
+                onClick={() => {
+                  const tab = "activeTab" in lastSession ? (lastSession as any).activeTab : "problems";
+                  navigate(`/workspace/${lastSession.chapterId}?tab=${tab}`);
+                }}
               >
                 Resume Work <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>

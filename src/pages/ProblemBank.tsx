@@ -1,7 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Eye, Loader2, Tag, Image, CheckCircle2, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 
@@ -53,8 +55,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function ProblemBank() {
   const qc = useQueryClient();
-  const [courseFilter, setCourseFilter] = useState<string>("all");
-  const [chapterFilter, setChapterFilter] = useState<string>("all");
+  const { workspace, setWorkspace } = useActiveWorkspace();
+
+  const courseFilter = workspace?.courseId || "all";
+  const chapterFilter = workspace?.chapterId || "all";
+
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProblem, setEditingProblem] = useState<ChapterProblem | null>(null);
@@ -108,6 +113,34 @@ export default function ProblemBank() {
       })) as ChapterProblem[];
     },
   });
+
+  // Workspace-aware course/chapter setters
+  const handleCourseChange = (v: string) => {
+    if (v === "all") return;
+    const course = courses?.find((c) => c.id === v);
+    if (course) {
+      setWorkspace({
+        courseId: course.id,
+        courseName: course.course_name,
+        chapterId: "",
+        chapterName: "",
+        chapterNumber: 0,
+      });
+    }
+  };
+
+  const handleChapterChange = (v: string) => {
+    if (v === "all" || !workspace) return;
+    const ch = chapters?.find((c) => c.id === v);
+    if (ch) {
+      setWorkspace({
+        ...workspace,
+        chapterId: ch.id,
+        chapterName: ch.chapter_name,
+        chapterNumber: ch.chapter_number,
+      });
+    }
+  };
 
   const uploadFile = async (file: File, prefix: string): Promise<string> => {
     const ext = file.name?.split(".").pop() || "png";
@@ -163,7 +196,6 @@ export default function ProblemBank() {
         source_label: editLabel,
         title: editTitle,
       };
-      // If label or title filled, auto-upgrade to tagged
       if ((editLabel || editTitle) && editingProblem.status === "raw") {
         updates.status = "tagged";
       }
@@ -228,32 +260,30 @@ export default function ProblemBank() {
     });
   };
 
-  const chapterName = (chId: string) => {
-    const ch = chapters?.find((c) => c.id === chId);
-    return ch ? `Ch ${ch.chapter_number}` : "";
-  };
-
   const imgCount = (urls: string[], legacy: string | null) => {
     if (urls.length > 0) return urls.length;
     return legacy ? 1 : 0;
   };
 
-  const canAdd = courseFilter !== "all" && chapterFilter !== "all";
+  const canAdd = courseFilter !== "all" && chapterFilter !== "all" && chapterFilter !== "";
 
   return (
     <SurviveSidebarLayout>
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-foreground">Problem Import</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
-        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Problem Import</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
+          </p>
+        </div>
+        <WorkspaceSelector />
       </div>
 
-      {/* Course + Chapter selectors */}
+      {/* Course + Chapter selectors (local, synced with workspace) */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
           <Label className="text-xs">Course (required)</Label>
-          <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
+          <Select value={courseFilter} onValueChange={handleCourseChange}>
             <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10"><SelectValue placeholder="Select course" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">— Select Course —</SelectItem>
@@ -263,7 +293,7 @@ export default function ProblemBank() {
         </div>
         <div>
           <Label className="text-xs">Chapter (required)</Label>
-          <Select value={chapterFilter} onValueChange={setChapterFilter}>
+          <Select value={chapterFilter || "all"} onValueChange={handleChapterChange}>
             <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10"><SelectValue placeholder="Select chapter" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">— Select Chapter —</SelectItem>
@@ -277,11 +307,9 @@ export default function ProblemBank() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
-            <>
-              <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Bulk Mark Ready ({selectedIds.size})
-              </Button>
-            </>
+            <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Bulk Mark Ready ({selectedIds.size})
+            </Button>
           )}
         </div>
         <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canAdd}>
@@ -432,7 +460,6 @@ export default function ProblemBank() {
 
           {editingProblem && (
             <>
-              {/* Show thumbnails */}
               {(editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) && (
                 <div className="flex gap-2 flex-wrap">
                   {(editingProblem.problem_screenshot_urls.length > 0
