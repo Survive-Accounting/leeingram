@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { problemImageUrls, solutionImageUrls } = await req.json();
+    const { problemImageUrls, solutionImageUrls, problemId } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -19,12 +20,26 @@ serve(async (req) => {
     const allSolutionUrls: string[] = solutionImageUrls || [];
 
     if (allProblemUrls.length === 0 && allSolutionUrls.length === 0) {
-      return new Response(JSON.stringify({
-        error: "No image URLs provided for OCR extraction.",
-      }), {
-        status: 400,
+      // No images — mark as not applicable
+      if (problemId) {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await supabase.from("chapter_problems").update({ ocr_status: "no_images" }).eq("id", problemId);
+      }
+      return new Response(JSON.stringify({ success: true, ocr: null, status: "no_images" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Mark as running
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    if (problemId) {
+      await supabase.from("chapter_problems").update({ ocr_status: "running" }).eq("id", problemId);
     }
 
     // Build content array with images for Gemini vision
@@ -46,28 +61,14 @@ EXTRACTION RULES:
 Return results using the provided tool.`,
     });
 
-    // Add problem images
     for (let i = 0; i < allProblemUrls.length; i++) {
-      content.push({
-        type: "text",
-        text: `--- PROBLEM IMAGE ${i + 1} of ${allProblemUrls.length} ---`,
-      });
-      content.push({
-        type: "image_url",
-        image_url: { url: allProblemUrls[i] },
-      });
+      content.push({ type: "text", text: `--- PROBLEM IMAGE ${i + 1} of ${allProblemUrls.length} ---` });
+      content.push({ type: "image_url", image_url: { url: allProblemUrls[i] } });
     }
 
-    // Add solution images
     for (let i = 0; i < allSolutionUrls.length; i++) {
-      content.push({
-        type: "text",
-        text: `--- SOLUTION IMAGE ${i + 1} of ${allSolutionUrls.length} ---`,
-      });
-      content.push({
-        type: "image_url",
-        image_url: { url: allSolutionUrls[i] },
-      });
+      content.push({ type: "text", text: `--- SOLUTION IMAGE ${i + 1} of ${allSolutionUrls.length} ---` });
+      content.push({ type: "image_url", image_url: { url: allSolutionUrls[i] } });
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -78,12 +79,7 @@ Return results using the provided tool.`,
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content,
-          },
-        ],
+        messages: [{ role: "user", content }],
         tools: [
           {
             type: "function",
@@ -93,50 +89,16 @@ Return results using the provided tool.`,
               parameters: {
                 type: "object",
                 properties: {
-                  detected_label: {
-                    type: "string",
-                    description: "The problem label/number detected, e.g. 'E13-3' or 'P14-2'. Empty string if not found.",
-                  },
-                  detected_lo: {
-                    type: "string",
-                    description: "Learning Objective number(s), e.g. 'LO 3' or 'LO 2, 3'. Empty string if not found.",
-                  },
-                  detected_title: {
-                    type: "string",
-                    description: "The problem title, e.g. 'Bond Amortization'. Empty string if not found.",
-                  },
-                  detected_type: {
-                    type: "string",
-                    description: "Problem type: 'Exercise', 'Problem', or 'Custom'. Empty string if not found.",
-                  },
-                  extracted_problem_text: {
-                    type: "string",
-                    description: "Full extracted text from problem screenshot(s). Include all details exactly as shown.",
-                  },
-                  extracted_solution_text: {
-                    type: "string",
-                    description: "Full extracted text from solution screenshot(s). Include all numbers, journal entries, and working. Empty string if no solution images.",
-                  },
-                  confidence: {
-                    type: "string",
-                    enum: ["high", "medium", "low"],
-                    description: "Overall OCR confidence level",
-                  },
-                  confidence_notes: {
-                    type: "string",
-                    description: "Brief explanation of any issues affecting confidence (blurry text, cut off content, etc.)",
-                  },
+                  detected_label: { type: "string", description: "Problem label e.g. 'E13-3'. Empty if not found." },
+                  detected_lo: { type: "string", description: "Learning Objective numbers. Empty if not found." },
+                  detected_title: { type: "string", description: "Problem title. Empty if not found." },
+                  detected_type: { type: "string", description: "Exercise, Problem, or Custom. Empty if not found." },
+                  extracted_problem_text: { type: "string", description: "Full extracted text from problem screenshots." },
+                  extracted_solution_text: { type: "string", description: "Full extracted text from solution screenshots." },
+                  confidence: { type: "string", enum: ["high", "medium", "low"], description: "Overall OCR confidence" },
+                  confidence_notes: { type: "string", description: "Brief explanation of confidence issues." },
                 },
-                required: [
-                  "detected_label",
-                  "detected_lo",
-                  "detected_title",
-                  "detected_type",
-                  "extracted_problem_text",
-                  "extracted_solution_text",
-                  "confidence",
-                  "confidence_notes",
-                ],
+                required: ["detected_label", "detected_lo", "detected_title", "detected_type", "extracted_problem_text", "extracted_solution_text", "confidence", "confidence_notes"],
                 additionalProperties: false,
               },
             },
@@ -147,16 +109,17 @@ Return results using the provided tool.`,
     });
 
     if (!response.ok) {
+      if (problemId) {
+        await supabase.from("chapter_problems").update({ ocr_status: "failed" }).eq("id", problemId);
+      }
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in Settings." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
@@ -167,10 +130,36 @@ Return results using the provided tool.`,
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
+      if (problemId) {
+        await supabase.from("chapter_problems").update({ ocr_status: "failed" }).eq("id", problemId);
+      }
       throw new Error("AI did not return structured OCR output");
     }
 
     const ocrResult = JSON.parse(toolCall.function.arguments);
+
+    // Persist OCR results to DB
+    if (problemId) {
+      const updateData: any = {
+        ocr_extracted_problem_text: ocrResult.extracted_problem_text || "",
+        ocr_extracted_solution_text: ocrResult.extracted_solution_text || "",
+        ocr_detected_label: ocrResult.detected_label || "",
+        ocr_detected_lo: ocrResult.detected_lo || "",
+        ocr_detected_title: ocrResult.detected_title || "",
+        ocr_detected_type: ocrResult.detected_type || "",
+        ocr_confidence: ocrResult.confidence || "",
+        ocr_confidence_notes: ocrResult.confidence_notes || "",
+        ocr_status: "success",
+      };
+      // Auto-fill empty fields from OCR detection
+      const { data: existing } = await supabase.from("chapter_problems").select("source_label, title, problem_type, status").eq("id", problemId).single();
+      if (existing) {
+        if (!existing.source_label && ocrResult.detected_label) updateData.source_label = ocrResult.detected_label;
+        if (!existing.title && ocrResult.detected_title) updateData.title = ocrResult.detected_title;
+        if (existing.status === "raw") updateData.status = "tagged";
+      }
+      await supabase.from("chapter_problems").update(updateData).eq("id", problemId);
+    }
 
     return new Response(JSON.stringify({ success: true, ocr: ocrResult }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
