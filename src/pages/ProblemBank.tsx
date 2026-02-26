@@ -162,7 +162,7 @@ export default function ProblemBank() {
       const problemUrls = await Promise.all(problemFiles.map((f) => uploadFile(f, "intake-problems")));
       const solutionUrls = await Promise.all(solutionFiles.map((f) => uploadFile(f, "intake-solutions")));
 
-      const { error } = await supabase.from("chapter_problems").insert({
+      const { data: inserted, error } = await supabase.from("chapter_problems").insert({
         course_id: courseFilter,
         chapter_id: chapterFilter,
         status: "raw",
@@ -175,8 +175,21 @@ export default function ProblemBank() {
         title: formTitle,
         problem_text: "",
         solution_text: "",
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Auto-trigger OCR in background (fire-and-forget)
+      if (inserted?.id && problemUrls.length > 0) {
+        supabase.functions.invoke("extract-ocr", {
+          body: {
+            problemId: inserted.id,
+            problemImageUrls: problemUrls,
+            solutionImageUrls: solutionUrls,
+          },
+        }).then(() => {
+          qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+        }).catch((e) => console.error("Auto-OCR failed:", e));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });

@@ -48,6 +48,15 @@ export type Database = {
             | null
           id: string
           journal_entry_text: string | null
+          ocr_confidence: string
+          ocr_confidence_notes: string
+          ocr_detected_label: string
+          ocr_detected_lo: string
+          ocr_detected_title: string
+          ocr_detected_type: string
+          ocr_extracted_problem_text: string
+          ocr_extracted_solution_text: string
+          ocr_status: string
           problem_screenshot_url: string | null
           problem_screenshot_urls: string[]
           problem_text: string
@@ -68,6 +77,15 @@ export type Database = {
             | null
           id?: string
           journal_entry_text?: string | null
+          ocr_confidence?: string
+          ocr_confidence_notes?: string
+          ocr_detected_label?: string
+          ocr_detected_lo?: string
+          ocr_detected_title?: string
+          ocr_detected_type?: string
+          ocr_extracted_problem_text?: string
+          ocr_extracted_solution_text?: string
+          ocr_status?: string
           problem_screenshot_url?: string | null
           problem_screenshot_urls?: string[]
           problem_text?: string
@@ -88,6 +106,15 @@ export type Database = {
             | null
           id?: string
           journal_entry_text?: string | null
+          ocr_confidence?: string
+          ocr_confidence_notes?: string
+          ocr_detected_label?: string
+          ocr_detected_lo?: string
+          ocr_detected_title?: string
+          ocr_detected_type?: string
+          ocr_extracted_problem_text?: string
+          ocr_extracted_solution_text?: string
+          ocr_status?: string
           problem_screenshot_url?: string | null
           problem_screenshot_urls?: string[]
           problem_text?: string
