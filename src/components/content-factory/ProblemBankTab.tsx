@@ -16,6 +16,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -61,6 +62,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
+  const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Add form
@@ -564,7 +566,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           <Sparkles className="h-3 w-3 mr-1" /> Generate
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(p)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)} title="Preview screenshots">
                         <Eye className="h-3 w-3" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
@@ -645,6 +647,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Source Problem Preview */}
+      <SourceProblemPreview
+        problem={previewProblem}
+        open={!!previewProblem}
+        onOpenChange={(open) => { if (!open) setPreviewProblem(null); }}
+      />
     </div>
   );
 }

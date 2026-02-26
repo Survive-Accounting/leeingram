@@ -12,9 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
+import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
 
 type ChapterProblem = {
   id: string;
@@ -63,6 +64,7 @@ export default function ProblemBank() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProblem, setEditingProblem] = useState<ChapterProblem | null>(null);
+  const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -374,6 +376,9 @@ export default function ProblemBank() {
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Ready
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)}>
+                          <Eye className="h-3 w-3" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
@@ -519,6 +524,13 @@ export default function ProblemBank() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Source Problem Preview */}
+      <SourceProblemPreview
+        problem={previewProblem}
+        open={!!previewProblem}
+        onOpenChange={(open) => { if (!open) setPreviewProblem(null); }}
+      />
     </SurviveSidebarLayout>
   );
 }
