@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
@@ -87,6 +87,22 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectNote, setRejectNote] = useState("");
 
+  // OCR state
+  const [ocrResult, setOcrResult] = useState<{
+    detected_label: string;
+    detected_lo: string;
+    detected_title: string;
+    detected_type: string;
+    extracted_problem_text: string;
+    extracted_solution_text: string;
+    confidence: "high" | "medium" | "low";
+    confidence_notes: string;
+  } | null>(null);
+  const [ocrStatus, setOcrStatus] = useState<"idle" | "running" | "success" | "failed">("idle");
+  const [ocrEditing, setOcrEditing] = useState(false);
+  const [ocrEditProblem, setOcrEditProblem] = useState("");
+  const [ocrEditSolution, setOcrEditSolution] = useState("");
+
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", chapterId],
     queryFn: async () => {
@@ -140,16 +156,22 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   const generateMutation = useMutation({
     mutationFn: async (problem: ChapterProblem) => {
+      // Use OCR-extracted text as primary grounding input when available
+      const useProblemText = ocrResult?.extracted_problem_text || problem.problem_text;
+      const useSolutionText = ocrResult?.extracted_solution_text || problem.solution_text;
+      const useLabel = ocrResult?.detected_label || problem.source_label;
+      const useTitle = ocrResult?.detected_title || problem.title;
+
       const { data, error } = await supabase.functions.invoke("convert-to-asset", {
         body: {
           mode: "candidates",
           problemId: problem.id,
           courseId: problem.course_id,
           chapterId: problem.chapter_id,
-          sourceLabel: problem.source_label,
-          title: problem.title,
-          problemText: problem.problem_text,
-          solutionText: problem.solution_text,
+          sourceLabel: useLabel,
+          title: useTitle,
+          problemText: useProblemText,
+          solutionText: useSolutionText,
           journalEntryText: problem.journal_entry_text,
           notes: afNotes,
           requiresJournalEntry: afRequiresJE,
@@ -230,6 +252,49 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     setFormLabel(""); setFormTitle(""); setFormProblem(""); setFormSolution(""); setFormJE("");
   };
 
+  // OCR extraction mutation
+  const ocrMutation = useMutation({
+    mutationFn: async (problem: ChapterProblem) => {
+      // Build URLs from the problem's screenshot fields
+      const pUrls = (problem as any).problem_screenshot_urls?.length
+        ? (problem as any).problem_screenshot_urls
+        : (problem as any).problem_screenshot_url
+          ? [(problem as any).problem_screenshot_url]
+          : [];
+      const sUrls = (problem as any).solution_screenshot_urls?.length
+        ? (problem as any).solution_screenshot_urls
+        : (problem as any).solution_screenshot_url
+          ? [(problem as any).solution_screenshot_url]
+          : [];
+
+      if (pUrls.length === 0 && sUrls.length === 0) {
+        throw new Error("No screenshots available for OCR extraction.");
+      }
+
+      const { data, error } = await supabase.functions.invoke("extract-ocr", {
+        body: { problemImageUrls: pUrls, solutionImageUrls: sUrls },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data.ocr;
+    },
+    onSuccess: (ocr) => {
+      setOcrResult(ocr);
+      setOcrStatus("success");
+      setOcrEditing(false);
+      toast.success(`OCR extracted (${ocr.confidence} confidence)`);
+    },
+    onError: (e: Error) => {
+      setOcrStatus("failed");
+      toast.error(`OCR failed: ${e.message}`);
+    },
+  });
+
+  const runOcr = (problem: ChapterProblem) => {
+    setOcrStatus("running");
+    ocrMutation.mutate(problem);
+  };
+
   const openDetail = (p: ChapterProblem) => {
     setViewingProblem(p);
     setAfNotes("");
@@ -239,6 +304,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     setSavingIndex(null);
     setGeneratedAssetId(null);
     setExpandedSolutions(new Set());
+    // Reset OCR state
+    setOcrResult(null);
+    setOcrStatus("idle");
+    setOcrEditing(false);
   };
 
   const toggleDifficulty = (id: string) => {
@@ -306,6 +375,135 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           </div>
         )}
 
+        {/* OCR Extraction Panel */}
+        <Collapsible className="rounded-lg border border-border bg-card">
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-accent/50 transition-colors">
+            <div className="flex items-center gap-2">
+              <ScanText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Extracted Source Text (OCR)</span>
+              {ocrStatus === "success" && ocrResult && (
+                <Badge variant="outline" className={`text-[10px] ${
+                  ocrResult.confidence === "high" ? "bg-green-500/20 text-green-400 border-green-500/30" :
+                  ocrResult.confidence === "medium" ? "bg-amber-500/20 text-amber-400 border-amber-500/30" :
+                  "bg-red-500/20 text-red-400 border-red-500/30"
+                }`}>
+                  {ocrResult.confidence.toUpperCase()} confidence
+                </Badge>
+              )}
+              {ocrStatus === "running" && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+              {ocrStatus === "failed" && <Badge variant="outline" className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">Failed</Badge>}
+              {ocrStatus === "idle" && <Badge variant="outline" className="text-[10px]">Not extracted</Badge>}
+            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-4 pb-4 space-y-3">
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => runOcr(p)} disabled={ocrMutation.isPending}>
+                {ocrMutation.isPending ? (
+                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Extracting…</>
+                ) : ocrStatus === "success" ? (
+                  <><RotateCw className="h-3 w-3 mr-1" /> Re-extract OCR</>
+                ) : (
+                  <><ScanText className="h-3 w-3 mr-1" /> Extract OCR</>
+                )}
+              </Button>
+              {ocrResult && !ocrEditing && (
+                <Button size="sm" variant="ghost" onClick={() => {
+                  setOcrEditing(true);
+                  setOcrEditProblem(ocrResult.extracted_problem_text);
+                  setOcrEditSolution(ocrResult.extracted_solution_text);
+                }}>
+                  <Pencil className="h-3 w-3 mr-1" /> Edit manually
+                </Button>
+              )}
+              {ocrEditing && ocrResult && (
+                <>
+                  <Button size="sm" variant="default" onClick={() => {
+                    setOcrResult({ ...ocrResult, extracted_problem_text: ocrEditProblem, extracted_solution_text: ocrEditSolution });
+                    setOcrEditing(false);
+                    toast.success("OCR text updated manually");
+                  }}>
+                    <Check className="h-3 w-3 mr-1" /> Save edits
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setOcrEditing(false)}>Cancel</Button>
+                </>
+              )}
+            </div>
+
+            {/* OCR Results */}
+            {ocrResult && (
+              <div className="space-y-3">
+                {/* Detected Fields */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="rounded border border-border bg-muted/30 p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Label</p>
+                    <p className="text-xs font-mono font-semibold text-foreground">{ocrResult.detected_label || "—"}</p>
+                  </div>
+                  <div className="rounded border border-border bg-muted/30 p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">LO#</p>
+                    <p className="text-xs font-semibold text-foreground">{ocrResult.detected_lo || "—"}</p>
+                  </div>
+                  <div className="rounded border border-border bg-muted/30 p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Title</p>
+                    <p className="text-xs font-semibold text-foreground">{ocrResult.detected_title || "—"}</p>
+                  </div>
+                  <div className="rounded border border-border bg-muted/30 p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Type</p>
+                    <p className="text-xs font-semibold text-foreground">{ocrResult.detected_type || "—"}</p>
+                  </div>
+                </div>
+
+                {ocrResult.confidence_notes && (
+                  <p className="text-[10px] text-muted-foreground italic">{ocrResult.confidence_notes}</p>
+                )}
+
+                {/* Extracted Text */}
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Extracted Problem Text</p>
+                    {ocrEditing ? (
+                      <Textarea value={ocrEditProblem} onChange={(e) => setOcrEditProblem(e.target.value)} rows={6} className="text-xs font-mono" />
+                    ) : (
+                      <pre className="text-xs text-foreground whitespace-pre-wrap font-mono bg-muted/30 rounded p-2 max-h-60 overflow-y-auto">{ocrResult.extracted_problem_text || "—"}</pre>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Extracted Solution Text</p>
+                    {ocrEditing ? (
+                      <Textarea value={ocrEditSolution} onChange={(e) => setOcrEditSolution(e.target.value)} rows={6} className="text-xs font-mono" />
+                    ) : (
+                      <pre className="text-xs text-foreground whitespace-pre-wrap font-mono bg-muted/30 rounded p-2 max-h-60 overflow-y-auto">{ocrResult.extracted_solution_text || "—"}</pre>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {ocrStatus === "idle" && (
+              <p className="text-xs text-muted-foreground">Click "Extract OCR" to pull text from the source screenshots using AI vision.</p>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* OCR Gate Warning */}
+        {ocrStatus !== "success" && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <ShieldAlert className="h-4 w-4 text-amber-400 flex-shrink-0" />
+            <p className="text-xs text-amber-300">
+              <span className="font-semibold">OCR needed</span> — re-extract or paste text manually before generating variants.
+            </p>
+          </div>
+        )}
+        {ocrStatus === "success" && ocrResult?.confidence === "low" && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <ShieldAlert className="h-4 w-4 text-amber-400 flex-shrink-0" />
+            <p className="text-xs text-amber-300">
+              <span className="font-semibold">Low confidence OCR</span> — review and edit extracted text, or re-extract before generating.
+            </p>
+          </div>
+        )}
+
         {/* Generate Variants Panel */}
         <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -353,7 +551,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           </Collapsible>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <Button size="sm" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending}>
+            <Button
+              size="sm"
+              onClick={() => generateMutation.mutate(p)}
+              disabled={generateMutation.isPending || ocrStatus !== "success" || ocrResult?.confidence === "low"}
+              title={ocrStatus !== "success" ? "Extract OCR first" : ocrResult?.confidence === "low" ? "Low confidence — edit OCR text first" : ""}
+            >
               {generateMutation.isPending ? (
                 <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
               ) : (
@@ -362,7 +565,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             </Button>
 
             {candidates.length > 0 && (
-              <Button size="sm" variant="outline" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending}>
+              <Button size="sm" variant="outline" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending || ocrStatus !== "success" || ocrResult?.confidence === "low"}>
                 <Sparkles className="h-3.5 w-3.5 mr-1" /> Regenerate 3 More
               </Button>
             )}
