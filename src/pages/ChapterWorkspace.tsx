@@ -10,11 +10,13 @@ import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { LessonsTab } from "@/components/content-factory/LessonsTab";
 import { ExportsTab } from "@/components/content-factory/ExportsTab";
 import { useProductionSession } from "@/hooks/useProductionSession";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
 export default function ChapterWorkspace() {
   const { chapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
   const { saveSession } = useProductionSession();
+  const { setWorkspace } = useActiveWorkspace();
   const initialTab = searchParams.get("tab") || "problems";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -82,6 +84,14 @@ export default function ChapterWorkspace() {
         chapterNumber: chapterNum,
         activeTab,
         lastPhase: determinePhase(),
+      });
+      // Also update active workspace
+      setWorkspace({
+        courseId: course.id,
+        courseName: course.course_name,
+        chapterId: chapter.id,
+        chapterName: chapter.chapter_name,
+        chapterNumber: chapterNum,
       });
     }
   }, [chapter, activeTab]);

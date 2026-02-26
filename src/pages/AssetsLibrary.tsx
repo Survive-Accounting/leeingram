@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,9 +46,16 @@ function escapeCSV(val: string): string {
 
 export default function AssetsLibrary() {
   const qc = useQueryClient();
-  const [courseFilter, setCourseFilter] = useState<string>("all");
-  const [chapterFilter, setChapterFilter] = useState<string>("all");
+  const { workspace } = useActiveWorkspace();
+  const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
+  const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
+
+  // Sync from workspace when it changes
+  useEffect(() => {
+    if (workspace?.courseId) setCourseFilter(workspace.courseId);
+    if (workspace?.chapterId) setChapterFilter(workspace.chapterId);
+  }, [workspace?.courseId, workspace?.chapterId]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewingAsset, setViewingAsset] = useState<TeachingAsset | null>(null);
 
@@ -304,6 +313,7 @@ export default function AssetsLibrary() {
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">Approved owned problems ready for LearnWorlds export + eBook linking.</p>
         </div>
+        <WorkspaceSelector />
         <div className="flex gap-2">
           {selectedIds.size > 0 && (
             <>
