@@ -13,14 +13,23 @@ export interface ActiveWorkspace {
 
 // Simple pub/sub so all hook consumers re-render on change
 const listeners = new Set<() => void>();
+let cachedSnapshot: ActiveWorkspace | null = null;
+let cachedRaw: string | null = null;
+
 function emitChange() {
+  // Invalidate cache on change
+  cachedRaw = null;
+  cachedSnapshot = null;
   listeners.forEach((l) => l());
 }
 
 function getSnapshot(): ActiveWorkspace | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (raw === cachedRaw) return cachedSnapshot;
+    cachedRaw = raw;
+    cachedSnapshot = raw ? JSON.parse(raw) : null;
+    return cachedSnapshot;
   } catch {
     return null;
   }
