@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -19,6 +19,13 @@ export default function ContentFactory() {
   const { getSession, clearSession } = useProductionSession();
   const { workspace } = useActiveWorkspace();
   const lastSession = workspace || getSession();
+
+  // Auto-navigate if workspace already has a chapter selected
+  useEffect(() => {
+    if (workspace?.chapterId) {
+      navigate(`/workspace/${workspace.chapterId}`, { replace: true });
+    }
+  }, []);
 
   const [starredId, setStarredId] = useState<string | null>(
     () => localStorage.getItem(STARRED_KEY)

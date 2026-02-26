@@ -369,13 +369,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const statusStyle = (status: string) => ({
     imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     raw: "bg-muted text-muted-foreground",
+    ready: "bg-green-500/20 text-green-400 border-green-500/30",
+    tagged: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     approved: "bg-green-500/20 text-green-400 border-green-500/30",
     converted: "bg-green-500/20 text-green-400 border-green-500/30",
   }[status] ?? "bg-muted text-muted-foreground");
 
   const statusLabel = (status: string) => ({
-    imported: "SOURCE", raw: "SOURCE", generated: "GENERATED", approved: "APPROVED", converted: "APPROVED",
+    imported: "SOURCE", raw: "SOURCE", ready: "READY", tagged: "TAGGED", generated: "GENERATED", approved: "APPROVED", converted: "APPROVED",
   }[status] ?? status.toUpperCase());
 
   // ─── Detail / Generate View ───
@@ -860,7 +862,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {(p.status === "raw" || p.status === "imported") && (
+                      {(p.status === "raw" || p.status === "imported" || p.status === "ready" || p.status === "tagged") && (
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
                           <Sparkles className="h-3 w-3 mr-1" /> Generate
                         </Button>

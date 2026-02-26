@@ -67,6 +67,7 @@ export default function ProblemBank() {
   const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [saveAndAddNext, setSaveAndAddNext] = useState(false);
 
   // Add Source Problem form state
   const [problemFiles, setProblemFiles] = useState<File[]>([]);
@@ -179,13 +180,18 @@ export default function ProblemBank() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
-      setAddDialogOpen(false);
       setProblemFiles([]);
       setSolutionFiles([]);
       setFormType("");
       setFormLabel("");
       setFormTitle("");
-      toast.success("Source problem saved to Raw queue");
+      if (saveAndAddNext) {
+        toast.success("Saved — ready for next problem");
+        setSaveAndAddNext(false);
+      } else {
+        setAddDialogOpen(false);
+        toast.success("Source problem saved to Raw queue");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -448,8 +454,11 @@ export default function ProblemBank() {
 
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || problemFiles.length === 0}>
-              {saveMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save Source Problem"}
+            <Button size="sm" variant="outline" onClick={() => { setSaveAndAddNext(true); saveMutation.mutate(); }} disabled={saveMutation.isPending || problemFiles.length === 0}>
+              {saveMutation.isPending && saveAndAddNext ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save & Add Next"}
+            </Button>
+            <Button size="sm" onClick={() => { setSaveAndAddNext(false); saveMutation.mutate(); }} disabled={saveMutation.isPending || problemFiles.length === 0}>
+              {saveMutation.isPending && !saveAndAddNext ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save Source Problem"}
             </Button>
           </DialogFooter>
         </DialogContent>
