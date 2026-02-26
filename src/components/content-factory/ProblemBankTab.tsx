@@ -828,9 +828,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         <p className="text-xs text-muted-foreground">
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
-        <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>
-          <Plus className="mr-1 h-3.5 w-3.5" /> Add Source
-        </Button>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
