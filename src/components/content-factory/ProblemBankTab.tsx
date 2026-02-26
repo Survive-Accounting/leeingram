@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert } from "lucide-react";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
@@ -41,6 +41,50 @@ interface Props {
   chapterId: string;
   chapterNumber: number;
   courseId: string;
+}
+
+/** Parse a journal entry block string into table rows */
+function parseJournalEntry(text: string | null | undefined): { account: string; debit: string; credit: string }[] {
+  if (!text) return [];
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const rows: { account: string; debit: string; credit: string }[] = [];
+
+  for (const line of lines) {
+    // Skip header-like lines
+    if (/^account\s*\|?\s*debit\s*\|?\s*credit/i.test(line)) continue;
+    if (/^[-|=\s]+$/.test(line)) continue;
+
+    // Try pipe-delimited: Account | Debit | Credit
+    const pipeParts = line.split("|").map(s => s.trim());
+    if (pipeParts.length >= 3) {
+      rows.push({ account: pipeParts[0], debit: pipeParts[1] || "", credit: pipeParts[2] || "" });
+      continue;
+    }
+
+    // Try tab-delimited
+    const tabParts = line.split("\t").map(s => s.trim());
+    if (tabParts.length >= 3) {
+      rows.push({ account: tabParts[0], debit: tabParts[1] || "", credit: tabParts[2] || "" });
+      continue;
+    }
+
+    // Try pattern: "Debit: Account — Amount" / "Credit: Account — Amount"
+    const debitMatch = line.match(/^debit:\s*(.+?)[\s—–-]+\$?([\d,.]+)/i);
+    if (debitMatch) {
+      rows.push({ account: debitMatch[1].trim(), debit: debitMatch[2], credit: "" });
+      continue;
+    }
+    const creditMatch = line.match(/^credit:\s*(.+?)[\s—–-]+\$?([\d,.]+)/i);
+    if (creditMatch) {
+      rows.push({ account: creditMatch[1].trim(), debit: "", credit: creditMatch[2] });
+      continue;
+    }
+
+    // Fallback: treat entire line as account with no amounts
+    rows.push({ account: line, debit: "", credit: "" });
+  }
+
+  return rows;
 }
 
 type ChapterProblem = {
@@ -579,101 +623,153 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             )}
           </div>
 
-          {/* Candidates */}
+          {/* Candidates — Vertical Stack */}
           {candidates.length > 0 && (
             <div className="mt-5 space-y-3">
               <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Generated Variants ({candidates.length})
               </h4>
-              <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
-                {candidates.map((c: any, idx: number) => (
-                  <div key={idx} className="rounded-lg border border-border bg-card p-4 space-y-3 flex flex-col">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Variant {idx + 1}</p>
-                      <h5 className="text-sm font-semibold text-foreground">{c.asset_name}</h5>
-                    </div>
+              <div className="space-y-3">
+                {candidates.map((c: any, idx: number) => {
+                  const summaryLine = c.survive_problem_text?.split(/[.\n]/)?.[0]?.trim() || "—";
+                  const jeRows = parseJournalEntry(c.journal_entry_block);
 
-                    {c.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {c.tags.map((t: string) => (
-                          <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-                        ))}
+                  return (
+                    <Collapsible key={idx} className="rounded-lg border border-border bg-card overflow-hidden">
+                      {/* Collapsed Header */}
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left min-w-0">
+                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform [[data-state=open]_&]:rotate-90" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">V{idx + 1}</span>
+                              <h5 className="text-sm font-semibold text-foreground truncate">{c.asset_name}</h5>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">{summaryLine}</p>
+                          </div>
+                        </CollapsibleTrigger>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            className="h-7 px-2.5 text-xs"
+                            onClick={() => {
+                              setSavingIndex(idx);
+                              approveMutation.mutate({ candidate: c, problem: p });
+                            }}
+                            disabled={approveMutation.isPending}
+                          >
+                            {savingIndex === idx && approveMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <><Check className="h-3 w-3 mr-1" /> Approve</>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs text-destructive"
+                            onClick={() => { setRejectingIndex(idx); setRejectReason(""); setRejectNote(""); }}
+                            disabled={approveMutation.isPending}
+                          >
+                            <X className="h-3 w-3 mr-1" /> Reject
+                          </Button>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Practice Problem Text */}
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Practice Problem</p>
-                      <p className="text-xs text-foreground whitespace-pre-wrap">{c.survive_problem_text}</p>
-                    </div>
+                      {/* Expanded Content */}
+                      <CollapsibleContent>
+                        <div className="border-t border-border px-4 py-4 space-y-4">
+                          {/* Tags */}
+                          {c.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {c.tags.map((t: string) => (
+                                <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
+                              ))}
+                            </div>
+                          )}
 
-                    {/* Journal Entry Block */}
-                    {c.journal_entry_block && (
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Journal Entry</p>
-                        <pre className="text-xs text-foreground whitespace-pre-wrap font-mono bg-muted/50 rounded p-2">{c.journal_entry_block}</pre>
-                      </div>
-                    )}
+                          {/* 1) Problem Text */}
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">1 — Problem Text</p>
+                            <div className="rounded-md border border-border bg-muted/20 p-3">
+                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
+                            </div>
+                          </div>
 
-                    {/* Answer Only */}
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Answer Only</p>
-                      <p className="text-xs text-foreground whitespace-pre-wrap bg-muted/30 rounded p-2">{c.answer_only || "—"}</p>
-                    </div>
+                          {/* 2) Answer Only */}
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">2 — Answer Only</p>
+                            <div className="rounded-md border border-border bg-muted/20 p-3">
+                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.answer_only || "—"}</p>
+                            </div>
+                          </div>
 
-                    {/* Fully Worked Steps (collapsible) */}
-                    <Collapsible open={expandedSolutions.has(idx)} onOpenChange={() => toggleSolutionExpand(idx)}>
-                      <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider hover:text-foreground">
-                        {expandedSolutions.has(idx) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                        Fully Worked Steps (internal)
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-1">
-                        <p className="text-xs text-foreground whitespace-pre-wrap bg-muted/30 rounded p-2">{c.survive_solution_text}</p>
+                          {/* 3) Worked Steps */}
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">3 — Worked Steps (internal)</p>
+                            <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
+                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_solution_text}</p>
+                            </div>
+                          </div>
+
+                          {/* 4) Journal Entry Block */}
+                          {c.journal_entry_block && (
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">4 — Journal Entry</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-[10px]"
+                                  onClick={() => {
+                                    const tsv = jeRows.map(r => `${r.account}\t${r.debit}\t${r.credit}`).join("\n");
+                                    navigator.clipboard.writeText(tsv);
+                                    toast.success("Copied as TSV for Google Sheets");
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3 mr-1" /> Copy for Sheets
+                                </Button>
+                              </div>
+                              <div className="rounded-md border border-border overflow-hidden">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="bg-muted/40 border-b border-border">
+                                      <th className="text-left px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Account</th>
+                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-24">Debit</th>
+                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-24">Credit</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {jeRows.map((row, ri) => (
+                                      <tr key={ri} className="border-b border-border/50 last:border-0">
+                                        <td className={`px-3 py-1.5 text-foreground ${row.credit && !row.debit ? 'pl-8' : ''}`}>
+                                          {row.account}
+                                        </td>
+                                        <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.debit}</td>
+                                        <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.credit}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Exam Trap Note */}
+                          {c.exam_trap_note && (
+                            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                              <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
+                                <AlertTriangle className="h-3 w-3" /> Exam Trap Note
+                              </p>
+                              <p className="text-sm text-foreground">{c.exam_trap_note}</p>
+                            </div>
+                          )}
+                        </div>
                       </CollapsibleContent>
                     </Collapsible>
-
-                    {/* Exam Trap Note */}
-                    {c.exam_trap_note && (
-                      <div className="rounded border border-amber-500/30 bg-amber-500/10 p-2">
-                        <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Exam Trap Note
-                        </p>
-                        <p className="text-xs text-foreground">{c.exam_trap_note}</p>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 mt-auto pt-2">
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => {
-                          setSavingIndex(idx);
-                          approveMutation.mutate({ candidate: c, problem: p });
-                        }}
-                        disabled={approveMutation.isPending}
-                      >
-                        {savingIndex === idx && approveMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <><Check className="h-3 w-3 mr-1" /> Approve</>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => { setRejectingIndex(idx); setRejectReason(""); setRejectNote(""); }}
-                        disabled={approveMutation.isPending}
-                      >
-                        <X className="h-3 w-3 mr-1" /> Reject
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <p className="text-[10px] text-muted-foreground/60 italic mt-3">
-                Future: use feedback to bias future generations.
-              </p>
             </div>
           )}
         </div>
