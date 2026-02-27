@@ -35,7 +35,7 @@ const SubLink = ({ label, onClick }: { label: string; onClick: () => void }) => 
       e.currentTarget.style.borderColor = "rgba(180,160,130,0.15)";
     }}
   >
-    <span className="text-xs font-semibold tracking-wide" style={{ color: "rgba(245,235,210,0.85)" }}>
+    <span className="text-xs font-semibold tracking-wide" style={{ color: "rgba(255,250,240,0.95)" }}>
       {label}
     </span>
   </button>
@@ -89,7 +89,7 @@ export default function DomainSelect() {
       <span
         className="font-bold tracking-[0.18em] uppercase text-sm"
         style={{
-          color: "rgba(245,235,210,0.95)",
+          color: "rgba(255,255,255,1)",
           textShadow: "0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(218,165,32,0.15)",
         }}
       >
@@ -110,7 +110,7 @@ export default function DomainSelect() {
       <div className="absolute bottom-0 left-0 right-0 h-[18%]" style={{ background: "linear-gradient(to top, rgba(100,140,180,0.1) 0%, transparent 100%)", animation: "waterShimmer 4s ease-in-out infinite" }} />
 
       <div className="absolute top-4 right-4 z-10">
-        <Button variant="ghost" size="sm" onClick={signOut} className="text-white/60 hover:text-white hover:bg-white/10">
+        <Button variant="ghost" size="sm" onClick={signOut} className="text-white/80 hover:text-white hover:bg-white/10">
           <LogOut className="mr-1 h-3.5 w-3.5" /> Sign Out
         </Button>
       </div>
@@ -180,7 +180,7 @@ export default function DomainSelect() {
         <button
           onClick={() => setChangelogOpen(true)}
           className="text-xs text-center cursor-pointer hover:underline"
-          style={{ color: "rgba(255,255,255,0.3)" }}
+          style={{ color: "rgba(255,255,255,0.5)" }}
         >
           Lovable Prompts = {PROMPT_COUNT} // Earned Wisdom, LLC
         </button>
