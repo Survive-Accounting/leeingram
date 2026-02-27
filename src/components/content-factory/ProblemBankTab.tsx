@@ -172,6 +172,45 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     },
   });
 
+  // Fetch topics and rules for auto-assignment
+  const { data: chapterTopics } = useQuery({
+    queryKey: ["chapter-topics", chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_topics")
+        .select("*")
+        .eq("chapter_id", chapterId)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: course } = useQuery({
+    queryKey: ["course-for-rules", courseId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("courses").select("code").eq("id", courseId).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: topicRules } = useQuery({
+    queryKey: ["topic-rules", course?.code, chapterNumber],
+    queryFn: async () => {
+      if (!course?.code) return [];
+      const { data, error } = await supabase
+        .from("topic_rules")
+        .select("*")
+        .eq("course_short", course.code)
+        .eq("chapter_number", chapterNumber)
+        .order("priority", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!course?.code,
+  });
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!formLabel.trim()) throw new Error("Source label is required");
@@ -188,28 +227,43 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       }).select("id, source_label").single();
       if (error) throw error;
 
-      // Auto-create 4 default LW items for this source problem
+      // Auto-create 4 default LW items with topic assignment
       const label = formLabel.trim();
-      const lwItems = [
+      const lwItemDefs = [
         { item_key: `${label}_CX1`, item_label: "Calc X" },
         { item_key: `${label}_CY1`, item_label: "Calc Y" },
         { item_key: `${label}_JE1`, item_label: "JE/Entry" },
         { item_key: `${label}_C1`, item_label: "Concept" },
       ];
-      await supabase.from("lw_items").insert(
-        lwItems.map(lw => ({
+
+      const { assignTopicByRules } = await import("@/lib/topicAssignment");
+      const activeTopics = (chapterTopics ?? []).filter(t => t.is_active);
+      const rules = (topicRules ?? []) as any[];
+      const context = {
+        problem_text: formProblem,
+        problem_title: formTitle.trim(),
+        lw_question_text: "",
+      };
+
+      const inserts = lwItemDefs.map(lw => {
+        const { topicId, usedFallback } = assignTopicByRules(rules, activeTopics, context, lw.item_label);
+        return {
           source_problem_id: inserted.id,
           chapter_id: chapterId,
           course_id: courseId,
           item_key: lw.item_key,
           item_label: lw.item_label,
-        }))
-      );
+          topic_id: topicId,
+          needs_topic_review: usedFallback,
+        };
+      });
+
+      await supabase.from("lw_items").insert(inserts);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
       qc.invalidateQueries({ queryKey: ["lw-items", chapterId] });
-      toast.success("Source problem added with 4 LW items");
+      toast.success("Source problem added with 4 LW items (topics auto-assigned)");
       resetForm();
       setAddOpen(false);
     },
