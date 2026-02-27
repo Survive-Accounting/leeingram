@@ -29,6 +29,24 @@ const REJECTION_REASONS = [
   "Not aligned with exam style",
 ] as const;
 
+/** Render worked-steps text with bold Step headers and spacing */
+function FormatWorkedSteps({ text }: { text: string }) {
+  if (!text) return <span className="text-foreground/50">—</span>;
+  // Split on "Step N:" patterns, keeping the delimiter
+  const parts = text.split(/(Step\s+\d+[^:\n]*:)/gi);
+  return (
+    <div className="text-sm text-foreground leading-relaxed space-y-3">
+      {parts.map((part, i) => {
+        if (/^Step\s+\d+/i.test(part)) {
+          return <p key={i} className="font-bold text-base text-foreground mt-1 mb-0.5">{part}</p>;
+        }
+        if (!part.trim()) return null;
+        return <p key={i} className="whitespace-pre-wrap">{part}</p>;
+      })}
+    </div>
+  );
+}
+
 const DIFFICULTY_TOGGLES = [
   { id: "partial_period", label: "Partial Period / Stub Period" },
   { id: "missing_info", label: "Missing Information (requires inference)" },
@@ -714,8 +732,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                         </div>
                         <div>
                           <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Worked Steps</p>
-                          <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
-                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_solution_text}</p>
+                          <div className="rounded-md border border-border bg-muted/20 p-3 max-h-80 overflow-y-auto">
+                            <FormatWorkedSteps text={c.survive_solution_text} />
                           </div>
                         </div>
                         {c.journal_entry_block && (
@@ -1186,8 +1204,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           {/* 3) Worked Steps */}
                           <div>
                             <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">3 — Worked Steps (internal)</p>
-                            <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
-                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_solution_text}</p>
+                            <div className="rounded-md border border-border bg-muted/20 p-3 max-h-80 overflow-y-auto">
+                              <FormatWorkedSteps text={c.survive_solution_text} />
                             </div>
                           </div>
 
