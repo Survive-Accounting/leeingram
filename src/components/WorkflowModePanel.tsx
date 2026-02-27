@@ -189,7 +189,7 @@ export function WorkflowModePanel() {
     >
       {/* ── header ─────────────────────── */}
       <div className="px-4 pt-4 pb-3 border-b border-white/10 space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-white/50">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-white/70">
           Chapter Production Pipeline
         </h2>
 
@@ -223,15 +223,15 @@ export function WorkflowModePanel() {
 
         {/* Stats row */}
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] text-white/40">
-            <span>Chapter: <span className="text-white/70">{chapterLabel}</span></span>
+          <div className="flex justify-between text-[10px] text-white/60">
+            <span>Chapter: <span className="text-white/85">{chapterLabel}</span></span>
           </div>
-          <div className="flex justify-between text-[10px] text-white/40">
+          <div className="flex justify-between text-[10px] text-white/60">
             <span>Completed: <span className="text-primary">{completedCount}</span></span>
-            <span>Remaining: <span className="text-muted-foreground">{remainingCount}</span></span>
+            <span>Remaining: <span className="text-white/70">{remainingCount}</span></span>
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] text-white/40">Chapter Production Progress</span>
+            <span className="text-[10px] text-white/60">Chapter Production Progress</span>
             <Progress value={progressPercent} className="h-1.5 bg-white/10" />
           </div>
         </div>
@@ -258,7 +258,7 @@ export function WorkflowModePanel() {
                 ) : (
                   <ChevronRight className="h-3.5 w-3.5 text-white/40 shrink-0" />
                 )}
-                <span className="text-xs font-medium text-white/80 flex-1">{phase.title}</span>
+                <span className="text-xs font-medium text-white/90 flex-1">{phase.title}</span>
                 {(phase as PhaseWithTooltip).tooltip && (
                   <span className="relative group">
                     <Info className="h-3 w-3 text-white/30 hover:text-white/60 transition-colors cursor-help" />
@@ -267,7 +267,7 @@ export function WorkflowModePanel() {
                     </span>
                   </span>
                 )}
-                <span className="text-[10px] tabular-nums text-white/30">
+                <span className="text-[10px] tabular-nums text-white/55">
                   {phaseDone}/{phase.steps.length}
                 </span>
               </button>
@@ -302,7 +302,7 @@ export function WorkflowModePanel() {
                         <span
                           className={cn(
                             "text-xs leading-relaxed",
-                            done ? "line-through text-white/40" : "text-white/70"
+                            done ? "line-through text-white/50" : "text-white/85"
                           )}
                         >
                           {sIdx + 1}. {step}
@@ -329,7 +329,7 @@ function QuickNav() {
 
   return (
     <div className="border-t border-white/10 px-2 py-2 space-y-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-white/30 px-2 mb-1 block">Navigate</span>
+      <span className="text-[10px] uppercase tracking-widest text-white/50 px-2 mb-1 block">Navigate</span>
       {QUICK_NAV.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.path);
@@ -341,7 +341,7 @@ function QuickNav() {
               "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] transition-colors",
               active
                 ? "bg-white/15 text-white font-medium"
-                : "text-white/45 hover:text-white hover:bg-white/8"
+                : "text-white/65 hover:text-white hover:bg-white/8"
             )}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />
