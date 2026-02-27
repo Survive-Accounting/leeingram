@@ -865,6 +865,8 @@ export type Database = {
           candidate_data: Json
           created_at: string
           id: string
+          journal_entry_completed_json: Json | null
+          journal_entry_template_json: Json | null
           variant_label: string
           variant_problem_text: string
           variant_solution_text: string
@@ -874,6 +876,8 @@ export type Database = {
           candidate_data?: Json
           created_at?: string
           id?: string
+          journal_entry_completed_json?: Json | null
+          journal_entry_template_json?: Json | null
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
@@ -883,6 +887,8 @@ export type Database = {
           candidate_data?: Json
           created_at?: string
           id?: string
+          journal_entry_completed_json?: Json | null
+          journal_entry_template_json?: Json | null
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
@@ -1074,6 +1080,8 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
           id: string
           journal_entry_block: string | null
+          journal_entry_completed_json: Json | null
+          journal_entry_template_json: Json | null
           source_ref: string | null
           survive_problem_text: string
           survive_solution_text: string
@@ -1090,6 +1098,8 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           id?: string
           journal_entry_block?: string | null
+          journal_entry_completed_json?: Json | null
+          journal_entry_template_json?: Json | null
           source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
@@ -1106,6 +1116,8 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           id?: string
           journal_entry_block?: string | null
+          journal_entry_completed_json?: Json | null
+          journal_entry_template_json?: Json | null
           source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string

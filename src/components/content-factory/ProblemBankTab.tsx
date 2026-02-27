@@ -13,11 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Copy } from "lucide-react";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 import { Progress } from "@/components/ui/progress";
+import { JournalEntryTable } from "@/components/JournalEntryTable";
+import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -62,49 +64,7 @@ interface Props {
   courseId: string;
 }
 
-/** Parse a journal entry block string into table rows */
-function parseJournalEntry(text: string | null | undefined): { account: string; debit: string; credit: string }[] {
-  if (!text) return [];
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const rows: { account: string; debit: string; credit: string }[] = [];
-
-  for (const line of lines) {
-    // Skip header-like lines
-    if (/^account\s*\|?\s*debit\s*\|?\s*credit/i.test(line)) continue;
-    if (/^[-|=\s]+$/.test(line)) continue;
-
-    // Try pipe-delimited: Account | Debit | Credit
-    const pipeParts = line.split("|").map(s => s.trim());
-    if (pipeParts.length >= 3) {
-      rows.push({ account: pipeParts[0], debit: pipeParts[1] || "", credit: pipeParts[2] || "" });
-      continue;
-    }
-
-    // Try tab-delimited
-    const tabParts = line.split("\t").map(s => s.trim());
-    if (tabParts.length >= 3) {
-      rows.push({ account: tabParts[0], debit: tabParts[1] || "", credit: tabParts[2] || "" });
-      continue;
-    }
-
-    // Try pattern: "Debit: Account — Amount" / "Credit: Account — Amount"
-    const debitMatch = line.match(/^debit:\s*(.+?)[\s—–-]+\$?([\d,.]+)/i);
-    if (debitMatch) {
-      rows.push({ account: debitMatch[1].trim(), debit: debitMatch[2], credit: "" });
-      continue;
-    }
-    const creditMatch = line.match(/^credit:\s*(.+?)[\s—–-]+\$?([\d,.]+)/i);
-    if (creditMatch) {
-      rows.push({ account: creditMatch[1].trim(), debit: "", credit: creditMatch[2] });
-      continue;
-    }
-
-    // Fallback: treat entire line as account with no amounts
-    rows.push({ account: line, debit: "", credit: "" });
-  }
-
-  return rows;
-}
+/* Legacy parseJournalEntry removed — now using shared JournalEntryTable component */
 
 type ChapterProblem = {
   id: string;
@@ -291,13 +251,30 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   const approveMutation = useMutation({
     mutationFn: async ({ candidate, problem }: { candidate: any; problem: ChapterProblem }) => {
+      // Parse legacy answer_only into structured JE JSON for backfill
+      let jeCompleted = candidate.journal_entry_completed_json || null;
+      let jeTemplate = candidate.journal_entry_template_json || null;
+      if (!jeCompleted && candidate.answer_only) {
+        const parsed = parseLegacyAnswerOnly(candidate.answer_only);
+        if (parsed.length > 0) {
+          jeCompleted = parsed;
+          jeTemplate = toTemplate(parsed);
+        }
+      }
+
+      const enrichedCandidate = {
+        ...candidate,
+        journal_entry_completed_json: jeCompleted,
+        journal_entry_template_json: jeTemplate,
+      };
+
       const { data, error } = await supabase.functions.invoke("convert-to-asset", {
         body: {
           mode: "save",
           problemId: problem.id,
           courseId: problem.course_id,
           chapterId: problem.chapter_id,
-          candidate,
+          candidate: enrichedCandidate,
           requiresJournalEntry: afRequiresJE,
         },
       });
@@ -722,7 +699,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               </h4>
               {allCandidates.map((c: any, idx: number) => {
                 const summaryLine = c.survive_problem_text?.split(/[.\n]/)?.[0]?.trim() || "—";
-                const jeRows = parseJournalEntry(c.journal_entry_block);
 
                 return (
                   <Collapsible key={idx} className="rounded-lg border border-border bg-background/95 overflow-hidden">
@@ -780,52 +756,20 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
                           </div>
                         </div>
-                        <div>
-                          <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Answer Only</p>
-                          <div className="rounded-md border border-border bg-muted/20 p-3">
-                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.answer_only || "—"}</p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Worked Steps</p>
-                          <div className="rounded-md border border-border bg-muted/20 p-3 max-h-80 overflow-y-auto">
-                            <FormatWorkedSteps text={c.survive_solution_text} />
-                          </div>
-                        </div>
-                        {c.journal_entry_block && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold">Journal Entry</p>
-                              <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => {
-                                const tsv = jeRows.map(r => `${r.account}\t${r.debit}\t${r.credit}`).join("\n");
-                                navigator.clipboard.writeText(tsv);
-                                toast.success("Copied as TSV");
-                              }}>
-                                <Copy className="h-3 w-3 mr-1" /> Copy for Sheets
-                              </Button>
-                            </div>
-                            <div className="rounded-md border border-border overflow-hidden">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="bg-muted/40 border-b border-border">
-                                    <th className="text-left px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/50 font-semibold">Account</th>
-                                    <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/50 font-semibold w-24">Debit</th>
-                                    <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/50 font-semibold w-24">Credit</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {jeRows.map((row, ri) => (
-                                    <tr key={ri} className="border-b border-border/50 last:border-0">
-                                      <td className={`px-3 py-1.5 text-foreground ${row.credit && !row.debit ? 'pl-8' : ''}`}>{row.account}</td>
-                                      <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.debit}</td>
-                                      <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.credit}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        )}
+                        <JournalEntryTable
+                          legacyAnswerText={c.answer_only}
+                          completedJson={c.journal_entry_completed_json}
+                          heading="Answer (Journal Entry)"
+                          mode="completed"
+                        />
+                        <JournalEntryTable
+                          legacyJEBlock={c.journal_entry_block}
+                          legacyAnswerText={c.answer_only}
+                          completedJson={c.journal_entry_completed_json}
+                          templateJson={c.journal_entry_template_json}
+                          heading="Journal Entry (Template)"
+                          mode="template"
+                        />
                         {c.exam_trap_note && (
                           <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
                             <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
@@ -1185,7 +1129,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <div className="space-y-3">
                 {candidates.map((c: any, idx: number) => {
                   const summaryLine = c.survive_problem_text?.split(/[.\n]/)?.[0]?.trim() || "—";
-                  const jeRows = parseJournalEntry(c.journal_entry_block);
 
                   return (
                     <Collapsible key={idx} className="rounded-lg border border-border bg-card overflow-hidden">
@@ -1249,13 +1192,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             </div>
                           </div>
 
-                          {/* 2) Answer Only */}
-                          <div>
-                            <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">2 — Answer Only</p>
-                            <div className="rounded-md border border-border bg-muted/20 p-3">
-                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.answer_only || "—"}</p>
-                            </div>
-                          </div>
+                          {/* 2) Answer (Journal Entry) */}
+                          <JournalEntryTable
+                            legacyAnswerText={c.answer_only}
+                            completedJson={c.journal_entry_completed_json}
+                            heading="2 — Answer (Journal Entry)"
+                            mode="completed"
+                          />
 
                           {/* 3) Worked Steps */}
                           <div>
@@ -1265,48 +1208,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             </div>
                           </div>
 
-                          {/* 4) Journal Entry Block */}
-                          {c.journal_entry_block && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold">4 — Journal Entry</p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-[10px]"
-                                  onClick={() => {
-                                    const tsv = jeRows.map(r => `${r.account}\t${r.debit}\t${r.credit}`).join("\n");
-                                    navigator.clipboard.writeText(tsv);
-                                    toast.success("Copied as TSV for Google Sheets");
-                                  }}
-                                >
-                                  <Copy className="h-3 w-3 mr-1" /> Copy for Sheets
-                                </Button>
-                              </div>
-                              <div className="rounded-md border border-border overflow-hidden">
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="bg-muted/40 border-b border-border">
-                                      <th className="text-left px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/60 font-semibold">Account</th>
-                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/60 font-semibold w-24">Debit</th>
-                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/60 font-semibold w-24">Credit</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {jeRows.map((row, ri) => (
-                                      <tr key={ri} className="border-b border-border/50 last:border-0">
-                                        <td className={`px-3 py-1.5 text-foreground ${row.credit && !row.debit ? 'pl-8' : ''}`}>
-                                          {row.account}
-                                        </td>
-                                        <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.debit}</td>
-                                        <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.credit}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          )}
+                          {/* 4) Journal Entry (Template) */}
+                          <JournalEntryTable
+                            legacyJEBlock={c.journal_entry_block}
+                            legacyAnswerText={c.answer_only}
+                            completedJson={c.journal_entry_completed_json}
+                            templateJson={c.journal_entry_template_json}
+                            heading="4 — Journal Entry (Template)"
+                            mode="template"
+                          />
 
                           {/* Exam Trap Note */}
                           {c.exam_trap_note && (
