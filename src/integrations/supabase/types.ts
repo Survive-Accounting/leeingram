@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          actor_id: string | null
+          actor_type: Database["public"]["Enums"]["actor_type"]
+          created_at: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          event_type: string
+          id: string
+          payload_json: Json
+          severity: Database["public"]["Enums"]["log_severity"]
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: Database["public"]["Enums"]["actor_type"]
+          created_at?: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          event_type?: string
+          id?: string
+          payload_json?: Json
+          severity?: Database["public"]["Enums"]["log_severity"]
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: Database["public"]["Enums"]["actor_type"]
+          created_at?: string
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["entity_type"]
+          event_type?: string
+          id?: string
+          payload_json?: Json
+          severity?: Database["public"]["Enums"]["log_severity"]
+        }
+        Relationships: []
+      }
+      answer_packages: {
+        Row: {
+          answer_payload: Json
+          approved_at: string | null
+          approved_by: string | null
+          computed_values: Json
+          created_at: string
+          extracted_inputs: Json
+          generator: Database["public"]["Enums"]["answer_generator"]
+          id: string
+          source_problem_id: string
+          status: Database["public"]["Enums"]["answer_status"]
+          validation_results: Json
+          version: number
+        }
+        Insert: {
+          answer_payload?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          computed_values?: Json
+          created_at?: string
+          extracted_inputs?: Json
+          generator?: Database["public"]["Enums"]["answer_generator"]
+          id?: string
+          source_problem_id: string
+          status?: Database["public"]["Enums"]["answer_status"]
+          validation_results?: Json
+          version?: number
+        }
+        Update: {
+          answer_payload?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          computed_values?: Json
+          created_at?: string
+          extracted_inputs?: Json
+          generator?: Database["public"]["Enums"]["answer_generator"]
+          id?: string
+          source_problem_id?: string
+          status?: Database["public"]["Enums"]["answer_status"]
+          validation_results?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_packages_source_problem_id_fkey"
+            columns: ["source_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       changelog: {
         Row: {
           created_at: string
@@ -1797,6 +1886,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      actor_type: "user" | "system" | "ai"
+      answer_generator: "ai" | "system" | "mixed"
+      answer_status: "drafted" | "needs_review" | "approved"
       asset_difficulty: "standard" | "harder" | "tricky"
       asset_type:
         | "practice_problem"
@@ -1804,6 +1896,12 @@ export type Database = {
         | "concept_review"
         | "exam_prep"
       difficulty_level: "easy" | "medium" | "hard" | "tricky"
+      entity_type:
+        | "source_problem"
+        | "lw_item"
+        | "export_job"
+        | "topic"
+        | "chapter"
       file_type: "textbook" | "solutions" | "tutoring" | "transcript" | "other"
       lesson_status:
         | "Planning"
@@ -1811,6 +1909,7 @@ export type Database = {
         | "Filming"
         | "Editing"
         | "Published"
+      log_severity: "info" | "warn" | "error"
       problem_pipeline_status:
         | "imported"
         | "generated"
@@ -1946,6 +2045,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      actor_type: ["user", "system", "ai"],
+      answer_generator: ["ai", "system", "mixed"],
+      answer_status: ["drafted", "needs_review", "approved"],
       asset_difficulty: ["standard", "harder", "tricky"],
       asset_type: [
         "practice_problem",
@@ -1954,6 +2056,13 @@ export const Constants = {
         "exam_prep",
       ],
       difficulty_level: ["easy", "medium", "hard", "tricky"],
+      entity_type: [
+        "source_problem",
+        "lw_item",
+        "export_job",
+        "topic",
+        "chapter",
+      ],
       file_type: ["textbook", "solutions", "tutoring", "transcript", "other"],
       lesson_status: [
         "Planning",
@@ -1962,6 +2071,7 @@ export const Constants = {
         "Editing",
         "Published",
       ],
+      log_severity: ["info", "warn", "error"],
       problem_pipeline_status: [
         "imported",
         "generated",
