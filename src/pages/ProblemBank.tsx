@@ -67,7 +67,7 @@ export default function ProblemBank() {
   const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [saveAndAddNext, setSaveAndAddNext] = useState(false);
+  
 
   // Add Source Problem form state
   const [problemFiles, setProblemFiles] = useState<File[]>([]);
@@ -155,7 +155,7 @@ export default function ProblemBank() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts: { keepOpen: boolean }) => {
       if (courseFilter === "all" || chapterFilter === "all") throw new Error("Select a course and chapter first");
       if (problemFiles.length === 0) throw new Error("Add at least one problem screenshot");
 
@@ -191,16 +191,15 @@ export default function ProblemBank() {
         }).catch((e) => console.error("Auto-OCR failed:", e));
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
       setProblemFiles([]);
       setSolutionFiles([]);
       setFormType("");
       setFormLabel("");
       setFormTitle("");
-      if (saveAndAddNext) {
+      if (variables.keepOpen) {
         toast.success("Saved — ready for next problem");
-        setSaveAndAddNext(false);
       } else {
         setAddDialogOpen(false);
         toast.success("Source problem saved to Raw queue");
@@ -467,11 +466,11 @@ export default function ProblemBank() {
 
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" variant="outline" onClick={() => {setSaveAndAddNext(true);saveMutation.mutate();}} disabled={saveMutation.isPending || problemFiles.length === 0}>
-              {saveMutation.isPending && saveAndAddNext ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save & Add Next"}
+            <Button size="sm" variant="outline" onClick={() => saveMutation.mutate({ keepOpen: true })} disabled={saveMutation.isPending || problemFiles.length === 0}>
+              {saveMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save & Add Next"}
             </Button>
-            <Button size="sm" onClick={() => {setSaveAndAddNext(false);saveMutation.mutate();}} disabled={saveMutation.isPending || problemFiles.length === 0}>
-              {saveMutation.isPending && !saveAndAddNext ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save Source Problem"}
+            <Button size="sm" onClick={() => saveMutation.mutate({ keepOpen: false })} disabled={saveMutation.isPending || problemFiles.length === 0}>
+              {saveMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save Source Problem"}
             </Button>
           </DialogFooter>
         </DialogContent>
