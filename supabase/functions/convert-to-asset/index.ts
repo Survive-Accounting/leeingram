@@ -92,6 +92,8 @@ serve(async (req) => {
           journal_entry_block: requiresJournalEntry ? (candidate.journal_entry_block || null) : null,
           survive_solution_text: candidate.survive_solution_text,
           source_ref: candidate.answer_only || null,
+          journal_entry_completed_json: candidate.journal_entry_completed_json || null,
+          journal_entry_template_json: candidate.journal_entry_template_json || null,
         })
         .select()
         .single();
