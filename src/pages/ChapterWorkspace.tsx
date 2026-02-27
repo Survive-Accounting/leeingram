@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
+import { ChapterActivityLog } from "@/components/content-factory/ChapterActivityLog";
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
@@ -67,10 +68,15 @@ export default function ChapterWorkspace() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Problems</TabsTrigger>
+          <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="problems">
           <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <ChapterActivityLog chapterId={chapterId!} />
         </TabsContent>
       </Tabs>
     </SurviveSidebarLayout>
