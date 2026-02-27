@@ -924,7 +924,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-foreground/80">
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
         {readyCount > 0 && (
@@ -939,28 +939,28 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         )}
       </div>
 
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="rounded-lg border border-border overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs w-24">Label</TableHead>
-              <TableHead className="text-xs">Title</TableHead>
-              <TableHead className="text-xs w-20">Type</TableHead>
-              <TableHead className="text-xs w-28">Status</TableHead>
-              <TableHead className="text-xs w-32">Actions</TableHead>
+              <TableHead className="text-xs w-24 text-foreground/70">Label</TableHead>
+              <TableHead className="text-xs text-foreground/70">Title</TableHead>
+              <TableHead className="text-xs w-20 text-foreground/70">Type</TableHead>
+              <TableHead className="text-xs w-28 text-foreground/70">Status</TableHead>
+              <TableHead className="text-xs w-32 text-foreground/70">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">Loading…</TableCell></TableRow>
             ) : !problems?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">No source problems yet. Click "+ Add Source" to start.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No source problems yet. Click "+ Add Source" to start.</TableCell></TableRow>
             ) : (
               problems.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-mono text-xs font-medium">{p.source_label}</TableCell>
-                  <TableCell className="text-xs truncate max-w-[200px]">{p.title || "—"}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge></TableCell>
+                <TableRow key={p.id} className="bg-background/90 text-foreground hover:bg-accent/50 data-[state=selected]:bg-accent/60">
+                  <TableCell className="font-mono text-xs font-medium text-foreground">{p.source_label}</TableCell>
+                  <TableCell className="text-xs truncate max-w-[200px] text-foreground/90">{p.title || "—"}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px] capitalize text-foreground/80 bg-background/80 border-border">{p.problem_type}</Badge></TableCell>
                   <TableCell>
                     <Badge variant="outline" className={`text-[10px] ${statusStyle(p.status)}`}>
                       {statusLabel(p.status)}
@@ -973,7 +973,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           <Sparkles className="h-3 w-3 mr-1" /> Generate
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)} title="Preview screenshots">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground/80 hover:text-foreground" onClick={() => setPreviewProblem(p)} title="Preview screenshots">
                         <Eye className="h-3 w-3" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
