@@ -344,7 +344,7 @@ export default function ProblemBank() {
 
       {/* Source problems table */}
       {canAdd && (
-        <div className="rounded-lg overflow-hidden border border-white/10 bg-white/[0.04]">
+        <div className="rounded-lg overflow-hidden border border-white/10 bg-background/80">
           <Table>
             <TableHeader>
               <TableRow className="border-white/10">

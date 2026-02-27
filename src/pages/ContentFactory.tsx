@@ -153,8 +153,8 @@ export default function ContentFactory() {
                 className={cn(
                   "overflow-hidden transition-all duration-300",
                   isStarred
-                    ? "border-amber-400/60 bg-amber-400/[0.06] shadow-[0_0_24px_-4px_rgba(251,191,36,0.25)] scale-[1.02]"
-                    : "border-white/10 bg-white/[0.07] opacity-60"
+                    ? "border-amber-400/60 bg-background/90 shadow-[0_0_24px_-4px_rgba(251,191,36,0.25)] scale-[1.02]"
+                    : "border-white/15 bg-background/80 opacity-70"
                 )}
                 style={!starredId ? { opacity: 1 } : undefined}
               >

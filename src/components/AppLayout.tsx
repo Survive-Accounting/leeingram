@@ -12,10 +12,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen relative">
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="fixed inset-0 bg-black/40" />
-      <div className="fixed inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
+      <div className="fixed inset-0 bg-black/60" />
+      <div className="fixed inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40" />
       <NightSkyOverlay />
-      <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}>
+      <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
           <Link to="/domains" className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs uppercase tracking-widest">
             <Home className="h-3.5 w-3.5" />
@@ -39,7 +39,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-6">
-        <div className="rounded-xl p-5" style={{ background: "rgba(10,15,25,0.75)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.12)" }}>
+        <div className="rounded-xl p-5" style={{ background: "hsl(220 20% 7% / 0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.10)" }}>
           {children}
         </div>
       </main>
