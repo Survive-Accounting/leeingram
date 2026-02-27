@@ -631,6 +631,50 @@ export type Database = {
           },
         ]
       }
+      generation_jobs: {
+        Row: {
+          completed_at: string | null
+          error: string
+          id: string
+          input_payload: Json
+          job_type: Database["public"]["Enums"]["generation_job_type"]
+          requested_at: string
+          requested_by: string | null
+          source_problem_id: string
+          status: Database["public"]["Enums"]["generation_job_status"]
+        }
+        Insert: {
+          completed_at?: string | null
+          error?: string
+          id?: string
+          input_payload?: Json
+          job_type?: Database["public"]["Enums"]["generation_job_type"]
+          requested_at?: string
+          requested_by?: string | null
+          source_problem_id: string
+          status?: Database["public"]["Enums"]["generation_job_status"]
+        }
+        Update: {
+          completed_at?: string | null
+          error?: string
+          id?: string
+          input_payload?: Json
+          job_type?: Database["public"]["Enums"]["generation_job_type"]
+          requested_at?: string
+          requested_by?: string | null
+          source_problem_id?: string
+          status?: Database["public"]["Enums"]["generation_job_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_jobs_source_problem_id_fkey"
+            columns: ["source_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_sheets: {
         Row: {
           created_at: string
@@ -1149,6 +1193,63 @@ export type Database = {
           {
             foreignKeyName: "problem_variants_base_problem_id_fkey"
             columns: ["base_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repair_notes: {
+        Row: {
+          answer_package_id: string
+          created_at: string
+          created_by: string | null
+          desired_fix: string
+          do_not_change: string | null
+          id: string
+          note_type: Database["public"]["Enums"]["repair_note_type"]
+          resolved_at: string | null
+          source_problem_id: string
+          status: Database["public"]["Enums"]["repair_note_status"]
+          what_was_wrong: string
+        }
+        Insert: {
+          answer_package_id: string
+          created_at?: string
+          created_by?: string | null
+          desired_fix?: string
+          do_not_change?: string | null
+          id?: string
+          note_type?: Database["public"]["Enums"]["repair_note_type"]
+          resolved_at?: string | null
+          source_problem_id: string
+          status?: Database["public"]["Enums"]["repair_note_status"]
+          what_was_wrong?: string
+        }
+        Update: {
+          answer_package_id?: string
+          created_at?: string
+          created_by?: string | null
+          desired_fix?: string
+          do_not_change?: string | null
+          id?: string
+          note_type?: Database["public"]["Enums"]["repair_note_type"]
+          resolved_at?: string | null
+          source_problem_id?: string
+          status?: Database["public"]["Enums"]["repair_note_status"]
+          what_was_wrong?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_notes_answer_package_id_fkey"
+            columns: ["answer_package_id"]
+            isOneToOne: false
+            referencedRelation: "answer_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_notes_source_problem_id_fkey"
+            columns: ["source_problem_id"]
             isOneToOne: false
             referencedRelation: "chapter_problems"
             referencedColumns: ["id"]
@@ -1903,6 +2004,8 @@ export type Database = {
         | "topic"
         | "chapter"
       file_type: "textbook" | "solutions" | "tutoring" | "transcript" | "other"
+      generation_job_status: "queued" | "running" | "done" | "failed"
+      generation_job_type: "generate" | "regenerate_with_repair_note"
       lesson_status:
         | "Planning"
         | "Sheet Generated"
@@ -1918,6 +2021,14 @@ export type Database = {
         | "ready_to_film"
         | "deployed"
       problem_type: "exercise" | "problem" | "custom"
+      repair_note_status: "open" | "resolved"
+      repair_note_type:
+        | "math_fix"
+        | "format_fix"
+        | "wording_fix"
+        | "missing_step"
+        | "wrong_topic"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2064,6 +2175,8 @@ export const Constants = {
         "chapter",
       ],
       file_type: ["textbook", "solutions", "tutoring", "transcript", "other"],
+      generation_job_status: ["queued", "running", "done", "failed"],
+      generation_job_type: ["generate", "regenerate_with_repair_note"],
       lesson_status: [
         "Planning",
         "Sheet Generated",
@@ -2081,6 +2194,15 @@ export const Constants = {
         "deployed",
       ],
       problem_type: ["exercise", "problem", "custom"],
+      repair_note_status: ["open", "resolved"],
+      repair_note_type: [
+        "math_fix",
+        "format_fix",
+        "wording_fix",
+        "missing_step",
+        "wrong_topic",
+        "other",
+      ],
     },
   },
 } as const
