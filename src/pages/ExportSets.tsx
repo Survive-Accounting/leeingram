@@ -12,20 +12,25 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
 export default function ExportSets() {
   const qc = useQueryClient();
+  const { workspace } = useActiveWorkspace();
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: sets, isLoading } = useQuery({
-    queryKey: ["export-sets"],
+    queryKey: ["export-sets", workspace?.courseId, workspace?.chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase.
-      from("export_sets").
-      select("*, export_set_items(count)").
-      order("created_at", { ascending: false });
+      let q = supabase
+        .from("export_sets")
+        .select("*, export_set_items(count)")
+        .order("created_at", { ascending: false });
+      if (workspace?.courseId) q = q.eq("course_id", workspace.courseId);
+      if (workspace?.chapterId) q = q.eq("chapter_id", workspace.chapterId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     }
