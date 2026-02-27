@@ -99,7 +99,7 @@ export default function ContentFactory() {
     <SurviveSidebarLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Variant Generator</h1>
-        <p className="text-sm text-muted-foreground">Generate 3 exam-style Survive variants from a selected source problem.</p>
+        <p className="text-sm text-muted-foreground">Generate exam-style Survive variants from a selected source problem.</p>
       </div>
 
       {/* Continue Where You Left Off */}
