@@ -1311,6 +1311,33 @@ export type Database = {
           },
         ]
       }
+      topic_templates: {
+        Row: {
+          chapter_number: number
+          course_short: string
+          created_at: string
+          display_order: number
+          id: string
+          topic_name: string
+        }
+        Insert: {
+          chapter_number: number
+          course_short: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          topic_name: string
+        }
+        Update: {
+          chapter_number?: number
+          course_short?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          topic_name?: string
+        }
+        Relationships: []
+      }
       trip_explore_items: {
         Row: {
           category: string
