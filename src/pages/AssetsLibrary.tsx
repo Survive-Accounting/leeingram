@@ -418,7 +418,7 @@ export default function AssetsLibrary() {
           </TableHeader>
           <TableBody>
             {isLoading ?
-            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
             !assets?.length ?
             <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">No assets found</TableCell></TableRow> :
 

@@ -99,7 +99,7 @@ export default function ChapterWorkspace() {
   if (!chapter || !course) {
     return (
       <SurviveSidebarLayout>
-        <div className="text-muted-foreground">Loading workspace...</div>
+        <div className="text-foreground/80">Loading workspace...</div>
       </SurviveSidebarLayout>);
 
   }

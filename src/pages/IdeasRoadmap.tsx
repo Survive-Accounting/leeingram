@@ -302,7 +302,7 @@ export default function IdeasRoadmap() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-foreground/80">Loading...</p>
       ) : !items?.length ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">

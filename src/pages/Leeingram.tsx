@@ -275,7 +275,7 @@ export default function Leeingram() {
 
         {/* Series List */}
         {isLoading ? (
-          <p className="text-sm text-white/50">Loading...</p>
+          <p className="text-sm text-foreground/80">Loading...</p>
         ) : !series?.length ? (
           <div className="flex flex-col items-center py-16 text-center">
             <FolderPlus className="h-12 w-12 text-white/20 mb-4" />

@@ -112,7 +112,7 @@ export default function ChapterPage() {
   if (!chapter) {
     return (
       <AppLayout>
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-foreground/80">Loading...</div>
       </AppLayout>
     );
   }

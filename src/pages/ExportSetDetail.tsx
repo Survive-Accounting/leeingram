@@ -246,7 +246,7 @@ export default function ExportSetDetail() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-foreground/80">Loading…</p>
       ) : !items?.length ? (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-sm">No assets in this set yet.</p>
