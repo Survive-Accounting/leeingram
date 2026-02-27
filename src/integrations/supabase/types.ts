@@ -57,6 +57,7 @@ export type Database = {
           ocr_extracted_problem_text: string
           ocr_extracted_solution_text: string
           ocr_status: string
+          pipeline_status: Database["public"]["Enums"]["problem_pipeline_status"]
           problem_screenshot_url: string | null
           problem_screenshot_urls: string[]
           problem_text: string
@@ -86,6 +87,7 @@ export type Database = {
           ocr_extracted_problem_text?: string
           ocr_extracted_solution_text?: string
           ocr_status?: string
+          pipeline_status?: Database["public"]["Enums"]["problem_pipeline_status"]
           problem_screenshot_url?: string | null
           problem_screenshot_urls?: string[]
           problem_text?: string
@@ -115,6 +117,7 @@ export type Database = {
           ocr_extracted_problem_text?: string
           ocr_extracted_solution_text?: string
           ocr_status?: string
+          pipeline_status?: Database["public"]["Enums"]["problem_pipeline_status"]
           problem_screenshot_url?: string | null
           problem_screenshot_urls?: string[]
           problem_text?: string
@@ -1588,6 +1591,13 @@ export type Database = {
         | "Filming"
         | "Editing"
         | "Published"
+      problem_pipeline_status:
+        | "imported"
+        | "generated"
+        | "approved"
+        | "banked"
+        | "ready_to_film"
+        | "deployed"
       problem_type: "exercise" | "problem" | "custom"
     }
     CompositeTypes: {
@@ -1731,6 +1741,14 @@ export const Constants = {
         "Filming",
         "Editing",
         "Published",
+      ],
+      problem_pipeline_status: [
+        "imported",
+        "generated",
+        "approved",
+        "banked",
+        "ready_to_film",
+        "deployed",
       ],
       problem_type: ["exercise", "problem", "custom"],
     },

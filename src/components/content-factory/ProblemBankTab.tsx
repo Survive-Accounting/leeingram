@@ -255,7 +255,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             candidate_data: c,
           } as any);
         }
-        supabase.from("chapter_problems").update({ status: "generated" }).eq("id", viewingProblem.id).then(() => {
+        supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", viewingProblem.id).then(() => {
           qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
         });
         setViewingProblem({ ...viewingProblem, status: "generated" });
@@ -400,7 +400,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         }
 
         // Update status to generated
-        await supabase.from("chapter_problems").update({ status: "generated" }).eq("id", problem.id);
+        await supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", problem.id);
       } catch (err: any) {
         const msg = `${problem.source_label}: ${err?.message || "Unknown error"}`;
         setBatchErrors(prev => [...prev, msg]);

@@ -246,7 +246,7 @@ export default function ProblemBank() {
 
   const bulkMarkReady = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from("chapter_problems").update({ status: "ready" }).in("id", ids);
+      const { error } = await supabase.from("chapter_problems").update({ status: "ready", pipeline_status: "imported" } as any).in("id", ids);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -258,7 +258,7 @@ export default function ProblemBank() {
   });
 
   const markReady = async (id: string) => {
-    const { error } = await supabase.from("chapter_problems").update({ status: "ready" }).eq("id", id);
+    const { error } = await supabase.from("chapter_problems").update({ status: "ready", pipeline_status: "imported" } as any).eq("id", id);
     if (error) {toast.error(error.message);return;}
     qc.invalidateQueries({ queryKey: ["chapter-problems"] });
     toast.success("Marked as Ready");
