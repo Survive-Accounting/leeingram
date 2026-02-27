@@ -22,13 +22,13 @@ export default function ExportSets() {
   const { data: sets, isLoading } = useQuery({
     queryKey: ["export-sets"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("export_sets")
-        .select("*, export_set_items(count)")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.
+      from("export_sets").
+      select("*, export_set_items(count)").
+      order("created_at", { ascending: false });
       if (error) throw error;
       return data;
-    },
+    }
   });
 
   const createMutation = useMutation({
@@ -42,7 +42,7 @@ export default function ExportSets() {
       setNewName("");
       toast.success("Export set created");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const deleteMutation = useMutation({
@@ -55,14 +55,14 @@ export default function ExportSets() {
       setDeleteId(null);
       toast.success("Export set deleted");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   return (
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
             <Package className="h-5 w-5 text-primary" />
             Export Sets
           </h1>
@@ -87,13 +87,13 @@ export default function ExportSets() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
-            ) : !sets?.length ? (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">No export sets yet</TableCell></TableRow>
-            ) : (
-              sets.map((s: any) => (
-                <TableRow key={s.id} className="border-white/10">
+            {isLoading ?
+            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow> :
+            !sets?.length ?
+            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">No export sets yet</TableCell></TableRow> :
+
+            sets.map((s: any) =>
+            <TableRow key={s.id} className="border-white/10">
                   <TableCell className="text-xs font-medium">{s.name}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {s.export_set_items?.[0]?.count ?? 0}
@@ -114,8 +114,8 @@ export default function ExportSets() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+            )
+            }
           </TableBody>
         </Table>
       </div>
@@ -155,6 +155,6 @@ export default function ExportSets() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SurviveSidebarLayout>
-  );
+    </SurviveSidebarLayout>);
+
 }
