@@ -45,7 +45,7 @@ export default function Index() {
   if (coursesLoading) {
     return (
       <AppLayout>
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-foreground/80">Loading...</div>
       </AppLayout>
     );
   }
@@ -55,7 +55,7 @@ export default function Index() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Content Factory</h1>
-          <p className="text-sm text-muted-foreground">Manage your accounting course lessons</p>
+          <p className="text-sm text-foreground/80">Manage your accounting course lessons</p>
         </div>
         <Button asChild>
           <Link to="/create-lesson">
@@ -74,8 +74,8 @@ export default function Index() {
 
           return (
             <Collapsible key={course.id}>
-              <Card className="overflow-hidden">
-                <CollapsibleTrigger className="w-full text-left">
+              <Card className="overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+                <CollapsibleTrigger className="w-full text-left group">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -86,7 +86,7 @@ export default function Index() {
                         <Badge variant="secondary">
                           {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
                         </Badge>
-                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=closed]>&]:rotate-[-90deg]" />
+                        <ChevronDown className="h-4 w-4 text-foreground/70 transition-transform duration-200 group-data-[state=closed]:-rotate-90" />
                       </div>
                     </div>
                   </CardHeader>
@@ -124,12 +124,12 @@ export default function Index() {
       </div>
 
       {/* Future Integration Placeholders */}
-      <div className="mt-8 rounded-lg border border-dashed border-border bg-muted/50 p-4">
-        <p className="text-xs font-medium text-muted-foreground">Future integrations planned:</p>
+      <div className="mt-8 rounded-lg border border-dashed border-border bg-background/90 p-4">
+        <p className="text-xs font-medium text-foreground/70">Future integrations planned:</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {["Google Drive / Sheets API", "Vimeo transcript import", "Descript automation", "LearnWorlds publishing"].map(
             (name) => (
-              <Badge key={name} variant="outline" className="text-xs text-muted-foreground">
+              <Badge key={name} variant="outline" className="text-xs text-foreground/70">
                 {name}
               </Badge>
             )
