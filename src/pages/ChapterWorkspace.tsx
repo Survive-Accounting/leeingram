@@ -50,7 +50,7 @@ export default function ChapterWorkspace() {
     enabled: !!chapterId,
   });
 
-  // Check if topics exist, auto-create if not
+  // Check if topics exist
   const { data: topics } = useQuery({
     queryKey: ["chapter-topics", chapterId],
     queryFn: async () => {
@@ -64,27 +64,6 @@ export default function ChapterWorkspace() {
     },
     enabled: !!chapterId,
   });
-
-  // Auto-create default topics when chapter has none
-  useEffect(() => {
-    if (topics && topics.length === 0 && chapterId && chapter) {
-      const defaultTopics = [
-        "Core Concepts",
-        "Calculations",
-        "Journal Entries",
-        "Analysis & Interpretation",
-        "Exam Practice",
-      ];
-      const inserts = defaultTopics.map((name, i) => ({
-        chapter_id: chapterId,
-        topic_name: name,
-        display_order: i,
-      }));
-      supabase.from("chapter_topics").insert(inserts).then(() => {
-        qc.invalidateQueries({ queryKey: ["chapter-topics", chapterId] });
-      });
-    }
-  }, [topics, chapterId, chapter]);
 
   const course = chapter?.courses as { course_name: string; id: string; code: string } | undefined;
   const chapterNum = chapter?.chapter_number ?? 0;
@@ -182,7 +161,7 @@ export default function ChapterWorkspace() {
         </TabsContent>
 
         <TabsContent value="topics">
-          <TopicManager chapterId={chapterId!} />
+          <TopicManager chapterId={chapterId!} chapterNumber={chapterNum} courseCode={course.code || ""} />
         </TabsContent>
 
         <TabsContent value="lw-review">

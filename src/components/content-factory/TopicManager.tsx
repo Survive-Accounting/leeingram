@@ -7,14 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, GripVertical, Pencil, Check, X, Merge, Eye, EyeOff } from "lucide-react";
+import { Plus, GripVertical, Pencil, Check, X, Merge, Eye, EyeOff, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
   chapterId: string;
+  chapterNumber?: number;
+  courseCode?: string;
 }
 
-export function TopicManager({ chapterId }: Props) {
+export function TopicManager({ chapterId, chapterNumber, courseCode }: Props) {
   const qc = useQueryClient();
   const [newName, setNewName] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
@@ -35,6 +37,40 @@ export function TopicManager({ chapterId }: Props) {
     },
   });
 
+  // Fetch matching templates for the Initialize button
+  const { data: templates } = useQuery({
+    queryKey: ["topic-templates", courseCode, chapterNumber],
+    queryFn: async () => {
+      if (!courseCode || !chapterNumber) return [];
+      const { data, error } = await supabase
+        .from("topic_templates")
+        .select("*")
+        .eq("course_short", courseCode)
+        .eq("chapter_number", chapterNumber)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!courseCode && !!chapterNumber,
+  });
+
+  const initializeMutation = useMutation({
+    mutationFn: async () => {
+      if (!templates?.length) throw new Error("No templates found for this chapter");
+      const inserts = templates.map((t) => ({
+        chapter_id: chapterId,
+        topic_name: t.topic_name,
+        display_order: t.display_order,
+      }));
+      const { error } = await supabase.from("chapter_topics").insert(inserts);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-topics", chapterId] });
+      toast.success("Topics initialized from templates");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const addMutation = useMutation({
     mutationFn: async (name: string) => {
       const maxOrder = topics?.length ? Math.max(...topics.map(t => t.display_order)) + 1 : 0;
@@ -113,12 +149,37 @@ export function TopicManager({ chapterId }: Props) {
   const activeTopics = topics?.filter(t => t.is_active) ?? [];
   const inactiveTopics = topics?.filter(t => !t.is_active) ?? [];
 
+  const hasTopics = (topics?.length ?? 0) > 0;
+  const hasTemplates = (templates?.length ?? 0) > 0;
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Chapter Topics</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm">Chapter Topics</CardTitle>
+          {!hasTopics && hasTemplates && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => initializeMutation.mutate()}
+              disabled={initializeMutation.isPending}
+            >
+              <Download className="h-3 w-3 mr-1" />
+              {initializeMutation.isPending ? "Initializing…" : "Initialize from Templates"}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-2">
+        {!hasTopics && !hasTemplates && (
+          <p className="text-xs text-muted-foreground">No topics yet. Add one below or set up templates for this course.</p>
+        )}
+        {!hasTopics && hasTemplates && (
+          <p className="text-xs text-muted-foreground">
+            {templates?.length} topic templates available. Click "Initialize from Templates" to load them.
+          </p>
+        )}
         {activeTopics.map((topic, idx) => (
           <div key={topic.id} className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
             <button
