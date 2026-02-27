@@ -79,7 +79,7 @@ export default function AssetsLibrary() {
       const { data, error } = await supabase.from("courses").select("*").order("course_name");
       if (error) throw error;
       return data;
-    },
+    }
   });
 
   const { data: chapters } = useQuery({
@@ -90,7 +90,7 @@ export default function AssetsLibrary() {
       const { data, error } = await q;
       if (error) throw error;
       return data;
-    },
+    }
   });
 
   const { data: assets, isLoading } = useQuery({
@@ -105,7 +105,7 @@ export default function AssetsLibrary() {
       const { data, error } = await q;
       if (error) throw error;
       return data as TeachingAsset[];
-    },
+    }
   });
 
   const { data: exportSets } = useQuery({
@@ -114,22 +114,22 @@ export default function AssetsLibrary() {
       const { data, error } = await supabase.from("export_sets").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
-    },
+    }
   });
 
   const addToSetMutation = useMutation({
-    mutationFn: async ({ setId, assetIds }: { setId: string; assetIds: string[] }) => {
-      const { data: existing } = await supabase
-        .from("export_set_items")
-        .select("order_index")
-        .eq("export_set_id", setId)
-        .order("order_index", { ascending: false })
-        .limit(1);
+    mutationFn: async ({ setId, assetIds }: {setId: string;assetIds: string[];}) => {
+      const { data: existing } = await supabase.
+      from("export_set_items").
+      select("order_index").
+      eq("export_set_id", setId).
+      order("order_index", { ascending: false }).
+      limit(1);
       let nextOrder = (existing?.[0]?.order_index ?? -1) + 1;
       const rows = assetIds.map((id, i) => ({
         export_set_id: setId,
         teaching_asset_id: id,
-        order_index: nextOrder + i,
+        order_index: nextOrder + i
       }));
       const { error } = await supabase.from("export_set_items").insert(rows as any);
       if (error) throw error;
@@ -141,7 +141,7 @@ export default function AssetsLibrary() {
       setSelectedIds(new Set());
       toast.success("Assets added to export set");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const handleAddToSet = async () => {
@@ -149,9 +149,9 @@ export default function AssetsLibrary() {
     if (!assetIds.length) return;
     let targetSetId = selectedSetId;
     if (selectedSetId === "__new__") {
-      if (!newSetName.trim()) { toast.error("Enter a set name"); return; }
+      if (!newSetName.trim()) {toast.error("Enter a set name");return;}
       const { data, error } = await supabase.from("export_sets").insert({ name: newSetName.trim() } as any).select("id").single();
-      if (error) { toast.error(error.message); return; }
+      if (error) {toast.error(error.message);return;}
       targetSetId = data.id;
       qc.invalidateQueries({ queryKey: ["export-sets"] });
     }
@@ -168,14 +168,14 @@ export default function AssetsLibrary() {
       setDeleteId(null);
       toast.success("Asset deleted");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id);else
+      next.add(id);
       return next;
     });
   };
@@ -192,7 +192,7 @@ export default function AssetsLibrary() {
   const handleExport = async () => {
     if (!assets) return;
     const selected = assets.filter((a) => selectedIds.has(a.id));
-    if (selected.length === 0) { toast.error("No assets selected"); return; }
+    if (selected.length === 0) {toast.error("No assets selected");return;}
     setIsExporting(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-distractors", {
@@ -201,10 +201,10 @@ export default function AssetsLibrary() {
             asset_name: a.asset_name,
             survive_problem_text: a.survive_problem_text,
             journal_entry_block: a.journal_entry_block,
-            survive_solution_text: a.survive_solution_text,
+            survive_solution_text: a.survive_solution_text
           })),
-          journalOption,
-        },
+          journalOption
+        }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -223,7 +223,7 @@ export default function AssetsLibrary() {
         let dIdx = 0;
         const distractorList = [d.distractor_1, d.distractor_2, d.distractor_3].filter(Boolean);
         for (let i = 0; i < 4; i++) {
-          if (i !== correctPos - 1) { answers[i] = distractorList[dIdx] || `Option ${i + 1}`; dIdx++; }
+          if (i !== correctPos - 1) {answers[i] = distractorList[dIdx] || `Option ${i + 1}`;dIdx++;}
         }
         return [exportName, exportQuestionType, questionText, String(correctPos), ...answers, "", "", "", correctFeedback, incorrectFeedback].map(escapeCSV).join(",");
       });
@@ -266,13 +266,13 @@ export default function AssetsLibrary() {
             <p className="text-xs text-muted-foreground mt-1">{chapterLabel(viewingAsset.chapter_id)}</p>
           </div>
 
-          {viewingAsset.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {viewingAsset.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-              ))}
+          {viewingAsset.tags?.length > 0 &&
+          <div className="flex flex-wrap gap-1.5">
+              {viewingAsset.tags.map((tag) =>
+            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+            )}
             </div>
-          )}
+          }
 
           <div className="space-y-4">
             <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
@@ -280,12 +280,12 @@ export default function AssetsLibrary() {
               <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_problem_text || "—"}</p>
             </div>
 
-            {viewingAsset.journal_entry_block && (
-              <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            {viewingAsset.journal_entry_block &&
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry Block</h2>
                 <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{viewingAsset.journal_entry_block}</pre>
               </div>
-            )}
+            }
 
             <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Full Solution Steps</h2>
@@ -294,20 +294,20 @@ export default function AssetsLibrary() {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button size="sm" variant="destructive" onClick={() => { setDeleteId(viewingAsset.id); setViewingAsset(null); }}>
+            <Button size="sm" variant="destructive" onClick={() => {setDeleteId(viewingAsset.id);setViewingAsset(null);}}>
               <Trash2 className="h-3 w-3 mr-1" /> Delete
             </Button>
           </div>
         </div>
-      </SurviveSidebarLayout>
-    );
+      </SurviveSidebarLayout>);
+
   }
 
   return (
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
             <Library className="h-5 w-5 text-primary" />
             Assets Library
           </h1>
@@ -315,64 +315,64 @@ export default function AssetsLibrary() {
         </div>
         <WorkspaceSelector />
         <div className="flex gap-2">
-          {selectedIds.size > 0 && (
-            <>
+          {selectedIds.size > 0 &&
+          <>
               <Button
-                size="sm"
-                variant="outline"
-                disabled={isGeneratingEbook}
-                onClick={async () => {
-                  if (!assets) return;
-                  const selected = assets.filter((a) => selectedIds.has(a.id));
-                  if (!selected.length) return;
-                  setIsGeneratingEbook(true);
-                  try {
-                    const chapterMap = new Map(chapters?.map((c) => [c.id, c]) ?? []);
-                    const courseMap = new Map(courses?.map((c) => [c.id, c]) ?? []);
-                    const ebookAssets = selected.map((a) => ({
-                      id: a.id,
-                      asset_name: a.asset_name,
-                      survive_problem_text: a.survive_problem_text,
-                      survive_solution_text: a.survive_solution_text,
-                      journal_entry_block: a.journal_entry_block,
-                      course_slug: courseMap.get(a.course_id)?.slug ?? "COURSE",
-                      chapter_number: chapterMap.get(a.chapter_id)?.chapter_number ?? 0,
-                      chapter_name: chapterMap.get(a.chapter_id)?.chapter_name ?? "",
-                    }));
-                    await generateEbookDocx(ebookAssets);
-                    toast.success(`Generated eBook with ${selected.length} problems`);
-                  } catch (e: any) {
-                    toast.error(e.message || "eBook generation failed");
-                  } finally {
-                    setIsGeneratingEbook(false);
-                  }
-                }}
-              >
+              size="sm"
+              variant="outline"
+              disabled={isGeneratingEbook}
+              onClick={async () => {
+                if (!assets) return;
+                const selected = assets.filter((a) => selectedIds.has(a.id));
+                if (!selected.length) return;
+                setIsGeneratingEbook(true);
+                try {
+                  const chapterMap = new Map(chapters?.map((c) => [c.id, c]) ?? []);
+                  const courseMap = new Map(courses?.map((c) => [c.id, c]) ?? []);
+                  const ebookAssets = selected.map((a) => ({
+                    id: a.id,
+                    asset_name: a.asset_name,
+                    survive_problem_text: a.survive_problem_text,
+                    survive_solution_text: a.survive_solution_text,
+                    journal_entry_block: a.journal_entry_block,
+                    course_slug: courseMap.get(a.course_id)?.slug ?? "COURSE",
+                    chapter_number: chapterMap.get(a.chapter_id)?.chapter_number ?? 0,
+                    chapter_name: chapterMap.get(a.chapter_id)?.chapter_name ?? ""
+                  }));
+                  await generateEbookDocx(ebookAssets);
+                  toast.success(`Generated eBook with ${selected.length} problems`);
+                } catch (e: any) {
+                  toast.error(e.message || "eBook generation failed");
+                } finally {
+                  setIsGeneratingEbook(false);
+                }
+              }}>
+
                 {isGeneratingEbook ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileText className="h-3.5 w-3.5 mr-1" />}
                 Generate LearnWorlds eBook (Coming Soon)
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { setSelectedSetId("__new__"); setNewSetName(""); setAddToSetOpen(true); }}>
+              <Button size="sm" variant="outline" onClick={() => {setSelectedSetId("__new__");setNewSetName("");setAddToSetOpen(true);}}>
                 <FolderPlus className="h-3.5 w-3.5 mr-1" /> Add to Export Set
               </Button>
               <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
                 <Download className="h-3.5 w-3.5 mr-1" /> Export Selected ({selectedIds.size})
               </Button>
             </>
-          )}
+          }
         </div>
       </div>
 
       {/* Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-        <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
+        <Select value={courseFilter} onValueChange={(v) => {setCourseFilter(v);setChapterFilter("all");}}>
           <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10">
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
-            {courses?.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>
-            ))}
+            {courses?.map((c) =>
+            <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>
+            )}
           </SelectContent>
         </Select>
 
@@ -382,9 +382,9 @@ export default function AssetsLibrary() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Chapters</SelectItem>
-            {chapters?.map((c) => (
-              <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>
-            ))}
+            {chapters?.map((c) =>
+            <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>
+            )}
           </SelectContent>
         </Select>
 
@@ -394,8 +394,8 @@ export default function AssetsLibrary() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, tags, or problem text…"
-            className="h-8 text-xs pl-7 bg-white/[0.07] border-white/10"
-          />
+            className="h-8 text-xs pl-7 bg-white/[0.07] border-white/10" />
+
         </div>
       </div>
 
@@ -407,8 +407,8 @@ export default function AssetsLibrary() {
               <TableHead className="w-10">
                 <Checkbox
                   checked={assets && assets.length > 0 && selectedIds.size === assets.length}
-                  onCheckedChange={toggleAll}
-                />
+                  onCheckedChange={toggleAll} />
+
               </TableHead>
               <TableHead className="text-xs">Instance ID</TableHead>
               <TableHead className="text-xs">Tags</TableHead>
@@ -417,28 +417,28 @@ export default function AssetsLibrary() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
-            ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">No assets found</TableCell></TableRow>
-            ) : (
-              assets.map((a) => (
-                <TableRow key={a.id} className="border-white/10">
+            {isLoading ?
+            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow> :
+            !assets?.length ?
+            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs">No assets found</TableCell></TableRow> :
+
+            assets.map((a) =>
+            <TableRow key={a.id} className="border-white/10">
                   <TableCell>
                     <Checkbox
-                      checked={selectedIds.has(a.id)}
-                      onCheckedChange={() => toggleSelect(a.id)}
-                    />
+                  checked={selectedIds.has(a.id)}
+                  onCheckedChange={() => toggleSelect(a.id)} />
+
                   </TableCell>
                   <TableCell className="text-xs font-mono font-medium">{a.asset_name}</TableCell>
                   <TableCell className="text-xs">
                     <div className="flex flex-wrap gap-1">
-                      {(a.tags ?? []).slice(0, 3).map((t) => (
-                        <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-                      ))}
-                      {(a.tags ?? []).length > 3 && (
-                        <span className="text-[10px] text-muted-foreground">+{a.tags.length - 3}</span>
-                      )}
+                      {(a.tags ?? []).slice(0, 3).map((t) =>
+                  <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
+                  )}
+                      {(a.tags ?? []).length > 3 &&
+                  <span className="text-[10px] text-muted-foreground">+{a.tags.length - 3}</span>
+                  }
                     </div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
@@ -455,8 +455,8 @@ export default function AssetsLibrary() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+            )
+            }
           </TableBody>
         </Table>
       </div>
@@ -539,18 +539,18 @@ export default function AssetsLibrary() {
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__new__">+ Create New Set</SelectItem>
-                  {exportSets?.map((s: any) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
+                  {exportSets?.map((s: any) =>
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
-            {selectedSetId === "__new__" && (
-              <div>
+            {selectedSetId === "__new__" &&
+            <div>
                 <Label className="text-xs">New Set Name</Label>
                 <Input value={newSetName} onChange={(e) => setNewSetName(e.target.value)} placeholder="e.g. Ch 8 Bonds Quiz" className="h-8 text-xs" />
               </div>
-            )}
+            }
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setAddToSetOpen(false)}>Cancel</Button>
@@ -560,6 +560,6 @@ export default function AssetsLibrary() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SurviveSidebarLayout>
-  );
+    </SurviveSidebarLayout>);
+
 }
