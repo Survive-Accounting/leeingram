@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, RefreshCw, Eye, GitCompare } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, RefreshCw, Eye, GitCompare, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type ValidationResult, type AnswerPackageData } from "@/lib/validation";
@@ -12,6 +12,8 @@ import { logActivity } from "@/lib/activityLogger";
 import { RepairNotesPanel } from "./RepairNotesPanel";
 import { RegenerateDialog } from "./RegenerateDialog";
 import { VersionDiffView } from "./VersionDiffView";
+import { FinalAnswersPanel, type FinalAnswer } from "./FinalAnswersPanel";
+import { JournalEntryEditor, groupsToSections, sectionsToGroups, type JESection } from "./JournalEntryEditor";
 
 interface Props {
   sourceProblemId: string;
@@ -29,12 +31,48 @@ function ValidationIcon({ status }: { status: string }) {
   return <AlertTriangle className="h-3 w-3 text-amber-400" />;
 }
 
+/** Extract structured sections from answer_payload */
+function extractFinalAnswers(payload: any): FinalAnswer[] {
+  if (!payload) return [];
+  if (Array.isArray(payload.final_answers)) return payload.final_answers;
+  // Legacy: try to extract from flat payload
+  if (payload.numeric_results && typeof payload.numeric_results === "object") {
+    return Object.entries(payload.numeric_results).map(([k, v]) => ({
+      label: k,
+      value: v as string | number,
+    }));
+  }
+  return [];
+}
+
+function extractTeachingJE(payload: any): JESection[] {
+  if (!payload) return [];
+  if (payload.teaching_aids?.journal_entries) {
+    // Already in structured section format
+    if (Array.isArray(payload.teaching_aids.journal_entries) && payload.teaching_aids.journal_entries[0]?.entry_date !== undefined) {
+      return payload.teaching_aids.journal_entries;
+    }
+    // Legacy JournalEntryGroup format
+    return groupsToSections(payload.teaching_aids.journal_entries);
+  }
+  // Legacy: JE in answer_payload.journal_entries
+  if (payload.journal_entries) {
+    return groupsToSections(payload.journal_entries);
+  }
+  return [];
+}
+
+function extractTeachingText(payload: any): string | null {
+  return payload?.teaching_aids?.explanation || payload?.teaching_aids?.calculation_breakdown || null;
+}
+
 export function AnswerPackagePanel({ sourceProblemId }: Props) {
   const qc = useQueryClient();
   const [showWork, setShowWork] = useState(false);
   const [showAllVersions, setShowAllVersions] = useState(false);
   const [regenOpen, setRegenOpen] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
+  const [showTeachingAids, setShowTeachingAids] = useState(true);
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ["answer-packages", sourceProblemId],
@@ -69,6 +107,86 @@ export function AnswerPackagePanel({ sourceProblemId }: Props) {
   const olderVersions = packages?.slice(1) ?? [];
   const validationResults: ValidationResult[] = latest?.validation_results ?? [];
   const failed = hasFailures(validationResults);
+
+  const outputType: string = latest?.output_type ?? "mixed";
+  const finalAnswers = extractFinalAnswers(latest?.answer_payload);
+  const teachingJE = extractTeachingJE(latest?.answer_payload);
+  const teachingText = extractTeachingText(latest?.answer_payload);
+  const isJEOutputType = outputType === "journal_entries" || outputType === "mixed";
+
+  // Save user edits as new version
+  const saveEditMutation = useMutation({
+    mutationFn: async (updatedPayload: any) => {
+      if (!latest) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      const newVersion = latest.version + 1;
+
+      // Compute diff for repair note
+      const diff = {
+        previous_version: latest.version,
+        changes: Object.keys(updatedPayload).filter(k => JSON.stringify(updatedPayload[k]) !== JSON.stringify(latest.answer_payload[k])),
+      };
+
+      // Create new answer package version
+      const { error } = await supabase.from("answer_packages").insert({
+        source_problem_id: sourceProblemId,
+        version: newVersion,
+        generator: "mixed" as any,
+        extracted_inputs: latest.extracted_inputs,
+        computed_values: latest.computed_values,
+        answer_payload: updatedPayload,
+        validation_results: latest.validation_results,
+        status: "drafted" as any,
+        output_type: latest.output_type,
+      } as any);
+      if (error) throw error;
+
+      // Auto-create repair note
+      await supabase.from("repair_notes").insert({
+        source_problem_id: sourceProblemId,
+        answer_package_id: latest.id,
+        note_type: "math_fix" as any,
+        what_was_wrong: `User manually edited: ${diff.changes.join(", ")}`,
+        desired_fix: "Applied directly by user",
+        created_by: user?.id,
+        status: "resolved" as any,
+        resolved_at: new Date().toISOString(),
+      } as any);
+
+      // Activity log
+      await logActivity({
+        actor_type: "user",
+        entity_type: "source_problem",
+        entity_id: sourceProblemId,
+        event_type: "USER_EDIT",
+        payload_json: { previous_version: latest.version, new_version: newVersion, diff },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["answer-packages"] });
+      qc.invalidateQueries({ queryKey: ["repair-notes-open"] });
+      toast.success("Saved as new version");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const handleFinalAnswersEdit = useCallback((answers: FinalAnswer[]) => {
+    if (!latest) return;
+    const updated = { ...latest.answer_payload, final_answers: answers };
+    saveEditMutation.mutate(updated);
+  }, [latest, saveEditMutation]);
+
+  const handleJEEdit = useCallback((sections: JESection[]) => {
+    if (!latest) return;
+    const updated = {
+      ...latest.answer_payload,
+      teaching_aids: {
+        ...(latest.answer_payload?.teaching_aids ?? {}),
+        journal_entries: sections,
+      },
+    };
+    saveEditMutation.mutate(updated);
+  }, [latest, saveEditMutation]);
 
   const approveMutation = useMutation({
     mutationFn: async () => {
@@ -148,13 +266,14 @@ export function AnswerPackagePanel({ sourceProblemId }: Props) {
                 {latest.status === "needs_review" ? "Needs Review" : latest.status}
               </Badge>
               <Badge variant="outline" className="text-[10px]">{latest.generator}</Badge>
+              <Badge variant="outline" className="text-[10px] capitalize">{outputType.replace("_", " ")}</Badge>
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => revalidateMutation.mutate()} disabled={revalidateMutation.isPending}>
                 <RefreshCw className="h-3 w-3 mr-1" /> Re-validate
               </Button>
               <Button variant="outline" size="sm" className="h-6 text-[10px]" onClick={() => setRegenOpen(true)}>
-                <RefreshCw className="h-3 w-3 mr-1" /> Regenerate
+                <RefreshCw className="h-3 w-3 mr-1" /> Regenerate (This Problem Only)
               </Button>
               {packages && packages.length > 1 && (
                 <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setDiffMode(!diffMode)}>
@@ -181,41 +300,77 @@ export function AnswerPackagePanel({ sourceProblemId }: Props) {
           {/* Diff View */}
           {diffMode && packages && <VersionDiffView packages={packages} />}
 
-          {/* Validation results */}
+          {/* Main content (non-diff) */}
           {!diffMode && (
-            <div className="space-y-0.5">
-              {validationResults.map((r, i) => (
-                <div key={i} className="flex items-center gap-2 px-2 py-1 text-xs">
-                  <ValidationIcon status={r.status} />
-                  <span className="font-mono text-muted-foreground w-44 truncate">{r.validator}</span>
-                  <span className={cn("truncate", r.status === "fail" ? "text-destructive" : "text-muted-foreground")}>{r.message}</span>
-                </div>
-              ))}
-            </div>
-          )}
+            <div className="space-y-5">
+              {/* SECTION A: Final Answers */}
+              <FinalAnswersPanel
+                answers={finalAnswers}
+                outputType={outputType}
+                onEdit={handleFinalAnswersEdit}
+              />
 
-          {/* Show Work */}
-          {!diffMode && (
-            <Collapsible open={showWork} onOpenChange={setShowWork}>
-              <CollapsibleTrigger className="flex items-center gap-1 text-xs text-primary hover:underline">
-                <Eye className="h-3 w-3" /> Show Work
-                <ChevronDown className={cn("h-3 w-3 transition-transform", showWork && "rotate-180")} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-2">
-                <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Extracted Inputs</p>
-                  <pre className="text-[10px] bg-muted/30 rounded p-2 overflow-x-auto max-h-32">{JSON.stringify(latest.extracted_inputs, null, 2)}</pre>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Computed Values</p>
-                  <pre className="text-[10px] bg-muted/30 rounded p-2 overflow-x-auto max-h-32">{JSON.stringify(latest.computed_values, null, 2)}</pre>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Answer Payload</p>
-                  <pre className="text-[10px] bg-muted/30 rounded p-2 overflow-x-auto max-h-40">{JSON.stringify(latest.answer_payload, null, 2)}</pre>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              {/* SECTION B: Teaching Aids */}
+              <Collapsible open={showTeachingAids} onOpenChange={setShowTeachingAids}>
+                <CollapsibleTrigger className="flex items-center gap-2 text-xs hover:underline">
+                  <BookOpen className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
+                    {isJEOutputType ? "Journal Entries" : "Teaching Journal Entries (Optional Reference)"}
+                  </span>
+                  <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", showTeachingAids && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-3">
+                  {teachingJE.length > 0 ? (
+                    <JournalEntryEditor
+                      sections={teachingJE}
+                      onChange={handleJEEdit}
+                    />
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">No journal entries in this package.</p>
+                  )}
+                  {teachingText && (
+                    <div className="rounded border border-border bg-card p-3">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Explanation / Calculation Breakdown</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{teachingText}</p>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Validation results */}
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Validation</p>
+                {validationResults.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 px-2 py-1 text-xs">
+                    <ValidationIcon status={r.status} />
+                    <span className="font-mono text-muted-foreground w-44 truncate">{r.validator}</span>
+                    <span className={cn("truncate", r.status === "fail" ? "text-destructive" : "text-muted-foreground")}>{r.message}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Show Work */}
+              <Collapsible open={showWork} onOpenChange={setShowWork}>
+                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-primary hover:underline">
+                  <Eye className="h-3 w-3" /> Show Work
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", showWork && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-2">
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Extracted Inputs</p>
+                    <pre className="text-[10px] bg-muted/30 rounded p-2 overflow-x-auto max-h-32">{JSON.stringify(latest.extracted_inputs, null, 2)}</pre>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Computed Values</p>
+                    <pre className="text-[10px] bg-muted/30 rounded p-2 overflow-x-auto max-h-32">{JSON.stringify(latest.computed_values, null, 2)}</pre>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Raw Answer Payload</p>
+                    <pre className="text-[10px] bg-muted/30 rounded p-2 overflow-x-auto max-h-40">{JSON.stringify(latest.answer_payload, null, 2)}</pre>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
           )}
 
           {/* Older versions */}
