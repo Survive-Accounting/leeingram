@@ -5,7 +5,7 @@ export default function FilmingControlPanel() {
   return (
     <SurviveSidebarLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-primary-foreground">
           <Video className="h-6 w-6 text-primary" />
           Filming Control Panel
         </h1>
@@ -16,6 +16,6 @@ export default function FilmingControlPanel() {
           Coming soon: connected workflows built from Teaching Assets.
         </p>
       </div>
-    </SurviveSidebarLayout>
-  );
+    </SurviveSidebarLayout>);
+
 }
