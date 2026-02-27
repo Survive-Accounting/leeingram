@@ -66,7 +66,7 @@ export default function SurviveHome() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-sm font-semibold text-white">{f.label}</h2>
-                  <p className="text-xs text-white/50 mt-0.5">{f.description}</p>
+                  <p className="text-xs text-white/70 mt-0.5">{f.description}</p>
                 </div>
               </div>
             );

@@ -53,7 +53,7 @@ export function DomainLayout({ children, title, tagline, actions, backgroundImag
           </button>
           <span className="text-white/20">|</span>
           <h1 className="font-semibold text-white text-sm">{title}</h1>
-          {tagline && <span className="text-xs text-white/40 hidden sm:inline">{tagline}</span>}
+          {tagline && <span className="text-xs text-white/60 hidden sm:inline">{tagline}</span>}
           {actions && <div className="ml-auto">{actions}</div>}
         </div>
       </header>

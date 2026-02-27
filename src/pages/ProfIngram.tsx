@@ -33,8 +33,8 @@ export default function ProfIngram() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-white">{course.label}</h3>
-                  <p className="text-sm text-white/50 mt-1">{course.description}</p>
-                  <span className="inline-block mt-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/10 text-white/50">
+                  <p className="text-sm text-white/70 mt-1">{course.description}</p>
+                  <span className="inline-block mt-3 text-xs font-medium px-2.5 py-1 rounded-full bg-white/10 text-white/60">
                     Coming Soon
                   </span>
                 </div>
