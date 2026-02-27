@@ -7,25 +7,17 @@ import {
   formatAmount,
   groupsToTSV,
   resolveJournalEntries,
-  parseLegacyAnswerOnly,
   parseLegacyJEBlock,
   toTemplate,
 } from "@/lib/journalEntryParser";
 
 interface JournalEntryTableProps {
-  /** Pre-parsed structured JSON (preferred) */
   completedJson?: JournalEntryGroup[] | null;
-  /** Legacy "answer_only" text to parse as completed JE */
   legacyAnswerText?: string | null;
-  /** Legacy pipe/tab journal_entry_block text */
   legacyJEBlock?: string | null;
-  /** Template JSON (no amounts) */
   templateJson?: JournalEntryGroup[] | null;
-  /** "completed" shows amounts, "template" shows debit/credit side only */
   mode?: "completed" | "template";
-  /** Section heading override */
   heading?: string;
-  /** Show heading? default true */
   showHeading?: boolean;
 }
 
@@ -44,7 +36,6 @@ export function JournalEntryTable({
     if (templateJson && Array.isArray(templateJson) && templateJson.length > 0) {
       groups = templateJson;
     } else {
-      // Derive template from completed data
       const completed = resolveJournalEntries(completedJson, legacyAnswerText);
       if (completed.length > 0) {
         groups = toTemplate(completed);
@@ -54,16 +45,13 @@ export function JournalEntryTable({
       }
     }
   } else {
-    // Completed mode
     groups = resolveJournalEntries(completedJson, legacyAnswerText);
     if (groups.length === 0 && legacyJEBlock) {
       groups = parseLegacyJEBlock(legacyJEBlock);
     }
   }
 
-  if (groups.length === 0) {
-    return null;
-  }
+  if (groups.length === 0) return null;
 
   const defaultHeading = mode === "template" ? "Journal Entry (Template)" : "Answer (Journal Entry)";
   const displayHeading = heading || defaultHeading;
@@ -96,7 +84,14 @@ export function JournalEntryTable({
         {groups.map((group, gi) => (
           <div key={gi}>
             {groups.length > 1 && (
-              <p className="text-xs font-semibold text-foreground mb-1">{group.label}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-xs font-semibold text-foreground">{group.label}</p>
+                {group.unbalanced && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 text-amber-400 border-amber-400/40">
+                    Unbalanced — review needed
+                  </Badge>
+                )}
+              </div>
             )}
             <div className="rounded-md border border-border overflow-hidden">
               <table className="w-full text-sm">
@@ -115,11 +110,11 @@ export function JournalEntryTable({
                 </thead>
                 <tbody>
                   {group.lines.map((line, li) => {
-                    const isCredit = line.side === "credit" || (line.credit != null && line.debit == null);
+                    const isCredit = line.side === "credit";
 
                     return (
                       <tr key={li} className="border-b border-border/50 last:border-0">
-                        <td className={`px-3 py-1.5 text-foreground ${isCredit ? "pl-8" : ""}`}>
+                        <td className={`px-3 py-1.5 text-foreground ${isCredit ? "pl-10" : ""}`}>
                           {line.account}
                           {line.needs_review && (
                             <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 text-amber-400 border-amber-400/40">
@@ -129,13 +124,13 @@ export function JournalEntryTable({
                         </td>
                         <td className="text-right px-3 py-1.5 text-foreground font-mono">
                           {mode === "template"
-                            ? (line.side === "debit" ? "—" : "")
-                            : formatAmount(line.debit)}
+                            ? ""
+                            : (isCredit ? "" : formatAmount(line.debit))}
                         </td>
                         <td className="text-right px-3 py-1.5 text-foreground font-mono">
                           {mode === "template"
-                            ? (line.side === "credit" ? "—" : "")
-                            : formatAmount(line.credit)}
+                            ? ""
+                            : (isCredit ? formatAmount(line.credit) : "")}
                         </td>
                       </tr>
                     );
