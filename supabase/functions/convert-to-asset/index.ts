@@ -111,7 +111,7 @@ serve(async (req) => {
       });
     }
 
-    // ─── MODE: candidates (default) ─── Generate 3 variants with V2 prompt
+    // ─── MODE: candidates (default) ─── Generate N variants with V2 prompt
     const {
       problemId,
       sourceLabel,
@@ -134,6 +134,8 @@ serve(async (req) => {
       .select("*")
       .eq("user_id", userId)
       .maybeSingle();
+
+    const variantCount = genSettings?.variants_per_request ?? 3;
 
     const teachingTone: string[] = genSettings?.teaching_tone || [
       "Neutral but memorable", "Mix of playful and professional",
@@ -196,9 +198,9 @@ EXAM REALISM RULES:
 ${examRealism.map((r: string) => `- ${r}`).join("\n")}
 
 CORE RULES:
-- Generate exactly 3 exam-style practice problem variants from the source.
+- Generate exactly ${variantCount} exam-style practice problem variants from the source.
 - Each variant must teach the SAME core accounting concept as the source.
-- Use DIFFERENT numerical values across all 3 variants.
+- Use DIFFERENT numerical values across all ${variantCount} variants.
 - Each variant MUST use a different company name and short scenario.
 - All scenarios must feel realistic and finance/accounting related.
 - Do NOT include "Survive Accounting" in student-facing text.
@@ -215,7 +217,7 @@ SOLUTION STORAGE — For every variant, provide BOTH:
 2. survive_solution_text: Fully worked steps with all internal solution logic (step-by-step)
 - Do not generate written teaching explanations — student-facing explanation will be video-linked.
 
-OUTPUT: Return exactly 3 candidates using tool calling.`;
+OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
 
     const userPrompt = `Source Problem: ${sourceLabel} — ${title}
 
@@ -229,7 +231,7 @@ ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate 3 exam-style practice variants.`;
+Generate ${variantCount} exam-style practice variants.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -248,7 +250,7 @@ Generate 3 exam-style practice variants.`;
             type: "function",
             function: {
               name: "create_teaching_asset_candidates",
-              description: "Create 3 candidate scalable teaching assets from a raw problem",
+              description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
               parameters: {
                 type: "object",
                 properties: {
@@ -268,7 +270,7 @@ Generate 3 exam-style practice variants.`;
                       required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
                       additionalProperties: false,
                     },
-                    description: "Exactly 3 candidate teaching assets",
+                    description: `Exactly ${variantCount} candidate teaching assets`,
                   },
                 },
                 required: ["candidates"],

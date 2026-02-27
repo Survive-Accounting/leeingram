@@ -143,6 +143,22 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewCandidates, setReviewCandidates] = useState<any[]>([]);
   const [reviewLoading, setReviewLoading] = useState(false);
 
+  // Fetch user's variant count preference
+  const { data: variantCount } = useQuery({
+    queryKey: ["variant-count-setting"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 3;
+      const { data } = await supabase
+        .from("variant_generation_settings")
+        .select("variants_per_request")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data?.variants_per_request ?? 3;
+    },
+  });
+  const vCount = variantCount ?? 3;
+
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", chapterId],
     queryFn: async () => {
@@ -1101,13 +1117,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               {generateMutation.isPending ? (
                 <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
               ) : (
-                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate 3 Variants</>
+                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate {vCount} Variants</>
               )}
             </Button>
 
             {candidates.length > 0 && (
               <Button size="sm" variant="outline" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending || !canGenerate}>
-                <Sparkles className="h-3.5 w-3.5 mr-1" /> Regenerate 3 More
+                <Sparkles className="h-3.5 w-3.5 mr-1" /> Regenerate {vCount} More
               </Button>
             )}
 
@@ -1444,7 +1460,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           <DialogHeader>
             <DialogTitle>Batch Generate Variants</DialogTitle>
             <DialogDescription>
-              Generate 3 AI variants for each READY source problem in this chapter.
+              Generate {vCount} AI variants for each READY source problem in this chapter.
               Variants will NOT be auto-approved.
             </DialogDescription>
           </DialogHeader>
