@@ -2,10 +2,14 @@ import { useState, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ActivityLogPanel } from "./ActivityLogPanel";
+import { AnswerPackagePanel } from "./AnswerPackagePanel";
 
 export interface SourceProblemPreviewData {
+  id?: string;
   source_label?: string;
   title?: string;
   problem_type?: string;
@@ -76,7 +80,6 @@ function ImageGallery({ urls, label }: { urls: string[]; label: string }) {
         )}
       </div>
 
-      {/* Thumbnail strip */}
       {urls.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {urls.map((url, i) => (
@@ -96,7 +99,6 @@ function ImageGallery({ urls, label }: { urls: string[]; label: string }) {
         </div>
       )}
 
-      {/* Zoom overlay */}
       {zoomed && (
         <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center cursor-zoom-out"
@@ -139,6 +141,8 @@ function ImageGallery({ urls, label }: { urls: string[]; label: string }) {
 }
 
 export function SourceProblemPreview({ problem, open, onOpenChange }: Props) {
+  const [activeTab, setActiveTab] = useState("preview");
+
   if (!problem) return null;
 
   const problemUrls = problem.problem_screenshot_urls?.length
@@ -162,7 +166,7 @@ export function SourceProblemPreview({ problem, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
         "max-h-[90vh] overflow-y-auto p-0",
-        bothSides ? "max-w-5xl" : "max-w-2xl"
+        "max-w-5xl"
       )}>
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background border-b border-border px-5 py-3">
@@ -185,36 +189,58 @@ export function SourceProblemPreview({ problem, open, onOpenChange }: Props) {
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-5">
-          {hasImages ? (
-            <div className={cn(
-              "gap-5",
-              bothSides ? "grid grid-cols-2" : ""
-            )}>
-              {hasProblems && <ImageGallery urls={problemUrls} label="Problem Screenshots" />}
-              {hasSolutions && <ImageGallery urls={solutionUrls} label="Solution Screenshots" />}
-            </div>
-          ) : (
-            /* Fallback to text if no images */
-            <div className={cn("gap-5", problem.problem_text && problem.solution_text ? "grid grid-cols-2" : "")}>
-              {problem.problem_text && (
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h3>
-                  <p className="text-sm text-foreground whitespace-pre-wrap">{problem.problem_text}</p>
+        {/* Tabs */}
+        <div className="px-5 pb-5">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-3">
+              <TabsTrigger value="preview">Preview</TabsTrigger>
+              <TabsTrigger value="answer">Answer Package</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="preview">
+              {hasImages ? (
+                <div className={cn("gap-5", bothSides ? "grid grid-cols-2" : "")}>
+                  {hasProblems && <ImageGallery urls={problemUrls} label="Problem Screenshots" />}
+                  {hasSolutions && <ImageGallery urls={solutionUrls} label="Solution Screenshots" />}
+                </div>
+              ) : (
+                <div className={cn("gap-5", problem.problem_text && problem.solution_text ? "grid grid-cols-2" : "")}>
+                  {problem.problem_text && (
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h3>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{problem.problem_text}</p>
+                    </div>
+                  )}
+                  {problem.solution_text && (
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h3>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{problem.solution_text}</p>
+                    </div>
+                  )}
+                  {!problem.problem_text && !problem.solution_text && (
+                    <p className="text-sm text-muted-foreground text-center py-8">No screenshots or text available.</p>
+                  )}
                 </div>
               )}
-              {problem.solution_text && (
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h3>
-                  <p className="text-sm text-foreground whitespace-pre-wrap">{problem.solution_text}</p>
-                </div>
+            </TabsContent>
+
+            <TabsContent value="answer">
+              {problem.id ? (
+                <AnswerPackagePanel sourceProblemId={problem.id} />
+              ) : (
+                <p className="text-xs text-muted-foreground">No problem ID available.</p>
               )}
-              {!problem.problem_text && !problem.solution_text && (
-                <p className="text-sm text-muted-foreground text-center py-8">No screenshots or text available for this source problem.</p>
+            </TabsContent>
+
+            <TabsContent value="activity">
+              {problem.id ? (
+                <ActivityLogPanel entityType="source_problem" entityId={problem.id} />
+              ) : (
+                <p className="text-xs text-muted-foreground">No problem ID available.</p>
               )}
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>
