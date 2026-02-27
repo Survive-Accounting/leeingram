@@ -20,6 +20,7 @@ import FilmingControlPanel from "./pages/FilmingControlPanel";
 import TutoringControlPanel from "./pages/TutoringControlPanel";
 import TutoringReview from "./pages/TutoringReview";
 import TutoringReviewDetail from "./pages/TutoringReviewDetail";
+import TutoringSourceDetail from "./pages/TutoringSourceDetail";
 import FocusTimer from "./pages/FocusTimer";
 import CreateLesson from "./pages/CreateLesson";
 import LessonDetail from "./pages/LessonDetail";
@@ -77,6 +78,7 @@ const AppRoutes = () => {
       <Route path="/filming" element={<ProtectedRoute><FilmingControlPanel /></ProtectedRoute>} />
       <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
       <Route path="/tutoring/review" element={<ProtectedRoute><TutoringReview /></ProtectedRoute>} />
+      <Route path="/tutoring/review/source/:problemId" element={<ProtectedRoute><TutoringSourceDetail /></ProtectedRoute>} />
       <Route path="/tutoring/review/:problemId" element={<ProtectedRoute><TutoringReviewDetail /></ProtectedRoute>} />
       <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />
       <Route path="/focus" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
