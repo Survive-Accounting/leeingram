@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { Factory, Inbox, Library, Package, Video, GraduationCap, ChevronDown, ChevronRight, Rocket } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +30,7 @@ type PipelineStatus = typeof PIPELINE_STAGES[number]["key"];
 
 export function WorkflowModePanel() {
   const navigate = useNavigate();
+  const { workspace, setWorkspace, clearWorkspace } = useActiveWorkspace();
 
   const { data: courses } = useQuery({
     queryKey: ["courses"],
@@ -51,15 +53,36 @@ export function WorkflowModePanel() {
     },
   });
 
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [selectedChapter, setSelectedChapter] = useState("");
+  const selectedCourse = workspace?.courseId || "";
+  const selectedChapter = workspace?.chapterId || "";
+
+  const handleCourseChange = (courseId: string) => {
+    const course = courses?.find((c) => c.id === courseId);
+    if (!course) return;
+    setWorkspace({
+      courseId: course.id,
+      courseName: course.course_name,
+      chapterId: "",
+      chapterName: "",
+      chapterNumber: 0,
+    });
+  };
+
+  const handleChapterChange = (chapterId: string) => {
+    const ch = allChapters?.find((c) => c.id === chapterId);
+    if (!ch || !workspace) return;
+    setWorkspace({
+      ...workspace,
+      chapterId: ch.id,
+      chapterName: ch.chapter_name,
+      chapterNumber: ch.chapter_number,
+    });
+  };
 
   const filteredChapters = useMemo(
     () => (allChapters ?? []).filter((ch) => ch.course_id === selectedCourse),
     [allChapters, selectedCourse]
   );
-
-  useEffect(() => { setSelectedChapter(""); }, [selectedCourse]);
 
   const { data: problems } = useQuery({
     queryKey: ["pipeline-problems", selectedChapter],
@@ -99,7 +122,7 @@ export function WorkflowModePanel() {
           Chapter Production Pipeline
         </h2>
 
-        <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+        <Select value={selectedCourse} onValueChange={handleCourseChange}>
           <SelectTrigger className="bg-background border-border text-foreground text-xs h-8">
             <SelectValue placeholder="Select course…" />
           </SelectTrigger>
@@ -110,7 +133,7 @@ export function WorkflowModePanel() {
           </SelectContent>
         </Select>
 
-        <Select value={selectedChapter} onValueChange={setSelectedChapter} disabled={!selectedCourse}>
+        <Select value={selectedChapter} onValueChange={handleChapterChange} disabled={!selectedCourse}>
           <SelectTrigger className="bg-background border-border text-foreground text-xs h-8">
             <SelectValue placeholder={selectedCourse ? "Select chapter…" : "Select a course first"} />
           </SelectTrigger>

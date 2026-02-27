@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
-import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +55,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function ProblemBank() {
   const qc = useQueryClient();
-  const { workspace, setWorkspace } = useActiveWorkspace();
+  const { workspace } = useActiveWorkspace();
 
   const courseFilter = workspace?.courseId || "all";
   const chapterFilter = workspace?.chapterId || "all";
@@ -80,15 +79,6 @@ export default function ProblemBank() {
   const [editType, setEditType] = useState<string>("");
   const [editLabel, setEditLabel] = useState("");
   const [editTitle, setEditTitle] = useState("");
-
-  const { data: courses } = useQuery({
-    queryKey: ["courses"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("*").order("course_name");
-      if (error) throw error;
-      return data;
-    }
-  });
 
   const { data: chapters } = useQuery({
     queryKey: ["chapters", courseFilter],
@@ -117,33 +107,6 @@ export default function ProblemBank() {
     }
   });
 
-  // Workspace-aware course/chapter setters
-  const handleCourseChange = (v: string) => {
-    if (v === "all") return;
-    const course = courses?.find((c) => c.id === v);
-    if (course) {
-      setWorkspace({
-        courseId: course.id,
-        courseName: course.course_name,
-        chapterId: "",
-        chapterName: "",
-        chapterNumber: 0
-      });
-    }
-  };
-
-  const handleChapterChange = (v: string) => {
-    if (v === "all" || !workspace) return;
-    const ch = chapters?.find((c) => c.id === v);
-    if (ch) {
-      setWorkspace({
-        ...workspace,
-        chapterId: ch.id,
-        chapterName: ch.chapter_name,
-        chapterNumber: ch.chapter_number
-      });
-    }
-  };
 
   const uploadFile = async (file: File, prefix: string): Promise<string> => {
     const ext = file.name?.split(".").pop() || "png";
@@ -289,42 +252,16 @@ export default function ProblemBank() {
 
   return (
     <SurviveSidebarLayout>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
-            <Inbox className="h-5 w-5 text-primary" />
-            Problem Import
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
-          </p>
-        </div>
-        <WorkspaceSelector />
+      <div className="mb-4">
+        <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
+          <Inbox className="h-5 w-5 text-primary" />
+          Problem Import
+        </h1>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
+        </p>
       </div>
 
-      {/* Course + Chapter selectors (local, synced with workspace) */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div>
-          <Label className="text-xs">Course (required)</Label>
-          <Select value={courseFilter} onValueChange={handleCourseChange}>
-            <SelectTrigger className="h-8 text-xs bg-background/95 border-border"><SelectValue placeholder="Select course" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">— Select Course —</SelectItem>
-              {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">Chapter (required)</Label>
-          <Select value={chapterFilter || "all"} onValueChange={handleChapterChange}>
-            <SelectTrigger className="h-8 text-xs bg-background/95 border-border"><SelectValue placeholder="Select chapter" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">— Select Chapter —</SelectItem>
-              {chapters?.map((c) => <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
       {/* Add button + bulk actions */}
       <div className="flex items-center justify-between mb-3">
@@ -341,7 +278,7 @@ export default function ProblemBank() {
       </div>
 
       {!canAdd &&
-      <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter above to view and add source problems.</p>
+      <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter in the sidebar pipeline to view and add source problems.</p>
       }
 
       {/* Source problems table */}

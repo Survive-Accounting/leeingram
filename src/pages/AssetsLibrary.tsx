@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
-import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -313,7 +312,6 @@ export default function AssetsLibrary() {
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">Approved owned problems ready for LearnWorlds export + eBook linking.</p>
         </div>
-        <WorkspaceSelector />
         <div className="flex gap-2">
           {selectedIds.size > 0 &&
           <>
