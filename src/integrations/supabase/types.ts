@@ -862,6 +862,7 @@ export type Database = {
       problem_variants: {
         Row: {
           base_problem_id: string
+          candidate_data: Json
           created_at: string
           id: string
           variant_label: string
@@ -870,6 +871,7 @@ export type Database = {
         }
         Insert: {
           base_problem_id: string
+          candidate_data?: Json
           created_at?: string
           id?: string
           variant_label?: string
@@ -878,6 +880,7 @@ export type Database = {
         }
         Update: {
           base_problem_id?: string
+          candidate_data?: Json
           created_at?: string
           id?: string
           variant_label?: string
