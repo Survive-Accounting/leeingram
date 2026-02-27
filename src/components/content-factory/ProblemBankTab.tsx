@@ -159,6 +159,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [batchCurrentLabel, setBatchCurrentLabel] = useState("");
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
 
+  // Review queue state
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [reviewCandidates, setReviewCandidates] = useState<any[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", chapterId],
     queryFn: async () => {
@@ -240,15 +246,27 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (data) => {
-      setCandidates((prev) => [...prev, ...(data.candidates || [])]);
+    onSuccess: async (data) => {
+      const newCandidates = data.candidates || [];
+      setCandidates((prev) => [...prev, ...newCandidates]);
       if (viewingProblem) {
+        // Persist variants to DB for review queue
+        for (let ci = 0; ci < newCandidates.length; ci++) {
+          const c = newCandidates[ci];
+          await supabase.from("problem_variants").insert({
+            base_problem_id: viewingProblem.id,
+            variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+            variant_problem_text: c.survive_problem_text || "",
+            variant_solution_text: c.survive_solution_text || "",
+            candidate_data: c,
+          } as any);
+        }
         supabase.from("chapter_problems").update({ status: "generated" }).eq("id", viewingProblem.id).then(() => {
           qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
         });
         setViewingProblem({ ...viewingProblem, status: "generated" });
       }
-      toast.success(`Generated ${data.candidates?.length || 0} variants`);
+      toast.success(`Generated ${newCandidates.length} variants`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -357,6 +375,19 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
+        // Persist generated candidates to problem_variants for later review
+        const candidates = data.candidates || [];
+        for (let ci = 0; ci < candidates.length; ci++) {
+          const c = candidates[ci];
+          await supabase.from("problem_variants").insert({
+            base_problem_id: problem.id,
+            variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+            variant_problem_text: c.survive_problem_text || "",
+            variant_solution_text: c.survive_solution_text || "",
+            candidate_data: c,
+          } as any);
+        }
+
         // Update status to generated
         await supabase.from("chapter_problems").update({ status: "generated" }).eq("id", problem.id);
       } catch (err: any) {
@@ -430,6 +461,55 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     setOcrEditing(false);
   };
 
+  // Review queue helpers
+  const generatedProblems = problems?.filter(p => p.status === "generated") ?? [];
+
+  const startReviewQueue = async (startIdx = 0) => {
+    if (generatedProblems.length === 0) {
+      toast.info("No generated problems to review.");
+      return;
+    }
+    setReviewMode(true);
+    setReviewIndex(startIdx);
+    await loadReviewCandidates(generatedProblems[startIdx].id);
+  };
+
+  const loadReviewCandidates = async (problemId: string) => {
+    setReviewLoading(true);
+    setReviewCandidates([]);
+    const { data, error } = await supabase
+      .from("problem_variants")
+      .select("*")
+      .eq("base_problem_id", problemId)
+      .order("created_at", { ascending: true });
+    if (!error && data) {
+      setReviewCandidates(data.map((v: any) => ({
+        ...(v.candidate_data || {}),
+        _variantId: v.id,
+        survive_problem_text: v.candidate_data?.survive_problem_text || v.variant_problem_text,
+        survive_solution_text: v.candidate_data?.survive_solution_text || v.variant_solution_text,
+      })));
+    }
+    setReviewLoading(false);
+  };
+
+  const navigateReview = async (direction: "next" | "prev") => {
+    const newIdx = direction === "next" ? reviewIndex + 1 : reviewIndex - 1;
+    if (newIdx < 0 || newIdx >= generatedProblems.length) return;
+    setReviewIndex(newIdx);
+    setCandidates([]);
+    setSavingIndex(null);
+    setGeneratedAssetId(null);
+    await loadReviewCandidates(generatedProblems[newIdx].id);
+  };
+
+  const exitReview = () => {
+    setReviewMode(false);
+    setReviewCandidates([]);
+    setCandidates([]);
+    qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+  };
+
   const toggleDifficulty = (id: string) => {
     setActiveDiffToggles(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
@@ -455,6 +535,254 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const statusLabel = (status: string) => ({
     imported: "SOURCE", raw: "SOURCE", ready: "READY", tagged: "TAGGED", generated: "GENERATED", approved: "APPROVED", converted: "APPROVED",
   }[status] ?? status.toUpperCase());
+
+  // ─── Review Queue Mode ───
+  if (reviewMode && generatedProblems.length > 0) {
+    const rp = generatedProblems[reviewIndex];
+    if (!rp) { setReviewMode(false); }
+    else {
+      const allCandidates = reviewCandidates;
+      return (
+        <div className="space-y-5">
+          {/* Nav Bar */}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={exitReview} className="text-foreground/70 hover:text-foreground">
+              <ArrowLeft className="h-3 w-3 mr-1" /> Exit Review
+            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-foreground/70 font-medium">
+                {reviewIndex + 1} / {generatedProblems.length}
+              </span>
+              <Button size="sm" variant="outline" disabled={reviewIndex === 0} onClick={() => navigateReview("prev")} className="h-7 px-2">
+                <ChevronRight className="h-3 w-3 rotate-180" />
+              </Button>
+              <Button size="sm" variant="outline" disabled={reviewIndex >= generatedProblems.length - 1} onClick={() => navigateReview("next")} className="h-7 px-2">
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Problem Header */}
+          <div className="rounded-lg border border-border bg-background/95 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-mono text-foreground/70">{rp.ocr_detected_label || rp.source_label}</span>
+              <Badge variant="outline" className="text-[10px] capitalize">{rp.problem_type}</Badge>
+              <Badge variant="outline" className={`text-[10px] ${statusStyle(rp.status)}`}>{statusLabel(rp.status)}</Badge>
+            </div>
+            <h2 className="text-lg font-bold text-foreground">{rp.ocr_detected_title || rp.title || rp.source_label}</h2>
+            <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{rp.ocr_extracted_problem_text || rp.problem_text || "No problem text"}</p>
+          </div>
+
+          {/* Variants to Review */}
+          {reviewLoading ? (
+            <div className="flex items-center justify-center py-8 gap-2 text-foreground/70">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading variants…
+            </div>
+          ) : allCandidates.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-foreground/70 mb-3">No saved variants found for this problem.</p>
+              <p className="text-xs text-foreground/50">Variants from batch generation may not have been saved. You can generate new ones:</p>
+              <Button size="sm" className="mt-3" onClick={() => {
+                setReviewMode(false);
+                openDetail(rp);
+              }}>
+                <Sparkles className="h-3 w-3 mr-1" /> Open & Generate
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
+                {allCandidates.length} Variant{allCandidates.length !== 1 ? "s" : ""} to Review
+              </h4>
+              {allCandidates.map((c: any, idx: number) => {
+                const summaryLine = c.survive_problem_text?.split(/[.\n]/)?.[0]?.trim() || "—";
+                const jeRows = parseJournalEntry(c.journal_entry_block);
+
+                return (
+                  <Collapsible key={idx} className="rounded-lg border border-border bg-background/95 overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left min-w-0">
+                        <ChevronRight className="h-4 w-4 text-foreground/50 flex-shrink-0 transition-transform [[data-state=open]_&]:rotate-90" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[10px] text-foreground/50 uppercase tracking-wider">V{idx + 1}</span>
+                            <h5 className="text-sm font-semibold text-foreground truncate">{c.asset_name || `Variant ${idx + 1}`}</h5>
+                          </div>
+                          <p className="text-xs text-foreground/60 truncate">{summaryLine}</p>
+                        </div>
+                      </CollapsibleTrigger>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          className="h-7 px-2.5 text-xs"
+                          onClick={() => {
+                            setSavingIndex(idx);
+                            setAfRequiresJE(!!c.journal_entry_block);
+                            approveMutation.mutate({ candidate: c, problem: rp as any });
+                          }}
+                          disabled={approveMutation.isPending}
+                        >
+                          {savingIndex === idx && approveMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <><Check className="h-3 w-3 mr-1" /> Approve</>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs text-destructive"
+                          onClick={() => { setRejectingIndex(idx); setRejectReason(""); setRejectNote(""); setViewingProblem(rp as any); }}
+                          disabled={approveMutation.isPending}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                    <CollapsibleContent>
+                      <div className="border-t border-border px-4 py-4 space-y-4">
+                        {c.tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {c.tags.map((t: string) => (
+                              <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
+                            ))}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Problem Text</p>
+                          <div className="rounded-md border border-border bg-muted/20 p-3">
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Answer Only</p>
+                          <div className="rounded-md border border-border bg-muted/20 p-3">
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.answer_only || "—"}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Worked Steps</p>
+                          <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_solution_text}</p>
+                          </div>
+                        </div>
+                        {c.journal_entry_block && (
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold">Journal Entry</p>
+                              <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => {
+                                const tsv = jeRows.map(r => `${r.account}\t${r.debit}\t${r.credit}`).join("\n");
+                                navigator.clipboard.writeText(tsv);
+                                toast.success("Copied as TSV");
+                              }}>
+                                <Copy className="h-3 w-3 mr-1" /> Copy for Sheets
+                              </Button>
+                            </div>
+                            <div className="rounded-md border border-border overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="bg-muted/40 border-b border-border">
+                                    <th className="text-left px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/50 font-semibold">Account</th>
+                                    <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/50 font-semibold w-24">Debit</th>
+                                    <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/50 font-semibold w-24">Credit</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {jeRows.map((row, ri) => (
+                                    <tr key={ri} className="border-b border-border/50 last:border-0">
+                                      <td className={`px-3 py-1.5 text-foreground ${row.credit && !row.debit ? 'pl-8' : ''}`}>{row.account}</td>
+                                      <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.debit}</td>
+                                      <td className="text-right px-3 py-1.5 text-foreground font-mono">{row.credit}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                        {c.exam_trap_note && (
+                          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                            <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
+                              <AlertTriangle className="h-3 w-3" /> Exam Trap Note
+                            </p>
+                            <p className="text-sm text-foreground">{c.exam_trap_note}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+
+              {/* Quick navigation after reviewing */}
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <Button size="sm" variant="outline" onClick={() => {
+                  setReviewMode(false);
+                  openDetail(rp as any);
+                }}>
+                  <Sparkles className="h-3 w-3 mr-1" /> Regenerate Variants
+                </Button>
+                <div className="flex items-center gap-2">
+                  {reviewIndex < generatedProblems.length - 1 && (
+                    <Button size="sm" onClick={() => navigateReview("next")}>
+                      Next Problem <ChevronRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  )}
+                  {reviewIndex >= generatedProblems.length - 1 && (
+                    <Button size="sm" variant="outline" onClick={exitReview}>
+                      <Check className="h-3 w-3 mr-1" /> Done Reviewing
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rejection Dialog (reuse) */}
+          <Dialog open={rejectingIndex !== null} onOpenChange={(o) => { if (!o) { setRejectingIndex(null); setViewingProblem(null); } }}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Why reject this variant?</DialogTitle>
+                <DialogDescription>Select a reason and optionally add a note.</DialogDescription>
+              </DialogHeader>
+              <RadioGroup value={rejectReason} onValueChange={setRejectReason} className="space-y-2">
+                {REJECTION_REASONS.map((r) => (
+                  <div key={r} className="flex items-center gap-2">
+                    <RadioGroupItem value={r} id={`rq-reason-${r}`} />
+                    <Label htmlFor={`rq-reason-${r}`} className="text-xs cursor-pointer">{r}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+              <div>
+                <Label className="text-xs">Note (optional)</Label>
+                <Textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} rows={2} className="text-xs mt-1" />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => { setRejectingIndex(null); setViewingProblem(null); }}>Cancel</Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={!rejectReason || rejectMutation.isPending}
+                  onClick={() => {
+                    if (rejectingIndex !== null) {
+                      rejectMutation.mutate({
+                        candidate: allCandidates[rejectingIndex],
+                        problem: rp as any,
+                        reason: rejectReason,
+                        note: rejectNote,
+                      });
+                    }
+                  }}
+                >
+                  {rejectMutation.isPending ? "Saving…" : "Reject Variant"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      );
+    }
+  }
 
   // ─── Detail / Generate View ───
   if (viewingProblem) {
@@ -923,20 +1251,32 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   // ─── Table View ───
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <p className="text-xs text-foreground/80">
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
-        {readyCount > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs"
-            onClick={() => { setBatchForceRegen(false); setBatchErrors([]); setBatchModalOpen(true); }}
-          >
-            <Sparkles className="h-3 w-3 mr-1" /> Batch Generate ({readyCount} ready)
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {generatedProblems.length > 0 && (
+            <Button
+              size="sm"
+              variant="default"
+              className="text-xs"
+              onClick={() => startReviewQueue(0)}
+            >
+              <Eye className="h-3 w-3 mr-1" /> Review Generated ({generatedProblems.length})
+            </Button>
+          )}
+          {readyCount > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => { setBatchForceRegen(false); setBatchErrors([]); setBatchModalOpen(true); }}
+            >
+              <Sparkles className="h-3 w-3 mr-1" /> Batch Generate ({readyCount} ready)
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
