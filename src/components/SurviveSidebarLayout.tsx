@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { WorkflowModePanel } from "@/components/WorkflowModePanel";
+import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -144,9 +145,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           </nav>
         )}
 
-        <main className="flex-1 px-6 py-6 overflow-auto relative">
+        <main className="flex-1 overflow-auto relative">
+          <PipelineProgressStrip />
           <div
-            className="rounded-xl p-5"
+            className="mx-6 mb-6 rounded-xl p-5"
             style={{
               background: "hsl(220 20% 7% / 0.95)",
               backdropFilter: "blur(20px)",
