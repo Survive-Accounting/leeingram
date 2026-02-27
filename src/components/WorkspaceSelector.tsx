@@ -59,7 +59,7 @@ export function WorkspaceSelector() {
   return (
     <div className="flex items-center gap-2">
       <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
-        <SelectTrigger className="h-7 text-[11px] w-40 bg-white/[0.07] border-white/10">
+        <SelectTrigger className="h-7 text-[11px] w-40 bg-background/95 border-border">
           <SelectValue placeholder="Course…" />
         </SelectTrigger>
         <SelectContent>
@@ -74,7 +74,7 @@ export function WorkspaceSelector() {
         onValueChange={handleChapterChange}
         disabled={!workspace?.courseId}
       >
-        <SelectTrigger className="h-7 text-[11px] w-44 bg-white/[0.07] border-white/10">
+        <SelectTrigger className="h-7 text-[11px] w-44 bg-background/95 border-border">
           <SelectValue placeholder="Chapter…" />
         </SelectTrigger>
         <SelectContent>

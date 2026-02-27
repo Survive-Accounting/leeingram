@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, CheckCircle2, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
@@ -291,7 +291,10 @@ export default function ProblemBank() {
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-primary-foreground">Problem Import</h1>
+          <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
+            <Inbox className="h-5 w-5 text-primary" />
+            Problem Import
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
           </p>
@@ -304,7 +307,7 @@ export default function ProblemBank() {
         <div>
           <Label className="text-xs">Course (required)</Label>
           <Select value={courseFilter} onValueChange={handleCourseChange}>
-            <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10"><SelectValue placeholder="Select course" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background/95 border-border"><SelectValue placeholder="Select course" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">— Select Course —</SelectItem>
               {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
@@ -314,7 +317,7 @@ export default function ProblemBank() {
         <div>
           <Label className="text-xs">Chapter (required)</Label>
           <Select value={chapterFilter || "all"} onValueChange={handleChapterChange}>
-            <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10"><SelectValue placeholder="Select chapter" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs bg-background/95 border-border"><SelectValue placeholder="Select chapter" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">— Select Chapter —</SelectItem>
               {chapters?.map((c) => <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>)}
@@ -343,10 +346,10 @@ export default function ProblemBank() {
 
       {/* Source problems table */}
       {canAdd &&
-      <div className="rounded-lg overflow-hidden border border-white/10 bg-background/80">
+      <div className="rounded-lg overflow-hidden border border-border bg-background/95">
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10">
+              <TableRow className="border-border">
                 <TableHead className="w-10">
                   <Checkbox
                   checked={problems && problems.length > 0 && selectedIds.size === problems.length}
@@ -373,7 +376,7 @@ export default function ProblemBank() {
             <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No source problems yet. Click "+ Add Source Problem" to start.</TableCell></TableRow> :
 
             problems.map((p) =>
-            <TableRow key={p.id} className="border-white/10">
+            <TableRow key={p.id} className="border-border">
                     <TableCell>
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </TableCell>

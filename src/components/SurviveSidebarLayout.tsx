@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, ListChecks, Workflow, GraduationCap } from "lucide-react";
+import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, ListChecks, Workflow, GraduationCap, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
@@ -30,12 +30,21 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   );
 
   const [panelOpen, setPanelOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
   const [workflowMode, setWorkflowMode] = useState(() => localStorage.getItem("wf-mode-active") !== "false");
 
   const toggleWorkflowMode = () => {
     setWorkflowMode((prev) => {
       const next = !prev;
       localStorage.setItem("wf-mode-active", String(next));
+      return next;
+    });
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("sidebar-collapsed", String(next));
       return next;
     });
   };
@@ -67,6 +76,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <h1 className="font-semibold text-white text-sm">Survive Accounting</h1>
           <span className="text-xs text-white/65 hidden sm:inline">Scalable Teaching Assets</span>
           <div className="ml-auto flex items-center gap-2">
+            {!workflowMode && (
+              <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-white/70 hover:text-white hover:bg-white/10" title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}>
+                {sidebarCollapsed ? <PanelLeft className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-white/70 hover:text-white hover:bg-white/10">
               <Workflow className="mr-1 h-3.5 w-3.5" /> {workflowMode ? "Dashboard View" : "Workflow View"}
             </Button>
@@ -86,7 +100,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         {/* Workflow Mode: show checklist panel + compact nav */}
         {workflowMode && <WorkflowModePanel />}
 
-        {!workflowMode && (
+        {!workflowMode && !sidebarCollapsed && (
           <>
             {/* Sidebar */}
             <nav
