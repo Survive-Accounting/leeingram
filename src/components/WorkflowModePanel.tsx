@@ -185,7 +185,7 @@ export function WorkflowModePanel() {
   return (
     <aside
       className="w-72 shrink-0 border-r border-white/10 flex flex-col overflow-hidden"
-      style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.35)" }}
+      style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.9)" }}
     >
       {/* ── header ─────────────────────── */}
       <div className="px-4 pt-4 pb-3 border-b border-white/10 space-y-3">

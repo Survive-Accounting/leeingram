@@ -45,14 +45,14 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     <div className="min-h-screen relative">
       {/* Background */}
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${aorakiBg})` }} />
-      <div className="fixed inset-0 bg-black/40" />
-      <div className="fixed inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
+      <div className="fixed inset-0 bg-black/60" />
+      <div className="fixed inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40" />
       <NightSkyOverlay />
 
       {/* Header */}
       <header
         className="relative z-10 border-b border-white/10"
-        style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}
+        style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
       >
         <div className="flex h-14 items-center gap-3 px-4">
           <button
@@ -90,7 +90,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {/* Sidebar */}
             <nav
               className="w-56 shrink-0 border-r border-white/10 py-4 px-2 space-y-1 flex flex-col"
-              style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.25)" }}
+              style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
             >
               <div className="space-y-1 flex-1">
                 {NAV_ITEMS.map((item) => {
@@ -148,9 +148,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <div
             className="rounded-xl p-5"
             style={{
-              background: "rgba(10,15,25,0.75)",
+              background: "hsl(220 20% 7% / 0.95)",
               backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.10)",
             }}
           >
             {children}

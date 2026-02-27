@@ -34,15 +34,15 @@ export function DomainLayout({ children, title, tagline, actions, backgroundImag
         style={{ backgroundImage: `url(${bg})` }}
       />
       {/* Lighter overlay — ominous dusk, not pitch black */}
-      <div className="fixed inset-0 bg-black/40" />
-      <div className="fixed inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
+      <div className="fixed inset-0 bg-black/55" />
+      <div className="fixed inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/35" />
       <NightSkyOverlay />
 
       {/* Focus Sprint dialog on domain entry */}
       <FocusSprintDialog open={dialogOpen} onClose={handleDialogClose} />
 
       {/* Nav bar */}
-      <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(0,0,0,0.3)" }}>
+      <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}>
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
           <button
             onClick={() => navigate("/domains")}
