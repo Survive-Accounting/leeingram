@@ -175,7 +175,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!formLabel.trim()) throw new Error("Source label is required");
-      const { error } = await supabase.from("chapter_problems").insert({
+      const { data: inserted, error } = await supabase.from("chapter_problems").insert({
         course_id: courseId,
         chapter_id: chapterId,
         problem_type: formType,
@@ -185,12 +185,31 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         solution_text: formSolution,
         journal_entry_text: formJE || null,
         status: "imported",
-      });
+      }).select("id, source_label").single();
       if (error) throw error;
+
+      // Auto-create 4 default LW items for this source problem
+      const label = formLabel.trim();
+      const lwItems = [
+        { item_key: `${label}_CX1`, item_label: "Calc X" },
+        { item_key: `${label}_CY1`, item_label: "Calc Y" },
+        { item_key: `${label}_JE1`, item_label: "JE/Entry" },
+        { item_key: `${label}_C1`, item_label: "Concept" },
+      ];
+      await supabase.from("lw_items").insert(
+        lwItems.map(lw => ({
+          source_problem_id: inserted.id,
+          chapter_id: chapterId,
+          course_id: courseId,
+          item_key: lw.item_key,
+          item_label: lw.item_label,
+        }))
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
-      toast.success("Source problem added");
+      qc.invalidateQueries({ queryKey: ["lw-items", chapterId] });
+      toast.success("Source problem added with 4 LW items");
       resetForm();
       setAddOpen(false);
     },

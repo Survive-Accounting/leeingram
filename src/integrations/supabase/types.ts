@@ -191,6 +191,41 @@ export type Database = {
           },
         ]
       }
+      chapter_topics: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          topic_name: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          topic_name: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          topic_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_topics_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           chapter_name: string
@@ -728,6 +763,125 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lw_items: {
+        Row: {
+          answer_1: string
+          answer_10: string
+          answer_2: string
+          answer_3: string
+          answer_4: string
+          answer_5: string
+          answer_6: string
+          answer_7: string
+          answer_8: string
+          answer_9: string
+          banked_at: string | null
+          chapter_id: string
+          correct_answer: string
+          correct_explanation: string
+          course_id: string
+          created_at: string
+          id: string
+          include_in_bank: boolean
+          incorrect_explanation: string
+          item_key: string
+          item_label: string
+          lw_type: string
+          question_text: string
+          source_problem_id: string
+          status: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          answer_1?: string
+          answer_10?: string
+          answer_2?: string
+          answer_3?: string
+          answer_4?: string
+          answer_5?: string
+          answer_6?: string
+          answer_7?: string
+          answer_8?: string
+          answer_9?: string
+          banked_at?: string | null
+          chapter_id: string
+          correct_answer?: string
+          correct_explanation?: string
+          course_id: string
+          created_at?: string
+          id?: string
+          include_in_bank?: boolean
+          incorrect_explanation?: string
+          item_key?: string
+          item_label?: string
+          lw_type?: string
+          question_text?: string
+          source_problem_id: string
+          status?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          answer_1?: string
+          answer_10?: string
+          answer_2?: string
+          answer_3?: string
+          answer_4?: string
+          answer_5?: string
+          answer_6?: string
+          answer_7?: string
+          answer_8?: string
+          answer_9?: string
+          banked_at?: string | null
+          chapter_id?: string
+          correct_answer?: string
+          correct_explanation?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          include_in_bank?: boolean
+          incorrect_explanation?: string
+          item_key?: string
+          item_label?: string
+          lw_type?: string
+          question_text?: string
+          source_problem_id?: string
+          status?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lw_items_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lw_items_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lw_items_source_problem_id_fkey"
+            columns: ["source_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lw_items_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_topics"
             referencedColumns: ["id"]
           },
         ]
