@@ -34,31 +34,17 @@ export default function ChapterWorkspace() {
   });
 
 
-  // Use chapter_problems for status tracking
   const { data: chapterProblems } = useQuery({
     queryKey: ["chapter-problems-stats", chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase.
-      from("chapter_problems").
-      select("status").
-      eq("chapter_id", chapterId!);
+      const { data, error } = await supabase
+        .from("chapter_problems")
+        .select("pipeline_status")
+        .eq("chapter_id", chapterId!);
       if (error) throw error;
-      return data;
+      return data as { pipeline_status: string }[];
     },
-    enabled: !!chapterId
-  });
-
-  const { data: chapterAssets } = useQuery({
-    queryKey: ["chapter-assets-stats", chapterId],
-    queryFn: async () => {
-      const { data, error } = await supabase.
-      from("teaching_assets").
-      select("id").
-      eq("chapter_id", chapterId!);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!chapterId
+    enabled: !!chapterId,
   });
 
   const course = chapter?.courses as {course_name: string;id: string;} | undefined;
@@ -66,10 +52,13 @@ export default function ChapterWorkspace() {
 
   // Determine last active phase from stats
   const determinePhase = () => {
-    if ((chapterAssets?.length ?? 0) > 0) return "Approved";
-    if ((chapterProblems?.filter((p) => p.status === "generated" || p.status === "approved").length ?? 0) > 0) return "Generated";
-    if ((chapterProblems?.length ?? 0) > 0) return "Source";
-    return "Source";
+    const counts: Record<string, number> = {};
+    chapterProblems?.forEach((p) => { counts[p.pipeline_status] = (counts[p.pipeline_status] || 0) + 1; });
+    if ((counts["deployed"] ?? 0) > 0) return "Deployed";
+    if ((counts["ready_to_film"] ?? 0) > 0) return "Ready to Film";
+    if ((counts["approved"] ?? 0) > 0) return "Approved";
+    if ((counts["generated"] ?? 0) > 0) return "Generated";
+    return "Imported";
   };
 
   // Persist session whenever chapter/tab changes
@@ -103,18 +92,19 @@ export default function ChapterWorkspace() {
 
   }
 
-  const totalSource = chapterProblems?.length ?? 0;
-  const generated = chapterProblems?.filter((p) => p.status === "generated" || p.status === "approved").length ?? 0;
-  const approved = chapterAssets?.length ?? 0;
+  const totalProblems = chapterProblems?.length ?? 0;
+  const pCounts: Record<string, number> = {};
+  chapterProblems?.forEach((p) => { pCounts[p.pipeline_status] = (pCounts[p.pipeline_status] || 0) + 1; });
 
-  const stats = [
-  { label: "SOURCE", value: totalSource, max: totalSource || 1 },
-  { label: "GENERATED", value: generated, max: totalSource || 1 },
-  { label: "APPROVED", value: approved, max: totalSource || 1 },
-  { label: "LW READY", value: 0, max: totalSource || 1 },
-  { label: "FILM READY", value: 0, max: totalSource || 1 },
-  { label: "FILMED", value: 0, max: totalSource || 1 },
-  { label: "DEPLOYED", value: 0, max: totalSource || 1 }];
+  const STAGES = ["imported", "generated", "approved", "banked", "ready_to_film", "deployed"] as const;
+  const stageLabels: Record<string, string> = {
+    imported: "IMPORTED", generated: "GENERATED", approved: "APPROVED",
+    banked: "BANKED", ready_to_film: "READY TO FILM", deployed: "DEPLOYED",
+  };
+
+  const stats = STAGES.map((s) => ({
+    label: stageLabels[s], value: pCounts[s] ?? 0, max: totalProblems || 1,
+  }));
 
 
   return (
@@ -127,7 +117,7 @@ export default function ChapterWorkspace() {
       </div>
 
       {/* Progress strip */}
-      <div className="grid grid-cols-7 gap-2 mb-5">
+      <div className="grid grid-cols-6 gap-2 mb-5">
         {stats.map((s) =>
         <div key={s.label} className="text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{s.label}</p>
