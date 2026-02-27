@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_aliases: {
+        Row: {
+          canonical_name: string
+          course_short: string | null
+          created_at: string
+          id: string
+          preferred_display_name: string
+        }
+        Insert: {
+          canonical_name: string
+          course_short?: string | null
+          created_at?: string
+          id?: string
+          preferred_display_name: string
+        }
+        Update: {
+          canonical_name?: string
+          course_short?: string | null
+          created_at?: string
+          id?: string
+          preferred_display_name?: string
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           actor_id: string | null
@@ -60,6 +84,7 @@ export type Database = {
           extracted_inputs: Json
           generator: Database["public"]["Enums"]["answer_generator"]
           id: string
+          output_type: Database["public"]["Enums"]["answer_output_type"]
           source_problem_id: string
           status: Database["public"]["Enums"]["answer_status"]
           validation_results: Json
@@ -74,6 +99,7 @@ export type Database = {
           extracted_inputs?: Json
           generator?: Database["public"]["Enums"]["answer_generator"]
           id?: string
+          output_type?: Database["public"]["Enums"]["answer_output_type"]
           source_problem_id: string
           status?: Database["public"]["Enums"]["answer_status"]
           validation_results?: Json
@@ -88,6 +114,7 @@ export type Database = {
           extracted_inputs?: Json
           generator?: Database["public"]["Enums"]["answer_generator"]
           id?: string
+          output_type?: Database["public"]["Enums"]["answer_output_type"]
           source_problem_id?: string
           status?: Database["public"]["Enums"]["answer_status"]
           validation_results?: Json
@@ -1989,6 +2016,11 @@ export type Database = {
     Enums: {
       actor_type: "user" | "system" | "ai"
       answer_generator: "ai" | "system" | "mixed"
+      answer_output_type:
+        | "numeric_values"
+        | "journal_entries"
+        | "multiple_choice"
+        | "mixed"
       answer_status: "drafted" | "needs_review" | "approved"
       asset_difficulty: "standard" | "harder" | "tricky"
       asset_type:
@@ -2158,6 +2190,12 @@ export const Constants = {
     Enums: {
       actor_type: ["user", "system", "ai"],
       answer_generator: ["ai", "system", "mixed"],
+      answer_output_type: [
+        "numeric_values",
+        "journal_entries",
+        "multiple_choice",
+        "mixed",
+      ],
       answer_status: ["drafted", "needs_review", "approved"],
       asset_difficulty: ["standard", "harder", "tricky"],
       asset_type: [
