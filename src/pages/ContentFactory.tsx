@@ -26,7 +26,8 @@ export default function ContentFactory() {
     if (workspace?.chapterId) {
       navigate(`/workspace/${workspace.chapterId}`, { replace: true });
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.chapterId]);
 
   const [starredId, setStarredId] = useState<string | null>(
     () => localStorage.getItem(STARRED_KEY)
