@@ -579,15 +579,67 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading variants…
             </div>
           ) : allCandidates.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-foreground/70 mb-3">No saved variants found for this problem.</p>
-              <p className="text-xs text-foreground/50">Variants from batch generation may not have been saved. You can generate new ones:</p>
-              <Button size="sm" className="mt-3" onClick={() => {
-                setReviewMode(false);
-                openDetail(rp);
-              }}>
-                <Sparkles className="h-3 w-3 mr-1" /> Open & Generate
+            <div className="rounded-lg border border-dashed border-border bg-background/95 p-6 text-center space-y-3">
+              <p className="text-sm text-foreground font-medium">No saved variants found for this problem.</p>
+              <p className="text-xs text-foreground/70">This problem was generated before variants were saved to the database. Click below to re-generate and save for review.</p>
+              <Button size="sm" onClick={async () => {
+                setReviewLoading(true);
+                try {
+                  const useProblemText = rp.ocr_extracted_problem_text || rp.problem_text;
+                  const useSolutionText = rp.ocr_extracted_solution_text || rp.solution_text;
+                  const useLabel = rp.ocr_detected_label || rp.source_label;
+                  const useTitle = rp.ocr_detected_title || rp.title;
+
+                  const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+                    body: {
+                      mode: "candidates",
+                      problemId: rp.id,
+                      courseId: rp.course_id,
+                      chapterId: rp.chapter_id,
+                      sourceLabel: useLabel,
+                      title: useTitle,
+                      problemText: useProblemText,
+                      solutionText: useSolutionText,
+                      journalEntryText: rp.journal_entry_text,
+                      notes: "",
+                      requiresJournalEntry: !!rp.journal_entry_text,
+                    },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+
+                  const candidates = data.candidates || [];
+                  for (let ci = 0; ci < candidates.length; ci++) {
+                    const c = candidates[ci];
+                    await supabase.from("problem_variants").insert({
+                      base_problem_id: rp.id,
+                      variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+                      variant_problem_text: c.survive_problem_text || "",
+                      variant_solution_text: c.survive_solution_text || "",
+                      candidate_data: c,
+                    } as any);
+                  }
+
+                  await loadReviewCandidates(rp.id);
+                  toast.success(`Generated ${candidates.length} variants for review`);
+                } catch (err: any) {
+                  toast.error(err?.message || "Generation failed");
+                  setReviewLoading(false);
+                }
+              }} disabled={reviewLoading}>
+                {reviewLoading ? (
+                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</>
+                ) : (
+                  <><Sparkles className="h-3 w-3 mr-1" /> Generate & Review</>
+                )}
               </Button>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                {reviewIndex < generatedProblems.length - 1 && (
+                  <Button size="sm" variant="ghost" className="text-xs" onClick={() => navigateReview("next")}>
+                    Skip to Next <ChevronRight className="h-3 w-3 ml-1" />
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -802,7 +854,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
     return (
       <div className="space-y-5">
-        <Button variant="ghost" size="sm" onClick={() => setViewingProblem(null)} className="text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" onClick={() => setViewingProblem(null)} className="text-foreground/70 hover:text-foreground">
           <ArrowLeft className="h-3 w-3 mr-1" /> Back to Problems
         </Button>
 
@@ -810,7 +862,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-mono text-muted-foreground">{p.ocr_detected_label || p.source_label}</span>
+              <span className="text-xs font-mono text-foreground/70">{p.ocr_detected_label || p.source_label}</span>
               <Badge variant="outline" className="text-[10px] capitalize">{p.problem_type}</Badge>
               <Badge variant="outline" className={`text-[10px] ${statusStyle(p.status)}`}>
                 {statusLabel(p.status)}
@@ -835,7 +887,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           <div className={`grid gap-4 ${problemUrls.length > 0 && solutionUrls.length > 0 ? "md:grid-cols-2" : ""}`}>
             {problemUrls.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Screenshots</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Problem Screenshots</h3>
                 <div className="space-y-2">
                   {problemUrls.map((url, i) => (
                     <img key={i} src={url} alt={`Problem ${i + 1}`} className="w-full rounded-lg border border-border object-contain max-h-80" />
@@ -845,7 +897,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             )}
             {solutionUrls.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Solution Screenshots</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Solution Screenshots</h3>
                 <div className="space-y-2">
                   {solutionUrls.map((url, i) => (
                     <img key={i} src={url} alt={`Solution ${i + 1}`} className="w-full rounded-lg border border-border object-contain max-h-80" />
@@ -860,14 +912,14 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         <Collapsible className="rounded-lg border border-border bg-card">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-accent/50 transition-colors">
             <div className="flex items-center gap-2">
-              <ScanText className="h-4 w-4 text-muted-foreground" />
+              <ScanText className="h-4 w-4 text-foreground/70" />
               <span className="text-sm font-semibold text-foreground">Extracted Source Text (OCR)</span>
               {ocrRunning && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
               {ocrOk && <Badge variant="outline" className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">Extracted</Badge>}
               {ocrFailed && <Badge variant="outline" className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">Failed</Badge>}
               {p.ocr_status === "pending" && <Badge variant="outline" className="text-[10px]">Pending…</Badge>}
             </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-foreground/70" />
           </CollapsibleTrigger>
           <CollapsibleContent className="px-4 pb-4 space-y-3">
             {/* Re-run button only if failed */}
@@ -888,20 +940,20 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                     { label: "Type", value: p.ocr_detected_type },
                   ].map(f => (
                     <div key={f.label} className="rounded border border-border bg-muted/30 p-2">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{f.label}</p>
+                      <p className="text-[10px] text-foreground/60 uppercase tracking-wider">{f.label}</p>
                       <p className="text-xs font-mono font-semibold text-foreground">{f.value || "—"}</p>
                     </div>
                   ))}
                 </div>
 
                 {p.ocr_confidence_notes && (
-                  <p className="text-[10px] text-muted-foreground italic">{p.ocr_confidence_notes}</p>
+                  <p className="text-[10px] text-foreground/60 italic">{p.ocr_confidence_notes}</p>
                 )}
 
                 {/* Extracted Text */}
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Extracted Problem Text</p>
+                    <p className="text-[10px] text-foreground/60 uppercase tracking-wider mb-1">Extracted Problem Text</p>
                     {ocrEditing ? (
                       <Textarea value={ocrEditProblem} onChange={(e) => setOcrEditProblem(e.target.value)} rows={6} className="text-xs font-mono" />
                     ) : (
@@ -909,7 +961,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                     )}
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Extracted Solution Text</p>
+                    <p className="text-[10px] text-foreground/60 uppercase tracking-wider mb-1">Extracted Solution Text</p>
                     {ocrEditing ? (
                       <Textarea value={ocrEditSolution} onChange={(e) => setOcrEditSolution(e.target.value)} rows={6} className="text-xs font-mono" />
                     ) : (
@@ -952,7 +1004,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             )}
 
             {p.ocr_status === "pending" && !ocrMutation.isPending && (
-              <p className="text-xs text-muted-foreground">OCR extraction is processing in the background…</p>
+              <p className="text-xs text-foreground/60">OCR extraction is processing in the background…</p>
             )}
           </CollapsibleContent>
         </Collapsible>
@@ -984,18 +1036,18 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
           <div className="grid gap-3 md:grid-cols-2 mb-4">
             <div>
-              <Label className="text-xs">Notes for AI (optional)</Label>
+              <Label className="text-xs text-foreground/80">Notes for AI (optional)</Label>
               <Input value={afNotes} onChange={(e) => setAfNotes(e.target.value)} placeholder="e.g., Focus on premium bonds" className="h-8 text-xs" />
             </div>
             <div className="flex items-center gap-2 pt-5">
               <Checkbox id="je-toggle" checked={afRequiresJE} onCheckedChange={(v) => setAfRequiresJE(v === true)} />
-              <Label htmlFor="je-toggle" className="text-xs cursor-pointer">Journal entry required</Label>
+              <Label htmlFor="je-toggle" className="text-xs cursor-pointer text-foreground/80">Journal entry required</Label>
             </div>
           </div>
 
           {/* Exam Difficulty Options */}
           <Collapsible className="mb-4">
-            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold text-foreground/70 hover:text-foreground transition-colors">
               <AlertTriangle className="h-3 w-3" />
               Exam Difficulty Options
               {activeDiffToggles.length > 0 && (
@@ -1004,7 +1056,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <ChevronDown className="h-3 w-3" />
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-2 pl-5">
-              <p className="text-[10px] text-muted-foreground mb-2">
+              <p className="text-[10px] text-foreground/60 mb-2">
                 All OFF by default. Toggle ON to add exam-style traps to generated variants.
               </p>
               {DIFFICULTY_TOGGLES.map((toggle) => (
@@ -1053,7 +1105,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           {/* Candidates — Vertical Stack */}
           {candidates.length > 0 && (
             <div className="mt-5 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
                 Generated Variants ({candidates.length})
               </h4>
               <div className="space-y-3">
@@ -1066,13 +1118,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       {/* Collapsed Header */}
                       <div className="flex items-center gap-3 px-4 py-3">
                         <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left min-w-0">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform [[data-state=open]_&]:rotate-90" />
+                          <ChevronRight className="h-4 w-4 text-foreground/50 flex-shrink-0 transition-transform [[data-state=open]_&]:rotate-90" />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">V{idx + 1}</span>
+                              <span className="text-[10px] text-foreground/50 uppercase tracking-wider">V{idx + 1}</span>
                               <h5 className="text-sm font-semibold text-foreground truncate">{c.asset_name}</h5>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">{summaryLine}</p>
+                            <p className="text-xs text-foreground/60 truncate">{summaryLine}</p>
                           </div>
                         </CollapsibleTrigger>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1117,7 +1169,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
                           {/* 1) Problem Text */}
                           <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">1 — Problem Text</p>
+                            <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">1 — Problem Text</p>
                             <div className="rounded-md border border-border bg-muted/20 p-3">
                               <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
                             </div>
@@ -1125,7 +1177,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
                           {/* 2) Answer Only */}
                           <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">2 — Answer Only</p>
+                            <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">2 — Answer Only</p>
                             <div className="rounded-md border border-border bg-muted/20 p-3">
                               <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.answer_only || "—"}</p>
                             </div>
@@ -1133,7 +1185,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
                           {/* 3) Worked Steps */}
                           <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1.5">3 — Worked Steps (internal)</p>
+                            <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">3 — Worked Steps (internal)</p>
                             <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
                               <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_solution_text}</p>
                             </div>
@@ -1143,7 +1195,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           {c.journal_entry_block && (
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">4 — Journal Entry</p>
+                                <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold">4 — Journal Entry</p>
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1161,9 +1213,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                                 <table className="w-full text-sm">
                                   <thead>
                                     <tr className="bg-muted/40 border-b border-border">
-                                      <th className="text-left px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Account</th>
-                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-24">Debit</th>
-                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-24">Credit</th>
+                                      <th className="text-left px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/60 font-semibold">Account</th>
+                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/60 font-semibold w-24">Debit</th>
+                                      <th className="text-right px-3 py-1.5 text-[10px] uppercase tracking-wider text-foreground/60 font-semibold w-24">Credit</th>
                                     </tr>
                                   </thead>
                                   <tbody>
