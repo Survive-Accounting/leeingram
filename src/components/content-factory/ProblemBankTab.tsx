@@ -17,6 +17,7 @@ import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
+import { Progress } from "@/components/ui/progress";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -148,6 +149,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [ocrEditing, setOcrEditing] = useState(false);
   const [ocrEditProblem, setOcrEditProblem] = useState("");
   const [ocrEditSolution, setOcrEditSolution] = useState("");
+
+  // Batch generate state
+  const [batchModalOpen, setBatchModalOpen] = useState(false);
+  const [batchForceRegen, setBatchForceRegen] = useState(false);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchTotal, setBatchTotal] = useState(0);
+  const [batchCompleted, setBatchCompleted] = useState(0);
+  const [batchCurrentLabel, setBatchCurrentLabel] = useState("");
+  const [batchErrors, setBatchErrors] = useState<string[]>([]);
 
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", chapterId],
@@ -296,6 +306,74 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   const resetForm = () => {
     setFormLabel(""); setFormTitle(""); setFormProblem(""); setFormSolution(""); setFormJE("");
+  };
+
+  // Batch generate function
+  const startBatchGenerate = async () => {
+    if (!problems?.length) return;
+    const readyStatuses = ["raw", "imported", "ready", "tagged"];
+    let eligible = problems.filter(p => readyStatuses.includes(p.status));
+    if (!batchForceRegen) {
+      eligible = eligible.filter(p => p.status !== "generated");
+    } else {
+      // Include generated ones too when force regen
+      eligible = problems.filter(p => readyStatuses.includes(p.status) || p.status === "generated");
+    }
+
+    if (eligible.length === 0) {
+      toast.info("No eligible problems to generate variants for.");
+      return;
+    }
+
+    setBatchRunning(true);
+    setBatchTotal(eligible.length);
+    setBatchCompleted(0);
+    setBatchErrors([]);
+
+    for (let i = 0; i < eligible.length; i++) {
+      const problem = eligible[i];
+      setBatchCurrentLabel(problem.ocr_detected_label || problem.source_label || `Problem ${i + 1}`);
+
+      try {
+        const useProblemText = problem.ocr_extracted_problem_text || problem.problem_text;
+        const useSolutionText = problem.ocr_extracted_solution_text || problem.solution_text;
+        const useLabel = problem.ocr_detected_label || problem.source_label;
+        const useTitle = problem.ocr_detected_title || problem.title;
+
+        const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+          body: {
+            mode: "candidates",
+            problemId: problem.id,
+            courseId: problem.course_id,
+            chapterId: problem.chapter_id,
+            sourceLabel: useLabel,
+            title: useTitle,
+            problemText: useProblemText,
+            solutionText: useSolutionText,
+            journalEntryText: problem.journal_entry_text,
+            notes: "",
+            requiresJournalEntry: !!problem.journal_entry_text,
+            difficultyToggles: undefined,
+          },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        // Update status to generated
+        await supabase.from("chapter_problems").update({ status: "generated" }).eq("id", problem.id);
+      } catch (err: any) {
+        const msg = `${problem.source_label}: ${err?.message || "Unknown error"}`;
+        setBatchErrors(prev => [...prev, msg]);
+      }
+
+      setBatchCompleted(i + 1);
+    }
+
+    setBatchRunning(false);
+    setBatchCurrentLabel("");
+    qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+    toast.success(`Batch generation complete: ${eligible.length} problems processed`);
   };
 
   // Re-run OCR mutation (only for failed/re-extract cases)
@@ -843,6 +921,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     );
   }
 
+  const readyCount = problems?.filter(p => ["raw", "imported", "ready", "tagged"].includes(p.status)).length ?? 0;
+
   // ─── Table View ───
   return (
     <div>
@@ -850,6 +930,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         <p className="text-xs text-muted-foreground">
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
+        {readyCount > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={() => { setBatchForceRegen(false); setBatchErrors([]); setBatchModalOpen(true); }}
+          >
+            <Sparkles className="h-3 w-3 mr-1" /> Batch Generate ({readyCount} ready)
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
@@ -974,6 +1064,92 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         open={!!previewProblem}
         onOpenChange={(open) => { if (!open) setPreviewProblem(null); }}
       />
+
+      {/* Batch Generate Modal */}
+      <Dialog open={batchModalOpen} onOpenChange={(o) => { if (!batchRunning) setBatchModalOpen(o); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Batch Generate Variants</DialogTitle>
+            <DialogDescription>
+              Generate 3 AI variants for each READY source problem in this chapter.
+              Variants will NOT be auto-approved.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!batchRunning && batchCompleted === 0 && (
+            <div className="space-y-4">
+              <div className="rounded-md border border-border bg-muted/20 p-3 space-y-1">
+                <p className="text-sm text-foreground"><strong>{readyCount}</strong> problems ready for generation</p>
+                <p className="text-xs text-muted-foreground">Estimated time: ~{Math.ceil(readyCount * 0.5)} minutes</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="force-regen"
+                  checked={batchForceRegen}
+                  onCheckedChange={(v) => setBatchForceRegen(!!v)}
+                />
+                <Label htmlFor="force-regen" className="text-xs cursor-pointer">
+                  Force regenerate (include already GENERATED problems)
+                </Label>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setBatchModalOpen(false)}>Cancel</Button>
+                <Button size="sm" onClick={startBatchGenerate}>
+                  <Sparkles className="h-3 w-3 mr-1" /> Start Batch Generation
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {batchRunning && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground font-medium">{batchCompleted} / {batchTotal} complete</span>
+                  <span className="text-muted-foreground text-xs">{Math.round((batchCompleted / batchTotal) * 100)}%</span>
+                </div>
+                <Progress value={(batchCompleted / batchTotal) * 100} className="h-2" />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                <span>Processing: <strong className="text-foreground">{batchCurrentLabel}</strong></span>
+              </div>
+              {batchErrors.length > 0 && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 space-y-1 max-h-24 overflow-y-auto">
+                  {batchErrors.map((e, i) => (
+                    <p key={i} className="text-[10px] text-destructive">{e}</p>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground">You can navigate away — generation will continue in the background.</p>
+            </div>
+          )}
+
+          {!batchRunning && batchCompleted > 0 && (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Batch complete: {batchCompleted} problems processed</span>
+              </div>
+              {batchErrors.length > 0 && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 space-y-1 max-h-24 overflow-y-auto">
+                  <p className="text-[10px] text-muted-foreground font-semibold">{batchErrors.length} error(s):</p>
+                  {batchErrors.map((e, i) => (
+                    <p key={i} className="text-[10px] text-destructive">{e}</p>
+                  ))}
+                </div>
+              )}
+              <DialogFooter>
+                <Button size="sm" onClick={() => { setBatchModalOpen(false); setBatchCompleted(0); }}>
+                  Done
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
