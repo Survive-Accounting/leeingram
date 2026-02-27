@@ -591,6 +591,62 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{rp.ocr_extracted_problem_text || rp.problem_text || "No problem text"}</p>
           </div>
 
+          {/* Source Reference Toggle */}
+          <Collapsible className="rounded-lg border border-border bg-background/95 overflow-hidden">
+            <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Source Reference</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-foreground/50 transition-transform [[data-state=open]_&]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-4 pb-4 space-y-4">
+                {/* Screenshots side by side */}
+                {(rp.problem_screenshot_urls?.length > 0 || rp.solution_screenshot_urls?.length > 0) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {rp.problem_screenshot_urls?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-foreground/60 mb-1.5">Problem Screenshots</p>
+                        <div className="space-y-2">
+                          {rp.problem_screenshot_urls.map((url: string, i: number) => (
+                            <img key={i} src={url} alt={`Problem screenshot ${i + 1}`} className="w-full rounded-md border border-border bg-white" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {rp.solution_screenshot_urls?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-foreground/60 mb-1.5">Solution Screenshots</p>
+                        <div className="space-y-2">
+                          {rp.solution_screenshot_urls.map((url: string, i: number) => (
+                            <img key={i} src={url} alt={`Solution screenshot ${i + 1}`} className="w-full rounded-md border border-border bg-white" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* OCR Extracted Text */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-foreground/60 mb-1.5">OCR — Problem Text</p>
+                    <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{rp.ocr_extracted_problem_text || rp.problem_text || "—"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-foreground/60 mb-1.5">OCR — Solution Text</p>
+                    <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{rp.ocr_extracted_solution_text || rp.solution_text || "—"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           {/* Variants to Review */}
           {reviewLoading ? (
             <div className="flex items-center justify-center py-8 gap-2 text-foreground font-medium">
