@@ -13,7 +13,7 @@ import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
 export default function ChapterWorkspace() {
-  const { chapterId } = useParams<{ chapterId: string }>();
+  const { chapterId } = useParams<{chapterId: string;}>();
   const [searchParams] = useSearchParams();
   const { saveSession } = useProductionSession();
   const { setWorkspace } = useActiveWorkspace();
@@ -23,15 +23,15 @@ export default function ChapterWorkspace() {
   const { data: chapter } = useQuery({
     queryKey: ["chapter", chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("*, courses(*)")
-        .eq("id", chapterId!)
-        .single();
+      const { data, error } = await supabase.
+      from("chapters").
+      select("*, courses(*)").
+      eq("id", chapterId!).
+      single();
       if (error) throw error;
       return data;
     },
-    enabled: !!chapterId,
+    enabled: !!chapterId
   });
 
 
@@ -39,36 +39,36 @@ export default function ChapterWorkspace() {
   const { data: chapterProblems } = useQuery({
     queryKey: ["chapter-problems-stats", chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapter_problems")
-        .select("status")
-        .eq("chapter_id", chapterId!);
+      const { data, error } = await supabase.
+      from("chapter_problems").
+      select("status").
+      eq("chapter_id", chapterId!);
       if (error) throw error;
       return data;
     },
-    enabled: !!chapterId,
+    enabled: !!chapterId
   });
 
   const { data: chapterAssets } = useQuery({
     queryKey: ["chapter-assets-stats", chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teaching_assets")
-        .select("id")
-        .eq("chapter_id", chapterId!);
+      const { data, error } = await supabase.
+      from("teaching_assets").
+      select("id").
+      eq("chapter_id", chapterId!);
       if (error) throw error;
       return data;
     },
-    enabled: !!chapterId,
+    enabled: !!chapterId
   });
 
-  const course = chapter?.courses as { course_name: string; id: string } | undefined;
+  const course = chapter?.courses as {course_name: string;id: string;} | undefined;
   const chapterNum = chapter?.chapter_number ?? 0;
 
   // Determine last active phase from stats
   const determinePhase = () => {
     if ((chapterAssets?.length ?? 0) > 0) return "Approved";
-    if ((chapterProblems?.filter(p => p.status === "generated" || p.status === "approved").length ?? 0) > 0) return "Generated";
+    if ((chapterProblems?.filter((p) => p.status === "generated" || p.status === "approved").length ?? 0) > 0) return "Generated";
     if ((chapterProblems?.length ?? 0) > 0) return "Source";
     return "Source";
   };
@@ -83,7 +83,7 @@ export default function ChapterWorkspace() {
         chapterName: chapter.chapter_name,
         chapterNumber: chapterNum,
         activeTab,
-        lastPhase: determinePhase(),
+        lastPhase: determinePhase()
       });
       // Also update active workspace
       setWorkspace({
@@ -91,7 +91,7 @@ export default function ChapterWorkspace() {
         courseName: course.course_name,
         chapterId: chapter.id,
         chapterName: chapter.chapter_name,
-        chapterNumber: chapterNum,
+        chapterNumber: chapterNum
       });
     }
   }, [chapter, activeTab]);
@@ -100,8 +100,8 @@ export default function ChapterWorkspace() {
     return (
       <SurviveSidebarLayout>
         <div className="text-muted-foreground">Loading workspace...</div>
-      </SurviveSidebarLayout>
-    );
+      </SurviveSidebarLayout>);
+
   }
 
   const totalSource = chapterProblems?.length ?? 0;
@@ -109,14 +109,14 @@ export default function ChapterWorkspace() {
   const approved = chapterAssets?.length ?? 0;
 
   const stats = [
-    { label: "SOURCE", value: totalSource, max: totalSource || 1 },
-    { label: "GENERATED", value: generated, max: totalSource || 1 },
-    { label: "APPROVED", value: approved, max: totalSource || 1 },
-    { label: "LW READY", value: 0, max: totalSource || 1 },
-    { label: "FILM READY", value: 0, max: totalSource || 1 },
-    { label: "FILMED", value: 0, max: totalSource || 1 },
-    { label: "DEPLOYED", value: 0, max: totalSource || 1 },
-  ];
+  { label: "SOURCE", value: totalSource, max: totalSource || 1 },
+  { label: "GENERATED", value: generated, max: totalSource || 1 },
+  { label: "APPROVED", value: approved, max: totalSource || 1 },
+  { label: "LW READY", value: 0, max: totalSource || 1 },
+  { label: "FILM READY", value: 0, max: totalSource || 1 },
+  { label: "FILMED", value: 0, max: totalSource || 1 },
+  { label: "DEPLOYED", value: 0, max: totalSource || 1 }];
+
 
   return (
     <SurviveSidebarLayout>
@@ -128,20 +128,20 @@ export default function ChapterWorkspace() {
 
       <div className="mb-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wider">{course.course_name}</p>
-        <h1 className="text-xl font-bold text-foreground">
+        <h1 className="text-xl font-bold text-primary-foreground">
           Ch {chapterNum} — {chapter.chapter_name}
         </h1>
       </div>
 
       {/* Progress strip */}
       <div className="grid grid-cols-7 gap-2 mb-5">
-        {stats.map((s) => (
-          <div key={s.label} className="text-center">
+        {stats.map((s) =>
+        <div key={s.label} className="text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{s.label}</p>
-            <Progress value={(s.value / s.max) * 100} className="h-1.5" />
+            <Progress value={s.value / s.max * 100} className="h-1.5" />
             <p className="text-xs font-medium text-foreground mt-0.5">{s.value}</p>
           </div>
-        ))}
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
@@ -163,6 +163,6 @@ export default function ChapterWorkspace() {
           <ExportsTab chapterId={chapterId!} chapterNumber={chapterNum} />
         </TabsContent>
       </Tabs>
-    </SurviveSidebarLayout>
-  );
+    </SurviveSidebarLayout>);
+
 }
