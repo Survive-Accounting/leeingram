@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
-import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,15 +98,12 @@ export default function ContentFactory() {
 
   return (
     <SurviveSidebarLayout>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
-            <Factory className="h-5 w-5 text-primary" />
-            Variant Generator
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Generate exam-style Survive variants from a selected source problem.</p>
-        </div>
-        <WorkspaceSelector />
+      <div className="mb-6">
+        <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
+          <Factory className="h-5 w-5 text-primary" />
+          Variant Generator
+        </h1>
+        <p className="text-xs text-muted-foreground mt-0.5">Generate exam-style Survive variants from a selected source problem.</p>
       </div>
 
       {/* Continue Where You Left Off */}
