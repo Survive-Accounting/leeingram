@@ -1,11 +1,10 @@
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft } from "lucide-react";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { LessonsTab } from "@/components/content-factory/LessonsTab";
 import { ExportsTab } from "@/components/content-factory/ExportsTab";
@@ -120,12 +119,6 @@ export default function ChapterWorkspace() {
 
   return (
     <SurviveSidebarLayout>
-      <div className="mb-3">
-        <Link to="/content" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-3 w-3" /> Variant Generator
-        </Link>
-      </div>
-
       <div className="mb-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wider">{course.course_name}</p>
         <h1 className="text-xl font-bold text-primary-foreground">

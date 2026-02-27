@@ -275,19 +275,19 @@ export default function AssetsLibrary() {
           }
 
           <div className="space-y-4">
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-lg border border-border bg-background/95 p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Survive Problem</h2>
               <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_problem_text || "—"}</p>
             </div>
 
             {viewingAsset.journal_entry_block &&
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-lg border border-border bg-background/95 p-4">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry Block</h2>
                 <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{viewingAsset.journal_entry_block}</pre>
               </div>
             }
 
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-lg border border-border bg-background/95 p-4">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Full Solution Steps</h2>
               <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_solution_text || "—"}</p>
             </div>
@@ -365,7 +365,7 @@ export default function AssetsLibrary() {
       {/* Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
         <Select value={courseFilter} onValueChange={(v) => {setCourseFilter(v);setChapterFilter("all");}}>
-          <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10">
+          <SelectTrigger className="h-8 text-xs bg-background/95 border-border">
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
           <SelectContent>
@@ -377,7 +377,7 @@ export default function AssetsLibrary() {
         </Select>
 
         <Select value={chapterFilter} onValueChange={setChapterFilter}>
-          <SelectTrigger className="h-8 text-xs bg-white/[0.07] border-white/10">
+          <SelectTrigger className="h-8 text-xs bg-background/95 border-border">
             <SelectValue placeholder="All Chapters" />
           </SelectTrigger>
           <SelectContent>
@@ -394,16 +394,16 @@ export default function AssetsLibrary() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, tags, or problem text…"
-            className="h-8 text-xs pl-7 bg-white/[0.07] border-white/10" />
+            className="h-8 text-xs pl-7 bg-background/95 border-border" />
 
         </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-lg overflow-hidden border border-white/10 bg-white/[0.04]">
+      <div className="rounded-lg overflow-hidden border border-border bg-background/95">
         <Table>
           <TableHeader>
-            <TableRow className="border-white/10">
+            <TableRow className="border-border">
               <TableHead className="w-10">
                 <Checkbox
                   checked={assets && assets.length > 0 && selectedIds.size === assets.length}
