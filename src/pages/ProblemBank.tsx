@@ -42,7 +42,7 @@ const STATUS_STYLES: Record<string, string> = {
   ready: "bg-green-500/20 text-green-400 border-green-500/30",
   imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   generated: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  approved: "bg-green-500/20 text-green-400 border-green-500/30",
+  approved: "bg-green-500/20 text-green-400 border-green-500/30"
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -51,7 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
   ready: "Ready",
   imported: "Imported",
   generated: "Generated",
-  approved: "Approved",
+  approved: "Approved"
 };
 
 export default function ProblemBank() {
@@ -87,7 +87,7 @@ export default function ProblemBank() {
       const { data, error } = await supabase.from("courses").select("*").order("course_name");
       if (error) throw error;
       return data;
-    },
+    }
   });
 
   const { data: chapters } = useQuery({
@@ -98,7 +98,7 @@ export default function ProblemBank() {
       const { data, error } = await q;
       if (error) throw error;
       return data;
-    },
+    }
   });
 
   const { data: problems, isLoading } = useQuery({
@@ -112,9 +112,9 @@ export default function ProblemBank() {
       return (data as any[]).map((d) => ({
         ...d,
         problem_screenshot_urls: d.problem_screenshot_urls ?? [],
-        solution_screenshot_urls: d.solution_screenshot_urls ?? [],
+        solution_screenshot_urls: d.solution_screenshot_urls ?? []
       })) as ChapterProblem[];
-    },
+    }
   });
 
   // Workspace-aware course/chapter setters
@@ -127,7 +127,7 @@ export default function ProblemBank() {
         courseName: course.course_name,
         chapterId: "",
         chapterName: "",
-        chapterNumber: 0,
+        chapterNumber: 0
       });
     }
   };
@@ -140,7 +140,7 @@ export default function ProblemBank() {
         ...workspace,
         chapterId: ch.id,
         chapterName: ch.chapter_name,
-        chapterNumber: ch.chapter_number,
+        chapterNumber: ch.chapter_number
       });
     }
   };
@@ -174,7 +174,7 @@ export default function ProblemBank() {
         source_label: formLabel,
         title: formTitle,
         problem_text: "",
-        solution_text: "",
+        solution_text: ""
       }).select("id").single();
       if (error) throw error;
 
@@ -184,8 +184,8 @@ export default function ProblemBank() {
           body: {
             problemId: inserted.id,
             problemImageUrls: problemUrls,
-            solutionImageUrls: solutionUrls,
-          },
+            solutionImageUrls: solutionUrls
+          }
         }).then(() => {
           qc.invalidateQueries({ queryKey: ["chapter-problems"] });
         }).catch((e) => console.error("Auto-OCR failed:", e));
@@ -206,7 +206,7 @@ export default function ProblemBank() {
         toast.success("Source problem saved to Raw queue");
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const updateMutation = useMutation({
@@ -215,7 +215,7 @@ export default function ProblemBank() {
       const updates: any = {
         problem_type: editType || "exercise",
         source_label: editLabel,
-        title: editTitle,
+        title: editTitle
       };
       if ((editLabel || editTitle) && editingProblem.status === "raw") {
         updates.status = "tagged";
@@ -229,7 +229,7 @@ export default function ProblemBank() {
       setEditingProblem(null);
       toast.success("Problem updated");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const deleteMutation = useMutation({
@@ -242,7 +242,7 @@ export default function ProblemBank() {
       setDeleteId(null);
       toast.success("Problem deleted");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const bulkMarkReady = useMutation({
@@ -255,12 +255,12 @@ export default function ProblemBank() {
       setSelectedIds(new Set());
       toast.success("Marked as Ready");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message)
   });
 
   const markReady = async (id: string) => {
     const { error } = await supabase.from("chapter_problems").update({ status: "ready" }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {toast.error(error.message);return;}
     qc.invalidateQueries({ queryKey: ["chapter-problems"] });
     toast.success("Marked as Ready");
   };
@@ -276,7 +276,7 @@ export default function ProblemBank() {
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);else next.add(id);
       return next;
     });
   };
@@ -292,7 +292,7 @@ export default function ProblemBank() {
     <SurviveSidebarLayout>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Problem Import</h1>
+          <h1 className="text-xl font-bold text-primary-foreground">Problem Import</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
           </p>
@@ -327,36 +327,36 @@ export default function ProblemBank() {
       {/* Add button + bulk actions */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex gap-2">
-          {selectedIds.size > 0 && (
-            <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
+          {selectedIds.size > 0 &&
+          <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
               <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Bulk Mark Ready ({selectedIds.size})
             </Button>
-          )}
+          }
         </div>
         <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canAdd}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Add Source Problem
         </Button>
       </div>
 
-      {!canAdd && (
-        <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter above to view and add source problems.</p>
-      )}
+      {!canAdd &&
+      <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter above to view and add source problems.</p>
+      }
 
       {/* Source problems table */}
-      {canAdd && (
-        <div className="rounded-lg overflow-hidden border border-white/10 bg-background/80">
+      {canAdd &&
+      <div className="rounded-lg overflow-hidden border border-white/10 bg-background/80">
           <Table>
             <TableHeader>
               <TableRow className="border-white/10">
                 <TableHead className="w-10">
                   <Checkbox
-                    checked={problems && problems.length > 0 && selectedIds.size === problems.length}
-                    onCheckedChange={() => {
-                      if (!problems) return;
-                      if (selectedIds.size === problems.length) setSelectedIds(new Set());
-                      else setSelectedIds(new Set(problems.map((p) => p.id)));
-                    }}
-                  />
+                  checked={problems && problems.length > 0 && selectedIds.size === problems.length}
+                  onCheckedChange={() => {
+                    if (!problems) return;
+                    if (selectedIds.size === problems.length) setSelectedIds(new Set());else
+                    setSelectedIds(new Set(problems.map((p) => p.id)));
+                  }} />
+
                 </TableHead>
                 <TableHead className="text-xs">Status</TableHead>
                 <TableHead className="text-xs">Label</TableHead>
@@ -368,13 +368,13 @@ export default function ProblemBank() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow>
-              ) : !problems?.length ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No source problems yet. Click "+ Add Source Problem" to start.</TableCell></TableRow>
-              ) : (
-                problems.map((p) => (
-                  <TableRow key={p.id} className="border-white/10">
+              {isLoading ?
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow> :
+            !problems?.length ?
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No source problems yet. Click "+ Add Source Problem" to start.</TableCell></TableRow> :
+
+            problems.map((p) =>
+            <TableRow key={p.id} className="border-white/10">
                     <TableCell>
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </TableCell>
@@ -390,11 +390,11 @@ export default function ProblemBank() {
                     <TableCell className="text-xs">{imgCount(p.solution_screenshot_urls, p.solution_screenshot_url)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {(p.status === "raw" || p.status === "tagged") && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markReady(p.id)}>
+                        {(p.status === "raw" || p.status === "tagged") &&
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markReady(p.id)}>
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Ready
                           </Button>
-                        )}
+                  }
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)}>
                           <Eye className="h-3 w-3" />
                         </Button>
@@ -407,12 +407,12 @@ export default function ProblemBank() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+            )
+            }
             </TableBody>
           </Table>
         </div>
-      )}
+      }
 
       {/* Add Source Problem Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
@@ -429,8 +429,8 @@ export default function ProblemBank() {
                 label="Paste or drop problem images"
                 files={problemFiles}
                 onAdd={(files) => setProblemFiles((prev) => [...prev, ...files])}
-                onRemove={(i) => setProblemFiles((prev) => prev.filter((_, idx) => idx !== i))}
-              />
+                onRemove={(i) => setProblemFiles((prev) => prev.filter((_, idx) => idx !== i))} />
+
             </div>
 
             <div>
@@ -439,8 +439,8 @@ export default function ProblemBank() {
                 label="Paste or drop solution images"
                 files={solutionFiles}
                 onAdd={(files) => setSolutionFiles((prev) => [...prev, ...files])}
-                onRemove={(i) => setSolutionFiles((prev) => prev.filter((_, idx) => idx !== i))}
-              />
+                onRemove={(i) => setSolutionFiles((prev) => prev.filter((_, idx) => idx !== i))} />
+
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -467,10 +467,10 @@ export default function ProblemBank() {
 
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" variant="outline" onClick={() => { setSaveAndAddNext(true); saveMutation.mutate(); }} disabled={saveMutation.isPending || problemFiles.length === 0}>
+            <Button size="sm" variant="outline" onClick={() => {setSaveAndAddNext(true);saveMutation.mutate();}} disabled={saveMutation.isPending || problemFiles.length === 0}>
               {saveMutation.isPending && saveAndAddNext ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save & Add Next"}
             </Button>
-            <Button size="sm" onClick={() => { setSaveAndAddNext(false); saveMutation.mutate(); }} disabled={saveMutation.isPending || problemFiles.length === 0}>
+            <Button size="sm" onClick={() => {setSaveAndAddNext(false);saveMutation.mutate();}} disabled={saveMutation.isPending || problemFiles.length === 0}>
               {saveMutation.isPending && !saveAndAddNext ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Saving…</> : "Save Source Problem"}
             </Button>
           </DialogFooter>
@@ -485,18 +485,18 @@ export default function ProblemBank() {
             <DialogDescription>Update label, title, and type. Saving with label/title auto-tags the item.</DialogDescription>
           </DialogHeader>
 
-          {editingProblem && (
-            <>
-              {(editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) && (
-                <div className="flex gap-2 flex-wrap">
-                  {(editingProblem.problem_screenshot_urls.length > 0
-                    ? editingProblem.problem_screenshot_urls
-                    : [editingProblem.problem_screenshot_url].filter(Boolean)
-                  ).map((url, i) => (
-                    <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
-                  ))}
-                </div>
+          {editingProblem &&
+          <>
+              {(editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) &&
+            <div className="flex gap-2 flex-wrap">
+                  {(editingProblem.problem_screenshot_urls.length > 0 ?
+              editingProblem.problem_screenshot_urls :
+              [editingProblem.problem_screenshot_url].filter(Boolean)).
+              map((url, i) =>
+              <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
               )}
+                </div>
+            }
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -520,7 +520,7 @@ export default function ProblemBank() {
                 </div>
               </div>
             </>
-          )}
+          }
 
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
@@ -551,8 +551,8 @@ export default function ProblemBank() {
       <SourceProblemPreview
         problem={previewProblem}
         open={!!previewProblem}
-        onOpenChange={(open) => { if (!open) setPreviewProblem(null); }}
-      />
-    </SurviveSidebarLayout>
-  );
+        onOpenChange={(open) => {if (!open) setPreviewProblem(null);}} />
+
+    </SurviveSidebarLayout>);
+
 }
