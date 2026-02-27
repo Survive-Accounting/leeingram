@@ -148,9 +148,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <div
             className="rounded-xl p-5"
             style={{
-              background: "rgba(0,0,0,0.45)",
+              background: "rgba(10,15,25,0.75)",
               backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.12)",
             }}
           >
             {children}
