@@ -311,13 +311,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   // Batch generate function
   const startBatchGenerate = async () => {
     if (!problems?.length) return;
-    const readyStatuses = ["raw", "imported", "ready", "tagged"];
-    let eligible = problems.filter(p => readyStatuses.includes(p.status));
-    if (!batchForceRegen) {
-      eligible = eligible.filter(p => p.status !== "generated");
-    } else {
-      // Include generated ones too when force regen
-      eligible = problems.filter(p => readyStatuses.includes(p.status) || p.status === "generated");
+    let eligible = problems.filter(p => p.status === "ready");
+    if (batchForceRegen) {
+      // Also include already-generated problems for re-generation
+      eligible = problems.filter(p => p.status === "ready" || p.status === "generated");
     }
 
     if (eligible.length === 0) {
@@ -921,7 +918,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     );
   }
 
-  const readyCount = problems?.filter(p => ["raw", "imported", "ready", "tagged"].includes(p.status)).length ?? 0;
+  const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
 
   // ─── Table View ───
   return (
@@ -1066,7 +1063,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       />
 
       {/* Batch Generate Modal */}
-      <Dialog open={batchModalOpen} onOpenChange={(o) => { if (!batchRunning) setBatchModalOpen(o); }}>
+      <Dialog open={batchModalOpen} onOpenChange={(o) => { if (!o) { setBatchModalOpen(false); if (!batchRunning) setBatchCompleted(0); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Batch Generate Variants</DialogTitle>
