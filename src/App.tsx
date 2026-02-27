@@ -18,6 +18,8 @@ import ExportSets from "./pages/ExportSets";
 import ExportSetDetail from "./pages/ExportSetDetail";
 import FilmingControlPanel from "./pages/FilmingControlPanel";
 import TutoringControlPanel from "./pages/TutoringControlPanel";
+import TutoringReview from "./pages/TutoringReview";
+import TutoringReviewDetail from "./pages/TutoringReviewDetail";
 import FocusTimer from "./pages/FocusTimer";
 import CreateLesson from "./pages/CreateLesson";
 import LessonDetail from "./pages/LessonDetail";
@@ -74,6 +76,8 @@ const AppRoutes = () => {
       <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
       <Route path="/filming" element={<ProtectedRoute><FilmingControlPanel /></ProtectedRoute>} />
       <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
+      <Route path="/tutoring/review" element={<ProtectedRoute><TutoringReview /></ProtectedRoute>} />
+      <Route path="/tutoring/review/:problemId" element={<ProtectedRoute><TutoringReviewDetail /></ProtectedRoute>} />
       <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />
       <Route path="/focus" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
       <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />

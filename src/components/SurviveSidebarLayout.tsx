@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, ListChecks, Workflow } from "lucide-react";
+import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, ListChecks, Workflow, GraduationCap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Assets Library", sub: "Approved problems vault", path: "/assets-library", icon: Library },
   { label: "Export Sets", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package },
   { label: "Filming Queue", sub: "Video walkthrough tracking", path: "/filming", icon: Video },
+  { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap },
 ];
 
 const STEPS_PAGES = ["/problem-bank", "/assets-library", "/export-sets", "/content", "/filming"];

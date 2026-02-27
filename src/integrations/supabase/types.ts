@@ -1082,10 +1082,12 @@ export type Database = {
           journal_entry_block: string | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
+          last_tutored_at: string | null
           source_ref: string | null
           survive_problem_text: string
           survive_solution_text: string
           tags: string[]
+          times_used: number
           updated_at: string
         }
         Insert: {
@@ -1100,10 +1102,12 @@ export type Database = {
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
+          last_tutored_at?: string | null
           source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
           tags?: string[]
+          times_used?: number
           updated_at?: string
         }
         Update: {
@@ -1118,10 +1122,12 @@ export type Database = {
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
+          last_tutored_at?: string | null
           source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
           tags?: string[]
+          times_used?: number
           updated_at?: string
         }
         Relationships: [
