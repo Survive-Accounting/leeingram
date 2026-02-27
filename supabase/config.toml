@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.extract-ocr]
 verify_jwt = false
+
+[functions.refine-topics]
+verify_jwt = false

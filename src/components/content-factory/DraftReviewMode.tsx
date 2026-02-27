@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Check, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Check, FileText, Lock, AlertTriangle, RotateCw, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { assignTopicByRules } from "@/lib/topicAssignment";
 
 interface Props {
   chapterId: string;
@@ -29,7 +31,14 @@ export function DraftReviewMode({ chapterId, courseId, chapterNumber }: Props) {
   const qc = useQueryClient();
   const [selectedTopic, setSelectedTopic] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showNeedsReview, setShowNeedsReview] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [rerunOpen, setRerunOpen] = useState(false);
+  const [rerunOverrideLocked, setRerunOverrideLocked] = useState(false);
+  const [rerunning, setRerunning] = useState(false);
+  const [refineOpen, setRefineOpen] = useState(false);
+  const [refining, setRefining] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const { data: topics } = useQuery({
     queryKey: ["chapter-topics", chapterId],
@@ -50,12 +59,37 @@ export function DraftReviewMode({ chapterId, courseId, chapterNumber }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lw_items")
-        .select("*, chapter_topics(topic_name), chapter_problems(source_label)")
+        .select("*, chapter_topics(topic_name), chapter_problems(source_label, problem_text, title)")
         .eq("chapter_id", chapterId)
         .order("created_at");
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: course } = useQuery({
+    queryKey: ["course-for-rules", courseId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("courses").select("code").eq("id", courseId).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: topicRules } = useQuery({
+    queryKey: ["topic-rules", course?.code, chapterNumber],
+    queryFn: async () => {
+      if (!course?.code) return [];
+      const { data, error } = await supabase
+        .from("topic_rules")
+        .select("*")
+        .eq("course_short", course.code)
+        .eq("chapter_number", chapterNumber)
+        .order("priority", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!course?.code,
   });
 
   const updateItem = useMutation({
@@ -79,9 +113,149 @@ export function DraftReviewMode({ chapterId, courseId, chapterNumber }: Props) {
     },
   });
 
+  // Handle topic change with lock
+  const changeTopicForItem = (itemId: string, topicId: string) => {
+    updateItem.mutate({
+      id: itemId,
+      updates: { topic_id: topicId, topic_locked: true, needs_topic_review: false },
+    });
+    toast.success("Topic updated & locked");
+  };
+
+  // Re-run topic assignment
+  const handleRerunTopicAssignment = async () => {
+    if (!lwItems || !topics || !topicRules) return;
+    setRerunning(true);
+
+    const activeTopics = topics.filter(t => t.is_active);
+    let updated = 0;
+
+    for (const item of lwItems) {
+      if (item.topic_locked && !rerunOverrideLocked) continue;
+
+      const context = {
+        problem_text: (item as any).chapter_problems?.problem_text || "",
+        problem_title: (item as any).chapter_problems?.title || "",
+        lw_question_text: item.question_text || "",
+      };
+
+      const { topicId, usedFallback } = assignTopicByRules(
+        topicRules as any[],
+        activeTopics as any[],
+        context,
+        item.item_label
+      );
+
+      if (topicId && topicId !== item.topic_id) {
+        await supabase.from("lw_items").update({
+          topic_id: topicId,
+          needs_topic_review: usedFallback,
+          ...(rerunOverrideLocked ? { topic_locked: false } : {}),
+        }).eq("id", item.id);
+        updated++;
+      }
+    }
+
+    setRerunning(false);
+    setRerunOpen(false);
+    qc.invalidateQueries({ queryKey: ["lw-items", chapterId] });
+    toast.success(`Re-assigned topics for ${updated} items`);
+  };
+
+  // AI Refine Topics
+  const handleRefineSuggestions = async () => {
+    setRefining(true);
+    setSuggestions([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("refine-topics", {
+        body: {
+          chapterId,
+          chapterNumber,
+          courseCode: course?.code || "",
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSuggestions(data.suggestions || []);
+      setRefineOpen(true);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to get AI suggestions");
+    } finally {
+      setRefining(false);
+    }
+  };
+
+  // Accept suggestion
+  const acceptSuggestion = async (suggestion: any, index: number) => {
+    try {
+      const d = suggestion.details;
+      switch (suggestion.type) {
+        case "rename": {
+          await supabase.from("chapter_topics").update({ topic_name: d.newName }).eq("id", d.topicId);
+          break;
+        }
+        case "merge": {
+          await supabase.from("lw_items").update({ topic_id: d.targetTopicId }).eq("topic_id", d.sourceTopicId);
+          await supabase.from("chapter_topics").update({ is_active: false }).eq("id", d.sourceTopicId);
+          break;
+        }
+        case "create": {
+          const maxOrder = (topics ?? []).reduce((max, t) => Math.max(max, t.display_order), 0) + 1;
+          const { data: newTopic } = await supabase.from("chapter_topics").insert({
+            chapter_id: chapterId,
+            topic_name: d.newTopicName,
+            display_order: maxOrder,
+          }).select("id").single();
+          if (newTopic && d.itemKeysToMove?.length) {
+            await supabase.from("lw_items")
+              .update({ topic_id: newTopic.id })
+              .eq("chapter_id", chapterId)
+              .in("item_key", d.itemKeysToMove);
+          }
+          break;
+        }
+        case "split": {
+          const maxOrder2 = (topics ?? []).reduce((max, t) => Math.max(max, t.display_order), 0) + 1;
+          const { data: splitTopic } = await supabase.from("chapter_topics").insert({
+            chapter_id: chapterId,
+            topic_name: d.newTopicName,
+            display_order: maxOrder2,
+          }).select("id").single();
+          if (splitTopic && d.itemKeysToMove?.length) {
+            await supabase.from("lw_items")
+              .update({ topic_id: splitTopic.id })
+              .eq("chapter_id", chapterId)
+              .in("item_key", d.itemKeysToMove);
+          }
+          break;
+        }
+        case "rule_add": {
+          await supabase.from("topic_rules").insert({
+            course_short: course?.code || "",
+            chapter_number: chapterNumber,
+            topic_name: d.topicName,
+            pattern: d.pattern,
+            match_field: d.matchField || "problem_text",
+            priority: 5,
+          });
+          break;
+        }
+      }
+
+      setSuggestions(prev => prev.filter((_, i) => i !== index));
+      qc.invalidateQueries({ queryKey: ["chapter-topics", chapterId] });
+      qc.invalidateQueries({ queryKey: ["lw-items", chapterId] });
+      qc.invalidateQueries({ queryKey: ["topic-rules"] });
+      toast.success(`Applied: ${suggestion.description}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   const filtered = (lwItems ?? []).filter(item => {
     if (selectedTopic !== "all" && item.topic_id !== selectedTopic) return false;
     if (statusFilter !== "all" && item.status !== statusFilter) return false;
+    if (showNeedsReview && !item.needs_topic_review) return false;
     return true;
   });
 
@@ -89,6 +263,7 @@ export function DraftReviewMode({ chapterId, courseId, chapterNumber }: Props) {
     drafted: (lwItems ?? []).filter(i => i.status === "drafted").length,
     approved: (lwItems ?? []).filter(i => i.status === "approved").length,
     banked: (lwItems ?? []).filter(i => i.status === "banked").length,
+    needsReview: (lwItems ?? []).filter(i => i.needs_topic_review).length,
   };
 
   return (
@@ -123,7 +298,31 @@ export function DraftReviewMode({ chapterId, courseId, chapterNumber }: Props) {
             </SelectContent>
           </Select>
         </div>
-        <div className="ml-auto flex gap-2 text-xs">
+        {statusCounts.needsReview > 0 && (
+          <Button
+            size="sm"
+            variant={showNeedsReview ? "default" : "outline"}
+            className="h-8 text-xs"
+            onClick={() => setShowNeedsReview(!showNeedsReview)}
+          >
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Needs Review ({statusCounts.needsReview})
+          </Button>
+        )}
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setRerunOpen(true)}>
+            <RotateCw className="h-3 w-3 mr-1" /> Re-run Assignment
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={handleRefineSuggestions}
+            disabled={refining}
+          >
+            {refining ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Refine Topics (AI)
+          </Button>
           <Badge variant="outline">{filtered.length} items</Badge>
         </div>
       </div>
@@ -139,30 +338,113 @@ export function DraftReviewMode({ chapterId, courseId, chapterNumber }: Props) {
             <LWItemCard
               key={item.id}
               item={item}
+              topics={topics ?? []}
               isEditing={editingItem === item.id}
               onToggleEdit={() => setEditingItem(editingItem === item.id ? null : item.id)}
               onUpdate={(updates) => updateItem.mutate({ id: item.id, updates })}
               onApprove={() => approveItem.mutate(item.id)}
+              onChangeTopic={(topicId) => changeTopicForItem(item.id, topicId)}
             />
           ))}
         </div>
       )}
+
+      {/* Re-run Dialog */}
+      <Dialog open={rerunOpen} onOpenChange={setRerunOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Re-run Topic Assignment</DialogTitle>
+            <DialogDescription>
+              Re-apply topic rules to all LW items. Locked items are skipped by default.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={rerunOverrideLocked}
+              onCheckedChange={(v) => setRerunOverrideLocked(!!v)}
+            />
+            <Label className="text-xs">Override locked topics (reset manual assignments)</Label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setRerunOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleRerunTopicAssignment} disabled={rerunning}>
+              {rerunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RotateCw className="h-3 w-3 mr-1" />}
+              {rerunning ? "Running…" : "Re-run"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Suggestions Dialog */}
+      <Dialog open={refineOpen} onOpenChange={setRefineOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" /> AI Topic Suggestions
+            </DialogTitle>
+            <DialogDescription>
+              Review each suggestion and accept or dismiss.
+            </DialogDescription>
+          </DialogHeader>
+          {suggestions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Topics look well-organized — no suggestions.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {suggestions.map((s, i) => (
+                <Card key={i} className="border-border">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <Badge variant="outline" className="text-[10px] mb-1">{s.type}</Badge>
+                        <p className="text-xs text-foreground">{s.description}</p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px]"
+                          onClick={() => setSuggestions(prev => prev.filter((_, idx) => idx !== i))}
+                        >
+                          Dismiss
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-7 text-[10px]"
+                          onClick={() => acceptSuggestion(s, i)}
+                        >
+                          <Check className="h-3 w-3 mr-1" /> Accept
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function LWItemCard({
   item,
+  topics,
   isEditing,
   onToggleEdit,
   onUpdate,
   onApprove,
+  onChangeTopic,
 }: {
   item: any;
+  topics: any[];
   isEditing: boolean;
   onToggleEdit: () => void;
   onUpdate: (updates: Record<string, any>) => void;
   onApprove: () => void;
+  onChangeTopic: (topicId: string) => void;
 }) {
   const sourceLabel = item.chapter_problems?.source_label ?? "—";
   const topicName = item.chapter_topics?.topic_name ?? "Unassigned";
@@ -178,6 +460,12 @@ function LWItemCard({
             <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[item.status] || ""}`}>
               {item.status}
             </Badge>
+            {item.topic_locked && (
+              <span title="Topic manually locked"><Lock className="h-3 w-3 text-muted-foreground" /></span>
+            )}
+            {item.needs_topic_review && (
+              <span title="Needs topic review (fallback used)"><AlertTriangle className="h-3 w-3 text-amber-400" /></span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
@@ -202,7 +490,19 @@ function LWItemCard({
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-2">
           <span>Source: {sourceLabel}</span>
           <span>•</span>
-          <span>Topic: {topicName}</span>
+          <Select
+            value={item.topic_id || ""}
+            onValueChange={(v) => onChangeTopic(v)}
+          >
+            <SelectTrigger className="h-5 w-auto min-w-[120px] text-[10px] border-none bg-transparent p-0 gap-1">
+              <span>Topic: {topicName}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {topics.map(t => (
+                <SelectItem key={t.id} value={t.id} className="text-xs">{t.topic_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <span>•</span>
           <span>Type: {item.lw_type}</span>
         </div>
@@ -227,7 +527,6 @@ function LWItemEditor({ item, onUpdate }: { item: any; onUpdate: (u: Record<stri
   const [answers, setAnswers] = useState<string[]>(
     Array.from({ length: 10 }, (_, i) => item[`answer_${i + 1}`] || "")
   );
-  const [topicId, setTopicId] = useState(item.topic_id || "");
 
   const save = () => {
     const updates: Record<string, any> = {
@@ -237,7 +536,6 @@ function LWItemEditor({ item, onUpdate }: { item: any; onUpdate: (u: Record<stri
       incorrect_explanation: incorrectExplanation,
     };
     answers.forEach((a, i) => { updates[`answer_${i + 1}`] = a; });
-    if (topicId) updates.topic_id = topicId;
     onUpdate(updates);
     toast.success("Item updated");
   };

@@ -791,10 +791,12 @@ export type Database = {
           item_key: string
           item_label: string
           lw_type: string
+          needs_topic_review: boolean
           question_text: string
           source_problem_id: string
           status: string
           topic_id: string | null
+          topic_locked: boolean
           updated_at: string
         }
         Insert: {
@@ -820,10 +822,12 @@ export type Database = {
           item_key?: string
           item_label?: string
           lw_type?: string
+          needs_topic_review?: boolean
           question_text?: string
           source_problem_id: string
           status?: string
           topic_id?: string | null
+          topic_locked?: boolean
           updated_at?: string
         }
         Update: {
@@ -849,10 +853,12 @@ export type Database = {
           item_key?: string
           item_label?: string
           lw_type?: string
+          needs_topic_review?: boolean
           question_text?: string
           source_problem_id?: string
           status?: string
           topic_id?: string | null
+          topic_locked?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -1310,6 +1316,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      topic_rules: {
+        Row: {
+          chapter_number: number
+          course_short: string
+          created_at: string
+          id: string
+          match_field: string
+          pattern: string
+          priority: number
+          topic_name: string
+        }
+        Insert: {
+          chapter_number: number
+          course_short: string
+          created_at?: string
+          id?: string
+          match_field?: string
+          pattern: string
+          priority?: number
+          topic_name: string
+        }
+        Update: {
+          chapter_number?: number
+          course_short?: string
+          created_at?: string
+          id?: string
+          match_field?: string
+          pattern?: string
+          priority?: number
+          topic_name?: string
+        }
+        Relationships: []
       }
       topic_templates: {
         Row: {
