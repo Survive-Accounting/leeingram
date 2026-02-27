@@ -575,8 +575,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
           {/* Variants to Review */}
           {reviewLoading ? (
-            <div className="flex items-center justify-center py-8 gap-2 text-foreground/70">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading variants…
+            <div className="flex items-center justify-center py-8 gap-2 text-foreground font-medium">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading variants…
             </div>
           ) : allCandidates.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-background/95 p-6 text-center space-y-3">

@@ -88,7 +88,7 @@ export default function ExportSets() {
           </TableHeader>
           <TableBody>
             {isLoading ?
-            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">Loading…</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={4} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
             !sets?.length ?
             <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground text-xs">No export sets yet</TableCell></TableRow> :
 

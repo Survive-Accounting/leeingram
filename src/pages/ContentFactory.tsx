@@ -83,7 +83,7 @@ export default function ContentFactory() {
   if (isLoading) {
     return (
       <SurviveSidebarLayout>
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-foreground/80">Loading...</div>
       </SurviveSidebarLayout>
     );
   }
