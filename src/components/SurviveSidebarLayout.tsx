@@ -57,24 +57,24 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         <div className="flex h-14 items-center gap-3 px-4">
           <button
             onClick={() => navigate("/domains")}
-            className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs uppercase tracking-widest"
+            className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-xs uppercase tracking-widest"
           >
             <Home className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Home</span>
           </button>
           <span className="text-white/20">|</span>
           <h1 className="font-semibold text-white text-sm">Survive Accounting</h1>
-          <span className="text-xs text-white/40 hidden sm:inline">Scalable Teaching Assets</span>
+          <span className="text-xs text-white/65 hidden sm:inline">Scalable Teaching Assets</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-white/50 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-white/70 hover:text-white hover:bg-white/10">
               <Workflow className="mr-1 h-3.5 w-3.5" /> {workflowMode ? "Dashboard View" : "Workflow View"}
             </Button>
-            <Button variant="ghost" size="sm" asChild className="text-white/50 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" asChild className="text-white/70 hover:text-white hover:bg-white/10">
               <Link to="/style-guide">
                 <Settings className="mr-1 h-3.5 w-3.5" /> Preferences
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-white/50 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" onClick={signOut} className="text-white/70 hover:text-white hover:bg-white/10">
               <LogOut className="mr-1 h-3.5 w-3.5" /> Sign Out
             </Button>
           </div>
@@ -104,13 +104,13 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                         "flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors",
                         active
                           ? "bg-white/15 text-white font-medium"
-                          : "text-white/50 hover:text-white hover:bg-white/8"
+                          : "text-white/70 hover:text-white hover:bg-white/8"
                       )}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
                       <div className="min-w-0">
                         <span className="text-sm block">{item.label}</span>
-                        {item.sub && <span className="text-[10px] text-white/30 block leading-tight">{item.sub}</span>}
+                        {item.sub && <span className="text-[10px] text-white/50 block leading-tight">{item.sub}</span>}
                       </div>
                     </Link>
                   );
@@ -122,7 +122,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                     to="/marketing"
                     className={cn(
                       "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                      isActive("/marketing") ? "bg-white/15 text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                      isActive("/marketing") ? "bg-white/15 text-white font-medium" : "text-white/60 hover:text-white/80 hover:bg-white/5"
                     )}
                   >
                     Marketing
@@ -131,7 +131,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                     to="/ideas?domain=survive"
                     className={cn(
                       "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                      location.pathname === "/ideas" ? "bg-white/15 text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                      location.pathname === "/ideas" ? "bg-white/15 text-white font-medium" : "text-white/60 hover:text-white/80 hover:bg-white/5"
                     )}
                   >
                     Ideas
