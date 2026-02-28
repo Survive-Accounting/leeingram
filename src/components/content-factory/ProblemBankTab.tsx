@@ -117,6 +117,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
   const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
   const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set());
+  const [genProvider, setGenProvider] = useState<"lovable" | "openai">("lovable");
+  const [genModel, setGenModel] = useState("gpt-4.1");
 
   // Rejection feedback state
   const [rejectingIndex, setRejectingIndex] = useState<number | null>(null);
@@ -304,6 +306,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           journalEntryText: problem.journal_entry_text,
           notes: afNotes,
           requiresJournalEntry: afRequiresJE,
+          provider: genProvider,
+          model: genProvider === "openai" ? genModel : undefined,
           difficultyToggles: activeDiffToggles.length > 0
             ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
             : undefined,
@@ -1152,7 +1156,26 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             </div>
           </div>
 
-          {/* Exam Difficulty Options */}
+          {/* AI Provider Selection */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <Label className="text-xs text-foreground/80">Provider:</Label>
+            <Select value={genProvider} onValueChange={(v) => setGenProvider(v as any)}>
+              <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lovable">Lovable</SelectItem>
+                <SelectItem value="openai">OpenAI</SelectItem>
+              </SelectContent>
+            </Select>
+            {genProvider === "openai" && (
+              <Select value={genModel} onValueChange={setGenModel}>
+                <SelectTrigger className="h-7 text-xs w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gpt-4.1">gpt-4.1 (accuracy)</SelectItem>
+                  <SelectItem value="gpt-4o-mini">gpt-4o-mini (cheap)</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <Collapsible className="mb-4">
             <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold text-foreground/70 hover:text-foreground transition-colors">
               <AlertTriangle className="h-3 w-3" />
@@ -1190,7 +1213,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               {generateMutation.isPending ? (
                 <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
               ) : (
-                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate {vCount} Variants</>
+                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate {vCount} Variants ({genProvider === "openai" ? `OpenAI/${genModel}` : "Lovable"})</>
               )}
             </Button>
 

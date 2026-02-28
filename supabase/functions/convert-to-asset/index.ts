@@ -122,10 +122,20 @@ serve(async (req) => {
       notes,
       requiresJournalEntry,
       difficultyToggles,
+      provider: reqProvider,
+      model: reqModel,
     } = body;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const provider = reqProvider || "lovable";
+    const aiModel = reqModel || "google/gemini-3-flash-preview";
+
+    if (provider === "lovable") {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    } else if (provider === "openai") {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
+    }
 
     // Fetch user's variant generation settings
     const userId = claimsData.claims.sub;
@@ -233,55 +243,111 @@ ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "create_teaching_asset_candidates",
-              description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
-              parameters: {
-                type: "object",
-                properties: {
-                  candidates: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        asset_name: { type: "string", description: "Short clear name for this variant" },
-                        tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
-                        survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
-                        journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
-                        answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
-                        survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
-                        exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
+    let response: Response;
+
+    if (provider === "openai") {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
+      response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "create_teaching_asset_candidates",
+                description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
+                parameters: {
+                  type: "object",
+                  properties: {
+                    candidates: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          asset_name: { type: "string", description: "Short clear name for this variant" },
+                          tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
+                          survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
+                          journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
+                          answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
+                          survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
+                          exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
+                        },
+                        required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
+                        additionalProperties: false,
                       },
-                      required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
-                      additionalProperties: false,
+                      description: `Exactly ${variantCount} candidate teaching assets`,
                     },
-                    description: `Exactly ${variantCount} candidate teaching assets`,
                   },
+                  required: ["candidates"],
+                  additionalProperties: false,
                 },
-                required: ["candidates"],
-                additionalProperties: false,
               },
             },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "create_teaching_asset_candidates" } },
-      }),
-    });
+          ],
+          tool_choice: { type: "function", function: { name: "create_teaching_asset_candidates" } },
+        }),
+      });
+    } else {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "create_teaching_asset_candidates",
+                description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
+                parameters: {
+                  type: "object",
+                  properties: {
+                    candidates: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          asset_name: { type: "string", description: "Short clear name for this variant" },
+                          tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
+                          survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
+                          journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
+                          answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
+                          survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
+                          exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
+                        },
+                        required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
+                        additionalProperties: false,
+                      },
+                      description: `Exactly ${variantCount} candidate teaching assets`,
+                    },
+                  },
+                  required: ["candidates"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "create_teaching_asset_candidates" } },
+        }),
+      });
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
