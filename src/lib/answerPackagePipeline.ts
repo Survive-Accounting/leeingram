@@ -278,6 +278,7 @@ export async function normalizeValidatePersistAnswerPackage(
     answer_payload: cleanPayload,
     extracted_inputs: draft.extracted_inputs ?? {},
     computed_values: draft.computed_values ?? {},
+    requires_je: requiresJE,
   };
   const validationResults = runValidation(pkgData);
   const failCount = validationResults.filter(r => r.status === "fail").length;

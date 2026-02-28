@@ -122,11 +122,12 @@ function entryBalance(section: JESection): { balanced: boolean; diff: number } {
   return { balanced: Math.abs(d - c) < 0.02, diff: Math.abs(d - c) };
 }
 
-function runSingleEntryValidation(section: JESection): ValidationResult[] {
+function runSingleEntryValidation(section: JESection, reqJE?: boolean): ValidationResult[] {
   const pkg: AnswerPackageData = {
     answer_payload: { teaching_aids: { journal_entries: [section] } },
     extracted_inputs: {},
     computed_values: {},
+    requires_je: reqJE,
   };
   return runValidation(pkg);
 }
@@ -258,7 +259,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
 
       // Initialize entry meta — all start as draft with per-entry validation
       const meta: EntryMeta[] = s.map(sec => {
-        const vr = runSingleEntryValidation(sec);
+        const vr = runSingleEntryValidation(sec, needsJE);
         return {
           status: "draft" as EntryStatus,
           originalLines: JSON.parse(JSON.stringify(sec.lines)),
@@ -287,6 +288,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       answer_payload: { teaching_aids: { journal_entries: s } },
       extracted_inputs: {},
       computed_values: {},
+      requires_je: requiresJE,
     };
     setGlobalValidation(runValidation(pkg));
   };
@@ -326,7 +328,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     setHasEdits(true);
 
     // Update entry meta — re-validate and mark corrected
-    const vr = runSingleEntryValidation(newSection);
+    const vr = runSingleEntryValidation(newSection, requiresJE);
     setEntryMeta(prev => prev.map((m, i) => i === si ? {
       ...m,
       status: m.status === "validated" ? "corrected" : (m.status === "draft" ? "corrected" : m.status),
@@ -755,7 +757,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                 setEntryMeta(prev => prev.map((m, i) => ({
                   ...m,
                   status: "corrected" as EntryStatus,
-                  validationResults: runSingleEntryValidation(fixedSections[i] || sections[i]),
+                  validationResults: runSingleEntryValidation(fixedSections[i] || sections[i], requiresJE),
                 })));
                 runGlobalValidation(fixedSections);
                 toast.success(desc);

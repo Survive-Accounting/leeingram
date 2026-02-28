@@ -99,7 +99,10 @@ const NARRATIVE_PREFIX_PATTERN = /^.{4,}:\s*/;
 // ─── V1: JE_BALANCES (HARD) ───
 export const jeBalances: Validator = (pkg) => {
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "JE_BALANCES", status: "pass", message: "No JE sections found, skipped" };
+  if (sections.length === 0) {
+    if (pkg.requires_je) return { validator: "JE_BALANCES", status: "fail", message: "Structured JE required but missing — cannot check balance" };
+    return { validator: "JE_BALANCES", status: "pass", message: "No JE sections found, skipped" };
+  }
 
   const failures: string[] = [];
   const details: Record<string, any> = { sections: [] };
@@ -127,7 +130,10 @@ export const jeBalances: Validator = (pkg) => {
 // ─── V2: NO_DATES_IN_ACCOUNT_NAMES (HARD) ───
 export const noDatesInAccountNames: Validator = (pkg) => {
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "NO_DATES_IN_ACCOUNT_NAMES", status: "pass", message: "No JE, skipped" };
+  if (sections.length === 0) {
+    if (pkg.requires_je) return { validator: "NO_DATES_IN_ACCOUNT_NAMES", status: "fail", message: "Structured JE required but missing — cannot check account names" };
+    return { validator: "NO_DATES_IN_ACCOUNT_NAMES", status: "pass", message: "No JE, skipped" };
+  }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; matchedPattern: string }> = [];
 
@@ -157,7 +163,10 @@ export const noDatesInAccountNames: Validator = (pkg) => {
 // ─── V3: NO_NARRATIVE_PREFIX_IN_ACCOUNT_NAMES (HARD) ───
 export const noNarrativePrefixInAccountNames: Validator = (pkg) => {
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "NO_NARRATIVE_PREFIX", status: "pass", message: "No JE, skipped" };
+  if (sections.length === 0) {
+    if (pkg.requires_je) return { validator: "NO_NARRATIVE_PREFIX", status: "fail", message: "Structured JE required but missing — cannot check for narrative prefixes" };
+    return { validator: "NO_NARRATIVE_PREFIX", status: "pass", message: "No JE, skipped" };
+  }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; prefix: string; suggestedName: string }> = [];
 
@@ -192,7 +201,10 @@ export const noNarrativePrefixInAccountNames: Validator = (pkg) => {
 // ─── V4: ONE_SIDED_ROWS (HARD) ───
 export const oneSidedRows: Validator = (pkg) => {
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "ONE_SIDED_ROWS", status: "pass", message: "No JE, skipped" };
+  if (sections.length === 0) {
+    if (pkg.requires_je) return { validator: "ONE_SIDED_ROWS", status: "fail", message: "Structured JE required but missing — cannot check row sides" };
+    return { validator: "ONE_SIDED_ROWS", status: "pass", message: "No JE, skipped" };
+  }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; issue: "both" | "neither" }> = [];
 
@@ -224,7 +236,11 @@ const CASH_CREDIT_WARN_KEYWORDS = ["issue", "proceeds", "borrow", "collected", "
 
 export const cashDirectionSanity: Validator = (pkg) => {
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "CASH_DIRECTION_SANITY", status: "pass", message: "No JE, skipped" };
+  if (sections.length === 0) {
+    // Cash direction is a soft check — warn if requires_je, skip otherwise
+    if (pkg.requires_je) return { validator: "CASH_DIRECTION_SANITY", status: "warn", message: "Structured JE required but missing — cannot check cash direction" };
+    return { validator: "CASH_DIRECTION_SANITY", status: "pass", message: "No JE, skipped" };
+  }
 
   const warnings: Array<{ sectionIndex: number; lineIndex: number; account_name: string; reason: string }> = [];
 
@@ -267,6 +283,22 @@ export const cashDirectionSanity: Validator = (pkg) => {
 // ─── V6: SCENARIO_SECTIONS_PRESENT (HARD) ───
 export const scenarioSectionsPresent: Validator = (pkg) => {
   const scenarioLabels: string[] = pkg.extracted_inputs?.scenario_labels || [];
+
+  // If requires_je, always check for scenario_sections existence
+  if (pkg.requires_je) {
+    const payload = pkg.answer_payload;
+    const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
+    const sections = extractJESections(pkg);
+    if (scenarioSections.length === 0 && sections.length === 0) {
+      return {
+        validator: "SCENARIO_SECTIONS_PRESENT",
+        status: "fail",
+        message: "Structured JE required but no scenario_sections found",
+        details: { requires_je: true },
+      };
+    }
+  }
+
   if (scenarioLabels.length === 0) {
     return { validator: "SCENARIO_SECTIONS_PRESENT", status: "pass", message: "Not a multi-scenario problem, skipped" };
   }
@@ -352,7 +384,10 @@ const ACCOUNT_FIELD_BANNED_PATTERNS: Array<{ pattern: RegExp; reason: string }> 
 
 export const accountFieldFormatting: Validator = (pkg) => {
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "ACCOUNT_FIELD_FORMATTING", status: "pass", message: "No JE, skipped" };
+  if (sections.length === 0) {
+    if (pkg.requires_je) return { validator: "ACCOUNT_FIELD_FORMATTING", status: "fail", message: "Structured JE required but missing — cannot check field formatting" };
+    return { validator: "ACCOUNT_FIELD_FORMATTING", status: "pass", message: "No JE, skipped" };
+  }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; reasons: string[] }> = [];
 
@@ -421,7 +456,10 @@ export const entriesByDateRequired: Validator = (pkg) => {
   const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
 
   // Only applies to scenario_sections format
-  if (scenarioSections.length === 0) return { validator: "ENTRIES_BY_DATE", status: "pass", message: "No scenario_sections, skipped" };
+  if (scenarioSections.length === 0) {
+    if (pkg.requires_je) return { validator: "ENTRIES_BY_DATE", status: "fail", message: "Structured JE required but no scenario_sections found — entries_by_date missing" };
+    return { validator: "ENTRIES_BY_DATE", status: "pass", message: "No scenario_sections, skipped" };
+  }
 
   const emptyScenarios: string[] = [];
   for (const scenario of scenarioSections) {

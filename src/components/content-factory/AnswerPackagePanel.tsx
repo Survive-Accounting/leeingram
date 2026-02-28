@@ -260,6 +260,7 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
         answer_payload: latest.answer_payload ?? {},
         extracted_inputs: latest.extracted_inputs ?? {},
         computed_values: latest.computed_values ?? {},
+        requires_je: requiresJE,
       };
       const results = runValidation(pkg);
       const newStatus = hasFailures(results) ? "needs_review" : "drafted";
