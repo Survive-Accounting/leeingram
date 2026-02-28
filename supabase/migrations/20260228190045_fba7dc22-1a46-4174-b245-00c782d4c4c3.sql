@@ -1,0 +1,6 @@
+
+ALTER TABLE public.activity_log
+  ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS model text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS message text NOT NULL DEFAULT '';

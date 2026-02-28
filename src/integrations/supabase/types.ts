@@ -43,33 +43,45 @@ export type Database = {
           actor_id: string | null
           actor_type: Database["public"]["Enums"]["actor_type"]
           created_at: string
+          duration_ms: number | null
           entity_id: string
           entity_type: Database["public"]["Enums"]["entity_type"]
           event_type: string
           id: string
+          message: string
+          model: string
           payload_json: Json
+          provider: string
           severity: Database["public"]["Enums"]["log_severity"]
         }
         Insert: {
           actor_id?: string | null
           actor_type?: Database["public"]["Enums"]["actor_type"]
           created_at?: string
+          duration_ms?: number | null
           entity_id: string
           entity_type: Database["public"]["Enums"]["entity_type"]
           event_type?: string
           id?: string
+          message?: string
+          model?: string
           payload_json?: Json
+          provider?: string
           severity?: Database["public"]["Enums"]["log_severity"]
         }
         Update: {
           actor_id?: string | null
           actor_type?: Database["public"]["Enums"]["actor_type"]
           created_at?: string
+          duration_ms?: number | null
           entity_id?: string
           entity_type?: Database["public"]["Enums"]["entity_type"]
           event_type?: string
           id?: string
+          message?: string
+          model?: string
           payload_json?: Json
+          provider?: string
           severity?: Database["public"]["Enums"]["log_severity"]
         }
         Relationships: []

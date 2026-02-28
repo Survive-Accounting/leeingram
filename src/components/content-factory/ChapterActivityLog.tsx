@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, AlertTriangle, Info, AlertCircle, RefreshCw } from "lucide-react";
+import { ChevronDown, AlertTriangle, Info, AlertCircle, RefreshCw, Clock, Cpu, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -24,8 +25,9 @@ export function ChapterActivityLog({ chapterId }: Props) {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [eventFilter, setEventFilter] = useState("all");
   const [entityFilter, setEntityFilter] = useState("all");
+  const [providerFilter, setProviderFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // First get all source problem IDs for this chapter
   const { data: problemIds } = useQuery({
     queryKey: ["chapter-problem-ids", chapterId],
     queryFn: async () => {
@@ -39,7 +41,6 @@ export function ChapterActivityLog({ chapterId }: Props) {
     enabled: !!chapterId,
   });
 
-  // Then fetch logs for all those entity IDs + the chapter itself
   const { data: logs, isLoading, refetch } = useQuery({
     queryKey: ["chapter-activity-log", chapterId, problemIds?.map(p => p.id)],
     queryFn: async () => {
@@ -49,7 +50,7 @@ export function ChapterActivityLog({ chapterId }: Props) {
         .select("*")
         .in("entity_id", entityIds)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return data as any[];
     },
@@ -58,13 +59,20 @@ export function ChapterActivityLog({ chapterId }: Props) {
 
   const problemLabelMap = new Map(problemIds?.map(p => [p.id, p.source_label]) ?? []);
 
-  const eventTypes = [...new Set(logs?.map(l => l.event_type) ?? [])];
+  const eventTypes = [...new Set(logs?.map(l => l.event_type) ?? [])].sort();
   const entityTypes = [...new Set(logs?.map(l => l.entity_type) ?? [])];
+  const providers = [...new Set(logs?.map(l => l.provider).filter(Boolean) ?? [])];
 
   const filtered = logs?.filter(l => {
     if (severityFilter !== "all" && l.severity !== severityFilter) return false;
     if (eventFilter !== "all" && l.event_type !== eventFilter) return false;
     if (entityFilter !== "all" && l.entity_type !== entityFilter) return false;
+    if (providerFilter !== "all" && l.provider !== providerFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const haystack = [l.event_type, l.message, l.provider, l.model, JSON.stringify(l.payload_json)].join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     return true;
   });
 
@@ -74,7 +82,7 @@ export function ChapterActivityLog({ chapterId }: Props) {
   return (
     <div className="space-y-4">
       {/* Summary strip */}
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-3 text-xs flex-wrap">
         <span className="text-muted-foreground">{logs?.length ?? 0} events</span>
         {errorCount > 0 && (
           <Badge variant="destructive" className="text-[10px] h-5">
@@ -89,6 +97,12 @@ export function ChapterActivityLog({ chapterId }: Props) {
         <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => refetch()}>
           <RefreshCw className="h-3 w-3 mr-1" /> Refresh
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search events, payloads..." className="h-8 pl-8 text-xs" />
       </div>
 
       {/* Filters */}
@@ -106,16 +120,25 @@ export function ChapterActivityLog({ chapterId }: Props) {
           <SelectTrigger className="h-7 text-xs w-36"><SelectValue placeholder="Entity" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Entities</SelectItem>
-            {entityTypes.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+            {entityTypes.map(e => <SelectItem key={e} value={e} className="text-xs">{e}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={eventFilter} onValueChange={setEventFilter}>
           <SelectTrigger className="h-7 text-xs w-44"><SelectValue placeholder="Event Type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Events</SelectItem>
-            {eventTypes.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+            {eventTypes.map(e => <SelectItem key={e} value={e} className="text-xs">{e}</SelectItem>)}
           </SelectContent>
         </Select>
+        {providers.length > 0 && (
+          <Select value={providerFilter} onValueChange={setProviderFilter}>
+            <SelectTrigger className="h-7 text-xs w-32"><SelectValue placeholder="Provider" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Providers</SelectItem>
+              {providers.map(p => <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Log entries */}
@@ -135,13 +158,36 @@ export function ChapterActivityLog({ chapterId }: Props) {
                   <span className="text-muted-foreground flex-shrink-0 w-32">{format(new Date(log.created_at), "MMM d HH:mm:ss")}</span>
                   <Badge variant="outline" className="text-[9px] h-4 flex-shrink-0">{log.actor_type}</Badge>
                   {label && <Badge variant="secondary" className="text-[9px] h-4 flex-shrink-0 max-w-[80px] truncate">{label}</Badge>}
-                  <span className="font-mono text-foreground truncate">{log.event_type}</span>
-                  <ChevronDown className="h-3 w-3 ml-auto text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
+                  <span className="font-mono text-foreground truncate flex-1">{log.event_type}</span>
+                  {log.message && <span className="text-muted-foreground truncate max-w-[160px] hidden sm:inline">{log.message}</span>}
+                  {log.provider && (
+                    <Badge variant="secondary" className="text-[9px] h-4 flex-shrink-0 hidden sm:flex">
+                      <Cpu className="h-2.5 w-2.5 mr-0.5" />{log.provider}
+                    </Badge>
+                  )}
+                  {log.duration_ms != null && log.duration_ms > 0 && (
+                    <Badge variant="outline" className="text-[9px] h-4 flex-shrink-0">
+                      <Clock className="h-2.5 w-2.5 mr-0.5" />{log.duration_ms >= 1000 ? `${(log.duration_ms / 1000).toFixed(1)}s` : `${log.duration_ms}ms`}
+                    </Badge>
+                  )}
+                  <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <pre className="text-[10px] text-muted-foreground bg-muted/30 rounded p-2 ml-5 overflow-x-auto max-h-60 whitespace-pre-wrap">
-                    {JSON.stringify(log.payload_json, null, 2)}
-                  </pre>
+                  <div className="ml-5 space-y-1.5 py-1.5">
+                    {log.message && (
+                      <p className="text-xs text-foreground/80 px-2">{log.message}</p>
+                    )}
+                    {(log.provider || log.model || log.duration_ms) && (
+                      <div className="flex gap-3 px-2 text-[10px] text-muted-foreground flex-wrap">
+                        {log.provider && <span>Provider: <span className="text-foreground">{log.provider}</span></span>}
+                        {log.model && <span>Model: <span className="text-foreground">{log.model}</span></span>}
+                        {log.duration_ms != null && <span>Duration: <span className="text-foreground">{log.duration_ms}ms</span></span>}
+                      </div>
+                    )}
+                    <pre className="text-[10px] text-muted-foreground bg-muted/30 rounded p-2 overflow-x-auto max-h-60 whitespace-pre-wrap">
+                      {JSON.stringify(log.payload_json, null, 2)}
+                    </pre>
+                  </div>
                 </CollapsibleContent>
               </Collapsible>
             );
