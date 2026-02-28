@@ -154,6 +154,35 @@ export type Database = {
         }
         Relationships: []
       }
+      chapter_account_whitelist: {
+        Row: {
+          account_name: string
+          chapter_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          account_name: string
+          chapter_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          account_name?: string
+          chapter_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_account_whitelist_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_problems: {
         Row: {
           chapter_id: string
