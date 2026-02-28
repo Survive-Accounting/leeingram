@@ -289,7 +289,18 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   });
 
   const generateMutation = useMutation({
-    mutationFn: async (problem: ChapterProblem) => {
+    mutationFn: async ({
+      problem,
+      provider,
+      model,
+    }: {
+      problem: ChapterProblem;
+      provider?: "lovable" | "openai";
+      model?: string;
+    }) => {
+      const selectedProvider = provider ?? genProvider;
+      const selectedModel = selectedProvider === "openai" ? (model ?? genModel) : undefined;
+
       // Use OCR-extracted text as primary grounding input when available
       const useProblemText = problem.ocr_extracted_problem_text || problem.problem_text;
       const useSolutionText = problem.ocr_extracted_solution_text || problem.solution_text;
@@ -309,8 +320,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           journalEntryText: problem.journal_entry_text,
           notes: afNotes,
           requiresJournalEntry: afRequiresJE,
-          provider: genProvider,
-          model: genProvider === "openai" ? genModel : undefined,
+          provider: selectedProvider,
+          model: selectedModel,
           difficultyToggles: activeDiffToggles.length > 0
             ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
             : undefined,
@@ -1250,19 +1261,33 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           <div className="flex items-center gap-3 flex-wrap">
             <Button
               size="sm"
-              onClick={() => generateMutation.mutate(p)}
+              onClick={() => { setGenProvider("lovable"); generateMutation.mutate({ problem: p, provider: "lovable" }); }}
               disabled={generateMutation.isPending || !canGenerate}
               title={!canGenerate ? "OCR extraction needed" : ""}
             >
-              {generateMutation.isPending ? (
+              {generateMutation.isPending && genProvider === "lovable" ? (
                 <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
               ) : (
-                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate {vCount} Variants ({genProvider === "openai" ? `OpenAI/${genModel}` : "Lovable"})</>
+                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate {vCount} Variants (Lovable)</>
+              )}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setGenProvider("openai"); generateMutation.mutate({ problem: p, provider: "openai", model: genModel }); }}
+              disabled={generateMutation.isPending || !canGenerate}
+              title={!canGenerate ? "OCR extraction needed" : ""}
+            >
+              {generateMutation.isPending && genProvider === "openai" ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generating…</>
+              ) : (
+                <><Sparkles className="h-3.5 w-3.5 mr-1" /> Generate {vCount} Variants (OpenAI/{genModel})</>
               )}
             </Button>
 
             {candidates.length > 0 && (
-              <Button size="sm" variant="outline" onClick={() => generateMutation.mutate(p)} disabled={generateMutation.isPending || !canGenerate}>
+              <Button size="sm" variant="outline" onClick={() => generateMutation.mutate({ problem: p })} disabled={generateMutation.isPending || !canGenerate}>
                 <Sparkles className="h-3.5 w-3.5 mr-1" /> Regenerate {vCount} More
               </Button>
             )}
