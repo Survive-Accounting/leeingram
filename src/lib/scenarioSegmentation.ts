@@ -83,7 +83,6 @@ export function detectAndSplitScenarios(problemText: string): ScenarioDetectionR
 }
 
 function splitByHeaders(text: string): ScenarioBlock[] {
-  // Find all header positions
   const headers: { label: string; start: number; headerEnd: number }[] = [];
   const regex = /(?:^|\n)((?:Situation|Case|Scenario)\s+(?:\d+|[A-Z]|[IVX]+))[\s:.\-–]+/gi;
   let match: RegExpExecArray | null;
@@ -109,18 +108,15 @@ function splitByHeaders(text: string): ScenarioBlock[] {
 }
 
 function splitByNumberedBlocks(text: string): ScenarioBlock[] {
-  // Split on "1. " "2. " etc. at line starts — only if we find ≥2
   const parts = text.split(/\n\s*(\d+)\.\s+/);
-  if (parts.length < 3) return []; // Need at least: [preamble, "1", text1, "2", text2]
+  if (parts.length < 3) return [];
 
   const blocks: ScenarioBlock[] = [];
-  // parts[0] is preamble (shared context), parts[1] is "1", parts[2] is text, etc.
   const preamble = parts[0].trim();
   for (let i = 1; i < parts.length; i += 2) {
     const num = parts[i];
     const blockText = (parts[i + 1] || "").trim();
     if (blockText) {
-      // Prepend shared preamble context to each block
       const fullText = preamble ? `${preamble}\n\n${blockText}` : blockText;
       blocks.push({ label: `Situation ${num}`, text: fullText });
     }
@@ -129,11 +125,9 @@ function splitByNumberedBlocks(text: string): ScenarioBlock[] {
 }
 
 function splitByParagraphs(text: string): ScenarioBlock[] {
-  // Split on double newlines, assign labels
   const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 50);
   if (paragraphs.length < 2 || paragraphs.length > 5) return [];
 
-  // Only split if each paragraph looks like a self-contained scenario (has numbers/amounts)
   const hasAmounts = paragraphs.every(p => /\$[\d,]+|\d{3,}/.test(p));
   if (!hasAmounts) return [];
 
@@ -145,6 +139,7 @@ function splitByParagraphs(text: string): ScenarioBlock[] {
 
 /**
  * Build scenario-aware prompt instruction block for AI generation.
+ * Uses the new entries_by_date schema.
  */
 export function buildScenarioPromptBlock(blocks: ScenarioBlock[]): string {
   if (blocks.length === 0) return "";
@@ -153,19 +148,64 @@ export function buildScenarioPromptBlock(blocks: ScenarioBlock[]): string {
 MULTI-SCENARIO PROBLEM DETECTED (${blocks.length} independent scenarios):
 This problem contains multiple independent scenarios that must be handled SEPARATELY.
 
-CRITICAL RULES FOR MULTI-SCENARIO PROBLEMS:
-- Generate SEPARATE journal entry sections for EACH scenario
-- Wrap output in a "scenario_sections" array:
-  { "scenario_sections": [
-      { "label": "Situation 1", "journal_entries": [...] },
-      { "label": "Situation 2", "journal_entries": [...] }
-  ]}
-- Each scenario_section must include its own journal_entries array
-- Each scenario should include entries for: a) issuance, b) interest payment, c) accrual (if applicable)
-- Do NOT merge scenarios into a single journal entry blob
+CRITICAL OUTPUT FORMAT — scenario_sections with entries_by_date:
+{
+  "requires_je": true,
+  "scenario_sections": [
+${blocks.map(b => `    {
+      "label": "${b.label}",
+      "entries_by_date": [
+        {
+          "entry_date": "YYYY-MM-DD or label",
+          "rows": [
+            { "account_name": "...", "debit": number|null, "credit": number|null }
+          ]
+        }
+      ]
+    }`).join(",\n")}
+  ]
+}
+
+RULES:
+- Generate SEPARATE entries_by_date for EACH scenario
+- Each entry_by_date must balance (sum debits == sum credits)
+- Each row must have exactly ONE of debit or credit (not both, not neither)
+- account_name must be clean: no "$", no ":", no "a./b./c.", no "1./2."
+- Do NOT merge scenarios into a single blob
 - Keep scenario numbering consistent with the source problem
 
 SCENARIO BLOCKS:
 ${blocks.map((b, i) => `--- ${b.label} ---\n${b.text}`).join("\n\n")}
+`;
+}
+
+/**
+ * Build single-scenario prompt block for entries_by_date format.
+ */
+export function buildSingleScenarioPromptBlock(): string {
+  return `
+OUTPUT FORMAT — entries_by_date (strict JSON):
+{
+  "requires_je": true,
+  "scenario_sections": [
+    {
+      "label": "Main",
+      "entries_by_date": [
+        {
+          "entry_date": "YYYY-MM-DD or label like 'Jul 1, 2026'",
+          "rows": [
+            { "account_name": "...", "debit": number|null, "credit": number|null }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+RULES:
+- Each entry_by_date must balance (sum debits == sum credits)
+- Each row must have exactly ONE of debit or credit (not both, not neither)
+- account_name must be clean: no "$", no ":", no "a./b./c.", no "1./2."
+- Order entries chronologically
 `;
 }

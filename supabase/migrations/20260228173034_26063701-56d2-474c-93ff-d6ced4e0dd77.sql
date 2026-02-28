@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_problems ADD COLUMN IF NOT EXISTS scenario_blocks_json jsonb DEFAULT NULL;

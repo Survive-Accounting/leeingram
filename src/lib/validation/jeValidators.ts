@@ -5,6 +5,15 @@
 
 import type { Validator, ValidationResult, AnswerPackageData } from "./validationEngine";
 
+// ── JE Phrase Detection ──
+const REQUIRES_JE_PHRASES = [
+  /prepare\s+(?:the\s+)?journal\s+entr/i,
+  /record\s+(?:the\s+)?(?:following\s+)?journal\s+entr/i,
+  /prepare\s+(?:the\s+)?entries?\s+to\s+record/i,
+  /journalize/i,
+  /make\s+(?:the\s+)?(?:necessary\s+)?journal\s+entr/i,
+];
+
 /** Extract JE sections from answer_payload (handles multiple storage formats) */
 function extractJESections(pkg: AnswerPackageData): Array<{
   entry_date: string;
@@ -18,7 +27,30 @@ function extractJESections(pkg: AnswerPackageData): Array<{
   }>;
 }> {
   const payload = pkg.answer_payload;
-  const sections: any[] = [];
+
+  // NEW: scenario_sections → entries_by_date format
+  const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
+  if (scenarioSections.length > 0) {
+    const allSections: any[] = [];
+    let globalIdx = 0;
+    for (const scenario of scenarioSections) {
+      const entriesByDate: any[] = scenario.entries_by_date || scenario.journal_entries || [];
+      for (const entry of entriesByDate) {
+        allSections.push({
+          entry_date: entry.entry_date || "",
+          sectionIndex: globalIdx++,
+          lines: (entry.rows || entry.lines || []).map((l: any, li: number) => ({
+            account_name: l.account_name || "",
+            debit: l.debit != null ? Number(l.debit) : null,
+            credit: l.credit != null ? Number(l.credit) : null,
+            memo: l.memo || "",
+            lineIndex: li,
+          })),
+        });
+      }
+    }
+    if (allSections.length > 0) return allSections;
+  }
 
   // teaching_aids.journal_entries (structured format)
   if (payload?.teaching_aids?.journal_entries && Array.isArray(payload.teaching_aids.journal_entries)) {
@@ -50,7 +82,7 @@ function extractJESections(pkg: AnswerPackageData): Array<{
     }];
   }
 
-  return sections;
+  return [];
 }
 
 // Date-like patterns
@@ -197,7 +229,6 @@ export const cashDirectionSanity: Validator = (pkg) => {
   const warnings: Array<{ sectionIndex: number; lineIndex: number; account_name: string; reason: string }> = [];
 
   for (const s of sections) {
-    // Build context string from entry_date + all memos
     const context = [s.entry_date, ...s.lines.map(l => l.memo)].join(" ").toLowerCase();
 
     for (const l of s.lines) {
@@ -234,7 +265,6 @@ export const cashDirectionSanity: Validator = (pkg) => {
 };
 
 // ─── V6: SCENARIO_SECTIONS_PRESENT (HARD) ───
-// When scenario_labels metadata exists, ensure output contains matching scenario_sections
 export const scenarioSectionsPresent: Validator = (pkg) => {
   const scenarioLabels: string[] = pkg.extracted_inputs?.scenario_labels || [];
   if (scenarioLabels.length === 0) {
@@ -243,11 +273,10 @@ export const scenarioSectionsPresent: Validator = (pkg) => {
 
   const payload = pkg.answer_payload;
 
-  // Check for scenario_sections wrapper structure first
+  // Check for scenario_sections wrapper structure
   const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
 
   if (scenarioSections.length > 0) {
-    // Validate each expected label has a matching section
     const foundLabels = scenarioSections.map((s: any) => (s.label || "").toLowerCase());
     const missing: string[] = [];
     for (const label of scenarioLabels) {
@@ -309,7 +338,6 @@ export const scenarioSectionsPresent: Validator = (pkg) => {
 };
 
 // ─── V7: ACCOUNT_FIELD_FORMATTING (HARD) ───
-// Detect narrative leakage in account_name fields
 const ACCOUNT_FIELD_BANNED_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\$/, reason: "dollar sign" },
   { pattern: /:\s/, reason: "colon (narrative prefix)" },
@@ -351,6 +379,74 @@ export const accountFieldFormatting: Validator = (pkg) => {
   };
 };
 
+// ─── V8: REQUIRES_JE (HARD) ───
+// If problem text indicates JE is needed, requires_je must be true in output
+export const requiresJeDetection: Validator = (pkg) => {
+  const problemText: string = pkg.extracted_inputs?.problem_text || "";
+  if (!problemText) return { validator: "REQUIRES_JE", status: "pass", message: "No problem text to check, skipped" };
+
+  const needsJE = REQUIRES_JE_PHRASES.some(p => p.test(problemText));
+  if (!needsJE) return { validator: "REQUIRES_JE", status: "pass", message: "Problem does not require JE, skipped" };
+
+  // Check if output actually has JE content
+  const payload = pkg.answer_payload;
+  const hasJE =
+    (payload?.scenario_sections && Array.isArray(payload.scenario_sections) && payload.scenario_sections.length > 0) ||
+    (payload?.teaching_aids?.scenario_sections && Array.isArray(payload.teaching_aids.scenario_sections)) ||
+    (payload?.teaching_aids?.journal_entries && Array.isArray(payload.teaching_aids.journal_entries) && payload.teaching_aids.journal_entries.length > 0) ||
+    (payload?.je_rows && Array.isArray(payload.je_rows) && payload.je_rows.length > 0);
+
+  const requiresJeFlag = payload?.requires_je;
+
+  if (!hasJE) {
+    return {
+      validator: "REQUIRES_JE",
+      status: "fail",
+      message: "Problem text requires journal entries but output contains none",
+      details: { detected_phrases: REQUIRES_JE_PHRASES.filter(p => p.test(problemText)).map(p => p.source) },
+    };
+  }
+
+  return {
+    validator: "REQUIRES_JE",
+    status: "pass",
+    message: "Journal entries present as required",
+  };
+};
+
+// ─── V9: ENTRIES_BY_DATE_REQUIRED (HARD) ───
+// If requires_je is true, each scenario_section must have non-empty entries_by_date
+export const entriesByDateRequired: Validator = (pkg) => {
+  const payload = pkg.answer_payload;
+  const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
+
+  // Only applies to scenario_sections format
+  if (scenarioSections.length === 0) return { validator: "ENTRIES_BY_DATE", status: "pass", message: "No scenario_sections, skipped" };
+
+  const emptyScenarios: string[] = [];
+  for (const scenario of scenarioSections) {
+    const entries = scenario.entries_by_date || scenario.journal_entries || [];
+    if (!Array.isArray(entries) || entries.length === 0) {
+      emptyScenarios.push(scenario.label || "Unknown");
+    }
+  }
+
+  if (emptyScenarios.length > 0) {
+    return {
+      validator: "ENTRIES_BY_DATE",
+      status: "fail",
+      message: `Missing entries_by_date in scenario(s): ${emptyScenarios.join(", ")}`,
+      details: { empty_scenarios: emptyScenarios },
+    };
+  }
+
+  return {
+    validator: "ENTRIES_BY_DATE",
+    status: "pass",
+    message: `All ${scenarioSections.length} scenario(s) have entries_by_date`,
+  };
+};
+
 // ─── Export all JE validators ───
 export const JE_VALIDATORS: Validator[] = [
   jeBalances,
@@ -360,6 +456,8 @@ export const JE_VALIDATORS: Validator[] = [
   cashDirectionSanity,
   scenarioSectionsPresent,
   accountFieldFormatting,
+  requiresJeDetection,
+  entriesByDateRequired,
 ];
 
 // ─── Auto-fix helpers ───
@@ -379,7 +477,6 @@ export function autoFixDatesInAccountNames(sections: any[]): AutoFixResult {
       for (const p of DATE_PATTERNS) {
         const match = name.match(p);
         if (match) {
-          // Move date to entry_date if empty
           if (!s.entry_date && match[0]) {
             s = { ...s, entry_date: match[0] };
           }

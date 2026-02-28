@@ -210,11 +210,13 @@ For each variant, include an "exam_trap_note" explaining what makes this variant
 
     const journalInstruction = requiresJournalEntry
       ? `JOURNAL ENTRY HANDLING:
-- Generate a consolidated JE per event
-- Use grid format: Account | Debit | Credit
-- If date-based events, use timeline-based JE
-- Format for easy Google Sheets copy/paste
-- Do NOT include explanations for JE entries — students rely on video walkthroughs.`
+- Generate journal entries using the entries_by_date format:
+  { "entry_date": "YYYY-MM-DD or label", "rows": [{ "account_name": "...", "debit": number|null, "credit": number|null }] }
+- Each entry_by_date must balance (sum debits == sum credits)
+- Each row: exactly ONE of debit or credit (not both, not neither)
+- account_name must be CLEAN: no "$", no ":", no "a./b./c.", no "1./2.", no narrative text
+- Do NOT include reasoning checklists — just JE rows
+- Format for easy Google Sheets copy/paste`
       : "JOURNAL ENTRY: Leave journal_entry_block as null. This problem does not require a journal entry.";
 
     // ─── Scenario Segmentation ───
@@ -224,8 +226,9 @@ For each variant, include an "exam_trap_note" explaining what makes this variant
       scenarioInstruction = `
 MULTI-SCENARIO PROBLEM (${scenarioBlocks.length} independent scenarios detected):
 This problem contains multiple independent scenarios. For EACH variant:
-- Generate SEPARATE journal entry sections for EACH scenario
-- Label each JE section's entry_date with the scenario label prefix (e.g., "${scenarioBlocks[0].label} — Jan 1, 2025")
+- Generate SEPARATE entries_by_date for EACH scenario
+- Use the scenario_sections wrapper format:
+  { "scenario_sections": [{ "label": "Situation 1", "entries_by_date": [...] }, ...] }
 - Do NOT merge all scenarios into a single journal entry blob
 - Each scenario should include entries for: a) issuance, b) interest payment, c) accrual (if applicable)
 - Keep scenario numbering consistent

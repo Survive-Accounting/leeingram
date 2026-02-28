@@ -5,14 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, RefreshCw, Eye, GitCompare, BookOpen, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, RefreshCw, Eye, GitCompare, BookOpen, Loader2, Sparkles, Scissors } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type ValidationResult, type AnswerPackageData } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
 import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
-import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
+import { detectAndSplitScenarios, buildScenarioPromptBlock, buildSingleScenarioPromptBlock, type ScenarioBlock } from "@/lib/scenarioSegmentation";
 import { RepairNotesPanel } from "./RepairNotesPanel";
+import { ScenarioSplitScreen } from "./ScenarioSplitScreen";
 import { RegenerateDialog } from "./RegenerateDialog";
 import { VersionDiffView } from "./VersionDiffView";
 import { FinalAnswersPanel, type FinalAnswer } from "./FinalAnswersPanel";
@@ -50,15 +51,36 @@ function extractFinalAnswers(payload: any): FinalAnswer[] {
 
 function extractTeachingJE(payload: any): JESection[] {
   if (!payload) return [];
+
+  // NEW: scenario_sections → entries_by_date format
+  const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
+  if (scenarioSections.length > 0) {
+    const allSections: JESection[] = [];
+    for (const scenario of scenarioSections) {
+      const entriesByDate: any[] = scenario.entries_by_date || scenario.journal_entries || [];
+      for (const entry of entriesByDate) {
+        const label = scenarioSections.length > 1 ? `${scenario.label} — ${entry.entry_date || ""}` : (entry.entry_date || "");
+        allSections.push({
+          entry_date: label,
+          lines: (entry.rows || entry.lines || []).map((l: any) => ({
+            account_name: l.account_name || "",
+            debit: l.debit != null ? Number(l.debit) : null,
+            credit: l.credit != null ? Number(l.credit) : null,
+            memo: l.memo || "",
+            indentation_level: (l.credit != null && l.credit !== 0) ? 1 : 0,
+          })),
+        });
+      }
+    }
+    if (allSections.length > 0) return allSections;
+  }
+
   if (payload.teaching_aids?.journal_entries) {
-    // Already in structured section format
     if (Array.isArray(payload.teaching_aids.journal_entries) && payload.teaching_aids.journal_entries[0]?.entry_date !== undefined) {
       return payload.teaching_aids.journal_entries;
     }
-    // Legacy JournalEntryGroup format
     return groupsToSections(payload.teaching_aids.journal_entries);
   }
-  // Legacy: JE in answer_payload.journal_entries
   if (payload.journal_entries) {
     return groupsToSections(payload.journal_entries);
   }
@@ -78,6 +100,8 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
   const [showTeachingAids, setShowTeachingAids] = useState(true);
   const [genProvider, setGenProvider] = useState<"lovable" | "openai">("lovable");
   const [genModel, setGenModel] = useState("gpt-4.1");
+  const [showScenarioSplit, setShowScenarioSplit] = useState(false);
+  const [confirmedScenarioBlocks, setConfirmedScenarioBlocks] = useState<ScenarioBlock[] | null>(null);
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ["answer-packages", sourceProblemId],
@@ -253,32 +277,28 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
 
   const initialGenMutation = useMutation({
     mutationFn: async () => {
-      // Detect scenarios
-      const scenarioResult = detectAndSplitScenarios(problemText || "");
-      const scenarioLabels = scenarioResult.is_multi_scenario
-        ? scenarioResult.scenario_blocks.map(b => b.label)
-        : [];
-      const scenarioPromptBlock = scenarioResult.is_multi_scenario
-        ? `\n\nMULTI-SCENARIO: This problem has ${scenarioLabels.length} independent scenarios (${scenarioLabels.join(", ")}). Generate SEPARATE journal entry sections for each, labeled with the scenario name prefix.`
-        : "";
+      // Use confirmed scenario blocks or auto-detect
+      const scenarioBlocks = confirmedScenarioBlocks ?? [];
+      const isMulti = scenarioBlocks.length >= 2;
+      const scenarioLabels = isMulti ? scenarioBlocks.map(b => b.label) : [];
 
-      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in valid JSON.\n\nProblem:\n${problemText || "No problem text"}\n\nSolution Reference:\n${solutionText || "No solution text"}${scenarioPromptBlock}\n\nProvide JSON: {"final_answers": [{"label": string, "value": string}], "teaching_aids": {"explanation": string, "journal_entries": [{"entry_date": string, "lines": [{"account_name": string, "debit": number|null, "credit": number|null, "memo": string, "indentation_level": number}]}]}}`;
+      const scenarioPromptBlock = isMulti
+        ? buildScenarioPromptBlock(scenarioBlocks)
+        : buildSingleScenarioPromptBlock();
+
+      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in valid JSON.\n\nProblem:\n${problemText || "No problem text"}\n\nSolution Reference:\n${solutionText || "No solution text"}\n\n${scenarioPromptBlock}\n\nRules:\n- requires_je must be true if the problem asks for journal entries\n- Use scenario_sections with entries_by_date format\n- Each entry_by_date must balance\n- Each row: exactly one of debit or credit\n- account_name: clean text only (no $, no :, no a./b./c., no 1./2.)\n- Also include: {"final_answers": [{"label": string, "value": string}]}`;
 
       const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
         body: {
           provider: genProvider,
           model: genProvider === "openai" ? genModel : "google/gemini-2.5-flash",
           temperature: 0.2,
-          max_output_tokens: 3000,
+          max_output_tokens: 4000,
           source_problem_id: sourceProblemId,
           messages: [
-            { role: "system", content: "You are an expert accounting professor. Return answers in valid JSON." },
+            { role: "system", content: "You are an expert accounting professor. Return answers in valid JSON using the scenario_sections/entries_by_date schema." },
             { role: "user", content: systemPrompt },
           ],
-          response_format_json_schema: genProvider === "openai" ? {
-            name: "answer_package", strict: true,
-            schema: { type: "object", properties: { final_answers: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"], additionalProperties: false } }, teaching_aids: { type: "object", properties: { explanation: { type: "string" }, journal_entries: { type: "array", items: { type: "object", properties: { entry_date: { type: "string" }, lines: { type: "array", items: { type: "object", properties: { account_name: { type: "string" }, debit: { type: ["number", "null"] }, credit: { type: ["number", "null"] }, memo: { type: "string" }, indentation_level: { type: "number" } }, required: ["account_name", "debit", "credit", "memo", "indentation_level"], additionalProperties: false } } }, required: ["entry_date", "lines"], additionalProperties: false } } }, required: ["explanation", "journal_entries"], additionalProperties: false } }, required: ["final_answers", "teaching_aids"], additionalProperties: false },
-          } : undefined,
         },
       });
       if (aiErr) throw aiErr;
@@ -291,12 +311,22 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
         throw new Error("AI returned invalid JSON — saved as needs_review");
       }
 
+      // Save scenario_blocks_json to source problem if multi-scenario
+      if (isMulti) {
+        await supabase.from("chapter_problems").update({
+          scenario_blocks_json: scenarioBlocks as any,
+        } as any).eq("id", sourceProblemId);
+      }
+
       await normalizeValidatePersistAnswerPackage({
         source_problem_id: sourceProblemId,
         version: 1,
         generator: "ai",
         answer_payload: parsed,
-        extracted_inputs: scenarioLabels.length > 0 ? { scenario_labels: scenarioLabels } : {},
+        extracted_inputs: {
+          ...(scenarioLabels.length > 0 ? { scenario_labels: scenarioLabels } : {}),
+          problem_text: problemText || "",
+        },
         output_type: "mixed",
         provider: genProvider,
         model: selectedModel,
@@ -320,32 +350,66 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
       <div className="border-t border-border pt-3" />
 
       {!latest ? (
-        <div className="space-y-3 border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground">No answer packages generated yet. Generate the first one:</p>
-          <div className="flex gap-2 items-center flex-wrap">
-            <Select value={genProvider} onValueChange={(v) => setGenProvider(v as any)}>
-              <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="lovable">Lovable</SelectItem>
-                <SelectItem value="openai">OpenAI</SelectItem>
-              </SelectContent>
-            </Select>
-            {genProvider === "openai" && (
-              <Select value={genModel} onValueChange={setGenModel}>
-                <SelectTrigger className="h-7 text-xs w-40"><SelectValue /></SelectTrigger>
+        <div className="space-y-3">
+          {/* Step 0: Scenario Split Screen */}
+          {showScenarioSplit && (
+            <ScenarioSplitScreen
+              problemText={problemText || ""}
+              onConfirm={(blocks) => {
+                setConfirmedScenarioBlocks(blocks.length >= 2 ? blocks : null);
+                setShowScenarioSplit(false);
+              }}
+              onSkip={() => {
+                setConfirmedScenarioBlocks(null);
+                setShowScenarioSplit(false);
+              }}
+            />
+          )}
+
+          {/* Confirmed scenario info */}
+          {confirmedScenarioBlocks && confirmedScenarioBlocks.length >= 2 && !showScenarioSplit && (
+            <div className="rounded border border-primary/30 bg-primary/5 px-3 py-2 flex items-center justify-between">
+              <span className="text-xs text-primary font-medium">
+                ✓ {confirmedScenarioBlocks.length} scenarios confirmed: {confirmedScenarioBlocks.map(b => b.label).join(", ")}
+              </span>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setShowScenarioSplit(true)}>
+                Edit Split
+              </Button>
+            </div>
+          )}
+
+          <div className="border border-border rounded-lg p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">No answer packages generated yet. Generate the first one:</p>
+            <div className="flex gap-2 items-center flex-wrap">
+              {!showScenarioSplit && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowScenarioSplit(true)}>
+                  <Scissors className="h-3 w-3 mr-1" /> Split Scenarios
+                </Button>
+              )}
+              <Select value={genProvider} onValueChange={(v) => setGenProvider(v as any)}>
+                <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-4.1">gpt-4.1 (accuracy)</SelectItem>
-                  <SelectItem value="gpt-4o-mini">gpt-4o-mini (cheap)</SelectItem>
+                  <SelectItem value="lovable">Lovable</SelectItem>
+                  <SelectItem value="openai">OpenAI</SelectItem>
                 </SelectContent>
               </Select>
-            )}
-            <Button size="sm" className="h-7 text-xs" onClick={() => initialGenMutation.mutate()} disabled={initialGenMutation.isPending || !problemText}>
-              {initialGenMutation.isPending ? (
-                <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</>
-              ) : (
-                <><Sparkles className="h-3 w-3 mr-1" /> Generate ({genProvider === "openai" ? `OpenAI/${genModel}` : "Lovable"})</>
+              {genProvider === "openai" && (
+                <Select value={genModel} onValueChange={setGenModel}>
+                  <SelectTrigger className="h-7 text-xs w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4.1">gpt-4.1 (accuracy)</SelectItem>
+                    <SelectItem value="gpt-4o-mini">gpt-4o-mini (cheap)</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
-            </Button>
+              <Button size="sm" className="h-7 text-xs" onClick={() => initialGenMutation.mutate()} disabled={initialGenMutation.isPending || !problemText}>
+                {initialGenMutation.isPending ? (
+                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</>
+                ) : (
+                  <><Sparkles className="h-3 w-3 mr-1" /> Generate ({genProvider === "openai" ? `OpenAI/${genModel}` : "Lovable"})</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
