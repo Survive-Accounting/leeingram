@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { JournalEntryEditor, groupsToSections, type JESection } from "./JournalEntryEditor";
 import { ValidationPanel } from "./ValidationPanel";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
-import { parseLegacyAnswerOnly, parseLegacyJEBlock } from "@/lib/journalEntryParser";
+import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { logActivity } from "@/lib/activityLogger";
 import { useChapterApprovedAccounts } from "./ChapterAccountsSetup";
 
@@ -205,11 +205,17 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const [showFixes, setShowFixes] = useState(false);
   const [openEntryIndex, setOpenEntryIndex] = useState<number | null>(null);
   const [approvalBlockedModal, setApprovalBlockedModal] = useState(false);
+  const [isLegacyFallback, setIsLegacyFallback] = useState(false);
 
   // Init
   useEffect(() => {
     if (variant && open) {
       const s = initialSections();
+      // Detect if we're using legacy fallback (no canonical structured data)
+      const hasCanonical = isCanonicalJE(variant.candidate_data) ||
+        isCanonicalJE(variant.journal_entry_completed_json) ||
+        (variant.candidate_data?.scenario_sections?.length > 0);
+      setIsLegacyFallback(s.length > 0 && !hasCanonical);
       setSections(s);
       setHasEdits(false);
       setEditVersion(0);
@@ -495,6 +501,19 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
                 Journal Entry Review
               </p>
+
+              {/* Legacy fallback banner */}
+              {isLegacyFallback && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 mb-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-destructive">Structured JE missing — legacy fallback shown</p>
+                    <p className="text-[10px] text-destructive/70 mt-0.5">
+                      Re-generate this variant to get structured journal entries with proper scenario/date organization.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {scenarioGroups.map((group, gi) => (
