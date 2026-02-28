@@ -206,6 +206,9 @@ export async function normalizeValidatePersistAnswerPackage(
     entity_id: draft.source_problem_id,
     event_type: "normalize_started",
     severity: "info",
+    provider: draft.provider,
+    model: draft.model,
+    message: `Normalizing output from ${draft.provider ?? "unknown"}/${draft.model ?? "unknown"}`,
     payload_json: providerMeta,
   });
 
@@ -220,6 +223,9 @@ export async function normalizeValidatePersistAnswerPackage(
     entity_id: draft.source_problem_id,
     event_type: "normalize_completed",
     severity: "info",
+    provider: draft.provider,
+    model: draft.model,
+    message: structureNormalized ? "Structure normalized to canonical format" : (fixApplied ? "Row-level fixes applied" : "Already canonical"),
     payload_json: { ...providerMeta, structure_normalized: structureNormalized, rows_fixed: fixApplied },
   });
 
@@ -230,6 +236,9 @@ export async function normalizeValidatePersistAnswerPackage(
     entity_id: draft.source_problem_id,
     event_type: "validate_started",
     severity: "info",
+    provider: draft.provider,
+    model: draft.model,
+    message: "Running validators",
     payload_json: providerMeta,
   });
 
@@ -249,6 +258,9 @@ export async function normalizeValidatePersistAnswerPackage(
     entity_id: draft.source_problem_id,
     event_type: "validate_completed",
     severity: failCount > 0 ? "warn" : "info",
+    provider: draft.provider,
+    model: draft.model,
+    message: failCount > 0 ? `${failCount} validator(s) failed` : `All ${passCount} validators passed`,
     payload_json: { ...providerMeta, validation_summary: { pass: passCount, fail: failCount, warn: warnCount } },
   });
 
@@ -283,6 +295,10 @@ export async function normalizeValidatePersistAnswerPackage(
     entity_id: draft.source_problem_id,
     event_type: "persist_completed",
     severity: failCount > 0 ? "warn" : "info",
+    provider: draft.provider,
+    model: draft.model,
+    duration_ms: totalMs,
+    message: `Package v${draft.version} persisted as ${status} (${totalMs}ms)`,
     payload_json: {
       package_id: newPkg.id,
       version: draft.version,

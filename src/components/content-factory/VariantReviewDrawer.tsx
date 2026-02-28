@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Check, X, Save, ChevronDown, AlertTriangle, Info, Lock, CheckCircle2,
-  Circle, XCircle,
+  Circle, XCircle, ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import { runValidation, hasFailures, type AnswerPackageData, type ValidationResu
 import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { logActivity } from "@/lib/activityLogger";
 import { useChapterApprovedAccounts } from "./ChapterAccountsSetup";
+import { ActivityLogPanel } from "./ActivityLogPanel";
 
 // ── Types ──
 
@@ -206,6 +207,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const [openEntryIndex, setOpenEntryIndex] = useState<number | null>(null);
   const [approvalBlockedModal, setApprovalBlockedModal] = useState(false);
   const [isLegacyFallback, setIsLegacyFallback] = useState(false);
+  const [showGenLog, setShowGenLog] = useState(false);
 
   // Init
   useEffect(() => {
@@ -494,6 +496,20 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
               </div>
             </div>
           )}
+
+          {/* Generation Log */}
+          <Collapsible open={showGenLog} onOpenChange={setShowGenLog}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs w-full justify-start">
+                <ScrollText className="h-3 w-3 mr-1.5" />
+                View Generation Log
+                <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", showGenLog && "rotate-180")} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <ActivityLogPanel entityType="source_problem" entityId={problem?.id ?? ""} />
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* ════════ JOURNAL ENTRIES — Per-Date Review ════════ */}
           {hasJE && (
