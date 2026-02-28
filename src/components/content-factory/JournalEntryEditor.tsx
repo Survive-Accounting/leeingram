@@ -1,11 +1,16 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ArrowUp, ArrowDown, Copy, CheckCircle2, XCircle, Wand2, ListPlus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Plus, Trash2, ArrowUp, ArrowDown, Copy, CheckCircle2, XCircle,
+  Wand2, ListPlus, ArrowLeftRight, Scissors, PlusCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface JELine {
   account_name: string;
@@ -31,10 +36,65 @@ function emptyLine(): JELine {
   return { account_name: "", debit: null, credit: null, memo: "", indentation_level: 0 };
 }
 
-function sectionBalance(section: JESection): { debits: number; credits: number; balanced: boolean } {
+function sectionBalance(section: JESection): { debits: number; credits: number; balanced: boolean; diff: number } {
   const debits = section.lines.reduce((s, l) => s + (l.debit ?? 0), 0);
   const credits = section.lines.reduce((s, l) => s + (l.credit ?? 0), 0);
-  return { debits, credits, balanced: Math.abs(debits - credits) < 0.02 };
+  const diff = Math.abs(debits - credits);
+  return { debits, credits, balanced: diff < 0.02, diff };
+}
+
+// ── Account Name Validation ──
+
+/** Returns error message if account_name has disallowed content, null otherwise */
+function validateAccountName(name: string): string | null {
+  if (!name.trim()) return null; // empty is ok (user hasn't typed yet)
+  if (name.includes(":")) return "Colons not allowed — use the memo field for context";
+  if (/\$[\d,]+/.test(name)) return "Dollar amounts not allowed in account names";
+  if (/^\d+\.\s/.test(name)) return "Numbered list prefixes detected — use Split Row";
+  if (/\brequire|must\b/i.test(name)) return "Narrative text detected in account name";
+  return null;
+}
+
+/** Check if account_name is splittable (has a. b. patterns or semicolons) */
+function isSplittable(name: string): boolean {
+  return /\b[a-z]\.\s+/i.test(name) || name.includes(";");
+}
+
+/** Split an account_name containing 'a.' 'b.' or semicolons into multiple lines */
+function splitAccountName(line: JELine): JELine[] {
+  const name = line.account_name;
+  // Try letter prefixes first: "a. Cash $100 b. Revenue $200"
+  const letterParts = name.split(/\b([a-z])\.\s+/i);
+  if (letterParts.length > 2) {
+    const results: JELine[] = [];
+    for (let i = 1; i < letterParts.length; i += 2) {
+      const text = (letterParts[i + 1] || "").trim();
+      if (!text) continue;
+      // Try to extract amount
+      const amountMatch = text.match(/^(.+?)\s+\$?([\d,]+(?:\.\d+)?)\s*$/);
+      if (amountMatch) {
+        const accountName = amountMatch[1].trim();
+        const amount = parseFloat(amountMatch[2].replace(/,/g, ""));
+        const isCredit = line.indentation_level === 1;
+        results.push({
+          account_name: accountName,
+          debit: isCredit ? null : amount,
+          credit: isCredit ? amount : null,
+          memo: line.memo,
+          indentation_level: line.indentation_level,
+        });
+      } else {
+        results.push({ ...line, account_name: text });
+      }
+    }
+    if (results.length > 0) return results;
+  }
+  // Try semicolons
+  const semiParts = name.split(";").map(s => s.trim()).filter(Boolean);
+  if (semiParts.length > 1) {
+    return semiParts.map(part => ({ ...line, account_name: part }));
+  }
+  return [line];
 }
 
 const ACCOUNT_NORMALIZATIONS: Record<string, string> = {
@@ -43,27 +103,6 @@ const ACCOUNT_NORMALIZATIONS: Record<string, string> = {
   "a/r": "Accounts Receivable",
   "ppd": "Prepaid",
 };
-
-function normalizeAccountName(name: string, aliases: Map<string, string>): string {
-  let result = name.trim();
-  // Strip leading dates
-  result = result.replace(/^(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?\s*[-:–]\s*/i, "");
-  result = result.trim();
-
-  // Check aliases
-  const lower = result.toLowerCase();
-  for (const [key, canonical] of aliases) {
-    if (lower === key.toLowerCase()) {
-      return canonical;
-    }
-  }
-
-  // Built-in normalizations
-  const builtIn = ACCOUNT_NORMALIZATIONS[lower];
-  if (builtIn) return builtIn;
-
-  return result;
-}
 
 export function JournalEntryEditor({ sections, onChange, readOnly = false, courseShort }: JournalEntryEditorProps) {
   const [editingCell, setEditingCell] = useState<{ si: number; li: number; field: string } | null>(null);
@@ -85,31 +124,42 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     return aliases?.get(canonical) ?? canonical;
   }, [aliases]);
 
+  // ── Row operations ──
+
   const updateLine = (si: number, li: number, patch: Partial<JELine>) => {
-    // Mutual exclusivity: entering debit clears credit and vice versa
     const finalPatch = { ...patch };
-    if ('debit' in finalPatch && finalPatch.debit != null) {
+    // Mutual exclusivity: entering debit clears credit and vice versa
+    if ("debit" in finalPatch && finalPatch.debit != null && finalPatch.debit !== 0) {
       finalPatch.credit = null;
       finalPatch.indentation_level = 0;
     }
-    if ('credit' in finalPatch && finalPatch.credit != null) {
+    if ("credit" in finalPatch && finalPatch.credit != null && finalPatch.credit !== 0) {
       finalPatch.debit = null;
       finalPatch.indentation_level = 1;
     }
-    const next = sections.map((s, i) => i === si ? {
-      ...s,
-      lines: s.lines.map((l, j) => j === li ? { ...l, ...finalPatch } : l),
-    } : s);
+    const next = sections.map((s, i) =>
+      i === si ? { ...s, lines: s.lines.map((l, j) => (j === li ? { ...l, ...finalPatch } : l)) } : s
+    );
+    onChange(next);
+  };
+
+  const addLineAt = (si: number, li: number, position: "above" | "below") => {
+    const next = sections.map((s, i) => {
+      if (i !== si) return s;
+      const newLines = [...s.lines];
+      newLines.splice(position === "above" ? li : li + 1, 0, emptyLine());
+      return { ...s, lines: newLines };
+    });
     onChange(next);
   };
 
   const addLine = (si: number) => {
-    const next = sections.map((s, i) => i === si ? { ...s, lines: [...s.lines, emptyLine()] } : s);
+    const next = sections.map((s, i) => (i === si ? { ...s, lines: [...s.lines, emptyLine()] } : s));
     onChange(next);
   };
 
   const removeLine = (si: number, li: number) => {
-    const next = sections.map((s, i) => i === si ? { ...s, lines: s.lines.filter((_, j) => j !== li) } : s);
+    const next = sections.map((s, i) => (i === si ? { ...s, lines: s.lines.filter((_, j) => j !== li) } : s));
     onChange(next);
   };
 
@@ -119,7 +169,7 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     if (target < 0 || target >= s.lines.length) return;
     const lines = [...s.lines];
     [lines[li], lines[target]] = [lines[target], lines[li]];
-    const next = sections.map((sec, i) => i === si ? { ...sec, lines } : sec);
+    const next = sections.map((sec, i) => (i === si ? { ...sec, lines } : sec));
     onChange(next);
   };
 
@@ -127,9 +177,40 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     const s = sections[si];
     const newLines = [...s.lines];
     newLines.splice(li + 1, 0, { ...s.lines[li] });
-    const next = sections.map((sec, i) => i === si ? { ...sec, lines: newLines } : sec);
+    const next = sections.map((sec, i) => (i === si ? { ...sec, lines: newLines } : sec));
     onChange(next);
   };
+
+  const flipSide = (si: number, li: number) => {
+    const line = sections[si].lines[li];
+    const amount = line.debit ?? line.credit ?? null;
+    if (amount == null) return;
+    const wasDebit = line.debit != null && line.debit !== 0;
+    updateLine(si, li, {
+      debit: wasDebit ? null : amount,
+      credit: wasDebit ? amount : null,
+      indentation_level: wasDebit ? 1 : 0,
+    });
+  };
+
+  const splitRow = (si: number, li: number) => {
+    const line = sections[si].lines[li];
+    const splitLines = splitAccountName(line);
+    if (splitLines.length <= 1) {
+      toast.info("Nothing to split — no a./b. patterns or semicolons found");
+      return;
+    }
+    const next = sections.map((s, i) => {
+      if (i !== si) return s;
+      const newLines = [...s.lines];
+      newLines.splice(li, 1, ...splitLines);
+      return { ...s, lines: newLines };
+    });
+    onChange(next);
+    toast.success(`Split into ${splitLines.length} rows`);
+  };
+
+  // ── Section operations ──
 
   const addSection = () => {
     onChange([...sections, { entry_date: "", lines: [emptyLine(), emptyLine()] }]);
@@ -140,7 +221,7 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
   };
 
   const updateSectionDate = (si: number, date: string) => {
-    const next = sections.map((s, i) => i === si ? { ...s, entry_date: date } : s);
+    const next = sections.map((s, i) => (i === si ? { ...s, entry_date: date } : s));
     onChange(next);
   };
 
@@ -159,34 +240,47 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
       ],
       blank3: [emptyLine(), emptyLine(), emptyLine()],
     };
-    const next = sections.map((s, i) => i === si ? { ...s, lines: [...s.lines, ...templates[template]] } : s);
+    const next = sections.map((s, i) => (i === si ? { ...s, lines: [...s.lines, ...templates[template]] } : s));
     onChange(next);
   };
 
   const handleNormalize = () => {
     const aliasMap = aliases ?? new Map<string, string>();
-    // Build reverse map: preferred -> canonical
-    const reverseMap = new Map<string, string>();
-    for (const [canonical, preferred] of aliasMap) {
-      reverseMap.set(preferred.toLowerCase(), canonical);
-    }
-
-    const next = sections.map(s => ({
+    const next = sections.map((s) => ({
       ...s,
-      lines: s.lines.map(l => {
+      lines: s.lines.map((l) => {
         let name = l.account_name.trim();
-        // Strip dates
-        name = name.replace(/^(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?\s*[-:–]\s*/i, "");
+        // Strip leading dates
+        name = name.replace(
+          /^(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?\s*[-:–]\s*/i,
+          ""
+        );
+        // Strip colons (narrative prefixes)
+        const colonIdx = name.indexOf(":");
+        if (colonIdx >= 4) {
+          const after = name.slice(colonIdx + 1).trim();
+          if (after) name = after;
+        }
+        // Strip dollar amounts
+        name = name.replace(/\s*\$[\d,]+(?:\.\d+)?\s*/g, " ").trim();
         // Normalize abbreviations
         const lower = name.toLowerCase();
         const builtIn = ACCOUNT_NORMALIZATIONS[lower];
         if (builtIn) name = builtIn;
-
+        // Check aliases
+        for (const [key, canonical] of aliasMap) {
+          if (lower === key.toLowerCase()) {
+            name = canonical;
+            break;
+          }
+        }
         return { ...l, account_name: name };
       }),
     }));
     onChange(next);
   };
+
+  // ── Render ──
 
   return (
     <div className="space-y-4">
@@ -201,7 +295,7 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
               ) : (
                 <Input
                   value={section.entry_date}
-                  onChange={e => updateSectionDate(si, e.target.value)}
+                  onChange={(e) => updateSectionDate(si, e.target.value)}
                   placeholder="Entry date (e.g. Jan 1, 2025)"
                   className="h-6 text-xs font-semibold w-48 bg-transparent border-0 p-0 focus-visible:ring-0"
                 />
@@ -213,7 +307,7 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
-                    <XCircle className="h-2.5 w-2.5 mr-0.5" /> Off by {Math.abs(bal.debits - bal.credits).toFixed(2)}
+                    <XCircle className="h-2.5 w-2.5 mr-0.5" /> Off by ${bal.diff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Badge>
                 )}
                 {!readOnly && sections.length > 1 && (
@@ -228,107 +322,245 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="text-left px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Account</th>
-                  <th className="text-right px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-24">Debit</th>
-                  <th className="text-right px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-24">Credit</th>
-                  {!readOnly && <th className="w-20" />}
+                  <th className="text-left px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Account
+                  </th>
+                  <th className="text-right px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-28">
+                    Debit
+                  </th>
+                  <th className="text-right px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-28">
+                    Credit
+                  </th>
+                  {!readOnly && <th className="w-28" />}
                 </tr>
               </thead>
               <tbody>
                 {section.lines.map((line, li) => {
                   const isEditing = (field: string) =>
                     editingCell?.si === si && editingCell?.li === li && editingCell?.field === field;
+                  const accountError = !readOnly ? validateAccountName(line.account_name) : null;
+                  const canSplit = !readOnly && isSplittable(line.account_name);
 
                   return (
-                    <tr key={li} className="border-b border-border/30 last:border-0 group/row hover:bg-muted/20">
+                    <tr
+                      key={li}
+                      className={cn(
+                        "border-b border-border/30 last:border-0 group/row hover:bg-muted/20",
+                        accountError && "bg-destructive/5"
+                      )}
+                    >
                       {/* Account */}
                       <td className={cn("px-3 py-1", line.indentation_level === 1 && "pl-8")}>
                         {readOnly ? (
                           <span className="text-foreground text-sm">{displayName(line.account_name)}</span>
                         ) : isEditing("account") ? (
-                          <Input
-                            autoFocus
-                            value={line.account_name}
-                            onChange={e => updateLine(si, li, { account_name: e.target.value })}
-                            onBlur={() => setEditingCell(null)}
-                            onKeyDown={e => e.key === "Enter" && setEditingCell(null)}
-                            className="h-6 text-sm p-0 border-0 bg-transparent focus-visible:ring-1"
-                          />
+                          <div className="space-y-0.5">
+                            <Input
+                              autoFocus
+                              value={line.account_name}
+                              onChange={(e) => updateLine(si, li, { account_name: e.target.value })}
+                              onBlur={() => setEditingCell(null)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") setEditingCell(null);
+                                if (e.key === "Tab") {
+                                  e.preventDefault();
+                                  setEditingCell({ si, li, field: "debit" });
+                                }
+                              }}
+                              className="h-6 text-sm p-0 border-0 bg-transparent focus-visible:ring-1"
+                            />
+                            {accountError && (
+                              <p className="text-[9px] text-destructive">{accountError}</p>
+                            )}
+                          </div>
                         ) : (
-                          <span
-                            className="text-foreground text-sm cursor-text hover:bg-muted/40 px-1 -mx-1 rounded"
-                            onClick={() => setEditingCell({ si, li, field: "account" })}
-                          >
-                            {displayName(line.account_name) || <span className="text-muted-foreground italic">Click to edit</span>}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="text-foreground text-sm cursor-text hover:bg-muted/40 px-1 -mx-1 rounded flex-1"
+                              onClick={() => setEditingCell({ si, li, field: "account" })}
+                            >
+                              {displayName(line.account_name) || (
+                                <span className="text-muted-foreground italic">Click to edit</span>
+                              )}
+                            </span>
+                            {accountError && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <XCircle className="h-3 w-3 text-destructive shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs max-w-48">
+                                  {accountError}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {canSplit && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    className="p-0.5 text-amber-400 hover:text-amber-300"
+                                    onClick={() => splitRow(si, li)}
+                                  >
+                                    <Scissors className="h-3 w-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  Split into separate rows
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         )}
                       </td>
 
-                      {/* Debit */}
+                      {/* Debit — always editable */}
                       <td className="text-right px-3 py-1">
                         {readOnly ? (
-                          <span className="font-mono text-foreground">{line.debit != null ? line.debit.toLocaleString() : ""}</span>
+                          <span className="font-mono text-foreground">
+                            {line.debit != null ? line.debit.toLocaleString() : ""}
+                          </span>
                         ) : isEditing("debit") ? (
                           <Input
                             autoFocus
                             type="number"
+                            step="any"
                             value={line.debit ?? ""}
-                            onChange={e => updateLine(si, li, { debit: e.target.value ? Number(e.target.value) : null })}
+                            onChange={(e) =>
+                              updateLine(si, li, { debit: e.target.value ? Number(e.target.value) : null })
+                            }
                             onBlur={() => setEditingCell(null)}
-                            onKeyDown={e => e.key === "Enter" && setEditingCell(null)}
-                            className="h-6 text-sm p-0 border-0 bg-transparent text-right font-mono focus-visible:ring-1 w-20 ml-auto"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") setEditingCell(null);
+                              if (e.key === "Tab") {
+                                e.preventDefault();
+                                setEditingCell({ si, li, field: "credit" });
+                              }
+                            }}
+                            className="h-6 text-sm p-0 border-0 bg-transparent text-right font-mono focus-visible:ring-1 w-24 ml-auto"
                           />
                         ) : (
                           <span
-                            className="font-mono text-foreground cursor-text hover:bg-muted/40 px-1 rounded inline-block min-w-[2rem] text-right"
+                            className={cn(
+                              "font-mono cursor-text hover:bg-muted/40 px-1 rounded inline-block min-w-[3rem] min-h-[1.25rem] text-right",
+                              line.debit != null ? "text-foreground" : "text-muted-foreground/30"
+                            )}
                             onClick={() => setEditingCell({ si, li, field: "debit" })}
                           >
-                            {line.debit != null ? line.debit.toLocaleString() : ""}
+                            {line.debit != null ? line.debit.toLocaleString() : "—"}
                           </span>
                         )}
                       </td>
 
-                      {/* Credit */}
+                      {/* Credit — always editable */}
                       <td className="text-right px-3 py-1">
                         {readOnly ? (
-                          <span className="font-mono text-foreground">{line.credit != null ? line.credit.toLocaleString() : ""}</span>
+                          <span className="font-mono text-foreground">
+                            {line.credit != null ? line.credit.toLocaleString() : ""}
+                          </span>
                         ) : isEditing("credit") ? (
                           <Input
                             autoFocus
                             type="number"
+                            step="any"
                             value={line.credit ?? ""}
-                            onChange={e => updateLine(si, li, { credit: e.target.value ? Number(e.target.value) : null })}
+                            onChange={(e) =>
+                              updateLine(si, li, { credit: e.target.value ? Number(e.target.value) : null })
+                            }
                             onBlur={() => setEditingCell(null)}
-                            onKeyDown={e => e.key === "Enter" && setEditingCell(null)}
-                            className="h-6 text-sm p-0 border-0 bg-transparent text-right font-mono focus-visible:ring-1 w-20 ml-auto"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") setEditingCell(null);
+                              if (e.key === "Tab" && !e.shiftKey) {
+                                e.preventDefault();
+                                // Move to next row's account
+                                if (li + 1 < section.lines.length) {
+                                  setEditingCell({ si, li: li + 1, field: "account" });
+                                } else {
+                                  setEditingCell(null);
+                                }
+                              }
+                            }}
+                            className="h-6 text-sm p-0 border-0 bg-transparent text-right font-mono focus-visible:ring-1 w-24 ml-auto"
                           />
                         ) : (
                           <span
-                            className="font-mono text-foreground cursor-text hover:bg-muted/40 px-1 rounded inline-block min-w-[2rem] text-right"
+                            className={cn(
+                              "font-mono cursor-text hover:bg-muted/40 px-1 rounded inline-block min-w-[3rem] min-h-[1.25rem] text-right",
+                              line.credit != null ? "text-foreground" : "text-muted-foreground/30"
+                            )}
                             onClick={() => setEditingCell({ si, li, field: "credit" })}
                           >
-                            {line.credit != null ? line.credit.toLocaleString() : ""}
+                            {line.credit != null ? line.credit.toLocaleString() : "—"}
                           </span>
                         )}
                       </td>
 
-                      {/* Actions */}
+                      {/* Row Actions */}
                       {!readOnly && (
                         <td className="px-1 py-1">
-                          <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                            <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => updateLine(si, li, { indentation_level: line.indentation_level === 0 ? 1 : 0 })} title="Toggle indent">
-                              <span className="text-[9px] font-mono">⇥</span>
-                            </button>
-                            <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => moveLine(si, li, -1)} title="Move up">
+                          <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity items-center">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  className="p-0.5 text-muted-foreground hover:text-foreground"
+                                  onClick={() => flipSide(si, li)}
+                                  disabled={line.debit == null && line.credit == null}
+                                >
+                                  <ArrowLeftRight className="h-3 w-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">Flip debit↔credit</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  className="p-0.5 text-muted-foreground hover:text-foreground"
+                                  onClick={() =>
+                                    updateLine(si, li, {
+                                      indentation_level: line.indentation_level === 0 ? 1 : 0,
+                                    })
+                                  }
+                                >
+                                  <span className="text-[9px] font-mono">⇥</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">Toggle indent</TooltipContent>
+                            </Tooltip>
+                            <button
+                              className="p-0.5 text-muted-foreground hover:text-foreground"
+                              onClick={() => moveLine(si, li, -1)}
+                              disabled={li === 0}
+                            >
                               <ArrowUp className="h-3 w-3" />
                             </button>
-                            <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => moveLine(si, li, 1)} title="Move down">
+                            <button
+                              className="p-0.5 text-muted-foreground hover:text-foreground"
+                              onClick={() => moveLine(si, li, 1)}
+                              disabled={li === section.lines.length - 1}
+                            >
                               <ArrowDown className="h-3 w-3" />
                             </button>
-                            <button className="p-0.5 text-muted-foreground hover:text-foreground" onClick={() => duplicateLine(si, li)} title="Duplicate">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  className="p-0.5 text-muted-foreground hover:text-foreground"
+                                  onClick={() => addLineAt(si, li, "above")}
+                                >
+                                  <PlusCircle className="h-3 w-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">Add row above</TooltipContent>
+                            </Tooltip>
+                            <button
+                              className="p-0.5 text-muted-foreground hover:text-foreground"
+                              onClick={() => duplicateLine(si, li)}
+                              title="Duplicate"
+                            >
                               <Copy className="h-3 w-3" />
                             </button>
-                            <button className="p-0.5 text-muted-foreground hover:text-destructive" onClick={() => removeLine(si, li)} title="Remove">
+                            <button
+                              className="p-0.5 text-muted-foreground hover:text-destructive"
+                              onClick={() => removeLine(si, li)}
+                              title="Delete row"
+                            >
                               <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
@@ -342,8 +574,12 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
               <tfoot>
                 <tr className="border-t border-border bg-muted/20">
                   <td className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase">Total</td>
-                  <td className="text-right px-3 py-1 font-mono text-xs font-semibold text-foreground">{bal.debits > 0 ? bal.debits.toLocaleString() : ""}</td>
-                  <td className="text-right px-3 py-1 font-mono text-xs font-semibold text-foreground">{bal.credits > 0 ? bal.credits.toLocaleString() : ""}</td>
+                  <td className="text-right px-3 py-1 font-mono text-xs font-semibold text-foreground">
+                    {bal.debits > 0 ? bal.debits.toLocaleString() : ""}
+                  </td>
+                  <td className="text-right px-3 py-1 font-mono text-xs font-semibold text-foreground">
+                    {bal.credits > 0 ? bal.credits.toLocaleString() : ""}
+                  </td>
                   {!readOnly && <td />}
                 </tr>
               </tfoot>
@@ -352,16 +588,36 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
             {/* Add line button + standard rows */}
             {!readOnly && (
               <div className="px-3 py-1 border-t border-border/30 flex gap-1 flex-wrap">
-                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addLine(si)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-[10px] text-muted-foreground"
+                  onClick={() => addLine(si)}
+                >
                   <Plus className="h-3 w-3 mr-0.5" /> Add Row
                 </Button>
-                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addStandardRows(si, "bonds")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-[10px] text-muted-foreground"
+                  onClick={() => addStandardRows(si, "bonds")}
+                >
                   <ListPlus className="h-3 w-3 mr-0.5" /> + Bonds Template
                 </Button>
-                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addStandardRows(si, "revenue")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-[10px] text-muted-foreground"
+                  onClick={() => addStandardRows(si, "revenue")}
+                >
                   <ListPlus className="h-3 w-3 mr-0.5" /> + Revenue Template
                 </Button>
-                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addStandardRows(si, "blank3")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-[10px] text-muted-foreground"
+                  onClick={() => addStandardRows(si, "blank3")}
+                >
                   <Plus className="h-3 w-3 mr-0.5" /> + 3 Blank
                 </Button>
               </div>
@@ -387,9 +643,9 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
 
 /** Convert legacy JournalEntryGroup[] to structured JESection[] */
 export function groupsToSections(groups: import("@/lib/journalEntryParser").JournalEntryGroup[]): JESection[] {
-  return groups.map(g => ({
+  return groups.map((g) => ({
     entry_date: g.label || "",
-    lines: g.lines.map(l => ({
+    lines: g.lines.map((l) => ({
       account_name: l.account,
       debit: l.debit,
       credit: l.credit,
@@ -400,14 +656,22 @@ export function groupsToSections(groups: import("@/lib/journalEntryParser").Jour
 }
 
 /** Convert JESection[] back to JournalEntryGroup[] for storage */
-export function sectionsToGroups(sections: JESection[]): import("@/lib/journalEntryParser").JournalEntryGroup[] {
-  return sections.map(s => ({
+export function sectionsToGroups(
+  sections: JESection[]
+): import("@/lib/journalEntryParser").JournalEntryGroup[] {
+  return sections.map((s) => ({
     label: s.entry_date || "Journal Entry",
-    lines: s.lines.map(l => ({
+    lines: s.lines.map((l) => ({
       account: l.account_name,
       debit: l.debit,
       credit: l.credit,
-      side: (l.indentation_level === 1 ? "credit" : l.debit != null ? "debit" : l.credit != null ? "credit" : "debit") as "debit" | "credit",
+      side: (l.indentation_level === 1
+        ? "credit"
+        : l.debit != null
+          ? "debit"
+          : l.credit != null
+            ? "credit"
+            : "debit") as "debit" | "credit",
     })),
   }));
 }
