@@ -3,6 +3,31 @@
  * Used across the variant generator, review queue, and asset library.
  */
 
+// ── Canonical structured format ──
+
+export interface CanonicalJERow {
+  account_name: string;
+  debit: number | null;
+  credit: number | null;
+  memo?: string;
+}
+
+export interface CanonicalEntryByDate {
+  entry_date: string;
+  rows: CanonicalJERow[];
+}
+
+export interface CanonicalScenarioSection {
+  label: string;
+  entries_by_date: CanonicalEntryByDate[];
+}
+
+export interface CanonicalJEPayload {
+  scenario_sections: CanonicalScenarioSection[];
+}
+
+// ── Legacy types (kept for backward compat) ──
+
 export interface JournalEntryLine {
   account: string;
   debit: number | null;
@@ -19,6 +44,42 @@ export interface JournalEntryGroup {
 }
 
 /* ------------------------------------------------------------------ */
+/*  CANONICAL HELPERS                                                   */
+/* ------------------------------------------------------------------ */
+
+/** Check if a payload has the canonical scenario_sections structure */
+export function isCanonicalJE(payload: any): payload is CanonicalJEPayload {
+  return (
+    payload &&
+    Array.isArray(payload.scenario_sections) &&
+    payload.scenario_sections.length > 0 &&
+    payload.scenario_sections[0].entries_by_date !== undefined
+  );
+}
+
+/** Convert canonical format to flat JESection[] for the editor */
+export function canonicalToSections(payload: CanonicalJEPayload): { label: string; entry_date: string; rows: CanonicalJERow[] }[] {
+  const result: { label: string; entry_date: string; rows: CanonicalJERow[] }[] = [];
+  for (const sc of payload.scenario_sections) {
+    for (const entry of sc.entries_by_date) {
+      result.push({
+        label: sc.label,
+        entry_date: entry.entry_date,
+        rows: entry.rows.map(r => ({ ...r })),
+      });
+    }
+  }
+  return result;
+}
+
+/** Compute balance for a set of rows */
+export function computeBalance(rows: CanonicalJERow[]): { balanced: boolean; diff: number } {
+  const d = rows.reduce((s, r) => s + (r.debit ?? 0), 0);
+  const c = rows.reduce((s, r) => s + (r.credit ?? 0), 0);
+  return { balanced: Math.abs(d - c) < 0.02, diff: Math.abs(d - c) };
+}
+
+/* ------------------------------------------------------------------ */
 /*  INFERENCE RULES                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -27,29 +88,19 @@ interface InferResult {
   confident: boolean;
 }
 
-/**
- * Infer debit/credit side from account name.
- * Returns side + confidence flag.
- */
 function inferSide(account: string): InferResult {
   const lower = account.toLowerCase().trim();
 
-  // --- SPECIAL CASE: "Discount on N/P" or "Discount on Notes Payable" → DEBIT (contra-liability) ---
   if (/discount\s+on\s+(n\/p|notes?\s+payable)/i.test(account)) {
     return { side: "debit", confident: true };
   }
-
-  // --- SPECIAL CASE: "N/P" or "Notes Payable" alone → CREDIT ---
   if (/^n\/p$/i.test(lower) || lower.includes("notes payable")) {
     return { side: "credit", confident: true };
   }
-
-  // --- Interest + asset label → treat as interest expense (DEBIT) ---
   if (lower.includes("interest") && /land|equip|build/i.test(lower)) {
     return { side: "debit", confident: true };
   }
 
-  // High-confidence CREDIT keywords
   const CREDIT_CONFIDENT: string[] = [
     "a/p", "accounts payable", "payable", "revenue", "unearned",
     "common stock", "preferred stock", "retained earnings",
@@ -60,24 +111,21 @@ function inferSide(account: string): InferResult {
     if (lower.includes(kw)) return { side: "credit", confident: true };
   }
 
-  // High-confidence DEBIT keywords
   const DEBIT_CONFIDENT: string[] = [
     "cash", "land", "equipment", "building", "supplies", "prepaid",
     "receivable", "inventory", "expense", "interest expense",
     "wages", "wage", "salary", "salaries", "dividends",
     "cost of goods", "rent expense", "insurance expense",
-    "depreciation", "amortization", "loss",
-    "discount",              // generic discount = contra, debit
+    "depreciation", "amortization", "loss", "discount",
   ];
   for (const kw of DEBIT_CONFIDENT) {
     if (lower.includes(kw)) return { side: "debit", confident: true };
   }
 
-  // Weaker heuristics
   if (/liability|gain|service/i.test(lower)) return { side: "credit", confident: false };
   if (/asset/i.test(lower)) return { side: "debit", confident: false };
 
-  return { side: "debit", confident: false }; // fallback
+  return { side: "debit", confident: false };
 }
 
 /* ------------------------------------------------------------------ */
@@ -126,16 +174,11 @@ export function parseLegacyAnswerOnly(text: string): JournalEntryGroup[] {
 function parseEntryLines(segment: string): JournalEntryLine[] {
   let cleaned = segment.replace(/\.\s*$/, "").trim();
   cleaned = cleaned.replace(/\([^)]+\)\s*$/, "").trim();
-
-  // Strip company name prefixes like "Shadow Balance Co.:" or "Island Transfer Inc.:"
   cleaned = cleaned.replace(/^[A-Z][A-Za-z\s&.,]+(?:Co\.|Corp\.|Inc\.|LLC|Ltd\.?)\s*:\s*/gm, "");
 
-  // Split on lettered sub-entries like "a. Cash $250,000 b. Interest Expense $5,000"
-  // First try splitting on letter prefixes: a. b. c. etc.
   const letterSplit = cleaned.split(/\b([a-z])\.\s+/i);
   let rawParts: string[];
   if (letterSplit.length > 2) {
-    // Reassemble: letterSplit = ["", "a", "Cash $250,000 ", "b", "Interest Expense $5,000"]
     rawParts = [];
     for (let i = 1; i < letterSplit.length; i += 2) {
       const text = (letterSplit[i + 1] || "").trim();
@@ -150,37 +193,20 @@ function parseEntryLines(segment: string): JournalEntryLine[] {
     const line = parseOneLine(part);
     if (line) lines.push(line);
   }
-
   return lines;
 }
 
 function parseOneLine(text: string): JournalEntryLine | null {
   if (!text.trim()) return null;
-
-  // Pattern: "Account Name $123,456" or "Account Name 123456"
   const amountMatch = text.match(/^(.+?)\s+\$?([\d,]+(?:\.\d+)?)\s*$/);
   if (amountMatch) {
     const account = amountMatch[1].trim();
     const amount = parseFloat(amountMatch[2].replace(/,/g, ""));
     const { side, confident } = inferSide(account);
-    return {
-      account,
-      debit: side === "debit" ? amount : null,
-      credit: side === "credit" ? amount : null,
-      side,
-      needs_review: !confident,
-    };
+    return { account, debit: side === "debit" ? amount : null, credit: side === "credit" ? amount : null, side, needs_review: !confident };
   }
-
-  // No amount found
   const { side, confident } = inferSide(text.trim());
-  return {
-    account: text.trim(),
-    debit: null,
-    credit: null,
-    side,
-    needs_review: !confident,
-  };
+  return { account: text.trim(), debit: null, credit: null, side, needs_review: !confident };
 }
 
 /* ------------------------------------------------------------------ */
@@ -189,64 +215,32 @@ function parseOneLine(text: string): JournalEntryLine | null {
 
 function balanceGroup(group: JournalEntryGroup) {
   const lines = group.lines;
-
-  // Normalize: ensure amount is in the correct column based on side
   for (const l of lines) {
-    if (l.side === "debit" && l.credit != null && l.debit == null) {
-      l.debit = l.credit;
-      l.credit = null;
-    } else if (l.side === "credit" && l.debit != null && l.credit == null) {
-      l.credit = l.debit;
-      l.debit = null;
-    }
+    if (l.side === "debit" && l.credit != null && l.debit == null) { l.debit = l.credit; l.credit = null; }
+    else if (l.side === "credit" && l.debit != null && l.credit == null) { l.credit = l.debit; l.debit = null; }
   }
-
   let totalDebit = lines.reduce((s, l) => s + (l.debit || 0), 0);
   let totalCredit = lines.reduce((s, l) => s + (l.credit || 0), 0);
+  if (Math.abs(totalDebit - totalCredit) < 0.01) { for (const l of lines) l.needs_review = false; return; }
 
-  if (Math.abs(totalDebit - totalCredit) < 0.01) {
-    // Balanced — clear needs_review on all lines
-    for (const l of lines) l.needs_review = false;
-    return;
-  }
-
-  // Try flipping uncertain lines to balance
   const uncertain = lines.filter(l => l.needs_review && (l.debit != null || l.credit != null));
   for (const u of uncertain) {
     const amount = u.debit ?? u.credit ?? 0;
     if (amount === 0) continue;
-
     const newSide: "debit" | "credit" = u.side === "debit" ? "credit" : "debit";
-    // Check if flipping helps
     const debitDelta = u.side === "debit" ? -amount : amount;
     const creditDelta = u.side === "credit" ? -amount : amount;
     const newTotalDebit = totalDebit + debitDelta;
     const newTotalCredit = totalCredit + creditDelta;
-
     if (Math.abs(newTotalDebit - newTotalCredit) < Math.abs(totalDebit - totalCredit)) {
-      // Flip
-      u.side = newSide;
-      u.debit = newSide === "debit" ? amount : null;
-      u.credit = newSide === "credit" ? amount : null;
-      u.needs_review = false;
-      totalDebit = newTotalDebit;
-      totalCredit = newTotalCredit;
-
+      u.side = newSide; u.debit = newSide === "debit" ? amount : null; u.credit = newSide === "credit" ? amount : null;
+      u.needs_review = false; totalDebit = newTotalDebit; totalCredit = newTotalCredit;
       if (Math.abs(totalDebit - totalCredit) < 0.01) break;
     }
   }
 
-  // Final check
-  if (Math.abs(totalDebit - totalCredit) < 0.01) {
-    for (const l of lines) l.needs_review = false;
-  } else {
-    group.unbalanced = true;
-    // Only keep needs_review on actually uncertain lines
-    for (const l of lines) {
-      const { confident } = inferSide(l.account);
-      if (confident) l.needs_review = false;
-    }
-  }
+  if (Math.abs(totalDebit - totalCredit) < 0.01) { for (const l of lines) l.needs_review = false; }
+  else { group.unbalanced = true; for (const l of lines) { const { confident } = inferSide(l.account); if (confident) l.needs_review = false; } }
 }
 
 /* ------------------------------------------------------------------ */
@@ -257,9 +251,7 @@ export function toTemplate(groups: JournalEntryGroup[]): JournalEntryGroup[] {
   return groups.map(g => ({
     label: g.label,
     lines: g.lines.map(l => ({
-      account: l.account,
-      debit: null,
-      credit: null,
+      account: l.account, debit: null, credit: null,
       side: l.side || (l.debit != null ? "debit" : l.credit != null ? "credit" : "debit"),
     })),
   }));
@@ -277,9 +269,7 @@ export function formatAmount(n: number | null | undefined): string {
 export function groupsToTSV(groups: JournalEntryGroup[], mode: "completed" | "template" = "completed"): string {
   const rows: string[] = ["Account\tDebit\tCredit"];
   for (const g of groups) {
-    if (groups.length > 1) {
-      rows.push(`${g.label}\t\t`);
-    }
+    if (groups.length > 1) rows.push(`${g.label}\t\t`);
     for (const l of g.lines) {
       if (mode === "template") {
         rows.push(`${l.account}\t${l.side === "debit" ? "X" : ""}\t${l.side === "credit" ? "X" : ""}`);
@@ -287,11 +277,18 @@ export function groupsToTSV(groups: JournalEntryGroup[], mode: "completed" | "te
         rows.push(`${l.account}\t${l.debit ?? ""}\t${l.credit ?? ""}`);
       }
     }
-    if (g.note) {
-      rows.push(`${g.note}\t\t`);
-    }
+    if (g.note) rows.push(`${g.note}\t\t`);
   }
   return rows.join("\n");
+}
+
+/** TSV export for canonical rows */
+export function canonicalRowsToTSV(rows: CanonicalJERow[]): string {
+  const lines: string[] = ["Account\tDebit\tCredit"];
+  for (const r of rows) {
+    lines.push(`${r.account_name}\t${r.debit ?? ""}\t${r.credit ?? ""}`);
+  }
+  return lines.join("\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -303,14 +300,11 @@ export function resolveJournalEntries(
   legacyText: string | null | undefined,
 ): JournalEntryGroup[] {
   if (completedJson && Array.isArray(completedJson) && completedJson.length > 0) {
-    // Re-run balancing on stored JSON to ensure correctness
     const groups = completedJson.map(g => ({ ...g, lines: g.lines.map(l => ({ ...l })) }));
     groups.forEach(balanceGroup);
     return groups;
   }
-  if (legacyText) {
-    return parseLegacyAnswerOnly(legacyText);
-  }
+  if (legacyText) return parseLegacyAnswerOnly(legacyText);
   return [];
 }
 
@@ -326,43 +320,24 @@ export function parseLegacyJEBlock(text: string | null | undefined): JournalEntr
   for (const line of lines) {
     if (/^account\s*\|?\s*debit\s*\|?\s*credit/i.test(line)) continue;
     if (/^[-|=\s]+$/.test(line)) continue;
-
-    // Strip company name prefixes
     let cleanLine = line.replace(/^[A-Z][A-Za-z\s&.,]+(?:Co\.|Corp\.|Inc\.|LLC|Ltd\.?)\s*:\s*/i, "");
-
     const pipeParts = cleanLine.split("|").map(s => s.trim());
     if (pipeParts.length >= 3) {
-      let accountName = pipeParts[0];
-      // Strip leading letter prefix like "a. " or "b. "
-      accountName = accountName.replace(/^[a-z]\.\s+/i, "");
+      let accountName = pipeParts[0].replace(/^[a-z]\.\s+/i, "");
       const debitVal = parseFloat(pipeParts[1].replace(/[$,]/g, "")) || null;
       const creditVal = parseFloat(pipeParts[2].replace(/[$,]/g, "")) || null;
       const { side, confident } = inferSide(accountName);
-      entryLines.push({
-        account: accountName,
-        debit: debitVal,
-        credit: creditVal,
-        side: debitVal != null ? "debit" : creditVal != null ? "credit" : side,
-        needs_review: !confident && debitVal == null && creditVal == null,
-      });
+      entryLines.push({ account: accountName, debit: debitVal, credit: creditVal, side: debitVal != null ? "debit" : creditVal != null ? "credit" : side, needs_review: !confident && debitVal == null && creditVal == null });
       continue;
     }
-
     const tabParts = cleanLine.split("\t").map(s => s.trim());
     if (tabParts.length >= 3) {
       let accountName = tabParts[0].replace(/^[a-z]\.\s+/i, "");
       const debitVal = parseFloat(tabParts[1].replace(/[$,]/g, "")) || null;
       const creditVal = parseFloat(tabParts[2].replace(/[$,]/g, "")) || null;
-      entryLines.push({
-        account: accountName,
-        debit: debitVal,
-        credit: creditVal,
-        side: debitVal != null ? "debit" : "credit",
-      });
+      entryLines.push({ account: accountName, debit: debitVal, credit: creditVal, side: debitVal != null ? "debit" : "credit" });
       continue;
     }
-
-    // Plain text line — try to extract account + amount
     let plainLine = cleanLine.replace(/^[a-z]\.\s+/i, "");
     const { side, confident } = inferSide(plainLine);
     const amountMatch = plainLine.match(/^(.+?)\s+\$?([\d,]+(?:\.\d+)?)\s*$/);
@@ -370,13 +345,7 @@ export function parseLegacyJEBlock(text: string | null | undefined): JournalEntr
       const account = amountMatch[1].trim();
       const amount = parseFloat(amountMatch[2].replace(/,/g, ""));
       const inf = inferSide(account);
-      entryLines.push({
-        account,
-        debit: inf.side === "debit" ? amount : null,
-        credit: inf.side === "credit" ? amount : null,
-        side: inf.side,
-        needs_review: !inf.confident,
-      });
+      entryLines.push({ account, debit: inf.side === "debit" ? amount : null, credit: inf.side === "credit" ? amount : null, side: inf.side, needs_review: !inf.confident });
     } else {
       entryLines.push({ account: plainLine, debit: null, credit: null, side, needs_review: !confident });
     }

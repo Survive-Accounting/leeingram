@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy } from "lucide-react";
+import { Copy, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
   JournalEntryGroup,
@@ -9,10 +9,13 @@ import {
   resolveJournalEntries,
   parseLegacyJEBlock,
   toTemplate,
+  isCanonicalJE,
+  type CanonicalJEPayload,
 } from "@/lib/journalEntryParser";
+import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 
 interface JournalEntryTableProps {
-  completedJson?: JournalEntryGroup[] | null;
+  completedJson?: JournalEntryGroup[] | CanonicalJEPayload | null;
   legacyAnswerText?: string | null;
   legacyJEBlock?: string | null;
   templateJson?: JournalEntryGroup[] | null;
@@ -30,13 +33,29 @@ export function JournalEntryTable({
   heading,
   showHeading = true,
 }: JournalEntryTableProps) {
+  // ── Check for canonical structured format first ──
+  if (mode === "completed" && isCanonicalJE(completedJson)) {
+    return (
+      <StructuredJEDisplay
+        data={completedJson}
+        heading={heading || "Answer (Journal Entry)"}
+        showHeading={showHeading}
+      />
+    );
+  }
+
+  // ── Legacy / flat group rendering ──
   let groups: JournalEntryGroup[];
+  let isLegacyFallback = false;
 
   if (mode === "template") {
     if (templateJson && Array.isArray(templateJson) && templateJson.length > 0) {
       groups = templateJson;
     } else {
-      const completed = resolveJournalEntries(completedJson, legacyAnswerText);
+      const completed = resolveJournalEntries(
+        Array.isArray(completedJson) ? completedJson : null,
+        legacyAnswerText,
+      );
       if (completed.length > 0) {
         groups = toTemplate(completed);
       } else {
@@ -45,9 +64,16 @@ export function JournalEntryTable({
       }
     }
   } else {
-    groups = resolveJournalEntries(completedJson, legacyAnswerText);
+    groups = resolveJournalEntries(
+      Array.isArray(completedJson) ? completedJson : null,
+      legacyAnswerText,
+    );
     if (groups.length === 0 && legacyJEBlock) {
       groups = parseLegacyJEBlock(legacyJEBlock);
+    }
+    // If we ended up with legacy-parsed data, flag it
+    if (groups.length > 0 && !completedJson) {
+      isLegacyFallback = true;
     }
   }
 
@@ -64,6 +90,19 @@ export function JournalEntryTable({
 
   return (
     <div>
+      {/* Legacy fallback banner */}
+      {isLegacyFallback && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 mb-2 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-destructive">Structured JE missing — legacy fallback shown</p>
+            <p className="text-[10px] text-destructive/70 mt-0.5">
+              Re-generate this answer package to get structured journal entries with scenario/date toggles.
+            </p>
+          </div>
+        </div>
+      )}
+
       {showHeading && (
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold">
@@ -111,7 +150,6 @@ export function JournalEntryTable({
                 <tbody>
                   {group.lines.map((line, li) => {
                     const isCredit = line.side === "credit";
-
                     return (
                       <tr key={li} className="border-b border-border/50 last:border-0">
                         <td className={`px-3 py-1.5 text-foreground ${isCredit ? "pl-10" : ""}`}>
@@ -123,14 +161,10 @@ export function JournalEntryTable({
                           )}
                         </td>
                         <td className="text-right px-3 py-1.5 text-foreground font-mono">
-                          {mode === "template"
-                            ? ""
-                            : (isCredit ? "" : formatAmount(line.debit))}
+                          {mode === "template" ? "" : (isCredit ? "" : formatAmount(line.debit))}
                         </td>
                         <td className="text-right px-3 py-1.5 text-foreground font-mono">
-                          {mode === "template"
-                            ? ""
-                            : (isCredit ? formatAmount(line.credit) : "")}
+                          {mode === "template" ? "" : (isCredit ? formatAmount(line.credit) : "")}
                         </td>
                       </tr>
                     );
