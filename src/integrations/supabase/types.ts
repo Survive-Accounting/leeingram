@@ -157,29 +157,38 @@ export type Database = {
       chapter_accounts: {
         Row: {
           account_name: string
-          account_type: string | null
+          account_type: string
           chapter_id: string
           created_at: string
+          credit_effect: string
+          debit_effect: string
           id: string
           is_approved: boolean
+          normal_balance: string
           source: string
         }
         Insert: {
           account_name: string
-          account_type?: string | null
+          account_type?: string
           chapter_id: string
           created_at?: string
+          credit_effect?: string
+          debit_effect?: string
           id?: string
           is_approved?: boolean
+          normal_balance?: string
           source?: string
         }
         Update: {
           account_name?: string
-          account_type?: string | null
+          account_type?: string
           chapter_id?: string
           created_at?: string
+          credit_effect?: string
+          debit_effect?: string
           id?: string
           is_approved?: boolean
+          normal_balance?: string
           source?: string
         }
         Relationships: [

@@ -12,6 +12,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { FILE_TYPES } from "@/lib/constants";
 import type { LessonStatus } from "@/lib/constants";
+import { ChapterAccountsSetup } from "@/components/content-factory/ChapterAccountsSetup";
 import type { Database } from "@/integrations/supabase/types";
 
 type FileType = Database["public"]["Enums"]["file_type"];
@@ -189,6 +190,16 @@ export default function ChapterPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Chapter Accounts Whitelist */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <ChapterAccountsSetup
+            chapterId={chapterId!}
+            solutionTexts={resources?.filter(r => r.file_type === 'textbook').map(r => r.file_name) ?? []}
+          />
         </CardContent>
       </Card>
 
