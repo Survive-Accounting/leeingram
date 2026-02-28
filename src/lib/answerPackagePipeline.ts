@@ -5,12 +5,20 @@
  * 
  * ALL AI generation paths (Lovable + OpenAI) MUST call this function.
  * No direct writes to answer_packages from provider-specific code.
+ * 
+ * Pipeline steps:
+ * 1) Normalize JE into canonical scenario_sections format
+ * 2) Run validators (hard fail + warnings)
+ * 3) Set status = needs_review if any hard fail
+ * 4) Persist with validation_results stored
+ * 5) Log granular pipeline events with provider/model metadata
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
 import { autoFixDatesInAccountNames, autoFixNarrativePrefixes } from "@/lib/validation/jeValidators";
 import { logActivity } from "@/lib/activityLogger";
+import type { CanonicalJEPayload, CanonicalScenarioSection, CanonicalEntryByDate, CanonicalJERow } from "@/lib/journalEntryParser";
 
 export interface AnswerPackageDraft {
   source_problem_id: string;
@@ -37,77 +45,212 @@ export interface PipelineResult {
   normalized: boolean;
 }
 
-/**
- * 1) Normalize JE rows (strip narrative prefixes, move dates to entry_date, parse amounts)
- * 2) Run validators (hard fail + warnings)
- * 3) Set status = needs_review if any hard fail
- * 4) Persist with validation_results stored
- * 5) Log provider/model + validation outcome
- */
-export async function normalizeValidatePersistAnswerPackage(
-  draft: AnswerPackageDraft
-): Promise<PipelineResult> {
-  let payload = { ...draft.answer_payload };
-  let normalized = false;
+// ── Helpers: Normalize AI output into canonical format ──
 
-  // ── Step 1: Normalize JE rows ──
-  const jeSections = payload?.teaching_aids?.journal_entries;
-  if (Array.isArray(jeSections) && jeSections.length > 0) {
-    // 1a: Strip dates from account_name → move to entry_date
-    const dateFix = autoFixDatesInAccountNames(jeSections);
-    let sections = dateFix.fixed ? dateFix.sections : jeSections;
-
-    // 1b: Strip narrative prefixes (e.g. "Issue Bonds: Cash" → "Cash", prefix → memo)
-    const narrativeFix = autoFixNarrativePrefixes(sections);
-    if (narrativeFix.fixed) sections = narrativeFix.sections;
-
-    // 1c: Ensure each line has proper debit/credit (not both, parse amounts)
-    for (const section of sections) {
-      if (!Array.isArray(section.lines)) continue;
-      for (const line of section.lines) {
-        // Parse string amounts to numbers
-        if (typeof line.debit === "string") line.debit = parseFloat(line.debit.replace(/[$,]/g, "")) || null;
-        if (typeof line.credit === "string") line.credit = parseFloat(line.credit.replace(/[$,]/g, "")) || null;
-
-        // Ensure mutual exclusivity: if both set, zero out the smaller
-        const hasDebit = line.debit != null && line.debit !== 0;
-        const hasCredit = line.credit != null && line.credit !== 0;
-        if (hasDebit && hasCredit) {
-          // Keep the larger, zero the smaller (likely a parsing error)
-          if ((line.debit ?? 0) >= (line.credit ?? 0)) {
-            line.credit = null;
-          } else {
-            line.debit = null;
-          }
-        }
-
-        // Strip embedded dollar amounts from account_name
-        if (line.account_name) {
-          line.account_name = line.account_name
-            .replace(/\s*\$[\d,]+(?:\.\d+)?\s*/g, " ")
-            .replace(/\s{2,}/g, " ")
-            .trim();
-        }
-      }
-    }
-
-    normalized = dateFix.fixed || narrativeFix.fixed;
-    payload = {
-      ...payload,
-      teaching_aids: {
-        ...(payload.teaching_aids ?? {}),
-        journal_entries: sections,
-      },
+/** Try to extract/build canonical scenario_sections from various AI output shapes */
+function normalizeToCanonical(payload: Record<string, any>): {
+  canonicalPayload: Record<string, any>;
+  normalized: boolean;
+} {
+  // Already canonical
+  if (payload.scenario_sections && Array.isArray(payload.scenario_sections) && payload.scenario_sections.length > 0) {
+    const sections = payload.scenario_sections.map(normalizeScenarioSection);
+    return {
+      canonicalPayload: { ...payload, scenario_sections: sections },
+      normalized: true,
     };
   }
 
+  // teaching_aids.scenario_sections
+  if (payload.teaching_aids?.scenario_sections && Array.isArray(payload.teaching_aids.scenario_sections)) {
+    const sections = payload.teaching_aids.scenario_sections.map(normalizeScenarioSection);
+    const { teaching_aids, ...rest } = payload;
+    return {
+      canonicalPayload: { ...rest, scenario_sections: sections, teaching_aids: { ...teaching_aids, scenario_sections: undefined } },
+      normalized: true,
+    };
+  }
+
+  // teaching_aids.journal_entries (flat array of date-based entries)
+  if (payload.teaching_aids?.journal_entries && Array.isArray(payload.teaching_aids.journal_entries) && payload.teaching_aids.journal_entries.length > 0) {
+    const entries = payload.teaching_aids.journal_entries;
+    const sections = convertFlatEntriesToScenarioSections(entries);
+    const { teaching_aids, ...rest } = payload;
+    return {
+      canonicalPayload: {
+        ...rest,
+        scenario_sections: sections,
+        teaching_aids: { ...teaching_aids, journal_entries: undefined },
+      },
+      normalized: true,
+    };
+  }
+
+  // Legacy je_rows at top level
+  if (payload.je_rows && Array.isArray(payload.je_rows) && payload.je_rows.length > 0) {
+    const rows: CanonicalJERow[] = payload.je_rows.map((r: any) => ({
+      account_name: r.account_name || r.account || "",
+      debit: r.debit != null ? Number(r.debit) : null,
+      credit: r.credit != null ? Number(r.credit) : null,
+    }));
+    const { je_rows, ...rest } = payload;
+    return {
+      canonicalPayload: {
+        ...rest,
+        scenario_sections: [{
+          label: "Journal Entry",
+          entries_by_date: [{ entry_date: "", rows }],
+        }],
+      },
+      normalized: true,
+    };
+  }
+
+  // No JE data to normalize
+  return { canonicalPayload: payload, normalized: false };
+}
+
+function normalizeScenarioSection(sc: any): CanonicalScenarioSection {
+  const entries = sc.entries_by_date || sc.journal_entries || [];
+  return {
+    label: sc.label || "Journal Entry",
+    entries_by_date: entries.map((entry: any): CanonicalEntryByDate => ({
+      entry_date: entry.entry_date || "",
+      rows: (entry.rows || entry.lines || []).map((r: any): CanonicalJERow => ({
+        account_name: r.account_name || r.account || "",
+        debit: r.debit != null ? Number(r.debit) : null,
+        credit: r.credit != null ? Number(r.credit) : null,
+        ...(r.memo ? { memo: r.memo } : {}),
+      })),
+    })),
+  };
+}
+
+/** Convert flat JE entries (with entry_date) into scenario_sections, grouping by scenario label */
+function convertFlatEntriesToScenarioSections(entries: any[]): CanonicalScenarioSection[] {
+  const scenarioPattern = /^((?:Situation|Case|Scenario)\s+(?:\d+|[A-Z]|[IVX]+))\s*[—\-–:]\s*/i;
+  const groups: Map<string, CanonicalEntryByDate[]> = new Map();
+
+  for (const entry of entries) {
+    const dateStr = entry.entry_date || "";
+    const m = dateStr.match(scenarioPattern);
+    const label = m ? m[1] : "Journal Entry";
+    const cleanDate = m ? dateStr.replace(scenarioPattern, "").trim() : dateStr;
+
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push({
+      entry_date: cleanDate || dateStr,
+      rows: (entry.rows || entry.lines || []).map((r: any): CanonicalJERow => ({
+        account_name: r.account_name || r.account || "",
+        debit: r.debit != null ? Number(r.debit) : null,
+        credit: r.credit != null ? Number(r.credit) : null,
+        ...(r.memo ? { memo: r.memo } : {}),
+      })),
+    });
+  }
+
+  return Array.from(groups.entries()).map(([label, ebd]) => ({ label, entries_by_date: ebd }));
+}
+
+/** Apply auto-fix normalizations to canonical rows */
+function normalizeCanonicalRows(payload: Record<string, any>): { payload: Record<string, any>; fixApplied: boolean } {
+  const sections = payload.scenario_sections;
+  if (!Array.isArray(sections) || sections.length === 0) return { payload, fixApplied: false };
+
+  let fixApplied = false;
+
+  for (const sc of sections) {
+    for (const entry of sc.entries_by_date || []) {
+      const rows: CanonicalJERow[] = entry.rows || [];
+      for (const row of rows) {
+        // Parse string amounts
+        if (typeof row.debit === "string") { row.debit = parseFloat((row.debit as string).replace(/[$,]/g, "")) || null; fixApplied = true; }
+        if (typeof row.credit === "string") { row.credit = parseFloat((row.credit as string).replace(/[$,]/g, "")) || null; fixApplied = true; }
+
+        // Mutual exclusivity
+        const hasDebit = row.debit != null && row.debit !== 0;
+        const hasCredit = row.credit != null && row.credit !== 0;
+        if (hasDebit && hasCredit) {
+          if ((row.debit ?? 0) >= (row.credit ?? 0)) { row.credit = null; } else { row.debit = null; }
+          fixApplied = true;
+        }
+
+        // Strip embedded dollar amounts from account_name
+        if (row.account_name) {
+          const cleaned = row.account_name.replace(/\s*\$[\d,]+(?:\.\d+)?\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+          if (cleaned !== row.account_name) { row.account_name = cleaned; fixApplied = true; }
+        }
+      }
+    }
+  }
+
+  return { payload, fixApplied };
+}
+
+// ── Main pipeline ──
+
+export async function normalizeValidatePersistAnswerPackage(
+  draft: AnswerPackageDraft
+): Promise<PipelineResult> {
+  const pipelineStart = Date.now();
+  const providerMeta = {
+    provider: draft.provider ?? "unknown",
+    model: draft.model ?? "unknown",
+    source_problem_id: draft.source_problem_id,
+  };
+
+  // ── Log: normalize_started ──
+  await logActivity({
+    actor_type: "system",
+    entity_type: "source_problem",
+    entity_id: draft.source_problem_id,
+    event_type: "normalize_started",
+    severity: "info",
+    payload_json: providerMeta,
+  });
+
+  // ── Step 1: Normalize into canonical scenario_sections ──
+  const { canonicalPayload, normalized: structureNormalized } = normalizeToCanonical(draft.answer_payload);
+  const { payload: cleanPayload, fixApplied } = normalizeCanonicalRows(canonicalPayload);
+  const normalized = structureNormalized || fixApplied;
+
+  await logActivity({
+    actor_type: "system",
+    entity_type: "source_problem",
+    entity_id: draft.source_problem_id,
+    event_type: "normalize_completed",
+    severity: "info",
+    payload_json: { ...providerMeta, structure_normalized: structureNormalized, rows_fixed: fixApplied },
+  });
+
   // ── Step 2: Run validators ──
+  await logActivity({
+    actor_type: "system",
+    entity_type: "source_problem",
+    entity_id: draft.source_problem_id,
+    event_type: "validate_started",
+    severity: "info",
+    payload_json: providerMeta,
+  });
+
   const pkgData: AnswerPackageData = {
-    answer_payload: payload,
+    answer_payload: cleanPayload,
     extracted_inputs: draft.extracted_inputs ?? {},
     computed_values: draft.computed_values ?? {},
   };
   const validationResults = runValidation(pkgData);
+  const failCount = validationResults.filter(r => r.status === "fail").length;
+  const warnCount = validationResults.filter(r => r.status === "warn").length;
+  const passCount = validationResults.filter(r => r.status === "pass").length;
+
+  await logActivity({
+    actor_type: "system",
+    entity_type: "source_problem",
+    entity_id: draft.source_problem_id,
+    event_type: "validate_completed",
+    severity: failCount > 0 ? "warn" : "info",
+    payload_json: { ...providerMeta, validation_summary: { pass: passCount, fail: failCount, warn: warnCount } },
+  });
 
   // ── Step 3: Determine status ──
   const status = hasFailures(validationResults) ? "needs_review" : "drafted";
@@ -119,7 +262,7 @@ export async function normalizeValidatePersistAnswerPackage(
       source_problem_id: draft.source_problem_id,
       version: draft.version,
       generator: draft.generator as any,
-      answer_payload: payload,
+      answer_payload: cleanPayload,
       extracted_inputs: draft.extracted_inputs ?? {},
       computed_values: draft.computed_values ?? {},
       validation_results: validationResults as any,
@@ -131,24 +274,22 @@ export async function normalizeValidatePersistAnswerPackage(
 
   if (insertErr) throw insertErr;
 
-  // ── Step 5: Log provider/model + validation outcome ──
-  const failCount = validationResults.filter(r => r.status === "fail").length;
-  const warnCount = validationResults.filter(r => r.status === "warn").length;
-  const passCount = validationResults.filter(r => r.status === "pass").length;
+  // ── Step 5: Log persist_completed ──
+  const totalMs = Date.now() - pipelineStart;
 
   await logActivity({
     actor_type: "ai",
     entity_type: "source_problem",
     entity_id: draft.source_problem_id,
-    event_type: draft.log_event_type ?? "answer_package_created",
+    event_type: "persist_completed",
     severity: failCount > 0 ? "warn" : "info",
     payload_json: {
       package_id: newPkg.id,
       version: draft.version,
-      provider: draft.provider ?? "unknown",
-      model: draft.model ?? "unknown",
+      ...providerMeta,
       token_usage: draft.token_usage,
       generation_time_ms: draft.generation_time_ms,
+      pipeline_time_ms: totalMs,
       status,
       normalized,
       validation_summary: { pass: passCount, fail: failCount, warn: warnCount },
