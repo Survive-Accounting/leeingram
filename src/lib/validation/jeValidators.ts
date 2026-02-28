@@ -233,6 +233,50 @@ export const cashDirectionSanity: Validator = (pkg) => {
   };
 };
 
+// ─── V6: SCENARIO_SECTIONS_PRESENT (HARD) ───
+// When scenario_labels metadata exists, ensure each scenario has at least one JE section
+export const scenarioSectionsPresent: Validator = (pkg) => {
+  const scenarioLabels: string[] = pkg.extracted_inputs?.scenario_labels || [];
+  if (scenarioLabels.length === 0) {
+    return { validator: "SCENARIO_SECTIONS_PRESENT", status: "pass", message: "Not a multi-scenario problem, skipped" };
+  }
+
+  const sections = extractJESections(pkg);
+  if (sections.length === 0) {
+    return {
+      validator: "SCENARIO_SECTIONS_PRESENT",
+      status: "fail",
+      message: `Multi-scenario problem (${scenarioLabels.length} scenarios) but no JE sections found`,
+      details: { expected: scenarioLabels, found: [] },
+    };
+  }
+
+  // Check that entry_date labels reference each scenario
+  const sectionDates = sections.map(s => (s.entry_date || "").toLowerCase());
+  const missing: string[] = [];
+  for (const label of scenarioLabels) {
+    const labelLower = label.toLowerCase();
+    const found = sectionDates.some(d => d.includes(labelLower));
+    if (!found) missing.push(label);
+  }
+
+  if (missing.length > 0) {
+    return {
+      validator: "SCENARIO_SECTIONS_PRESENT",
+      status: "fail",
+      message: `Missing JE sections for scenario(s): ${missing.join(", ")}. Got a single mixed blob instead of per-scenario entries.`,
+      details: { expected: scenarioLabels, missing, found_dates: sectionDates },
+    };
+  }
+
+  return {
+    validator: "SCENARIO_SECTIONS_PRESENT",
+    status: "pass",
+    message: `All ${scenarioLabels.length} scenario(s) have JE sections`,
+    details: { expected: scenarioLabels },
+  };
+};
+
 // ─── Export all JE validators ───
 export const JE_VALIDATORS: Validator[] = [
   jeBalances,
@@ -240,6 +284,7 @@ export const JE_VALIDATORS: Validator[] = [
   noNarrativePrefixInAccountNames,
   oneSidedRows,
   cashDirectionSanity,
+  scenarioSectionsPresent,
 ];
 
 // ─── Auto-fix helpers ───

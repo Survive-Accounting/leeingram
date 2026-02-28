@@ -22,6 +22,7 @@ import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
 import { logActivity } from "@/lib/activityLogger";
+import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -308,6 +309,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       const useLabel = problem.ocr_detected_label || problem.source_label;
       const useTitle = problem.ocr_detected_title || problem.title;
 
+      // ── Scenario Segmentation ──
+      const scenarioResult = detectAndSplitScenarios(useProblemText);
+      const scenarioBlocks = scenarioResult.is_multi_scenario ? scenarioResult.scenario_blocks : undefined;
+
       const { data, error } = await supabase.functions.invoke("convert-to-asset", {
         body: {
           mode: "candidates",
@@ -323,6 +328,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           requiresJournalEntry: afRequiresJE,
           provider: selectedProvider,
           model: selectedModel,
+          scenarioBlocks,
           difficultyToggles: activeDiffToggles.length > 0
             ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
             : undefined,
@@ -354,8 +360,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         setViewingProblem({ ...viewingProblem, status: "generated" });
       }
       const constraintsUsed = data.constraints_count || 0;
+      const scenarioLabels = data.scenario_labels || [];
       const fixMsg = constraintsUsed > 0 ? ` (used ${constraintsUsed} recent constraints from edits)` : "";
-      toast.success(`Generated ${newCandidates.length} variants${fixMsg}`);
+      const scenarioMsg = scenarioLabels.length > 0 ? ` [${scenarioLabels.length} scenarios detected]` : "";
+      toast.success(`Generated ${newCandidates.length} variants${fixMsg}${scenarioMsg}`);
 
       // Log to activity log
       if (viewingProblem) {

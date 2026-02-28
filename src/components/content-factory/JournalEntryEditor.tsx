@@ -282,16 +282,51 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
 
   // ── Render ──
 
+  // Group sections by scenario label (detected from entry_date prefix like "Situation 1 — ...")
+  const scenarioPattern = /^((?:Situation|Case|Scenario)\s+(?:\d+|[A-Z]|[IVX]+))\s*[—\-–:]\s*/i;
+  type SectionGroup = { scenarioLabel: string | null; sectionIndices: number[] };
+  const sectionGroups: SectionGroup[] = [];
+  let currentScenario: string | null = null;
+
+  sections.forEach((section, si) => {
+    const match = section.entry_date.match(scenarioPattern);
+    const label = match ? match[1] : null;
+    if (label !== currentScenario || label === null) {
+      sectionGroups.push({ scenarioLabel: label, sectionIndices: [si] });
+      currentScenario = label;
+    } else {
+      sectionGroups[sectionGroups.length - 1].sectionIndices.push(si);
+    }
+  });
+
+  const hasScenarioGroups = sectionGroups.some(g => g.scenarioLabel !== null);
+
   return (
     <div className="space-y-4">
-      {sections.map((section, si) => {
+      {sectionGroups.map((group, gi) => (
+        <div key={gi}>
+          {/* Scenario group header */}
+          {hasScenarioGroups && group.scenarioLabel && (
+            <div className="flex items-center gap-2 mb-2 mt-1">
+              <div className="h-px flex-1 bg-primary/20" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                {group.scenarioLabel}
+              </span>
+              <div className="h-px flex-1 bg-primary/20" />
+            </div>
+          )}
+          <div className="space-y-3">
+      {group.sectionIndices.map((si) => {
+        const section = sections[si];
         const bal = sectionBalance(section);
+        // Strip scenario label from display date
+        const displayDate = section.entry_date.replace(scenarioPattern, "").trim() || section.entry_date;
         return (
           <div key={si} className="border border-border rounded-lg overflow-hidden">
             {/* Section header */}
             <div className="bg-muted/40 px-3 py-1.5 flex items-center justify-between border-b border-border">
               {readOnly ? (
-                <span className="text-xs font-semibold text-foreground">{section.entry_date || "Journal Entry"}</span>
+                <span className="text-xs font-semibold text-foreground">{hasScenarioGroups ? displayDate : (section.entry_date || "Journal Entry")}</span>
               ) : (
                 <Input
                   value={section.entry_date}
@@ -625,6 +660,9 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
           </div>
         );
       })}
+          </div>
+        </div>
+      ))}
 
       {/* Bottom actions */}
       {!readOnly && (

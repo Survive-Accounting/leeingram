@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { runValidation, hasFailures, type ValidationResult, type AnswerPackageData } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
 import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
+import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
 import { RepairNotesPanel } from "./RepairNotesPanel";
 import { RegenerateDialog } from "./RegenerateDialog";
 import { VersionDiffView } from "./VersionDiffView";
@@ -252,7 +253,16 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
 
   const initialGenMutation = useMutation({
     mutationFn: async () => {
-      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in valid JSON.\n\nProblem:\n${problemText || "No problem text"}\n\nSolution Reference:\n${solutionText || "No solution text"}\n\nProvide JSON: {"final_answers": [{"label": string, "value": string}], "teaching_aids": {"explanation": string, "journal_entries": [{"entry_date": string, "lines": [{"account_name": string, "debit": number|null, "credit": number|null, "memo": string, "indentation_level": number}]}]}}`;
+      // Detect scenarios
+      const scenarioResult = detectAndSplitScenarios(problemText || "");
+      const scenarioLabels = scenarioResult.is_multi_scenario
+        ? scenarioResult.scenario_blocks.map(b => b.label)
+        : [];
+      const scenarioPromptBlock = scenarioResult.is_multi_scenario
+        ? `\n\nMULTI-SCENARIO: This problem has ${scenarioLabels.length} independent scenarios (${scenarioLabels.join(", ")}). Generate SEPARATE journal entry sections for each, labeled with the scenario name prefix.`
+        : "";
+
+      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in valid JSON.\n\nProblem:\n${problemText || "No problem text"}\n\nSolution Reference:\n${solutionText || "No solution text"}${scenarioPromptBlock}\n\nProvide JSON: {"final_answers": [{"label": string, "value": string}], "teaching_aids": {"explanation": string, "journal_entries": [{"entry_date": string, "lines": [{"account_name": string, "debit": number|null, "credit": number|null, "memo": string, "indentation_level": number}]}]}}`;
 
       const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
         body: {
@@ -286,13 +296,14 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
         version: 1,
         generator: "ai",
         answer_payload: parsed,
+        extracted_inputs: scenarioLabels.length > 0 ? { scenario_labels: scenarioLabels } : {},
         output_type: "mixed",
         provider: genProvider,
         model: selectedModel,
         token_usage: aiResult.token_usage,
         generation_time_ms: aiResult.generation_time_ms,
         log_event_type: "ai_generation_test",
-        log_extra_payload: { mode: "initial" },
+        log_extra_payload: { mode: "initial", scenario_count: scenarioLabels.length },
       });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["answer-packages"] }); toast.success(`Initial generation complete (${genProvider})`); },
