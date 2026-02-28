@@ -20,11 +20,13 @@ import { FinalAnswersPanel, type FinalAnswer } from "./FinalAnswersPanel";
 import { JournalEntryEditor, groupsToSections, sectionsToGroups, type JESection } from "./JournalEntryEditor";
 import { AIComparisonPanel } from "./AIComparisonPanel";
 import { ValidationPanel } from "./ValidationPanel";
+import { ChapterAccountsSetup, useChapterApprovedAccounts } from "./ChapterAccountsSetup";
 
 interface Props {
   sourceProblemId: string;
   problemText?: string;
   solutionText?: string;
+  chapterId?: string;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -91,7 +93,7 @@ function extractTeachingText(payload: any): string | null {
   return payload?.teaching_aids?.explanation || payload?.teaching_aids?.calculation_breakdown || null;
 }
 
-export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText }: Props) {
+export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText, chapterId }: Props) {
   const qc = useQueryClient();
   const [showWork, setShowWork] = useState(false);
   const [showAllVersions, setShowAllVersions] = useState(false);
@@ -102,6 +104,8 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
   const [genModel, setGenModel] = useState("gpt-4.1");
   const [showScenarioSplit, setShowScenarioSplit] = useState(false);
   const [confirmedScenarioBlocks, setConfirmedScenarioBlocks] = useState<ScenarioBlock[] | null>(null);
+
+  const { data: approvedAccounts } = useChapterApprovedAccounts(chapterId);
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ["answer-packages", sourceProblemId],
@@ -325,6 +329,7 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
         answer_payload: parsed,
         extracted_inputs: {
           ...(scenarioLabels.length > 0 ? { scenario_labels: scenarioLabels } : {}),
+          ...(approvedAccounts && approvedAccounts.length > 0 ? { approved_accounts: approvedAccounts } : {}),
           problem_text: problemText || "",
         },
         output_type: "mixed",
@@ -346,6 +351,14 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
     <div className="space-y-4">
       {/* Repair Notes */}
       <RepairNotesPanel sourceProblemId={sourceProblemId} latestPackageId={latest?.id} />
+
+      {/* Chapter Account Whitelist Setup */}
+      {chapterId && (
+        <ChapterAccountsSetup
+          chapterId={chapterId}
+          solutionTexts={solutionText ? [solutionText] : []}
+        />
+      )}
 
       <div className="border-t border-border pt-3" />
 
@@ -491,6 +504,8 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
                     <JournalEntryEditor
                       sections={teachingJE}
                       onChange={handleJEEdit}
+                      chapterId={chapterId}
+                      approvedAccounts={approvedAccounts}
                     />
                   ) : (
                     <p className="text-xs text-muted-foreground italic">No journal entries in this package.</p>

@@ -20,6 +20,7 @@ export interface SourceProblemPreviewData {
   solution_screenshot_urls?: string[];
   problem_text?: string;
   solution_text?: string;
+  chapter_id?: string;
 }
 
 interface Props {
@@ -227,7 +228,7 @@ export function SourceProblemPreview({ problem, open, onOpenChange }: Props) {
 
             <TabsContent value="answer">
               {problem.id ? (
-                <AnswerPackagePanel sourceProblemId={problem.id} problemText={problem.problem_text} solutionText={problem.solution_text} />
+                <AnswerPackagePanel sourceProblemId={problem.id} problemText={problem.problem_text} solutionText={problem.solution_text} chapterId={problem.chapter_id} />
               ) : (
                 <p className="text-xs text-muted-foreground">No problem ID available.</p>
               )}

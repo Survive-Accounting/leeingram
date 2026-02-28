@@ -154,28 +154,37 @@ export type Database = {
         }
         Relationships: []
       }
-      chapter_account_whitelist: {
+      chapter_accounts: {
         Row: {
           account_name: string
+          account_type: string | null
           chapter_id: string
           created_at: string
           id: string
+          is_approved: boolean
+          source: string
         }
         Insert: {
           account_name: string
+          account_type?: string | null
           chapter_id: string
           created_at?: string
           id?: string
+          is_approved?: boolean
+          source?: string
         }
         Update: {
           account_name?: string
+          account_type?: string | null
           chapter_id?: string
           created_at?: string
           id?: string
+          is_approved?: boolean
+          source?: string
         }
         Relationships: [
           {
-            foreignKeyName: "chapter_account_whitelist_chapter_id_fkey"
+            foreignKeyName: "chapter_accounts_chapter_id_fkey"
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
