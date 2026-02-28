@@ -125,6 +125,7 @@ serve(async (req) => {
       provider: reqProvider,
       model: reqModel,
       chapterId: reqChapterId,
+      scenarioBlocks: reqScenarioBlocks,
     } = body;
 
     const provider = reqProvider || "lovable";
@@ -216,6 +217,24 @@ For each variant, include an "exam_trap_note" explaining what makes this variant
 - Do NOT include explanations for JE entries — students rely on video walkthroughs.`
       : "JOURNAL ENTRY: Leave journal_entry_block as null. This problem does not require a journal entry.";
 
+    // ─── Scenario Segmentation ───
+    const scenarioBlocks = reqScenarioBlocks as Array<{ label: string; text: string }> | undefined;
+    let scenarioInstruction = "";
+    if (scenarioBlocks && scenarioBlocks.length >= 2) {
+      scenarioInstruction = `
+MULTI-SCENARIO PROBLEM (${scenarioBlocks.length} independent scenarios detected):
+This problem contains multiple independent scenarios. For EACH variant:
+- Generate SEPARATE journal entry sections for EACH scenario
+- Label each JE section's entry_date with the scenario label prefix (e.g., "${scenarioBlocks[0].label} — Jan 1, 2025")
+- Do NOT merge all scenarios into a single journal entry blob
+- Each scenario should include entries for: a) issuance, b) interest payment, c) accrual (if applicable)
+- Keep scenario numbering consistent
+
+SCENARIO BLOCKS:
+${scenarioBlocks.map((b: any) => `--- ${b.label} ---\n${b.text}`).join("\n\n")}
+`;
+    }
+
     const systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
 TEACHING TONE:
@@ -239,6 +258,7 @@ ${difficultySection}
 ${constraintsBlock}
 
 ${journalInstruction}
+${scenarioInstruction}
 
 SOLUTION STORAGE — For every variant, provide BOTH:
 1. answer_only: Final numeric answers + JE summary (concise)
@@ -393,8 +413,9 @@ Generate ${variantCount} exam-style practice variants.`;
     const candidates = parsed.candidates || [];
 
     const constraintsCount = constraintsBlock ? constraintsBlock.split("\n").filter((l: string) => l.match(/^\d+\./)).length : 0;
+    const scenarioLabels = scenarioBlocks?.map((b: any) => b.label) ?? [];
 
-    return new Response(JSON.stringify({ success: true, candidates, constraints_count: constraintsCount }), {
+    return new Response(JSON.stringify({ success: true, candidates, constraints_count: constraintsCount, scenario_labels: scenarioLabels }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
