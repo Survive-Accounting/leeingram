@@ -14,6 +14,8 @@ export interface AnswerPackageData {
   answer_payload: Record<string, any>;
   extracted_inputs: Record<string, any>;
   computed_values: Record<string, any>;
+  /** Derived flag: true if problem text requires journal entries */
+  requires_je?: boolean;
 }
 
 export type Validator = (pkg: AnswerPackageData) => ValidationResult;
