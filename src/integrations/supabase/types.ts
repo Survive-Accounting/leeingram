@@ -178,6 +178,7 @@ export type Database = {
           problem_screenshot_urls: string[]
           problem_text: string
           problem_type: Database["public"]["Enums"]["problem_type"]
+          scenario_blocks_json: Json | null
           solution_screenshot_url: string | null
           solution_screenshot_urls: string[]
           solution_text: string
@@ -208,6 +209,7 @@ export type Database = {
           problem_screenshot_urls?: string[]
           problem_text?: string
           problem_type?: Database["public"]["Enums"]["problem_type"]
+          scenario_blocks_json?: Json | null
           solution_screenshot_url?: string | null
           solution_screenshot_urls?: string[]
           solution_text?: string
@@ -238,6 +240,7 @@ export type Database = {
           problem_screenshot_urls?: string[]
           problem_text?: string
           problem_type?: Database["public"]["Enums"]["problem_type"]
+          scenario_blocks_json?: Json | null
           solution_screenshot_url?: string | null
           solution_screenshot_urls?: string[]
           solution_text?: string
