@@ -10,6 +10,7 @@ import { RefreshCw, Lock, Unlock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 import { runValidation, hasFailures, type AnswerPackageData } from "@/lib/validation";
+import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
 
 interface Props {
   sourceProblemId: string;
@@ -124,18 +125,13 @@ Provide a JSON object with:
       const nextVersion = (latestPackage?.version ?? 0) + 1;
 
       if (!parsed) {
-        // JSON parse failed — save as needs_review
-        await supabase.from("answer_packages").insert({
-          source_problem_id: sourceProblemId,
-          version: nextVersion,
-          generator: "ai" as any,
-          answer_payload: { _raw_unparsed: aiResult.raw },
+        await persistUnparseablePackage(sourceProblemId, nextVersion, aiResult.raw, {
           extracted_inputs: latestPackage?.extracted_inputs ?? {},
           computed_values: latestPackage?.computed_values ?? {},
-          validation_results: [] as any,
-          status: "needs_review" as any,
           output_type: latestPackage?.output_type ?? "mixed",
-        } as any);
+          provider,
+          model: provider === "openai" ? model : "google/gemini-2.5-flash",
+        });
         throw new Error("AI returned invalid JSON — saved as needs_review");
       }
 
@@ -149,41 +145,20 @@ Provide a JSON object with:
         newPayload.teaching_aids = { ...newPayload.teaching_aids, explanation: prevPayload.teaching_aids.explanation };
       }
 
-      const pkgData: AnswerPackageData = {
-        answer_payload: newPayload,
-        extracted_inputs: latestPackage?.extracted_inputs ?? {},
-        computed_values: latestPackage?.computed_values ?? {},
-      };
-      const validationResults = runValidation(pkgData);
-      const status = hasFailures(validationResults) ? "needs_review" : "drafted";
-
-      const { data: newPkg, error: pkgErr } = await supabase.from("answer_packages").insert({
+      await normalizeValidatePersistAnswerPackage({
         source_problem_id: sourceProblemId,
         version: nextVersion,
-        generator: "ai" as any,
+        generator: "ai",
+        answer_payload: newPayload,
         extracted_inputs: latestPackage?.extracted_inputs ?? {},
         computed_values: latestPackage?.computed_values ?? {},
-        answer_payload: newPayload,
-        validation_results: validationResults as any,
-        status: status as any,
         output_type: latestPackage?.output_type ?? "mixed",
-      } as any).select("id").single();
-      if (pkgErr) throw pkgErr;
-
-      await logActivity({
-        actor_type: "ai",
-        entity_type: "source_problem",
-        entity_id: sourceProblemId,
-        event_type: "ai_generation_test",
-        payload_json: {
-          provider,
-          model: provider === "openai" ? model : "google/gemini-2.5-flash",
-          token_usage: aiResult.token_usage,
-          generation_time_ms: aiResult.generation_time_ms,
-          package_id: newPkg.id,
-          version: nextVersion,
-          mode: "regen",
-        },
+        provider,
+        model: provider === "openai" ? model : "google/gemini-2.5-flash",
+        token_usage: aiResult.token_usage,
+        generation_time_ms: aiResult.generation_time_ms,
+        log_event_type: "ai_generation_test",
+        log_extra_payload: { mode: "regen" },
       });
 
       // Mark repair notes resolved
