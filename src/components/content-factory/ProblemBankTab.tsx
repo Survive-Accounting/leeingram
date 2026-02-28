@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
+import { logActivity } from "@/lib/activityLogger";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -348,12 +349,31 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         }
         supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", viewingProblem.id).then(() => {
           qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+          qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
         });
         setViewingProblem({ ...viewingProblem, status: "generated" });
       }
       const constraintsUsed = data.constraints_count || 0;
       const fixMsg = constraintsUsed > 0 ? ` (used ${constraintsUsed} recent constraints from edits)` : "";
       toast.success(`Generated ${newCandidates.length} variants${fixMsg}`);
+
+      // Log to activity log
+      if (viewingProblem) {
+        await logActivity({
+          actor_type: "ai",
+          entity_type: "source_problem",
+          entity_id: viewingProblem.id,
+          event_type: "variant_generation",
+          severity: "info",
+          payload_json: {
+            provider: genProvider,
+            variant_count: newCandidates.length,
+            constraints_used: constraintsUsed,
+            difficulty_toggles: activeDiffToggles,
+            requires_je: afRequiresJE,
+          },
+        });
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -391,13 +411,25 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
       setGeneratedAssetId(data.asset?.id ?? null);
       setSavingIndex(null);
       if (viewingProblem) {
         setViewingProblem({ ...viewingProblem, status: "approved" });
+        await logActivity({
+          actor_type: "user",
+          entity_type: "source_problem",
+          entity_id: viewingProblem.id,
+          event_type: "variant_approved",
+          severity: "info",
+          payload_json: {
+            asset_id: data.asset?.id,
+            asset_name: data.asset?.asset_name,
+          },
+        });
       }
       toast.success("Variant approved & saved to Assets Library!");
     },
@@ -414,9 +446,19 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       } as any);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       if (rejectingIndex !== null) {
         setCandidates((prev) => prev.filter((_, i) => i !== rejectingIndex));
+      }
+      if (viewingProblem) {
+        await logActivity({
+          actor_type: "user",
+          entity_type: "source_problem",
+          entity_id: viewingProblem.id,
+          event_type: "variant_rejected",
+          severity: "warn",
+          payload_json: { reason: rejectReason, note: rejectNote },
+        });
       }
       setRejectingIndex(null);
       setRejectReason("");
