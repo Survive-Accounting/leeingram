@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ArrowUp, ArrowDown, Copy, CheckCircle2, XCircle, Wand2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Copy, CheckCircle2, XCircle, Wand2, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,9 +86,19 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
   }, [aliases]);
 
   const updateLine = (si: number, li: number, patch: Partial<JELine>) => {
+    // Mutual exclusivity: entering debit clears credit and vice versa
+    const finalPatch = { ...patch };
+    if ('debit' in finalPatch && finalPatch.debit != null) {
+      finalPatch.credit = null;
+      finalPatch.indentation_level = 0;
+    }
+    if ('credit' in finalPatch && finalPatch.credit != null) {
+      finalPatch.debit = null;
+      finalPatch.indentation_level = 1;
+    }
     const next = sections.map((s, i) => i === si ? {
       ...s,
-      lines: s.lines.map((l, j) => j === li ? { ...l, ...patch } : l),
+      lines: s.lines.map((l, j) => j === li ? { ...l, ...finalPatch } : l),
     } : s);
     onChange(next);
   };
@@ -131,6 +141,25 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
 
   const updateSectionDate = (si: number, date: string) => {
     const next = sections.map((s, i) => i === si ? { ...s, entry_date: date } : s);
+    onChange(next);
+  };
+
+  const addStandardRows = (si: number, template: "bonds" | "revenue" | "blank3") => {
+    const templates: Record<string, JELine[]> = {
+      bonds: [
+        { account_name: "Cash", debit: null, credit: null, memo: "", indentation_level: 0 },
+        { account_name: "Discount on Bonds Payable", debit: null, credit: null, memo: "", indentation_level: 0 },
+        { account_name: "Bonds Payable", debit: null, credit: null, memo: "", indentation_level: 1 },
+      ],
+      revenue: [
+        { account_name: "Cash", debit: null, credit: null, memo: "", indentation_level: 0 },
+        { account_name: "Sales Revenue", debit: null, credit: null, memo: "", indentation_level: 1 },
+        { account_name: "Cost of Goods Sold", debit: null, credit: null, memo: "", indentation_level: 0 },
+        { account_name: "Inventory", debit: null, credit: null, memo: "", indentation_level: 1 },
+      ],
+      blank3: [emptyLine(), emptyLine(), emptyLine()],
+    };
+    const next = sections.map((s, i) => i === si ? { ...s, lines: [...s.lines, ...templates[template]] } : s);
     onChange(next);
   };
 
@@ -320,11 +349,20 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
               </tfoot>
             </table>
 
-            {/* Add line button */}
+            {/* Add line button + standard rows */}
             {!readOnly && (
-              <div className="px-3 py-1 border-t border-border/30">
+              <div className="px-3 py-1 border-t border-border/30 flex gap-1 flex-wrap">
                 <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addLine(si)}>
                   <Plus className="h-3 w-3 mr-0.5" /> Add Row
+                </Button>
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addStandardRows(si, "bonds")}>
+                  <ListPlus className="h-3 w-3 mr-0.5" /> + Bonds Template
+                </Button>
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addStandardRows(si, "revenue")}>
+                  <ListPlus className="h-3 w-3 mr-0.5" /> + Revenue Template
+                </Button>
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground" onClick={() => addStandardRows(si, "blank3")}>
+                  <Plus className="h-3 w-3 mr-0.5" /> + 3 Blank
                 </Button>
               </div>
             )}

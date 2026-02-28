@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { RefreshCw, Lock, Unlock } from "lucide-react";
+import { RefreshCw, Lock, Unlock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 import { runValidation, hasFailures, type AnswerPackageData } from "@/lib/validation";
@@ -16,10 +17,20 @@ interface Props {
   openRepairNotes?: any[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  problemText?: string;
+  solutionText?: string;
 }
 
-export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNotes, open, onOpenChange }: Props) {
+const OPENAI_MODELS = [
+  { value: "gpt-4.1", label: "gpt-4.1 (accuracy)" },
+  { value: "gpt-4o-mini", label: "gpt-4o-mini (cheap)" },
+];
+
+export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNotes, open, onOpenChange, problemText, solutionText }: Props) {
   const qc = useQueryClient();
+  const [provider, setProvider] = useState<"lovable" | "openai">("lovable");
+  const [model, setModel] = useState("gpt-4.1");
+  const [temperature, setTemperature] = useState(0.2);
   const [lockProblemText, setLockProblemText] = useState(true);
   const [lockQuestionFormatting, setLockQuestionFormatting] = useState(true);
   const [lockAnswerChoices, setLockAnswerChoices] = useState(false);
@@ -46,6 +57,8 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
           repair_note_ids: repairNoteIds,
           lock_flags: lockFlags,
           previous_package_id: latestPackage?.id ?? null,
+          provider,
+          model: provider === "openai" ? model : "google/gemini-2.5-flash",
         },
         status: "queued" as any,
       } as any).select("id").single();
@@ -56,37 +69,89 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
         entity_type: "source_problem",
         entity_id: sourceProblemId,
         event_type: "REGEN_JOB_CREATED",
-        payload_json: { job_id: job.id, lock_flags: lockFlags, repair_note_ids: repairNoteIds },
+        payload_json: { job_id: job.id, provider, model: provider === "openai" ? model : "google/gemini-2.5-flash", lock_flags: lockFlags, repair_note_ids: repairNoteIds },
       });
 
       // 2. Mark job running
       await supabase.from("generation_jobs").update({ status: "running" as any } as any).eq("id", job.id);
-      await logActivity({
-        actor_type: "system",
-        entity_type: "source_problem",
-        entity_id: sourceProblemId,
-        event_type: "REGEN_STARTED",
-        payload_json: { job_id: job.id },
+
+      // 3. Call AI provider
+      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in the required JSON format.
+
+Problem:
+${problemText || "No problem text available"}
+
+Solution Reference:
+${solutionText || "No solution text available"}
+
+${repairNoteIds.length > 0 && openRepairNotes ? `\nPrevious repair notes to address:\n${openRepairNotes.map(n => `- ${n.what_was_wrong}: ${n.desired_fix}`).join("\n")}` : ""}
+
+Provide a JSON object with:
+1. "final_answers": array of {"label": string, "value": string} with the specific answers
+2. "teaching_aids": {"explanation": string (calculation breakdown), "journal_entries": array of {"entry_date": string, "lines": array of {"account_name": string, "debit": number|null, "credit": number|null, "memo": string, "indentation_level": number}}}`;
+
+      const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+        body: {
+          provider,
+          model: provider === "openai" ? model : "google/gemini-2.5-flash",
+          temperature,
+          max_output_tokens: 3000,
+          source_problem_id: sourceProblemId,
+          messages: [
+            { role: "system", content: "You are an expert accounting professor. Return answers in valid JSON." },
+            { role: "user", content: systemPrompt },
+          ],
+          response_format_json_schema: provider === "openai" ? {
+            name: "answer_package",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                final_answers: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"], additionalProperties: false } },
+                teaching_aids: { type: "object", properties: { explanation: { type: "string" }, journal_entries: { type: "array", items: { type: "object", properties: { entry_date: { type: "string" }, lines: { type: "array", items: { type: "object", properties: { account_name: { type: "string" }, debit: { type: ["number", "null"] }, credit: { type: ["number", "null"] }, memo: { type: "string" }, indentation_level: { type: "number" } }, required: ["account_name", "debit", "credit", "memo", "indentation_level"], additionalProperties: false } } }, required: ["entry_date", "lines"], additionalProperties: false } } }, required: ["explanation", "journal_entries"], additionalProperties: false },
+              },
+              required: ["final_answers", "teaching_aids"],
+              additionalProperties: false,
+            },
+          } : undefined,
+        },
       });
 
-      // 3. Build new answer package (merge locked fields from previous)
-      const nextVersion = (latestPackage?.version ?? 0) + 1;
-      const prevPayload = latestPackage?.answer_payload ?? {};
-      const prevInputs = latestPackage?.extracted_inputs ?? {};
+      if (aiErr) throw aiErr;
+      if (aiResult.error) throw new Error(aiResult.error);
 
-      // For now, create a new package preserving locked content
-      const newPayload = { ...prevPayload };
-      if (!lockAnswerChoices) {
-        // Would be regenerated by AI — placeholder for now
-        newPayload._regenerated_answers = true;
+      const parsed = aiResult.parsed;
+      const nextVersion = (latestPackage?.version ?? 0) + 1;
+
+      if (!parsed) {
+        // JSON parse failed — save as needs_review
+        await supabase.from("answer_packages").insert({
+          source_problem_id: sourceProblemId,
+          version: nextVersion,
+          generator: "ai" as any,
+          answer_payload: { _raw_unparsed: aiResult.raw },
+          extracted_inputs: latestPackage?.extracted_inputs ?? {},
+          computed_values: latestPackage?.computed_values ?? {},
+          validation_results: [] as any,
+          status: "needs_review" as any,
+          output_type: latestPackage?.output_type ?? "mixed",
+        } as any);
+        throw new Error("AI returned invalid JSON — saved as needs_review");
       }
-      if (!lockExplanations) {
-        newPayload._regenerated_explanations = true;
+
+      // Merge locked fields from previous version
+      const newPayload = { ...parsed };
+      const prevPayload = latestPackage?.answer_payload ?? {};
+      if (lockAnswerChoices && prevPayload.final_answers) {
+        newPayload.final_answers = prevPayload.final_answers;
+      }
+      if (lockExplanations && prevPayload.teaching_aids?.explanation) {
+        newPayload.teaching_aids = { ...newPayload.teaching_aids, explanation: prevPayload.teaching_aids.explanation };
       }
 
       const pkgData: AnswerPackageData = {
         answer_payload: newPayload,
-        extracted_inputs: prevInputs,
+        extracted_inputs: latestPackage?.extracted_inputs ?? {},
         computed_values: latestPackage?.computed_values ?? {},
       };
       const validationResults = runValidation(pkgData);
@@ -95,24 +160,33 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
       const { data: newPkg, error: pkgErr } = await supabase.from("answer_packages").insert({
         source_problem_id: sourceProblemId,
         version: nextVersion,
-        generator: repairNoteIds.length > 0 ? "mixed" as any : "system" as any,
-        extracted_inputs: prevInputs,
+        generator: "ai" as any,
+        extracted_inputs: latestPackage?.extracted_inputs ?? {},
         computed_values: latestPackage?.computed_values ?? {},
         answer_payload: newPayload,
         validation_results: validationResults as any,
         status: status as any,
+        output_type: latestPackage?.output_type ?? "mixed",
       } as any).select("id").single();
       if (pkgErr) throw pkgErr;
 
       await logActivity({
-        actor_type: "system",
+        actor_type: "ai",
         entity_type: "source_problem",
         entity_id: sourceProblemId,
-        event_type: "ANSWER_PACKAGE_CREATED",
-        payload_json: { package_id: newPkg.id, version: nextVersion, status, validation_results: validationResults },
+        event_type: "ai_generation_test",
+        payload_json: {
+          provider,
+          model: provider === "openai" ? model : "google/gemini-2.5-flash",
+          token_usage: aiResult.token_usage,
+          generation_time_ms: aiResult.generation_time_ms,
+          package_id: newPkg.id,
+          version: nextVersion,
+          mode: "regen",
+        },
       });
 
-      // 4. Mark repair notes resolved
+      // Mark repair notes resolved
       if (repairNoteIds.length > 0) {
         await supabase.from("repair_notes").update({
           status: "resolved" as any,
@@ -120,26 +194,18 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
         } as any).in("id", repairNoteIds);
       }
 
-      // 5. Mark job done
+      // Mark job done
       await supabase.from("generation_jobs").update({
         status: "done" as any,
         completed_at: new Date().toISOString(),
       } as any).eq("id", job.id);
-
-      await logActivity({
-        actor_type: "system",
-        entity_type: "source_problem",
-        entity_id: sourceProblemId,
-        event_type: "REGEN_FINISHED",
-        payload_json: { job_id: job.id, package_id: newPkg.id },
-      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["answer-packages"] });
       qc.invalidateQueries({ queryKey: ["repair-notes"] });
       qc.invalidateQueries({ queryKey: ["activity-log"] });
       onOpenChange(false);
-      toast.success("Regeneration complete — new answer package created");
+      toast.success(`Regeneration complete (${provider}) — new version created`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -169,6 +235,34 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
           </DialogDescription>
         </DialogHeader>
 
+        {/* Provider selection */}
+        <div className="border border-border rounded-lg p-3 space-y-2">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">AI Provider</p>
+          <div className="flex gap-2">
+            <Select value={provider} onValueChange={(v) => setProvider(v as any)}>
+              <SelectTrigger className="h-7 text-xs w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lovable">Lovable</SelectItem>
+                <SelectItem value="openai">OpenAI</SelectItem>
+              </SelectContent>
+            </Select>
+            {provider === "openai" && (
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger className="h-7 text-xs w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPENAI_MODELS.map(m => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
+
         <div className="border border-border rounded-lg p-3 space-y-0.5">
           <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Lock Options</p>
           <LockToggle label="Problem Text" locked={lockProblemText} onChange={setLockProblemText} />
@@ -180,7 +274,11 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button size="sm" onClick={() => regenMutation.mutate()} disabled={regenMutation.isPending}>
-            {regenMutation.isPending ? "Regenerating…" : "Regenerate"}
+            {regenMutation.isPending ? (
+              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Regenerating…</>
+            ) : (
+              `Regenerate (${provider === "openai" ? `OpenAI/${model}` : "Lovable"})`
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
