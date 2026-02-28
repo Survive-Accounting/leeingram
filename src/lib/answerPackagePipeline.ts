@@ -19,6 +19,7 @@ import { runValidation, hasFailures, type AnswerPackageData, type ValidationResu
 import { autoFixDatesInAccountNames, autoFixNarrativePrefixes } from "@/lib/validation/jeValidators";
 import { logActivity } from "@/lib/activityLogger";
 import type { CanonicalJEPayload, CanonicalScenarioSection, CanonicalEntryByDate, CanonicalJERow } from "@/lib/journalEntryParser";
+import { detectRequiresJE, normalizeLegacyJEText } from "@/lib/legacyJENormalizer";
 
 export interface AnswerPackageDraft {
   source_problem_id: string;
@@ -229,6 +230,37 @@ export async function normalizeValidatePersistAnswerPackage(
     payload_json: { ...providerMeta, structure_normalized: structureNormalized, rows_fixed: fixApplied },
   });
 
+  // ── Step 1b: If requires_je, try legacy text normalization ──
+  const problemText = draft.extracted_inputs?.problem_text || "";
+  const requiresJE = detectRequiresJE(problemText);
+  const hasStructuredJE = Array.isArray(cleanPayload.scenario_sections) && cleanPayload.scenario_sections.length > 0;
+
+  if (requiresJE && !hasStructuredJE) {
+    // Try to find legacy JE text in the payload
+    const legacyText = cleanPayload.journal_entry_text
+      || cleanPayload.teaching_aids?.journal_entry_text
+      || cleanPayload._raw_unparsed
+      || "";
+    if (legacyText && typeof legacyText === "string") {
+      const normalizeResult = normalizeLegacyJEText(legacyText);
+      if (normalizeResult.success) {
+        cleanPayload.scenario_sections = normalizeResult.scenario_sections;
+        cleanPayload._legacy_je_text = legacyText;
+        await logActivity({
+          actor_type: "system",
+          entity_type: "source_problem",
+          entity_id: draft.source_problem_id,
+          event_type: "legacy_je_normalized",
+          severity: "info",
+          provider: draft.provider,
+          model: draft.model,
+          message: `Normalized ${normalizeResult.rowCount} legacy JE rows into ${normalizeResult.scenario_sections.length} scenario section(s)`,
+          payload_json: { ...providerMeta, row_count: normalizeResult.rowCount, section_count: normalizeResult.scenario_sections.length },
+        });
+      }
+    }
+  }
+
   // ── Step 2: Run validators ──
   await logActivity({
     actor_type: "system",
@@ -265,7 +297,10 @@ export async function normalizeValidatePersistAnswerPackage(
   });
 
   // ── Step 3: Determine status ──
-  const status = hasFailures(validationResults) ? "needs_review" : "drafted";
+  // Hard rule: if requires_je but still no structured JE after normalization, force needs_review
+  const finalHasJE = Array.isArray(cleanPayload.scenario_sections) && cleanPayload.scenario_sections.length > 0;
+  const missingRequiredJE = requiresJE && !finalHasJE;
+  const status = (hasFailures(validationResults) || missingRequiredJE) ? "needs_review" : "drafted";
 
   // ── Step 4: Persist ──
   const { data: newPkg, error: insertErr } = await supabase

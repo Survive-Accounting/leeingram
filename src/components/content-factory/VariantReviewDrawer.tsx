@@ -17,6 +17,7 @@ import { JournalEntryEditor, groupsToSections, type JESection } from "./JournalE
 import { ValidationPanel } from "./ValidationPanel";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
 import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { detectRequiresJE, normalizeLegacyJEText } from "@/lib/legacyJENormalizer";
 import { logActivity } from "@/lib/activityLogger";
 import { useChapterApprovedAccounts } from "./ChapterAccountsSetup";
 import { ActivityLogPanel } from "./ActivityLogPanel";
@@ -208,16 +209,48 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const [approvalBlockedModal, setApprovalBlockedModal] = useState(false);
   const [isLegacyFallback, setIsLegacyFallback] = useState(false);
   const [showGenLog, setShowGenLog] = useState(false);
+  const [requiresJE, setRequiresJE] = useState(false);
+  const [missingStructuredJE, setMissingStructuredJE] = useState(false);
 
   // Init
   useEffect(() => {
     if (variant && open) {
-      const s = initialSections();
+      const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+      const needsJE = detectRequiresJE(problemText);
+      setRequiresJE(needsJE);
+
+      let s = initialSections();
+
       // Detect if we're using legacy fallback (no canonical structured data)
       const hasCanonical = isCanonicalJE(variant.candidate_data) ||
         isCanonicalJE(variant.journal_entry_completed_json) ||
         (variant.candidate_data?.scenario_sections?.length > 0);
       setIsLegacyFallback(s.length > 0 && !hasCanonical);
+
+      // Auto-normalize legacy text if requires_je but no structured JE
+      if (needsJE && s.length === 0) {
+        const legacyText = variant.journal_entry_block || variant.answer_only || variant.survive_solution_text || "";
+        if (legacyText) {
+          const result = normalizeLegacyJEText(legacyText);
+          if (result.success) {
+            s = result.scenario_sections.flatMap(sc =>
+              sc.entries_by_date.map(entry => ({
+                entry_date: sc.label !== "Journal Entry" ? `${sc.label} — ${entry.entry_date}` : entry.entry_date,
+                lines: entry.rows.map(r => ({
+                  account_name: r.account_name,
+                  debit: r.debit,
+                  credit: r.credit,
+                  memo: r.memo || "",
+                  indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
+                })),
+              }))
+            );
+            setIsLegacyFallback(true);
+          }
+        }
+      }
+
+      setMissingStructuredJE(needsJE && s.length === 0);
       setSections(s);
       setHasEdits(false);
       setEditVersion(0);
@@ -284,7 +317,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     [entryMeta]);
 
   const globalFailed = hasFailures(globalValidation);
-  const canApprove = !globalFailed && allEntriesValidated && !saving;
+  const canApprove = !globalFailed && allEntriesValidated && !saving && !missingStructuredJE;
 
   // Handle section change for a single entry
   const handleSingleEntryChange = (si: number, newSection: JESection) => {
@@ -518,14 +551,27 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                 Journal Entry Review
               </p>
 
-              {/* Legacy fallback banner */}
-              {isLegacyFallback && (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 mb-3 flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              {/* Missing structured JE blocking banner */}
+              {missingStructuredJE && (
+                <div className="rounded-md border border-destructive/60 bg-destructive/15 px-3 py-2.5 mb-3 flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-destructive">Structured JE missing — legacy fallback shown</p>
+                    <p className="text-xs font-bold text-destructive">Structured JE missing — must fix before approval</p>
                     <p className="text-[10px] text-destructive/70 mt-0.5">
-                      Re-generate this variant to get structured journal entries with proper scenario/date organization.
+                      This problem requires journal entries but none could be parsed. Re-generate or manually add entries.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Legacy fallback banner */}
+              {isLegacyFallback && !missingStructuredJE && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 mb-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-amber-400">Structured JE auto-normalized from legacy text</p>
+                    <p className="text-[10px] text-amber-400/70 mt-0.5">
+                      Review carefully — re-generate this variant for best results.
                     </p>
                   </div>
                 </div>

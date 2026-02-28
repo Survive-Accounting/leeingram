@@ -12,6 +12,7 @@ import { runValidation, hasFailures, type ValidationResult, type AnswerPackageDa
 import { logActivity } from "@/lib/activityLogger";
 import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
 import { detectAndSplitScenarios, buildScenarioPromptBlock, buildSingleScenarioPromptBlock, type ScenarioBlock } from "@/lib/scenarioSegmentation";
+import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 import { RepairNotesPanel } from "./RepairNotesPanel";
 import { ScenarioSplitScreen } from "./ScenarioSplitScreen";
 import { RegenerateDialog } from "./RegenerateDialog";
@@ -147,6 +148,10 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
   const teachingJE = extractTeachingJE(latest?.answer_payload);
   const teachingText = extractTeachingText(latest?.answer_payload);
   const isJEOutputType = outputType === "journal_entries" || outputType === "mixed";
+
+  // requires_je detection
+  const requiresJE = detectRequiresJE(problemText);
+  const missingRequiredJE = requiresJE && teachingJE.length === 0 && latest != null;
 
   // Save user edits as new version
   const saveEditMutation = useMutation({
@@ -449,7 +454,7 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
                   <GitCompare className="h-3 w-3 mr-1" /> {diffMode ? "Hide Diff" : "Diff"}
                 </Button>
               )}
-              {!failed && latest.status !== "approved" && (
+              {!failed && !missingRequiredJE && latest.status !== "approved" && (
                 <Button
                   size="sm"
                   className="h-6 text-[10px]"
@@ -467,6 +472,16 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
               )}
             </div>
           </div>
+
+          {/* Missing required JE banner */}
+          {missingRequiredJE && (
+            <div className="rounded border border-destructive/50 bg-destructive/10 px-3 py-2">
+              <p className="text-xs font-bold text-destructive flex items-center gap-1">
+                <XCircle className="h-3.5 w-3.5" /> Structured JE missing — must fix before approval
+              </p>
+              <p className="text-[10px] text-destructive/70 mt-0.5">This problem requires journal entries. Regenerate or add manually.</p>
+            </div>
+          )}
 
           {/* Validation failures banner */}
           {failed && (
