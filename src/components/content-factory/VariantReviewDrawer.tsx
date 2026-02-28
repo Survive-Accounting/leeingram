@@ -151,6 +151,9 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             entry_date: label,
             lines: (entry.rows || entry.lines || []).map((l: any) => ({
               account_name: l.account_name || l.account || "",
+              coa_id: l.coa_id || null,
+              display_name: l.display_name,
+              unknown_account: l.unknown_account,
               debit: l.debit != null ? Number(l.debit) : null,
               credit: l.credit != null ? Number(l.credit) : null,
               memo: l.memo || "",
@@ -167,6 +170,9 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           entry_date: s.entry_date || "",
           lines: (s.lines || s.rows || []).map((l: any) => ({
             account_name: l.account_name || l.account || "",
+            coa_id: l.coa_id || null,
+            display_name: l.display_name,
+            unknown_account: l.unknown_account,
             debit: l.debit != null ? Number(l.debit) : null,
             credit: l.credit != null ? Number(l.credit) : null,
             memo: l.memo || "",

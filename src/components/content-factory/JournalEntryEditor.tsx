@@ -14,10 +14,22 @@ import { toast } from "sonner";
 
 export interface JELine {
   account_name: string;
+  coa_id?: string | null;
+  display_name?: string;
+  unknown_account?: boolean;
   debit: number | null;
   credit: number | null;
   memo: string;
   indentation_level: 0 | 1;
+}
+
+/** COA record used for autocomplete matching */
+export interface COAEntry {
+  id: string;
+  canonical_name: string;
+  keywords: string[] | null;
+  account_type: string;
+  normal_balance: string;
 }
 
 export interface JESection {
@@ -35,7 +47,7 @@ export interface JournalEntryEditorProps {
 }
 
 function emptyLine(): JELine {
-  return { account_name: "", debit: null, credit: null, memo: "", indentation_level: 0 };
+  return { account_name: "", coa_id: null, debit: null, credit: null, memo: "", indentation_level: 0 };
 }
 
 function sectionBalance(section: JESection): { debits: number; credits: number; balanced: boolean; diff: number } {
@@ -147,25 +159,34 @@ function AccountAutocomplete({
   onChange,
   onBlur,
   onKeyDown,
-  suggestions,
+  coaEntries,
   chapterId,
+  onSelectCOA,
 }: {
   value: string;
   onChange: (v: string) => void;
   onBlur: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  suggestions: string[];
+  coaEntries: COAEntry[];
   chapterId?: string;
+  onSelectCOA?: (entry: COAEntry) => void;
 }) {
   const [showDropdown, setShowDropdown] = useState(true);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const qc = useQueryClient();
 
-  const filtered = value.trim()
-    ? suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase())).slice(0, 8)
-    : suggestions.slice(0, 8);
+  // Search COA by canonical_name + keywords
+  const filtered = (() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return coaEntries.slice(0, 10);
+    return coaEntries.filter(e => {
+      if (e.canonical_name.toLowerCase().includes(q)) return true;
+      if (e.keywords?.some(k => k.toLowerCase().includes(q))) return true;
+      return false;
+    }).slice(0, 10);
+  })();
 
-  const isNewAccount = value.trim() && !suggestions.some(s => s.toLowerCase() === value.trim().toLowerCase());
+  const isNewAccount = value.trim() && !coaEntries.some(e => e.canonical_name.toLowerCase() === value.trim().toLowerCase());
 
   const addToWhitelist = async () => {
     if (!chapterId || !value.trim()) return;
@@ -197,7 +218,9 @@ function AccountAutocomplete({
     }
     if (e.key === "Enter" && selectedIdx >= 0 && filtered[selectedIdx]) {
       e.preventDefault();
-      onChange(filtered[selectedIdx]);
+      const entry = filtered[selectedIdx];
+      onChange(entry.canonical_name);
+      onSelectCOA?.(entry);
       setShowDropdown(false);
       onBlur();
       return;
@@ -226,22 +249,24 @@ function AccountAutocomplete({
         placeholder="Type account name..."
       />
       {showDropdown && (filtered.length > 0 || isNewAccount) && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-64 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-md">
-          {filtered.map((s, i) => (
+        <div className="absolute z-50 top-full left-0 mt-1 w-72 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-md">
+          {filtered.map((entry, i) => (
             <button
-              key={s}
+              key={entry.id}
               className={cn(
-                "w-full text-left px-2 py-1 text-xs hover:bg-accent transition-colors",
+                "w-full text-left px-2 py-1 text-xs hover:bg-accent transition-colors flex items-center justify-between gap-1",
                 i === selectedIdx && "bg-accent"
               )}
               onMouseDown={(e) => {
                 e.preventDefault();
-                onChange(s);
+                onChange(entry.canonical_name);
+                onSelectCOA?.(entry);
                 setShowDropdown(false);
                 onBlur();
               }}
             >
-              {s}
+              <span>{entry.canonical_name}</span>
+              <span className="text-[9px] text-muted-foreground shrink-0">{entry.account_type}</span>
             </button>
           ))}
           {isNewAccount && chapterId && (
@@ -279,35 +304,63 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     },
   });
 
-  // Fetch global chart_of_accounts for autocomplete
+  // Fetch global chart_of_accounts for autocomplete (with keywords)
   const { data: globalCOA } = useQuery({
-    queryKey: ["global-coa-names"],
+    queryKey: ["global-coa-full"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chart_of_accounts")
-        .select("canonical_name")
+        .select("id, canonical_name, keywords, account_type, normal_balance")
         .order("canonical_name");
       if (error) throw error;
-      return (data ?? []).map((r: any) => r.canonical_name as string);
+      return (data ?? []) as COAEntry[];
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  // Build combined suggestions from approved accounts + global COA + aliases + existing accounts in sections
-  const accountSuggestions = (() => {
-    const set = new Set<string>();
-    (approvedAccounts ?? []).forEach(a => set.add(a));
-    (globalCOA ?? []).forEach(a => set.add(a));
+  // Build COA entries list: global COA + any extra accounts from sections/whitelist as synthetic entries
+  const coaEntries: COAEntry[] = (() => {
+    const byName = new Map<string, COAEntry>();
+    (globalCOA ?? []).forEach(e => byName.set(e.canonical_name.toLowerCase(), e));
+    // Add approved accounts not already in COA as synthetic entries
+    (approvedAccounts ?? []).forEach(a => {
+      if (!byName.has(a.toLowerCase())) {
+        byName.set(a.toLowerCase(), { id: `chapter-${a}`, canonical_name: a, keywords: null, account_type: "—", normal_balance: "—" });
+      }
+    });
+    // Add aliases
     if (aliases) {
-      for (const [_, display] of aliases) set.add(display);
-    }
-    for (const s of sections) {
-      for (const l of s.lines) {
-        if (l.account_name.trim()) set.add(l.account_name.trim());
+      for (const [_, display] of aliases) {
+        if (!byName.has(display.toLowerCase())) {
+          byName.set(display.toLowerCase(), { id: `alias-${display}`, canonical_name: display, keywords: null, account_type: "—", normal_balance: "—" });
+        }
       }
     }
-    return Array.from(set).sort();
+    // Add existing accounts from sections
+    for (const s of sections) {
+      for (const l of s.lines) {
+        const name = l.account_name.trim();
+        if (name && !byName.has(name.toLowerCase())) {
+          byName.set(name.toLowerCase(), { id: `inline-${name}`, canonical_name: name, keywords: null, account_type: "—", normal_balance: "—" });
+        }
+      }
+    }
+    return Array.from(byName.values()).sort((a, b) => a.canonical_name.localeCompare(b.canonical_name));
   })();
+
+  /** Try to resolve a raw account name to a COA entry */
+  const resolveAccountToCOA = useCallback((name: string): COAEntry | null => {
+    if (!name.trim()) return null;
+    const lower = name.trim().toLowerCase();
+    // Direct match on canonical_name
+    const direct = (globalCOA ?? []).find(e => e.canonical_name.toLowerCase() === lower);
+    if (direct) return direct;
+    // Match via keywords
+    const kwMatch = (globalCOA ?? []).find(e =>
+      e.keywords?.some(k => k.toLowerCase() === lower)
+    );
+    return kwMatch ?? null;
+  }, [globalCOA]);
 
   const displayName = useCallback((canonical: string) => {
     return aliases?.get(canonical) ?? canonical;
@@ -457,7 +510,12 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
             break;
           }
         }
-        return { ...l, account_name: name };
+        // Resolve to COA
+        const resolved = resolveAccountToCOA(name);
+        if (resolved) {
+          return { ...l, account_name: resolved.canonical_name, coa_id: resolved.id, display_name: resolved.canonical_name, unknown_account: false };
+        }
+        return { ...l, account_name: name, unknown_account: name.length > 0 };
       }),
     }));
     onChange(next);
@@ -579,23 +637,27 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                               value={line.account_name}
                               onChange={(v) => updateLine(si, li, { account_name: v })}
                               onBlur={() => {
-                                // Auto-clean on blur
+                                // Auto-clean on blur + resolve to COA
                                 const { cleanName, side, amount } = autoCleanAccountInput(line.account_name);
-                                if (cleanName !== line.account_name || amount != null) {
-                                  const patch: Partial<JELine> = { account_name: cleanName };
-                                  if (amount != null && side) {
-                                    patch.debit = side === "debit" ? amount : null;
-                                    patch.credit = side === "credit" ? amount : null;
-                                    patch.indentation_level = side === "credit" ? 1 : 0;
-                                  } else if (amount != null) {
-                                    // No side detected — put in debit by default
-                                    if (line.debit == null && line.credit == null) {
-                                      patch.debit = amount;
-                                      patch.indentation_level = 0;
-                                    }
+                                const resolved = resolveAccountToCOA(cleanName);
+                                const finalName = resolved ? resolved.canonical_name : cleanName;
+                                const patch: Partial<JELine> = {
+                                  account_name: finalName,
+                                  coa_id: resolved?.id ?? null,
+                                  display_name: resolved?.canonical_name,
+                                  unknown_account: !resolved && finalName.length > 0,
+                                };
+                                if (amount != null && side) {
+                                  patch.debit = side === "debit" ? amount : null;
+                                  patch.credit = side === "credit" ? amount : null;
+                                  patch.indentation_level = side === "credit" ? 1 : 0;
+                                } else if (amount != null) {
+                                  if (line.debit == null && line.credit == null) {
+                                    patch.debit = amount;
+                                    patch.indentation_level = 0;
                                   }
-                                  updateLine(si, li, patch);
                                 }
+                                updateLine(si, li, patch);
                                 setEditingCell(null);
                               }}
                               onKeyDown={(e) => {
@@ -604,8 +666,16 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                                   setEditingCell({ si, li, field: "debit" });
                                 }
                               }}
-                              suggestions={accountSuggestions}
+                              coaEntries={coaEntries}
                               chapterId={chapterId}
+                              onSelectCOA={(entry) => {
+                                updateLine(si, li, {
+                                  account_name: entry.canonical_name,
+                                  coa_id: entry.id.startsWith("chapter-") || entry.id.startsWith("alias-") || entry.id.startsWith("inline-") ? null : entry.id,
+                                  display_name: entry.canonical_name,
+                                  unknown_account: false,
+                                });
+                              }}
                             />
                             {accountError && (
                               <p className="text-[9px] text-destructive">{accountError}</p>
@@ -631,7 +701,17 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                                 </TooltipContent>
                               </Tooltip>
                             )}
-                            {notInWhitelist && !accountError && (
+                            {line.unknown_account && !accountError && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <XCircle className="h-3 w-3 text-amber-400 shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs max-w-48">
+                                  Unknown account — not in Chart of Accounts
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {notInWhitelist && !accountError && !line.unknown_account && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <XCircle className="h-3 w-3 text-amber-400 shrink-0" />

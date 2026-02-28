@@ -7,9 +7,13 @@
 
 export interface CanonicalJERow {
   account_name: string;
+  coa_id?: string | null;
+  display_name?: string;
   debit: number | null;
   credit: number | null;
   memo?: string;
+  /** True when account_name could not be matched to any COA entry */
+  unknown_account?: boolean;
 }
 
 export interface CanonicalEntryByDate {
