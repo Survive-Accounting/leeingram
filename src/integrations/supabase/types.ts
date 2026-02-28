@@ -439,6 +439,36 @@ export type Database = {
           },
         ]
       }
+      chart_of_accounts: {
+        Row: {
+          account_type: string
+          canonical_name: string
+          created_at: string
+          id: string
+          is_global_default: boolean
+          keywords: string[] | null
+          normal_balance: string
+        }
+        Insert: {
+          account_type?: string
+          canonical_name: string
+          created_at?: string
+          id?: string
+          is_global_default?: boolean
+          keywords?: string[] | null
+          normal_balance?: string
+        }
+        Update: {
+          account_type?: string
+          canonical_name?: string
+          created_at?: string
+          id?: string
+          is_global_default?: boolean
+          keywords?: string[] | null
+          normal_balance?: string
+        }
+        Relationships: []
+      }
       company_names: {
         Row: {
           active: boolean

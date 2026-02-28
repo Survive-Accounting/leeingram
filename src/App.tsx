@@ -35,6 +35,7 @@ import Travel from "./pages/Travel";
 import TripPlanning from "./pages/TripPlanning";
 import TripExploring from "./pages/TripExploring";
 import Auth from "./pages/Auth";
+import ChartOfAccounts from "./pages/ChartOfAccounts";
 import NotFound from "./pages/NotFound";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 
@@ -95,6 +96,7 @@ const AppRoutes = () => {
       <Route path="/travel/:tripId/planning" element={<ProtectedRoute><TripPlanning /></ProtectedRoute>} />
       <Route path="/travel/:tripId/exploring" element={<ProtectedRoute><TripExploring /></ProtectedRoute>} />
       <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
+      <Route path="/chart-of-accounts" element={<ProtectedRoute><ChartOfAccounts /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
