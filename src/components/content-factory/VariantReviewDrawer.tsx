@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Check, X, Save, ChevronDown, AlertTriangle, Info, Lock, CheckCircle2,
-  Circle, XCircle, ScrollText,
+  Circle, XCircle, ScrollText, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -394,6 +394,8 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       const updatedCandidate = {
         ...(variant.candidate_data || variant),
         journal_entry_completed_json: sections,
+        updated_by_user: true,
+        updated_at: new Date().toISOString(),
         _edit_version: newVersion,
         _edited_at: new Date().toISOString(),
         _edited_by: user?.id,
@@ -738,11 +740,42 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             </div>
           )}
 
-          {/* No JE content */}
+          {/* No JE content — offer manual creation if requires_je */}
           {!hasJE && (
-            <p className="text-xs text-muted-foreground italic border border-dashed border-border rounded p-4 text-center">
-              No structured journal entry data.
-            </p>
+            <div className="border border-dashed border-border rounded p-4 text-center space-y-2">
+              <p className="text-xs text-muted-foreground italic">
+                No structured journal entry data.
+              </p>
+              {requiresJE && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    const initial: JESection[] = [
+                      { entry_date: "Entry 1", lines: [
+                        { account_name: "", debit: null, credit: null, memo: "", indentation_level: 0 },
+                        { account_name: "", debit: null, credit: null, memo: "", indentation_level: 1 },
+                      ]},
+                    ];
+                    setSections(initial);
+                    setMissingStructuredJE(false);
+                    setHasEdits(true);
+                    setEntryMeta([{
+                      status: "draft",
+                      originalLines: [],
+                      editedAt: null,
+                      editedBy: null,
+                      validationResults: [],
+                    }]);
+                    setOpenEntryIndex(0);
+                    runGlobalValidation(initial);
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Journal Entries Manually
+                </Button>
+              )}
+            </div>
           )}
 
           {/* Global Validation */}
