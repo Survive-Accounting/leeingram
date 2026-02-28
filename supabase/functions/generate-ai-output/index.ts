@@ -140,7 +140,8 @@ serve(async (req) => {
       schemaErrors = validation.errors;
     }
 
-    // ── Log: ai_generate_completed ──
+    // ── Log: ai_generate_completed (with raw output snippet for debugging) ──
+    const rawSnippet = typeof aiResponse === "string" ? aiResponse.slice(0, 2000) : JSON.stringify(aiResponse).slice(0, 2000);
     await sb.from("activity_log").insert({
       actor_type: "ai",
       entity_type: "source_problem",
@@ -155,6 +156,8 @@ serve(async (req) => {
         parse_error: parseError,
         schema_valid: schemaValid,
         schema_errors: schemaErrors.length > 0 ? schemaErrors : undefined,
+        raw_output_snippet: rawSnippet,
+        parsed_json_snippet: parsed ? JSON.stringify(parsed).slice(0, 2000) : null,
       },
     });
 
