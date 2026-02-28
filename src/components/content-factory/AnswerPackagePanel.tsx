@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type ValidationResult, type AnswerPackageData } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
+import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
 import { RepairNotesPanel } from "./RepairNotesPanel";
 import { RegenerateDialog } from "./RegenerateDialog";
 import { VersionDiffView } from "./VersionDiffView";
@@ -274,16 +275,25 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
       if (aiResult.error) throw new Error(aiResult.error);
 
       const parsed = aiResult.parsed;
+      const selectedModel = genProvider === "openai" ? genModel : "google/gemini-2.5-flash";
       if (!parsed) {
-        await supabase.from("answer_packages").insert({ source_problem_id: sourceProblemId, version: 1, generator: "ai" as any, answer_payload: { _raw_unparsed: aiResult.raw }, status: "needs_review" as any, output_type: "mixed" } as any);
+        await persistUnparseablePackage(sourceProblemId, 1, aiResult.raw, { provider: genProvider, model: selectedModel });
         throw new Error("AI returned invalid JSON — saved as needs_review");
       }
 
-      const pkgData: AnswerPackageData = { answer_payload: parsed, extracted_inputs: {}, computed_values: {} };
-      const vr = runValidation(pkgData);
-      const status = hasFailures(vr) ? "needs_review" : "drafted";
-      await supabase.from("answer_packages").insert({ source_problem_id: sourceProblemId, version: 1, generator: "ai" as any, answer_payload: parsed, validation_results: vr as any, status: status as any, output_type: "mixed" } as any);
-      await logActivity({ actor_type: "ai", entity_type: "source_problem", entity_id: sourceProblemId, event_type: "ai_generation_test", payload_json: { provider: genProvider, model: genProvider === "openai" ? genModel : "google/gemini-2.5-flash", token_usage: aiResult.token_usage, generation_time_ms: aiResult.generation_time_ms, mode: "initial" } });
+      await normalizeValidatePersistAnswerPackage({
+        source_problem_id: sourceProblemId,
+        version: 1,
+        generator: "ai",
+        answer_payload: parsed,
+        output_type: "mixed",
+        provider: genProvider,
+        model: selectedModel,
+        token_usage: aiResult.token_usage,
+        generation_time_ms: aiResult.generation_time_ms,
+        log_event_type: "ai_generation_test",
+        log_extra_payload: { mode: "initial" },
+      });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["answer-packages"] }); toast.success(`Initial generation complete (${genProvider})`); },
     onError: (e: Error) => toast.error(e.message),

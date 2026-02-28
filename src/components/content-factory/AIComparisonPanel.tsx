@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
+import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
 
 interface Props {
   sourceProblemId: string;
@@ -183,66 +184,37 @@ For journal entries, each line must have: account_name, debit (number or null), 
       const parsed = data.parsed;
       if (!parsed) {
         toast.error("JSON parsing failed — raw output logged");
-        // Create needs_review package
         const nextVersion = (latestPackage?.version ?? 0) + 1;
-        await supabase.from("answer_packages").insert({
-          source_problem_id: sourceProblemId,
-          version: nextVersion,
-          generator: "ai" as any,
-          answer_payload: { _raw_unparsed: data.raw },
+        await persistUnparseablePackage(sourceProblemId, nextVersion, data.raw, {
           extracted_inputs: latestPackage?.extracted_inputs ?? {},
           computed_values: latestPackage?.computed_values ?? {},
-          validation_results: [] as any,
-          status: "needs_review" as any,
           output_type: latestPackage?.output_type ?? "mixed",
-        } as any);
+          provider: data.provider,
+          model: data.model,
+        });
         qc.invalidateQueries({ queryKey: ["answer-packages"] });
         return;
       }
 
-      // Run validation
-      const pkgData: AnswerPackageData = {
-        answer_payload: parsed,
-        extracted_inputs: latestPackage?.extracted_inputs ?? {},
-        computed_values: latestPackage?.computed_values ?? {},
-      };
-      const validationResults = runValidation(pkgData);
-      const status = hasFailures(validationResults) ? "needs_review" : "drafted";
       const nextVersion = (latestPackage?.version ?? 0) + 1;
-
-      const { data: newPkg, error: insertErr } = await supabase.from("answer_packages").insert({
+      const result = await normalizeValidatePersistAnswerPackage({
         source_problem_id: sourceProblemId,
         version: nextVersion,
-        generator: "ai" as any,
+        generator: "ai",
         answer_payload: parsed,
         extracted_inputs: latestPackage?.extracted_inputs ?? {},
         computed_values: latestPackage?.computed_values ?? {},
-        validation_results: validationResults as any,
-        status: status as any,
         output_type: latestPackage?.output_type ?? "mixed",
-      } as any).select("*").single();
-      if (insertErr) throw insertErr;
-
-      setOpenaiPkg(newPkg);
-
-      await logActivity({
-        actor_type: "ai",
-        entity_type: "source_problem",
-        entity_id: sourceProblemId,
-        event_type: "ai_generation_test",
-        payload_json: {
-          provider: data.provider,
-          model: data.model,
-          token_usage: data.token_usage,
-          generation_time_ms: data.generation_time_ms,
-          validation_pass_rate: validationResults.filter((r: any) => r.status === "pass").length / Math.max(validationResults.length, 1),
-          package_id: newPkg.id,
-          version: nextVersion,
-        },
+        provider: data.provider,
+        model: data.model,
+        token_usage: data.token_usage,
+        generation_time_ms: data.generation_time_ms,
+        log_event_type: "ai_generation_test",
       });
 
+      setOpenaiPkg(result.package);
       qc.invalidateQueries({ queryKey: ["answer-packages"] });
-      toast.success(`OpenAI test complete — v${nextVersion} created (${status})`);
+      toast.success(`OpenAI test complete — v${nextVersion} created (${result.status})`);
     },
     onError: (e: Error) => toast.error(`OpenAI test failed: ${e.message}`),
   });
