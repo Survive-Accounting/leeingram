@@ -447,6 +447,37 @@ export const entriesByDateRequired: Validator = (pkg) => {
   };
 };
 
+// ─── V10: ACCOUNT_WHITELIST (HARD) ───
+// If approved_accounts whitelist is provided, all account names must be in it
+export const accountWhitelist: Validator = (pkg) => {
+  const whitelist: string[] = pkg.extracted_inputs?.approved_accounts || [];
+  if (whitelist.length === 0) return { validator: "ACCOUNT_WHITELIST", status: "pass", message: "No whitelist configured, skipped" };
+
+  const sections = extractJESections(pkg);
+  if (sections.length === 0) return { validator: "ACCOUNT_WHITELIST", status: "pass", message: "No JE, skipped" };
+
+  const whitelistLower = new Set(whitelist.map(a => a.toLowerCase()));
+  const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string }> = [];
+
+  for (const s of sections) {
+    for (const l of s.lines) {
+      if (!l.account_name.trim()) continue;
+      if (!whitelistLower.has(l.account_name.trim().toLowerCase())) {
+        offending.push({ sectionIndex: s.sectionIndex, lineIndex: l.lineIndex, account_name: l.account_name });
+      }
+    }
+  }
+
+  return {
+    validator: "ACCOUNT_WHITELIST",
+    status: offending.length > 0 ? "fail" : "pass",
+    message: offending.length > 0
+      ? `Account not in whitelist: ${offending.map(o => `"${o.account_name}"`).join(", ")}`
+      : "All accounts match whitelist",
+    details: { offending, whitelist_size: whitelist.length },
+  };
+};
+
 // ─── Export all JE validators ───
 export const JE_VALIDATORS: Validator[] = [
   jeBalances,
@@ -458,6 +489,7 @@ export const JE_VALIDATORS: Validator[] = [
   accountFieldFormatting,
   requiresJeDetection,
   entriesByDateRequired,
+  accountWhitelist,
 ];
 
 // ─── Auto-fix helpers ───

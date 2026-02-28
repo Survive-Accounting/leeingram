@@ -31,6 +31,7 @@ export interface JournalEntryEditorProps {
   readOnly?: boolean;
   courseShort?: string;
   chapterId?: string;
+  approvedAccounts?: string[];
 }
 
 function emptyLine(): JELine {
@@ -129,11 +130,14 @@ function AccountAutocomplete({
   const addToWhitelist = async () => {
     if (!chapterId || !value.trim()) return;
     try {
-      await supabase.from("chapter_account_whitelist").insert({
+      await supabase.from("chapter_accounts" as any).insert({
         chapter_id: chapterId,
         account_name: value.trim(),
+        source: "user",
+        is_approved: true,
       } as any);
-      qc.invalidateQueries({ queryKey: ["chapter-account-whitelist", chapterId] });
+      qc.invalidateQueries({ queryKey: ["chapter-accounts", chapterId] });
+      qc.invalidateQueries({ queryKey: ["chapter-accounts-approved", chapterId] });
       toast.success(`"${value.trim()}" added to chapter whitelist`);
     } catch {
       // Unique constraint - already exists
@@ -219,7 +223,7 @@ function AccountAutocomplete({
   );
 }
 
-export function JournalEntryEditor({ sections, onChange, readOnly = false, courseShort, chapterId }: JournalEntryEditorProps) {
+export function JournalEntryEditor({ sections, onChange, readOnly = false, courseShort, chapterId, approvedAccounts }: JournalEntryEditorProps) {
   const [editingCell, setEditingCell] = useState<{ si: number; li: number; field: string } | null>(null);
 
   const { data: aliases } = useQuery({
@@ -235,30 +239,13 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     },
   });
 
-  // Fetch chapter account whitelist
-  const { data: whitelistAccounts } = useQuery({
-    queryKey: ["chapter-account-whitelist", chapterId],
-    queryFn: async () => {
-      if (!chapterId) return [];
-      const { data, error } = await supabase
-        .from("chapter_account_whitelist")
-        .select("account_name")
-        .eq("chapter_id", chapterId)
-        .order("account_name");
-      if (error) throw error;
-      return (data ?? []).map((r: any) => r.account_name as string);
-    },
-    enabled: !!chapterId,
-  });
-
-  // Build combined suggestions from whitelist + aliases + existing accounts in sections
+  // Build combined suggestions from approved accounts prop + aliases + existing accounts in sections
   const accountSuggestions = (() => {
     const set = new Set<string>();
-    (whitelistAccounts ?? []).forEach(a => set.add(a));
+    (approvedAccounts ?? []).forEach(a => set.add(a));
     if (aliases) {
       for (const [_, display] of aliases) set.add(display);
     }
-    // Add accounts already used in current sections
     for (const s of sections) {
       for (const l of s.lines) {
         if (l.account_name.trim()) set.add(l.account_name.trim());
@@ -514,13 +501,17 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                     editingCell?.si === si && editingCell?.li === li && editingCell?.field === field;
                   const accountError = !readOnly ? validateAccountName(line.account_name) : null;
                   const canSplit = !readOnly && isSplittable(line.account_name);
+                  const whitelistLower = approvedAccounts && approvedAccounts.length > 0
+                    ? new Set(approvedAccounts.map(a => a.toLowerCase()))
+                    : null;
+                  const notInWhitelist = !readOnly && whitelistLower && line.account_name.trim() && !whitelistLower.has(line.account_name.trim().toLowerCase());
 
                   return (
                     <tr
                       key={li}
                       className={cn(
                         "border-b border-border/30 last:border-0 group/row hover:bg-muted/20",
-                        accountError && "bg-destructive/5"
+                        (accountError || notInWhitelist) && "bg-destructive/5"
                       )}
                     >
                       {/* Account */}
@@ -563,6 +554,16 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs max-w-48">
                                   {accountError}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {notInWhitelist && !accountError && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <XCircle className="h-3 w-3 text-amber-400 shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs max-w-48">
+                                  Not in chapter whitelist
                                 </TooltipContent>
                               </Tooltip>
                             )}

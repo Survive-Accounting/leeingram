@@ -238,6 +238,24 @@ ${scenarioBlocks.map((b: any) => `--- ${b.label} ---\n${b.text}`).join("\n\n")}
 `;
     }
 
+    // Fetch approved account whitelist for this chapter
+    let accountWhitelistBlock = "";
+    if (reqChapterId) {
+      const { data: approvedAccounts } = await supabase
+        .from("chapter_accounts")
+        .select("account_name")
+        .eq("chapter_id", reqChapterId)
+        .eq("is_approved", true);
+      if (approvedAccounts && approvedAccounts.length > 0) {
+        const accountList = approvedAccounts.map((a: any) => a.account_name).join(", ");
+        accountWhitelistBlock = `
+APPROVED ACCOUNT WHITELIST (STRICT — use ONLY these account names in journal entries):
+${accountList}
+Do NOT invent or use account names outside this list. If an account is needed but not listed, use the closest match.
+`;
+      }
+    }
+
     const systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
 TEACHING TONE:
@@ -259,6 +277,7 @@ ${companyList}
 
 ${difficultySection}
 ${constraintsBlock}
+${accountWhitelistBlock}
 
 ${journalInstruction}
 ${scenarioInstruction}
