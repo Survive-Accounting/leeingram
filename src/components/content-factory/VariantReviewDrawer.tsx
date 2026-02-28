@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { JournalEntryEditor, groupsToSections, type JESection } from "./JournalEntryEditor";
 import { ValidationPanel } from "./ValidationPanel";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
-import { parseLegacyAnswerOnly } from "@/lib/journalEntryParser";
+import { parseLegacyAnswerOnly, parseLegacyJEBlock } from "@/lib/journalEntryParser";
 import { logActivity } from "@/lib/activityLogger";
 
 interface VariantReviewDrawerProps {
@@ -124,6 +124,22 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       }
       // Legacy groups format
       return groupsToSections(variant.journal_entry_completed_json);
+    }
+    // Try parsing from journal_entry_block text (pipe/tab format)
+    if (variant.journal_entry_block) {
+      const parsed = parseLegacyJEBlock(variant.journal_entry_block);
+      if (parsed.length > 0) {
+        return parsed.map((g: any) => ({
+          entry_date: g.label || "",
+          lines: (g.lines || []).map((l: any) => ({
+            account_name: l.account || "",
+            debit: l.debit,
+            credit: l.credit,
+            memo: "",
+            indentation_level: (l.side === "credit" ? 1 : 0) as 0 | 1,
+          })),
+        }));
+      }
     }
     // Try parsing from answer_only text
     if (variant.answer_only) {
