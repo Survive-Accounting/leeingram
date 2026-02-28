@@ -227,7 +227,7 @@ export function SourceProblemPreview({ problem, open, onOpenChange }: Props) {
 
             <TabsContent value="answer">
               {problem.id ? (
-                <AnswerPackagePanel sourceProblemId={problem.id} />
+                <AnswerPackagePanel sourceProblemId={problem.id} problemText={problem.problem_text} solutionText={problem.solution_text} />
               ) : (
                 <p className="text-xs text-muted-foreground">No problem ID available.</p>
               )}
