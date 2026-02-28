@@ -100,6 +100,46 @@ const ACCOUNT_NORMALIZATIONS: Record<string, string> = {
   "ppd": "Prepaid",
 };
 
+/**
+ * Auto-clean: strip Debit/Credit/Dr/Cr tokens from account name,
+ * parse embedded amounts, and return cleaned name + parsed amount info.
+ */
+function autoCleanAccountInput(raw: string): {
+  cleanName: string;
+  side: "debit" | "credit" | null;
+  amount: number | null;
+} {
+  let text = raw.trim();
+  let side: "debit" | "credit" | null = null;
+  let amount: number | null = null;
+
+  // Detect and strip leading Debit/Credit/Dr/Cr tokens
+  const debitMatch = text.match(/^(?:Debit|Dr\.?)\s+/i);
+  const creditMatch = text.match(/^(?:Credit|Cr\.?)\s+/i);
+  if (debitMatch) {
+    side = "debit";
+    text = text.slice(debitMatch[0].length).trim();
+  } else if (creditMatch) {
+    side = "credit";
+    text = text.slice(creditMatch[0].length).trim();
+  }
+
+  // Strip trailing amount like "350,000" or "$350,000.00"
+  const amountMatch = text.match(/\s+\$?([\d,]+(?:\.\d+)?)\s*$/);
+  if (amountMatch) {
+    amount = parseFloat(amountMatch[1].replace(/,/g, ""));
+    text = text.slice(0, -amountMatch[0].length).trim();
+  }
+
+  // Also strip embedded $ amounts
+  text = text.replace(/\$[\d,]+(?:\.\d+)?/g, "").trim();
+
+  // Strip leftover Debit/Credit tokens in the middle
+  text = text.replace(/\b(?:Debit|Credit|Dr\.?|Cr\.?)\b/gi, "").replace(/\s{2,}/g, " ").trim();
+
+  return { cleanName: text, side, amount };
+}
+
 // ── Account Autocomplete Component ──
 
 function AccountAutocomplete({
@@ -239,10 +279,25 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     },
   });
 
-  // Build combined suggestions from approved accounts prop + aliases + existing accounts in sections
+  // Fetch global chart_of_accounts for autocomplete
+  const { data: globalCOA } = useQuery({
+    queryKey: ["global-coa-names"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chart_of_accounts")
+        .select("canonical_name")
+        .order("canonical_name");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.canonical_name as string);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Build combined suggestions from approved accounts + global COA + aliases + existing accounts in sections
   const accountSuggestions = (() => {
     const set = new Set<string>();
     (approvedAccounts ?? []).forEach(a => set.add(a));
+    (globalCOA ?? []).forEach(a => set.add(a));
     if (aliases) {
       for (const [_, display] of aliases) set.add(display);
     }
@@ -523,7 +578,26 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                             <AccountAutocomplete
                               value={line.account_name}
                               onChange={(v) => updateLine(si, li, { account_name: v })}
-                              onBlur={() => setEditingCell(null)}
+                              onBlur={() => {
+                                // Auto-clean on blur
+                                const { cleanName, side, amount } = autoCleanAccountInput(line.account_name);
+                                if (cleanName !== line.account_name || amount != null) {
+                                  const patch: Partial<JELine> = { account_name: cleanName };
+                                  if (amount != null && side) {
+                                    patch.debit = side === "debit" ? amount : null;
+                                    patch.credit = side === "credit" ? amount : null;
+                                    patch.indentation_level = side === "credit" ? 1 : 0;
+                                  } else if (amount != null) {
+                                    // No side detected — put in debit by default
+                                    if (line.debit == null && line.credit == null) {
+                                      patch.debit = amount;
+                                      patch.indentation_level = 0;
+                                    }
+                                  }
+                                  updateLine(si, li, patch);
+                                }
+                                setEditingCell(null);
+                              }}
                               onKeyDown={(e) => {
                                 if (e.key === "Tab") {
                                   e.preventDefault();
