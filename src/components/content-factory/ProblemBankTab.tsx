@@ -20,6 +20,7 @@ import { SourceProblemPreview } from "@/components/content-factory/SourceProblem
 import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
+import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -144,6 +145,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewCandidates, setReviewCandidates] = useState<any[]>([]);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [reviewDrawerVariant, setReviewDrawerVariant] = useState<any>(null);
 
   // Fetch user's variant count preference
   const { data: variantCount } = useQuery({
@@ -337,7 +340,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         });
         setViewingProblem({ ...viewingProblem, status: "generated" });
       }
-      toast.success(`Generated ${newCandidates.length} variants`);
+      const constraintsUsed = data.constraints_count || 0;
+      const fixMsg = constraintsUsed > 0 ? ` (used ${constraintsUsed} recent constraints from edits)` : "";
+      toast.success(`Generated ${newCandidates.length} variants${fixMsg}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -809,6 +814,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <Button
                           size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-xs"
+                          onClick={() => {
+                            setReviewDrawerVariant(c);
+                            setReviewDrawerOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-3 w-3 mr-1" /> Review & Edit
+                        </Button>
+                        <Button
+                          size="sm"
                           className="h-7 px-2.5 text-xs"
                           onClick={() => {
                             setSavingIndex(idx);
@@ -900,6 +916,34 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               </div>
             </div>
           )}
+
+          {/* Variant Review Drawer */}
+          <VariantReviewDrawer
+            open={reviewDrawerOpen}
+            onOpenChange={setReviewDrawerOpen}
+            variant={reviewDrawerVariant}
+            problem={rp}
+            chapterId={rp.chapter_id}
+            onApproved={() => {
+              setReviewDrawerOpen(false);
+              const c = reviewDrawerVariant;
+              if (c) {
+                setSavingIndex(allCandidates.indexOf(c));
+                setAfRequiresJE(!!c.journal_entry_block);
+                approveMutation.mutate({ candidate: c, problem: rp as any });
+              }
+            }}
+            onRejected={() => {
+              setReviewDrawerOpen(false);
+              const idx = allCandidates.indexOf(reviewDrawerVariant);
+              if (idx >= 0) {
+                setRejectingIndex(idx);
+                setRejectReason("");
+                setRejectNote("");
+                setViewingProblem(rp as any);
+              }
+            }}
+          />
 
           {/* Rejection Dialog (reuse) */}
           <Dialog open={rejectingIndex !== null} onOpenChange={(o) => { if (!o) { setRejectingIndex(null); setViewingProblem(null); } }}>
@@ -1259,6 +1303,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <Button
                             size="sm"
+                            variant="outline"
+                            className="h-7 px-2.5 text-xs"
+                            onClick={() => {
+                              setReviewDrawerVariant(c);
+                              setReviewDrawerOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" /> Review & Edit
+                          </Button>
+                          <Button
+                            size="sm"
                             className="h-7 px-2.5 text-xs"
                             onClick={() => {
                               setSavingIndex(idx);
@@ -1348,6 +1403,33 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             </div>
           )}
         </div>
+
+        {/* Variant Review Drawer (detail view) */}
+        <VariantReviewDrawer
+          open={reviewDrawerOpen}
+          onOpenChange={setReviewDrawerOpen}
+          variant={reviewDrawerVariant}
+          problem={p}
+          chapterId={p.chapter_id}
+          onApproved={() => {
+            setReviewDrawerOpen(false);
+            const c = reviewDrawerVariant;
+            if (c) {
+              const idx = candidates.indexOf(c);
+              setSavingIndex(idx);
+              approveMutation.mutate({ candidate: c, problem: p });
+            }
+          }}
+          onRejected={() => {
+            setReviewDrawerOpen(false);
+            const idx = candidates.indexOf(reviewDrawerVariant);
+            if (idx >= 0) {
+              setRejectingIndex(idx);
+              setRejectReason("");
+              setRejectNote("");
+            }
+          }}
+        />
 
         {/* Rejection Feedback Dialog */}
         <Dialog open={rejectingIndex !== null} onOpenChange={(o) => { if (!o) setRejectingIndex(null); }}>

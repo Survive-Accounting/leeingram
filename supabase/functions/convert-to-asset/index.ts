@@ -124,10 +124,27 @@ serve(async (req) => {
       difficultyToggles,
       provider: reqProvider,
       model: reqModel,
+      chapterId: reqChapterId,
     } = body;
 
     const provider = reqProvider || "lovable";
     const aiModel = reqModel || "google/gemini-3-flash-preview";
+
+    // Fetch recent correction events for lightweight learning
+    let constraintsBlock = "";
+    if (reqChapterId) {
+      const { data: recentFixes } = await supabase
+        .from("correction_events")
+        .select("summary, auto_tags")
+        .eq("chapter_id", reqChapterId)
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (recentFixes && recentFixes.length > 0) {
+        constraintsBlock = `\nCONSTRAINTS FROM RECENT FIXES (apply these to avoid repeating errors):
+${recentFixes.map((f: any, i: number) => `${i + 1}. ${f.summary} [tags: ${(f.auto_tags || []).join(", ")}]`).join("\n")}
+`;
+      }
+    }
 
     if (provider === "lovable") {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -219,6 +236,7 @@ COMPANY NAMES TO USE (one per variant, in order):
 ${companyList}
 
 ${difficultySection}
+${constraintsBlock}
 
 ${journalInstruction}
 
@@ -374,7 +392,9 @@ Generate ${variantCount} exam-style practice variants.`;
     const parsed = JSON.parse(toolCall.function.arguments);
     const candidates = parsed.candidates || [];
 
-    return new Response(JSON.stringify({ success: true, candidates }), {
+    const constraintsCount = constraintsBlock ? constraintsBlock.split("\n").filter((l: string) => l.match(/^\d+\./)).length : 0;
+
+    return new Response(JSON.stringify({ success: true, candidates, constraints_count: constraintsCount }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

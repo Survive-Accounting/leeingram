@@ -404,6 +404,45 @@ export type Database = {
         }
         Relationships: []
       }
+      correction_events: {
+        Row: {
+          after_json: Json
+          auto_tags: string[]
+          before_json: Json
+          chapter_id: string
+          created_at: string
+          diff_json: Json
+          id: string
+          source_problem_id: string
+          summary: string
+          user_id: string | null
+        }
+        Insert: {
+          after_json?: Json
+          auto_tags?: string[]
+          before_json?: Json
+          chapter_id: string
+          created_at?: string
+          diff_json?: Json
+          id?: string
+          source_problem_id: string
+          summary?: string
+          user_id?: string | null
+        }
+        Update: {
+          after_json?: Json
+          auto_tags?: string[]
+          before_json?: Json
+          chapter_id?: string
+          created_at?: string
+          diff_json?: Json
+          id?: string
+          source_problem_id?: string
+          summary?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           code: string
