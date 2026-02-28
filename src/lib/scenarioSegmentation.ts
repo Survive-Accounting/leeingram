@@ -27,6 +27,11 @@ const MULTI_SCENARIO_TRIGGERS = [
   /following\s+independent\s+(?:situations?|scenarios?|cases?)/i,
   /(?:case|situation|scenario)\s+(?:1|I|A)\s*(?:and|&)\s*(?:case|situation|scenario)\s+(?:2|II|B)/i,
   /unrelated\s+(?:situations?|scenarios?|transactions?)/i,
+  /presented\s+below\s+are/i,
+  /situation\s+1/i,
+  /situation\s+2/i,
+  /case\s+1/i,
+  /case\s+2/i,
 ];
 
 // ── Splitting patterns ──
@@ -150,9 +155,14 @@ This problem contains multiple independent scenarios that must be handled SEPARA
 
 CRITICAL RULES FOR MULTI-SCENARIO PROBLEMS:
 - Generate SEPARATE journal entry sections for EACH scenario
-- Label each JE section's entry_date with the scenario label prefix (e.g., "Situation 1 — Jan 1, 2025")
-- Do NOT merge scenarios into a single journal entry blob
+- Wrap output in a "scenario_sections" array:
+  { "scenario_sections": [
+      { "label": "Situation 1", "journal_entries": [...] },
+      { "label": "Situation 2", "journal_entries": [...] }
+  ]}
+- Each scenario_section must include its own journal_entries array
 - Each scenario should include entries for: a) issuance, b) interest payment, c) accrual (if applicable)
+- Do NOT merge scenarios into a single journal entry blob
 - Keep scenario numbering consistent with the source problem
 
 SCENARIO BLOCKS:

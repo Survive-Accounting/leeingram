@@ -234,24 +234,55 @@ export const cashDirectionSanity: Validator = (pkg) => {
 };
 
 // ─── V6: SCENARIO_SECTIONS_PRESENT (HARD) ───
-// When scenario_labels metadata exists, ensure each scenario has at least one JE section
+// When scenario_labels metadata exists, ensure output contains matching scenario_sections
 export const scenarioSectionsPresent: Validator = (pkg) => {
   const scenarioLabels: string[] = pkg.extracted_inputs?.scenario_labels || [];
   if (scenarioLabels.length === 0) {
     return { validator: "SCENARIO_SECTIONS_PRESENT", status: "pass", message: "Not a multi-scenario problem, skipped" };
   }
 
+  const payload = pkg.answer_payload;
+
+  // Check for scenario_sections wrapper structure first
+  const scenarioSections: any[] = payload?.scenario_sections || payload?.teaching_aids?.scenario_sections || [];
+
+  if (scenarioSections.length > 0) {
+    // Validate each expected label has a matching section
+    const foundLabels = scenarioSections.map((s: any) => (s.label || "").toLowerCase());
+    const missing: string[] = [];
+    for (const label of scenarioLabels) {
+      const labelLower = label.toLowerCase();
+      if (!foundLabels.some(fl => fl.includes(labelLower))) missing.push(label);
+    }
+
+    if (missing.length > 0) {
+      return {
+        validator: "SCENARIO_SECTIONS_PRESENT",
+        status: "fail",
+        message: `Missing scenario_sections for: ${missing.join(", ")}. Expected ${scenarioLabels.length} scenario sections.`,
+        details: { expected: scenarioLabels, missing, found: foundLabels },
+      };
+    }
+
+    return {
+      validator: "SCENARIO_SECTIONS_PRESENT",
+      status: "pass",
+      message: `All ${scenarioLabels.length} scenario(s) have scenario_sections`,
+      details: { expected: scenarioLabels, found: foundLabels },
+    };
+  }
+
+  // Fallback: check entry_date labels in flat JE sections
   const sections = extractJESections(pkg);
   if (sections.length === 0) {
     return {
       validator: "SCENARIO_SECTIONS_PRESENT",
       status: "fail",
-      message: `Multi-scenario problem (${scenarioLabels.length} scenarios) but no JE sections found`,
+      message: `Missing scenario_sections for multi-situation problem. Expected ${scenarioLabels.length} scenario sections but found none.`,
       details: { expected: scenarioLabels, found: [] },
     };
   }
 
-  // Check that entry_date labels reference each scenario
   const sectionDates = sections.map(s => (s.entry_date || "").toLowerCase());
   const missing: string[] = [];
   for (const label of scenarioLabels) {
@@ -264,7 +295,7 @@ export const scenarioSectionsPresent: Validator = (pkg) => {
     return {
       validator: "SCENARIO_SECTIONS_PRESENT",
       status: "fail",
-      message: `Missing JE sections for scenario(s): ${missing.join(", ")}. Got a single mixed blob instead of per-scenario entries.`,
+      message: `Missing scenario_sections for multi-situation problem. Got a single mixed blob instead of per-scenario entries for: ${missing.join(", ")}.`,
       details: { expected: scenarioLabels, missing, found_dates: sectionDates },
     };
   }
