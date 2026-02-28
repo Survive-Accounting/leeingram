@@ -308,6 +308,49 @@ export const scenarioSectionsPresent: Validator = (pkg) => {
   };
 };
 
+// ─── V7: ACCOUNT_FIELD_FORMATTING (HARD) ───
+// Detect narrative leakage in account_name fields
+const ACCOUNT_FIELD_BANNED_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
+  { pattern: /\$/, reason: "dollar sign" },
+  { pattern: /:\s/, reason: "colon (narrative prefix)" },
+  { pattern: /^[a-c]\.\s/i, reason: "lettered prefix (a./b./c.)" },
+  { pattern: /^\d+\.\s/, reason: "numeric prefix" },
+  { pattern: /\bto record\b/i, reason: "narrative phrase 'to record'" },
+  { pattern: /\bdebit\b/i, reason: "embedded debit text" },
+  { pattern: /\bcredit\b/i, reason: "embedded credit text" },
+  { pattern: /\bdr\b\.?/i, reason: "embedded Dr abbreviation" },
+  { pattern: /\bcr\b\.?/i, reason: "embedded Cr abbreviation" },
+];
+
+export const accountFieldFormatting: Validator = (pkg) => {
+  const sections = extractJESections(pkg);
+  if (sections.length === 0) return { validator: "ACCOUNT_FIELD_FORMATTING", status: "pass", message: "No JE, skipped" };
+
+  const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; reasons: string[] }> = [];
+
+  for (const s of sections) {
+    for (const l of s.lines) {
+      if (!l.account_name) continue;
+      const reasons: string[] = [];
+      for (const { pattern, reason } of ACCOUNT_FIELD_BANNED_PATTERNS) {
+        if (pattern.test(l.account_name)) reasons.push(reason);
+      }
+      if (reasons.length > 0) {
+        offending.push({ sectionIndex: s.sectionIndex, lineIndex: l.lineIndex, account_name: l.account_name, reasons });
+      }
+    }
+  }
+
+  return {
+    validator: "ACCOUNT_FIELD_FORMATTING",
+    status: offending.length > 0 ? "fail" : "pass",
+    message: offending.length > 0
+      ? `Narrative leakage detected in account field: ${offending.map(o => `"${o.account_name}" (${o.reasons.join(", ")})`).join("; ")}`
+      : "All account fields clean",
+    details: { offending },
+  };
+};
+
 // ─── Export all JE validators ───
 export const JE_VALIDATORS: Validator[] = [
   jeBalances,
@@ -316,6 +359,7 @@ export const JE_VALIDATORS: Validator[] = [
   oneSidedRows,
   cashDirectionSanity,
   scenarioSectionsPresent,
+  accountFieldFormatting,
 ];
 
 // ─── Auto-fix helpers ───
