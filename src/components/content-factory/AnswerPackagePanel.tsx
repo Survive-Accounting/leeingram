@@ -14,9 +14,12 @@ import { RegenerateDialog } from "./RegenerateDialog";
 import { VersionDiffView } from "./VersionDiffView";
 import { FinalAnswersPanel, type FinalAnswer } from "./FinalAnswersPanel";
 import { JournalEntryEditor, groupsToSections, sectionsToGroups, type JESection } from "./JournalEntryEditor";
+import { AIComparisonPanel } from "./AIComparisonPanel";
 
 interface Props {
   sourceProblemId: string;
+  problemText?: string;
+  solutionText?: string;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -66,7 +69,7 @@ function extractTeachingText(payload: any): string | null {
   return payload?.teaching_aids?.explanation || payload?.teaching_aids?.calculation_breakdown || null;
 }
 
-export function AnswerPackagePanel({ sourceProblemId }: Props) {
+export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText }: Props) {
   const qc = useQueryClient();
   const [showWork, setShowWork] = useState(false);
   const [showAllVersions, setShowAllVersions] = useState(false);
@@ -393,6 +396,16 @@ export function AnswerPackagePanel({ sourceProblemId }: Props) {
             </Collapsible>
           )}
         </>
+      )}
+
+      {/* AI Provider Testing */}
+      {latest && problemText && (
+        <AIComparisonPanel
+          sourceProblemId={sourceProblemId}
+          problemText={problemText}
+          solutionText={solutionText ?? ""}
+          latestPackage={latest}
+        />
       )}
 
       {/* Regenerate Dialog */}
