@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, RefreshCw, Eye, GitCompare, BookOpen } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, RefreshCw, Eye, GitCompare, BookOpen, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type ValidationResult, type AnswerPackageData } from "@/lib/validation";
@@ -76,6 +77,8 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
   const [regenOpen, setRegenOpen] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
   const [showTeachingAids, setShowTeachingAids] = useState(true);
+  const [genProvider, setGenProvider] = useState<"lovable" | "openai">("lovable");
+  const [genModel, setGenModel] = useState("gpt-4.1");
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ["answer-packages", sourceProblemId],
@@ -248,6 +251,46 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const initialGenMutation = useMutation({
+    mutationFn: async () => {
+      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in valid JSON.\n\nProblem:\n${problemText || "No problem text"}\n\nSolution Reference:\n${solutionText || "No solution text"}\n\nProvide JSON: {"final_answers": [{"label": string, "value": string}], "teaching_aids": {"explanation": string, "journal_entries": [{"entry_date": string, "lines": [{"account_name": string, "debit": number|null, "credit": number|null, "memo": string, "indentation_level": number}]}]}}`;
+
+      const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+        body: {
+          provider: genProvider,
+          model: genProvider === "openai" ? genModel : "google/gemini-2.5-flash",
+          temperature: 0.2,
+          max_output_tokens: 3000,
+          source_problem_id: sourceProblemId,
+          messages: [
+            { role: "system", content: "You are an expert accounting professor. Return answers in valid JSON." },
+            { role: "user", content: systemPrompt },
+          ],
+          response_format_json_schema: genProvider === "openai" ? {
+            name: "answer_package", strict: true,
+            schema: { type: "object", properties: { final_answers: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"], additionalProperties: false } }, teaching_aids: { type: "object", properties: { explanation: { type: "string" }, journal_entries: { type: "array", items: { type: "object", properties: { entry_date: { type: "string" }, lines: { type: "array", items: { type: "object", properties: { account_name: { type: "string" }, debit: { type: ["number", "null"] }, credit: { type: ["number", "null"] }, memo: { type: "string" }, indentation_level: { type: "number" } }, required: ["account_name", "debit", "credit", "memo", "indentation_level"], additionalProperties: false } } }, required: ["entry_date", "lines"], additionalProperties: false } } }, required: ["explanation", "journal_entries"], additionalProperties: false } }, required: ["final_answers", "teaching_aids"], additionalProperties: false },
+          } : undefined,
+        },
+      });
+      if (aiErr) throw aiErr;
+      if (aiResult.error) throw new Error(aiResult.error);
+
+      const parsed = aiResult.parsed;
+      if (!parsed) {
+        await supabase.from("answer_packages").insert({ source_problem_id: sourceProblemId, version: 1, generator: "ai" as any, answer_payload: { _raw_unparsed: aiResult.raw }, status: "needs_review" as any, output_type: "mixed" } as any);
+        throw new Error("AI returned invalid JSON — saved as needs_review");
+      }
+
+      const pkgData: AnswerPackageData = { answer_payload: parsed, extracted_inputs: {}, computed_values: {} };
+      const vr = runValidation(pkgData);
+      const status = hasFailures(vr) ? "needs_review" : "drafted";
+      await supabase.from("answer_packages").insert({ source_problem_id: sourceProblemId, version: 1, generator: "ai" as any, answer_payload: parsed, validation_results: vr as any, status: status as any, output_type: "mixed" } as any);
+      await logActivity({ actor_type: "ai", entity_type: "source_problem", entity_id: sourceProblemId, event_type: "ai_generation_test", payload_json: { provider: genProvider, model: genProvider === "openai" ? genModel : "google/gemini-2.5-flash", token_usage: aiResult.token_usage, generation_time_ms: aiResult.generation_time_ms, mode: "initial" } });
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["answer-packages"] }); toast.success(`Initial generation complete (${genProvider})`); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <p className="text-xs text-muted-foreground">Loading answer packages…</p>;
 
   return (
@@ -258,7 +301,34 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
       <div className="border-t border-border pt-3" />
 
       {!latest ? (
-        <p className="text-xs text-muted-foreground">No answer packages generated yet.</p>
+        <div className="space-y-3 border border-border rounded-lg p-4">
+          <p className="text-xs text-muted-foreground">No answer packages generated yet. Generate the first one:</p>
+          <div className="flex gap-2 items-center flex-wrap">
+            <Select value={genProvider} onValueChange={(v) => setGenProvider(v as any)}>
+              <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lovable">Lovable</SelectItem>
+                <SelectItem value="openai">OpenAI</SelectItem>
+              </SelectContent>
+            </Select>
+            {genProvider === "openai" && (
+              <Select value={genModel} onValueChange={setGenModel}>
+                <SelectTrigger className="h-7 text-xs w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gpt-4.1">gpt-4.1 (accuracy)</SelectItem>
+                  <SelectItem value="gpt-4o-mini">gpt-4o-mini (cheap)</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            <Button size="sm" className="h-7 text-xs" onClick={() => initialGenMutation.mutate()} disabled={initialGenMutation.isPending || !problemText}>
+              {initialGenMutation.isPending ? (
+                <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</>
+              ) : (
+                <><Sparkles className="h-3 w-3 mr-1" /> Generate ({genProvider === "openai" ? `OpenAI/${genModel}` : "Lovable"})</>
+              )}
+            </Button>
+          </div>
+        </div>
       ) : (
         <>
           {/* Header with status + actions */}
@@ -415,6 +485,8 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
         openRepairNotes={openRepairNotes}
         open={regenOpen}
         onOpenChange={setRegenOpen}
+        problemText={problemText}
+        solutionText={solutionText}
       />
     </div>
   );
