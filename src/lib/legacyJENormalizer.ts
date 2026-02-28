@@ -103,8 +103,15 @@ export interface NormalizeResult {
   rowCount: number;
 }
 
-/** Parse legacy JE text into canonical structured format */
-export function normalizeLegacyJEText(text: string): NormalizeResult {
+/** COA lookup entry for matching during normalization */
+export interface COALookupEntry {
+  id: string;
+  canonical_name: string;
+  keywords: string[] | null;
+}
+
+/** Parse legacy JE text into canonical structured format, optionally resolving to COA */
+export function normalizeLegacyJEText(text: string, coaLookup?: COALookupEntry[]): NormalizeResult {
   if (!text?.trim()) return { scenario_sections: [], success: false, rowCount: 0 };
 
   const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
@@ -160,14 +167,16 @@ export function normalizeLegacyJEText(text: string): NormalizeResult {
     }
   }
 
-  // Build output
+  // Build output + resolve to COA
   const sections: CanonicalScenarioSection[] = [];
   let rowCount = 0;
   for (const [label, dateMap] of scenarioMap) {
     const entries: CanonicalEntryByDate[] = [];
     for (const [date, rows] of dateMap) {
-      entries.push({ entry_date: date, rows });
-      rowCount += rows.length;
+      // Resolve rows to COA if lookup provided
+      const resolvedRows = coaLookup ? rows.map(row => resolveRowToCOA(row, coaLookup)) : rows;
+      entries.push({ entry_date: date, rows: resolvedRows });
+      rowCount += resolvedRows.length;
     }
     sections.push({ label, entries_by_date: entries });
   }
@@ -178,6 +187,29 @@ export function normalizeLegacyJEText(text: string): NormalizeResult {
   }
 
   return { scenario_sections: sections, success: rowCount > 0, rowCount };
+}
+
+/** Try to match a row's account_name to a COA entry */
+function resolveRowToCOA(row: CanonicalJERow, coaLookup: COALookupEntry[]): CanonicalJERow {
+  const lower = row.account_name.toLowerCase().trim();
+  if (!lower) return row;
+
+  // Direct match on canonical_name
+  const direct = coaLookup.find(e => e.canonical_name.toLowerCase() === lower);
+  if (direct) {
+    return { ...row, account_name: direct.canonical_name, coa_id: direct.id, unknown_account: false };
+  }
+
+  // Match via keywords
+  const kwMatch = coaLookup.find(e =>
+    e.keywords?.some(k => k.toLowerCase() === lower)
+  );
+  if (kwMatch) {
+    return { ...row, account_name: kwMatch.canonical_name, coa_id: kwMatch.id, unknown_account: false };
+  }
+
+  // No match found
+  return { ...row, unknown_account: true };
 }
 
 function addRow(map: Map<string, Map<string, CanonicalJERow[]>>, scenario: string, date: string, row: CanonicalJERow) {
