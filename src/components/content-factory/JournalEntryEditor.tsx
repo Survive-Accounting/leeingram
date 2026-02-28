@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import {
   Wand2, ListPlus, ArrowLeftRight, Scissors, PlusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -30,6 +30,7 @@ export interface JournalEntryEditorProps {
   onChange: (sections: JESection[]) => void;
   readOnly?: boolean;
   courseShort?: string;
+  chapterId?: string;
 }
 
 function emptyLine(): JELine {
@@ -45,9 +46,8 @@ function sectionBalance(section: JESection): { debits: number; credits: number; 
 
 // ── Account Name Validation ──
 
-/** Returns error message if account_name has disallowed content, null otherwise */
 function validateAccountName(name: string): string | null {
-  if (!name.trim()) return null; // empty is ok (user hasn't typed yet)
+  if (!name.trim()) return null;
   if (name.includes(":")) return "Colons not allowed — use the memo field for context";
   if (/\$[\d,]+/.test(name)) return "Dollar amounts not allowed in account names";
   if (/^\d+\.\s/.test(name)) return "Numbered list prefixes detected — use Split Row";
@@ -55,22 +55,18 @@ function validateAccountName(name: string): string | null {
   return null;
 }
 
-/** Check if account_name is splittable (has a. b. patterns or semicolons) */
 function isSplittable(name: string): boolean {
   return /\b[a-z]\.\s+/i.test(name) || name.includes(";");
 }
 
-/** Split an account_name containing 'a.' 'b.' or semicolons into multiple lines */
 function splitAccountName(line: JELine): JELine[] {
   const name = line.account_name;
-  // Try letter prefixes first: "a. Cash $100 b. Revenue $200"
   const letterParts = name.split(/\b([a-z])\.\s+/i);
   if (letterParts.length > 2) {
     const results: JELine[] = [];
     for (let i = 1; i < letterParts.length; i += 2) {
       const text = (letterParts[i + 1] || "").trim();
       if (!text) continue;
-      // Try to extract amount
       const amountMatch = text.match(/^(.+?)\s+\$?([\d,]+(?:\.\d+)?)\s*$/);
       if (amountMatch) {
         const accountName = amountMatch[1].trim();
@@ -89,7 +85,6 @@ function splitAccountName(line: JELine): JELine[] {
     }
     if (results.length > 0) return results;
   }
-  // Try semicolons
   const semiParts = name.split(";").map(s => s.trim()).filter(Boolean);
   if (semiParts.length > 1) {
     return semiParts.map(part => ({ ...line, account_name: part }));
@@ -104,7 +99,127 @@ const ACCOUNT_NORMALIZATIONS: Record<string, string> = {
   "ppd": "Prepaid",
 };
 
-export function JournalEntryEditor({ sections, onChange, readOnly = false, courseShort }: JournalEntryEditorProps) {
+// ── Account Autocomplete Component ──
+
+function AccountAutocomplete({
+  value,
+  onChange,
+  onBlur,
+  onKeyDown,
+  suggestions,
+  chapterId,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onBlur: () => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+  suggestions: string[];
+  chapterId?: string;
+}) {
+  const [showDropdown, setShowDropdown] = useState(true);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+  const qc = useQueryClient();
+
+  const filtered = value.trim()
+    ? suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase())).slice(0, 8)
+    : suggestions.slice(0, 8);
+
+  const isNewAccount = value.trim() && !suggestions.some(s => s.toLowerCase() === value.trim().toLowerCase());
+
+  const addToWhitelist = async () => {
+    if (!chapterId || !value.trim()) return;
+    try {
+      await supabase.from("chapter_account_whitelist").insert({
+        chapter_id: chapterId,
+        account_name: value.trim(),
+      } as any);
+      qc.invalidateQueries({ queryKey: ["chapter-account-whitelist", chapterId] });
+      toast.success(`"${value.trim()}" added to chapter whitelist`);
+    } catch {
+      // Unique constraint - already exists
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown" && filtered.length > 0) {
+      e.preventDefault();
+      setSelectedIdx(prev => Math.min(prev + 1, filtered.length - 1));
+      return;
+    }
+    if (e.key === "ArrowUp" && filtered.length > 0) {
+      e.preventDefault();
+      setSelectedIdx(prev => Math.max(prev - 1, -1));
+      return;
+    }
+    if (e.key === "Enter" && selectedIdx >= 0 && filtered[selectedIdx]) {
+      e.preventDefault();
+      onChange(filtered[selectedIdx]);
+      setShowDropdown(false);
+      onBlur();
+      return;
+    }
+    onKeyDown(e);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        autoFocus
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setShowDropdown(true);
+          setSelectedIdx(-1);
+        }}
+        onBlur={() => {
+          setTimeout(() => {
+            setShowDropdown(false);
+            onBlur();
+          }, 200);
+        }}
+        onKeyDown={handleKeyDown}
+        className="h-6 text-sm p-0 border-0 bg-transparent focus-visible:ring-1"
+        placeholder="Type account name..."
+      />
+      {showDropdown && (filtered.length > 0 || isNewAccount) && (
+        <div className="absolute z-50 top-full left-0 mt-1 w-64 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-md">
+          {filtered.map((s, i) => (
+            <button
+              key={s}
+              className={cn(
+                "w-full text-left px-2 py-1 text-xs hover:bg-accent transition-colors",
+                i === selectedIdx && "bg-accent"
+              )}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(s);
+                setShowDropdown(false);
+                onBlur();
+              }}
+            >
+              {s}
+            </button>
+          ))}
+          {isNewAccount && chapterId && (
+            <button
+              className="w-full text-left px-2 py-1.5 text-xs border-t border-border text-primary hover:bg-accent/50 flex items-center gap-1"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                addToWhitelist();
+                setShowDropdown(false);
+                onBlur();
+              }}
+            >
+              <Plus className="h-3 w-3" /> Add "{value.trim()}" to whitelist
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function JournalEntryEditor({ sections, onChange, readOnly = false, courseShort, chapterId }: JournalEntryEditorProps) {
   const [editingCell, setEditingCell] = useState<{ si: number; li: number; field: string } | null>(null);
 
   const { data: aliases } = useQuery({
@@ -120,6 +235,38 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     },
   });
 
+  // Fetch chapter account whitelist
+  const { data: whitelistAccounts } = useQuery({
+    queryKey: ["chapter-account-whitelist", chapterId],
+    queryFn: async () => {
+      if (!chapterId) return [];
+      const { data, error } = await supabase
+        .from("chapter_account_whitelist")
+        .select("account_name")
+        .eq("chapter_id", chapterId)
+        .order("account_name");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.account_name as string);
+    },
+    enabled: !!chapterId,
+  });
+
+  // Build combined suggestions from whitelist + aliases + existing accounts in sections
+  const accountSuggestions = (() => {
+    const set = new Set<string>();
+    (whitelistAccounts ?? []).forEach(a => set.add(a));
+    if (aliases) {
+      for (const [_, display] of aliases) set.add(display);
+    }
+    // Add accounts already used in current sections
+    for (const s of sections) {
+      for (const l of s.lines) {
+        if (l.account_name.trim()) set.add(l.account_name.trim());
+      }
+    }
+    return Array.from(set).sort();
+  })();
+
   const displayName = useCallback((canonical: string) => {
     return aliases?.get(canonical) ?? canonical;
   }, [aliases]);
@@ -128,7 +275,6 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
 
   const updateLine = (si: number, li: number, patch: Partial<JELine>) => {
     const finalPatch = { ...patch };
-    // Mutual exclusivity: entering debit clears credit and vice versa
     if ("debit" in finalPatch && finalPatch.debit != null && finalPatch.debit !== 0) {
       finalPatch.credit = null;
       finalPatch.indentation_level = 0;
@@ -250,24 +396,19 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
       ...s,
       lines: s.lines.map((l) => {
         let name = l.account_name.trim();
-        // Strip leading dates
         name = name.replace(
           /^(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?\s*[-:–]\s*/i,
           ""
         );
-        // Strip colons (narrative prefixes)
         const colonIdx = name.indexOf(":");
         if (colonIdx >= 4) {
           const after = name.slice(colonIdx + 1).trim();
           if (after) name = after;
         }
-        // Strip dollar amounts
         name = name.replace(/\s*\$[\d,]+(?:\.\d+)?\s*/g, " ").trim();
-        // Normalize abbreviations
         const lower = name.toLowerCase();
         const builtIn = ACCOUNT_NORMALIZATIONS[lower];
         if (builtIn) name = builtIn;
-        // Check aliases
         for (const [key, canonical] of aliasMap) {
           if (lower === key.toLowerCase()) {
             name = canonical;
@@ -282,7 +423,7 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
 
   // ── Render ──
 
-  // Group sections by scenario label (detected from entry_date prefix like "Situation 1 — ...")
+  // Group sections by scenario label
   const scenarioPattern = /^((?:Situation|Case|Scenario)\s+(?:\d+|[A-Z]|[IVX]+))\s*[—\-–:]\s*/i;
   type SectionGroup = { scenarioLabel: string | null; sectionIndices: number[] };
   const sectionGroups: SectionGroup[] = [];
@@ -305,7 +446,6 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
     <div className="space-y-4">
       {sectionGroups.map((group, gi) => (
         <div key={gi}>
-          {/* Scenario group header */}
           {hasScenarioGroups && group.scenarioLabel && (
             <div className="flex items-center gap-2 mb-2 mt-1">
               <div className="h-px flex-1 bg-primary/20" />
@@ -319,7 +459,6 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
       {group.sectionIndices.map((si) => {
         const section = sections[si];
         const bal = sectionBalance(section);
-        // Strip scenario label from display date
         const displayDate = section.entry_date.replace(scenarioPattern, "").trim() || section.entry_date;
         return (
           <div key={si} className="border border-border rounded-lg overflow-hidden">
@@ -390,19 +529,18 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                           <span className="text-foreground text-sm">{displayName(line.account_name)}</span>
                         ) : isEditing("account") ? (
                           <div className="space-y-0.5">
-                            <Input
-                              autoFocus
+                            <AccountAutocomplete
                               value={line.account_name}
-                              onChange={(e) => updateLine(si, li, { account_name: e.target.value })}
+                              onChange={(v) => updateLine(si, li, { account_name: v })}
                               onBlur={() => setEditingCell(null)}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") setEditingCell(null);
                                 if (e.key === "Tab") {
                                   e.preventDefault();
                                   setEditingCell({ si, li, field: "debit" });
                                 }
                               }}
-                              className="h-6 text-sm p-0 border-0 bg-transparent focus-visible:ring-1"
+                              suggestions={accountSuggestions}
+                              chapterId={chapterId}
                             />
                             {accountError && (
                               <p className="text-[9px] text-destructive">{accountError}</p>
@@ -505,7 +643,6 @@ export function JournalEntryEditor({ sections, onChange, readOnly = false, cours
                               if (e.key === "Enter") setEditingCell(null);
                               if (e.key === "Tab" && !e.shiftKey) {
                                 e.preventDefault();
-                                // Move to next row's account
                                 if (li + 1 < section.lines.length) {
                                   setEditingCell({ si, li: li + 1, field: "account" });
                                 } else {

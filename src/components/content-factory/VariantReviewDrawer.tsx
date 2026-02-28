@@ -30,19 +30,16 @@ function autoTagCorrections(before: JESection[], after: JESection[]): string[] {
   const beforeFlat = before.flatMap(s => s.lines);
   const afterFlat = after.flatMap(s => s.lines);
   
-  // Check for date removal from account names
   const datePattern = /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|20\d{2})\b/i;
   const hadDates = beforeFlat.some(l => datePattern.test(l.account_name));
   const hasDates = afterFlat.some(l => datePattern.test(l.account_name));
   if (hadDates && !hasDates) tags.push("no_dates_in_account_names");
   
-  // Check for narrative prefix removal
   const prefixPattern = /^.{4,}:\s*/;
   const hadPrefixes = beforeFlat.some(l => prefixPattern.test(l.account_name));
   const hasPrefixes = afterFlat.some(l => prefixPattern.test(l.account_name));
   if (hadPrefixes && !hasPrefixes) tags.push("no_narrative_prefix_in_account");
   
-  // Check for debit/credit side changes on Cash rows
   for (let i = 0; i < Math.min(beforeFlat.length, afterFlat.length); i++) {
     const bLine = beforeFlat[i];
     const aLine = afterFlat[i];
@@ -56,7 +53,6 @@ function autoTagCorrections(before: JESection[], after: JESection[]): string[] {
     }
   }
   
-  // Check for discount/premium side changes
   for (let i = 0; i < Math.min(beforeFlat.length, afterFlat.length); i++) {
     const bLine = beforeFlat[i];
     const aLine = afterFlat[i];
@@ -108,7 +104,31 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   // Parse initial JE sections from variant data
   const initialSections = useCallback((): JESection[] => {
     if (!variant) return [];
-    // Try structured JSON first
+
+    // Try scenario_sections → entries_by_date format first
+    const scenarioSections: any[] = variant.candidate_data?.scenario_sections || variant.journal_entry_completed_json?.scenario_sections || [];
+    if (scenarioSections.length > 0) {
+      const allSections: JESection[] = [];
+      for (const scenario of scenarioSections) {
+        const entriesByDate: any[] = scenario.entries_by_date || scenario.journal_entries || [];
+        for (const entry of entriesByDate) {
+          const label = scenarioSections.length > 1 ? `${scenario.label} — ${entry.entry_date || ""}` : (entry.entry_date || "");
+          allSections.push({
+            entry_date: label,
+            lines: (entry.rows || entry.lines || []).map((l: any) => ({
+              account_name: l.account_name || l.account || "",
+              debit: l.debit != null ? Number(l.debit) : null,
+              credit: l.credit != null ? Number(l.credit) : null,
+              memo: l.memo || "",
+              indentation_level: (l.credit != null && l.credit !== 0 ? 1 : 0) as 0 | 1,
+            })),
+          });
+        }
+      }
+      if (allSections.length > 0) return allSections;
+    }
+
+    // Try structured JSON
     if (variant.journal_entry_completed_json && Array.isArray(variant.journal_entry_completed_json)) {
       if (variant.journal_entry_completed_json[0]?.entry_date !== undefined) {
         return variant.journal_entry_completed_json.map((s: any) => ({
@@ -122,10 +142,9 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           })),
         }));
       }
-      // Legacy groups format
       return groupsToSections(variant.journal_entry_completed_json);
     }
-    // Try parsing from journal_entry_block text (pipe/tab format)
+    // Try parsing from journal_entry_block text
     if (variant.journal_entry_block) {
       const parsed = parseLegacyJEBlock(variant.journal_entry_block);
       if (parsed.length > 0) {
@@ -165,6 +184,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [saving, setSaving] = useState(false);
   const [hasEdits, setHasEdits] = useState(false);
+  const [editVersion, setEditVersion] = useState(0);
   const [recentFixes, setRecentFixes] = useState<any[]>([]);
   const [showFixes, setShowFixes] = useState(false);
 
@@ -175,6 +195,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       setSections(s);
       setOriginalSections(JSON.parse(JSON.stringify(s)));
       setHasEdits(false);
+      setEditVersion(0);
       runValidationOnSections(s);
       loadRecentFixes();
     }
@@ -216,26 +237,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     toast.success(description);
   };
 
-  const handleFlipSide = (si: number, li: number) => {
-    const newSections = sections.map((s, i) => {
-      if (i !== si) return s;
-      return {
-        ...s,
-        lines: s.lines.map((l, j) => {
-          if (j !== li) return l;
-          // Flip debit <-> credit
-          return {
-            ...l,
-            debit: l.credit,
-            credit: l.debit,
-            indentation_level: (l.debit != null ? 1 : 0) as 0 | 1,
-          };
-        }),
-      };
-    });
-    handleSectionsChange(newSections);
-  };
-
   const handleSaveEdits = async () => {
     if (!variant || !problem) return;
     setSaving(true);
@@ -261,17 +262,27 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         summary,
       } as any);
 
-      // Update the variant's candidate_data with new JE
+      // Create a NEW version of the variant (not overwrite)
+      const newVersion = editVersion + 1;
       const updatedCandidate = {
         ...(variant.candidate_data || variant),
         journal_entry_completed_json: sections,
+        _edit_version: newVersion,
+        _edited_at: new Date().toISOString(),
+        _edited_by: user?.id,
       };
 
       if (variant._variantId) {
-        await supabase.from("problem_variants").update({
+        // Insert new problem_variant row as a versioned copy
+        const { error: insertErr } = await supabase.from("problem_variants").insert({
+          base_problem_id: problem.id,
+          variant_label: `${variant.variant_label || "Variant"} (edit v${newVersion})`,
+          variant_problem_text: variant.variant_problem_text || variant.survive_problem_text || "",
+          variant_solution_text: variant.variant_solution_text || variant.survive_solution_text || "",
           candidate_data: updatedCandidate,
           journal_entry_completed_json: sections as any,
-        } as any).eq("id", variant._variantId);
+        } as any);
+        if (insertErr) throw insertErr;
       }
 
       // Log activity
@@ -284,12 +295,14 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           variant_id: variant._variantId,
           auto_tags: autoTags,
           change_count: diff.changes.length,
+          edit_version: newVersion,
         },
       });
 
       setOriginalSections(JSON.parse(JSON.stringify(sections)));
       setHasEdits(false);
-      toast.success("Edits saved with correction event logged");
+      setEditVersion(newVersion);
+      toast.success(`Saved as new version (v${newVersion}) — original preserved`);
     } catch (err: any) {
       toast.error(err?.message || "Save failed");
     } finally {
@@ -318,6 +331,11 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             <Badge variant="outline" className="text-[10px]">
               {variant.asset_name || variant.variant_label || "Variant"}
             </Badge>
+            {editVersion > 0 && (
+              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                v{editVersion}
+              </Badge>
+            )}
           </SheetTitle>
         </SheetHeader>
 
@@ -386,6 +404,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
               <JournalEntryEditor
                 sections={sections}
                 onChange={handleSectionsChange}
+                chapterId={chapterId}
               />
             ) : (
               <p className="text-xs text-muted-foreground italic border border-dashed border-border rounded p-4 text-center">
@@ -450,7 +469,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                 disabled={saving}
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
-                {saving ? "Saving…" : "Save Edits"}
+                {saving ? "Saving…" : "Save as New Version"}
               </Button>
             )}
             <Button
