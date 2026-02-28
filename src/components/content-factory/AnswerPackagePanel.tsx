@@ -16,6 +16,7 @@ import { VersionDiffView } from "./VersionDiffView";
 import { FinalAnswersPanel, type FinalAnswer } from "./FinalAnswersPanel";
 import { JournalEntryEditor, groupsToSections, sectionsToGroups, type JESection } from "./JournalEntryEditor";
 import { AIComparisonPanel } from "./AIComparisonPanel";
+import { ValidationPanel } from "./ValidationPanel";
 
 interface Props {
   sourceProblemId: string;
@@ -29,11 +30,7 @@ const STATUS_STYLES: Record<string, string> = {
   approved: "bg-green-500/20 text-green-400 border-green-500/30",
 };
 
-function ValidationIcon({ status }: { status: string }) {
-  if (status === "pass") return <CheckCircle2 className="h-3 w-3 text-green-400" />;
-  if (status === "fail") return <XCircle className="h-3 w-3 text-destructive" />;
-  return <AlertTriangle className="h-3 w-3 text-amber-400" />;
-}
+// ValidationIcon moved to ValidationPanel
 
 /** Extract structured sections from answer_payload */
 function extractFinalAnswers(payload: any): FinalAnswer[] {
@@ -113,6 +110,7 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
   const olderVersions = packages?.slice(1) ?? [];
   const validationResults: ValidationResult[] = latest?.validation_results ?? [];
   const failed = hasFailures(validationResults);
+  const hasWarnings = validationResults.some(r => r.status === "warn");
 
   const outputType: string = latest?.output_type ?? "mixed";
   const finalAnswers = extractFinalAnswers(latest?.answer_payload);
@@ -354,8 +352,19 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
                 </Button>
               )}
               {!failed && latest.status !== "approved" && (
-                <Button size="sm" className="h-6 text-[10px]" onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
-                  <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
+                <Button
+                  size="sm"
+                  className="h-6 text-[10px]"
+                  variant={hasWarnings ? "outline" : "default"}
+                  onClick={() => {
+                    if (hasWarnings) {
+                      if (!window.confirm("There are validation warnings. Approve anyway?")) return;
+                    }
+                    approveMutation.mutate();
+                  }}
+                  disabled={approveMutation.isPending}
+                >
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> {hasWarnings ? "Override & Approve" : "Approve"}
                 </Button>
               )}
             </div>
@@ -411,16 +420,21 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText 
               </Collapsible>
 
               {/* Validation results */}
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Validation</p>
-                {validationResults.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 px-2 py-1 text-xs">
-                    <ValidationIcon status={r.status} />
-                    <span className="font-mono text-muted-foreground w-44 truncate">{r.validator}</span>
-                    <span className={cn("truncate", r.status === "fail" ? "text-destructive" : "text-muted-foreground")}>{r.message}</span>
-                  </div>
-                ))}
-              </div>
+              <ValidationPanel
+                results={validationResults}
+                sections={teachingJE}
+                onAutoFix={(fixedSections, description) => {
+                  if (!latest) return;
+                  const updated = {
+                    ...latest.answer_payload,
+                    teaching_aids: {
+                      ...(latest.answer_payload?.teaching_aids ?? {}),
+                      journal_entries: fixedSections,
+                    },
+                  };
+                  saveEditMutation.mutate(updated);
+                }}
+              />
 
               {/* Show Work */}
               <Collapsible open={showWork} onOpenChange={setShowWork}>

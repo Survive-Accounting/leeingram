@@ -92,10 +92,15 @@ export const BASE_VALIDATORS: Validator[] = [
   formattingSanity,
 ];
 
+// Import and re-export JE validators so they're always included
+import { JE_VALIDATORS } from "./jeValidators";
+
+export const ALL_VALIDATORS: Validator[] = [...BASE_VALIDATORS, ...JE_VALIDATORS];
+
 // --- Validation Pipeline ---
 
 export function runValidation(pkg: AnswerPackageData, extraValidators: Validator[] = []): ValidationResult[] {
-  const all = [...BASE_VALIDATORS, ...extraValidators];
+  const all = [...ALL_VALIDATORS, ...extraValidators];
   return all.map((v) => v(pkg));
 }
 
