@@ -10,6 +10,10 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, supabaseKey);
+
   try {
     const {
       provider,
@@ -25,6 +29,18 @@ serve(async (req) => {
       throw new Error("Missing required fields: provider, messages, source_problem_id");
     }
 
+    const selectedModel = model || (provider === "openai" ? "gpt-4.1" : "google/gemini-2.5-flash");
+
+    // ── Log: ai_generate_started ──
+    await sb.from("activity_log").insert({
+      actor_type: "ai",
+      entity_type: "source_problem",
+      entity_id: source_problem_id,
+      event_type: "ai_generate_started",
+      severity: "info",
+      payload_json: { provider, model: selectedModel },
+    });
+
     const startTime = Date.now();
     let aiResponse: any;
     let tokenUsage: any = {};
@@ -34,7 +50,7 @@ serve(async (req) => {
       if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
       const body: any = {
-        model: model || "gpt-4.1",
+        model: selectedModel,
         input: messages,
         temperature,
         max_output_tokens,
@@ -73,7 +89,7 @@ serve(async (req) => {
       if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
       const body: any = {
-        model: model || "google/gemini-2.5-flash",
+        model: selectedModel,
         messages,
         temperature,
       };
@@ -102,11 +118,10 @@ serve(async (req) => {
 
     const latencyMs = Date.now() - startTime;
 
-    // Parse JSON response
+    // ── Parse JSON response ──
     let parsed: any = null;
     let parseError: string | null = null;
     try {
-      // Strip markdown fences if present
       let cleaned = aiResponse;
       if (typeof cleaned === "string") {
         cleaned = cleaned.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -116,23 +131,30 @@ serve(async (req) => {
       parseError = e.message;
     }
 
-    // Log to activity_log
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, supabaseKey);
+    // ── Validate canonical JE schema if parsed ──
+    let schemaValid = true;
+    let schemaErrors: string[] = [];
+    if (parsed && !parseError) {
+      const validation = validateCanonicalSchema(parsed);
+      schemaValid = validation.valid;
+      schemaErrors = validation.errors;
+    }
 
+    // ── Log: ai_generate_completed ──
     await sb.from("activity_log").insert({
       actor_type: "ai",
       entity_type: "source_problem",
       entity_id: source_problem_id,
-      event_type: "ai_generation_test",
+      event_type: "ai_generate_completed",
       severity: parseError ? "warn" : "info",
       payload_json: {
         provider,
-        model: model || (provider === "openai" ? "gpt-4.1" : "google/gemini-2.5-flash"),
+        model: selectedModel,
         token_usage: tokenUsage,
         generation_time_ms: latencyMs,
         parse_error: parseError,
+        schema_valid: schemaValid,
+        schema_errors: schemaErrors.length > 0 ? schemaErrors : undefined,
       },
     });
 
@@ -140,19 +162,87 @@ serve(async (req) => {
       parsed,
       raw: aiResponse,
       parse_error: parseError,
+      schema_valid: schemaValid,
+      schema_errors: schemaErrors,
       token_usage: tokenUsage,
       generation_time_ms: latencyMs,
       provider,
-      model: model || (provider === "openai" ? "gpt-4.1" : "google/gemini-2.5-flash"),
+      model: selectedModel,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (e) {
     console.error("generate-ai-output error:", e);
+
+    // Try to log error
+    try {
+      const body = await req.clone().json().catch(() => ({}));
+      if (body.source_problem_id) {
+        await sb.from("activity_log").insert({
+          actor_type: "ai",
+          entity_type: "source_problem",
+          entity_id: body.source_problem_id,
+          event_type: "ai_generate_completed",
+          severity: "error",
+          payload_json: { error: e.message, provider: body.provider, model: body.model },
+        });
+      }
+    } catch (_) { /* swallow logging errors */ }
+
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
+/**
+ * Validate that parsed AI output contains the canonical JE schema
+ * when scenario_sections or journal entries are present.
+ */
+function validateCanonicalSchema(parsed: any): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Check for scenario_sections
+  const sections = parsed.scenario_sections || parsed.teaching_aids?.scenario_sections;
+  if (!sections) {
+    // Not necessarily an error — output might not contain JE
+    return { valid: true, errors: [] };
+  }
+
+  if (!Array.isArray(sections)) {
+    errors.push("scenario_sections must be an array");
+    return { valid: false, errors };
+  }
+
+  for (let si = 0; si < sections.length; si++) {
+    const sc = sections[si];
+    if (!sc.label) errors.push(`scenario_sections[${si}] missing 'label'`);
+
+    const entries = sc.entries_by_date;
+    if (!entries || !Array.isArray(entries)) {
+      errors.push(`scenario_sections[${si}] missing 'entries_by_date' array`);
+      continue;
+    }
+
+    for (let ei = 0; ei < entries.length; ei++) {
+      const entry = entries[ei];
+      if (!entry.entry_date && entry.entry_date !== "") {
+        errors.push(`scenario_sections[${si}].entries_by_date[${ei}] missing 'entry_date'`);
+      }
+      if (!entry.rows || !Array.isArray(entry.rows)) {
+        errors.push(`scenario_sections[${si}].entries_by_date[${ei}] missing 'rows' array`);
+        continue;
+      }
+      for (let ri = 0; ri < entry.rows.length; ri++) {
+        const row = entry.rows[ri];
+        if (!row.account_name && row.account_name !== "") {
+          errors.push(`Row [${si}][${ei}][${ri}] missing 'account_name'`);
+        }
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
