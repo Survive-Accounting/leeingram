@@ -127,10 +127,26 @@ function parseEntryLines(segment: string): JournalEntryLine[] {
   let cleaned = segment.replace(/\.\s*$/, "").trim();
   cleaned = cleaned.replace(/\([^)]+\)\s*$/, "").trim();
 
-  const parts = cleaned.split(/;\s*|(?<=\d)\.\s+(?=[A-Z])/).map(p => p.trim()).filter(Boolean);
+  // Strip company name prefixes like "Shadow Balance Co.:" or "Island Transfer Inc.:"
+  cleaned = cleaned.replace(/^[A-Z][A-Za-z\s&.,]+(?:Co\.|Corp\.|Inc\.|LLC|Ltd\.?)\s*:\s*/gm, "");
+
+  // Split on lettered sub-entries like "a. Cash $250,000 b. Interest Expense $5,000"
+  // First try splitting on letter prefixes: a. b. c. etc.
+  const letterSplit = cleaned.split(/\b([a-z])\.\s+/i);
+  let rawParts: string[];
+  if (letterSplit.length > 2) {
+    // Reassemble: letterSplit = ["", "a", "Cash $250,000 ", "b", "Interest Expense $5,000"]
+    rawParts = [];
+    for (let i = 1; i < letterSplit.length; i += 2) {
+      const text = (letterSplit[i + 1] || "").trim();
+      if (text) rawParts.push(text);
+    }
+  } else {
+    rawParts = cleaned.split(/;\s*|(?<=\d)\.\s+(?=[A-Z])/).map(p => p.trim()).filter(Boolean);
+  }
 
   const lines: JournalEntryLine[] = [];
-  for (const part of parts) {
+  for (const part of rawParts) {
     const line = parseOneLine(part);
     if (line) lines.push(line);
   }
@@ -311,13 +327,19 @@ export function parseLegacyJEBlock(text: string | null | undefined): JournalEntr
     if (/^account\s*\|?\s*debit\s*\|?\s*credit/i.test(line)) continue;
     if (/^[-|=\s]+$/.test(line)) continue;
 
-    const pipeParts = line.split("|").map(s => s.trim());
+    // Strip company name prefixes
+    let cleanLine = line.replace(/^[A-Z][A-Za-z\s&.,]+(?:Co\.|Corp\.|Inc\.|LLC|Ltd\.?)\s*:\s*/i, "");
+
+    const pipeParts = cleanLine.split("|").map(s => s.trim());
     if (pipeParts.length >= 3) {
+      let accountName = pipeParts[0];
+      // Strip leading letter prefix like "a. " or "b. "
+      accountName = accountName.replace(/^[a-z]\.\s+/i, "");
       const debitVal = parseFloat(pipeParts[1].replace(/[$,]/g, "")) || null;
       const creditVal = parseFloat(pipeParts[2].replace(/[$,]/g, "")) || null;
-      const { side, confident } = inferSide(pipeParts[0]);
+      const { side, confident } = inferSide(accountName);
       entryLines.push({
-        account: pipeParts[0],
+        account: accountName,
         debit: debitVal,
         credit: creditVal,
         side: debitVal != null ? "debit" : creditVal != null ? "credit" : side,
@@ -326,12 +348,13 @@ export function parseLegacyJEBlock(text: string | null | undefined): JournalEntr
       continue;
     }
 
-    const tabParts = line.split("\t").map(s => s.trim());
+    const tabParts = cleanLine.split("\t").map(s => s.trim());
     if (tabParts.length >= 3) {
+      let accountName = tabParts[0].replace(/^[a-z]\.\s+/i, "");
       const debitVal = parseFloat(tabParts[1].replace(/[$,]/g, "")) || null;
       const creditVal = parseFloat(tabParts[2].replace(/[$,]/g, "")) || null;
       entryLines.push({
-        account: tabParts[0],
+        account: accountName,
         debit: debitVal,
         credit: creditVal,
         side: debitVal != null ? "debit" : "credit",
@@ -339,8 +362,24 @@ export function parseLegacyJEBlock(text: string | null | undefined): JournalEntr
       continue;
     }
 
-    const { side, confident } = inferSide(line);
-    entryLines.push({ account: line, debit: null, credit: null, side, needs_review: !confident });
+    // Plain text line — try to extract account + amount
+    let plainLine = cleanLine.replace(/^[a-z]\.\s+/i, "");
+    const { side, confident } = inferSide(plainLine);
+    const amountMatch = plainLine.match(/^(.+?)\s+\$?([\d,]+(?:\.\d+)?)\s*$/);
+    if (amountMatch) {
+      const account = amountMatch[1].trim();
+      const amount = parseFloat(amountMatch[2].replace(/,/g, ""));
+      const inf = inferSide(account);
+      entryLines.push({
+        account,
+        debit: inf.side === "debit" ? amount : null,
+        credit: inf.side === "credit" ? amount : null,
+        side: inf.side,
+        needs_review: !inf.confident,
+      });
+    } else {
+      entryLines.push({ account: plainLine, debit: null, credit: null, side, needs_review: !confident });
+    }
   }
 
   if (entryLines.length === 0) return [];
