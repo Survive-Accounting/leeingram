@@ -22,6 +22,7 @@ import { JournalEntryEditor, groupsToSections, sectionsToGroups, type JESection 
 import { AIComparisonPanel } from "./AIComparisonPanel";
 import { ValidationPanel } from "./ValidationPanel";
 import { ChapterAccountsSetup, useChapterApprovedAccounts } from "./ChapterAccountsSetup";
+import { JE_SYSTEM_PROMPT, buildJEUserPrompt } from "@/lib/jeSystemPrompt";
 
 interface Props {
   sourceProblemId: string;
@@ -296,7 +297,11 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
         ? buildScenarioPromptBlock(scenarioBlocks)
         : buildSingleScenarioPromptBlock();
 
-      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in valid JSON.\n\nProblem:\n${problemText || "No problem text"}\n\nSolution Reference:\n${solutionText || "No solution text"}\n\n${scenarioPromptBlock}\n\nRules:\n- requires_je must be true if the problem asks for journal entries\n- Use scenario_sections with entries_by_date format\n- Each entry_by_date must balance\n- Each row: exactly one of debit or credit\n- account_name: clean text only (no $, no :, no a./b./c., no 1./2.)\n- Also include: {"final_answers": [{"label": string, "value": string}]}`;
+      const userPrompt = buildJEUserPrompt({
+        problemText: problemText || "",
+        solutionText: solutionText || "",
+        scenarioPromptBlock,
+      });
 
       const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
         body: {
@@ -306,8 +311,8 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
           max_output_tokens: 4000,
           source_problem_id: sourceProblemId,
           messages: [
-            { role: "system", content: "You are an expert accounting professor. Return answers in valid JSON using the scenario_sections/entries_by_date schema." },
-            { role: "user", content: systemPrompt },
+            { role: "system", content: JE_SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
           ],
         },
       });
