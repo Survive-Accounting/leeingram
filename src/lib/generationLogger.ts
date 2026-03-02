@@ -122,6 +122,38 @@ export class GenerationLogger {
   }): Promise<any> {
     const durationMs = Date.now() - this.startTime;
 
+    let timeline = this.events;
+    let existingVariantId: string | null = null;
+    let existingErrorSummary: string | null = null;
+
+    if (this.runId) {
+      try {
+        const { data: runRow } = await supabase
+          .from("generation_runs" as any)
+          .select("variant_id,error_summary")
+          .eq("id", this.runId)
+          .maybeSingle();
+
+        existingVariantId = (runRow as any)?.variant_id ?? null;
+        existingErrorSummary = (runRow as any)?.error_summary ?? null;
+
+        const { data: dbEvents } = await supabase
+          .from("generation_events" as any)
+          .select("seq,scope,level,event_type,message,payload_json,created_at")
+          .eq("run_id", this.runId)
+          .order("seq", { ascending: true });
+
+        if (dbEvents?.length) {
+          timeline = dbEvents as any[];
+        }
+      } catch (e) {
+        console.error("Failed to read existing generation run context:", e);
+      }
+    }
+
+    const finalVariantId = opts?.variant_id !== undefined ? opts.variant_id : existingVariantId;
+    const finalErrorSummary = opts?.error_summary !== undefined ? opts.error_summary : existingErrorSummary;
+
     const debugBundle = {
       run_id: this.runId,
       status,
@@ -130,21 +162,28 @@ export class GenerationLogger {
       course_id: this.init.course_id,
       chapter_id: this.init.chapter_id,
       source_problem_id: this.init.source_problem_id,
-      variant_id: opts?.variant_id ?? null,
+      variant_id: finalVariantId ?? null,
       duration_ms: durationMs,
-      error_summary: opts?.error_summary ?? null,
-      timeline: this.events,
+      error_summary: finalErrorSummary ?? null,
+      timeline,
     };
 
     if (this.runId) {
       try {
-        await supabase.from("generation_runs" as any).update({
+        const updatePayload: Record<string, any> = {
           status,
           duration_ms: durationMs,
-          variant_id: opts?.variant_id ?? null,
-          error_summary: opts?.error_summary ?? null,
           debug_bundle_json: debugBundle,
-        }).eq("id", this.runId);
+        };
+
+        if (opts?.variant_id !== undefined) {
+          updatePayload.variant_id = opts.variant_id;
+        }
+        if (opts?.error_summary !== undefined) {
+          updatePayload.error_summary = opts.error_summary;
+        }
+
+        await supabase.from("generation_runs" as any).update(updatePayload).eq("id", this.runId);
       } catch (e) {
         console.error("Failed to finalize generation_run:", e);
       }
