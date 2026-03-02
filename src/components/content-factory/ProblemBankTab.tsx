@@ -735,7 +735,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           const jeSource = c.je_structured || c.journal_entry_completed_json;
           if (jeSource && jeValid) {
             variantPayload.journal_entry_completed_json = jeSource;
-            variantPayload.journal_entry_template_json = deriveJETemplate(jeSource);
+            variantPayload.journal_entry_template_json = buildJournalEntryTemplateFromCompleted(jeSource);
           }
           const { data: insertedVariant, error: insertVariantError } = await supabase
             .from("problem_variants")
@@ -854,7 +854,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         const cd = v.candidate_data || {};
         // Merge DB-persisted structured JE back into candidate for rendering
         const jeCompleted = v.journal_entry_completed_json || cd.je_structured || cd.journal_entry_completed_json || null;
-        const jeTemplate = v.journal_entry_template_json || cd.journal_entry_template_json || (jeCompleted ? deriveJETemplate(jeCompleted) : null);
+        const jeTemplate = v.journal_entry_template_json || cd.journal_entry_template_json || (jeCompleted ? buildJournalEntryTemplateFromCompleted(jeCompleted) : null);
         return {
           ...cd,
           _variantId: v.id,
