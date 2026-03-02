@@ -20,6 +20,7 @@ import { autoFixDatesInAccountNames, autoFixNarrativePrefixes } from "@/lib/vali
 import { logActivity } from "@/lib/activityLogger";
 import type { CanonicalJEPayload, CanonicalScenarioSection, CanonicalEntryByDate, CanonicalJERow } from "@/lib/journalEntryParser";
 import { detectRequiresJE, normalizeLegacyJEText } from "@/lib/legacyJENormalizer";
+import { validateStructuredJESchema } from "@/lib/validation/structuredJESchema";
 
 export interface AnswerPackageDraft {
   source_problem_id: string;
@@ -44,6 +45,9 @@ export interface PipelineResult {
   validation_results: ValidationResult[];
   status: string;
   normalized: boolean;
+  /** True if pipeline rejected and did not persist */
+  rejected?: boolean;
+  rejection_reason?: string;
 }
 
 // ── Helpers: Normalize AI output into canonical format ──
@@ -215,6 +219,48 @@ export async function normalizeValidatePersistAnswerPackage(
     payload_json: providerMeta,
   });
 
+  // ── Pre-check: If requires_je, validate structured schema before proceeding ──
+  const problemText = draft.extracted_inputs?.problem_text || "";
+  const requiresJE = detectRequiresJE(problemText);
+
+  if (requiresJE) {
+    const schemaCheck = validateStructuredJESchema(draft.answer_payload);
+    if (!schemaCheck.valid) {
+      // DO NOT persist — log and reject
+      await logActivity({
+        actor_type: "ai",
+        entity_type: "source_problem",
+        entity_id: draft.source_problem_id,
+        event_type: "structured_je_schema_rejected",
+        severity: "error",
+        provider: draft.provider,
+        model: draft.model,
+        message: `Structured JE schema validation failed — output NOT saved`,
+        payload_json: {
+          ...providerMeta,
+          schema_errors: schemaCheck.errors,
+          raw_payload_snippet: JSON.stringify(draft.answer_payload).slice(0, 2000),
+          token_usage: draft.token_usage,
+          generation_time_ms: draft.generation_time_ms,
+        },
+      });
+
+      return {
+        package: null,
+        validation_results: [{
+          validator: "STRUCTURED_JE_REQUIRED_MISSING",
+          status: "fail",
+          message: `Structured JE output invalid — nothing saved. Schema errors: ${schemaCheck.errors.slice(0, 3).join("; ")}`,
+          details: { schema_errors: schemaCheck.errors },
+        }],
+        status: "rejected",
+        normalized: false,
+        rejected: true,
+        rejection_reason: `Schema validation failed: ${schemaCheck.errors.slice(0, 3).join("; ")}`,
+      };
+    }
+  }
+
   // ── Step 1: Normalize into canonical scenario_sections ──
   const { canonicalPayload, normalized: structureNormalized } = normalizeToCanonical(draft.answer_payload);
   const { payload: cleanPayload, fixApplied } = normalizeCanonicalRows(canonicalPayload);
@@ -232,35 +278,39 @@ export async function normalizeValidatePersistAnswerPackage(
     payload_json: { ...providerMeta, structure_normalized: structureNormalized, rows_fixed: fixApplied },
   });
 
-  // ── Step 1b: If requires_je, try legacy text normalization ──
-  const problemText = draft.extracted_inputs?.problem_text || "";
-  const requiresJE = detectRequiresJE(problemText);
+  // ── Step 1b: If requires_je, try legacy text normalization ONLY if no structured JE ──
   const hasStructuredJE = Array.isArray(cleanPayload.scenario_sections) && cleanPayload.scenario_sections.length > 0;
 
   if (requiresJE && !hasStructuredJE) {
-    // Try to find legacy JE text in the payload
-    const legacyText = cleanPayload.journal_entry_text
-      || cleanPayload.teaching_aids?.journal_entry_text
-      || cleanPayload._raw_unparsed
-      || "";
-    if (legacyText && typeof legacyText === "string") {
-      const normalizeResult = normalizeLegacyJEText(legacyText);
-      if (normalizeResult.success) {
-        cleanPayload.scenario_sections = normalizeResult.scenario_sections;
-        cleanPayload._legacy_je_text = legacyText;
-        await logActivity({
-          actor_type: "system",
-          entity_type: "source_problem",
-          entity_id: draft.source_problem_id,
-          event_type: "legacy_je_normalized",
-          severity: "info",
-          provider: draft.provider,
-          model: draft.model,
-          message: `Normalized ${normalizeResult.rowCount} legacy JE rows into ${normalizeResult.scenario_sections.length} scenario section(s)`,
-          payload_json: { ...providerMeta, row_count: normalizeResult.rowCount, section_count: normalizeResult.scenario_sections.length },
-        });
-      }
-    }
+    // Legacy fallback is NOT allowed when requires_je — reject instead
+    await logActivity({
+      actor_type: "system",
+      entity_type: "source_problem",
+      entity_id: draft.source_problem_id,
+      event_type: "structured_je_missing_after_normalize",
+      severity: "error",
+      provider: draft.provider,
+      model: draft.model,
+      message: "Structured JE required but not found after normalization — output NOT saved",
+      payload_json: {
+        ...providerMeta,
+        raw_payload_snippet: JSON.stringify(draft.answer_payload).slice(0, 2000),
+      },
+    });
+
+    return {
+      package: null,
+      validation_results: [{
+        validator: "STRUCTURED_JE_REQUIRED_MISSING",
+        status: "fail",
+        message: "Problem requires journal entries but AI output contains no valid structured JE data. Nothing saved — click Regenerate.",
+        details: { requires_je: true },
+      }],
+      status: "rejected",
+      normalized: false,
+      rejected: true,
+      rejection_reason: "Structured JE required but AI output contains no valid scenario_sections",
+    };
   }
 
   // ── Step 2: Run validators ──
@@ -355,45 +405,32 @@ export async function normalizeValidatePersistAnswerPackage(
 }
 
 /**
- * Shorthand for saving an unparseable AI response as needs_review.
+ * Log an unparseable AI response WITHOUT saving to answer_packages.
+ * Returns null — caller must handle the rejection.
  */
-export async function persistUnparseablePackage(
+export async function logUnparseableOutput(
   sourceProblemId: string,
   version: number,
   rawOutput: string,
-  extras?: { extracted_inputs?: any; computed_values?: any; output_type?: string; provider?: string; model?: string },
-): Promise<any> {
-  const { data: newPkg, error } = await supabase
-    .from("answer_packages")
-    .insert({
-      source_problem_id: sourceProblemId,
-      version,
-      generator: "ai" as any,
-      answer_payload: { _raw_unparsed: rawOutput },
-      extracted_inputs: extras?.extracted_inputs ?? {},
-      computed_values: extras?.computed_values ?? {},
-      validation_results: [] as any,
-      status: "needs_review" as any,
-      output_type: (extras?.output_type ?? "mixed") as any,
-    } as any)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-
+  extras?: { extracted_inputs?: any; computed_values?: any; output_type?: string; provider?: string; model?: string; parse_error?: string },
+): Promise<null> {
   await logActivity({
     actor_type: "ai",
     entity_type: "source_problem",
     entity_id: sourceProblemId,
-    event_type: "answer_package_unparseable",
+    event_type: "ai_output_unparseable_rejected",
     severity: "error",
+    provider: extras?.provider,
+    model: extras?.model,
+    message: "AI returned invalid JSON — nothing saved",
     payload_json: {
-      package_id: newPkg.id,
       version,
       provider: extras?.provider ?? "unknown",
       model: extras?.model ?? "unknown",
+      parse_error: extras?.parse_error ?? "unknown",
+      raw_output_snippet: typeof rawOutput === "string" ? rawOutput.slice(0, 2000) : "",
     },
   });
 
-  return newPkg;
+  return null;
 }

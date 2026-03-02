@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
-import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
+import { normalizeValidatePersistAnswerPackage, logUnparseableOutput } from "@/lib/answerPackagePipeline";
 import { JE_SYSTEM_PROMPT, buildJEUserPrompt } from "@/lib/jeSystemPrompt";
 
 interface Props {
@@ -175,16 +175,13 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
 
       const parsed = data.parsed;
       if (!parsed) {
-        toast.error("JSON parsing failed — raw output logged");
+        toast.error("AI returned invalid JSON — nothing saved. Click Regenerate.");
         const nextVersion = (latestPackage?.version ?? 0) + 1;
-        await persistUnparseablePackage(sourceProblemId, nextVersion, data.raw, {
-          extracted_inputs: latestPackage?.extracted_inputs ?? {},
-          computed_values: latestPackage?.computed_values ?? {},
-          output_type: latestPackage?.output_type ?? "mixed",
+        await logUnparseableOutput(sourceProblemId, nextVersion, data.raw, {
           provider: data.provider,
           model: data.model,
+          parse_error: data.parse_error ?? "JSON parse failed",
         });
-        qc.invalidateQueries({ queryKey: ["answer-packages"] });
         return;
       }
 

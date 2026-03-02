@@ -24,6 +24,7 @@ const VALIDATOR_LABELS: Record<string, string> = {
   ACCOUNT_FIELD_FORMATTING: "Account field formatting",
   REQUIRES_JE: "Requires journal entries",
   ENTRIES_BY_DATE: "Entries by date present",
+  STRUCTURED_JE_REQUIRED_MISSING: "Structured JE required",
   required_fields_present: "Required fields",
   mc_correct_answer_in_range: "MC answer range",
   answers_count_valid: "Answer count",
