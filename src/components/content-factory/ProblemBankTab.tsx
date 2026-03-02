@@ -19,7 +19,7 @@ import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
-import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
+import { parseLegacyAnswerOnly, toTemplate, isCanonicalJE } from "@/lib/journalEntryParser";
 import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
 import { logActivity } from "@/lib/activityLogger";
 import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
@@ -69,6 +69,38 @@ interface Props {
 }
 
 /* Legacy parseJournalEntry removed — now using shared JournalEntryTable component */
+
+/** Derive a blank template from structured JE (keeps account_name + side, nulls amounts) */
+function deriveJETemplate(jeStructured: any): any {
+  if (!jeStructured?.scenario_sections) return null;
+  return {
+    scenario_sections: jeStructured.scenario_sections.map((sc: any) => ({
+      ...sc,
+      entries_by_date: (sc.entries_by_date || []).map((entry: any) => ({
+        ...entry,
+        rows: (entry.rows || []).map((r: any) => ({
+          account_name: r.account_name,
+          debit: null,
+          credit: null,
+          side: r.debit != null && r.debit !== 0 ? "debit" : "credit",
+        })),
+      })),
+    })),
+  };
+}
+
+/** Normalize a candidate so je_structured is also available as journal_entry_completed_json */
+function normalizeCandidateJE(c: any): any {
+  if (c.journal_entry_completed_json) return c; // already has it
+  if (c.je_structured && isCanonicalJE(c.je_structured)) {
+    return {
+      ...c,
+      journal_entry_completed_json: c.je_structured,
+      journal_entry_template_json: c.journal_entry_template_json || deriveJETemplate(c.je_structured),
+    };
+  }
+  return c;
+}
 
 type ChapterProblem = {
   id: string;
@@ -398,7 +430,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     },
     onSuccess: async ({ data, logger, selectedProvider, selectedModel, problem }) => {
       try {
-        const newCandidates = data.candidates || [];
+        const newCandidates = (data.candidates || []).map(normalizeCandidateJE);
 
         await logger.info("db", "SAVE_VARIANT_START", `Persisting ${newCandidates.length} variants`, {
           candidate_count: newCandidates.length,
@@ -420,8 +452,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             candidate_data: c,
           };
           // Store structured JE when valid
-          if (c.je_structured && jeValid) {
-            variantPayload.journal_entry_completed_json = c.je_structured;
+          const jeSource = c.je_structured || c.journal_entry_completed_json;
+          if (jeSource && jeValid) {
+            variantPayload.journal_entry_completed_json = jeSource;
+            variantPayload.journal_entry_template_json = deriveJETemplate(jeSource);
           }
           const { data: insertedVariant, error: insertVariantError } = await supabase
             .from("problem_variants")
@@ -496,9 +530,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   const approveMutation = useMutation({
     mutationFn: async ({ candidate, problem }: { candidate: any; problem: ChapterProblem }) => {
-      // Parse legacy answer_only into structured JE JSON for backfill
-      let jeCompleted = candidate.journal_entry_completed_json || null;
-      let jeTemplate = candidate.journal_entry_template_json || null;
+      // Use structured JE from je_structured or journal_entry_completed_json
+      let jeCompleted = candidate.journal_entry_completed_json || candidate.je_structured || null;
+      let jeTemplate = candidate.journal_entry_template_json || (jeCompleted && isCanonicalJE(jeCompleted) ? deriveJETemplate(jeCompleted) : null);
       if (!jeCompleted && candidate.answer_only) {
         const parsed = parseLegacyAnswerOnly(candidate.answer_only);
         if (parsed.length > 0) {
@@ -693,8 +727,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             variant_solution_text: c.survive_solution_text || "",
             candidate_data: c,
           };
-          if (c.je_structured && jeValid) {
-            variantPayload.journal_entry_completed_json = c.je_structured;
+          const jeSource = c.je_structured || c.journal_entry_completed_json;
+          if (jeSource && jeValid) {
+            variantPayload.journal_entry_completed_json = jeSource;
+            variantPayload.journal_entry_template_json = deriveJETemplate(jeSource);
           }
           const { data: insertedVariant, error: insertVariantError } = await supabase
             .from("problem_variants")
@@ -809,12 +845,20 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       .eq("base_problem_id", problemId)
       .order("created_at", { ascending: true });
     if (!error && data) {
-      setReviewCandidates(data.map((v: any) => ({
-        ...(v.candidate_data || {}),
-        _variantId: v.id,
-        survive_problem_text: v.candidate_data?.survive_problem_text || v.variant_problem_text,
-        survive_solution_text: v.candidate_data?.survive_solution_text || v.variant_solution_text,
-      })));
+      setReviewCandidates(data.map((v: any) => {
+        const cd = v.candidate_data || {};
+        // Merge DB-persisted structured JE back into candidate for rendering
+        const jeCompleted = v.journal_entry_completed_json || cd.je_structured || cd.journal_entry_completed_json || null;
+        const jeTemplate = v.journal_entry_template_json || cd.journal_entry_template_json || (jeCompleted ? deriveJETemplate(jeCompleted) : null);
+        return {
+          ...cd,
+          _variantId: v.id,
+          survive_problem_text: cd.survive_problem_text || v.variant_problem_text,
+          survive_solution_text: cd.survive_solution_text || v.variant_solution_text,
+          journal_entry_completed_json: jeCompleted,
+          journal_entry_template_json: jeTemplate,
+        };
+      }));
     }
     setReviewLoading(false);
   };
