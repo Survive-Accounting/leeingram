@@ -7,6 +7,31 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Helper to log generation events when run_id is provided
+async function logGenEvent(
+  sb: any,
+  runId: string | null,
+  seq: number,
+  scope: string,
+  level: string,
+  eventType: string,
+  message: string,
+  payload?: any
+) {
+  if (!runId) return;
+  try {
+    await sb.from("generation_events").insert({
+      run_id: runId,
+      seq,
+      scope,
+      level,
+      event_type: eventType,
+      message,
+      payload_json: payload ?? null,
+    });
+  } catch (_) { /* swallow */ }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -126,10 +151,27 @@ serve(async (req) => {
       model: reqModel,
       chapterId: reqChapterId,
       scenarioBlocks: reqScenarioBlocks,
+      run_id: runId,
     } = body;
 
     const provider = reqProvider || "lovable";
     const aiModel = reqModel || "google/gemini-3-flash-preview";
+    let eventSeq = 100;
+
+    // Use service role client for logging (RLS bypass)
+    const sbService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FETCH_SOURCE",
+      `Source data received for ${sourceLabel || problemId}`, {
+        problem_id: problemId,
+        source_label: sourceLabel,
+        problem_text_length: problemText?.length ?? 0,
+        solution_text_length: solutionText?.length ?? 0,
+        has_je: !!journalEntryText,
+      });
 
     // Fetch recent correction events for lightweight learning
     let constraintsBlock = "";
@@ -303,6 +345,22 @@ ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants.`;
 
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT",
+      `Prompt built: ${variantCount} variants, provider=${provider}, model=${aiModel}`, {
+        provider,
+        model: aiModel,
+        variant_count: variantCount,
+        system_prompt_length: systemPrompt.length,
+        user_prompt_length: userPrompt.length,
+        requires_je: requiresJournalEntry,
+        has_scenarios: !!reqScenarioBlocks,
+        has_constraints: constraintsBlock.length > 0,
+      });
+
+    await logGenEvent(sbService, runId, ++eventSeq, "ai", "info", "AI_REQUEST",
+      `Calling ${provider}/${aiModel}`, { provider, model: aiModel });
+
+    const aiStartTime = Date.now();
     let response: Response;
 
     if (provider === "openai") {
@@ -409,30 +467,57 @@ Generate ${variantCount} exam-style practice variants.`;
       });
     }
 
+    const aiLatencyMs = Date.now() - aiStartTime;
+
     if (!response.ok) {
-      if (response.status === 429) {
+      const errStatus = response.status;
+      const errText = await response.text();
+      await logGenEvent(sbService, runId, ++eventSeq, "ai", "error", "AI_RESPONSE",
+        `AI error: ${errStatus}`, { status: errStatus, body_preview: errText.slice(0, 1000), latency_ms: aiLatencyMs });
+
+      if (errStatus === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (errStatus === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in Settings." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
+      console.error("AI error:", errStatus, errText);
       throw new Error("AI generation failed");
     }
 
     const data = await response.json();
+
+    await logGenEvent(sbService, runId, ++eventSeq, "ai", "info", "AI_RESPONSE",
+      `Response received (${aiLatencyMs}ms)`, {
+        latency_ms: aiLatencyMs,
+        usage: data.usage,
+        finish_reason: data.choices?.[0]?.finish_reason,
+      });
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_START", "Parsing tool call response");
+
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END",
+        "AI did not return structured output (no tool_calls)", {
+          raw_message_preview: JSON.stringify(data.choices?.[0]?.message).slice(0, 1000),
+        });
       throw new Error("AI did not return structured output");
     }
 
     const parsed = JSON.parse(toolCall.function.arguments);
     const candidates = parsed.candidates || [];
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_END",
+      `Parsed ${candidates.length} candidates`, {
+        candidate_count: candidates.length,
+        candidate_names: candidates.map((c: any) => c.asset_name),
+        has_je_blocks: candidates.map((c: any) => !!c.journal_entry_block),
+      });
 
     const constraintsCount = constraintsBlock ? constraintsBlock.split("\n").filter((l: string) => l.match(/^\d+\./)).length : 0;
     const scenarioLabels = scenarioBlocks?.map((b: any) => b.label) ?? [];

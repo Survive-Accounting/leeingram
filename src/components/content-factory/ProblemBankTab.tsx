@@ -23,6 +23,7 @@ import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
 import { logActivity } from "@/lib/activityLogger";
 import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
+import { GenerationLogger } from "@/lib/generationLogger";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -485,7 +486,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     if (!problems?.length) return;
     let eligible = problems.filter(p => p.status === "ready");
     if (batchForceRegen) {
-      // Also include already-generated problems for re-generation
       eligible = problems.filter(p => p.status === "ready" || p.status === "generated");
     }
 
@@ -503,11 +503,33 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       const problem = eligible[i];
       setBatchCurrentLabel(problem.ocr_detected_label || problem.source_label || `Problem ${i + 1}`);
 
+      const logger = new GenerationLogger({
+        course_id: problem.course_id,
+        chapter_id: problem.chapter_id,
+        source_problem_id: problem.id,
+        provider: "lovable",
+        model: "google/gemini-3-flash-preview",
+      });
+
       try {
+        await logger.start();
+        await logger.info("frontend", "CLICK_GENERATE", `Batch generate variant for ${problem.source_label || problem.id}`, {
+          batch_index: i,
+          batch_total: eligible.length,
+          problem_id: problem.id,
+          source_label: problem.source_label,
+          has_je: !!problem.journal_entry_text,
+        });
+
         const useProblemText = problem.ocr_extracted_problem_text || problem.problem_text;
         const useSolutionText = problem.ocr_extracted_solution_text || problem.solution_text;
         const useLabel = problem.ocr_detected_label || problem.source_label;
         const useTitle = problem.ocr_detected_title || problem.title;
+
+        await logger.info("frontend", "REQUEST_START", "Calling convert-to-asset edge function", {
+          problem_text_length: useProblemText?.length ?? 0,
+          solution_text_length: useSolutionText?.length ?? 0,
+        });
 
         const { data, error } = await supabase.functions.invoke("convert-to-asset", {
           body: {
@@ -523,14 +545,25 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             notes: "",
             requiresJournalEntry: !!problem.journal_entry_text,
             difficultyToggles: undefined,
+            run_id: logger.runId,
           },
+        });
+
+        await logger.info("frontend", "REQUEST_END", "Edge function returned", {
+          has_error: !!error,
+          has_data_error: !!data?.error,
+          candidate_count: data?.candidates?.length ?? 0,
         });
 
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
-        // Persist generated candidates to problem_variants for later review
         const candidates = data.candidates || [];
+
+        await logger.info("db", "SAVE_VARIANT_START", `Saving ${candidates.length} variants`, {
+          candidate_count: candidates.length,
+        });
+
         for (let ci = 0; ci < candidates.length; ci++) {
           const c = candidates[ci];
           await supabase.from("problem_variants").insert({
@@ -542,11 +575,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           } as any);
         }
 
-        // Update status to generated
         await supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", problem.id);
+
+        await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`);
+        await logger.finalize("success");
       } catch (err: any) {
         const msg = `${problem.source_label}: ${err?.message || "Unknown error"}`;
         setBatchErrors(prev => [...prev, msg]);
+        await logger.error("frontend", "GENERATION_ERROR", msg, { stack: err?.stack?.slice(0, 500) });
+        await logger.finalize("failed", { error_summary: err?.message });
       }
 
       setBatchCompleted(i + 1);
