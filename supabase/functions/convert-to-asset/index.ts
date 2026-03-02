@@ -629,21 +629,9 @@ serve(async (req) => {
       "All generated problems must be exam-style", "No bolded numbers",
       "Round all calculations to whole dollars", "Use short, concise sentences",
     ];
-    const useCompanyNames = genSettings?.use_company_names ?? true;
-
-    // Fetch random active company names
-    let companyList = "Riverstone Corp (realistic), Moonbeam Industries (playful), Granite Financial (realistic)";
-    if (useCompanyNames) {
-      const { data: companyNames } = await supabase
-        .from("company_names")
-        .select("name, style")
-        .eq("active", true);
-      const shuffled = (companyNames || []).sort(() => Math.random() - 0.5);
-      const selectedCompanies = shuffled.slice(0, 3);
-      if (selectedCompanies.length >= 3) {
-        companyList = selectedCompanies.map((c: any) => `${c.name} (${c.style})`).join(", ");
-      }
-    }
+    // Standardized company names — no rotating list
+    const SURVIVE_COMPANY = "Survive Company";
+    const SURVIVE_COUNTERPARTY = "Survive Counterparty";
 
     // Fetch recent correction events for lightweight learning
     let constraintsBlock = "";
@@ -770,12 +758,11 @@ CORE RULES:
 - Generate exactly ${variantCount} exam-style practice problem variants from the source.
 - Each variant must teach the SAME core accounting concept as the source.
 - Use DIFFERENT numerical values across all ${variantCount} variants.
-- Each variant MUST use a different company name and short scenario.
+- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity.
+- If a second entity is needed (counterparty, investor, lender, etc.), use "${SURVIVE_COUNTERPARTY}".
+- Do NOT use any other fictional company names.
 - All scenarios must feel realistic and finance/accounting related.
 - Do NOT include "Survive Accounting" in student-facing text.
-
-COMPANY NAMES TO USE (one per variant, in order):
-${companyList}
 
 ${difficultySection}
 ${constraintsBlock}
@@ -1093,6 +1080,37 @@ Generate ${variantCount} exam-style practice variants.`;
           details: unknownAccounts.slice(0, 20),
         }
       );
+    }
+
+    // Post-processing: replace any non-standard company names with Survive Company / Survive Counterparty
+    const companyNameReplacements: Array<{ candidate_index: number; field: string; original: string }> = [];
+    for (let ci = 0; ci < candidates.length; ci++) {
+      const c = candidates[ci];
+      // Replace in problem text
+      if (c.survive_problem_text && typeof c.survive_problem_text === "string") {
+        const original = c.survive_problem_text;
+        // The AI should already use Survive Company, but if it didn't, we can't regex-guess arbitrary names.
+        // Instead, log a warning if neither Survive Company nor Survive Counterparty appear.
+        if (!original.includes(SURVIVE_COMPANY) && !original.includes(SURVIVE_COUNTERPARTY)) {
+          companyNameReplacements.push({ candidate_index: ci, field: "survive_problem_text", original: original.slice(0, 200) });
+        }
+      }
+      if (c.survive_solution_text && typeof c.survive_solution_text === "string") {
+        if (!c.survive_solution_text.includes(SURVIVE_COMPANY) && !c.survive_solution_text.includes(SURVIVE_COUNTERPARTY)) {
+          companyNameReplacements.push({ candidate_index: ci, field: "survive_solution_text", original: c.survive_solution_text.slice(0, 200) });
+        }
+      }
+    }
+
+    if (companyNameReplacements.length > 0) {
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", "warn", "COMPANY_NAME_CHECK",
+        `${companyNameReplacements.length} field(s) missing standard company name`, {
+          replacements: companyNameReplacements,
+        }
+      );
+    } else {
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "COMPANY_NAME_CHECK",
+        "All candidates use standard Survive Company name", {});
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "VALIDATE_SCHEMA_START", "Validating candidate schema", {

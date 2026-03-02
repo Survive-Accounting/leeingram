@@ -10,8 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, Save, Loader2, Building2, Sparkles, AlertTriangle, BookOpen, FileText, Video, X, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -80,7 +78,6 @@ export default function StyleGuide() {
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [companyNamesOpen, setCompanyNamesOpen] = useState(false);
   const [newToneItem, setNewToneItem] = useState("");
   const [newExamItem, setNewExamItem] = useState("");
 
@@ -97,18 +94,6 @@ export default function StyleGuide() {
     enabled: !!session,
   });
 
-  const { data: companyNames } = useQuery({
-    queryKey: ["company-names"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("company_names")
-        .select("*")
-        .order("style")
-        .order("name");
-      if (error) throw error;
-      return data as any[];
-    },
-  });
 
   useEffect(() => {
     if (existing) {
@@ -337,59 +322,30 @@ export default function StyleGuide() {
           </CardContent>
         </Card>
 
-        {/* Company Names Library */}
+        {/* Company Names — Standardized */}
         <Card>
           <CardContent className="pt-5">
-            <SectionTitle icon={Building2} title="Fictional Company Names" />
-            <p className="text-xs text-muted-foreground mb-3">
-              The AI randomly selects company names from this library during variant generation.
+            <SectionTitle icon={Building2} title="Company Names" />
+            <p className="text-xs text-muted-foreground mb-2">
+              All generated variants now use a standardized company name.
             </p>
-            <ToggleRow label="Use company names in generation" checked={settings.use_company_names} onChange={(v) => update("use_company_names", v)} />
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => setCompanyNamesOpen(true)}>
-              <Building2 className="h-3.5 w-3.5 mr-1" /> Manage Company Names
-            </Button>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px]">Primary</Badge>
+                <span className="font-medium">Survive Company</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px]">Counterparty</Badge>
+                <span className="font-medium">Survive Counterparty</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 italic mt-3">
+              The rotating company names library is no longer used. All variants use "Survive Company" for consistency.
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Company Names Dialog */}
-      <Dialog open={companyNamesOpen} onOpenChange={setCompanyNamesOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Company Names Library</DialogTitle>
-            <DialogDescription>These names will be randomly used in generated practice problems.</DialogDescription>
-          </DialogHeader>
-          <div className="rounded-lg border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Name</TableHead>
-                  <TableHead className="text-xs w-24">Style</TableHead>
-                  <TableHead className="text-xs w-16">Active</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!companyNames?.length ? (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground text-xs py-4">No company names found</TableCell></TableRow>
-                ) : (
-                  companyNames.map((cn: any) => (
-                    <TableRow key={cn.id}>
-                      <TableCell className="text-xs font-medium">{cn.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px] capitalize">{cn.style}</Badge>
-                      </TableCell>
-                      <TableCell className="text-xs">{cn.active ? "✓" : "—"}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="text-[10px] text-muted-foreground/60 italic">
-            Full CRUD management coming soon. For now, names can be managed via the backend.
-          </p>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 }
