@@ -10,7 +10,7 @@ import { RefreshCw, Lock, Unlock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 import { runValidation, hasFailures, type AnswerPackageData } from "@/lib/validation";
-import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
+import { normalizeValidatePersistAnswerPackage, logUnparseableOutput } from "@/lib/answerPackagePipeline";
 import { JE_SYSTEM_PROMPT, buildJEUserPrompt } from "@/lib/jeSystemPrompt";
 
 interface Props {
@@ -122,14 +122,12 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
       const nextVersion = (latestPackage?.version ?? 0) + 1;
 
       if (!parsed) {
-        await persistUnparseablePackage(sourceProblemId, nextVersion, aiResult.raw, {
-          extracted_inputs: latestPackage?.extracted_inputs ?? {},
-          computed_values: latestPackage?.computed_values ?? {},
-          output_type: latestPackage?.output_type ?? "mixed",
+        await logUnparseableOutput(sourceProblemId, nextVersion, aiResult.raw, {
           provider,
           model: provider === "openai" ? model : "google/gemini-2.5-flash",
+          parse_error: aiResult.parse_error ?? "JSON parse failed",
         });
-        throw new Error("AI returned invalid JSON — saved as needs_review");
+        throw new Error("AI returned invalid JSON — nothing saved. Click Regenerate.");
       }
 
       // Merge locked fields from previous version

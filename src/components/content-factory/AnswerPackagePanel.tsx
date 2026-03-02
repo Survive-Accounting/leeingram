@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { runValidation, hasFailures, type ValidationResult, type AnswerPackageData } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
-import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
+import { normalizeValidatePersistAnswerPackage, logUnparseableOutput } from "@/lib/answerPackagePipeline";
 import { detectAndSplitScenarios, buildScenarioPromptBlock, buildSingleScenarioPromptBlock, type ScenarioBlock } from "@/lib/scenarioSegmentation";
 import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 import { RepairNotesPanel } from "./RepairNotesPanel";
@@ -322,8 +322,12 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
       const parsed = aiResult.parsed;
       const selectedModel = genProvider === "openai" ? genModel : "google/gemini-2.5-flash";
       if (!parsed) {
-        await persistUnparseablePackage(sourceProblemId, 1, aiResult.raw, { provider: genProvider, model: selectedModel });
-        throw new Error("AI returned invalid JSON — saved as needs_review");
+        await logUnparseableOutput(sourceProblemId, 1, aiResult.raw, {
+          provider: genProvider,
+          model: selectedModel,
+          parse_error: aiResult.parse_error ?? "JSON parse failed",
+        });
+        throw new Error("AI returned invalid JSON — nothing saved. Click Regenerate.");
       }
 
       // Save scenario_blocks_json to source problem if multi-scenario
@@ -333,7 +337,7 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
         } as any).eq("id", sourceProblemId);
       }
 
-      await normalizeValidatePersistAnswerPackage({
+      const result = await normalizeValidatePersistAnswerPackage({
         source_problem_id: sourceProblemId,
         version: 1,
         generator: "ai",
@@ -351,6 +355,10 @@ export function AnswerPackagePanel({ sourceProblemId, problemText, solutionText,
         log_event_type: "ai_generation_test",
         log_extra_payload: { mode: "initial", scenario_count: scenarioLabels.length },
       });
+
+      if (result.rejected) {
+        throw new Error(result.rejection_reason || "Structured output invalid — nothing saved. Click Regenerate.");
+      }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["answer-packages"] }); toast.success(`Initial generation complete (${genProvider})`); },
     onError: (e: Error) => toast.error(e.message),
