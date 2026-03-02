@@ -106,16 +106,22 @@ export const BASE_VALIDATORS: Validator[] = [
 
 // Import and re-export JE validators so they're always included
 import { JE_VALIDATORS } from "./jeValidators";
+import { NON_JE_VALIDATORS } from "./nonJeValidators";
 
 export const ALL_VALIDATORS: Validator[] = [...BASE_VALIDATORS, ...JE_VALIDATORS];
 
 // --- Validation Pipeline ---
 
 export function runValidation(pkg: AnswerPackageData, extraValidators: Validator[] = []): ValidationResult[] {
-  const all = [...ALL_VALIDATORS, ...extraValidators];
+  // Use NON_JE validators if answer_parts exist and no JE required
+  const isNonJE = pkg.answer_payload?.answer_parts && !pkg.requires_je;
+  const baseSet = isNonJE ? [...BASE_VALIDATORS, ...NON_JE_VALIDATORS] : ALL_VALIDATORS;
+  const all = [...baseSet, ...extraValidators];
   return all.map((v) => v(pkg));
 }
 
 export function hasFailures(results: ValidationResult[]): boolean {
   return results.some((r) => r.status === "fail");
 }
+
+export { NON_JE_VALIDATORS };

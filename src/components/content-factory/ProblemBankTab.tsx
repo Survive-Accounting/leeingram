@@ -108,6 +108,7 @@ type ChapterProblem = {
   difficulty_internal: "easy" | "medium" | "hard" | "tricky" | null;
   status: string;
   created_at: string;
+  contains_no_journal_entries?: boolean;
   problem_screenshot_url?: string | null;
   solution_screenshot_url?: string | null;
   problem_screenshot_urls?: string[];
@@ -137,6 +138,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [formProblem, setFormProblem] = useState("");
   const [formSolution, setFormSolution] = useState("");
   const [formJE, setFormJE] = useState("");
+  const [formNoJE, setFormNoJE] = useState(false);
 
   // Generate state
   const [afNotes, setAfNotes] = useState("");
@@ -269,6 +271,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         problem_text: formProblem,
         solution_text: formSolution,
         journal_entry_text: formJE || null,
+        contains_no_journal_entries: formNoJE,
         status: "imported",
       }).select("id, source_label").single();
       if (error) throw error;
@@ -403,6 +406,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             journalEntryText: problem.journal_entry_text,
             notes: afNotes,
             requiresJournalEntry: afRequiresJE,
+            containsNoJournalEntries: !!(problem as any).contains_no_journal_entries,
             provider: selectedProvider,
             model: selectedModel,
             scenarioBlocks,
@@ -419,6 +423,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               difficulty_toggles: activeDiffToggles,
               requires_je_forced: afRequiresJE,
               notes_present: !!afNotes?.trim(),
+              contains_no_journal_entries: !!(problem as any).contains_no_journal_entries,
             },
           },
         });
@@ -458,14 +463,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
           const { normalizedCandidate, completed, template, counts } = getCandidateJEPersistence(c);
+          const isNonJE = !!(problem as any).contains_no_journal_entries || !!c.answer_parts || c._generation_mode === "NON_JE";
           const variantPayload: Record<string, any> = {
             base_problem_id: problem.id,
             variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
             variant_problem_text: normalizedCandidate.survive_problem_text || "",
             variant_solution_text: normalizedCandidate.survive_solution_text || "",
             candidate_data: normalizedCandidate,
-            journal_entry_completed_json: completed,
-            journal_entry_template_json: template,
+            journal_entry_completed_json: isNonJE ? null : completed,
+            journal_entry_template_json: isNonJE ? null : template,
+            ...(isNonJE && c.answer_parts ? { answer_parts_json: c.answer_parts } : {}),
           };
 
           const { data: insertedVariant, error: insertVariantError } = await supabase
@@ -647,7 +654,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   });
 
   const resetForm = () => {
-    setFormLabel(""); setFormTitle(""); setFormProblem(""); setFormSolution(""); setFormJE("");
+    setFormLabel(""); setFormTitle(""); setFormProblem(""); setFormSolution(""); setFormJE(""); setFormNoJE(false);
   };
 
   // Batch generate function
@@ -1372,20 +1379,45 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
                           </div>
                         </div>
-                        <JournalEntryTable
-                          legacyAnswerText={c.answer_only}
-                          completedJson={c.journal_entry_completed_json}
-                          heading="Answer (Journal Entry)"
-                          mode="completed"
-                        />
-                        <JournalEntryTable
-                          legacyJEBlock={c.journal_entry_block}
-                          legacyAnswerText={c.answer_only}
-                          completedJson={c.journal_entry_completed_json}
-                          templateJson={c.journal_entry_template_json}
-                          heading="Journal Entry (Template)"
-                          mode="template"
-                        />
+                        {/* NON_JE: Answer Parts accordion */}
+                        {(c.answer_parts || c._generation_mode === "NON_JE") && c.answer_parts?.length > 0 ? (
+                          <div>
+                            <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Answer Parts</p>
+                            <div className="space-y-2">
+                              {c.answer_parts.map((part: any, pi: number) => (
+                                <Collapsible key={pi} className="rounded-md border border-border overflow-hidden">
+                                  <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 text-left">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <Badge variant="outline" className="text-[10px] shrink-0">{part.label}</Badge>
+                                      <span className="text-sm font-medium text-foreground truncate">{part.final_answer}</span>
+                                    </div>
+                                    <ChevronDown className="h-3 w-3 text-foreground/50 shrink-0" />
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent className="px-3 pb-3 border-t border-border">
+                                    <pre className="text-xs text-foreground whitespace-pre-wrap mt-2 leading-relaxed">{part.steps}</pre>
+                                  </CollapsibleContent>
+                                </Collapsible>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <JournalEntryTable
+                              legacyAnswerText={c.answer_only}
+                              completedJson={c.journal_entry_completed_json}
+                              heading="Answer (Journal Entry)"
+                              mode="completed"
+                            />
+                            <JournalEntryTable
+                              legacyJEBlock={c.journal_entry_block}
+                              legacyAnswerText={c.answer_only}
+                              completedJson={c.journal_entry_completed_json}
+                              templateJson={c.journal_entry_template_json}
+                              heading="Journal Entry (Template)"
+                              mode="template"
+                            />
+                          </>
+                        )}
                         {c.exam_trap_note && (
                           <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
                             <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
@@ -2135,6 +2167,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             <div>
               <Label className="text-xs">Journal Entry (optional)</Label>
               <Textarea value={formJE} onChange={(e) => setFormJE(e.target.value)} rows={3} className="text-xs font-mono" placeholder="Debit: Account — Amount&#10;Credit: Account — Amount" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="no-je-toggle" checked={formNoJE} onCheckedChange={(v) => setFormNoJE(v === true)} />
+              <Label htmlFor="no-je-toggle" className="text-xs cursor-pointer">Contains no Journal Entries</Label>
+              <span className="text-[10px] text-muted-foreground">(EPS/ratios/analysis — skips JE logic)</span>
             </div>
           </div>
           <DialogFooter>

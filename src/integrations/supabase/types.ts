@@ -216,6 +216,7 @@ export type Database = {
       chapter_problems: {
         Row: {
           chapter_id: string
+          contains_no_journal_entries: boolean
           course_id: string
           created_at: string
           difficulty_internal:
@@ -247,6 +248,7 @@ export type Database = {
         }
         Insert: {
           chapter_id: string
+          contains_no_journal_entries?: boolean
           course_id: string
           created_at?: string
           difficulty_internal?:
@@ -278,6 +280,7 @@ export type Database = {
         }
         Update: {
           chapter_id?: string
+          contains_no_journal_entries?: boolean
           course_id?: string
           created_at?: string
           difficulty_internal?:
@@ -1410,6 +1413,7 @@ export type Database = {
       }
       problem_variants: {
         Row: {
+          answer_parts_json: Json | null
           base_problem_id: string
           candidate_data: Json
           created_at: string
@@ -1425,6 +1429,7 @@ export type Database = {
           variant_status: string
         }
         Insert: {
+          answer_parts_json?: Json | null
           base_problem_id: string
           candidate_data?: Json
           created_at?: string
@@ -1440,6 +1445,7 @@ export type Database = {
           variant_status?: string
         }
         Update: {
+          answer_parts_json?: Json | null
           base_problem_id?: string
           candidate_data?: Json
           created_at?: string
