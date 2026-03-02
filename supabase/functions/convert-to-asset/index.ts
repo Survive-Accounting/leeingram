@@ -7,6 +7,25 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LOG_PREVIEW_CHARS = 1000;
+
+function previewText(input: unknown, length = LOG_PREVIEW_CHARS) {
+  const text = typeof input === "string"
+    ? input
+    : JSON.stringify(input ?? "", null, 0);
+
+  return {
+    first: text.slice(0, length),
+    last: text.slice(-length),
+    length: text.length,
+  };
+}
+
+async function sha256Hex(input: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 // Helper to log generation events when run_id is provided
 async function logGenEvent(
   sb: any,
@@ -32,8 +51,165 @@ async function logGenEvent(
   } catch (_) { /* swallow */ }
 }
 
+function validateCandidates(candidates: any[], expectedCount: number) {
+  const errors: string[] = [];
+
+  if (!Array.isArray(candidates)) {
+    return ["candidates must be an array"];
+  }
+
+  if (candidates.length !== expectedCount) {
+    errors.push(`expected ${expectedCount} candidates, got ${candidates.length}`);
+  }
+
+  candidates.forEach((candidate, index) => {
+    const prefix = `candidates[${index}]`;
+    if (!candidate || typeof candidate !== "object") {
+      errors.push(`${prefix} must be an object`);
+      return;
+    }
+
+    if (typeof candidate.asset_name !== "string" || !candidate.asset_name.trim()) {
+      errors.push(`${prefix}.asset_name is required`);
+    }
+    if (!Array.isArray(candidate.tags)) {
+      errors.push(`${prefix}.tags must be an array`);
+    }
+    if (typeof candidate.survive_problem_text !== "string" || !candidate.survive_problem_text.trim()) {
+      errors.push(`${prefix}.survive_problem_text is required`);
+    }
+    if (typeof candidate.answer_only !== "string" || !candidate.answer_only.trim()) {
+      errors.push(`${prefix}.answer_only is required`);
+    }
+    if (typeof candidate.survive_solution_text !== "string" || !candidate.survive_solution_text.trim()) {
+      errors.push(`${prefix}.survive_solution_text is required`);
+    }
+  });
+
+  return errors;
+}
+
+function runCandidateValidators(candidates: any[], requiresJournalEntry: boolean) {
+  const results: Array<Record<string, any>> = [];
+
+  const hasCandidates = Array.isArray(candidates) && candidates.length > 0;
+  results.push({
+    name: "candidate_presence",
+    status: hasCandidates ? "pass" : "fail",
+    details_if_fail: hasCandidates ? undefined : "No candidates were generated",
+  });
+
+  const allHaveAnswerOnly = hasCandidates && candidates.every((c) => typeof c?.answer_only === "string" && c.answer_only.trim().length > 0);
+  results.push({
+    name: "answer_only_present",
+    status: allHaveAnswerOnly ? "pass" : "fail",
+    details_if_fail: allHaveAnswerOnly ? undefined : "One or more candidates are missing answer_only",
+  });
+
+  if (!requiresJournalEntry) {
+    results.push({
+      name: "journal_entry_presence",
+      status: "skip",
+      reason_if_skip: "Journal entry not required for this source problem",
+    });
+  } else {
+    const allHaveJE = hasCandidates && candidates.every((c) =>
+      typeof c?.journal_entry_block === "string"
+        ? c.journal_entry_block.trim().length > 0
+        : !!c?.journal_entry_template_json || !!c?.journal_entry_completed_json
+    );
+
+    results.push({
+      name: "journal_entry_presence",
+      status: allHaveJE ? "pass" : "fail",
+      details_if_fail: allHaveJE ? undefined : "One or more candidates are missing structured/templated journal entry data",
+    });
+  }
+
+  return results;
+}
+
+async function finalizeRunRecord(
+  sb: any,
+  params: {
+    runId: string | null;
+    status: "success" | "failed";
+    durationMs: number;
+    errorSummary?: string | null;
+    variantId?: string | null;
+    provider?: string | null;
+    model?: string | null;
+    courseId?: string | null;
+    chapterId?: string | null;
+    sourceProblemId?: string | null;
+  }
+) {
+  if (!params.runId) return;
+
+  try {
+    const { data: timeline } = await sb
+      .from("generation_events")
+      .select("seq,scope,level,event_type,message,payload_json,created_at")
+      .eq("run_id", params.runId)
+      .order("seq", { ascending: true });
+
+    const debugBundle = {
+      run_id: params.runId,
+      status: params.status,
+      provider: params.provider ?? null,
+      model: params.model ?? null,
+      course_id: params.courseId ?? null,
+      chapter_id: params.chapterId ?? null,
+      source_problem_id: params.sourceProblemId ?? null,
+      variant_id: params.variantId ?? null,
+      duration_ms: params.durationMs,
+      error_summary: params.errorSummary ?? null,
+      timeline: (timeline ?? []).map((evt: any) => ({
+        seq: evt.seq,
+        scope: evt.scope,
+        level: evt.level,
+        event_type: evt.event_type,
+        message: evt.message,
+        payload: evt.payload_json,
+        created_at: evt.created_at,
+      })),
+    };
+
+    await sb
+      .from("generation_runs")
+      .update({
+        status: params.status,
+        duration_ms: params.durationMs,
+        error_summary: params.errorSummary ?? null,
+        variant_id: params.variantId ?? null,
+        debug_bundle_json: debugBundle,
+      })
+      .eq("id", params.runId);
+  } catch (error) {
+    console.error("Failed to finalize generation run:", error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  let runId: string | null = null;
+  let eventSeq = 100;
+  const runStartedAt = Date.now();
+  let sbService: any = null;
+  let runMeta: {
+    provider: string | null;
+    model: string | null;
+    course_id: string | null;
+    chapter_id: string | null;
+    source_problem_id: string | null;
+  } = {
+    provider: null,
+    model: null,
+    course_id: null,
+    chapter_id: null,
+    source_problem_id: null,
+  };
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -62,9 +238,103 @@ serve(async (req) => {
     const body = await req.json();
     const { mode } = body;
 
+    runId = body.run_id ?? null;
+    runMeta = {
+      provider: body.provider ?? body.ui_provider_selected ?? "lovable",
+      model: body.model ?? null,
+      course_id: body.courseId ?? body.course_id ?? null,
+      chapter_id: body.chapterId ?? body.chapter_id ?? null,
+      source_problem_id: body.problemId ?? body.source_problem_id ?? null,
+    };
+
+    // Service client for backend logging + run finalization (RLS bypass)
+    sbService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    if (runId) {
+      const { data: lastEvent } = await sbService
+        .from("generation_events")
+        .select("seq")
+        .eq("run_id", runId)
+        .order("seq", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      eventSeq = Math.max(100, Number(lastEvent?.seq ?? 0));
+    }
+
     // ─── MODE: save ─── Save a chosen candidate to DB
     if (mode === "save") {
-      const { problemId, courseId, chapterId, candidate, requiresJournalEntry } = body;
+      const problemId = body.problemId ?? body.source_problem_id;
+      const courseId = body.courseId ?? body.course_id;
+      const chapterId = body.chapterId ?? body.chapter_id;
+      const candidate = body.candidate;
+      const requiresJournalEntry = !!body.requiresJournalEntry;
+
+      runMeta = {
+        ...runMeta,
+        course_id: courseId ?? runMeta.course_id,
+        chapter_id: chapterId ?? runMeta.chapter_id,
+        source_problem_id: problemId ?? runMeta.source_problem_id,
+      };
+
+      await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_START", "Starting variant persistence", {
+        mode: "save",
+        problem_id: problemId,
+        course_id: courseId,
+        chapter_id: chapterId,
+        candidate_fields_present: {
+          survive_problem_text: !!candidate?.survive_problem_text,
+          survive_solution_text: !!candidate?.survive_solution_text,
+          answer_only: !!candidate?.answer_only,
+          journal_entry_block: !!candidate?.journal_entry_block,
+          journal_entry_completed_json: !!candidate?.journal_entry_completed_json,
+          journal_entry_template_json: !!candidate?.journal_entry_template_json,
+        },
+      });
+
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running save-path validators");
+      const saveValidatorResults = [
+        {
+          name: "candidate_payload_present",
+          status: candidate && typeof candidate === "object" ? "pass" : "fail",
+          details_if_fail: candidate && typeof candidate === "object" ? undefined : "Candidate payload is missing or invalid",
+        },
+        !requiresJournalEntry
+          ? {
+              name: "journal_entry_requirement",
+              status: "skip",
+              reason_if_skip: "Journal entry not required for this save operation",
+            }
+          : {
+              name: "journal_entry_requirement",
+              status:
+                candidate?.journal_entry_block ||
+                candidate?.journal_entry_completed_json ||
+                candidate?.journal_entry_template_json
+                  ? "pass"
+                  : "fail",
+              details_if_fail:
+                candidate?.journal_entry_block ||
+                candidate?.journal_entry_completed_json ||
+                candidate?.journal_entry_template_json
+                  ? undefined
+                  : "Journal entry is required but no JE payload was provided",
+            },
+      ];
+
+      await logGenEvent(
+        sbService,
+        runId,
+        ++eventSeq,
+        "validator",
+        saveValidatorResults.some((v) => v.status === "fail") ? "warn" : "info",
+        "RUN_VALIDATORS_END",
+        "Save-path validators completed",
+        { validator_results: saveValidatorResults }
+      );
 
       // ── Auto-generate Instance ID ──
       const { data: course, error: courseErr } = await supabase
@@ -131,63 +401,88 @@ serve(async (req) => {
         .eq("id", problemId);
       if (updateErr) console.error("Failed to update problem status:", updateErr);
 
+      await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_END", "Variant persisted", {
+        variant_id: newAsset?.id ?? null,
+        variant_name: newAsset?.asset_name ?? null,
+        fields_written: {
+          source_ref: !!newAsset?.source_ref,
+          journal_entry_block: !!newAsset?.journal_entry_block,
+          journal_entry_completed_json: !!newAsset?.journal_entry_completed_json,
+          journal_entry_template_json: !!newAsset?.journal_entry_template_json,
+        },
+      });
+
+      const durationMs = Date.now() - runStartedAt;
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FINALIZE_RUN", "Finalizing save run", {
+        status: "success",
+        duration_ms: durationMs,
+        variant_id: newAsset?.id ?? null,
+      });
+
+      await finalizeRunRecord(sbService, {
+        runId,
+        status: "success",
+        durationMs,
+        variantId: newAsset?.id ?? null,
+        provider: runMeta.provider,
+        model: runMeta.model,
+        courseId: runMeta.course_id,
+        chapterId: runMeta.chapter_id,
+        sourceProblemId: runMeta.source_problem_id,
+      });
+
       return new Response(JSON.stringify({ success: true, asset: newAsset }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // ─── MODE: candidates (default) ─── Generate N variants with V2 prompt
-    const {
-      problemId,
-      sourceLabel,
-      title,
-      problemText,
-      solutionText,
-      journalEntryText,
-      notes,
-      requiresJournalEntry,
-      difficultyToggles,
-      provider: reqProvider,
-      model: reqModel,
-      chapterId: reqChapterId,
-      scenarioBlocks: reqScenarioBlocks,
-      run_id: runId,
-    } = body;
+    const problemId = body.problemId ?? body.source_problem_id;
+    const sourceLabel = body.sourceLabel;
+    const title = body.title;
+    const problemText = body.problemText;
+    const solutionText = body.solutionText;
+    const journalEntryText = body.journalEntryText;
+    const notes = body.notes;
+    const requiresJournalEntry = !!body.requiresJournalEntry;
+    const difficultyToggles = body.difficultyToggles;
+    const reqProvider = body.provider ?? body.ui_provider_selected;
+    const reqModel = body.model;
+    const reqChapterId = body.chapterId ?? body.chapter_id;
+    const reqScenarioBlocks = body.scenarioBlocks;
+    const uiSettings = body.ui_settings ?? null;
 
     const provider = reqProvider || "lovable";
     const aiModel = reqModel || "google/gemini-3-flash-preview";
-    let eventSeq = 100;
 
-    // Use service role client for logging (RLS bypass)
-    const sbService = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    runMeta = {
+      provider,
+      model: aiModel,
+      course_id: body.courseId ?? body.course_id ?? runMeta.course_id,
+      chapter_id: reqChapterId ?? runMeta.chapter_id,
+      source_problem_id: problemId ?? runMeta.source_problem_id,
+    };
 
-    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FETCH_SOURCE",
-      `Source data received for ${sourceLabel || problemId}`, {
-        problem_id: problemId,
-        source_label: sourceLabel,
-        problem_text_length: problemText?.length ?? 0,
-        solution_text_length: solutionText?.length ?? 0,
-        has_je: !!journalEntryText,
-      });
+    const scenarioBlocks = reqScenarioBlocks as Array<{ label: string; text: string }> | undefined;
+    const hasScenarios = !!(scenarioBlocks && scenarioBlocks.length >= 2);
 
-    // Fetch recent correction events for lightweight learning
-    let constraintsBlock = "";
-    if (reqChapterId) {
-      const { data: recentFixes } = await supabase
-        .from("correction_events")
-        .select("summary, auto_tags")
-        .eq("chapter_id", reqChapterId)
-        .order("created_at", { ascending: false })
-        .limit(3);
-      if (recentFixes && recentFixes.length > 0) {
-        constraintsBlock = `\nCONSTRAINTS FROM RECENT FIXES (apply these to avoid repeating errors):
-${recentFixes.map((f: any, i: number) => `${i + 1}. ${f.summary} [tags: ${(f.auto_tags || []).join(", ")}]`).join("\n")}
-`;
-      }
-    }
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FETCH_SOURCE_START", "Starting source fetch and preprocessing", {
+      course_id: runMeta.course_id,
+      chapter_id: runMeta.chapter_id,
+      source_problem_id: runMeta.source_problem_id,
+      source_label: sourceLabel,
+      has_ui_settings: !!uiSettings,
+    });
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FETCH_SOURCE_END", "Source payload prepared", {
+      problem_text_length: problemText?.length ?? 0,
+      solution_text_length: solutionText?.length ?? 0,
+      journal_entry_text_length: journalEntryText?.length ?? 0,
+      has_scenarios: hasScenarios,
+      scenario_count: scenarioBlocks?.length ?? 0,
+      problem_image_count: Array.isArray(body.problemImageUrls) ? body.problemImageUrls.length : null,
+      solution_image_count: Array.isArray(body.solutionImageUrls) ? body.solutionImageUrls.length : null,
+    });
 
     if (provider === "lovable") {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -231,6 +526,22 @@ ${recentFixes.map((f: any, i: number) => `${i + 1}. ${f.summary} [tags: ${(f.aut
       }
     }
 
+    // Fetch recent correction events for lightweight learning
+    let constraintsBlock = "";
+    if (reqChapterId) {
+      const { data: recentFixes } = await supabase
+        .from("correction_events")
+        .select("summary, auto_tags")
+        .eq("chapter_id", reqChapterId)
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (recentFixes && recentFixes.length > 0) {
+        constraintsBlock = `\nCONSTRAINTS FROM RECENT FIXES (apply these to avoid repeating errors):
+${recentFixes.map((f: any, i: number) => `${i + 1}. ${f.summary} [tags: ${(f.auto_tags || []).join(", ")}]`).join("\n")}
+`;
+      }
+    }
+
     // Merge saved tricky toggles with per-request overrides
     const savedTrickyToggles: string[] = [];
     if (genSettings?.tricky_partial_period) savedTrickyToggles.push("Partial period / stub period");
@@ -261,8 +572,6 @@ For each variant, include an "exam_trap_note" explaining what makes this variant
 - Format for easy Google Sheets copy/paste`
       : "JOURNAL ENTRY: Leave journal_entry_block as null. This problem does not require a journal entry.";
 
-    // ─── Scenario Segmentation ───
-    const scenarioBlocks = reqScenarioBlocks as Array<{ label: string; text: string }> | undefined;
     let scenarioInstruction = "";
     if (scenarioBlocks && scenarioBlocks.length >= 2) {
       scenarioInstruction = `
@@ -345,20 +654,75 @@ ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants.`;
 
-    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT",
-      `Prompt built: ${variantCount} variants, provider=${provider}, model=${aiModel}`, {
-        provider,
-        model: aiModel,
-        variant_count: variantCount,
-        system_prompt_length: systemPrompt.length,
-        user_prompt_length: userPrompt.length,
-        requires_je: requiresJournalEntry,
-        has_scenarios: !!reqScenarioBlocks,
-        has_constraints: constraintsBlock.length > 0,
-      });
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
+      prompt_version: "convert_to_asset_v3_trace",
+      provider,
+      model: aiModel,
+      variant_count: variantCount,
+      structured_mode: {
+        requires_journal_entry: requiresJournalEntry,
+        scenario_split: hasScenarios,
+        account_whitelist_enabled: accountWhitelistBlock.length > 0,
+      },
+      ui_settings: uiSettings,
+      constraints_applied: constraintsBlock.length > 0,
+      system_prompt_length: systemPrompt.length,
+      user_prompt_length: userPrompt.length,
+    });
 
-    await logGenEvent(sbService, runId, ++eventSeq, "ai", "info", "AI_REQUEST",
-      `Calling ${provider}/${aiModel}`, { provider, model: aiModel });
+    const promptCombined = `${systemPrompt}\n\n${userPrompt}`;
+    const promptHash = await sha256Hex(promptCombined);
+    const systemPreview = previewText(systemPrompt);
+    const userPreview = previewText(userPrompt);
+
+    const temperature = 0.2;
+    const maxTokens = 8000;
+
+    await logGenEvent(sbService, runId, ++eventSeq, "ai", "info", "AI_REQUEST", `Calling ${provider}/${aiModel}`, {
+      provider,
+      model: aiModel,
+      temperature,
+      max_tokens: maxTokens,
+      json_mode: true,
+      prompt_hash: promptHash,
+      system_prompt_preview: { first: systemPreview.first, last: systemPreview.last },
+      user_prompt_preview: { first: userPreview.first, last: userPreview.last },
+    });
+
+    const toolSpec = [
+      {
+        type: "function",
+        function: {
+          name: "create_teaching_asset_candidates",
+          description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
+          parameters: {
+            type: "object",
+            properties: {
+              candidates: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    asset_name: { type: "string", description: "Short clear name for this variant" },
+                    tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
+                    survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
+                    journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
+                    answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
+                    survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
+                    exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
+                  },
+                  required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
+                  additionalProperties: false,
+                },
+                description: `Exactly ${variantCount} candidate teaching assets`,
+              },
+            },
+            required: ["candidates"],
+            additionalProperties: false,
+          },
+        },
+      },
+    ];
 
     const aiStartTime = Date.now();
     let response: Response;
@@ -373,44 +737,13 @@ Generate ${variantCount} exam-style practice variants.`;
         },
         body: JSON.stringify({
           model: aiModel,
+          temperature,
+          max_tokens: maxTokens,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "create_teaching_asset_candidates",
-                description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
-                parameters: {
-                  type: "object",
-                  properties: {
-                    candidates: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          asset_name: { type: "string", description: "Short clear name for this variant" },
-                          tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
-                          survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
-                          journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
-                          answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
-                          survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
-                          exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
-                        },
-                        required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
-                        additionalProperties: false,
-                      },
-                      description: `Exactly ${variantCount} candidate teaching assets`,
-                    },
-                  },
-                  required: ["candidates"],
-                  additionalProperties: false,
-                },
-              },
-            },
-          ],
+          tools: toolSpec,
           tool_choice: { type: "function", function: { name: "create_teaching_asset_candidates" } },
         }),
       });
@@ -424,44 +757,13 @@ Generate ${variantCount} exam-style practice variants.`;
         },
         body: JSON.stringify({
           model: aiModel,
+          temperature,
+          max_tokens: maxTokens,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "create_teaching_asset_candidates",
-                description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
-                parameters: {
-                  type: "object",
-                  properties: {
-                    candidates: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          asset_name: { type: "string", description: "Short clear name for this variant" },
-                          tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
-                          survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
-                          journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
-                          answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
-                          survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
-                          exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
-                        },
-                        required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
-                        additionalProperties: false,
-                      },
-                      description: `Exactly ${variantCount} candidate teaching assets`,
-                    },
-                  },
-                  required: ["candidates"],
-                  additionalProperties: false,
-                },
-              },
-            },
-          ],
+          tools: toolSpec,
           tool_choice: { type: "function", function: { name: "create_teaching_asset_candidates" } },
         }),
       });
@@ -472,64 +774,185 @@ Generate ${variantCount} exam-style practice variants.`;
     if (!response.ok) {
       const errStatus = response.status;
       const errText = await response.text();
-      await logGenEvent(sbService, runId, ++eventSeq, "ai", "error", "AI_RESPONSE",
-        `AI error: ${errStatus}`, { status: errStatus, body_preview: errText.slice(0, 1000), latency_ms: aiLatencyMs });
+      const errPreview = previewText(errText);
+
+      await logGenEvent(sbService, runId, ++eventSeq, "ai", "error", "AI_RESPONSE", `AI error: ${errStatus}`, {
+        status: errStatus,
+        response_text_truncated: {
+          first: errPreview.first,
+          last: errPreview.last,
+        },
+        response_length_chars: errPreview.length,
+        finish_reason: null,
+        latency_ms: aiLatencyMs,
+      });
 
       if (errStatus === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        throw new Error("Rate limit exceeded. Try again shortly.");
       }
       if (errStatus === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Add funds in Settings." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        throw new Error("AI credits exhausted. Add funds in Settings.");
       }
-      console.error("AI error:", errStatus, errText);
-      throw new Error("AI generation failed");
+      throw new Error(`AI generation failed (${errStatus})`);
     }
 
     const data = await response.json();
+    const rawResponseMessage = JSON.stringify(data?.choices?.[0]?.message ?? {});
+    const aiResponsePreview = previewText(rawResponseMessage);
 
-    await logGenEvent(sbService, runId, ++eventSeq, "ai", "info", "AI_RESPONSE",
-      `Response received (${aiLatencyMs}ms)`, {
-        latency_ms: aiLatencyMs,
-        usage: data.usage,
-        finish_reason: data.choices?.[0]?.finish_reason,
-      });
+    await logGenEvent(sbService, runId, ++eventSeq, "ai", "info", "AI_RESPONSE", `Response received (${aiLatencyMs}ms)`, {
+      response_text_truncated: {
+        first: aiResponsePreview.first,
+        last: aiResponsePreview.last,
+      },
+      response_length_chars: aiResponsePreview.length,
+      finish_reason: data.choices?.[0]?.finish_reason ?? null,
+      usage: data.usage ?? null,
+      latency_ms: aiLatencyMs,
+    });
 
-    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_START", "Parsing tool call response");
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_START", "Parsing tool call JSON");
 
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
-      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END",
-        "AI did not return structured output (no tool_calls)", {
-          raw_message_preview: JSON.stringify(data.choices?.[0]?.message).slice(0, 1000),
-        });
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END", "Tool call arguments missing", {
+        parse_success: false,
+        parse_error: "AI did not return structured output (no tool_calls)",
+      });
       throw new Error("AI did not return structured output");
     }
 
-    const parsed = JSON.parse(toolCall.function.arguments);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(toolCall.function.arguments);
+    } catch (parseError) {
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END", "JSON parsing failed", {
+        parse_success: false,
+        parse_error: parseError instanceof Error ? parseError.message : "Unknown JSON parse error",
+      });
+      throw new Error(parseError instanceof Error ? parseError.message : "Failed to parse JSON");
+    }
+
     const candidates = parsed.candidates || [];
 
-    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_END",
-      `Parsed ${candidates.length} candidates`, {
-        candidate_count: candidates.length,
-        candidate_names: candidates.map((c: any) => c.asset_name),
-        has_je_blocks: candidates.map((c: any) => !!c.journal_entry_block),
-      });
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_END", `Parsed ${candidates.length} candidates`, {
+      parse_success: true,
+      extracted_top_level_keys: Object.keys(parsed || {}),
+      candidate_count: candidates.length,
+    });
 
-    const constraintsCount = constraintsBlock ? constraintsBlock.split("\n").filter((l: string) => l.match(/^\d+\./)).length : 0;
+    await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "VALIDATE_SCHEMA_START", "Validating candidate schema", {
+      schema_name: "create_teaching_asset_candidates",
+      expected_candidate_count: variantCount,
+    });
+
+    const schemaErrors = validateCandidates(candidates, variantCount);
+    if (schemaErrors.length > 0) {
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", "error", "VALIDATE_SCHEMA_END", "Schema validation failed", {
+        schema_name: "create_teaching_asset_candidates",
+        success: false,
+        zod_errors: schemaErrors,
+      });
+      throw new Error(`Schema validation failed: ${schemaErrors[0]}`);
+    }
+
+    await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "VALIDATE_SCHEMA_END", "Schema validation passed", {
+      schema_name: "create_teaching_asset_candidates",
+      success: true,
+      zod_errors: [],
+    });
+
+    await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators");
+
+    const validatorResults = runCandidateValidators(candidates, requiresJournalEntry);
+    const validatorFailed = validatorResults.some((r) => r.status === "fail");
+
+    await logGenEvent(
+      sbService,
+      runId,
+      ++eventSeq,
+      "validator",
+      validatorFailed ? "warn" : "info",
+      "RUN_VALIDATORS_END",
+      "Validator pass complete",
+      { validator_results: validatorResults }
+    );
+
+    await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_START", "No backend variant persistence for candidates mode", {
+      persisted: false,
+      reason: "Variants are persisted by frontend after review",
+    });
+
+    await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_END", "No variant rows inserted by backend", {
+      inserted_variant_ids: [],
+      persisted: false,
+    });
+
+    const durationMs = Date.now() - runStartedAt;
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FINALIZE_RUN", "Finalizing generation run", {
+      status: "success",
+      duration_ms: durationMs,
+      variant_id: null,
+    });
+
+    await finalizeRunRecord(sbService, {
+      runId,
+      status: "success",
+      durationMs,
+      variantId: null,
+      provider: runMeta.provider,
+      model: runMeta.model,
+      courseId: runMeta.course_id,
+      chapterId: runMeta.chapter_id,
+      sourceProblemId: runMeta.source_problem_id,
+    });
+
+    const constraintsCount = constraintsBlock
+      ? constraintsBlock.split("\n").filter((l: string) => l.match(/^\d+\./)).length
+      : 0;
     const scenarioLabels = scenarioBlocks?.map((b: any) => b.label) ?? [];
 
-    return new Response(JSON.stringify({ success: true, candidates, constraints_count: constraintsCount, scenario_labels: scenarioLabels }), {
+    return new Response(JSON.stringify({
+      success: true,
+      candidates,
+      constraints_count: constraintsCount,
+      scenario_labels: scenarioLabels,
+      validator_results: validatorResults,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("convert-to-asset error:", e);
+
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+
+    if (sbService && runId) {
+      const durationMs = Date.now() - runStartedAt;
+
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "FINALIZE_RUN", "Finalizing generation run with failure", {
+        status: "failed",
+        duration_ms: durationMs,
+        error_summary: errorMessage,
+      });
+
+      await finalizeRunRecord(sbService, {
+        runId,
+        status: "failed",
+        durationMs,
+        errorSummary: errorMessage,
+        variantId: null,
+        provider: runMeta.provider,
+        model: runMeta.model,
+        courseId: runMeta.course_id,
+        chapterId: runMeta.chapter_id,
+        sourceProblemId: runMeta.source_problem_id,
+      });
+    }
+
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+

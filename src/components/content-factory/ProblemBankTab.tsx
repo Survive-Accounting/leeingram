@@ -364,6 +364,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
               : undefined,
             run_id: logger.runId,
+            course_id: problem.course_id,
+            chapter_id: problem.chapter_id,
+            source_problem_id: problem.id,
+            ui_provider_selected: selectedProvider,
+            ui_settings: {
+              variant_count: vCount,
+              difficulty_toggles: activeDiffToggles,
+              requires_je_forced: afRequiresJE,
+              notes_present: !!afNotes?.trim(),
+            },
           },
         });
 
@@ -396,15 +406,24 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
         setCandidates((prev) => [...prev, ...newCandidates]);
 
+        let firstVariantId: string | null = null;
+
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
-          await supabase.from("problem_variants").insert({
-            base_problem_id: problem.id,
-            variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-            variant_problem_text: c.survive_problem_text || "",
-            variant_solution_text: c.survive_solution_text || "",
-            candidate_data: c,
-          } as any);
+          const { data: insertedVariant, error: insertVariantError } = await supabase
+            .from("problem_variants")
+            .insert({
+              base_problem_id: problem.id,
+              variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+              variant_problem_text: c.survive_problem_text || "",
+              variant_solution_text: c.survive_solution_text || "",
+              candidate_data: c,
+            } as any)
+            .select("id")
+            .single();
+
+          if (insertVariantError) throw insertVariantError;
+          if (!firstVariantId) firstVariantId = (insertedVariant as any)?.id ?? null;
         }
 
         await supabase
@@ -416,8 +435,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           base_problem_id: problem.id,
           provider: selectedProvider,
           model: selectedModel,
+          first_variant_id: firstVariantId,
         });
-        await logger.finalize("success");
+        await logger.finalize("success", { variant_id: firstVariantId ?? undefined });
 
         qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
         qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
@@ -621,6 +641,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             requiresJournalEntry: !!problem.journal_entry_text,
             difficultyToggles: undefined,
             run_id: logger.runId,
+            course_id: problem.course_id,
+            chapter_id: problem.chapter_id,
+            source_problem_id: problem.id,
+            ui_provider_selected: "lovable",
+            ui_settings: {
+              variant_count: 1,
+              difficulty_toggles: [],
+              requires_je_forced: !!problem.journal_entry_text,
+            },
           },
         });
 
@@ -639,21 +668,30 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           candidate_count: candidates.length,
         });
 
+        let firstVariantId: string | null = null;
+
         for (let ci = 0; ci < candidates.length; ci++) {
           const c = candidates[ci];
-          await supabase.from("problem_variants").insert({
-            base_problem_id: problem.id,
-            variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-            variant_problem_text: c.survive_problem_text || "",
-            variant_solution_text: c.survive_solution_text || "",
-            candidate_data: c,
-          } as any);
+          const { data: insertedVariant, error: insertVariantError } = await supabase
+            .from("problem_variants")
+            .insert({
+              base_problem_id: problem.id,
+              variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+              variant_problem_text: c.survive_problem_text || "",
+              variant_solution_text: c.survive_solution_text || "",
+              candidate_data: c,
+            } as any)
+            .select("id")
+            .single();
+
+          if (insertVariantError) throw insertVariantError;
+          if (!firstVariantId) firstVariantId = (insertedVariant as any)?.id ?? null;
         }
 
         await supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", problem.id);
 
-        await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`);
-        await logger.finalize("success");
+        await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`, { first_variant_id: firstVariantId });
+        await logger.finalize("success", { variant_id: firstVariantId ?? undefined });
       } catch (err: any) {
         const msg = `${problem.source_label}: ${err?.message || "Unknown error"}`;
         setBatchErrors(prev => [...prev, msg]);
@@ -906,11 +944,36 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <p className="text-xs text-foreground/70">This problem was generated before variants were saved to the database. Click below to re-generate and save for review.</p>
               <Button size="sm" onClick={async () => {
                 setReviewLoading(true);
+                const logger = new GenerationLogger({
+                  course_id: rp.course_id,
+                  chapter_id: rp.chapter_id,
+                  source_problem_id: rp.id,
+                  provider: "lovable",
+                  model: "google/gemini-3-flash-preview",
+                });
+
                 try {
+                  await logger.start();
+                  await logger.info("frontend", "CLICK_GENERATE", `Generate & Review for ${rp.source_label || rp.id}`, {
+                    course_id: rp.course_id,
+                    chapter_id: rp.chapter_id,
+                    source_problem_id: rp.id,
+                    ui_provider_selected: "lovable",
+                    ui_settings: {
+                      variant_count: 1,
+                      requires_je_forced: !!rp.journal_entry_text,
+                    },
+                  });
+
                   const useProblemText = rp.ocr_extracted_problem_text || rp.problem_text;
                   const useSolutionText = rp.ocr_extracted_solution_text || rp.solution_text;
                   const useLabel = rp.ocr_detected_label || rp.source_label;
                   const useTitle = rp.ocr_detected_title || rp.title;
+
+                  await logger.info("frontend", "REQUEST_START", "Calling convert-to-asset edge function", {
+                    problem_text_length: useProblemText?.length ?? 0,
+                    solution_text_length: useSolutionText?.length ?? 0,
+                  });
 
                   const { data, error } = await supabase.functions.invoke("convert-to-asset", {
                     body: {
@@ -925,27 +988,67 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       journalEntryText: rp.journal_entry_text,
                       notes: "",
                       requiresJournalEntry: !!rp.journal_entry_text,
+                      run_id: logger.runId,
+                      course_id: rp.course_id,
+                      chapter_id: rp.chapter_id,
+                      source_problem_id: rp.id,
+                      ui_provider_selected: "lovable",
+                      ui_settings: {
+                        variant_count: 1,
+                        difficulty_toggles: [],
+                        requires_je_forced: !!rp.journal_entry_text,
+                      },
                     },
                   });
+
+                  await logger.info("frontend", "REQUEST_END", "Edge function returned", {
+                    has_error: !!error,
+                    has_data_error: !!data?.error,
+                    candidate_count: data?.candidates?.length ?? 0,
+                  });
+
                   if (error) throw error;
                   if (data?.error) throw new Error(data.error);
 
                   const candidates = data.candidates || [];
+                  await logger.info("db", "SAVE_VARIANT_START", `Saving ${candidates.length} variants`, {
+                    candidate_count: candidates.length,
+                  });
+
+                  let firstVariantId: string | null = null;
                   for (let ci = 0; ci < candidates.length; ci++) {
                     const c = candidates[ci];
-                    await supabase.from("problem_variants").insert({
-                      base_problem_id: rp.id,
-                      variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-                      variant_problem_text: c.survive_problem_text || "",
-                      variant_solution_text: c.survive_solution_text || "",
-                      candidate_data: c,
-                    } as any);
+                    const { data: insertedVariant, error: insertVariantError } = await supabase
+                      .from("problem_variants")
+                      .insert({
+                        base_problem_id: rp.id,
+                        variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+                        variant_problem_text: c.survive_problem_text || "",
+                        variant_solution_text: c.survive_solution_text || "",
+                        candidate_data: c,
+                      } as any)
+                      .select("id")
+                      .single();
+
+                    if (insertVariantError) throw insertVariantError;
+                    if (!firstVariantId) firstVariantId = (insertedVariant as any)?.id ?? null;
                   }
+
+                  await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`, {
+                    first_variant_id: firstVariantId,
+                  });
+                  await logger.finalize("success", { variant_id: firstVariantId ?? undefined });
 
                   await loadReviewCandidates(rp.id);
                   toast.success(`Generated ${candidates.length} variants for review`);
                 } catch (err: any) {
+                  await logger.error("frontend", "GENERATION_ERROR", err?.message || "Generate & Review failed", {
+                    stack: err?.stack?.slice(0, 500),
+                  });
+                  await logger.finalize("failed", { error_summary: err?.message });
                   toast.error(err?.message || "Generation failed");
+                } finally {
+                  qc.invalidateQueries({ queryKey: ["generation-runs", chapterId] });
                   setReviewLoading(false);
                 }
               }} disabled={reviewLoading}>
