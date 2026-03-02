@@ -51,6 +51,61 @@ async function logGenEvent(
   } catch (_) { /* swallow */ }
 }
 
+/** Extract the first JSON object from raw text, handling code fences */
+function extractFirstJsonObject(raw: string): any | null {
+  if (!raw || typeof raw !== "string") return null;
+  // Strip markdown code fences
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+  // Try parsing the whole thing first
+  try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
+  // Find first { and last }
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try { return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1)); } catch (_) { /* continue */ }
+  }
+  // Try first [ and last ]
+  const firstBracket = cleaned.indexOf("[");
+  const lastBracket = cleaned.lastIndexOf("]");
+  if (firstBracket >= 0 && lastBracket > firstBracket) {
+    try { return JSON.parse(cleaned.slice(firstBracket, lastBracket + 1)); } catch (_) { /* continue */ }
+  }
+  // Try removing trailing commas
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const slice = cleaned.slice(firstBrace, lastBrace + 1).replace(/,\s*([\]}])/g, "$1");
+    try { return JSON.parse(slice); } catch (_) { /* give up */ }
+  }
+  return null;
+}
+
+/** Validate NON_JE candidate schema */
+function validateNonJeCandidates(candidates: any[]): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return { valid: false, errors: ["candidates must be a non-empty array"] };
+  }
+  candidates.forEach((c, i) => {
+    const p = `candidates[${i}]`;
+    if (typeof c.asset_name !== "string" || !c.asset_name.trim()) errors.push(`${p}.asset_name required`);
+    if (!Array.isArray(c.tags)) errors.push(`${p}.tags must be array`);
+    if (typeof c.survive_problem_text !== "string" || !c.survive_problem_text.trim()) errors.push(`${p}.survive_problem_text required`);
+    if (typeof c.answer_only !== "string" || !c.answer_only.trim()) errors.push(`${p}.answer_only required`);
+    if (typeof c.survive_solution_text !== "string" || !c.survive_solution_text.trim()) errors.push(`${p}.survive_solution_text required`);
+    if (!Array.isArray(c.answer_parts) || c.answer_parts.length === 0) {
+      errors.push(`${p}.answer_parts must be non-empty array`);
+    } else {
+      c.answer_parts.forEach((ap: any, j: number) => {
+        if (typeof ap.label !== "string") errors.push(`${p}.answer_parts[${j}].label required`);
+        if (typeof ap.final_answer !== "string") errors.push(`${p}.answer_parts[${j}].final_answer required`);
+        if (typeof ap.steps !== "string") errors.push(`${p}.answer_parts[${j}].steps required`);
+      });
+    }
+    // Must NOT have JE fields
+    if (c.je_structured) errors.push(`${p} should not contain je_structured in NON_JE mode`);
+  });
+  return { valid: errors.length === 0, errors };
+}
+
 function validateCandidates(candidates: any[], expectedCount: number) {
   const errors: string[] = [];
 
@@ -1091,29 +1146,74 @@ Generate ${variantCount} exam-style practice variants.`;
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_START", "Parsing tool call JSON");
 
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END", "Tool call arguments missing", {
-        parse_success: false,
-        parse_error: "AI did not return structured output (no tool_calls)",
-      });
-      throw new Error("AI did not return structured output");
+    let parsed: any = null;
+    let parseSource = "tool_call"; // track where we got JSON from
+
+    if (toolCall?.function?.arguments) {
+      try {
+        parsed = JSON.parse(toolCall.function.arguments);
+      } catch (parseError) {
+        const rawArgs = toolCall.function.arguments || "";
+        await logGenEvent(sbService, runId, ++eventSeq, "backend", "warn", "PARSE_ERROR", "Tool call JSON parse failed, trying fallback", {
+          error_message: parseError instanceof Error ? parseError.message : "Unknown",
+          response_preview: rawArgs.slice(0, 3000),
+        });
+        // Try fallback on malformed tool_call arguments
+        parsed = extractFirstJsonObject(rawArgs);
+        if (parsed) parseSource = "tool_call_fallback";
+      }
     }
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(toolCall.function.arguments);
-    } catch (parseError) {
-      const rawArgs = toolCall.function.arguments || "";
-      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_ERROR", "JSON parsing failed", {
-        error_message: parseError instanceof Error ? parseError.message : "Unknown JSON parse error",
-        response_preview: rawArgs.slice(0, 3000),
-      });
-      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END", "JSON parsing failed", {
-        parse_success: false,
-        parse_error: parseError instanceof Error ? parseError.message : "Unknown JSON parse error",
-      });
-      throw new Error(parseError instanceof Error ? parseError.message : "Failed to parse JSON");
+    // Fallback: extract JSON from raw message content if tool_calls missing/failed
+    if (!parsed) {
+      const rawContent = data.choices?.[0]?.message?.content || "";
+      if (rawContent) {
+        await logGenEvent(sbService, runId, ++eventSeq, "backend", "warn", "PARSE_FALLBACK", "No tool_calls, attempting JSON extraction from message content", {
+          content_length: rawContent.length,
+          content_preview: rawContent.slice(0, 500),
+        });
+        parsed = extractFirstJsonObject(rawContent);
+        if (parsed) parseSource = "content_fallback";
+      }
     }
+
+    // If still nothing, return structured error (NOT a 500)
+    if (!parsed) {
+      const rawPreview = (data.choices?.[0]?.message?.content || JSON.stringify(data.choices?.[0]?.message ?? {})).slice(0, 500);
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "AI_RESPONSE_UNSTRUCTURED", "Could not extract structured JSON from AI response", {
+        raw_length: rawPreview.length,
+        raw_preview: rawPreview,
+      });
+
+      const durationMs = Date.now() - runStartedAt;
+      await finalizeRunRecord(sbService, {
+        runId,
+        status: "failed",
+        durationMs,
+        errorSummary: "AI did not return tool-call JSON",
+        variantId: null,
+        provider: runMeta.provider,
+        model: runMeta.model,
+        courseId: runMeta.course_id,
+        chapterId: runMeta.chapter_id,
+        sourceProblemId: runMeta.source_problem_id,
+      });
+
+      return new Response(JSON.stringify({
+        ok: false,
+        error_code: "AI_UNSTRUCTURED",
+        message: "AI did not return tool-call JSON. Try again or switch providers.",
+        raw_preview: rawPreview,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_END", `Parsed via ${parseSource}`, {
+      parse_success: true,
+      parse_source: parseSource,
+    });
 
     const candidates = parsed.candidates || [];
 
@@ -1222,6 +1322,17 @@ Generate ${variantCount} exam-style practice variants.`;
       success: true,
       zod_errors: [],
     });
+
+    // NON_JE explicit schema validation
+    if (generationMode === "NON_JE") {
+      const nonJeValidation = validateNonJeCandidates(candidates);
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", nonJeValidation.valid ? "info" : "warn", "VALIDATE_NON_JE_SCHEMA",
+        nonJeValidation.valid ? "NON_JE schema valid" : `NON_JE schema issues: ${nonJeValidation.errors.length}`, {
+          valid: nonJeValidation.valid,
+          errors: nonJeValidation.errors,
+        }
+      );
+    }
 
     await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators", {
       validator_set_used: generationMode === "NON_JE" ? "NON_JE_VALIDATORS" : "JE_VALIDATORS",

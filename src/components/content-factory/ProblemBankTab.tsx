@@ -393,53 +393,78 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           has_scenarios: !!scenarioBlocks?.length,
         });
 
-        const { data, error } = await supabase.functions.invoke("convert-to-asset", {
-          body: {
-            mode: "candidates",
-            problemId: problem.id,
-            courseId: problem.course_id,
-            chapterId: problem.chapter_id,
-            sourceLabel: useLabel,
-            title: useTitle,
-            problemText: useProblemText,
-            solutionText: useSolutionText,
-            journalEntryText: problem.journal_entry_text,
-            notes: afNotes,
-            requiresJournalEntry: afRequiresJE,
-            containsNoJournalEntries: !!(problem as any).contains_no_journal_entries,
-            provider: selectedProvider,
-            model: selectedModel,
-            scenarioBlocks,
-            difficultyToggles: activeDiffToggles.length > 0
-              ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
-              : undefined,
-            run_id: logger.runId,
-            course_id: problem.course_id,
-            chapter_id: problem.chapter_id,
-            source_problem_id: problem.id,
-            ui_provider_selected: selectedProvider,
-            ui_settings: {
-              variant_count: vCount,
-              difficulty_toggles: activeDiffToggles,
-              requires_je_forced: afRequiresJE,
-              notes_present: !!afNotes?.trim(),
-              contains_no_journal_entries: !!(problem as any).contains_no_journal_entries,
+        // 60-second timeout for edge function
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+        let data: any;
+        let error: any;
+        try {
+          const result = await supabase.functions.invoke("convert-to-asset", {
+            body: {
+              mode: "candidates",
+              problemId: problem.id,
+              courseId: problem.course_id,
+              chapterId: problem.chapter_id,
+              sourceLabel: useLabel,
+              title: useTitle,
+              problemText: useProblemText,
+              solutionText: useSolutionText,
+              journalEntryText: problem.journal_entry_text,
+              notes: afNotes,
+              requiresJournalEntry: afRequiresJE,
+              containsNoJournalEntries: !!(problem as any).contains_no_journal_entries,
+              provider: selectedProvider,
+              model: selectedModel,
+              scenarioBlocks,
+              difficultyToggles: activeDiffToggles.length > 0
+                ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
+                : undefined,
+              run_id: logger.runId,
+              course_id: problem.course_id,
+              chapter_id: problem.chapter_id,
+              source_problem_id: problem.id,
+              ui_provider_selected: selectedProvider,
+              ui_settings: {
+                variant_count: vCount,
+                difficulty_toggles: activeDiffToggles,
+                requires_je_forced: afRequiresJE,
+                notes_present: !!afNotes?.trim(),
+                contains_no_journal_entries: !!(problem as any).contains_no_journal_entries,
+              },
             },
-          },
-        });
+          });
+          data = result.data;
+          error = result.error;
+        } catch (abortErr: any) {
+          clearTimeout(timeoutId);
+          await logger.error("frontend", "REQUEST_TIMEOUT", "Generation timed out after 60s");
+          await logger.finalize("failed", { error_summary: "Request timed out" });
+          throw new Error("Generation timed out. Please try again.");
+        }
+        clearTimeout(timeoutId);
 
         await logger.info("frontend", "REQUEST_END", "Edge function returned", {
           duration_ms: Date.now() - requestStart,
           has_error: !!error,
           has_data_error: !!data?.error,
+          has_ok_false: data?.ok === false,
           candidate_count: data?.candidates?.length ?? 0,
         });
 
         if (error) throw error;
+        if (data?.ok === false) {
+          const msg = data.message || data.error_code || "AI generation failed";
+          throw new Error(msg);
+        }
         if (data?.error) throw new Error(data.error);
 
         return { data, logger, selectedProvider, selectedModel, problem };
       } catch (err: any) {
+        // Always log REQUEST_END on failure
+        await logger.info("frontend", "REQUEST_END", "Edge function failed", {
+          error: err?.message,
+        }).catch(() => {});
         await logger.error("frontend", "GENERATION_ERROR", err?.message || "Variant generation failed", {
           stack: err?.stack?.slice(0, 500),
         });
@@ -754,6 +779,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         });
 
         if (error) throw error;
+        if (data?.ok === false) throw new Error(data.message || "AI generation failed");
         if (data?.error) throw new Error(data.error);
 
         const candidates = data.candidates || [];
@@ -1122,6 +1148,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   });
 
                   if (error) throw error;
+                  if (data?.ok === false) throw new Error(data.message || "AI generation failed");
                   if (data?.error) throw new Error(data.error);
 
                   const candidates = data.candidates || [];
