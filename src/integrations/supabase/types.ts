@@ -789,6 +789,50 @@ export type Database = {
           },
         ]
       }
+      generation_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          level: string
+          message: string
+          payload_json: Json | null
+          run_id: string
+          scope: string
+          seq: number
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          level?: string
+          message?: string
+          payload_json?: Json | null
+          run_id: string
+          scope?: string
+          seq?: number
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          level?: string
+          message?: string
+          payload_json?: Json | null
+          run_id?: string
+          scope?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "generation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generation_jobs: {
         Row: {
           completed_at: string | null
@@ -832,6 +876,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      generation_runs: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          debug_bundle_json: Json | null
+          duration_ms: number | null
+          error_summary: string | null
+          id: string
+          model: string | null
+          provider: string
+          source_problem_id: string | null
+          status: string
+          user_id: string | null
+          variant_id: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          debug_bundle_json?: Json | null
+          duration_ms?: number | null
+          error_summary?: string | null
+          id?: string
+          model?: string | null
+          provider?: string
+          source_problem_id?: string | null
+          status?: string
+          user_id?: string | null
+          variant_id?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          debug_bundle_json?: Json | null
+          duration_ms?: number | null
+          error_summary?: string | null
+          id?: string
+          model?: string | null
+          provider?: string
+          source_problem_id?: string | null
+          status?: string
+          user_id?: string | null
+          variant_id?: string | null
+        }
+        Relationships: []
       }
       google_sheets: {
         Row: {
