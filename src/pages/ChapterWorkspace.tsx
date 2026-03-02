@@ -1,20 +1,24 @@
 import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { ChapterActivityLog } from "@/components/content-factory/ChapterActivityLog";
 import { GenerationRunsPanel } from "@/components/content-factory/GenerationRunsPanel";
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { toast } from "sonner";
 
 export default function ChapterWorkspace() {
   const { chapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
   const { saveSession } = useProductionSession();
   const { setWorkspace } = useActiveWorkspace();
+  const qc = useQueryClient();
   const initialTab = searchParams.get("tab") || "problems";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -66,6 +70,23 @@ export default function ChapterWorkspace() {
 
   return (
     <SurviveSidebarLayout>
+      <div className="flex items-center justify-between mb-3">
+        <div />
+        <div className="flex items-center gap-2">
+          <Switch
+            id="je-only-mode"
+            checked={chapter.je_only_mode ?? true}
+            onCheckedChange={async (checked) => {
+              await supabase.from("chapters").update({ je_only_mode: checked } as any).eq("id", chapterId!);
+              qc.invalidateQueries({ queryKey: ["chapter", chapterId] });
+              qc.invalidateQueries({ queryKey: ["chapter-settings", chapterId] });
+              toast.success(`JE-only mode ${checked ? "enabled" : "disabled"}`);
+            }}
+            className="scale-75"
+          />
+          <Label htmlFor="je-only-mode" className="text-[11px] text-muted-foreground cursor-pointer">JE-only mode</Label>
+        </div>
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Problems</TabsTrigger>

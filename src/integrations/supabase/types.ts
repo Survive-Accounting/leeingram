@@ -411,6 +411,7 @@ export type Database = {
           course_id: string
           created_at: string
           id: string
+          je_only_mode: boolean
           target_lessons: number | null
         }
         Insert: {
@@ -419,6 +420,7 @@ export type Database = {
           course_id: string
           created_at?: string
           id?: string
+          je_only_mode?: boolean
           target_lessons?: number | null
         }
         Update: {
@@ -427,6 +429,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
+          je_only_mode?: boolean
           target_lessons?: number | null
         }
         Relationships: [

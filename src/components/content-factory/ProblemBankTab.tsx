@@ -31,6 +31,7 @@ import {
 } from "@/lib/journalEntryCanonical";
 import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
 import { GenerationLogger } from "@/lib/generationLogger";
+import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -229,6 +230,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     },
   });
 
+  // Fetch chapter je_only_mode setting
+  const { data: chapterSettings } = useQuery({
+    queryKey: ["chapter-settings", chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("chapters").select("je_only_mode").eq("id", chapterId).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const jeOnlyMode = chapterSettings?.je_only_mode ?? true;
+
   const { data: topicRules } = useQuery({
     queryKey: ["topic-rules", course?.code, chapterNumber],
     queryFn: async () => {
@@ -329,6 +341,14 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     }) => {
       const selectedProvider = provider ?? genProvider;
       const selectedModel = selectedProvider === "openai" ? (model ?? genModel) : undefined;
+
+      // JE-only mode gate
+      if (jeOnlyMode) {
+        const probText = problem.ocr_extracted_problem_text || problem.problem_text;
+        if (!detectRequiresJE(probText) && !afRequiresJE) {
+          throw new Error("Skipped: not a journal entry problem (JE-only mode enabled).");
+        }
+      }
 
       const logger = new GenerationLogger({
         course_id: problem.course_id,
@@ -636,6 +656,19 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     let eligible = problems.filter(p => p.status === "ready");
     if (batchForceRegen) {
       eligible = problems.filter(p => p.status === "ready" || p.status === "generated");
+    }
+
+    // JE-only mode: filter out non-JE problems
+    if (jeOnlyMode) {
+      const beforeCount = eligible.length;
+      eligible = eligible.filter(p => {
+        const txt = p.ocr_extracted_problem_text || p.problem_text;
+        return detectRequiresJE(txt) || !!p.journal_entry_text;
+      });
+      const skipped = beforeCount - eligible.length;
+      if (skipped > 0) {
+        toast.info(`JE-only mode: skipped ${skipped} non-JE problem(s).`);
+      }
     }
 
     if (eligible.length === 0) {
@@ -1473,6 +1506,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     const ocrRunning = p.ocr_status === "running";
     const ocrFailed = p.ocr_status === "failed";
     const canGenerate = (ocrOk && !ocrLow) || (!!(p.problem_text));
+    const probTextForJECheck = p.ocr_extracted_problem_text || p.problem_text;
+    const problemRequiresJE = detectRequiresJE(probTextForJECheck) || afRequiresJE;
+    const jeOnlyBlocked = jeOnlyMode && !problemRequiresJE;
 
     // Screenshot URLs
     const problemUrls = p.problem_screenshot_urls?.length ? p.problem_screenshot_urls
@@ -1656,11 +1692,24 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           </div>
         )}
 
+        {/* JE-only mode blocked banner */}
+        {jeOnlyBlocked && (
+          <div className="flex items-center gap-2 rounded-lg border border-muted bg-muted/30 px-4 py-3">
+            <AlertTriangle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold">Skipped:</span> not a journal entry problem (JE-only mode enabled). Toggle "Journal entry required" or disable JE-only mode in chapter settings.
+            </p>
+          </div>
+        )}
+
         {/* Generate Variants Panel */}
-        <div className="rounded-lg border border-primary/30 bg-primary/[0.05] p-5">
+        <div className={cn("rounded-lg border border-primary/30 bg-primary/[0.05] p-5", jeOnlyBlocked && "opacity-50 pointer-events-none")}>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">AI Variant Maker V2</h3>
+            {jeOnlyMode && (
+              <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground">JE-only mode</Badge>
+            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 mb-4">
