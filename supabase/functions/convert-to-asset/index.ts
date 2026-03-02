@@ -724,14 +724,32 @@ ${scenarioBlocks.map((b: any) => `--- ${b.label} ---\n${b.text}`).join("\n\n")}
 
     // Fetch approved account whitelist for this chapter
     let accountWhitelistBlock = "";
+    let whitelistNames: string[] = [];
+    let whitelistEnabled = false;
     if (reqChapterId) {
-      const { data: approvedAccounts } = await supabase
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "COA_FETCH_START", "Fetching chapter account whitelist", {
+        chapter_id: reqChapterId,
+      });
+
+      const { data: approvedAccounts, error: coaErr } = await supabase
         .from("chapter_accounts")
         .select("account_name")
         .eq("chapter_id", reqChapterId)
         .eq("is_approved", true);
-      if (approvedAccounts && approvedAccounts.length > 0) {
-        const accountList = approvedAccounts.map((a: any) => a.account_name).join(", ");
+
+      whitelistNames = (approvedAccounts ?? []).map((a: any) => a.account_name as string);
+      whitelistEnabled = whitelistNames.length > 0;
+
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "COA_FETCH_END", `Whitelist: ${whitelistEnabled ? "enabled" : "disabled"} (${whitelistNames.length} accounts)`, {
+        chapter_id: reqChapterId,
+        whitelist_enabled: whitelistEnabled,
+        whitelist_count: whitelistNames.length,
+        account_names: whitelistNames,
+        fetch_error: coaErr?.message ?? null,
+      });
+
+      if (whitelistEnabled) {
+        const accountList = whitelistNames.join(", ");
         accountWhitelistBlock = `
 APPROVED ACCOUNT WHITELIST (STRICT — use ONLY these account names in journal entries):
 ${accountList}
@@ -1035,6 +1053,48 @@ Generate ${variantCount} exam-style practice variants.`;
       candidates_preview: candidates.slice(0, 1),
     });
 
+    // Post-generation whitelist check
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "WHITELIST_APPLIED", `Whitelist ${whitelistEnabled ? "enabled" : "disabled"}`, {
+      whitelist_enabled: whitelistEnabled,
+      whitelist_count: whitelistNames.length,
+    });
+
+    if (whitelistEnabled && requiresJournalEntry) {
+      const whitelistLower = new Set(whitelistNames.map(n => n.toLowerCase()));
+      const unknownAccounts: Array<{ candidate_index: number; account_name: string }> = [];
+
+      for (let ci = 0; ci < candidates.length; ci++) {
+        const je = candidates[ci]?.je_structured;
+        if (!je?.scenario_sections) continue;
+        for (const sc of je.scenario_sections) {
+          for (const entry of (sc.entries_by_date || [])) {
+            for (const row of (entry.rows || [])) {
+              const name = (row.account_name || "").trim();
+              if (name && !whitelistLower.has(name.toLowerCase())) {
+                unknownAccounts.push({ candidate_index: ci, account_name: name });
+              }
+            }
+          }
+        }
+      }
+
+      const uniqueUnknown = [...new Set(unknownAccounts.map(u => u.account_name))];
+
+      await logGenEvent(sbService, runId, ++eventSeq, "backend",
+        uniqueUnknown.length > 0 ? "warn" : "info",
+        "UNKNOWN_ACCOUNTS_FOUND",
+        uniqueUnknown.length > 0
+          ? `${uniqueUnknown.length} unknown account(s): ${uniqueUnknown.join(", ")}`
+          : "All accounts match whitelist",
+        {
+          unknown_accounts: uniqueUnknown,
+          unknown_count: uniqueUnknown.length,
+          total_account_references: unknownAccounts.length,
+          details: unknownAccounts.slice(0, 20),
+        }
+      );
+    }
+
     await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "VALIDATE_SCHEMA_START", "Validating candidate schema", {
       schema_name: "create_teaching_asset_candidates",
       expected_candidate_count: variantCount,
@@ -1146,6 +1206,8 @@ Generate ${variantCount} exam-style practice variants.`;
       validator_results: validatorResults,
       requires_je: requiresJournalEntry,
       je_validation_failed: jeValidationFailed,
+      whitelist_enabled: whitelistEnabled,
+      whitelist_count: whitelistNames.length,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
