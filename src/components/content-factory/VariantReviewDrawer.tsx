@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Check, X, Save, ChevronDown, AlertTriangle, Info, Lock, CheckCircle2,
-  Circle, XCircle, ScrollText, Plus, Sparkles, Loader2, Pencil,
+  Circle, XCircle, ScrollText, Plus, Sparkles, Loader2, Pencil, Code, Copy,
 } from "lucide-react";
 import { ScenarioAccordion } from "./ScenarioAccordion";
 import { EntryByDateCard, type DateEntryStatus as CardDateEntryStatus } from "./EntryByDateCard";
@@ -168,6 +168,9 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const [recentFixes, setRecentFixes] = useState<any[]>([]);
   const [showFixes, setShowFixes] = useState(false);
   const [showGenLog, setShowGenLog] = useState(false);
+  const [payloadModalOpen, setPayloadModalOpen] = useState(false);
+  const [payloadData, setPayloadData] = useState<any>(null);
+  const [payloadLoading, setPayloadLoading] = useState(false);
 
   // Init
   useEffect(() => {
@@ -230,6 +233,69 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       .eq("chapter_id", chapterId)
       .order("created_at", { ascending: false }).limit(5);
     setRecentFixes(data || []);
+  };
+
+  const handleViewPayload = async () => {
+    setPayloadLoading(true);
+    setPayloadModalOpen(true);
+    try {
+      const variantId = variant._variantId || variant.id;
+      // Find the most recent generation run for this problem/variant
+      let query = supabase
+        .from("generation_runs")
+        .select("id, provider, model, status, created_at, debug_bundle_json")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (variantId) {
+        query = query.eq("variant_id", variantId);
+      } else if (problem?.id) {
+        query = query.eq("source_problem_id", problem.id);
+      }
+
+      const { data: runs } = await query;
+      const run = runs?.[0];
+
+      if (!run) {
+        setPayloadData({ empty: true });
+        return;
+      }
+
+      // Fetch key events from this run
+      const { data: events } = await supabase
+        .from("generation_events")
+        .select("event_type, level, message, payload_json, seq")
+        .eq("run_id", run.id)
+        .order("seq");
+
+      const buildPromptEvent = events?.find(e => e.event_type === "BUILD_PROMPT");
+      const rawResponseEvent = events?.find(e => e.event_type === "RAW_RESPONSE");
+      const toolCallEvent = events?.find(e => e.event_type === "TOOL_CALL_PARSED" || e.event_type === "PARSED_CANDIDATES");
+      const requestStartEvent = events?.find(e => e.event_type === "REQUEST_START");
+
+      const promptPayload = buildPromptEvent?.payload_json as any;
+      const rawPayload = rawResponseEvent?.payload_json as any;
+      const toolPayload = toolCallEvent?.payload_json as any;
+
+      setPayloadData({
+        run_id: run.id,
+        provider: run.provider,
+        model: run.model,
+        status: run.status,
+        created_at: run.created_at,
+        temperature: (promptPayload as any)?.temperature ?? (requestStartEvent?.payload_json as any)?.temperature ?? "—",
+        prompt_hash: (promptPayload as any)?.prompt_hash ?? "—",
+        candidate_json: (toolPayload as any)?.candidates_preview ?? (toolPayload as any)?.candidate_count ?? variant.candidate_data,
+        raw_tool_call: (rawPayload as any)?.raw_text_truncated ?? (rawPayload as any)?.raw_text ?? null,
+        debug_bundle: run.debug_bundle_json,
+        whitelist_enabled: (promptPayload as any)?.whitelist_enabled,
+        whitelist_count: (promptPayload as any)?.whitelist_count,
+      });
+    } catch (err: any) {
+      setPayloadData({ error: err.message });
+    } finally {
+      setPayloadLoading(false);
+    }
   };
 
   const runGlobalValidationFromEntries = () => {
@@ -691,6 +757,17 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             </CollapsibleContent>
           </Collapsible>
 
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={handleViewPayload}
+            disabled={payloadLoading}
+          >
+            {payloadLoading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Code className="h-3 w-3 mr-1.5" />}
+            View AI Payload
+          </Button>
+
           {/* ════════ SKELETON-FIRST JE WORKFLOW ════════ */}
           <div>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
@@ -874,6 +951,89 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         </div>
       </SheetContent>
 
+      {/* AI Payload Modal */}
+      <Dialog open={payloadModalOpen} onOpenChange={setPayloadModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Code className="h-4 w-4" /> AI Payload Inspector
+            </DialogTitle>
+            <DialogDescription>
+              Generation run details and raw AI output for debugging.
+            </DialogDescription>
+          </DialogHeader>
+
+          {payloadLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {payloadData?.empty && (
+            <p className="text-sm text-muted-foreground text-center py-6">No generation run found for this variant.</p>
+          )}
+
+          {payloadData?.error && (
+            <p className="text-sm text-destructive text-center py-6">{payloadData.error}</p>
+          )}
+
+          {payloadData && !payloadData.empty && !payloadData.error && !payloadLoading && (
+            <div className="space-y-4">
+              {/* Meta */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded border border-border p-2">
+                  <span className="text-muted-foreground">Provider</span>
+                  <p className="font-mono font-medium text-foreground">{payloadData.provider || "—"}</p>
+                </div>
+                <div className="rounded border border-border p-2">
+                  <span className="text-muted-foreground">Model</span>
+                  <p className="font-mono font-medium text-foreground">{payloadData.model || "—"}</p>
+                </div>
+                <div className="rounded border border-border p-2">
+                  <span className="text-muted-foreground">Temperature</span>
+                  <p className="font-mono font-medium text-foreground">{String(payloadData.temperature)}</p>
+                </div>
+                <div className="rounded border border-border p-2">
+                  <span className="text-muted-foreground">Prompt Hash</span>
+                  <p className="font-mono font-medium text-foreground truncate">{payloadData.prompt_hash}</p>
+                </div>
+                <div className="rounded border border-border p-2">
+                  <span className="text-muted-foreground">Run ID</span>
+                  <p className="font-mono font-medium text-foreground truncate">{payloadData.run_id}</p>
+                </div>
+                <div className="rounded border border-border p-2">
+                  <span className="text-muted-foreground">Whitelist</span>
+                  <p className="font-mono font-medium text-foreground">
+                    {payloadData.whitelist_enabled ? `Enabled (${payloadData.whitelist_count})` : "Disabled"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Parsed Candidate JSON */}
+              <PayloadSection
+                title="Parsed Candidate JSON"
+                content={payloadData.candidate_json}
+              />
+
+              {/* Raw Tool Call */}
+              <PayloadSection
+                title="Raw Tool Call Arguments"
+                content={payloadData.raw_tool_call}
+                isString
+              />
+
+              {/* Debug Bundle */}
+              {payloadData.debug_bundle && (
+                <PayloadSection
+                  title="Debug Bundle"
+                  content={payloadData.debug_bundle}
+                />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Approval Blocked Modal */}
       <Dialog open={approvalBlockedModal} onOpenChange={setApprovalBlockedModal}>
         <DialogContent className="sm:max-w-md">
@@ -909,5 +1069,30 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         </DialogContent>
       </Dialog>
     </Sheet>
+  );
+}
+
+function PayloadSection({ title, content, isString }: { title: string; content: any; isString?: boolean }) {
+  if (!content) return null;
+
+  const text = isString ? String(content) : JSON.stringify(content, null, 2);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    toast.success(`Copied ${title}`);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs font-semibold text-muted-foreground">{title}</p>
+        <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={handleCopy}>
+          <Copy className="h-3 w-3 mr-1" /> Copy JSON
+        </Button>
+      </div>
+      <pre className="rounded border border-border bg-muted/30 p-3 text-[11px] font-mono text-foreground overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap break-all">
+        {text}
+      </pre>
+    </div>
   );
 }
