@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,14 +31,17 @@ import { GenerationLogger } from "@/lib/generationLogger";
 
 // ── Types ──
 
-interface VariantReviewDrawerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface VariantReviewContentProps {
   variant: any;
   problem: any;
   chapterId: string;
   onApproved: () => void;
   onRejected: () => void;
+}
+
+interface VariantReviewDrawerProps extends VariantReviewContentProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 type DateEntryStatus = "empty" | "drafted" | "edited" | "validated";
@@ -147,9 +150,12 @@ function extractEntriesFromCandidate(candidate: any): EntriesMap {
   return map;
 }
 
-// ── Component ──
+// ══════════════════════════════════════════════
+// VariantReviewContent — standalone review UI
+// Can be rendered inline or inside a Sheet/Drawer
+// ══════════════════════════════════════════════
 
-export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chapterId, onApproved, onRejected }: VariantReviewDrawerProps) {
+export function VariantReviewContent({ variant, problem, chapterId, onApproved, onRejected }: VariantReviewContentProps) {
   const { data: approvedAccounts } = useChapterApprovedAccounts(chapterId);
 
   // Core state
@@ -161,7 +167,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const [editVersion, setEditVersion] = useState(0);
   const [requiresJE, setRequiresJE] = useState(false);
   const [generatingSkeleton, setGeneratingSkeleton] = useState(false);
-  const [generatingDate, setGeneratingDate] = useState<string | null>(null); // dateKey being generated
+  const [generatingDate, setGeneratingDate] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [globalValidation, setGlobalValidation] = useState<ValidationResult[]>([]);
   const [approvalBlockedModal, setApprovalBlockedModal] = useState(false);
@@ -174,13 +180,12 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
 
   // Init
   useEffect(() => {
-    if (!variant || !open) return;
+    if (!variant) return;
     
     const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
     const needsJE = detectRequiresJE(problemText);
     setRequiresJE(needsJE);
 
-    // Try to load existing skeleton from DB fields or extract from candidate_data
     const dbSkeleton = variant.je_skeleton_json as SkeletonData | null;
     const dbEntries = (variant.je_entries_json || {}) as EntriesMap;
     const dbStatuses = (variant.je_entry_status_json || {}) as StatusMap;
@@ -190,7 +195,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       setEntries(dbEntries);
       setStatuses(dbStatuses);
     } else {
-      // Try extracting from candidate_data
       const candidateSkeleton = extractSkeletonFromCandidate(
         variant.candidate_data || variant.journal_entry_completed_json
       );
@@ -201,7 +205,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       if (candidateSkeleton) {
         setSkeleton(candidateSkeleton);
         setEntries(candidateEntries);
-        // Mark entries with data as drafted
         const initStatuses: StatusMap = {};
         for (const key of Object.keys(candidateEntries)) {
           initStatuses[key] = "drafted";
@@ -218,7 +221,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     setEditVersion(0);
     setEditingDate(null);
     loadRecentFixes();
-  }, [variant, open]);
+  }, [variant]);
 
   // Recompute global validation whenever entries change
   useEffect(() => {
@@ -240,7 +243,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     setPayloadModalOpen(true);
     try {
       const variantId = variant._variantId || variant.id;
-      // Find the most recent generation run for this problem/variant
       let query = supabase
         .from("generation_runs")
         .select("id, provider, model, status, created_at, debug_bundle_json")
@@ -261,7 +263,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         return;
       }
 
-      // Fetch key events from this run
       const { data: events } = await supabase
         .from("generation_events")
         .select("event_type, level, message, payload_json, seq")
@@ -300,7 +301,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
 
   const runGlobalValidationFromEntries = () => {
     if (!skeleton) { setGlobalValidation([]); return; }
-    // Build full sections for global validation
     const allSections: JESection[] = [];
     for (const sc of skeleton.scenario_sections) {
       for (const d of sc.entry_dates) {
@@ -442,7 +442,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
       const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
       const solutionText = variant.survive_solution_text || variant.variant_solution_text || problem?.solution_text || "";
 
-      // Gather prior entries for context
       const priorEntries: Array<{ date: string; rows: any[] }> = [];
       if (skeleton) {
         const sc = skeleton.scenario_sections.find(s => s.scenario_label === scenarioLabel);
@@ -507,7 +506,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         })),
       };
 
-      // Run validators on the generated rows
       const vr = runDateValidation(newRows.rows, requiresJE);
       await logger.info("validator", "RUN_VALIDATORS_END", `Validators ran: ${vr.length} checks`, {
         validator_results: vr.map(v => ({ name: v.validator, status: v.status, message: v.message })),
@@ -607,7 +605,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     const variantId = variant._variantId || variant.id;
     if (!variantId) return;
 
-    // Also build the full journal_entry_completed_json for backward compat
     const completedSections = skeleton?.scenario_sections.map(sc => ({
       label: sc.scenario_label,
       entries_by_date: sc.entry_dates
@@ -691,261 +688,253 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   if (!variant) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border sticky top-0 bg-background z-10">
-          <SheetTitle className="text-base flex items-center gap-2 flex-wrap">
-            Variant Review
-            <Badge variant="outline" className="text-[10px]">
-              {variant.asset_name || variant.variant_label || "Variant"}
+    <>
+      <div className="space-y-5">
+        {/* Header badges */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-[10px]">
+            {variant.asset_name || variant.variant_label || "Variant"}
+          </Badge>
+          {editVersion > 0 && (
+            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+              v{editVersion}
             </Badge>
-            {editVersion > 0 && (
-              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
-                v{editVersion}
-              </Badge>
-            )}
-            {skeleton && (
-              <Badge variant="outline" className={cn(
-                "text-[10px]",
-                allDatesValidated
-                  ? "text-green-400 border-green-500/30 bg-green-500/10"
-                  : "text-amber-400 border-amber-500/30 bg-amber-500/10"
-              )}>
-                {validatedCount}/{totalDates} entries validated
-              </Badge>
-            )}
-          </SheetTitle>
-        </SheetHeader>
-
-        <div className="px-6 py-4 space-y-5">
-          {/* Recent Fixes */}
-          {recentFixes.length > 0 && (
-            <Collapsible open={showFixes} onOpenChange={setShowFixes}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-xs">
-                <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30 cursor-pointer">
-                  <Info className="h-3 w-3 mr-1" />
-                  {recentFixes.length} recent fix{recentFixes.length !== 1 ? "es" : ""} in this chapter
-                </Badge>
-                <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", showFixes && "rotate-180")} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 space-y-1">
-                {recentFixes.map((fix: any) => (
-                  <div key={fix.id} className="rounded border border-border bg-muted/20 px-3 py-1.5 text-xs">
-                    <p className="font-medium text-foreground">{fix.summary}</p>
-                    <div className="flex gap-1 mt-1">
-                      {(fix.auto_tags || []).map((tag: string) => (
-                        <Badge key={tag} variant="outline" className="text-[9px] h-4">{tag}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
           )}
-
-          {/* Problem Text */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">Problem Text</p>
-            <div className="rounded-md border border-border bg-muted/20 p-3 max-h-40 overflow-y-auto">
-              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                {variant.survive_problem_text || variant.variant_problem_text || "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* Answer Summary */}
-          {variant.answer_only && (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">Answer Summary</p>
-              <div className="rounded-md border border-border bg-muted/20 p-3 max-h-32 overflow-y-auto">
-                <p className="text-sm text-foreground whitespace-pre-wrap font-mono">{variant.answer_only}</p>
-              </div>
-            </div>
+          {skeleton && (
+            <Badge variant="outline" className={cn(
+              "text-[10px]",
+              allDatesValidated
+                ? "text-green-400 border-green-500/30 bg-green-500/10"
+                : "text-amber-400 border-amber-500/30 bg-amber-500/10"
+            )}>
+              {validatedCount}/{totalDates} entries validated
+            </Badge>
           )}
+        </div>
 
-          {/* Generation Log */}
-          <Collapsible open={showGenLog} onOpenChange={setShowGenLog}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs w-full justify-start">
-                <ScrollText className="h-3 w-3 mr-1.5" />
-                View Generation Log
-                <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", showGenLog && "rotate-180")} />
-              </Button>
+        {/* Recent Fixes */}
+        {recentFixes.length > 0 && (
+          <Collapsible open={showFixes} onOpenChange={setShowFixes}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs">
+              <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/30 cursor-pointer">
+                <Info className="h-3 w-3 mr-1" />
+                {recentFixes.length} recent fix{recentFixes.length !== 1 ? "es" : ""} in this chapter
+              </Badge>
+              <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", showFixes && "rotate-180")} />
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2">
-              <ActivityLogPanel entityType="source_problem" entityId={problem?.id ?? ""} />
+            <CollapsibleContent className="mt-2 space-y-1">
+              {recentFixes.map((fix: any) => (
+                <div key={fix.id} className="rounded border border-border bg-muted/20 px-3 py-1.5 text-xs">
+                  <p className="font-medium text-foreground">{fix.summary}</p>
+                  <div className="flex gap-1 mt-1">
+                    {(fix.auto_tags || []).map((tag: string) => (
+                      <Badge key={tag} variant="outline" className="text-[9px] h-4">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </CollapsibleContent>
           </Collapsible>
+        )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={handleViewPayload}
-            disabled={payloadLoading}
-          >
-            {payloadLoading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Code className="h-3 w-3 mr-1.5" />}
-            View AI Payload
-          </Button>
-
-          {/* ════════ SKELETON-FIRST JE WORKFLOW ════════ */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
-              Journal Entry Review
+        {/* Problem Text */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">Problem Text</p>
+          <div className="rounded-md border border-border bg-muted/20 p-3 max-h-40 overflow-y-auto">
+            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+              {variant.survive_problem_text || variant.variant_problem_text || "—"}
             </p>
-
-            {/* No skeleton yet — generate one */}
-            {!skeleton && (
-              <div className="border border-dashed border-border rounded-lg p-6 text-center space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  {requiresJE
-                    ? "This problem requires journal entries. Start by generating the entry skeleton (dates only)."
-                    : "No journal entry skeleton. Generate one to structure the entries."}
-                </p>
-                <Button
-                  size="sm"
-                  onClick={handleGenerateSkeleton}
-                  disabled={generatingSkeleton}
-                >
-                  {generatingSkeleton ? (
-                    <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Generating Skeleton…</>
-                  ) : (
-                    <><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Generate Skeleton</>
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* Skeleton exists — show per-date accordion */}
-            {skeleton && (
-              <div className="space-y-4">
-                <ScenarioAccordion
-                  scenarios={skeleton.scenario_sections.map(sc => {
-                    const validatedCount = sc.entry_dates.filter(d =>
-                      statuses[dateKey(sc.scenario_label, d)] === "validated"
-                    ).length;
-                    const allBal = sc.entry_dates.every(d => {
-                      const e = entries[dateKey(sc.scenario_label, d)];
-                      if (!e?.rows?.length) return true;
-                      return entryBalanceFromRows(e.rows).balanced;
-                    });
-                    return {
-                      label: sc.scenario_label,
-                      totalDates: sc.entry_dates.length,
-                      validatedDates: validatedCount,
-                      allBalanced: allBal,
-                    };
-                  })}
-                  renderDates={(si) => {
-                    const sc = skeleton.scenario_sections[si];
-                    return (
-                      <div className="space-y-1.5">
-                        {sc.entry_dates.map((date, di) => {
-                          const key = dateKey(sc.scenario_label, date);
-                          const entry = entries[key];
-                          const status = statuses[key] || "empty";
-                          const isEditing = editingDate === key;
-                          const isGenerating = generatingDate === key;
-                          const hasRows = entry && entry.rows.length > 0;
-                          const bal = hasRows ? entryBalanceFromRows(entry.rows) : null;
-                          const dateVR = hasRows ? runDateValidation(entry.rows, requiresJE) : [];
-
-                          // Unlock: first date always unlocked, subsequent require prior validated
-                          const priorValidated = di === 0 || statuses[dateKey(sc.scenario_label, sc.entry_dates[di - 1])] === "validated";
-
-                          return (
-                            <EntryByDateCard
-                              key={key}
-                              date={date}
-                              rows={entry?.rows || []}
-                              status={status as CardDateEntryStatus}
-                              unlocked={priorValidated}
-                              isGenerating={isGenerating}
-                              balance={bal}
-                              validationErrors={dateVR.map(r => ({ status: r.status, message: r.message }))}
-                              onGenerateRows={() => handleGenerateRows(sc.scenario_label, date)}
-                              onMarkCorrect={(override?: boolean) => handleMarkCorrect(key, override)}
-                              onEditRows={() => setEditingDate(isEditing ? null : key)}
-                              isEditing={isEditing}
-                              editorSlot={
-                                hasRows ? (
-                                  <JournalEntryEditor
-                                    sections={[{
-                                      entry_date: date,
-                                      lines: entry.rows.map(r => ({
-                                        account_name: r.account_name,
-                                        debit: r.debit,
-                                        credit: r.credit,
-                                        memo: r.memo || "",
-                                        indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
-                                        coa_id: r.coa_id,
-                                        display_name: r.display_name,
-                                        unknown_account: r.unknown_account,
-                                      })),
-                                    }]}
-                                    onChange={(newSections) => {
-                                      if (newSections[0]) handleDateRowsChange(key, newSections[0]);
-                                    }}
-                                    chapterId={chapterId}
-                                    approvedAccounts={approvedAccounts}
-                                  />
-                                ) : undefined
-                              }
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  }}
-                />
-
-                {/* Re-generate skeleton button */}
-                <Button
-                  variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground"
-                  onClick={handleGenerateSkeleton}
-                  disabled={generatingSkeleton}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" /> Regenerate Skeleton
-                </Button>
-              </div>
-            )}
           </div>
+        </div>
 
-          {/* Global Validation */}
-          {globalValidation.length > 0 && (
-            <ValidationPanel results={globalValidation} />
-          )}
+        {/* Answer Summary */}
+        {variant.answer_only && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">Answer Summary</p>
+            <div className="rounded-md border border-border bg-muted/20 p-3 max-h-32 overflow-y-auto">
+              <p className="text-sm text-foreground whitespace-pre-wrap font-mono">{variant.answer_only}</p>
+            </div>
+          </div>
+        )}
 
-          {/* Worked Steps */}
-          {variant.survive_solution_text && (
-            <Collapsible>
-              <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <ChevronDown className="h-3 w-3" />
-                <span className="text-[10px] uppercase tracking-wider font-semibold">Worked Steps</span>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
-                  <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                    {variant.survive_solution_text || variant.variant_solution_text}
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+        {/* Generation Log */}
+        <Collapsible open={showGenLog} onOpenChange={setShowGenLog}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 text-xs w-full justify-start">
+              <ScrollText className="h-3 w-3 mr-1.5" />
+              View Generation Log
+              <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", showGenLog && "rotate-180")} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <ActivityLogPanel entityType="source_problem" entityId={problem?.id ?? ""} />
+          </CollapsibleContent>
+        </Collapsible>
 
-          {/* Exam Trap Note */}
-          {variant.exam_trap_note && (
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
-              <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
-                <AlertTriangle className="h-3 w-3" /> Exam Trap Note
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={handleViewPayload}
+          disabled={payloadLoading}
+        >
+          {payloadLoading ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Code className="h-3 w-3 mr-1.5" />}
+          View AI Payload
+        </Button>
+
+        {/* ════════ SKELETON-FIRST JE WORKFLOW ════════ */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
+            Journal Entry Review
+          </p>
+
+          {!skeleton && (
+            <div className="border border-dashed border-border rounded-lg p-6 text-center space-y-3">
+              <p className="text-xs text-muted-foreground">
+                {requiresJE
+                  ? "This problem requires journal entries. Start by generating the entry skeleton (dates only)."
+                  : "No journal entry skeleton. Generate one to structure the entries."}
               </p>
-              <p className="text-sm text-foreground">{variant.exam_trap_note}</p>
+              <Button
+                size="sm"
+                onClick={handleGenerateSkeleton}
+                disabled={generatingSkeleton}
+              >
+                {generatingSkeleton ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Generating Skeleton…</>
+                ) : (
+                  <><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Generate Skeleton</>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {skeleton && (
+            <div className="space-y-4">
+              <ScenarioAccordion
+                scenarios={skeleton.scenario_sections.map(sc => {
+                  const validatedCount = sc.entry_dates.filter(d =>
+                    statuses[dateKey(sc.scenario_label, d)] === "validated"
+                  ).length;
+                  const allBal = sc.entry_dates.every(d => {
+                    const e = entries[dateKey(sc.scenario_label, d)];
+                    if (!e?.rows?.length) return true;
+                    return entryBalanceFromRows(e.rows).balanced;
+                  });
+                  return {
+                    label: sc.scenario_label,
+                    totalDates: sc.entry_dates.length,
+                    validatedDates: validatedCount,
+                    allBalanced: allBal,
+                  };
+                })}
+                renderDates={(si) => {
+                  const sc = skeleton.scenario_sections[si];
+                  return (
+                    <div className="space-y-1.5">
+                      {sc.entry_dates.map((date, di) => {
+                        const key = dateKey(sc.scenario_label, date);
+                        const entry = entries[key];
+                        const status = statuses[key] || "empty";
+                        const isEditing = editingDate === key;
+                        const isGenerating = generatingDate === key;
+                        const hasRows = entry && entry.rows.length > 0;
+                        const bal = hasRows ? entryBalanceFromRows(entry.rows) : null;
+                        const dateVR = hasRows ? runDateValidation(entry.rows, requiresJE) : [];
+
+                        const priorValidated = di === 0 || statuses[dateKey(sc.scenario_label, sc.entry_dates[di - 1])] === "validated";
+
+                        return (
+                          <EntryByDateCard
+                            key={key}
+                            date={date}
+                            rows={entry?.rows || []}
+                            status={status as CardDateEntryStatus}
+                            unlocked={priorValidated}
+                            isGenerating={isGenerating}
+                            balance={bal}
+                            validationErrors={dateVR.map(r => ({ status: r.status, message: r.message }))}
+                            onGenerateRows={() => handleGenerateRows(sc.scenario_label, date)}
+                            onMarkCorrect={(override?: boolean) => handleMarkCorrect(key, override)}
+                            onEditRows={() => setEditingDate(isEditing ? null : key)}
+                            isEditing={isEditing}
+                            editorSlot={
+                              hasRows ? (
+                                <JournalEntryEditor
+                                  sections={[{
+                                    entry_date: date,
+                                    lines: entry.rows.map(r => ({
+                                      account_name: r.account_name,
+                                      debit: r.debit,
+                                      credit: r.credit,
+                                      memo: r.memo || "",
+                                      indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
+                                      coa_id: r.coa_id,
+                                      display_name: r.display_name,
+                                      unknown_account: r.unknown_account,
+                                    })),
+                                  }]}
+                                  onChange={(newSections) => {
+                                    if (newSections[0]) handleDateRowsChange(key, newSections[0]);
+                                  }}
+                                  chapterId={chapterId}
+                                  approvedAccounts={approvedAccounts}
+                                />
+                              ) : undefined
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                }}
+              />
+
+              <Button
+                variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground"
+                onClick={handleGenerateSkeleton}
+                disabled={generatingSkeleton}
+              >
+                <Sparkles className="h-3 w-3 mr-1" /> Regenerate Skeleton
+              </Button>
             </div>
           )}
         </div>
 
+        {/* Global Validation */}
+        {globalValidation.length > 0 && (
+          <ValidationPanel results={globalValidation} />
+        )}
+
+        {/* Worked Steps */}
+        {variant.survive_solution_text && (
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <ChevronDown className="h-3 w-3" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Worked Steps</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <div className="rounded-md border border-border bg-muted/20 p-3 max-h-64 overflow-y-auto">
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {variant.survive_solution_text || variant.variant_solution_text}
+                </p>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Exam Trap Note */}
+        {variant.exam_trap_note && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+            <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
+              <AlertTriangle className="h-3 w-3" /> Exam Trap Note
+            </p>
+            <p className="text-sm text-foreground">{variant.exam_trap_note}</p>
+          </div>
+        )}
+
         {/* Action Bar */}
-        <div className="sticky bottom-0 bg-background border-t border-border px-6 py-3 flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={onRejected}>
             <X className="h-3.5 w-3.5 mr-1" /> Reject
           </Button>
@@ -969,7 +958,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             </Button>
           </div>
         </div>
-      </SheetContent>
+      </div>
 
       {/* AI Payload Modal */}
       <Dialog open={payloadModalOpen} onOpenChange={setPayloadModalOpen}>
@@ -999,7 +988,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
 
           {payloadData && !payloadData.empty && !payloadData.error && !payloadLoading && (
             <div className="space-y-4">
-              {/* Meta */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded border border-border p-2">
                   <span className="text-muted-foreground">Provider</span>
@@ -1029,20 +1017,17 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                 </div>
               </div>
 
-              {/* Parsed Candidate JSON */}
               <PayloadSection
                 title="Parsed Candidate JSON"
                 content={payloadData.candidate_json}
               />
 
-              {/* Raw Tool Call */}
               <PayloadSection
                 title="Raw Tool Call Arguments"
                 content={payloadData.raw_tool_call}
                 isString
               />
 
-              {/* Debug Bundle */}
               {payloadData.debug_bundle && (
                 <PayloadSection
                   title="Debug Bundle"
@@ -1088,6 +1073,33 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════
+// VariantReviewDrawer — Sheet wrapper (kept for backward compat)
+// ══════════════════════════════════════════════
+
+export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chapterId, onApproved, onRejected }: VariantReviewDrawerProps) {
+  if (!variant) return null;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border sticky top-0 bg-background z-10">
+          <SheetTitle className="text-base">Variant Review</SheetTitle>
+        </SheetHeader>
+        <div className="px-6 py-4">
+          <VariantReviewContent
+            variant={variant}
+            problem={problem}
+            chapterId={chapterId}
+            onApproved={onApproved}
+            onRejected={onRejected}
+          />
+        </div>
+      </SheetContent>
     </Sheet>
   );
 }
