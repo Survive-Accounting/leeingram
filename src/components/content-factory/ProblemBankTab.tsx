@@ -407,6 +407,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         setCandidates((prev) => [...prev, ...newCandidates]);
 
         let firstVariantId: string | null = null;
+        const allVariantIds: string[] = [];
 
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
@@ -423,7 +424,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             .single();
 
           if (insertVariantError) throw insertVariantError;
-          if (!firstVariantId) firstVariantId = (insertedVariant as any)?.id ?? null;
+          const vid = (insertedVariant as any)?.id;
+          if (vid) {
+            allVariantIds.push(vid);
+            if (!firstVariantId) firstVariantId = vid;
+          }
         }
 
         await supabase
@@ -436,8 +441,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           provider: selectedProvider,
           model: selectedModel,
           first_variant_id: firstVariantId,
+          variant_ids: allVariantIds,
         });
-        await logger.finalize("success", { variant_id: firstVariantId ?? undefined });
+        await logger.finalize("success", { variant_id: firstVariantId || undefined });
 
         qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
         qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
@@ -669,6 +675,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         });
 
         let firstVariantId: string | null = null;
+        const allVariantIds: string[] = [];
 
         for (let ci = 0; ci < candidates.length; ci++) {
           const c = candidates[ci];
@@ -685,13 +692,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             .single();
 
           if (insertVariantError) throw insertVariantError;
-          if (!firstVariantId) firstVariantId = (insertedVariant as any)?.id ?? null;
+          const vid = (insertedVariant as any)?.id;
+          if (vid) {
+            allVariantIds.push(vid);
+            if (!firstVariantId) firstVariantId = vid;
+          }
         }
 
         await supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", problem.id);
 
-        await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`, { first_variant_id: firstVariantId });
-        await logger.finalize("success", { variant_id: firstVariantId ?? undefined });
+        await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`, { first_variant_id: firstVariantId, variant_ids: allVariantIds });
+        await logger.finalize("success", { variant_id: firstVariantId || undefined });
       } catch (err: any) {
         const msg = `${problem.source_label}: ${err?.message || "Unknown error"}`;
         setBatchErrors(prev => [...prev, msg]);
@@ -1016,6 +1027,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   });
 
                   let firstVariantId: string | null = null;
+                  const allVariantIds: string[] = [];
                   for (let ci = 0; ci < candidates.length; ci++) {
                     const c = candidates[ci];
                     const { data: insertedVariant, error: insertVariantError } = await supabase
@@ -1031,13 +1043,18 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       .single();
 
                     if (insertVariantError) throw insertVariantError;
-                    if (!firstVariantId) firstVariantId = (insertedVariant as any)?.id ?? null;
+                    const vid = (insertedVariant as any)?.id;
+                    if (vid) {
+                      allVariantIds.push(vid);
+                      if (!firstVariantId) firstVariantId = vid;
+                    }
                   }
 
                   await logger.info("db", "SAVE_VARIANT_END", `${candidates.length} variants saved`, {
                     first_variant_id: firstVariantId,
+                    variant_ids: allVariantIds,
                   });
-                  await logger.finalize("success", { variant_id: firstVariantId ?? undefined });
+                  await logger.finalize("success", { variant_id: firstVariantId || undefined });
 
                   await loadReviewCandidates(rp.id);
                   toast.success(`Generated ${candidates.length} variants for review`);
