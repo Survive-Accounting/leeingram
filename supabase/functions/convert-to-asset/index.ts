@@ -521,6 +521,7 @@ serve(async (req) => {
     const journalEntryText = body.journalEntryText;
     const notes = body.notes;
     const uiRequiresJournalEntry = !!body.requiresJournalEntry;
+    const containsNoJournalEntries = !!body.containsNoJournalEntries;
     const difficultyToggles = body.difficultyToggles;
     const reqProvider = body.provider ?? body.ui_provider_selected;
     const reqModel = body.model;
@@ -561,45 +562,55 @@ serve(async (req) => {
     });
 
     // ── Backend requirement detection (overrides UI flags) ──
-    const DETECTION_RULES_VERSION = "v1";
+    const DETECTION_RULES_VERSION = "v2_non_je";
     const combinedText = [problemText, solutionText, journalEntryText, notes].filter(Boolean).join(" ").toLowerCase();
 
-    // JE detection: regex over combined text
-    const jePatterns = [
-      /prepare\s+(the\s+)?journal\s+entr(y|ies)/i,
-      /record\s+(the\s+)?(following\s+)?journal\s+entr(y|ies)/i,
-      /journalize\s+(the|each|all)/i,
-      /make\s+(the\s+)?journal\s+entr(y|ies)/i,
-      /\bjournal\s+entr(y|ies)\b/i,
-    ];
-    const jeMatchedRule = jePatterns.findIndex((p) => p.test(combinedText));
-    const requiresJeDetected = jeMatchedRule >= 0 || !!journalEntryText?.trim();
+    // Determine generation mode
+    const generationMode = containsNoJournalEntries ? "NON_JE" : "JE";
 
-    // Scenario detection: regex over problem text
-    const scenarioPatterns = [
-      /\b(situation|scenario|case)\s+(1|2|a|b|i|ii)\b/i,
-      /\bindependent\s+(situations|scenarios|cases)\b/i,
-      /\b(situation|scenario)\s*#?\s*\d/i,
-    ];
-    const scenarioMatchedRule = scenarioPatterns.findIndex((p) => p.test(problemText || ""));
-    const hasScenariosDetected = scenarioMatchedRule >= 0;
+    // JE detection: skip entirely in NON_JE mode
+    let requiresJeDetected = false;
+    let jeMatchedRule = -1;
+    let requiresJournalEntry = false;
+    let hasScenarios = false;
 
-    // Final values: backend detection OR UI override
-    const requiresJournalEntry = requiresJeDetected || uiRequiresJournalEntry;
-    const hasScenarios = hasScenariosDetected || uiHasScenarios;
+    if (generationMode === "JE") {
+      // JE detection: regex over combined text
+      const jePatterns = [
+        /prepare\s+(the\s+)?journal\s+entr(y|ies)/i,
+        /record\s+(the\s+)?(following\s+)?journal\s+entr(y|ies)/i,
+        /journalize\s+(the|each|all)/i,
+        /make\s+(the\s+)?journal\s+entr(y|ies)/i,
+        /\bjournal\s+entr(y|ies)\b/i,
+      ];
+      jeMatchedRule = jePatterns.findIndex((p) => p.test(combinedText));
+      requiresJeDetected = jeMatchedRule >= 0 || !!journalEntryText?.trim();
+
+      // Scenario detection: regex over problem text
+      const scenarioPatterns = [
+        /\b(situation|scenario|case)\s+(1|2|a|b|i|ii)\b/i,
+        /\bindependent\s+(situations|scenarios|cases)\b/i,
+        /\b(situation|scenario)\s*#?\s*\d/i,
+      ];
+      const scenarioMatchedRule = scenarioPatterns.findIndex((p) => p.test(problemText || ""));
+      const hasScenariosDetected = scenarioMatchedRule >= 0;
+
+      // Final values: backend detection OR UI override
+      requiresJournalEntry = requiresJeDetected || uiRequiresJournalEntry;
+      hasScenarios = hasScenariosDetected || uiHasScenarios;
+    }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "DETECT_REQUIREMENTS",
-      `JE: ${requiresJournalEntry ? "required" : "not required"}, Scenarios: ${hasScenarios ? "detected" : "none"}`, {
+      `Mode: ${generationMode}, JE: ${requiresJournalEntry ? "required" : "not required"}, Scenarios: ${hasScenarios ? "detected" : "none"}`, {
       detection_rules_version: DETECTION_RULES_VERSION,
+      generation_mode: generationMode,
+      contains_no_journal_entries: containsNoJournalEntries,
       requires_je_detected: requiresJeDetected,
       requires_je_ui: uiRequiresJournalEntry,
       requires_je_final: requiresJournalEntry,
-      je_matched_rule: jeMatchedRule >= 0 ? jePatterns[jeMatchedRule].source : null,
+      je_matched_rule: jeMatchedRule >= 0 ? `rule_${jeMatchedRule}` : null,
       je_has_journal_entry_text: !!journalEntryText?.trim(),
-      has_scenarios_detected: hasScenariosDetected,
-      has_scenarios_ui: uiHasScenarios,
       has_scenarios_final: hasScenarios,
-      scenario_matched_rule: scenarioMatchedRule >= 0 ? scenarioPatterns[scenarioMatchedRule].source : null,
       scenario_blocks_from_ui: scenarioBlocks?.length ?? 0,
     });
 
@@ -746,7 +757,62 @@ Do NOT invent or use account names outside this list. If an account is needed bu
       }
     }
 
-    const systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (generationMode === "NON_JE") {
+      // ── NON_JE Prompt (convert_to_asset_non_je_v1) ──
+      systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
+
+TEACHING TONE:
+${teachingTone.map((t: string) => `- ${t}`).join("\n")}
+
+EXAM REALISM RULES:
+${examRealism.map((r: string) => `- ${r}`).join("\n")}
+
+CORE RULES:
+- Generate exactly ${variantCount} exam-style practice problem variants from the source.
+- Each variant must teach the SAME core accounting concept as the source.
+- Use DIFFERENT numerical values across all ${variantCount} variants.
+- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity.
+- If a second entity is needed (counterparty, investor, lender, etc.), use "${SURVIVE_COUNTERPARTY}".
+- Do NOT use any other fictional company names.
+- All scenarios must feel realistic and finance/accounting related.
+- Do NOT include "Survive Accounting" in student-facing text.
+
+${difficultySection}
+${constraintsBlock}
+
+THIS IS A NON-JOURNAL ENTRY PROBLEM. Do NOT generate any journal entries.
+Do NOT include je_structured, journal_entry_block, or any journal entry fields.
+
+ANSWER PARTS:
+- Produce "answer_parts" aligned to the source problem's structure (a/b/c or 1/2/3).
+- Each part must include: label (e.g. "(a)" or "1"), final_answer (short string), steps (concise worked solution).
+- Round to whole dollars unless the problem requires cents (e.g. EPS).
+
+SOLUTION STORAGE — For every variant, provide:
+1. answer_only: Final numeric answers summary (concise)
+2. survive_solution_text: Fully worked steps with all solution logic (step-by-step, compact)
+3. answer_parts: Array of {label, final_answer, steps}
+
+OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
+
+      userPrompt = `Source Problem: ${sourceLabel} — ${title}
+
+Original Problem Text:
+${problemText || "Not provided"}
+
+Original Solution:
+${solutionText || "Not provided"}
+
+${notes ? `Instructor Notes:\n${notes}` : ""}
+
+Generate ${variantCount} exam-style practice variants. This is NOT a journal entry problem — focus on calculations, ratios, and analysis.`;
+
+    } else {
+      // ── JE Prompt (existing v3) ──
+      systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
 TEACHING TONE:
 ${teachingTone.map((t: string) => `- ${t}`).join("\n")}
@@ -778,7 +844,7 @@ SOLUTION STORAGE — For every variant, provide BOTH:
 
 OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
 
-    const userPrompt = `Source Problem: ${sourceLabel} — ${title}
+      userPrompt = `Source Problem: ${sourceLabel} — ${title}
 
 Original Problem Text:
 ${problemText || "Not provided"}
@@ -791,9 +857,11 @@ ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants.`;
+    }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
-      prompt_version: "convert_to_asset_v3_trace",
+      prompt_version: generationMode === "NON_JE" ? "convert_to_asset_non_je_v1" : "convert_to_asset_v3_trace",
+      generation_mode: generationMode,
       provider,
       model: aiModel,
       variant_count: variantCount,
@@ -844,7 +912,9 @@ Generate ${variantCount} exam-style practice variants.`;
                     asset_name: { type: "string", description: "Short clear name for this variant" },
                     tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
                     survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
-                    journal_entry_block: { type: "string", description: "Account | Debit | Credit text grid or null" },
+                    ...(generationMode === "JE" ? {
+                      journal_entry_block: { type: "string", description: "Account | Debit | Credit text grid or null" },
+                    } : {}),
                     ...(requiresJournalEntry ? {
                       je_structured: {
                         type: "object",
@@ -886,11 +956,30 @@ Generate ${variantCount} exam-style practice variants.`;
                         required: ["scenario_sections"],
                       },
                     } : {}),
+                    ...(generationMode === "NON_JE" ? {
+                      answer_parts: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            label: { type: "string", description: "Part label e.g. '(a)' or '1'" },
+                            final_answer: { type: "string", description: "Short final answer string" },
+                            steps: { type: "string", description: "Concise worked solution steps" },
+                          },
+                          required: ["label", "final_answer", "steps"],
+                        },
+                        description: "Answer parts aligned to source problem structure",
+                      },
+                    } : {}),
                     answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
                     survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
                     exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
                   },
-                  required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text", ...(requiresJournalEntry ? ["je_structured"] : [])],
+                  required: [
+                    "asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text",
+                    ...(requiresJournalEntry ? ["je_structured"] : []),
+                    ...(generationMode === "NON_JE" ? ["answer_parts"] : []),
+                  ],
                   additionalProperties: false,
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,
@@ -1134,9 +1223,26 @@ Generate ${variantCount} exam-style practice variants.`;
       zod_errors: [],
     });
 
-    await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators");
+    await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators", {
+      validator_set_used: generationMode === "NON_JE" ? "NON_JE_VALIDATORS" : "JE_VALIDATORS",
+      generation_mode: generationMode,
+    });
 
     const validatorResults = runCandidateValidators(candidates, requiresJournalEntry);
+
+    // NON_JE answer_parts validation
+    if (generationMode === "NON_JE") {
+      const allHaveAnswerParts = candidates.every((c: any) => Array.isArray(c.answer_parts) && c.answer_parts.length >= 1);
+      const partsValid = allHaveAnswerParts && candidates.every((c: any) =>
+        c.answer_parts.every((p: any) => typeof p.label === "string" && typeof p.final_answer === "string" && typeof p.steps === "string")
+      );
+      validatorResults.push({
+        name: "answer_parts_present",
+        status: partsValid ? "pass" : "fail",
+        details_if_fail: partsValid ? undefined : "One or more candidates missing valid answer_parts",
+      });
+    }
+
     const jeValidator = validatorResults.find((r) => r.name === "je_structured_valid");
     const jeValidationFailed = requiresJournalEntry && jeValidator?.status === "fail";
     const validatorFailed = validatorResults.some((r) => r.status === "fail");
@@ -1148,11 +1254,17 @@ Generate ${variantCount} exam-style practice variants.`;
           candidates[pc.index]._je_valid = pc.valid;
           candidates[pc.index]._je_errors = pc.errors;
           if (!pc.valid) {
-            // Store raw text and mark needs_repair
             candidates[pc.index]._status = "needs_repair";
             candidates[pc.index]._ai_raw_je = candidates[pc.index].journal_entry_block || null;
           }
         }
+      }
+    }
+
+    // Annotate NON_JE candidates with _generation_mode
+    if (generationMode === "NON_JE") {
+      for (const c of candidates) {
+        c._generation_mode = "NON_JE";
       }
     }
 
@@ -1170,6 +1282,9 @@ Generate ${variantCount} exam-style practice variants.`;
         validator_results: validatorResults,
         je_validation_failed: jeValidationFailed,
         requires_je: requiresJournalEntry,
+        generation_mode: generationMode,
+        validator_set_used: generationMode === "NON_JE" ? "NON_JE_VALIDATORS" : "JE_VALIDATORS",
+        candidate_keys_present: candidates.length > 0 ? Object.keys(candidates[0]) : [],
       }
     );
 
@@ -1224,6 +1339,7 @@ Generate ${variantCount} exam-style practice variants.`;
       validator_results: validatorResults,
       requires_je: requiresJournalEntry,
       je_validation_failed: jeValidationFailed,
+      generation_mode: generationMode,
       whitelist_enabled: whitelistEnabled,
       whitelist_count: whitelistNames.length,
     }), {
