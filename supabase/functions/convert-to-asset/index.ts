@@ -444,7 +444,7 @@ serve(async (req) => {
     const solutionText = body.solutionText;
     const journalEntryText = body.journalEntryText;
     const notes = body.notes;
-    const requiresJournalEntry = !!body.requiresJournalEntry;
+    const uiRequiresJournalEntry = !!body.requiresJournalEntry;
     const difficultyToggles = body.difficultyToggles;
     const reqProvider = body.provider ?? body.ui_provider_selected;
     const reqModel = body.model;
@@ -464,7 +464,7 @@ serve(async (req) => {
     };
 
     const scenarioBlocks = reqScenarioBlocks as Array<{ label: string; text: string }> | undefined;
-    const hasScenarios = !!(scenarioBlocks && scenarioBlocks.length >= 2);
+    const uiHasScenarios = !!(scenarioBlocks && scenarioBlocks.length >= 2);
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FETCH_SOURCE_START", "Starting source fetch and preprocessing", {
       course_id: runMeta.course_id,
@@ -478,10 +478,53 @@ serve(async (req) => {
       problem_text_length: problemText?.length ?? 0,
       solution_text_length: solutionText?.length ?? 0,
       journal_entry_text_length: journalEntryText?.length ?? 0,
-      has_scenarios: hasScenarios,
+      ui_has_scenarios: uiHasScenarios,
       scenario_count: scenarioBlocks?.length ?? 0,
       problem_image_count: Array.isArray(body.problemImageUrls) ? body.problemImageUrls.length : null,
       solution_image_count: Array.isArray(body.solutionImageUrls) ? body.solutionImageUrls.length : null,
+    });
+
+    // ── Backend requirement detection (overrides UI flags) ──
+    const DETECTION_RULES_VERSION = "v1";
+    const combinedText = [problemText, solutionText, journalEntryText, notes].filter(Boolean).join(" ").toLowerCase();
+
+    // JE detection: regex over combined text
+    const jePatterns = [
+      /prepare\s+(the\s+)?journal\s+entr(y|ies)/i,
+      /record\s+(the\s+)?(following\s+)?journal\s+entr(y|ies)/i,
+      /journalize\s+(the|each|all)/i,
+      /make\s+(the\s+)?journal\s+entr(y|ies)/i,
+      /\bjournal\s+entr(y|ies)\b/i,
+    ];
+    const jeMatchedRule = jePatterns.findIndex((p) => p.test(combinedText));
+    const requiresJeDetected = jeMatchedRule >= 0 || !!journalEntryText?.trim();
+
+    // Scenario detection: regex over problem text
+    const scenarioPatterns = [
+      /\b(situation|scenario|case)\s+(1|2|a|b|i|ii)\b/i,
+      /\bindependent\s+(situations|scenarios|cases)\b/i,
+      /\b(situation|scenario)\s*#?\s*\d/i,
+    ];
+    const scenarioMatchedRule = scenarioPatterns.findIndex((p) => p.test(problemText || ""));
+    const hasScenariosDetected = scenarioMatchedRule >= 0;
+
+    // Final values: backend detection OR UI override
+    const requiresJournalEntry = requiresJeDetected || uiRequiresJournalEntry;
+    const hasScenarios = hasScenariosDetected || uiHasScenarios;
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "DETECT_REQUIREMENTS",
+      `JE: ${requiresJournalEntry ? "required" : "not required"}, Scenarios: ${hasScenarios ? "detected" : "none"}`, {
+      detection_rules_version: DETECTION_RULES_VERSION,
+      requires_je_detected: requiresJeDetected,
+      requires_je_ui: uiRequiresJournalEntry,
+      requires_je_final: requiresJournalEntry,
+      je_matched_rule: jeMatchedRule >= 0 ? jePatterns[jeMatchedRule].source : null,
+      je_has_journal_entry_text: !!journalEntryText?.trim(),
+      has_scenarios_detected: hasScenariosDetected,
+      has_scenarios_ui: uiHasScenarios,
+      has_scenarios_final: hasScenarios,
+      scenario_matched_rule: scenarioMatchedRule >= 0 ? scenarioPatterns[scenarioMatchedRule].source : null,
+      scenario_blocks_from_ui: scenarioBlocks?.length ?? 0,
     });
 
     if (provider === "lovable") {
