@@ -5,7 +5,7 @@
 
 export interface ValidationResult {
   validator: string;
-  status: "pass" | "fail" | "warn";
+  status: "pass" | "fail" | "warn" | "skip";
   message: string;
   details?: Record<string, any>;
 }
@@ -33,7 +33,7 @@ export const requiredFieldsPresent: Validator = (pkg) => {
 
 export const mcCorrectAnswerInRange: Validator = (pkg) => {
   const { answer_type, correct_answer_index, answers } = pkg.answer_payload;
-  if (answer_type !== "mc") return { validator: "mc_correct_answer_in_range", status: "pass", message: "Not MC type, skipped" };
+  if (answer_type !== "mc") return { validator: "mc_correct_answer_in_range", status: "skip", message: "Not MC type" };
   const arr = answers as any[] | undefined;
   if (!arr || !Array.isArray(arr)) return { validator: "mc_correct_answer_in_range", status: "fail", message: "No answers array" };
   const idx = correct_answer_index as number | undefined;
@@ -45,7 +45,7 @@ export const mcCorrectAnswerInRange: Validator = (pkg) => {
 
 export const answersCountValid: Validator = (pkg) => {
   const { answer_type, answers, correct_answer_index } = pkg.answer_payload;
-  if (answer_type !== "mc") return { validator: "answers_count_valid", status: "pass", message: "Not MC type, skipped" };
+  if (answer_type !== "mc") return { validator: "answers_count_valid", status: "skip", message: "Not MC type" };
   const arr = answers as any[] | undefined;
   if (!arr || arr.length < 2) return { validator: "answers_count_valid", status: "fail", message: `Only ${arr?.length ?? 0} answers, need at least 2` };
   if (correct_answer_index === undefined) return { validator: "answers_count_valid", status: "fail", message: "No correct_answer_index" };
@@ -55,7 +55,7 @@ export const answersCountValid: Validator = (pkg) => {
 export const journalEntryBalances: Validator = (pkg) => {
   const rows = pkg.answer_payload.je_rows as Array<{ debit?: number; credit?: number }> | undefined;
   if (!rows || !Array.isArray(rows) || rows.length === 0) {
-    return { validator: "journal_entry_balances", status: "pass", message: "No JE rows, skipped" };
+    return { validator: "journal_entry_balances", status: "skip", message: "No JE rows" };
   }
   const totalDebits = rows.reduce((s, r) => s + (Number(r.debit) || 0), 0);
   const totalCredits = rows.reduce((s, r) => s + (Number(r.credit) || 0), 0);
@@ -68,7 +68,7 @@ export const journalEntryBalances: Validator = (pkg) => {
 
 export const noEmptyRequiredLines: Validator = (pkg) => {
   const rows = pkg.answer_payload.je_rows as Array<{ account?: string; debit?: number; credit?: number }> | undefined;
-  if (!rows || rows.length === 0) return { validator: "no_empty_required_lines", status: "pass", message: "No JE rows, skipped" };
+  if (!rows || rows.length === 0) return { validator: "no_empty_required_lines", status: "skip", message: "No JE rows" };
   const emptyRows = rows.filter((r, i) => !r.account && (r.debit === undefined || r.debit === null) && (r.credit === undefined || r.credit === null));
   if (emptyRows.length > 0) {
     return { validator: "no_empty_required_lines", status: "fail", message: `${emptyRows.length} empty row(s) found` };
