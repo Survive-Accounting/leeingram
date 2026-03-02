@@ -10,6 +10,8 @@ import {
   Check, X, Save, ChevronDown, AlertTriangle, Info, Lock, CheckCircle2,
   Circle, XCircle, ScrollText, Plus, Sparkles, Loader2, Pencil,
 } from "lucide-react";
+import { ScenarioAccordion } from "./ScenarioAccordion";
+import { EntryByDateCard, type DateEntryStatus as CardDateEntryStatus } from "./EntryByDateCard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -720,198 +722,85 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             {/* Skeleton exists — show per-date accordion */}
             {skeleton && (
               <div className="space-y-4">
-                {skeleton.scenario_sections.map((sc, si) => (
-                  <div key={si}>
-                    {/* Scenario label */}
-                    {(skeleton.scenario_sections.length > 1 || sc.scenario_label !== "Journal Entry") && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="h-px flex-1 bg-primary/20" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                          {sc.scenario_label}
-                        </span>
-                        <div className="h-px flex-1 bg-primary/20" />
+                <ScenarioAccordion
+                  scenarios={skeleton.scenario_sections.map(sc => {
+                    const validatedCount = sc.entry_dates.filter(d =>
+                      statuses[dateKey(sc.scenario_label, d)] === "validated"
+                    ).length;
+                    const allBal = sc.entry_dates.every(d => {
+                      const e = entries[dateKey(sc.scenario_label, d)];
+                      if (!e?.rows?.length) return true;
+                      return entryBalanceFromRows(e.rows).balanced;
+                    });
+                    return {
+                      label: sc.scenario_label,
+                      totalDates: sc.entry_dates.length,
+                      validatedDates: validatedCount,
+                      allBalanced: allBal,
+                    };
+                  })}
+                  renderDates={(si) => {
+                    const sc = skeleton.scenario_sections[si];
+                    return (
+                      <div className="space-y-1.5">
+                        {sc.entry_dates.map((date, di) => {
+                          const key = dateKey(sc.scenario_label, date);
+                          const entry = entries[key];
+                          const status = statuses[key] || "empty";
+                          const isEditing = editingDate === key;
+                          const isGenerating = generatingDate === key;
+                          const hasRows = entry && entry.rows.length > 0;
+                          const bal = hasRows ? entryBalanceFromRows(entry.rows) : null;
+                          const dateVR = hasRows ? runDateValidation(entry.rows, requiresJE) : [];
+
+                          // Unlock: first date always unlocked, subsequent require prior validated
+                          const priorValidated = di === 0 || statuses[dateKey(sc.scenario_label, sc.entry_dates[di - 1])] === "validated";
+
+                          return (
+                            <EntryByDateCard
+                              key={key}
+                              date={date}
+                              rows={entry?.rows || []}
+                              status={status as CardDateEntryStatus}
+                              unlocked={priorValidated}
+                              isGenerating={isGenerating}
+                              balance={bal}
+                              validationErrors={dateVR.map(r => ({ status: r.status, message: r.message }))}
+                              onGenerateRows={() => handleGenerateRows(sc.scenario_label, date)}
+                              onMarkCorrect={() => handleMarkCorrect(key)}
+                              onEditRows={() => setEditingDate(isEditing ? null : key)}
+                              isEditing={isEditing}
+                              editorSlot={
+                                hasRows ? (
+                                  <JournalEntryEditor
+                                    sections={[{
+                                      entry_date: date,
+                                      lines: entry.rows.map(r => ({
+                                        account_name: r.account_name,
+                                        debit: r.debit,
+                                        credit: r.credit,
+                                        memo: r.memo || "",
+                                        indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
+                                        coa_id: r.coa_id,
+                                        display_name: r.display_name,
+                                        unknown_account: r.unknown_account,
+                                      })),
+                                    }]}
+                                    onChange={(newSections) => {
+                                      if (newSections[0]) handleDateRowsChange(key, newSections[0]);
+                                    }}
+                                    chapterId={chapterId}
+                                    approvedAccounts={approvedAccounts}
+                                  />
+                                ) : undefined
+                              }
+                            />
+                          );
+                        })}
                       </div>
-                    )}
-
-                    <div className="space-y-1">
-                      {sc.entry_dates.map((date, di) => {
-                        const key = dateKey(sc.scenario_label, date);
-                        const entry = entries[key];
-                        const status = statuses[key] || "empty";
-                        const isEditing = editingDate === key;
-                        const isGenerating = generatingDate === key;
-                        const hasRows = entry && entry.rows.length > 0;
-                        const bal = hasRows ? entryBalanceFromRows(entry.rows) : null;
-                        const dateVR = hasRows ? runDateValidation(entry.rows, requiresJE) : [];
-                        const dateFails = dateVR.some(r => r.status === "fail");
-
-                        // Unlock: first date always unlocked, subsequent require prior validated
-                        const priorValidated = di === 0 || statuses[dateKey(sc.scenario_label, sc.entry_dates[di - 1])] === "validated";
-                        const unlocked = priorValidated;
-
-                        const StatusIcon = status === "validated"
-                          ? CheckCircle2
-                          : status === "empty" ? Circle
-                          : dateFails ? XCircle : Circle;
-                        const statusColor = status === "validated"
-                          ? "text-green-400"
-                          : status === "empty" ? "text-muted-foreground"
-                          : dateFails ? "text-destructive" : "text-amber-400";
-
-                        return (
-                          <div key={key} className="rounded-lg border border-border overflow-hidden">
-                            {/* Header row */}
-                            <div className={cn(
-                              "flex items-center gap-2 px-3 py-2",
-                              !unlocked && "opacity-50"
-                            )}>
-                              {!unlocked ? (
-                                <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              ) : (
-                                <StatusIcon className={cn("h-3.5 w-3.5 shrink-0", statusColor)} />
-                              )}
-
-                              <span className="text-xs font-semibold text-foreground flex-1">
-                                {formatDate(date)}
-                              </span>
-
-                              {/* Status badges */}
-                              {status === "validated" && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-green-400 border-green-500/30">Validated</Badge>
-                              )}
-                              {status === "edited" && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-amber-400 border-amber-500/30">Edited</Badge>
-                              )}
-                              {status === "drafted" && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground border-border">Drafted</Badge>
-                              )}
-                              {hasRows && !bal?.balanced && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
-                                  Off ${bal!.diff.toFixed(2)}
-                                </Badge>
-                              )}
-
-                              {/* Action buttons */}
-                              {unlocked && (
-                                <div className="flex gap-1">
-                                  {!hasRows && (
-                                    <Button
-                                      variant="outline" size="sm" className="h-6 text-[10px]"
-                                      onClick={() => handleGenerateRows(sc.scenario_label, date)}
-                                      disabled={isGenerating}
-                                    >
-                                      {isGenerating ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        <><Sparkles className="h-3 w-3 mr-0.5" /> Generate Rows</>
-                                      )}
-                                    </Button>
-                                  )}
-                                  {hasRows && (
-                                    <Button
-                                      variant="ghost" size="sm" className="h-6 text-[10px]"
-                                      onClick={() => setEditingDate(isEditing ? null : key)}
-                                    >
-                                      <Pencil className="h-3 w-3 mr-0.5" /> {isEditing ? "Close" : "Edit"}
-                                    </Button>
-                                  )}
-                                  {hasRows && status !== "validated" && bal?.balanced && !dateFails && (
-                                    <Button
-                                      size="sm" className="h-6 text-[10px]"
-                                      onClick={() => handleMarkCorrect(key)}
-                                    >
-                                      <CheckCircle2 className="h-3 w-3 mr-0.5" /> Mark Correct
-                                    </Button>
-                                  )}
-                                  {hasRows && !hasRows && (
-                                    <Button
-                                      variant="outline" size="sm" className="h-6 text-[10px]"
-                                      onClick={() => handleGenerateRows(sc.scenario_label, date)}
-                                      disabled={isGenerating}
-                                    >
-                                      {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Sparkles className="h-3 w-3 mr-0.5" /> Regenerate</>}
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Expanded editor */}
-                            {isEditing && hasRows && unlocked && (
-                              <div className="border-t border-border px-3 py-3 space-y-3">
-                                <JournalEntryEditor
-                                  sections={[{
-                                    entry_date: date,
-                                    lines: entry.rows.map(r => ({
-                                      account_name: r.account_name,
-                                      debit: r.debit,
-                                      credit: r.credit,
-                                      memo: r.memo || "",
-                                      indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
-                                      coa_id: r.coa_id,
-                                      display_name: r.display_name,
-                                      unknown_account: r.unknown_account,
-                                    })),
-                                  }]}
-                                  onChange={(newSections) => {
-                                    if (newSections[0]) handleDateRowsChange(key, newSections[0]);
-                                  }}
-                                  chapterId={chapterId}
-                                  approvedAccounts={approvedAccounts}
-                                />
-
-                                {/* Per-date validation */}
-                                {dateVR.filter(r => r.status !== "pass").length > 0 && (
-                                  <div className="space-y-1">
-                                    {dateVR.filter(r => r.status !== "pass").map((r, ri) => (
-                                      <div key={ri} className={cn(
-                                        "rounded border px-2.5 py-1.5 text-xs flex items-start gap-1.5",
-                                        r.status === "fail"
-                                          ? "border-destructive/30 bg-destructive/5 text-destructive"
-                                          : "border-amber-500/30 bg-amber-500/5 text-amber-400"
-                                      )}>
-                                        {r.status === "fail" ? <XCircle className="h-3 w-3 mt-0.5 shrink-0" /> : <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />}
-                                        <span>{r.message}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Balance + mark correct */}
-                                <div className="flex items-center justify-between pt-1">
-                                  <div className="text-[10px] text-muted-foreground">
-                                    {bal?.balanced ? (
-                                      <span className="text-green-400 flex items-center gap-1">
-                                        <CheckCircle2 className="h-3 w-3" /> Balanced
-                                      </span>
-                                    ) : (
-                                      <span className="text-destructive flex items-center gap-1">
-                                        <XCircle className="h-3 w-3" /> Off by ${bal?.diff.toFixed(2)}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {status !== "validated" ? (
-                                    <Button
-                                      size="sm" className="h-7 text-xs"
-                                      disabled={!bal?.balanced || dateFails}
-                                      onClick={() => handleMarkCorrect(key)}
-                                    >
-                                      <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Entry Correct
-                                    </Button>
-                                  ) : (
-                                    <Badge variant="outline" className="text-[10px] text-green-400 border-green-500/30 bg-green-500/10">
-                                      <CheckCircle2 className="h-3 w-3 mr-1" /> Validated
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                    );
+                  }}
+                />
 
                 {/* Re-generate skeleton button */}
                 <Button
