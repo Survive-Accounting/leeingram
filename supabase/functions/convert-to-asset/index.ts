@@ -235,12 +235,118 @@ function nonJe_required_fields(candidates: any[]): NonJeValidatorResult[] {
   return results;
 }
 
-function runNonJeQualityValidators(candidates: any[]): NonJeValidatorResult[] {
+/** EPS Part (b) denominator validator — checks time-weighted incremental shares */
+function nonJe_eps_denominator_check(candidates: any[], problemText: string, solutionText: string): NonJeValidatorResult[] {
+  const results: NonJeValidatorResult[] = [];
+  const combinedUpper = ((problemText || "") + " " + (solutionText || "")).toUpperCase();
+  
+  // Only run for EPS / diluted / if-converted problems
+  const isEPS = combinedUpper.includes("EPS") || combinedUpper.includes("EARNINGS PER SHARE") || combinedUpper.includes("IF-CONVERTED") || combinedUpper.includes("DILUTED");
+  if (!isEPS) return results;
+
+  // Detect mid-year issuance date from problem text
+  const monthNames: Record<string, number> = {
+    JANUARY: 1, FEBRUARY: 2, MARCH: 3, APRIL: 4, MAY: 5, JUNE: 6,
+    JULY: 7, AUGUST: 8, SEPTEMBER: 9, OCTOBER: 10, NOVEMBER: 11, DECEMBER: 12,
+    JAN: 1, FEB: 2, MAR: 3, APR: 4, JUN: 6, JUL: 7, AUG: 8, SEP: 9, SEPT: 9, OCT: 10, NOV: 11, DEC: 12,
+  };
+  // Match patterns like "September 1", "Sept. 1", "Oct 1, 2025", "issued on July 1"
+  const datePattern = /(?:ISSUED|ISSU(?:ED|ANCE)|SOLD|CONVERTED)\s+(?:ON\s+)?(?:THE\s+)?(\w+)\.?\s+(\d{1,2})/gi;
+  let dateMatch;
+  let issuanceMonth: number | null = null;
+  
+  while ((dateMatch = datePattern.exec(combinedUpper)) !== null) {
+    const monthStr = dateMatch[1].replace(/\.$/, "");
+    const m = monthNames[monthStr];
+    if (m && m > 1) { // Only care about mid-year (not Jan 1)
+      issuanceMonth = m;
+      break;
+    }
+  }
+
+  if (!issuanceMonth) {
+    // No mid-year issuance detected — skip this validator
+    return results;
+  }
+
+  const monthsOutstanding = 12 - issuanceMonth + 1; // e.g., Sept 1 = months 9-12 = 4 months
+  const fraction = monthsOutstanding / 12;
+
+  // Now check each candidate's part (b) or diluted EPS denominator
+  candidates.forEach((c, ci) => {
+    if (!Array.isArray(c.answer_parts)) return;
+    
+    // Find the part that deals with diluted EPS (usually part b)
+    const dilutedPart = c.answer_parts.find((p: any) => {
+      const label = (p.label || "").toLowerCase();
+      const steps = (p.steps || "").toUpperCase();
+      return (label.includes("b") || label.includes("2")) && 
+             (steps.includes("DILUTED") || steps.includes("IF-CONVERTED") || steps.includes("INCREMENTAL"));
+    });
+
+    if (!dilutedPart) return;
+
+    const steps = dilutedPart.steps || "";
+    
+    // Extract incremental shares from steps — look for "X × fraction" or "X * fraction" patterns
+    // Also check for full-year incremental shares (no time-weighting)
+    const shareConversionPattern = /(\d[\d,]*)\s*(?:shares?\s+)?(?:×|x|\*|from conversion)/gi;
+    const timeWeightPattern = /(\d[\d,]*)\s*(?:×|x|\*)\s*(\d+)\s*\/\s*12/gi;
+    
+    let hasTimeWeighting = false;
+    let twMatch;
+    while ((twMatch = timeWeightPattern.exec(steps)) !== null) {
+      const monthsUsed = parseInt(twMatch[2]);
+      if (monthsUsed === monthsOutstanding) {
+        hasTimeWeighting = true;
+      }
+    }
+
+    // Also check survive_solution_text for the same
+    const solText = c.survive_solution_text || "";
+    const solTwPattern = /(\d[\d,]*)\s*(?:×|x|\*)\s*(\d+)\s*\/\s*12/gi;
+    let solTwMatch;
+    while ((solTwMatch = solTwPattern.exec(solText)) !== null) {
+      const monthsUsed = parseInt(solTwMatch[2]);
+      if (monthsUsed === monthsOutstanding) {
+        hasTimeWeighting = true;
+      }
+    }
+
+    // Check if they used the fraction in some form
+    const fractionStr = `${monthsOutstanding}/12`;
+    const hasFractionInSteps = steps.includes(fractionStr);
+    const hasFractionInSol = solText.includes(fractionStr);
+
+    if (!hasTimeWeighting && !hasFractionInSteps && !hasFractionInSol) {
+      results.push({
+        name: "nonJe_eps_denominator_check",
+        candidate_index: ci,
+        status: "fail",
+        message: `EPS part (b): Bonds issued month ${issuanceMonth} → expected ${monthsOutstanding}/12 time-weighting for incremental shares, but no time-weighting found. Denominator likely uses full-year shares incorrectly.`,
+        details: { issuance_month: issuanceMonth, months_outstanding: monthsOutstanding, expected_fraction: fractionStr },
+      });
+    } else {
+      results.push({
+        name: "nonJe_eps_denominator_check",
+        candidate_index: ci,
+        status: "pass",
+        message: `EPS part (b): Time-weighting ${fractionStr} detected for incremental shares.`,
+        details: { issuance_month: issuanceMonth, months_outstanding: monthsOutstanding },
+      });
+    }
+  });
+
+  return results;
+}
+
+function runNonJeQualityValidators(candidates: any[], problemText?: string, solutionText?: string): NonJeValidatorResult[] {
   return [
     ...nonJe_no_self_correction_language(candidates),
     ...nonJe_answer_only_matches_parts(candidates),
     ...nonJe_consistency_basic(candidates),
     ...nonJe_required_fields(candidates),
+    ...nonJe_eps_denominator_check(candidates, problemText || "", solutionText || ""),
   ];
 }
 
@@ -969,7 +1075,7 @@ Do NOT invent or use account names outside this list. If an account is needed bu
     let userPrompt: string;
 
     if (generationMode === "NON_JE") {
-      // ── NON_JE Prompt (convert_to_asset_non_je_v2) ──
+      // ── NON_JE Prompt (convert_to_asset_non_je_v3_eps) ──
       systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
 TEACHING TONE:
@@ -1001,6 +1107,39 @@ STRICT OUTPUT QUALITY RULES (CRITICAL — violations will be rejected):
 4. SOLUTION CONSISTENCY: survive_solution_text must use the SAME numbers, denominators, and formulas as answer_parts.steps. If answer_parts says "Net Income / Shares = 500,000 / 200,000 = $2.50", the solution text must use those same values.
 5. DENOMINATOR CONSISTENCY: If a division is performed (e.g., EPS = Net Income / Shares), the denominator must be identical in answer_parts.steps AND survive_solution_text. Do NOT use different share counts or different bases.
 6. CLEAN STEPS FORMAT: Each step in answer_parts[].steps should be a numbered line like "1. Identify net income: $500,000" — no narrative filler, no hedging, no commentary after the final calculation.
+
+${(() => {
+  // Detect EPS / If-Converted topics from problem text + tags
+  const upperProblem = (problemText || "").toUpperCase();
+  const upperSolution = (solutionText || "").toUpperCase();
+  const combinedUpper = upperProblem + " " + upperSolution + " " + (title || "").toUpperCase();
+  const isEPS = combinedUpper.includes("EPS") || combinedUpper.includes("EARNINGS PER SHARE") || combinedUpper.includes("IF-CONVERTED") || combinedUpper.includes("DILUTED");
+  if (!isEPS) return "";
+  return `
+EPS / IF-CONVERTED METHOD — MANDATORY RULES (CRITICAL):
+These rules apply because this problem involves EPS or diluted EPS calculations.
+
+A) BONDS/CONVERTIBLES ISSUED DURING THE YEAR (Part b or Diluted EPS):
+   - When convertible bonds are issued DURING the year (not Jan 1), assume conversion at the DATE OF ISSUANCE.
+   - TIME-WEIGHT BOTH components:
+     (1) Interest addback (after-tax) = Annual interest × (months outstanding / 12)
+     (2) Incremental shares = Shares from conversion × (months outstanding / 12)
+   - The denominator MUST be: base weighted-average common shares + time-weighted incremental shares.
+   - NEVER use a full-year incremental share count when bonds were issued mid-year.
+   - Example: If 200 bonds convertible into 6,000 shares are issued Sept 1, months outstanding = 4/12.
+     Incremental shares = 6,000 × 4/12 = 2,000 (NOT 6,000).
+     Interest addback = Annual interest × 4/12 × (1 - tax rate).
+
+B) FINAL EPS LINE:
+   - The final "Diluted EPS = Numerator / Denominator" line MUST use the exact denominator computed above.
+   - Do NOT restate with a different denominator. Do NOT "simplify" by using full-year shares.
+
+C) NO ALTERNATE DENOMINATOR LOGIC:
+   - Do NOT use "matching source complexity" as a reason to change the denominator.
+   - Do NOT provide two denominator options. There is exactly ONE correct denominator.
+   - Do NOT self-correct denominator calculations. Get it right the first time.
+`;
+})()}
 
 ANSWER PARTS:
 - Produce "answer_parts" aligned to the source problem's structure (a/b/c or 1/2/3).
@@ -1078,7 +1217,7 @@ Generate ${variantCount} exam-style practice variants.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
-      prompt_version: generationMode === "NON_JE" ? "convert_to_asset_non_je_v2" : "convert_to_asset_v3_trace",
+      prompt_version: generationMode === "NON_JE" ? "convert_to_asset_non_je_v3_eps" : "convert_to_asset_v3_trace",
       generation_mode: generationMode,
       provider,
       model: aiModel,
@@ -1497,7 +1636,7 @@ Generate ${variantCount} exam-style practice variants.`;
       );
 
       // Run NON_JE quality validators + automatic cleanup
-      const nonJeQualityResults = runNonJeQualityValidators(candidates);
+      const nonJeQualityResults = runNonJeQualityValidators(candidates, problemText, solutionText);
       await logGenEvent(sbService, runId, ++eventSeq, "validator",
         nonJeQualityResults.some(r => r.status === "fail") ? "warn" : "info",
         "VALIDATE_NON_JE_QUALITY",
