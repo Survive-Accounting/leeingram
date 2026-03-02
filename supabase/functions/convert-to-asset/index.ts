@@ -985,6 +985,15 @@ Generate ${variantCount} exam-style practice variants.`;
       latency_ms: aiLatencyMs,
     });
 
+    // Detailed raw response log for debugging
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "AI_RESPONSE_RAW", "Raw AI response payload captured", {
+      provider,
+      model: aiModel,
+      response_length: rawResponseMessage.length,
+      first_2000_chars: rawResponseMessage.slice(0, 2000),
+      last_2000_chars: rawResponseMessage.slice(-2000),
+    });
+
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_START", "Parsing tool call JSON");
 
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
@@ -1000,6 +1009,11 @@ Generate ${variantCount} exam-style practice variants.`;
     try {
       parsed = JSON.parse(toolCall.function.arguments);
     } catch (parseError) {
+      const rawArgs = toolCall.function.arguments || "";
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_ERROR", "JSON parsing failed", {
+        error_message: parseError instanceof Error ? parseError.message : "Unknown JSON parse error",
+        response_preview: rawArgs.slice(0, 3000),
+      });
       await logGenEvent(sbService, runId, ++eventSeq, "backend", "error", "PARSE_JSON_END", "JSON parsing failed", {
         parse_success: false,
         parse_error: parseError instanceof Error ? parseError.message : "Unknown JSON parse error",
@@ -1013,6 +1027,12 @@ Generate ${variantCount} exam-style practice variants.`;
       parse_success: true,
       extracted_top_level_keys: Object.keys(parsed || {}),
       candidate_count: candidates.length,
+    });
+
+    // Full first-candidate preview for debugging
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSED_CANDIDATES", `${candidates.length} candidates extracted`, {
+      candidate_count: candidates.length,
+      candidates_preview: candidates.slice(0, 1),
     });
 
     await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "VALIDATE_SCHEMA_START", "Validating candidate schema", {
@@ -1074,6 +1094,22 @@ Generate ${variantCount} exam-style practice variants.`;
         requires_je: requiresJournalEntry,
       }
     );
+
+    // Log what would be saved as variant rows (for frontend persistence)
+    const variantPreviewRows = candidates.slice(0, 1).map((c: any, i: number) => ({
+      variant_label: `Variant ${String.fromCharCode(65 + i)}`,
+      survive_problem_text: c.survive_problem_text?.slice(0, 500) || "",
+      survive_solution_text: c.survive_solution_text?.slice(0, 500) || "",
+      je_structured: c.je_structured ?? null,
+      answer_only: c.answer_only?.slice(0, 300) || "",
+      tags: c.tags ?? [],
+      _je_valid: c._je_valid,
+      _status: c._status,
+    }));
+
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "VARIANT_SAVE_PAYLOAD", `Preview of ${candidates.length} rows to insert`, {
+      rows_to_insert_preview: variantPreviewRows,
+    });
 
     await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_START", "No backend variant persistence for candidates mode", {
       persisted: false,
