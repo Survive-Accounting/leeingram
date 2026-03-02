@@ -74,11 +74,13 @@ export default function ProblemBank() {
   const [formType, setFormType] = useState<string>("");
   const [formLabel, setFormLabel] = useState("");
   const [formTitle, setFormTitle] = useState("");
+  const [formNoJE, setFormNoJE] = useState(false);
 
   // Edit form state
   const [editType, setEditType] = useState<string>("");
   const [editLabel, setEditLabel] = useState("");
   const [editTitle, setEditTitle] = useState("");
+  const [editNoJE, setEditNoJE] = useState(false);
 
   const { data: chapters } = useQuery({
     queryKey: ["chapters", courseFilter],
@@ -136,6 +138,7 @@ export default function ProblemBank() {
         problem_type: (formType || "exercise") as any,
         source_label: formLabel,
         title: formTitle,
+        contains_no_journal_entries: formNoJE,
         problem_text: "",
         solution_text: ""
       }).select("id").single();
@@ -161,6 +164,7 @@ export default function ProblemBank() {
       setFormType("");
       setFormLabel("");
       setFormTitle("");
+      setFormNoJE(false);
       if (variables.keepOpen) {
         toast.success("Saved — ready for next problem");
       } else {
@@ -177,7 +181,8 @@ export default function ProblemBank() {
       const updates: any = {
         problem_type: editType || "exercise",
         source_label: editLabel,
-        title: editTitle
+        title: editTitle,
+        contains_no_journal_entries: editNoJE
       };
       if ((editLabel || editTitle) && editingProblem.status === "raw") {
         updates.status = "tagged";
@@ -232,6 +237,7 @@ export default function ProblemBank() {
     setEditType(p.problem_type);
     setEditLabel(p.source_label);
     setEditTitle(p.title);
+    setEditNoJE(!!(p as any).contains_no_journal_entries);
     setEditDialogOpen(true);
   };
 
@@ -402,6 +408,12 @@ export default function ProblemBank() {
                 <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Bond amortization" className="h-8 text-xs" />
               </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox id="form-no-je" checked={formNoJE} onCheckedChange={(v) => setFormNoJE(!!v)} />
+              <Label htmlFor="form-no-je" className="text-xs cursor-pointer">Contains no Journal Entries</Label>
+              <span className="text-[10px] text-muted-foreground">— EPS/ratios/analysis. Skips JE logic in generation.</span>
+            </div>
           </div>
 
           <DialogFooter>
@@ -457,6 +469,12 @@ export default function ProblemBank() {
                   <Label className="text-xs">Title</Label>
                   <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Bond premium" className="h-8 text-xs" />
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox id="edit-no-je" checked={editNoJE} onCheckedChange={(v) => setEditNoJE(!!v)} />
+                <Label htmlFor="edit-no-je" className="text-xs cursor-pointer">Contains no Journal Entries</Label>
+                <span className="text-[10px] text-muted-foreground">— EPS/ratios/analysis. Skips JE logic.</span>
               </div>
             </>
           }
