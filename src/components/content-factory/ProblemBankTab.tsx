@@ -1881,6 +1881,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <div className="space-y-3">
                 {candidates.map((c: any, idx: number) => {
                   const summaryLine = c.survive_problem_text?.split(/[.\n]/)?.[0]?.trim() || "—";
+                  const isNonJE = !!(c.answer_parts || c._generation_mode === "NON_JE");
+                  const nonJeFailures = isNonJE ? (c._non_je_quality_results || []).filter((r: any) => r.status === "fail") : [];
+                  const hasNonJeFailures = nonJeFailures.length > 0;
+                  const needsReview = c._needs_review === true;
+                  const approveBlocked = hasNonJeFailures && !c._override_approve;
 
                   return (
                     <Collapsible key={idx} className="rounded-lg border border-border bg-card overflow-hidden">
@@ -1892,6 +1897,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             <div className="flex items-center gap-2 mb-0.5">
                               <span className="text-[10px] text-foreground/50 uppercase tracking-wider">V{idx + 1}</span>
                               <h5 className="text-sm font-semibold text-foreground truncate">{c.asset_name}</h5>
+                              {hasNonJeFailures && <Badge variant="outline" className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">Quality Issues</Badge>}
+                              {needsReview && <Badge variant="outline" className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">Cleaned</Badge>}
                             </div>
                             <p className="text-xs text-foreground/60 truncate">{summaryLine}</p>
                           </div>
@@ -1915,7 +1922,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                               setSavingIndex(idx);
                               approveMutation.mutate({ candidate: c, problem: p });
                             }}
-                            disabled={approveMutation.isPending}
+                            disabled={approveMutation.isPending || approveBlocked}
+                            title={approveBlocked ? "Fix quality issues or enable Override to approve" : ""}
                           >
                             {savingIndex === idx && approveMutation.isPending ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
@@ -1938,6 +1946,39 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       {/* Expanded Content */}
                       <CollapsibleContent>
                         <div className="border-t border-border px-4 py-4 space-y-4">
+                          {/* NON_JE Quality Issues Banner */}
+                          {hasNonJeFailures && (
+                            <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 space-y-2">
+                              <p className="text-[10px] text-red-400 uppercase tracking-wider font-semibold flex items-center gap-1">
+                                <ShieldAlert className="h-3 w-3" /> Quality Validation Failures ({nonJeFailures.length})
+                              </p>
+                              <ul className="text-xs text-red-300 space-y-0.5 list-disc pl-4">
+                                {nonJeFailures.map((f: any, fi: number) => (
+                                  <li key={fi}><span className="font-mono text-[10px]">{f.name}</span>: {f.message}</li>
+                                ))}
+                              </ul>
+                              <div className="flex items-center gap-2 pt-1">
+                                <Switch
+                                  id={`override-${idx}`}
+                                  checked={!!c._override_approve}
+                                  onCheckedChange={(checked) => {
+                                    setCandidates(prev => prev.map((cc, ci) =>
+                                      ci === idx ? { ...cc, _override_approve: checked } : cc
+                                    ));
+                                  }}
+                                  className="scale-75"
+                                />
+                                <Label htmlFor={`override-${idx}`} className="text-[10px] text-red-300 cursor-pointer">Override — approve despite failures</Label>
+                              </div>
+                            </div>
+                          )}
+                          {needsReview && !hasNonJeFailures && (
+                            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+                              <p className="text-[10px] text-amber-400 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" /> Steps were auto-cleaned (trailing commentary stripped). Review before approving.
+                              </p>
+                            </div>
+                          )}
                           {/* Tags */}
                           {c.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-1">
