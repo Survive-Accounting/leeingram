@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, AlertTriangle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Copy, AlertTriangle, ChevronDown, Bug } from "lucide-react";
 import { toast } from "sonner";
 import {
   JournalEntryGroup,
@@ -33,14 +35,31 @@ export function JournalEntryTable({
   heading,
   showHeading = true,
 }: JournalEntryTableProps) {
+  const [debugOpen, setDebugOpen] = useState(false);
+
+  // ── Determine JE source for debug info ──
+  let jeSource = "none";
+  let debugInfo: Record<string, any> = {};
+
   // ── Check for canonical structured format first ──
   if (mode === "completed" && isCanonicalJE(completedJson)) {
+    jeSource = "journal_entry_completed_json (canonical)";
+    const payload = completedJson as CanonicalJEPayload;
+    debugInfo = {
+      scenarios: payload.scenario_sections.length,
+      entries_by_date: payload.scenario_sections.reduce((s, sc) => s + sc.entries_by_date.length, 0),
+      total_rows: payload.scenario_sections.reduce((s, sc) => s + sc.entries_by_date.reduce((s2, e) => s2 + e.rows.length, 0), 0),
+    };
+
     return (
-      <StructuredJEDisplay
-        data={completedJson}
-        heading={heading || "Answer (Journal Entry)"}
-        showHeading={showHeading}
-      />
+      <div>
+        <StructuredJEDisplay
+          data={payload}
+          heading={heading || "Answer (Journal Entry)"}
+          showHeading={showHeading}
+        />
+        <JEDebugPanel open={debugOpen} onToggle={setDebugOpen} source={jeSource} info={debugInfo} />
+      </div>
     );
   }
 
@@ -49,8 +68,25 @@ export function JournalEntryTable({
   let isLegacyFallback = false;
 
   if (mode === "template") {
+    // Check if templateJson is actually canonical structured
+    if (isCanonicalJE(templateJson)) {
+      jeSource = "journal_entry_template_json (canonical)";
+      // For template mode with canonical data, render StructuredJEDisplay
+      return (
+        <div>
+          <StructuredJEDisplay
+            data={templateJson as unknown as CanonicalJEPayload}
+            heading={heading || "Journal Entry (Template)"}
+            showHeading={showHeading}
+          />
+          <JEDebugPanel open={debugOpen} onToggle={setDebugOpen} source={jeSource} info={{}} />
+        </div>
+      );
+    }
+
     if (templateJson && Array.isArray(templateJson) && templateJson.length > 0) {
       groups = templateJson;
+      jeSource = "journal_entry_template_json (legacy array)";
     } else {
       const completed = resolveJournalEntries(
         Array.isArray(completedJson) ? completedJson : null,
@@ -58,9 +94,11 @@ export function JournalEntryTable({
       );
       if (completed.length > 0) {
         groups = toTemplate(completed);
+        jeSource = "derived from completed (legacy)";
       } else {
         const fromBlock = parseLegacyJEBlock(legacyJEBlock);
         groups = toTemplate(fromBlock);
+        jeSource = "derived from legacy JE block";
       }
     }
   } else {
@@ -70,6 +108,9 @@ export function JournalEntryTable({
     );
     if (groups.length === 0 && legacyJEBlock) {
       groups = parseLegacyJEBlock(legacyJEBlock);
+      jeSource = "legacy JE block parse";
+    } else if (groups.length > 0) {
+      jeSource = completedJson ? "journal_entry_completed_json (legacy array)" : "legacy answer text parse";
     }
     // If we ended up with legacy-parsed data, flag it
     if (groups.length > 0 && !completedJson) {
@@ -78,6 +119,8 @@ export function JournalEntryTable({
   }
 
   if (groups.length === 0) return null;
+
+  debugInfo = { group_count: groups.length, total_lines: groups.reduce((s, g) => s + g.lines.length, 0) };
 
   const defaultHeading = mode === "template" ? "Journal Entry (Template)" : "Answer (Journal Entry)";
   const displayHeading = heading || defaultHeading;
@@ -178,6 +221,39 @@ export function JournalEntryTable({
           </div>
         ))}
       </div>
+
+      <JEDebugPanel open={debugOpen} onToggle={setDebugOpen} source={jeSource} info={debugInfo} />
     </div>
+  );
+}
+
+/** Collapsed debug panel showing JE source */
+function JEDebugPanel({
+  open,
+  onToggle,
+  source,
+  info,
+}: {
+  open: boolean;
+  onToggle: (v: boolean) => void;
+  source: string;
+  info: Record<string, any>;
+}) {
+  return (
+    <Collapsible open={open} onOpenChange={onToggle} className="mt-1">
+      <CollapsibleTrigger className="flex items-center gap-1 text-[9px] text-foreground/40 hover:text-foreground/60 transition-colors">
+        <Bug className="h-3 w-3" />
+        <span>JE Debug</span>
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-1">
+        <div className="rounded border border-border/50 bg-muted/30 px-2 py-1.5 text-[10px] text-foreground/50 font-mono space-y-0.5">
+          <p>Source: <span className="text-foreground/70">{source}</span></p>
+          {Object.entries(info).map(([k, v]) => (
+            <p key={k}>{k}: <span className="text-foreground/70">{JSON.stringify(v)}</span></p>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
