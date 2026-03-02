@@ -63,9 +63,19 @@ interface StructuredJEDisplayProps {
   data: CanonicalJEPayload;
   heading?: string;
   showHeading?: boolean;
+  templateMode?: boolean;
 }
 
-function EntryTable({ rows, entryDate }: { rows: CanonicalJERow[]; entryDate: string }) {
+/** Infer side from row data, with backwards-compatible fallback */
+function inferSide(row: any): "debit" | "credit" {
+  if (row.side === "credit" || row.side === "debit") return row.side;
+  if (row.credit != null && row.credit !== 0) return "credit";
+  if (row.debit != null && row.debit !== 0) return "debit";
+  console.warn(`[StructuredJEDisplay] No side info for account "${row.account_name}", defaulting to debit`);
+  return "debit";
+}
+
+function EntryTable({ rows, entryDate, templateMode }: { rows: CanonicalJERow[]; entryDate: string; templateMode?: boolean }) {
   const bal = computeBalance(rows);
 
   const handleCopy = () => {
@@ -75,22 +85,24 @@ function EntryTable({ rows, entryDate }: { rows: CanonicalJERow[]; entryDate: st
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {bal.balanced ? (
-            <span className="text-[10px] text-green-400 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Balanced
-            </span>
-          ) : (
-            <span className="text-[10px] text-destructive flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Off by ${bal.diff.toFixed(2)}
-            </span>
-          )}
+      {!templateMode && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {bal.balanced ? (
+              <span className="text-[10px] text-green-400 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Balanced
+              </span>
+            ) : (
+              <span className="text-[10px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Off by ${bal.diff.toFixed(2)}
+              </span>
+            )}
+          </div>
+          <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={handleCopy}>
+            <Copy className="h-3 w-3 mr-1" /> Copy for Sheets
+          </Button>
         </div>
-        <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={handleCopy}>
-          <Copy className="h-3 w-3 mr-1" /> Copy for Sheets
-        </Button>
-      </div>
+      )}
       <div className="rounded-md border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -108,17 +120,22 @@ function EntryTable({ rows, entryDate }: { rows: CanonicalJERow[]; entryDate: st
           </thead>
           <tbody>
             {rows.map((row, ri) => {
-              const isCredit = row.credit != null && row.credit !== 0;
+              const side = templateMode ? inferSide(row) : ((row.credit != null && row.credit !== 0) ? "credit" : "debit");
+              const isCredit = side === "credit";
               return (
                 <tr key={ri} className="border-b border-border/50 last:border-0">
                   <td className={cn("px-3 py-1.5 text-foreground", isCredit && "pl-10")}>
                     {row.account_name}
                   </td>
                   <td className="text-right px-3 py-1.5 text-foreground font-mono">
-                    {!isCredit && row.debit != null ? formatAmount(row.debit) : ""}
+                    {templateMode
+                      ? (side === "debit" ? <span className="text-muted-foreground">???</span> : "")
+                      : (!isCredit && row.debit != null ? formatAmount(row.debit) : "")}
                   </td>
                   <td className="text-right px-3 py-1.5 text-foreground font-mono">
-                    {isCredit ? formatAmount(row.credit) : ""}
+                    {templateMode
+                      ? (side === "credit" ? <span className="text-muted-foreground">???</span> : "")
+                      : (isCredit ? formatAmount(row.credit) : "")}
                   </td>
                 </tr>
               );
@@ -130,7 +147,7 @@ function EntryTable({ rows, entryDate }: { rows: CanonicalJERow[]; entryDate: st
   );
 }
 
-export function StructuredJEDisplay({ data, heading, showHeading = true }: StructuredJEDisplayProps) {
+export function StructuredJEDisplay({ data, heading, showHeading = true, templateMode = false }: StructuredJEDisplayProps) {
   const sections = data.scenario_sections;
 
   return (
@@ -170,7 +187,7 @@ export function StructuredJEDisplay({ data, heading, showHeading = true }: Struc
                               raw: {raw}
                             </Badge>
                           )}
-                          {(() => {
+                          {!templateMode && (() => {
                             const bal = computeBalance(entry.rows);
                             return bal.balanced ? (
                               <CheckCircle2 className="h-3 w-3 text-green-400" />
@@ -180,10 +197,13 @@ export function StructuredJEDisplay({ data, heading, showHeading = true }: Struc
                               </Badge>
                             );
                           })()}
+                          {templateMode && (
+                            <Badge variant="secondary" className="text-[9px] h-4">Template</Badge>
+                          )}
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="px-3 pb-3">
-                        <EntryTable rows={entry.rows} entryDate={display} />
+                        <EntryTable rows={entry.rows} entryDate={display} templateMode={templateMode} />
                       </AccordionContent>
                     </AccordionItem>
                   );
