@@ -23,6 +23,41 @@ import {
   canonicalRowsToTSV,
 } from "@/lib/journalEntryParser";
 import { cn } from "@/lib/utils";
+import { format as fnsFormat } from "date-fns";
+
+const IS_DEV = import.meta.env.DEV;
+
+/** Parse a YYYY-MM-DD string as a local date (avoids UTC shift) */
+function parseLocalDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, y, m, d] = match.map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Format a raw date string for display */
+function formatEntryDate(raw: string | undefined | null, fallbackIndex: number): { display: string; raw: string; missing: boolean } {
+  if (!raw || raw.trim() === "" || raw === "Undated") {
+    return { display: `Entry ${fallbackIndex + 1}`, raw: raw ?? "(empty)", missing: true };
+  }
+  const local = parseLocalDate(raw);
+  if (local && !isNaN(local.getTime())) {
+    return { display: fnsFormat(local, "MMM d, yyyy"), raw, missing: false };
+  }
+  // Fallback: try native parse for ISO with time/tz
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) {
+    return { display: fnsFormat(parsed, "MMM d, yyyy"), raw, missing: false };
+  }
+  // Unparseable – show raw string
+  return { display: raw, raw, missing: false };
+}
+
+/** Extract the date string from an entry, supporting both 'entry_date' and 'date' field names */
+function getEntryDate(entry: any): string | undefined {
+  return entry?.entry_date ?? entry?.date;
+}
 
 interface StructuredJEDisplayProps {
   data: CanonicalJEPayload;
@@ -97,7 +132,6 @@ function EntryTable({ rows, entryDate }: { rows: CanonicalJERow[]; entryDate: st
 
 export function StructuredJEDisplay({ data, heading, showHeading = true }: StructuredJEDisplayProps) {
   const sections = data.scenario_sections;
-  const singleScenario = sections.length === 1;
 
   return (
     <div>
@@ -120,28 +154,40 @@ export function StructuredJEDisplay({ data, heading, showHeading = true }: Struc
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3">
               <Accordion type="multiple" className="space-y-1">
-                {scenario.entries_by_date.map((entry, ei) => (
-                  <AccordionItem key={ei} value={`entry-${si}-${ei}`} className="border border-border/50 rounded-md overflow-hidden">
-                    <AccordionTrigger className="px-3 py-1.5 text-xs hover:no-underline">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{entry.entry_date}</span>
-                        {(() => {
-                          const bal = computeBalance(entry.rows);
-                          return bal.balanced ? (
-                            <CheckCircle2 className="h-3 w-3 text-green-400" />
-                          ) : (
-                            <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
-                              Off ${bal.diff.toFixed(2)}
+                {scenario.entries_by_date.map((entry, ei) => {
+                  const rawDate = getEntryDate(entry);
+                  const { display, raw, missing } = formatEntryDate(rawDate, ei);
+                  if (missing) {
+                    console.warn(`[StructuredJEDisplay] Missing date for entry index ${ei} in scenario "${scenario.label}"`);
+                  }
+                  return (
+                    <AccordionItem key={ei} value={`entry-${si}-${ei}`} className="border border-border/50 rounded-md overflow-hidden">
+                      <AccordionTrigger className="px-3 py-1.5 text-xs hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{display}</span>
+                          {IS_DEV && (
+                            <Badge variant="secondary" className="text-[8px] h-3.5 font-mono opacity-60">
+                              raw: {raw}
                             </Badge>
-                          );
-                        })()}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-3">
-                      <EntryTable rows={entry.rows} entryDate={entry.entry_date} />
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
+                          )}
+                          {(() => {
+                            const bal = computeBalance(entry.rows);
+                            return bal.balanced ? (
+                              <CheckCircle2 className="h-3 w-3 text-green-400" />
+                            ) : (
+                              <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
+                                Off ${bal.diff.toFixed(2)}
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-3">
+                        <EntryTable rows={entry.rows} entryDate={display} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
               </Accordion>
             </AccordionContent>
           </AccordionItem>
