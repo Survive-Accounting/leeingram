@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
 import { logActivity } from "@/lib/activityLogger";
 import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
+import { JE_SYSTEM_PROMPT, buildJEUserPrompt } from "@/lib/jeSystemPrompt";
 
 interface Props {
   sourceProblemId: string;
@@ -145,19 +146,10 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
 
   const testMutation = useMutation({
     mutationFn: async () => {
-      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in the required JSON schema format.
-
-Problem:
-${problemText}
-
-Solution Reference:
-${solutionText}
-
-Provide:
-1. final_answers: array of {label, value} with the specific numeric/text answers the problem asks for
-2. teaching_aids: { explanation (calculation breakdown), journal_entries (array of dated entries with lines) }
-
-For journal entries, each line must have: account_name, debit (number or null), credit (number or null), memo (string, can be empty), indentation_level (0 for debits, 1 for credits).`;
+      const userPrompt = buildJEUserPrompt({
+        problemText: problemText || "",
+        solutionText: solutionText || "",
+      });
 
       const { data, error } = await supabase.functions.invoke("generate-ai-output", {
         body: {
@@ -167,8 +159,8 @@ For journal entries, each line must have: account_name, debit (number or null), 
           max_output_tokens: 3000,
           source_problem_id: sourceProblemId,
           messages: [
-            { role: "system", content: "You are an expert accounting professor. Return answers in the exact JSON schema requested." },
-            { role: "user", content: systemPrompt },
+            { role: "system", content: JE_SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
           ],
           response_format_json_schema: ANSWER_PACKAGE_SCHEMA,
         },

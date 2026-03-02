@@ -114,14 +114,16 @@ function normalizeToCanonical(payload: Record<string, any>): {
 function normalizeScenarioSection(sc: any): CanonicalScenarioSection {
   const entries = sc.entries_by_date || sc.journal_entries || [];
   return {
-    label: sc.label || "Journal Entry",
+    label: sc.label || sc.scenario_label || "Journal Entry",
     entries_by_date: entries.map((entry: any): CanonicalEntryByDate => ({
-      entry_date: entry.entry_date || "",
+      entry_date: entry.entry_date || entry.date || "",
       rows: (entry.rows || entry.lines || []).map((r: any): CanonicalJERow => ({
         account_name: r.account_name || r.account || "",
         debit: r.debit != null ? Number(r.debit) : null,
         credit: r.credit != null ? Number(r.credit) : null,
         ...(r.memo ? { memo: r.memo } : {}),
+        ...(r.coa_id ? { coa_id: r.coa_id } : {}),
+        ...(r.needs_review ? { unknown_account: true } : {}),
       })),
     })),
   };

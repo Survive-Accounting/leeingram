@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 import { runValidation, hasFailures, type AnswerPackageData } from "@/lib/validation";
 import { normalizeValidatePersistAnswerPackage, persistUnparseablePackage } from "@/lib/answerPackagePipeline";
+import { JE_SYSTEM_PROMPT, buildJEUserPrompt } from "@/lib/jeSystemPrompt";
 
 interface Props {
   sourceProblemId: string;
@@ -77,19 +78,15 @@ export function RegenerateDialog({ sourceProblemId, latestPackage, openRepairNot
       await supabase.from("generation_jobs").update({ status: "running" as any } as any).eq("id", job.id);
 
       // 3. Call AI provider
-      const systemPrompt = `You are an expert accounting professor. Analyze this problem and provide the answer in the required JSON format.
+      const repairNotesText = repairNoteIds.length > 0 && openRepairNotes
+        ? openRepairNotes.map(n => `- ${n.what_was_wrong}: ${n.desired_fix}`).join("\n")
+        : undefined;
 
-Problem:
-${problemText || "No problem text available"}
-
-Solution Reference:
-${solutionText || "No solution text available"}
-
-${repairNoteIds.length > 0 && openRepairNotes ? `\nPrevious repair notes to address:\n${openRepairNotes.map(n => `- ${n.what_was_wrong}: ${n.desired_fix}`).join("\n")}` : ""}
-
-Provide a JSON object with:
-1. "final_answers": array of {"label": string, "value": string} with the specific answers
-2. "teaching_aids": {"explanation": string (calculation breakdown), "journal_entries": array of {"entry_date": string, "lines": array of {"account_name": string, "debit": number|null, "credit": number|null, "memo": string, "indentation_level": number}}}`;
+      const userPrompt = buildJEUserPrompt({
+        problemText: problemText || "",
+        solutionText: solutionText || "",
+        repairNotes: repairNotesText,
+      });
 
       const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
         body: {
@@ -99,8 +96,8 @@ Provide a JSON object with:
           max_output_tokens: 3000,
           source_problem_id: sourceProblemId,
           messages: [
-            { role: "system", content: "You are an expert accounting professor. Return answers in valid JSON." },
-            { role: "user", content: systemPrompt },
+            { role: "system", content: JE_SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
           ],
           response_format_json_schema: provider === "openai" ? {
             name: "answer_package",
