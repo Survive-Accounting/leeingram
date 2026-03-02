@@ -6,6 +6,7 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { ChapterActivityLog } from "@/components/content-factory/ChapterActivityLog";
+import { GenerationRunsPanel } from "@/components/content-factory/GenerationRunsPanel";
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
@@ -68,11 +69,16 @@ export default function ChapterWorkspace() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Problems</TabsTrigger>
+          <TabsTrigger value="generation">Generation Runs</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="problems">
           <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="generation">
+          <GenerationRunsPanel chapterId={chapterId!} courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="activity">

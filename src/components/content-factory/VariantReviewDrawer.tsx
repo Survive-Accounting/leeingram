@@ -25,6 +25,7 @@ import {
   SKELETON_SYSTEM_PROMPT, buildSkeletonUserPrompt,
   SINGLE_DATE_SYSTEM_PROMPT, buildSingleDateUserPrompt,
 } from "@/lib/jeSkeletonPrompts";
+import { GenerationLogger } from "@/lib/generationLogger";
 
 // ── Types ──
 
@@ -265,9 +266,25 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   // ── Skeleton Generation ──
   const handleGenerateSkeleton = async () => {
     setGeneratingSkeleton(true);
+    const logger = new GenerationLogger({
+      course_id: problem?.course_id,
+      chapter_id: chapterId,
+      source_problem_id: problem?.id || variant.base_problem_id,
+      provider: "lovable",
+      model: "google/gemini-2.5-flash",
+    });
+
     try {
+      await logger.start();
+      await logger.info("frontend", "CLICK_GENERATE", "User clicked Generate Skeleton", {
+        variant_id: variant._variantId || variant.id,
+        problem_id: problem?.id,
+      });
+
       const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
       const solutionText = variant.survive_solution_text || variant.variant_solution_text || problem?.solution_text || "";
+
+      await logger.info("frontend", "REQUEST_START", "Calling generate-ai-output for skeleton");
 
       const { data, error } = await supabase.functions.invoke("generate-ai-output", {
         body: {
@@ -276,11 +293,19 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           temperature: 0.1,
           max_output_tokens: 2000,
           source_problem_id: problem?.id || variant.base_problem_id || "unknown",
+          run_id: logger.runId,
           messages: [
             { role: "system", content: SKELETON_SYSTEM_PROMPT },
             { role: "user", content: buildSkeletonUserPrompt({ problemText, solutionText }) },
           ],
         },
+      });
+
+      await logger.info("frontend", "REQUEST_END", "Edge function returned", {
+        has_error: !!error,
+        has_data_error: !!data?.error,
+        has_parsed: !!data?.parsed,
+        generation_time_ms: data?.generation_time_ms,
       });
 
       if (error) throw error;
@@ -294,12 +319,16 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         })),
       };
 
+      await logger.info("frontend", "SAVE_VARIANT_START", "Saving skeleton to variant", {
+        scenario_count: sk.scenario_sections.length,
+        total_dates: sk.scenario_sections.reduce((s, sc) => s + sc.entry_dates.length, 0),
+      });
+
       setSkeleton(sk);
       setEntries({});
       setStatuses({});
       setHasEdits(true);
 
-      // Persist skeleton to variant
       if (variant._variantId || variant.id) {
         await supabase.from("problem_variants").update({
           je_skeleton_json: sk as any,
@@ -308,19 +337,13 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         } as any).eq("id", variant._variantId || variant.id);
       }
 
-      await logActivity({
-        actor_type: "ai", entity_type: "source_problem",
-        entity_id: problem?.id || "unknown",
-        event_type: "je_skeleton_generated",
-        severity: "info",
-        payload_json: {
-          scenario_count: sk.scenario_sections.length,
-          total_dates: sk.scenario_sections.reduce((s, sc) => s + sc.entry_dates.length, 0),
-        },
-      });
+      await logger.info("frontend", "SAVE_VARIANT_END", "Skeleton persisted");
+      await logger.finalize("success", { variant_id: variant._variantId || variant.id });
 
       toast.success(`Skeleton generated: ${sk.scenario_sections.reduce((s, sc) => s + sc.entry_dates.length, 0)} dates across ${sk.scenario_sections.length} scenario(s)`);
     } catch (err: any) {
+      await logger.error("frontend", "GENERATION_ERROR", err?.message || "Skeleton generation failed", { stack: err?.stack?.slice(0, 500) });
+      await logger.finalize("failed", { error_summary: err?.message });
       toast.error(err?.message || "Skeleton generation failed");
     } finally {
       setGeneratingSkeleton(false);
@@ -331,7 +354,23 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   const handleGenerateRows = async (scenarioLabel: string, date: string) => {
     const key = dateKey(scenarioLabel, date);
     setGeneratingDate(key);
+
+    const logger = new GenerationLogger({
+      course_id: problem?.course_id,
+      chapter_id: chapterId,
+      source_problem_id: problem?.id || variant.base_problem_id,
+      provider: "lovable",
+      model: "google/gemini-2.5-flash",
+    });
+
     try {
+      await logger.start();
+      await logger.info("frontend", "CLICK_GENERATE", `Generate rows for ${scenarioLabel} / ${date}`, {
+        scenario_label: scenarioLabel,
+        target_date: date,
+        variant_id: variant._variantId || variant.id,
+      });
+
       const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
       const solutionText = variant.survive_solution_text || variant.variant_solution_text || problem?.solution_text || "";
 
@@ -341,7 +380,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         const sc = skeleton.scenario_sections.find(s => s.scenario_label === scenarioLabel);
         if (sc) {
           for (const d of sc.entry_dates) {
-            if (d === date) break; // Only prior dates
+            if (d === date) break;
             const priorKey = dateKey(scenarioLabel, d);
             if (entries[priorKey]) {
               priorEntries.push({ date: d, rows: entries[priorKey].rows });
@@ -350,6 +389,11 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         }
       }
 
+      await logger.info("frontend", "REQUEST_START", "Calling generate-ai-output for rows", {
+        prior_entries_count: priorEntries.length,
+        coa_count: approvedAccounts?.length ?? 0,
+      });
+
       const { data, error } = await supabase.functions.invoke("generate-ai-output", {
         body: {
           provider: "lovable",
@@ -357,6 +401,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           temperature: 0.2,
           max_output_tokens: 2000,
           source_problem_id: problem?.id || variant.base_problem_id || "unknown",
+          run_id: logger.runId,
           messages: [
             { role: "system", content: SINGLE_DATE_SYSTEM_PROMPT },
             { role: "user", content: buildSingleDateUserPrompt({
@@ -369,6 +414,15 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             }) },
           ],
         },
+      });
+
+      await logger.info("frontend", "REQUEST_END", "Edge function returned", {
+        has_error: !!error,
+        has_data_error: !!data?.error,
+        has_parsed: !!data?.parsed,
+        parsed_has_rows: !!data?.parsed?.rows,
+        row_count: data?.parsed?.rows?.length ?? 0,
+        generation_time_ms: data?.generation_time_ms,
       });
 
       if (error) throw error;
@@ -385,16 +439,31 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
         })),
       };
 
+      // Run validators on the generated rows
+      const vr = runDateValidation(newRows.rows, requiresJE);
+      await logger.info("validator", "RUN_VALIDATORS_END", `Validators ran: ${vr.length} checks`, {
+        validator_results: vr.map(v => ({ name: v.validator, status: v.status, message: v.message })),
+      });
+
+      await logger.info("frontend", "SAVE_VARIANT_START", `Saving ${newRows.rows.length} rows`, {
+        row_count: newRows.rows.length,
+        rows_preview: newRows.rows.slice(0, 5),
+      });
+
       setEntries(prev => ({ ...prev, [key]: newRows }));
       setStatuses(prev => ({ ...prev, [key]: "drafted" }));
       setHasEdits(true);
       setEditingDate(key);
 
-      // Auto-persist
       await persistEntriesToDB({ ...entries, [key]: newRows }, { ...statuses, [key]: "drafted" });
+
+      await logger.info("frontend", "SAVE_VARIANT_END", "Rows persisted to variant");
+      await logger.finalize("success", { variant_id: variant._variantId || variant.id });
 
       toast.success(`Generated ${newRows.rows.length} rows for ${formatDate(date)}`);
     } catch (err: any) {
+      await logger.error("frontend", "GENERATION_ERROR", err?.message || "Row generation failed", { stack: err?.stack?.slice(0, 500) });
+      await logger.finalize("failed", { error_summary: err?.message });
       toast.error(err?.message || "Row generation failed");
     } finally {
       setGeneratingDate(null);

@@ -10,6 +10,7 @@ import { runValidation, hasFailures, type AnswerPackageData, type ValidationResu
 import { logActivity } from "@/lib/activityLogger";
 import { normalizeValidatePersistAnswerPackage, logUnparseableOutput } from "@/lib/answerPackagePipeline";
 import { JE_SYSTEM_PROMPT, buildJEUserPrompt } from "@/lib/jeSystemPrompt";
+import { GenerationLogger } from "@/lib/generationLogger";
 
 interface Props {
   sourceProblemId: string;
@@ -146,10 +147,23 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
 
   const testMutation = useMutation({
     mutationFn: async () => {
+      const logger = new GenerationLogger({
+        source_problem_id: sourceProblemId,
+        provider: "openai",
+        model: "gpt-4.1",
+      });
+      await logger.start();
+      await logger.info("frontend", "CLICK_GENERATE", "OpenAI A/B test started", {
+        source_problem_id: sourceProblemId,
+        problem_text_length: problemText?.length ?? 0,
+      });
+
       const userPrompt = buildJEUserPrompt({
         problemText: problemText || "",
         solutionText: solutionText || "",
       });
+
+      await logger.info("frontend", "REQUEST_START", "Calling generate-ai-output");
 
       const { data, error } = await supabase.functions.invoke("generate-ai-output", {
         body: {
@@ -158,6 +172,7 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
           temperature: 0.2,
           max_output_tokens: 3000,
           source_problem_id: sourceProblemId,
+          run_id: logger.runId,
           messages: [
             { role: "system", content: JE_SYSTEM_PROMPT },
             { role: "user", content: userPrompt },
@@ -166,15 +181,25 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
         },
       });
 
+      await logger.info("frontend", "REQUEST_END", "Edge function returned", {
+        has_error: !!error,
+        has_parsed: !!data?.parsed,
+        generation_time_ms: data?.generation_time_ms,
+      });
+
       if (error) throw error;
       if (data.error) throw new Error(data.error);
-      return data;
+
+      // Return both data and logger for onSuccess
+      return { data, logger };
     },
-    onSuccess: async (data) => {
+    onSuccess: async ({ data, logger }) => {
       setMetadata({ provider: data.provider, model: data.model, token_usage: data.token_usage, generation_time_ms: data.generation_time_ms });
 
       const parsed = data.parsed;
       if (!parsed) {
+        await logger.error("frontend", "PARSE_FAILED", "AI returned invalid JSON — nothing saved");
+        await logger.finalize("failed", { error_summary: "JSON parse failed" });
         toast.error("AI returned invalid JSON — nothing saved. Click Regenerate.");
         const nextVersion = (latestPackage?.version ?? 0) + 1;
         await logUnparseableOutput(sourceProblemId, nextVersion, data.raw, {
@@ -186,6 +211,9 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
       }
 
       const nextVersion = (latestPackage?.version ?? 0) + 1;
+
+      await logger.info("validator", "RUN_VALIDATORS_START", "Running normalize+validate+persist pipeline");
+
       const result = await normalizeValidatePersistAnswerPackage({
         source_problem_id: sourceProblemId,
         version: nextVersion,
@@ -201,11 +229,23 @@ export function AIComparisonPanel({ sourceProblemId, problemText, solutionText, 
         log_event_type: "ai_generation_test",
       });
 
+      await logger.info("validator", "RUN_VALIDATORS_END", `Pipeline result: ${result.status}`, {
+        status: result.status,
+        rejected: result.rejected,
+        validation_results: result.validation_results.map(v => ({ name: v.validator, status: v.status, message: v.message })),
+      });
+
+      if (result.rejected) {
+        await logger.finalize("failed", { error_summary: result.rejection_reason });
+      } else {
+        await logger.finalize("success", { variant_id: result.package?.id });
+      }
+
       setOpenaiPkg(result.package);
       qc.invalidateQueries({ queryKey: ["answer-packages"] });
       toast.success(`OpenAI test complete — v${nextVersion} created (${result.status})`);
     },
-    onError: (e: Error) => toast.error(`OpenAI test failed: ${e.message}`),
+    onError: async (e: Error) => toast.error(`OpenAI test failed: ${e.message}`),
   });
 
   const promoteMutation = useMutation({
