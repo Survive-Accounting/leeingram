@@ -56,9 +56,7 @@ export class GenerationLogger {
 
     if (error) {
       console.error("Failed to create generation_run:", error);
-      // Generate a local ID so logging can continue in-memory
-      this.runId = crypto.randomUUID();
-      return this.runId;
+      throw new Error(`Failed to create generation run: ${error.message}`);
     }
 
     this.runId = (data as any).id;

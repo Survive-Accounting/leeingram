@@ -304,87 +304,162 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       const selectedProvider = provider ?? genProvider;
       const selectedModel = selectedProvider === "openai" ? (model ?? genModel) : undefined;
 
-      // Use OCR-extracted text as primary grounding input when available
-      const useProblemText = problem.ocr_extracted_problem_text || problem.problem_text;
-      const useSolutionText = problem.ocr_extracted_solution_text || problem.solution_text;
-      const useLabel = problem.ocr_detected_label || problem.source_label;
-      const useTitle = problem.ocr_detected_title || problem.title;
+      const logger = new GenerationLogger({
+        course_id: problem.course_id,
+        chapter_id: problem.chapter_id,
+        source_problem_id: problem.id,
+        provider: selectedProvider,
+        model: selectedModel,
+      });
 
-      // ── Scenario Segmentation ──
-      const scenarioResult = detectAndSplitScenarios(useProblemText);
-      const scenarioBlocks = scenarioResult.is_multi_scenario ? scenarioResult.scenario_blocks : undefined;
-
-      const { data, error } = await supabase.functions.invoke("convert-to-asset", {
-        body: {
-          mode: "candidates",
-          problemId: problem.id,
-          courseId: problem.course_id,
-          chapterId: problem.chapter_id,
-          sourceLabel: useLabel,
-          title: useTitle,
-          problemText: useProblemText,
-          solutionText: useSolutionText,
-          journalEntryText: problem.journal_entry_text,
-          notes: afNotes,
-          requiresJournalEntry: afRequiresJE,
-          provider: selectedProvider,
-          model: selectedModel,
-          scenarioBlocks,
-          difficultyToggles: activeDiffToggles.length > 0
-            ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
-            : undefined,
+      await logger.start();
+      await logger.info("frontend", "CLICK_GENERATE", `Generate variants for ${problem.source_label || problem.id}`, {
+        course_id: problem.course_id,
+        chapter_id: problem.chapter_id,
+        source_problem_id: problem.id,
+        ui_provider_selected: selectedProvider,
+        ui_settings: {
+          variant_count: vCount,
+          difficulty_toggles: activeDiffToggles,
+          requires_je_forced: afRequiresJE,
+          notes_present: !!afNotes?.trim(),
         },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+
+      try {
+        // Use OCR-extracted text as primary grounding input when available
+        const useProblemText = problem.ocr_extracted_problem_text || problem.problem_text;
+        const useSolutionText = problem.ocr_extracted_solution_text || problem.solution_text;
+        const useLabel = problem.ocr_detected_label || problem.source_label;
+        const useTitle = problem.ocr_detected_title || problem.title;
+
+        // ── Scenario Segmentation ──
+        const scenarioResult = detectAndSplitScenarios(useProblemText);
+        const scenarioBlocks = scenarioResult.is_multi_scenario ? scenarioResult.scenario_blocks : undefined;
+
+        const requestStart = Date.now();
+        await logger.info("frontend", "REQUEST_START", "Calling convert-to-asset edge function", {
+          problem_text_length: useProblemText?.length ?? 0,
+          solution_text_length: useSolutionText?.length ?? 0,
+          has_scenarios: !!scenarioBlocks?.length,
+        });
+
+        const { data, error } = await supabase.functions.invoke("convert-to-asset", {
+          body: {
+            mode: "candidates",
+            problemId: problem.id,
+            courseId: problem.course_id,
+            chapterId: problem.chapter_id,
+            sourceLabel: useLabel,
+            title: useTitle,
+            problemText: useProblemText,
+            solutionText: useSolutionText,
+            journalEntryText: problem.journal_entry_text,
+            notes: afNotes,
+            requiresJournalEntry: afRequiresJE,
+            provider: selectedProvider,
+            model: selectedModel,
+            scenarioBlocks,
+            difficultyToggles: activeDiffToggles.length > 0
+              ? activeDiffToggles.map(id => DIFFICULTY_TOGGLES.find(t => t.id === id)?.label).filter(Boolean)
+              : undefined,
+            run_id: logger.runId,
+          },
+        });
+
+        await logger.info("frontend", "REQUEST_END", "Edge function returned", {
+          duration_ms: Date.now() - requestStart,
+          has_error: !!error,
+          has_data_error: !!data?.error,
+          candidate_count: data?.candidates?.length ?? 0,
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        return { data, logger, selectedProvider, selectedModel, problem };
+      } catch (err: any) {
+        await logger.error("frontend", "GENERATION_ERROR", err?.message || "Variant generation failed", {
+          stack: err?.stack?.slice(0, 500),
+        });
+        await logger.finalize("failed", { error_summary: err?.message });
+        throw err;
+      }
     },
-    onSuccess: async (data) => {
-      const newCandidates = data.candidates || [];
-      setCandidates((prev) => [...prev, ...newCandidates]);
-      if (viewingProblem) {
-        // Persist variants to DB for review queue
+    onSuccess: async ({ data, logger, selectedProvider, selectedModel, problem }) => {
+      try {
+        const newCandidates = data.candidates || [];
+
+        await logger.info("db", "SAVE_VARIANT_START", `Persisting ${newCandidates.length} variants`, {
+          candidate_count: newCandidates.length,
+        });
+
+        setCandidates((prev) => [...prev, ...newCandidates]);
+
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
           await supabase.from("problem_variants").insert({
-            base_problem_id: viewingProblem.id,
+            base_problem_id: problem.id,
             variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
             variant_problem_text: c.survive_problem_text || "",
             variant_solution_text: c.survive_solution_text || "",
             candidate_data: c,
           } as any);
         }
-        supabase.from("chapter_problems").update({ status: "generated", pipeline_status: "generated" } as any).eq("id", viewingProblem.id).then(() => {
-          qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
-          qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
-        });
-        setViewingProblem({ ...viewingProblem, status: "generated" });
-      }
-      const constraintsUsed = data.constraints_count || 0;
-      const scenarioLabels = data.scenario_labels || [];
-      const fixMsg = constraintsUsed > 0 ? ` (used ${constraintsUsed} recent constraints from edits)` : "";
-      const scenarioMsg = scenarioLabels.length > 0 ? ` [${scenarioLabels.length} scenarios detected]` : "";
-      toast.success(`Generated ${newCandidates.length} variants${fixMsg}${scenarioMsg}`);
 
-      // Log to activity log
-      if (viewingProblem) {
+        await supabase
+          .from("chapter_problems")
+          .update({ status: "generated", pipeline_status: "generated" } as any)
+          .eq("id", problem.id);
+
+        await logger.info("db", "SAVE_VARIANT_END", `${newCandidates.length} variants saved`, {
+          base_problem_id: problem.id,
+          provider: selectedProvider,
+          model: selectedModel,
+        });
+        await logger.finalize("success");
+
+        qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+        qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
+        qc.invalidateQueries({ queryKey: ["generation-runs", chapterId] });
+
+        setViewingProblem((prev) => (prev?.id === problem.id ? { ...prev, status: "generated" } : prev));
+
+        const constraintsUsed = data.constraints_count || 0;
+        const scenarioLabels = data.scenario_labels || [];
+        const fixMsg = constraintsUsed > 0 ? ` (used ${constraintsUsed} recent constraints from edits)` : "";
+        const scenarioMsg = scenarioLabels.length > 0 ? ` [${scenarioLabels.length} scenarios detected]` : "";
+        toast.success(`Generated ${newCandidates.length} variants${fixMsg}${scenarioMsg}`);
+
         await logActivity({
           actor_type: "ai",
           entity_type: "source_problem",
-          entity_id: viewingProblem.id,
+          entity_id: problem.id,
           event_type: "variant_generation",
           severity: "info",
           payload_json: {
-            provider: genProvider,
+            provider: selectedProvider,
+            model: selectedModel,
             variant_count: newCandidates.length,
             constraints_used: constraintsUsed,
             difficulty_toggles: activeDiffToggles,
             requires_je: afRequiresJE,
+            generation_run_id: logger.runId,
           },
         });
+      } catch (err: any) {
+        await logger.error("db", "SAVE_VARIANT_ERROR", err?.message || "Failed to persist generated variants", {
+          stack: err?.stack?.slice(0, 500),
+        });
+        await logger.finalize("failed", { error_summary: err?.message });
+        qc.invalidateQueries({ queryKey: ["generation-runs", chapterId] });
+        toast.error(err?.message || "Failed to save generated variants");
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: async (e: Error) => {
+      qc.invalidateQueries({ queryKey: ["generation-runs", chapterId] });
+      toast.error(e.message);
+    },
   });
 
   const approveMutation = useMutation({
