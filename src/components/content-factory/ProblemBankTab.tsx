@@ -150,6 +150,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set());
   const [genProvider, setGenProvider] = useState<"lovable" | "openai">("lovable");
   const [genModel, setGenModel] = useState("gpt-4.1");
+  const [lastGenError, setLastGenError] = useState<{ message: string; runId?: string; problemId?: string; provider?: string; model?: string } | null>(null);
 
   // Rejection feedback state
   const [rejectingIndex, setRejectingIndex] = useState<number | null>(null);
@@ -344,6 +345,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     }) => {
       const selectedProvider = provider ?? genProvider;
       const selectedModel = selectedProvider === "openai" ? (model ?? genModel) : undefined;
+      setLastGenError(null);
 
       // JE-only mode gate
       if (jeOnlyMode) {
@@ -440,7 +442,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           clearTimeout(timeoutId);
           await logger.error("frontend", "REQUEST_TIMEOUT", "Generation timed out after 60s");
           await logger.finalize("failed", { error_summary: "Request timed out" });
-          throw new Error("Generation timed out. Please try again.");
+          const err = new Error("Generation timed out. Please try again.");
+          setLastGenError({ message: err.message, runId: logger.runId ?? undefined, problemId: problem.id, provider: selectedProvider, model: selectedModel });
+          throw err;
         }
         clearTimeout(timeoutId);
 
@@ -452,12 +456,28 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           candidate_count: data?.candidates?.length ?? 0,
         });
 
-        if (error) throw error;
+        // Handle all error shapes
+        if (error) {
+          setLastGenError({ message: typeof error === "string" ? error : error?.message || "Edge function error", runId: logger.runId ?? undefined, problemId: problem.id, provider: selectedProvider, model: selectedModel });
+          throw typeof error === "string" ? new Error(error) : error;
+        }
         if (data?.ok === false) {
           const msg = data.message || data.error_code || "AI generation failed";
+          setLastGenError({ message: msg, runId: logger.runId ?? undefined, problemId: problem.id, provider: selectedProvider, model: selectedModel });
           throw new Error(msg);
         }
-        if (data?.error) throw new Error(data.error);
+        if (data?.error) {
+          setLastGenError({ message: data.error, runId: logger.runId ?? undefined, problemId: problem.id, provider: selectedProvider, model: selectedModel });
+          throw new Error(data.error);
+        }
+        // Validate expected candidates array
+        if (!data?.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+          const msg = "AI returned empty or missing candidates array. Try again or switch providers.";
+          setLastGenError({ message: msg, runId: logger.runId ?? undefined, problemId: problem.id, provider: selectedProvider, model: selectedModel });
+          await logger.error("frontend", "EMPTY_CANDIDATES", msg);
+          await logger.finalize("failed", { error_summary: msg });
+          throw new Error(msg);
+        }
 
         return { data, logger, selectedProvider, selectedModel, problem };
       } catch (err: any) {
@@ -469,6 +489,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           stack: err?.stack?.slice(0, 500),
         });
         await logger.finalize("failed", { error_summary: err?.message });
+        // Ensure error state is set (may already be set above)
+        if (!lastGenError) {
+          setLastGenError({ message: err?.message || "Variant generation failed", problemId: problem.id, provider: selectedProvider, model: selectedModel });
+        }
         throw err;
       }
     },
@@ -1871,6 +1895,54 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               </Button>
             )}
           </div>
+
+          {/* Inline Generation Error Panel */}
+          {lastGenError && !generateMutation.isPending && (
+            <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-destructive">Generation Failed</p>
+                  <p className="text-xs text-foreground/70 mt-0.5">{lastGenError.message}</p>
+                  {lastGenError.runId && (
+                    <p className="text-[10px] text-foreground/50 font-mono mt-1">Run ID: {lastGenError.runId}</p>
+                  )}
+                </div>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => setLastGenError(null)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  onClick={() => {
+                    setLastGenError(null);
+                    generateMutation.mutate({
+                      problem: p,
+                      provider: (lastGenError.provider as "lovable" | "openai") ?? genProvider,
+                      model: lastGenError.model,
+                    });
+                  }}
+                >
+                  <RotateCw className="h-3 w-3 mr-1" /> Retry
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-foreground/60"
+                  onClick={() => {
+                    const debug = JSON.stringify(lastGenError, null, 2);
+                    navigator.clipboard.writeText(debug);
+                    toast.success("Debug info copied");
+                  }}
+                >
+                  Copy Debug
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Candidates — Vertical Stack */}
           {candidates.length > 0 && (
