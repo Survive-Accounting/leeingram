@@ -411,15 +411,21 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
+          const jeValid = c._je_valid !== false; // true or undefined (no JE required)
+          const variantPayload: Record<string, any> = {
+            base_problem_id: problem.id,
+            variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+            variant_problem_text: c.survive_problem_text || "",
+            variant_solution_text: c.survive_solution_text || "",
+            candidate_data: c,
+          };
+          // Store structured JE when valid
+          if (c.je_structured && jeValid) {
+            variantPayload.journal_entry_completed_json = c.je_structured;
+          }
           const { data: insertedVariant, error: insertVariantError } = await supabase
             .from("problem_variants")
-            .insert({
-              base_problem_id: problem.id,
-              variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-              variant_problem_text: c.survive_problem_text || "",
-              variant_solution_text: c.survive_solution_text || "",
-              candidate_data: c,
-            } as any)
+            .insert(variantPayload as any)
             .select("id")
             .single();
 
@@ -679,15 +685,20 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
         for (let ci = 0; ci < candidates.length; ci++) {
           const c = candidates[ci];
+          const jeValid = c._je_valid !== false;
+          const variantPayload: Record<string, any> = {
+            base_problem_id: problem.id,
+            variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+            variant_problem_text: c.survive_problem_text || "",
+            variant_solution_text: c.survive_solution_text || "",
+            candidate_data: c,
+          };
+          if (c.je_structured && jeValid) {
+            variantPayload.journal_entry_completed_json = c.je_structured;
+          }
           const { data: insertedVariant, error: insertVariantError } = await supabase
             .from("problem_variants")
-            .insert({
-              base_problem_id: problem.id,
-              variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-              variant_problem_text: c.survive_problem_text || "",
-              variant_solution_text: c.survive_solution_text || "",
-              candidate_data: c,
-            } as any)
+            .insert(variantPayload as any)
             .select("id")
             .single();
 
@@ -1030,15 +1041,20 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   const allVariantIds: string[] = [];
                   for (let ci = 0; ci < candidates.length; ci++) {
                     const c = candidates[ci];
+                    const jeValid = c._je_valid !== false;
+                    const variantPayload: Record<string, any> = {
+                      base_problem_id: rp.id,
+                      variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
+                      variant_problem_text: c.survive_problem_text || "",
+                      variant_solution_text: c.survive_solution_text || "",
+                      candidate_data: c,
+                    };
+                    if (c.je_structured && jeValid) {
+                      variantPayload.journal_entry_completed_json = c.je_structured;
+                    }
                     const { data: insertedVariant, error: insertVariantError } = await supabase
                       .from("problem_variants")
-                      .insert({
-                        base_problem_id: rp.id,
-                        variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-                        variant_problem_text: c.survive_problem_text || "",
-                        variant_solution_text: c.survive_solution_text || "",
-                        candidate_data: c,
-                      } as any)
+                      .insert(variantPayload as any)
                       .select("id")
                       .single();
 

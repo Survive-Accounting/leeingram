@@ -89,6 +89,67 @@ function validateCandidates(candidates: any[], expectedCount: number) {
   return errors;
 }
 
+function validateJeStructured(je: any): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (!je || typeof je !== "object") {
+    return { valid: false, errors: ["je_structured is missing or not an object"] };
+  }
+
+  const sections = je.scenario_sections;
+  if (!sections || !Array.isArray(sections) || sections.length === 0) {
+    return { valid: false, errors: ["je_structured.scenario_sections must be a non-empty array"] };
+  }
+
+  for (let si = 0; si < sections.length; si++) {
+    const sec = sections[si];
+    const sp = `scenario_sections[${si}]`;
+    if (!sec.label || typeof sec.label !== "string") {
+      errors.push(`${sp}.label is required`);
+    }
+    const entries = sec.entries_by_date;
+    if (!entries || !Array.isArray(entries) || entries.length === 0) {
+      errors.push(`${sp}.entries_by_date must be a non-empty array`);
+      continue;
+    }
+    for (let ei = 0; ei < entries.length; ei++) {
+      const entry = entries[ei];
+      const ep = `${sp}.entries_by_date[${ei}]`;
+      if (entry.date === undefined && entry.entry_date === undefined) {
+        errors.push(`${ep} missing date/entry_date`);
+      }
+      const rows = entry.rows;
+      if (!rows || !Array.isArray(rows) || rows.length === 0) {
+        errors.push(`${ep}.rows must be a non-empty array`);
+        continue;
+      }
+      let totalDebit = 0;
+      let totalCredit = 0;
+      for (let ri = 0; ri < rows.length; ri++) {
+        const row = rows[ri];
+        const rp = `${ep}.rows[${ri}]`;
+        if (!row.account_name || typeof row.account_name !== "string") {
+          errors.push(`${rp}.account_name is required`);
+        }
+        const hasDebit = row.debit !== null && row.debit !== undefined;
+        const hasCredit = row.credit !== null && row.credit !== undefined;
+        if (!hasDebit && !hasCredit) {
+          errors.push(`${rp} must have either debit or credit`);
+        }
+        if (hasDebit && hasCredit && Number(row.debit) > 0 && Number(row.credit) > 0) {
+          errors.push(`${rp} has both debit and credit > 0`);
+        }
+        if (hasDebit) totalDebit += Number(row.debit) || 0;
+        if (hasCredit) totalCredit += Number(row.credit) || 0;
+      }
+      if (Math.abs(totalDebit - totalCredit) > 1) {
+        errors.push(`${ep} debits (${totalDebit}) != credits (${totalCredit})`);
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 function runCandidateValidators(candidates: any[], requiresJournalEntry: boolean) {
   const results: Array<Record<string, any>> = [];
 
@@ -108,21 +169,36 @@ function runCandidateValidators(candidates: any[], requiresJournalEntry: boolean
 
   if (!requiresJournalEntry) {
     results.push({
-      name: "journal_entry_presence",
+      name: "je_structured_valid",
       status: "skip",
       reason_if_skip: "Journal entry not required for this source problem",
     });
   } else {
-    const allHaveJE = hasCandidates && candidates.every((c) =>
-      typeof c?.journal_entry_block === "string"
-        ? c.journal_entry_block.trim().length > 0
-        : !!c?.journal_entry_template_json || !!c?.journal_entry_completed_json
-    );
+    // Deep validate each candidate's je_structured
+    const perCandidateResults: Array<{ index: number; valid: boolean; errors: string[] }> = [];
+    let allValid = true;
+
+    if (hasCandidates) {
+      candidates.forEach((c, idx) => {
+        const je = c?.je_structured;
+        if (!je) {
+          perCandidateResults.push({ index: idx, valid: false, errors: ["je_structured field is missing"] });
+          allValid = false;
+        } else {
+          const validation = validateJeStructured(je);
+          perCandidateResults.push({ index: idx, valid: validation.valid, errors: validation.errors });
+          if (!validation.valid) allValid = false;
+        }
+      });
+    } else {
+      allValid = false;
+    }
 
     results.push({
-      name: "journal_entry_presence",
-      status: allHaveJE ? "pass" : "fail",
-      details_if_fail: allHaveJE ? undefined : "One or more candidates are missing structured/templated journal entry data",
+      name: "je_structured_valid",
+      status: allValid ? "pass" : "fail",
+      details_if_fail: allValid ? undefined : "One or more candidates have invalid/missing je_structured",
+      per_candidate: perCandidateResults,
     });
   }
 
@@ -605,15 +681,29 @@ For each variant, include an "exam_trap_note" explaining what makes this variant
     }
 
     const journalInstruction = requiresJournalEntry
-      ? `JOURNAL ENTRY HANDLING:
-- Generate journal entries using the entries_by_date format:
-  { "entry_date": "YYYY-MM-DD or label", "rows": [{ "account_name": "...", "debit": number|null, "credit": number|null }] }
-- Each entry_by_date must balance (sum debits == sum credits)
-- Each row: exactly ONE of debit or credit (not both, not neither)
-- account_name must be CLEAN: no "$", no ":", no "a./b./c.", no "1./2.", no narrative text
-- Do NOT include reasoning checklists — just JE rows
-- Format for easy Google Sheets copy/paste`
-      : "JOURNAL ENTRY: Leave journal_entry_block as null. This problem does not require a journal entry.";
+      ? `JOURNAL ENTRY HANDLING (STRICT — structured output required):
+- You MUST populate the "je_structured" field for every candidate.
+- Use this EXACT structure:
+  { "scenario_sections": [
+      { "label": "Main" OR "Situation 1" etc.,
+        "entries_by_date": [
+          { "date": "YYYY-MM-DD or descriptive label",
+            "rows": [
+              { "account_name": "Cash", "debit": 1000, "credit": null },
+              { "account_name": "Revenue", "debit": null, "credit": 1000 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+- For single-scenario problems, use a single scenario_section with label "Main".
+- Each entry_by_date must balance (sum debits == sum credits).
+- Each row: exactly ONE of debit or credit is a number, the other is null.
+- account_name must be CLEAN: no "$", no ":", no "a./b./c.", no "1./2.", no narrative text.
+- Do NOT include reasoning checklists — just JE rows.
+- Also populate journal_entry_block as a text summary for backward compatibility.`
+      : "JOURNAL ENTRY: Leave journal_entry_block and je_structured as null. This problem does not require a journal entry.";
 
     let scenarioInstruction = "";
     if (scenarioBlocks && scenarioBlocks.length >= 2) {
@@ -749,12 +839,53 @@ Generate ${variantCount} exam-style practice variants.`;
                     asset_name: { type: "string", description: "Short clear name for this variant" },
                     tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
                     survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
-                    journal_entry_block: { type: "string", description: "Account | Debit | Credit grid or null" },
+                    journal_entry_block: { type: "string", description: "Account | Debit | Credit text grid or null" },
+                    ...(requiresJournalEntry ? {
+                      je_structured: {
+                        type: "object",
+                        description: "Structured journal entry with scenario_sections containing entries_by_date with rows of account_name/debit/credit",
+                        properties: {
+                          scenario_sections: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                label: { type: "string", description: "Scenario label e.g. 'Main' or 'Situation 1'" },
+                                entries_by_date: {
+                                  type: "array",
+                                  items: {
+                                    type: "object",
+                                    properties: {
+                                      date: { type: "string", description: "Entry date or descriptive label" },
+                                      rows: {
+                                        type: "array",
+                                        items: {
+                                          type: "object",
+                                          properties: {
+                                            account_name: { type: "string" },
+                                            debit: { type: ["number", "null"] },
+                                            credit: { type: ["number", "null"] },
+                                          },
+                                          required: ["account_name", "debit", "credit"],
+                                        },
+                                      },
+                                    },
+                                    required: ["date", "rows"],
+                                  },
+                                },
+                              },
+                              required: ["label", "entries_by_date"],
+                            },
+                          },
+                        },
+                        required: ["scenario_sections"],
+                      },
+                    } : {}),
                     answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
                     survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
                     exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
                   },
-                  required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text"],
+                  required: ["asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text", ...(requiresJournalEntry ? ["je_structured"] : [])],
                   additionalProperties: false,
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,
@@ -908,7 +1039,24 @@ Generate ${variantCount} exam-style practice variants.`;
     await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators");
 
     const validatorResults = runCandidateValidators(candidates, requiresJournalEntry);
+    const jeValidator = validatorResults.find((r) => r.name === "je_structured_valid");
+    const jeValidationFailed = requiresJournalEntry && jeValidator?.status === "fail";
     const validatorFailed = validatorResults.some((r) => r.status === "fail");
+
+    // Annotate each candidate with _je_valid and _je_errors for the frontend
+    if (requiresJournalEntry && jeValidator?.per_candidate) {
+      for (const pc of jeValidator.per_candidate) {
+        if (candidates[pc.index]) {
+          candidates[pc.index]._je_valid = pc.valid;
+          candidates[pc.index]._je_errors = pc.errors;
+          if (!pc.valid) {
+            // Store raw text and mark needs_repair
+            candidates[pc.index]._status = "needs_repair";
+            candidates[pc.index]._ai_raw_je = candidates[pc.index].journal_entry_block || null;
+          }
+        }
+      }
+    }
 
     await logGenEvent(
       sbService,
@@ -917,8 +1065,14 @@ Generate ${variantCount} exam-style practice variants.`;
       "validator",
       validatorFailed ? "warn" : "info",
       "RUN_VALIDATORS_END",
-      "Validator pass complete",
-      { validator_results: validatorResults }
+      jeValidationFailed
+        ? `JE validation failed for ${(jeValidator?.per_candidate || []).filter((p: any) => !p.valid).length} candidates`
+        : "Validator pass complete",
+      {
+        validator_results: validatorResults,
+        je_validation_failed: jeValidationFailed,
+        requires_je: requiresJournalEntry,
+      }
     );
 
     await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_START", "No backend variant persistence for candidates mode", {
@@ -936,6 +1090,7 @@ Generate ${variantCount} exam-style practice variants.`;
       status: "pending_frontend_finalize",
       duration_ms: durationMs,
       note: "variant_id will be set by frontend after inserting problem_variants rows",
+      je_validation_failed: jeValidationFailed,
     });
 
     // Do NOT call finalizeRunRecord here for candidates mode.
@@ -953,6 +1108,8 @@ Generate ${variantCount} exam-style practice variants.`;
       constraints_count: constraintsCount,
       scenario_labels: scenarioLabels,
       validator_results: validatorResults,
+      requires_je: requiresJournalEntry,
+      je_validation_failed: jeValidationFailed,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
