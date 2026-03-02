@@ -1319,6 +1319,9 @@ export type Database = {
           candidate_data: Json
           created_at: string
           id: string
+          je_entries_json: Json | null
+          je_entry_status_json: Json | null
+          je_skeleton_json: Json | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
           variant_label: string
@@ -1330,6 +1333,9 @@ export type Database = {
           candidate_data?: Json
           created_at?: string
           id?: string
+          je_entries_json?: Json | null
+          je_entry_status_json?: Json | null
+          je_skeleton_json?: Json | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           variant_label?: string
@@ -1341,6 +1347,9 @@ export type Database = {
           candidate_data?: Json
           created_at?: string
           id?: string
+          je_entries_json?: Json | null
+          je_entry_status_json?: Json | null
+          je_skeleton_json?: Json | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           variant_label?: string

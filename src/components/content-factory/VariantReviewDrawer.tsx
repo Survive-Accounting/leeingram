@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Check, X, Save, ChevronDown, AlertTriangle, Info, Lock, CheckCircle2,
-  Circle, XCircle, ScrollText, Plus,
+  Circle, XCircle, ScrollText, Plus, Sparkles, Loader2, Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -16,11 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { JournalEntryEditor, groupsToSections, type JESection } from "./JournalEntryEditor";
 import { ValidationPanel } from "./ValidationPanel";
 import { runValidation, hasFailures, type AnswerPackageData, type ValidationResult } from "@/lib/validation";
-import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
-import { detectRequiresJE, normalizeLegacyJEText } from "@/lib/legacyJENormalizer";
+import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE } from "@/lib/journalEntryParser";
+import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 import { logActivity } from "@/lib/activityLogger";
 import { useChapterApprovedAccounts } from "./ChapterAccountsSetup";
 import { ActivityLogPanel } from "./ActivityLogPanel";
+import {
+  SKELETON_SYSTEM_PROMPT, buildSkeletonUserPrompt,
+  SINGLE_DATE_SYSTEM_PROMPT, buildSingleDateUserPrompt,
+} from "@/lib/jeSkeletonPrompts";
 
 // ── Types ──
 
@@ -34,95 +38,62 @@ interface VariantReviewDrawerProps {
   onRejected: () => void;
 }
 
-type EntryStatus = "draft" | "corrected" | "validated";
+type DateEntryStatus = "empty" | "drafted" | "edited" | "validated";
 
-interface EntryMeta {
-  status: EntryStatus;
-  originalLines: JESection["lines"];
-  editedAt: string | null;
-  editedBy: string | null;
-  validationResults: ValidationResult[];
+interface SkeletonScenario {
+  scenario_label: string;
+  entry_dates: string[];
 }
 
-// ── Helpers ──
-
-function autoTagCorrections(before: JESection[], after: JESection[]): string[] {
-  const tags: string[] = [];
-  const beforeFlat = before.flatMap(s => s.lines);
-  const afterFlat = after.flatMap(s => s.lines);
-  const datePattern = /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|20\d{2})\b/i;
-  if (beforeFlat.some(l => datePattern.test(l.account_name)) && !afterFlat.some(l => datePattern.test(l.account_name)))
-    tags.push("no_dates_in_account_names");
-  const prefixPattern = /^.{4,}:\s*/;
-  if (beforeFlat.some(l => prefixPattern.test(l.account_name)) && !afterFlat.some(l => prefixPattern.test(l.account_name)))
-    tags.push("no_narrative_prefix_in_account");
-  for (let i = 0; i < Math.min(beforeFlat.length, afterFlat.length); i++) {
-    const bLine = beforeFlat[i], aLine = afterFlat[i];
-    if ((bLine.account_name + aLine.account_name).toLowerCase().includes("cash")) {
-      if ((bLine.debit != null ? "debit" : "credit") !== (aLine.debit != null ? "debit" : "credit")) {
-        tags.push("cash_direction_fix"); break;
-      }
-    }
-  }
-  for (let i = 0; i < Math.min(beforeFlat.length, afterFlat.length); i++) {
-    const name = (beforeFlat[i].account_name + afterFlat[i].account_name).toLowerCase();
-    if (name.includes("discount") || name.includes("premium")) {
-      if ((beforeFlat[i].debit != null ? "debit" : "credit") !== (afterFlat[i].debit != null ? "debit" : "credit")) {
-        tags.push("discount_premium_side_fix"); break;
-      }
-    }
-  }
-  return [...new Set(tags)];
+interface SkeletonData {
+  scenario_sections: SkeletonScenario[];
 }
 
-function buildDiff(before: JESection[], after: JESection[]): any {
-  const changes: any[] = [];
-  const max = Math.max(before.length, after.length);
-  for (let si = 0; si < max; si++) {
-    const b = before[si], a = after[si];
-    if (!b) { changes.push({ type: "section_added", sectionIndex: si }); continue; }
-    if (!a) { changes.push({ type: "section_removed", sectionIndex: si }); continue; }
-    if (b.entry_date !== a.entry_date) changes.push({ type: "date_changed", sectionIndex: si, from: b.entry_date, to: a.entry_date });
-    const maxL = Math.max(b.lines.length, a.lines.length);
-    for (let li = 0; li < maxL; li++) {
-      if (JSON.stringify(b.lines[li]) !== JSON.stringify(a.lines[li]))
-        changes.push({ type: "line_changed", sectionIndex: si, lineIndex: li, from: b.lines[li] || null, to: a.lines[li] || null });
-    }
-  }
-  return { changes };
+interface DateEntryRows {
+  rows: Array<{
+    account_name: string;
+    debit: number | null;
+    credit: number | null;
+    coa_id?: string | null;
+    display_name?: string;
+    unknown_account?: boolean;
+    memo?: string;
+  }>;
 }
 
-/** Group sections by scenario label */
-const scenarioPattern = /^((?:Situation|Case|Scenario)\s+(?:\d+|[A-Z]|[IVX]+))\s*[—\-–:]\s*/i;
+// Map: "scenarioLabel::date" -> DateEntryRows
+type EntriesMap = Record<string, DateEntryRows>;
+// Map: "scenarioLabel::date" -> DateEntryStatus
+type StatusMap = Record<string, DateEntryStatus>;
 
-interface ScenarioGroup {
-  label: string;
-  sectionIndices: number[];
+function dateKey(scenario: string, date: string): string {
+  return `${scenario}::${date}`;
 }
 
-function groupByScenario(sections: JESection[]): ScenarioGroup[] {
-  const groups: ScenarioGroup[] = [];
-  let current: string | null = null;
-  sections.forEach((s, i) => {
-    const m = s.entry_date.match(scenarioPattern);
-    const label = m ? m[1] : "Journal Entries";
-    if (label !== current) {
-      groups.push({ label, sectionIndices: [i] });
-      current = label;
-    } else {
-      groups[groups.length - 1].sectionIndices.push(i);
-    }
-  });
-  return groups;
+function formatDate(d: string): string {
+  try {
+    const dt = new Date(d + "T00:00:00");
+    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch { return d; }
 }
 
-function entryBalance(section: JESection): { balanced: boolean; diff: number } {
-  const d = section.lines.reduce((s, l) => s + (l.debit ?? 0), 0);
-  const c = section.lines.reduce((s, l) => s + (l.credit ?? 0), 0);
+function entryBalanceFromRows(rows: DateEntryRows["rows"]): { balanced: boolean; diff: number } {
+  const d = rows.reduce((s, r) => s + (r.debit ?? 0), 0);
+  const c = rows.reduce((s, r) => s + (r.credit ?? 0), 0);
   return { balanced: Math.abs(d - c) < 0.02, diff: Math.abs(d - c) };
 }
 
-function runSingleEntryValidation(section: JESection, reqJE?: boolean): ValidationResult[] {
+function runDateValidation(rows: DateEntryRows["rows"], reqJE?: boolean): ValidationResult[] {
+  const section: JESection = {
+    entry_date: "",
+    lines: rows.map(r => ({
+      account_name: r.account_name,
+      debit: r.debit,
+      credit: r.credit,
+      memo: r.memo || "",
+      indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
+    })),
+  };
   const pkg: AnswerPackageData = {
     answer_payload: { teaching_aids: { journal_entries: [section] } },
     extracted_inputs: {},
@@ -132,153 +103,122 @@ function runSingleEntryValidation(section: JESection, reqJE?: boolean): Validati
   return runValidation(pkg);
 }
 
+// ── Try to extract skeleton from existing candidate data ──
+function extractSkeletonFromCandidate(candidate: any): SkeletonData | null {
+  const ss = candidate?.scenario_sections || candidate?.teaching_aids?.scenario_sections;
+  if (!Array.isArray(ss) || ss.length === 0) return null;
+  
+  const sections: SkeletonScenario[] = ss.map((sc: any) => ({
+    scenario_label: sc.label || sc.scenario_label || "Journal Entry",
+    entry_dates: (sc.entries_by_date || sc.journal_entries || []).map(
+      (e: any) => e.entry_date || e.date || ""
+    ).filter(Boolean),
+  }));
+
+  if (sections.some(s => s.entry_dates.length > 0)) return { scenario_sections: sections };
+  return null;
+}
+
+function extractEntriesFromCandidate(candidate: any): EntriesMap {
+  const map: EntriesMap = {};
+  const ss = candidate?.scenario_sections || candidate?.teaching_aids?.scenario_sections;
+  if (!Array.isArray(ss)) return map;
+
+  for (const sc of ss) {
+    const label = sc.label || sc.scenario_label || "Journal Entry";
+    for (const entry of (sc.entries_by_date || sc.journal_entries || [])) {
+      const d = entry.entry_date || entry.date || "";
+      if (!d) continue;
+      const rows = (entry.rows || entry.lines || []).map((r: any) => ({
+        account_name: r.account_name || r.account || "",
+        debit: r.debit != null ? Number(r.debit) : null,
+        credit: r.credit != null ? Number(r.credit) : null,
+        coa_id: r.coa_id || null,
+        display_name: r.display_name,
+        unknown_account: r.unknown_account || r.needs_review,
+        memo: r.memo || "",
+      }));
+      if (rows.length > 0) map[dateKey(label, d)] = { rows };
+    }
+  }
+  return map;
+}
+
 // ── Component ──
 
 export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chapterId, onApproved, onRejected }: VariantReviewDrawerProps) {
   const { data: approvedAccounts } = useChapterApprovedAccounts(chapterId);
 
-  // Parse initial sections
-  const initialSections = useCallback((): JESection[] => {
-    if (!variant) return [];
-    const scenarioSections: any[] = variant.candidate_data?.scenario_sections || variant.journal_entry_completed_json?.scenario_sections || [];
-    if (scenarioSections.length > 0) {
-      const all: JESection[] = [];
-      for (const sc of scenarioSections) {
-        const entries: any[] = sc.entries_by_date || sc.journal_entries || [];
-        for (const entry of entries) {
-          const label = scenarioSections.length > 1 ? `${sc.label} — ${entry.entry_date || ""}` : (entry.entry_date || "");
-          all.push({
-            entry_date: label,
-            lines: (entry.rows || entry.lines || []).map((l: any) => ({
-              account_name: l.account_name || l.account || "",
-              coa_id: l.coa_id || null,
-              display_name: l.display_name,
-              unknown_account: l.unknown_account,
-              debit: l.debit != null ? Number(l.debit) : null,
-              credit: l.credit != null ? Number(l.credit) : null,
-              memo: l.memo || "",
-              indentation_level: (l.credit != null && l.credit !== 0 ? 1 : 0) as 0 | 1,
-            })),
-          });
-        }
-      }
-      if (all.length > 0) return all;
-    }
-    if (variant.journal_entry_completed_json && Array.isArray(variant.journal_entry_completed_json)) {
-      if (variant.journal_entry_completed_json[0]?.entry_date !== undefined) {
-        return variant.journal_entry_completed_json.map((s: any) => ({
-          entry_date: s.entry_date || "",
-          lines: (s.lines || s.rows || []).map((l: any) => ({
-            account_name: l.account_name || l.account || "",
-            coa_id: l.coa_id || null,
-            display_name: l.display_name,
-            unknown_account: l.unknown_account,
-            debit: l.debit != null ? Number(l.debit) : null,
-            credit: l.credit != null ? Number(l.credit) : null,
-            memo: l.memo || "",
-            indentation_level: (l.indentation_level ?? (l.credit != null ? 1 : 0)) as 0 | 1,
-          })),
-        }));
-      }
-      return groupsToSections(variant.journal_entry_completed_json);
-    }
-    if (variant.journal_entry_block) {
-      const parsed = parseLegacyJEBlock(variant.journal_entry_block);
-      if (parsed.length > 0) return parsed.map((g: any) => ({
-        entry_date: g.label || "", lines: (g.lines || []).map((l: any) => ({
-          account_name: l.account || "", debit: l.debit, credit: l.credit, memo: "",
-          indentation_level: (l.side === "credit" ? 1 : 0) as 0 | 1,
-        })),
-      }));
-    }
-    if (variant.answer_only) {
-      const parsed = parseLegacyAnswerOnly(variant.answer_only);
-      if (parsed.length > 0) return parsed.map((g: any) => ({
-        entry_date: g.label || "", lines: (g.lines || []).map((l: any) => ({
-          account_name: l.account || "", debit: l.debit, credit: l.credit, memo: "",
-          indentation_level: (l.side === "credit" ? 1 : 0) as 0 | 1,
-        })),
-      }));
-    }
-    return [];
-  }, [variant]);
-
-  // State
-  const [sections, setSections] = useState<JESection[]>([]);
-  const [entryMeta, setEntryMeta] = useState<EntryMeta[]>([]);
-  const [globalValidation, setGlobalValidation] = useState<ValidationResult[]>([]);
+  // Core state
+  const [skeleton, setSkeleton] = useState<SkeletonData | null>(null);
+  const [entries, setEntries] = useState<EntriesMap>({});
+  const [statuses, setStatuses] = useState<StatusMap>({});
   const [saving, setSaving] = useState(false);
   const [hasEdits, setHasEdits] = useState(false);
   const [editVersion, setEditVersion] = useState(0);
+  const [requiresJE, setRequiresJE] = useState(false);
+  const [generatingSkeleton, setGeneratingSkeleton] = useState(false);
+  const [generatingDate, setGeneratingDate] = useState<string | null>(null); // dateKey being generated
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [globalValidation, setGlobalValidation] = useState<ValidationResult[]>([]);
+  const [approvalBlockedModal, setApprovalBlockedModal] = useState(false);
   const [recentFixes, setRecentFixes] = useState<any[]>([]);
   const [showFixes, setShowFixes] = useState(false);
-  const [openEntryIndex, setOpenEntryIndex] = useState<number | null>(null);
-  const [approvalBlockedModal, setApprovalBlockedModal] = useState(false);
-  const [isLegacyFallback, setIsLegacyFallback] = useState(false);
   const [showGenLog, setShowGenLog] = useState(false);
-  const [requiresJE, setRequiresJE] = useState(false);
-  const [missingStructuredJE, setMissingStructuredJE] = useState(false);
 
   // Init
   useEffect(() => {
-    if (variant && open) {
-      const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
-      const needsJE = detectRequiresJE(problemText);
-      setRequiresJE(needsJE);
+    if (!variant || !open) return;
+    
+    const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+    const needsJE = detectRequiresJE(problemText);
+    setRequiresJE(needsJE);
 
-      let s = initialSections();
+    // Try to load existing skeleton from DB fields or extract from candidate_data
+    const dbSkeleton = variant.je_skeleton_json as SkeletonData | null;
+    const dbEntries = (variant.je_entries_json || {}) as EntriesMap;
+    const dbStatuses = (variant.je_entry_status_json || {}) as StatusMap;
 
-      // Detect if we're using legacy fallback (no canonical structured data)
-      const hasCanonical = isCanonicalJE(variant.candidate_data) ||
-        isCanonicalJE(variant.journal_entry_completed_json) ||
-        (variant.candidate_data?.scenario_sections?.length > 0);
-      setIsLegacyFallback(s.length > 0 && !hasCanonical);
+    if (dbSkeleton && dbSkeleton.scenario_sections?.length > 0) {
+      setSkeleton(dbSkeleton);
+      setEntries(dbEntries);
+      setStatuses(dbStatuses);
+    } else {
+      // Try extracting from candidate_data
+      const candidateSkeleton = extractSkeletonFromCandidate(
+        variant.candidate_data || variant.journal_entry_completed_json
+      );
+      const candidateEntries = extractEntriesFromCandidate(
+        variant.candidate_data || variant.journal_entry_completed_json
+      );
 
-      // Auto-normalize legacy text if requires_je but no structured JE
-      if (needsJE && s.length === 0) {
-        const legacyText = variant.journal_entry_block || variant.answer_only || variant.survive_solution_text || "";
-        if (legacyText) {
-          const result = normalizeLegacyJEText(legacyText);
-          if (result.success) {
-            s = result.scenario_sections.flatMap(sc =>
-              sc.entries_by_date.map(entry => ({
-                entry_date: sc.label !== "Journal Entry" ? `${sc.label} — ${entry.entry_date}` : entry.entry_date,
-                lines: entry.rows.map(r => ({
-                  account_name: r.account_name,
-                  debit: r.debit,
-                  credit: r.credit,
-                  memo: r.memo || "",
-                  indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
-                })),
-              }))
-            );
-            setIsLegacyFallback(true);
-          }
+      if (candidateSkeleton) {
+        setSkeleton(candidateSkeleton);
+        setEntries(candidateEntries);
+        // Mark entries with data as drafted
+        const initStatuses: StatusMap = {};
+        for (const key of Object.keys(candidateEntries)) {
+          initStatuses[key] = "drafted";
         }
+        setStatuses(initStatuses);
+      } else {
+        setSkeleton(null);
+        setEntries({});
+        setStatuses({});
       }
-
-      setMissingStructuredJE(needsJE && s.length === 0);
-      setSections(s);
-      setHasEdits(false);
-      setEditVersion(0);
-      setOpenEntryIndex(null);
-
-      // Initialize entry meta — all start as draft with per-entry validation
-      const meta: EntryMeta[] = s.map(sec => {
-        const vr = runSingleEntryValidation(sec, needsJE);
-        return {
-          status: "draft" as EntryStatus,
-          originalLines: JSON.parse(JSON.stringify(sec.lines)),
-          editedAt: null,
-          editedBy: null,
-          validationResults: vr,
-        };
-      });
-      setEntryMeta(meta);
-      runGlobalValidation(s);
-      loadRecentFixes();
     }
+
+    setHasEdits(false);
+    setEditVersion(0);
+    setEditingDate(null);
+    loadRecentFixes();
   }, [variant, open]);
+
+  // Recompute global validation whenever entries change
+  useEffect(() => {
+    if (!skeleton) return;
+    runGlobalValidationFromEntries();
+  }, [entries, skeleton]);
 
   const loadRecentFixes = async () => {
     if (!chapterId) return;
@@ -289,9 +229,32 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     setRecentFixes(data || []);
   };
 
-  const runGlobalValidation = (s: JESection[]) => {
+  const runGlobalValidationFromEntries = () => {
+    if (!skeleton) { setGlobalValidation([]); return; }
+    // Build full sections for global validation
+    const allSections: JESection[] = [];
+    for (const sc of skeleton.scenario_sections) {
+      for (const d of sc.entry_dates) {
+        const key = dateKey(sc.scenario_label, d);
+        const entry = entries[key];
+        if (entry) {
+          allSections.push({
+            entry_date: skeleton.scenario_sections.length > 1
+              ? `${sc.scenario_label} — ${d}`
+              : d,
+            lines: entry.rows.map(r => ({
+              account_name: r.account_name,
+              debit: r.debit,
+              credit: r.credit,
+              memo: r.memo || "",
+              indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
+            })),
+          });
+        }
+      }
+    }
     const pkg: AnswerPackageData = {
-      answer_payload: { teaching_aids: { journal_entries: s } },
+      answer_payload: { teaching_aids: { journal_entries: allSections } },
       extracted_inputs: {},
       computed_values: {},
       requires_je: requiresJE,
@@ -299,158 +262,265 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
     setGlobalValidation(runValidation(pkg));
   };
 
-  // Scenario groups
-  const scenarioGroups = useMemo(() => groupByScenario(sections), [sections]);
+  // ── Skeleton Generation ──
+  const handleGenerateSkeleton = async () => {
+    setGeneratingSkeleton(true);
+    try {
+      const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+      const solutionText = variant.survive_solution_text || variant.variant_solution_text || problem?.solution_text || "";
 
-  // Check if entry is unlocked (chronological order within each scenario group)
-  const isEntryUnlocked = useCallback((sectionIndex: number): boolean => {
-    for (const group of scenarioGroups) {
-      const idx = group.sectionIndices.indexOf(sectionIndex);
-      if (idx === -1) continue;
-      // First entry in group is always unlocked
-      if (idx === 0) return true;
-      // All prior entries in this group must be validated
-      for (let i = 0; i < idx; i++) {
-        const priorMeta = entryMeta[group.sectionIndices[i]];
-        if (!priorMeta || priorMeta.status !== "validated") return false;
+      const { data, error } = await supabase.functions.invoke("generate-ai-output", {
+        body: {
+          provider: "lovable",
+          model: "google/gemini-2.5-flash",
+          temperature: 0.1,
+          max_output_tokens: 2000,
+          source_problem_id: problem?.id || variant.base_problem_id || "unknown",
+          messages: [
+            { role: "system", content: SKELETON_SYSTEM_PROMPT },
+            { role: "user", content: buildSkeletonUserPrompt({ problemText, solutionText }) },
+          ],
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      if (!data.parsed?.scenario_sections) throw new Error("Invalid skeleton response");
+
+      const sk: SkeletonData = {
+        scenario_sections: data.parsed.scenario_sections.map((s: any) => ({
+          scenario_label: s.scenario_label || "Journal Entry",
+          entry_dates: (s.entry_dates || []).filter(Boolean),
+        })),
+      };
+
+      setSkeleton(sk);
+      setEntries({});
+      setStatuses({});
+      setHasEdits(true);
+
+      // Persist skeleton to variant
+      if (variant._variantId || variant.id) {
+        await supabase.from("problem_variants").update({
+          je_skeleton_json: sk as any,
+          je_entries_json: {} as any,
+          je_entry_status_json: {} as any,
+        } as any).eq("id", variant._variantId || variant.id);
       }
-      return true;
+
+      await logActivity({
+        actor_type: "ai", entity_type: "source_problem",
+        entity_id: problem?.id || "unknown",
+        event_type: "je_skeleton_generated",
+        severity: "info",
+        payload_json: {
+          scenario_count: sk.scenario_sections.length,
+          total_dates: sk.scenario_sections.reduce((s, sc) => s + sc.entry_dates.length, 0),
+        },
+      });
+
+      toast.success(`Skeleton generated: ${sk.scenario_sections.reduce((s, sc) => s + sc.entry_dates.length, 0)} dates across ${sk.scenario_sections.length} scenario(s)`);
+    } catch (err: any) {
+      toast.error(err?.message || "Skeleton generation failed");
+    } finally {
+      setGeneratingSkeleton(false);
     }
-    return true;
-  }, [scenarioGroups, entryMeta]);
-
-  // All entries validated?
-  const allEntriesValidated = useMemo(() =>
-    entryMeta.length > 0 && entryMeta.every(m => m.status === "validated"),
-    [entryMeta]);
-
-  const globalFailed = hasFailures(globalValidation);
-  const canApprove = !globalFailed && allEntriesValidated && !saving && !missingStructuredJE;
-
-  // Handle section change for a single entry
-  const handleSingleEntryChange = (si: number, newSection: JESection) => {
-    const next = sections.map((s, i) => i === si ? newSection : s);
-    setSections(next);
-    setHasEdits(true);
-
-    // Update entry meta — re-validate and mark corrected
-    const vr = runSingleEntryValidation(newSection, requiresJE);
-    setEntryMeta(prev => prev.map((m, i) => i === si ? {
-      ...m,
-      status: m.status === "validated" ? "corrected" : (m.status === "draft" ? "corrected" : m.status),
-      validationResults: vr,
-      editedAt: new Date().toISOString(),
-    } : m));
-
-    runGlobalValidation(next);
   };
 
-  const handleMarkEntryCorrect = async (si: number) => {
-    const section = sections[si];
-    const meta = entryMeta[si];
-    if (!meta) return;
+  // ── Per-Date Row Generation ──
+  const handleGenerateRows = async (scenarioLabel: string, date: string) => {
+    const key = dateKey(scenarioLabel, date);
+    setGeneratingDate(key);
+    try {
+      const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+      const solutionText = variant.survive_solution_text || variant.variant_solution_text || problem?.solution_text || "";
 
-    const bal = entryBalance(section);
+      // Gather prior entries for context
+      const priorEntries: Array<{ date: string; rows: any[] }> = [];
+      if (skeleton) {
+        const sc = skeleton.scenario_sections.find(s => s.scenario_label === scenarioLabel);
+        if (sc) {
+          for (const d of sc.entry_dates) {
+            if (d === date) break; // Only prior dates
+            const priorKey = dateKey(scenarioLabel, d);
+            if (entries[priorKey]) {
+              priorEntries.push({ date: d, rows: entries[priorKey].rows });
+            }
+          }
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke("generate-ai-output", {
+        body: {
+          provider: "lovable",
+          model: "google/gemini-2.5-flash",
+          temperature: 0.2,
+          max_output_tokens: 2000,
+          source_problem_id: problem?.id || variant.base_problem_id || "unknown",
+          messages: [
+            { role: "system", content: SINGLE_DATE_SYSTEM_PROMPT },
+            { role: "user", content: buildSingleDateUserPrompt({
+              problemText,
+              solutionText,
+              scenarioLabel,
+              targetDate: date,
+              chartOfAccounts: approvedAccounts?.map((a: any) => a.account_name) || [],
+              priorEntries,
+            }) },
+          ],
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      if (!data.parsed?.rows || !Array.isArray(data.parsed.rows)) throw new Error("Invalid rows response");
+
+      const newRows: DateEntryRows = {
+        rows: data.parsed.rows.map((r: any) => ({
+          account_name: r.account || r.account_name || "",
+          debit: r.debit != null ? Number(r.debit) : null,
+          credit: r.credit != null ? Number(r.credit) : null,
+          unknown_account: r.needs_review || false,
+          memo: "",
+        })),
+      };
+
+      setEntries(prev => ({ ...prev, [key]: newRows }));
+      setStatuses(prev => ({ ...prev, [key]: "drafted" }));
+      setHasEdits(true);
+      setEditingDate(key);
+
+      // Auto-persist
+      await persistEntriesToDB({ ...entries, [key]: newRows }, { ...statuses, [key]: "drafted" });
+
+      toast.success(`Generated ${newRows.rows.length} rows for ${formatDate(date)}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Row generation failed");
+    } finally {
+      setGeneratingDate(null);
+    }
+  };
+
+  // ── Edit rows for a date ──
+  const handleDateRowsChange = (key: string, newSection: JESection) => {
+    const newRows: DateEntryRows = {
+      rows: newSection.lines.map(l => ({
+        account_name: l.account_name,
+        debit: l.debit,
+        credit: l.credit,
+        coa_id: (l as any).coa_id || null,
+        display_name: (l as any).display_name,
+        unknown_account: (l as any).unknown_account,
+        memo: l.memo || "",
+      })),
+    };
+    setEntries(prev => ({ ...prev, [key]: newRows }));
+    setStatuses(prev => {
+      const current = prev[key];
+      return { ...prev, [key]: current === "validated" ? "edited" : (current === "empty" ? "drafted" : current) };
+    });
+    setHasEdits(true);
+  };
+
+  // ── Mark Entry Correct ──
+  const handleMarkCorrect = async (key: string) => {
+    const entry = entries[key];
+    if (!entry) return;
+
+    const bal = entryBalanceFromRows(entry.rows);
     if (!bal.balanced) {
       toast.error(`Entry is off by $${bal.diff.toFixed(2)} — fix balance first`);
       return;
     }
 
-    const entryFails = meta.validationResults.some(r => r.status === "fail");
-    if (entryFails) {
+    const vr = runDateValidation(entry.rows, requiresJE);
+    if (vr.some(r => r.status === "fail")) {
       toast.error("Fix validation errors before marking correct");
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    setEntryMeta(prev => prev.map((m, i) => i === si ? {
-      ...m,
-      status: "validated",
-      editedAt: new Date().toISOString(),
-      editedBy: user?.id || null,
-    } : m));
-
-    toast.success(`"${section.entry_date}" marked as validated`);
+    setStatuses(prev => ({ ...prev, [key]: "validated" }));
+    const newStatuses = { ...statuses, [key]: "validated" as DateEntryStatus };
+    await persistEntriesToDB(entries, newStatuses);
+    toast.success("Entry marked as validated");
   };
 
-  const handleSaveEdits = async () => {
-    if (!variant || !problem) return;
-    setSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const originalSections = entryMeta.map(m => ({
-        entry_date: "",
-        lines: m.originalLines,
-      }));
-      const diff = buildDiff(originalSections, sections);
-      const autoTags = autoTagCorrections(originalSections, sections);
-      const summary = autoTags.length > 0
-        ? `Fixed: ${autoTags.join(", ")}`
-        : `Manual JE edits (${diff.changes.length} changes)`;
+  // ── Persist to DB ──
+  const persistEntriesToDB = async (ent: EntriesMap, sts: StatusMap) => {
+    const variantId = variant._variantId || variant.id;
+    if (!variantId) return;
 
-      await supabase.from("correction_events").insert({
-        source_problem_id: problem.id, chapter_id: chapterId,
-        user_id: user?.id || null,
-        before_json: originalSections, after_json: sections,
-        diff_json: diff, auto_tags: autoTags, summary,
-      } as any);
+    // Also build the full journal_entry_completed_json for backward compat
+    const completedSections = skeleton?.scenario_sections.map(sc => ({
+      label: sc.scenario_label,
+      entries_by_date: sc.entry_dates
+        .filter(d => ent[dateKey(sc.scenario_label, d)])
+        .map(d => ({
+          entry_date: d,
+          rows: ent[dateKey(sc.scenario_label, d)]!.rows,
+        })),
+    })) || [];
 
-      const newVersion = editVersion + 1;
-      const updatedCandidate = {
-        ...(variant.candidate_data || variant),
-        journal_entry_completed_json: sections,
+    await supabase.from("problem_variants").update({
+      je_entries_json: ent as any,
+      je_entry_status_json: sts as any,
+      journal_entry_completed_json: {
+        scenario_sections: completedSections,
         updated_by_user: true,
         updated_at: new Date().toISOString(),
-        _edit_version: newVersion,
-        _edited_at: new Date().toISOString(),
-        _edited_by: user?.id,
-        _entry_meta: entryMeta.map((m, i) => ({
-          entry_date: sections[i]?.entry_date,
-          status: m.status,
-          original_generated_rows: m.originalLines,
-          edited_rows: sections[i]?.lines,
-          edited_at: m.editedAt,
-          edited_by: m.editedBy,
-        })),
-      };
+      } as any,
+    } as any).eq("id", variantId);
+  };
 
-      if (variant._variantId) {
-        const { error } = await supabase.from("problem_variants").insert({
-          base_problem_id: problem.id,
-          variant_label: `${variant.variant_label || "Variant"} (edit v${newVersion})`,
-          variant_problem_text: variant.variant_problem_text || variant.survive_problem_text || "",
-          variant_solution_text: variant.variant_solution_text || variant.survive_solution_text || "",
-          candidate_data: updatedCandidate,
-          journal_entry_completed_json: sections as any,
-        } as any);
-        if (error) throw error;
-      }
+  // ── Save explicit ──
+  const handleSaveEdits = async () => {
+    setSaving(true);
+    try {
+      await persistEntriesToDB(entries, statuses);
+      const newVersion = editVersion + 1;
+      setEditVersion(newVersion);
+      setHasEdits(false);
 
       await logActivity({
-        actor_type: "user", entity_type: "source_problem", entity_id: problem.id,
-        event_type: "USER_JE_EDIT",
+        actor_type: "user", entity_type: "source_problem",
+        entity_id: problem?.id || "unknown",
+        event_type: "USER_JE_SKELETON_EDIT",
         payload_json: {
-          variant_id: variant._variantId, auto_tags: autoTags,
-          change_count: diff.changes.length, edit_version: newVersion,
-          entry_statuses: entryMeta.map(m => m.status),
+          variant_id: variant._variantId || variant.id,
+          edit_version: newVersion,
+          entry_statuses: statuses,
         },
       });
 
-      // Update original lines to current
-      setEntryMeta(prev => prev.map((m, i) => ({
-        ...m,
-        originalLines: JSON.parse(JSON.stringify(sections[i]?.lines || [])),
-      })));
-      setHasEdits(false);
-      setEditVersion(newVersion);
-      toast.success(`Saved as new version (v${newVersion})`);
+      toast.success(`Saved (v${newVersion})`);
     } catch (err: any) {
       toast.error(err?.message || "Save failed");
     } finally {
       setSaving(false);
     }
   };
+
+  // ── Approval logic ──
+  const allDatesGenerated = useMemo(() => {
+    if (!skeleton) return false;
+    return skeleton.scenario_sections.every(sc =>
+      sc.entry_dates.every(d => entries[dateKey(sc.scenario_label, d)]?.rows?.length > 0)
+    );
+  }, [skeleton, entries]);
+
+  const allDatesValidated = useMemo(() => {
+    if (!skeleton) return false;
+    return skeleton.scenario_sections.every(sc =>
+      sc.entry_dates.every(d => statuses[dateKey(sc.scenario_label, d)] === "validated")
+    );
+  }, [skeleton, statuses]);
+
+  const globalFailed = hasFailures(globalValidation);
+  const canApprove = skeleton && allDatesGenerated && allDatesValidated && !globalFailed && !saving;
+
+  const totalDates = skeleton?.scenario_sections.reduce((s, sc) => s + sc.entry_dates.length, 0) || 0;
+  const validatedCount = Object.values(statuses).filter(s => s === "validated").length;
+  const generatedCount = Object.keys(entries).length;
 
   const handleApprove = async () => {
     if (!canApprove) {
@@ -462,10 +532,6 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   };
 
   if (!variant) return null;
-
-  const hasJE = sections.length > 0;
-  const validatedCount = entryMeta.filter(m => m.status === "validated").length;
-  const totalEntries = entryMeta.length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -481,14 +547,14 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                 v{editVersion}
               </Badge>
             )}
-            {hasJE && (
+            {skeleton && (
               <Badge variant="outline" className={cn(
                 "text-[10px]",
-                allEntriesValidated
+                allDatesValidated
                   ? "text-green-400 border-green-500/30 bg-green-500/10"
                   : "text-amber-400 border-amber-500/30 bg-amber-500/10"
               )}>
-                {validatedCount}/{totalEntries} entries validated
+                {validatedCount}/{totalDates} entries validated
               </Badge>
             )}
           </SheetTitle>
@@ -554,145 +620,181 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
             </CollapsibleContent>
           </Collapsible>
 
-          {/* ════════ JOURNAL ENTRIES — Per-Date Review ════════ */}
-          {hasJE && (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
-                Journal Entry Review
-              </p>
+          {/* ════════ SKELETON-FIRST JE WORKFLOW ════════ */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">
+              Journal Entry Review
+            </p>
 
-              {/* Missing structured JE blocking banner */}
-              {missingStructuredJE && (
-                <div className="rounded-md border border-destructive/60 bg-destructive/15 px-3 py-2.5 mb-3 flex items-start gap-2">
-                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-destructive">Structured JE missing — must fix before approval</p>
-                    <p className="text-[10px] text-destructive/70 mt-0.5">
-                      This problem requires journal entries but none could be parsed. Re-generate or manually add entries.
-                    </p>
-                  </div>
-                </div>
-              )}
+            {/* No skeleton yet — generate one */}
+            {!skeleton && (
+              <div className="border border-dashed border-border rounded-lg p-6 text-center space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  {requiresJE
+                    ? "This problem requires journal entries. Start by generating the entry skeleton (dates only)."
+                    : "No journal entry skeleton. Generate one to structure the entries."}
+                </p>
+                <Button
+                  size="sm"
+                  onClick={handleGenerateSkeleton}
+                  disabled={generatingSkeleton}
+                >
+                  {generatingSkeleton ? (
+                    <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Generating Skeleton…</>
+                  ) : (
+                    <><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Generate Skeleton</>
+                  )}
+                </Button>
+              </div>
+            )}
 
-              {/* Legacy fallback banner */}
-              {isLegacyFallback && !missingStructuredJE && (
-                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 mb-3 flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-amber-400">Structured JE auto-normalized from legacy text</p>
-                    <p className="text-[10px] text-amber-400/70 mt-0.5">
-                      Review carefully — re-generate this variant for best results.
-                    </p>
-                  </div>
-                </div>
-              )}
-
+            {/* Skeleton exists — show per-date accordion */}
+            {skeleton && (
               <div className="space-y-4">
-                {scenarioGroups.map((group, gi) => (
-                  <div key={gi}>
+                {skeleton.scenario_sections.map((sc, si) => (
+                  <div key={si}>
                     {/* Scenario label */}
-                    {scenarioGroups.length > 1 || group.label !== "Journal Entries" ? (
+                    {(skeleton.scenario_sections.length > 1 || sc.scenario_label !== "Journal Entry") && (
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-px flex-1 bg-primary/20" />
                         <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                          {group.label}
+                          {sc.scenario_label}
                         </span>
                         <div className="h-px flex-1 bg-primary/20" />
                       </div>
-                    ) : null}
+                    )}
 
                     <div className="space-y-1">
-                      {group.sectionIndices.map((si) => {
-                        const section = sections[si];
-                        const meta = entryMeta[si];
-                        if (!section || !meta) return null;
+                      {sc.entry_dates.map((date, di) => {
+                        const key = dateKey(sc.scenario_label, date);
+                        const entry = entries[key];
+                        const status = statuses[key] || "empty";
+                        const isEditing = editingDate === key;
+                        const isGenerating = generatingDate === key;
+                        const hasRows = entry && entry.rows.length > 0;
+                        const bal = hasRows ? entryBalanceFromRows(entry.rows) : null;
+                        const dateVR = hasRows ? runDateValidation(entry.rows, requiresJE) : [];
+                        const dateFails = dateVR.some(r => r.status === "fail");
 
-                        const unlocked = isEntryUnlocked(si);
-                        const isOpen = openEntryIndex === si;
-                        const bal = entryBalance(section);
-                        const entryFails = meta.validationResults.some(r => r.status === "fail");
-                        const displayDate = section.entry_date.replace(scenarioPattern, "").trim() || section.entry_date || "Entry";
+                        // Unlock: first date always unlocked, subsequent require prior validated
+                        const priorValidated = di === 0 || statuses[dateKey(sc.scenario_label, sc.entry_dates[di - 1])] === "validated";
+                        const unlocked = priorValidated;
 
-                        // Status icon
-                        const StatusIcon = meta.status === "validated"
+                        const StatusIcon = status === "validated"
                           ? CheckCircle2
-                          : entryFails ? XCircle : Circle;
-                        const statusColor = meta.status === "validated"
+                          : status === "empty" ? Circle
+                          : dateFails ? XCircle : Circle;
+                        const statusColor = status === "validated"
                           ? "text-green-400"
-                          : entryFails ? "text-destructive" : "text-amber-400";
+                          : status === "empty" ? "text-muted-foreground"
+                          : dateFails ? "text-destructive" : "text-amber-400";
 
                         return (
-                          <div key={si} className="rounded-lg border border-border overflow-hidden">
-                            {/* Toggle header */}
-                            <button
-                              className={cn(
-                                "w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
-                                unlocked ? "hover:bg-muted/30 cursor-pointer" : "opacity-50 cursor-not-allowed",
-                                isOpen && "bg-muted/20"
-                              )}
-                              onClick={() => {
-                                if (!unlocked) {
-                                  toast.info("Validate earlier entries first");
-                                  return;
-                                }
-                                setOpenEntryIndex(isOpen ? null : si);
-                              }}
-                              disabled={!unlocked}
-                            >
+                          <div key={key} className="rounded-lg border border-border overflow-hidden">
+                            {/* Header row */}
+                            <div className={cn(
+                              "flex items-center gap-2 px-3 py-2",
+                              !unlocked && "opacity-50"
+                            )}>
                               {!unlocked ? (
                                 <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                               ) : (
                                 <StatusIcon className={cn("h-3.5 w-3.5 shrink-0", statusColor)} />
                               )}
 
-                              <span className="text-xs font-semibold text-foreground flex-1">{displayDate}</span>
+                              <span className="text-xs font-semibold text-foreground flex-1">
+                                {formatDate(date)}
+                              </span>
 
-                              {meta.status === "validated" && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-green-400 border-green-500/30">
-                                  Validated
-                                </Badge>
+                              {/* Status badges */}
+                              {status === "validated" && (
+                                <Badge variant="outline" className="text-[9px] h-4 text-green-400 border-green-500/30">Validated</Badge>
                               )}
-                              {meta.status === "corrected" && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-amber-400 border-amber-500/30">
-                                  Edited
-                                </Badge>
+                              {status === "edited" && (
+                                <Badge variant="outline" className="text-[9px] h-4 text-amber-400 border-amber-500/30">Edited</Badge>
                               )}
-                              {entryFails && meta.status !== "validated" && (
+                              {status === "drafted" && (
+                                <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground border-border">Drafted</Badge>
+                              )}
+                              {hasRows && !bal?.balanced && (
                                 <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
-                                  <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> Errors
-                                </Badge>
-                              )}
-                              {!bal.balanced && (
-                                <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
-                                  Off ${bal.diff.toFixed(2)}
+                                  Off ${bal!.diff.toFixed(2)}
                                 </Badge>
                               )}
 
+                              {/* Action buttons */}
                               {unlocked && (
-                                <ChevronDown className={cn(
-                                  "h-3.5 w-3.5 text-muted-foreground transition-transform",
-                                  isOpen && "rotate-180"
-                                )} />
+                                <div className="flex gap-1">
+                                  {!hasRows && (
+                                    <Button
+                                      variant="outline" size="sm" className="h-6 text-[10px]"
+                                      onClick={() => handleGenerateRows(sc.scenario_label, date)}
+                                      disabled={isGenerating}
+                                    >
+                                      {isGenerating ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <><Sparkles className="h-3 w-3 mr-0.5" /> Generate Rows</>
+                                      )}
+                                    </Button>
+                                  )}
+                                  {hasRows && (
+                                    <Button
+                                      variant="ghost" size="sm" className="h-6 text-[10px]"
+                                      onClick={() => setEditingDate(isEditing ? null : key)}
+                                    >
+                                      <Pencil className="h-3 w-3 mr-0.5" /> {isEditing ? "Close" : "Edit"}
+                                    </Button>
+                                  )}
+                                  {hasRows && status !== "validated" && bal?.balanced && !dateFails && (
+                                    <Button
+                                      size="sm" className="h-6 text-[10px]"
+                                      onClick={() => handleMarkCorrect(key)}
+                                    >
+                                      <CheckCircle2 className="h-3 w-3 mr-0.5" /> Mark Correct
+                                    </Button>
+                                  )}
+                                  {hasRows && !hasRows && (
+                                    <Button
+                                      variant="outline" size="sm" className="h-6 text-[10px]"
+                                      onClick={() => handleGenerateRows(sc.scenario_label, date)}
+                                      disabled={isGenerating}
+                                    >
+                                      {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Sparkles className="h-3 w-3 mr-0.5" /> Regenerate</>}
+                                    </Button>
+                                  )}
+                                </div>
                               )}
-                            </button>
+                            </div>
 
-                            {/* Expanded content */}
-                            {isOpen && unlocked && (
+                            {/* Expanded editor */}
+                            {isEditing && hasRows && unlocked && (
                               <div className="border-t border-border px-3 py-3 space-y-3">
-                                {/* JE Editor for this single entry */}
                                 <JournalEntryEditor
-                                  sections={[section]}
+                                  sections={[{
+                                    entry_date: date,
+                                    lines: entry.rows.map(r => ({
+                                      account_name: r.account_name,
+                                      debit: r.debit,
+                                      credit: r.credit,
+                                      memo: r.memo || "",
+                                      indentation_level: (r.credit != null && r.credit !== 0 ? 1 : 0) as 0 | 1,
+                                      coa_id: r.coa_id,
+                                      display_name: r.display_name,
+                                      unknown_account: r.unknown_account,
+                                    })),
+                                  }]}
                                   onChange={(newSections) => {
-                                    if (newSections[0]) handleSingleEntryChange(si, newSections[0]);
+                                    if (newSections[0]) handleDateRowsChange(key, newSections[0]);
                                   }}
                                   chapterId={chapterId}
                                   approvedAccounts={approvedAccounts}
                                 />
 
-                                {/* Per-entry validation warnings */}
-                                {meta.validationResults.filter(r => r.status !== "pass").length > 0 && (
+                                {/* Per-date validation */}
+                                {dateVR.filter(r => r.status !== "pass").length > 0 && (
                                   <div className="space-y-1">
-                                    {meta.validationResults.filter(r => r.status !== "pass").map((r, ri) => (
+                                    {dateVR.filter(r => r.status !== "pass").map((r, ri) => (
                                       <div key={ri} className={cn(
                                         "rounded border px-2.5 py-1.5 text-xs flex items-start gap-1.5",
                                         r.status === "fail"
@@ -706,25 +808,24 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                                   </div>
                                 )}
 
-                                {/* Mark Entry Correct */}
+                                {/* Balance + mark correct */}
                                 <div className="flex items-center justify-between pt-1">
                                   <div className="text-[10px] text-muted-foreground">
-                                    {bal.balanced ? (
+                                    {bal?.balanced ? (
                                       <span className="text-green-400 flex items-center gap-1">
                                         <CheckCircle2 className="h-3 w-3" /> Balanced
                                       </span>
                                     ) : (
                                       <span className="text-destructive flex items-center gap-1">
-                                        <XCircle className="h-3 w-3" /> Off by ${bal.diff.toFixed(2)}
+                                        <XCircle className="h-3 w-3" /> Off by ${bal?.diff.toFixed(2)}
                                       </span>
                                     )}
                                   </div>
-                                  {meta.status !== "validated" ? (
+                                  {status !== "validated" ? (
                                     <Button
-                                      size="sm"
-                                      className="h-7 text-xs"
-                                      disabled={!bal.balanced || entryFails}
-                                      onClick={() => handleMarkEntryCorrect(si)}
+                                      size="sm" className="h-7 text-xs"
+                                      disabled={!bal?.balanced || dateFails}
+                                      onClick={() => handleMarkCorrect(key)}
                                     >
                                       <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Entry Correct
                                     </Button>
@@ -742,66 +843,22 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
 
-          {/* No JE content — offer manual creation if requires_je */}
-          {!hasJE && (
-            <div className="border border-dashed border-border rounded p-4 text-center space-y-2">
-              <p className="text-xs text-muted-foreground italic">
-                No structured journal entry data.
-              </p>
-              {requiresJE && (
+                {/* Re-generate skeleton button */}
                 <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    const initial: JESection[] = [
-                      { entry_date: "Entry 1", lines: [
-                        { account_name: "", debit: null, credit: null, memo: "", indentation_level: 0 },
-                        { account_name: "", debit: null, credit: null, memo: "", indentation_level: 1 },
-                      ]},
-                    ];
-                    setSections(initial);
-                    setMissingStructuredJE(false);
-                    setHasEdits(true);
-                    setEntryMeta([{
-                      status: "draft",
-                      originalLines: [],
-                      editedAt: null,
-                      editedBy: null,
-                      validationResults: [],
-                    }]);
-                    setOpenEntryIndex(0);
-                    runGlobalValidation(initial);
-                  }}
+                  variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground"
+                  onClick={handleGenerateSkeleton}
+                  disabled={generatingSkeleton}
                 >
-                  <Plus className="h-3 w-3 mr-1" /> Add Journal Entries Manually
+                  <Sparkles className="h-3 w-3 mr-1" /> Regenerate Skeleton
                 </Button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Global Validation */}
           {globalValidation.length > 0 && (
-            <ValidationPanel
-              results={globalValidation}
-              sections={sections}
-              onAutoFix={(fixedSections, desc) => {
-                setSections(fixedSections);
-                setHasEdits(true);
-                // Re-init entry meta validation
-                setEntryMeta(prev => prev.map((m, i) => ({
-                  ...m,
-                  status: "corrected" as EntryStatus,
-                  validationResults: runSingleEntryValidation(fixedSections[i] || sections[i], requiresJE),
-                })));
-                runGlobalValidation(fixedSections);
-                toast.success(desc);
-              }}
-            />
+            <ValidationPanel results={globalValidation} />
           )}
 
           {/* Worked Steps */}
@@ -840,7 +897,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
           <div className="flex gap-2">
             {hasEdits && (
               <Button variant="outline" size="sm" onClick={handleSaveEdits} disabled={saving}>
-                <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Saving…" : "Save as New Version"}
+                <Save className="h-3.5 w-3.5 mr-1" /> {saving ? "Saving…" : "Save"}
               </Button>
             )}
             <Button
@@ -868,15 +925,20 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
               Validation Required
             </DialogTitle>
             <DialogDescription>
-              All journal entries must be validated before approval.
-              {!allEntriesValidated && (
+              {!skeleton && "Generate a skeleton first to identify entry dates."}
+              {skeleton && !allDatesGenerated && (
                 <span className="block mt-2 text-foreground font-medium">
-                  {validatedCount} of {totalEntries} entries validated.
+                  {generatedCount} of {totalDates} dates have generated rows.
+                </span>
+              )}
+              {skeleton && allDatesGenerated && !allDatesValidated && (
+                <span className="block mt-2 text-foreground font-medium">
+                  {validatedCount} of {totalDates} entries validated.
                 </span>
               )}
               {globalFailed && (
                 <span className="block mt-1 text-destructive">
-                  There are also global validation errors that must be fixed.
+                  There are global validation errors that must be fixed.
                 </span>
               )}
             </DialogDescription>
