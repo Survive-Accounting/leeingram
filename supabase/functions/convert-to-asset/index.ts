@@ -106,7 +106,160 @@ function validateNonJeCandidates(candidates: any[]): { valid: boolean; errors: s
   return { valid: errors.length === 0, errors };
 }
 
-function validateCandidates(candidates: any[], expectedCount: number) {
+// ── NON_JE Quality Validators ──
+
+const SELF_CORRECTION_PATTERNS = /\b(wait|check|re-|however|actually|verify|to match|incorrect|let's|fix|recalculating|recalculate|let's verify|to match source|but if we)\b/gi;
+
+interface NonJeValidatorResult {
+  name: string;
+  status: "pass" | "fail" | "warn";
+  message: string;
+  candidate_index?: number;
+  details?: any;
+}
+
+function nonJe_no_self_correction_language(candidates: any[]): NonJeValidatorResult[] {
+  const results: NonJeValidatorResult[] = [];
+  candidates.forEach((c, i) => {
+    const textsToCheck: string[] = [];
+    if (Array.isArray(c.answer_parts)) {
+      c.answer_parts.forEach((p: any) => {
+        if (typeof p.steps === "string") textsToCheck.push(p.steps);
+      });
+    }
+    if (typeof c.survive_solution_text === "string") textsToCheck.push(c.survive_solution_text);
+
+    const found: string[] = [];
+    for (const text of textsToCheck) {
+      const matches = text.match(SELF_CORRECTION_PATTERNS);
+      if (matches) found.push(...matches.map(m => m.toLowerCase()));
+    }
+    const unique = [...new Set(found)];
+    results.push({
+      name: "nonJe_no_self_correction_language",
+      candidate_index: i,
+      status: unique.length > 0 ? "fail" : "pass",
+      message: unique.length > 0 ? `Self-correction language found: ${unique.join(", ")}` : "No self-correction language",
+      details: unique.length > 0 ? { words: unique } : undefined,
+    });
+  });
+  return results;
+}
+
+function nonJe_answer_only_matches_parts(candidates: any[]): NonJeValidatorResult[] {
+  const results: NonJeValidatorResult[] = [];
+  candidates.forEach((c, i) => {
+    if (!Array.isArray(c.answer_parts) || !c.answer_only) {
+      results.push({ name: "nonJe_answer_only_matches_parts", candidate_index: i, status: "warn", message: "Missing answer_parts or answer_only" });
+      return;
+    }
+    const mismatches: string[] = [];
+    for (const part of c.answer_parts) {
+      const fa = (part.final_answer || "").trim();
+      if (fa && !c.answer_only.includes(fa)) {
+        mismatches.push(`${part.label}: "${fa}" not found in answer_only`);
+      }
+    }
+    results.push({
+      name: "nonJe_answer_only_matches_parts",
+      candidate_index: i,
+      status: mismatches.length > 0 ? "fail" : "pass",
+      message: mismatches.length > 0 ? mismatches.join("; ") : "answer_only matches all final_answers",
+      details: mismatches.length > 0 ? { mismatches } : undefined,
+    });
+  });
+  return results;
+}
+
+function nonJe_consistency_basic(candidates: any[]): NonJeValidatorResult[] {
+  const results: NonJeValidatorResult[] = [];
+  candidates.forEach((c, i) => {
+    if (!c.survive_solution_text || !Array.isArray(c.answer_parts)) {
+      results.push({ name: "nonJe_consistency_basic", candidate_index: i, status: "warn", message: "Missing data for consistency check" });
+      return;
+    }
+    // Extract division expressions from solution text: "X / Y"
+    const divPattern = /[\d,]+(?:\.\d+)?\s*\/\s*([\d,]+(?:\.\d+)?)/g;
+    const solutionDenominators = new Set<string>();
+    let match;
+    while ((match = divPattern.exec(c.survive_solution_text)) !== null) {
+      solutionDenominators.add(match[1].replace(/,/g, ""));
+    }
+    // Extract from steps
+    const stepsDenominators = new Set<string>();
+    for (const part of c.answer_parts) {
+      if (typeof part.steps === "string") {
+        const stepDiv = /[\d,]+(?:\.\d+)?\s*\/\s*([\d,]+(?:\.\d+)?)/g;
+        let sm;
+        while ((sm = stepDiv.exec(part.steps)) !== null) {
+          stepsDenominators.add(sm[1].replace(/,/g, ""));
+        }
+      }
+    }
+    // Check: denominators in solution should appear in steps
+    const solOnly = [...solutionDenominators].filter(d => !stepsDenominators.has(d) && stepsDenominators.size > 0);
+    results.push({
+      name: "nonJe_consistency_basic",
+      candidate_index: i,
+      status: solOnly.length > 0 ? "fail" : "pass",
+      message: solOnly.length > 0
+        ? `Solution uses denominators not in steps: ${solOnly.join(", ")}`
+        : "Denominator consistency OK",
+      details: solOnly.length > 0 ? { solution_only_denominators: solOnly } : undefined,
+    });
+  });
+  return results;
+}
+
+function nonJe_required_fields(candidates: any[]): NonJeValidatorResult[] {
+  const results: NonJeValidatorResult[] = [];
+  candidates.forEach((c, i) => {
+    if (!Array.isArray(c.answer_parts) || c.answer_parts.length === 0) {
+      results.push({ name: "nonJe_required_fields", candidate_index: i, status: "fail", message: "answer_parts missing or empty" });
+      return;
+    }
+    // Check each part has required fields
+    const issues: string[] = [];
+    for (const part of c.answer_parts) {
+      if (!part.label?.trim()) issues.push("missing label");
+      if (!part.final_answer?.trim()) issues.push("missing final_answer");
+      if (!part.steps?.trim()) issues.push("missing steps");
+    }
+    results.push({
+      name: "nonJe_required_fields",
+      candidate_index: i,
+      status: issues.length > 0 ? "fail" : "pass",
+      message: issues.length > 0 ? issues.join("; ") : `${c.answer_parts.length} answer parts valid`,
+    });
+  });
+  return results;
+}
+
+function runNonJeQualityValidators(candidates: any[]): NonJeValidatorResult[] {
+  return [
+    ...nonJe_no_self_correction_language(candidates),
+    ...nonJe_answer_only_matches_parts(candidates),
+    ...nonJe_consistency_basic(candidates),
+    ...nonJe_required_fields(candidates),
+  ];
+}
+
+/** Strip trailing commentary after the last numbered step */
+function stripTrailingCommentary(steps: string): string {
+  const lines = steps.split("\n");
+  let lastNumberedIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/^\s*\d+[\.\)]\s/.test(lines[i])) {
+      lastNumberedIdx = i;
+      break;
+    }
+  }
+  if (lastNumberedIdx >= 0 && lastNumberedIdx < lines.length - 1) {
+    // Keep lines up to and including the last numbered step
+    return lines.slice(0, lastNumberedIdx + 1).join("\n");
+  }
+  return steps;
+}
   const errors: string[] = [];
 
   if (!Array.isArray(candidates)) {
@@ -816,7 +969,7 @@ Do NOT invent or use account names outside this list. If an account is needed bu
     let userPrompt: string;
 
     if (generationMode === "NON_JE") {
-      // ── NON_JE Prompt (convert_to_asset_non_je_v1) ──
+      // ── NON_JE Prompt (convert_to_asset_non_je_v2) ──
       systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
 TEACHING TONE:
@@ -841,14 +994,23 @@ ${constraintsBlock}
 THIS IS A NON-JOURNAL ENTRY PROBLEM. Do NOT generate any journal entries.
 Do NOT include je_structured, journal_entry_block, or any journal entry fields.
 
+STRICT OUTPUT QUALITY RULES (CRITICAL — violations will be rejected):
+1. NO SELF-CORRECTIONS: Do NOT use phrases like "wait", "check", "re-", "however", "actually", "verify", "to match", "incorrect", "let's", "fix", "recalculating", "recalculate", "let's verify", "to match source". Every step must be decisive and final.
+2. ONE COMPUTATION PATH ONLY: Each answer_part.steps must be a clean numbered list with exactly ONE final computation path. No alternative approaches, no backtracking, no "but if we use X instead" language.
+3. ANSWER CONSISTENCY: The "answer_only" field must exactly match the final_answer values from answer_parts. For example, if answer_parts has (a) "$2.50" and (b) "12.5%", then answer_only must contain those exact strings.
+4. SOLUTION CONSISTENCY: survive_solution_text must use the SAME numbers, denominators, and formulas as answer_parts.steps. If answer_parts says "Net Income / Shares = 500,000 / 200,000 = $2.50", the solution text must use those same values.
+5. DENOMINATOR CONSISTENCY: If a division is performed (e.g., EPS = Net Income / Shares), the denominator must be identical in answer_parts.steps AND survive_solution_text. Do NOT use different share counts or different bases.
+6. CLEAN STEPS FORMAT: Each step in answer_parts[].steps should be a numbered line like "1. Identify net income: $500,000" — no narrative filler, no hedging, no commentary after the final calculation.
+
 ANSWER PARTS:
 - Produce "answer_parts" aligned to the source problem's structure (a/b/c or 1/2/3).
 - Each part must include: label (e.g. "(a)" or "1"), final_answer (short string), steps (concise worked solution).
+- The number of answer_parts MUST match the number of requirements in the source problem.
 - Round to whole dollars unless the problem requires cents (e.g. EPS).
 
 SOLUTION STORAGE — For every variant, provide:
-1. answer_only: Final numeric answers summary (concise)
-2. survive_solution_text: Fully worked steps with all solution logic (step-by-step, compact)
+1. answer_only: Final numeric answers summary (concise) — must exactly match answer_parts final_answer values
+2. survive_solution_text: Fully worked steps with all solution logic (step-by-step, compact) — must be consistent with answer_parts
 3. answer_parts: Array of {label, final_answer, steps}
 
 OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
@@ -863,7 +1025,8 @@ ${solutionText || "Not provided"}
 
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants. This is NOT a journal entry problem — focus on calculations, ratios, and analysis.`;
+Generate ${variantCount} exam-style practice variants. This is NOT a journal entry problem — focus on calculations, ratios, and analysis.
+REMINDER: No self-corrections, no "wait/check/however" language, no alternate computation paths. One clean path per answer part.`;
 
     } else {
       // ── JE Prompt (existing v3) ──
@@ -915,7 +1078,7 @@ Generate ${variantCount} exam-style practice variants.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
-      prompt_version: generationMode === "NON_JE" ? "convert_to_asset_non_je_v1" : "convert_to_asset_v3_trace",
+      prompt_version: generationMode === "NON_JE" ? "convert_to_asset_non_je_v2" : "convert_to_asset_v3_trace",
       generation_mode: generationMode,
       provider,
       model: aiModel,
@@ -1323,7 +1486,7 @@ Generate ${variantCount} exam-style practice variants.`;
       zod_errors: [],
     });
 
-    // NON_JE explicit schema validation
+    // NON_JE explicit schema validation + quality validators
     if (generationMode === "NON_JE") {
       const nonJeValidation = validateNonJeCandidates(candidates);
       await logGenEvent(sbService, runId, ++eventSeq, "validator", nonJeValidation.valid ? "info" : "warn", "VALIDATE_NON_JE_SCHEMA",
@@ -1332,6 +1495,36 @@ Generate ${variantCount} exam-style practice variants.`;
           errors: nonJeValidation.errors,
         }
       );
+
+      // Run NON_JE quality validators + automatic cleanup
+      const nonJeQualityResults = runNonJeQualityValidators(candidates);
+      await logGenEvent(sbService, runId, ++eventSeq, "validator",
+        nonJeQualityResults.some(r => r.status === "fail") ? "warn" : "info",
+        "VALIDATE_NON_JE_QUALITY",
+        `NON_JE quality: ${nonJeQualityResults.filter(r => r.status === "fail").length} failures, ${nonJeQualityResults.filter(r => r.status === "pass").length} passes`,
+        { results: nonJeQualityResults }
+      );
+
+      // Annotate candidates with quality validation results
+      for (const c of candidates) {
+        c._non_je_quality_results = nonJeQualityResults.filter((r: any) => r.candidate_index !== undefined ? r.candidate_index === candidates.indexOf(c) : true);
+      }
+
+      // Automatic cleanup: strip trailing commentary from steps
+      for (let ci = 0; ci < candidates.length; ci++) {
+        const c = candidates[ci];
+        if (Array.isArray(c.answer_parts)) {
+          for (const part of c.answer_parts) {
+            if (typeof part.steps === "string") {
+              const cleaned = stripTrailingCommentary(part.steps);
+              if (cleaned !== part.steps) {
+                part.steps = cleaned;
+                c._needs_review = true;
+              }
+            }
+          }
+        }
+      }
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators", {
