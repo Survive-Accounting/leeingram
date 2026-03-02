@@ -2,6 +2,7 @@ export interface PersistedJERow {
   account_name: string;
   debit: number | null;
   credit: number | null;
+  side?: "debit" | "credit";
 }
 
 export interface PersistedJEEntryByDate {
@@ -102,6 +103,7 @@ export function buildJournalEntryTemplateFromCompleted(completed: PersistedJEPay
           account_name: row.account_name,
           debit: null,
           credit: null,
+          side: (row.credit !== null && row.credit !== 0) ? "credit" as const : "debit" as const,
         })),
       })),
     })),
