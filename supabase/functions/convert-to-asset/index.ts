@@ -889,23 +889,15 @@ Generate ${variantCount} exam-style practice variants.`;
     });
 
     const durationMs = Date.now() - runStartedAt;
-    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FINALIZE_RUN", "Finalizing generation run", {
-      status: "success",
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "FINALIZE_RUN", "Candidates generated — frontend will finalize run after variant persistence", {
+      status: "pending_frontend_finalize",
       duration_ms: durationMs,
-      variant_id: null,
+      note: "variant_id will be set by frontend after inserting problem_variants rows",
     });
 
-    await finalizeRunRecord(sbService, {
-      runId,
-      status: "success",
-      durationMs,
-      variantId: null,
-      provider: runMeta.provider,
-      model: runMeta.model,
-      courseId: runMeta.course_id,
-      chapterId: runMeta.chapter_id,
-      sourceProblemId: runMeta.source_problem_id,
-    });
+    // Do NOT call finalizeRunRecord here for candidates mode.
+    // The frontend inserts variants, captures IDs, and calls logger.finalize()
+    // which writes variant_id + debug_bundle_json to generation_runs.
 
     const constraintsCount = constraintsBlock
       ? constraintsBlock.split("\n").filter((l: string) => l.match(/^\d+\./)).length
