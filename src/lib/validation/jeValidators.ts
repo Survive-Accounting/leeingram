@@ -101,7 +101,7 @@ export const jeBalances: Validator = (pkg) => {
   const sections = extractJESections(pkg);
   if (sections.length === 0) {
     if (pkg.requires_je) return { validator: "JE_BALANCES", status: "fail", message: "Structured JE required but missing — cannot check balance" };
-    return { validator: "JE_BALANCES", status: "pass", message: "No JE sections found, skipped" };
+    return { validator: "JE_BALANCES", status: "skip", message: "No JE sections found" };
   }
 
   const failures: string[] = [];
@@ -132,7 +132,7 @@ export const noDatesInAccountNames: Validator = (pkg) => {
   const sections = extractJESections(pkg);
   if (sections.length === 0) {
     if (pkg.requires_je) return { validator: "NO_DATES_IN_ACCOUNT_NAMES", status: "fail", message: "Structured JE required but missing — cannot check account names" };
-    return { validator: "NO_DATES_IN_ACCOUNT_NAMES", status: "pass", message: "No JE, skipped" };
+    return { validator: "NO_DATES_IN_ACCOUNT_NAMES", status: "skip", message: "No JE sections" };
   }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; matchedPattern: string }> = [];
@@ -165,7 +165,7 @@ export const noNarrativePrefixInAccountNames: Validator = (pkg) => {
   const sections = extractJESections(pkg);
   if (sections.length === 0) {
     if (pkg.requires_je) return { validator: "NO_NARRATIVE_PREFIX", status: "fail", message: "Structured JE required but missing — cannot check for narrative prefixes" };
-    return { validator: "NO_NARRATIVE_PREFIX", status: "pass", message: "No JE, skipped" };
+    return { validator: "NO_NARRATIVE_PREFIX", status: "skip", message: "No JE sections" };
   }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; prefix: string; suggestedName: string }> = [];
@@ -203,7 +203,7 @@ export const oneSidedRows: Validator = (pkg) => {
   const sections = extractJESections(pkg);
   if (sections.length === 0) {
     if (pkg.requires_je) return { validator: "ONE_SIDED_ROWS", status: "fail", message: "Structured JE required but missing — cannot check row sides" };
-    return { validator: "ONE_SIDED_ROWS", status: "pass", message: "No JE, skipped" };
+    return { validator: "ONE_SIDED_ROWS", status: "skip", message: "No JE sections" };
   }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; issue: "both" | "neither" }> = [];
@@ -239,7 +239,7 @@ export const cashDirectionSanity: Validator = (pkg) => {
   if (sections.length === 0) {
     // Cash direction is a soft check — warn if requires_je, skip otherwise
     if (pkg.requires_je) return { validator: "CASH_DIRECTION_SANITY", status: "warn", message: "Structured JE required but missing — cannot check cash direction" };
-    return { validator: "CASH_DIRECTION_SANITY", status: "pass", message: "No JE, skipped" };
+    return { validator: "CASH_DIRECTION_SANITY", status: "skip", message: "No JE sections" };
   }
 
   const warnings: Array<{ sectionIndex: number; lineIndex: number; account_name: string; reason: string }> = [];
@@ -300,7 +300,7 @@ export const scenarioSectionsPresent: Validator = (pkg) => {
   }
 
   if (scenarioLabels.length === 0) {
-    return { validator: "SCENARIO_SECTIONS_PRESENT", status: "pass", message: "Not a multi-scenario problem, skipped" };
+    return { validator: "SCENARIO_SECTIONS_PRESENT", status: "skip", message: "Not a multi-scenario problem" };
   }
 
   const payload = pkg.answer_payload;
@@ -386,7 +386,7 @@ export const accountFieldFormatting: Validator = (pkg) => {
   const sections = extractJESections(pkg);
   if (sections.length === 0) {
     if (pkg.requires_je) return { validator: "ACCOUNT_FIELD_FORMATTING", status: "fail", message: "Structured JE required but missing — cannot check field formatting" };
-    return { validator: "ACCOUNT_FIELD_FORMATTING", status: "pass", message: "No JE, skipped" };
+    return { validator: "ACCOUNT_FIELD_FORMATTING", status: "skip", message: "No JE sections" };
   }
 
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string; reasons: string[] }> = [];
@@ -418,10 +418,10 @@ export const accountFieldFormatting: Validator = (pkg) => {
 // If problem text indicates JE is needed, requires_je must be true in output
 export const requiresJeDetection: Validator = (pkg) => {
   const problemText: string = pkg.extracted_inputs?.problem_text || "";
-  if (!problemText) return { validator: "REQUIRES_JE", status: "pass", message: "No problem text to check, skipped" };
+  if (!problemText) return { validator: "REQUIRES_JE", status: "skip", message: "No problem text available" };
 
   const needsJE = REQUIRES_JE_PHRASES.some(p => p.test(problemText));
-  if (!needsJE) return { validator: "REQUIRES_JE", status: "pass", message: "Problem does not require JE, skipped" };
+  if (!needsJE) return { validator: "REQUIRES_JE", status: "skip", message: "Problem does not require JE" };
 
   // Check if output actually has JE content
   const payload = pkg.answer_payload;
@@ -458,7 +458,7 @@ export const entriesByDateRequired: Validator = (pkg) => {
   // Only applies to scenario_sections format
   if (scenarioSections.length === 0) {
     if (pkg.requires_je) return { validator: "ENTRIES_BY_DATE", status: "fail", message: "Structured JE required but no scenario_sections found — entries_by_date missing" };
-    return { validator: "ENTRIES_BY_DATE", status: "pass", message: "No scenario_sections, skipped" };
+    return { validator: "ENTRIES_BY_DATE", status: "skip", message: "No scenario_sections" };
   }
 
   const emptyScenarios: string[] = [];
@@ -489,10 +489,10 @@ export const entriesByDateRequired: Validator = (pkg) => {
 // If approved_accounts whitelist is provided, all account names must be in it
 export const accountWhitelist: Validator = (pkg) => {
   const whitelist: string[] = pkg.extracted_inputs?.approved_accounts || [];
-  if (whitelist.length === 0) return { validator: "ACCOUNT_WHITELIST", status: "pass", message: "No whitelist configured, skipped" };
+  if (whitelist.length === 0) return { validator: "ACCOUNT_WHITELIST", status: "skip", message: "No whitelist configured" };
 
   const sections = extractJESections(pkg);
-  if (sections.length === 0) return { validator: "ACCOUNT_WHITELIST", status: "pass", message: "No JE, skipped" };
+  if (sections.length === 0) return { validator: "ACCOUNT_WHITELIST", status: "skip", message: "No JE sections" };
 
   const whitelistLower = new Set(whitelist.map(a => a.toLowerCase()));
   const offending: Array<{ sectionIndex: number; lineIndex: number; account_name: string }> = [];

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, Wand2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, Wand2, ShieldCheck, MinusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ValidationResult } from "@/lib/validation";
 import { autoFixDatesInAccountNames, autoFixNarrativePrefixes } from "@/lib/validation/jeValidators";
@@ -25,6 +25,7 @@ const VALIDATOR_LABELS: Record<string, string> = {
   REQUIRES_JE: "Requires journal entries",
   ENTRIES_BY_DATE: "Entries by date present",
   STRUCTURED_JE_REQUIRED_MISSING: "Structured JE required",
+  ACCOUNT_WHITELIST: "Account whitelist",
   required_fields_present: "Required fields",
   mc_correct_answer_in_range: "MC answer range",
   answers_count_valid: "Answer count",
@@ -36,12 +37,14 @@ const VALIDATOR_LABELS: Record<string, string> = {
 function StatusIcon({ status }: { status: string }) {
   if (status === "pass") return <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />;
   if (status === "fail") return <XCircle className="h-3.5 w-3.5 text-destructive" />;
+  if (status === "skip") return <MinusCircle className="h-3.5 w-3.5 text-muted-foreground" />;
   return <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />;
 }
 
 function statusBadgeClass(status: string) {
   if (status === "pass") return "text-green-400 border-green-500/30 bg-green-500/10";
   if (status === "fail") return "text-destructive border-destructive/30 bg-destructive/10";
+  if (status === "skip") return "text-muted-foreground border-border bg-muted/20";
   return "text-amber-400 border-amber-500/30 bg-amber-500/10";
 }
 
@@ -53,6 +56,10 @@ export function ValidationPanel({ results, sections, onAutoFix, onHighlightRow }
   const failures = results.filter(r => r.status === "fail");
   const warnings = results.filter(r => r.status === "warn");
   const passes = results.filter(r => r.status === "pass");
+  const skipped = results.filter(r => r.status === "skip");
+
+  // If STRUCTURED_JE_REQUIRED_MISSING is failing, show only that
+  const structuredBlocker = failures.find(r => r.validator === "STRUCTURED_JE_REQUIRED_MISSING");
 
   const canAutoFixDates = results.some(r => r.validator === "NO_DATES_IN_ACCOUNT_NAMES" && r.status === "fail");
   const canAutoFixPrefixes = results.some(r => r.validator === "NO_NARRATIVE_PREFIX" && r.status === "fail");
@@ -85,9 +92,14 @@ export function ValidationPanel({ results, sections, onAutoFix, onHighlightRow }
               {warnings.length} warning{warnings.length !== 1 ? "s" : ""}
             </Badge>
           )}
-          {failures.length === 0 && warnings.length === 0 && (
+          {passes.length > 0 && (
             <Badge variant="outline" className={cn("text-[9px] h-4", statusBadgeClass("pass"))}>
-              All passed
+              {passes.length} passed
+            </Badge>
+          )}
+          {skipped.length > 0 && (
+            <Badge variant="outline" className={cn("text-[9px] h-4", statusBadgeClass("skip"))}>
+              {skipped.length} skipped
             </Badge>
           )}
         </div>
@@ -96,30 +108,50 @@ export function ValidationPanel({ results, sections, onAutoFix, onHighlightRow }
 
       <CollapsibleContent>
         <div className="p-3 space-y-1.5">
-          {/* Failures first */}
-          {failures.map((r, i) => (
-            <ValidatorRow key={`fail-${i}`} result={r} onHighlightRow={onHighlightRow} />
-          ))}
-          {/* Warnings */}
-          {warnings.map((r, i) => (
-            <ValidatorRow key={`warn-${i}`} result={r} onHighlightRow={onHighlightRow} />
-          ))}
-          {/* Passes (collapsed) */}
-          {passes.length > 0 && (
-            <Collapsible>
-              <CollapsibleTrigger className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 pt-1">
-                <ChevronDown className="h-3 w-3" /> {passes.length} passed
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1 pt-1">
-                {passes.map((r, i) => (
-                  <ValidatorRow key={`pass-${i}`} result={r} onHighlightRow={onHighlightRow} />
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
+          {/* If structured blocker exists, show only that */}
+          {structuredBlocker ? (
+            <ValidatorRow result={structuredBlocker} onHighlightRow={onHighlightRow} />
+          ) : (
+            <>
+              {/* Failures first */}
+              {failures.map((r, i) => (
+                <ValidatorRow key={`fail-${i}`} result={r} onHighlightRow={onHighlightRow} />
+              ))}
+              {/* Warnings */}
+              {warnings.map((r, i) => (
+                <ValidatorRow key={`warn-${i}`} result={r} onHighlightRow={onHighlightRow} />
+              ))}
+              {/* Passes (collapsed) */}
+              {passes.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 pt-1">
+                    <ChevronDown className="h-3 w-3" /> {passes.length} passed
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-1">
+                    {passes.map((r, i) => (
+                      <ValidatorRow key={`pass-${i}`} result={r} onHighlightRow={onHighlightRow} />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+              {/* Skipped (collapsed) */}
+              {skipped.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 pt-1">
+                    <ChevronDown className="h-3 w-3" /> {skipped.length} skipped
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 pt-1">
+                    {skipped.map((r, i) => (
+                      <ValidatorRow key={`skip-${i}`} result={r} onHighlightRow={onHighlightRow} />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+            </>
           )}
 
           {/* Auto-fix buttons */}
-          {(canAutoFixDates || canAutoFixPrefixes) && sections && onAutoFix && (
+          {!structuredBlocker && (canAutoFixDates || canAutoFixPrefixes) && sections && onAutoFix && (
             <div className="pt-2 border-t border-border/50 flex gap-2 flex-wrap">
               <span className="text-[10px] text-muted-foreground uppercase font-semibold self-center">Auto-fix:</span>
               {canAutoFixDates && (
@@ -150,12 +182,15 @@ function ValidatorRow({ result, onHighlightRow }: { result: ValidationResult; on
       "rounded px-2.5 py-1.5 flex items-start gap-2 text-xs",
       result.status === "fail" && "bg-destructive/5 border border-destructive/20",
       result.status === "warn" && "bg-amber-500/5 border border-amber-500/20",
+      result.status === "skip" && "bg-muted/10 border border-border/30",
       result.status === "pass" && "bg-muted/20",
     )}>
       <StatusIcon status={result.status} />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-foreground">{label}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5 break-words">{result.message}</p>
+        <p className={cn("font-medium", result.status === "skip" ? "text-muted-foreground" : "text-foreground")}>{label}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5 break-words">
+          {result.status === "skip" ? `skipped: ${result.message}` : result.message}
+        </p>
         {/* Clickable offending rows */}
         {offending && offending.length > 0 && onHighlightRow && (
           <div className="flex flex-wrap gap-1 mt-1">
