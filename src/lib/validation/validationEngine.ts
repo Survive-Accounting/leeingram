@@ -84,6 +84,15 @@ export const formattingSanity: Validator = (pkg) => {
   return { validator: "formatting_sanity", status: "pass", message: "No formatting issues" };
 };
 
+export const companyNameStandard: Validator = (pkg) => {
+  const text = JSON.stringify(pkg.answer_payload);
+  const hasSurvive = text.includes("Survive Company") || text.includes("Survive Counterparty");
+  if (!hasSurvive && text.length > 50) {
+    return { validator: "company_name_standard", status: "warn", message: "No 'Survive Company' found in answer payload — may use non-standard company name" };
+  }
+  return { validator: "company_name_standard", status: "pass", message: "Standard company name present" };
+};
+
 // --- Base validator set ---
 export const BASE_VALIDATORS: Validator[] = [
   requiredFieldsPresent,
@@ -92,6 +101,7 @@ export const BASE_VALIDATORS: Validator[] = [
   journalEntryBalances,
   noEmptyRequiredLines,
   formattingSanity,
+  companyNameStandard,
 ];
 
 // Import and re-export JE validators so they're always included
