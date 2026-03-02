@@ -19,9 +19,15 @@ import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
-import { parseLegacyAnswerOnly, toTemplate, isCanonicalJE } from "@/lib/journalEntryParser";
+import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
 import { logActivity } from "@/lib/activityLogger";
+import {
+  normalizeCandidateJournalEntry,
+  normalizeJournalEntryCompletedJson,
+  buildJournalEntryTemplateFromCompleted,
+  getJournalEntryCounts,
+} from "@/lib/journalEntryCanonical";
 import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
 import { GenerationLogger } from "@/lib/generationLogger";
 
@@ -70,36 +76,21 @@ interface Props {
 
 /* Legacy parseJournalEntry removed — now using shared JournalEntryTable component */
 
-/** Derive a blank template from structured JE (keeps account_name + side, nulls amounts) */
-function deriveJETemplate(jeStructured: any): any {
-  if (!jeStructured?.scenario_sections) return null;
-  return {
-    scenario_sections: jeStructured.scenario_sections.map((sc: any) => ({
-      ...sc,
-      entries_by_date: (sc.entries_by_date || []).map((entry: any) => ({
-        ...entry,
-        rows: (entry.rows || []).map((r: any) => ({
-          account_name: r.account_name,
-          debit: null,
-          credit: null,
-          side: r.debit != null && r.debit !== 0 ? "debit" : "credit",
-        })),
-      })),
-    })),
-  };
+/** Normalize candidate JE into canonical persisted fields */
+function normalizeCandidateJE(c: any): any {
+  return normalizeCandidateJournalEntry(c);
 }
 
-/** Normalize a candidate so je_structured is also available as journal_entry_completed_json */
-function normalizeCandidateJE(c: any): any {
-  if (c.journal_entry_completed_json) return c; // already has it
-  if (c.je_structured && isCanonicalJE(c.je_structured)) {
-    return {
-      ...c,
-      journal_entry_completed_json: c.je_structured,
-      journal_entry_template_json: c.journal_entry_template_json || deriveJETemplate(c.je_structured),
-    };
-  }
-  return c;
+function getCandidateJEPersistence(candidate: any) {
+  const normalizedCandidate = normalizeCandidateJournalEntry(candidate);
+  const completed = normalizedCandidate.journal_entry_completed_json;
+  const template = normalizedCandidate.journal_entry_template_json;
+  return {
+    normalizedCandidate,
+    completed,
+    template,
+    counts: getJournalEntryCounts(completed),
+  };
 }
 
 type ChapterProblem = {
@@ -443,20 +434,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
-          const jeValid = c._je_valid !== false; // true or undefined (no JE required)
+          const { normalizedCandidate, completed, template, counts } = getCandidateJEPersistence(c);
           const variantPayload: Record<string, any> = {
             base_problem_id: problem.id,
             variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
-            variant_problem_text: c.survive_problem_text || "",
-            variant_solution_text: c.survive_solution_text || "",
-            candidate_data: c,
+            variant_problem_text: normalizedCandidate.survive_problem_text || "",
+            variant_solution_text: normalizedCandidate.survive_solution_text || "",
+            candidate_data: normalizedCandidate,
+            journal_entry_completed_json: completed,
+            journal_entry_template_json: template,
           };
-          // Store structured JE when valid
-          const jeSource = c.je_structured || c.journal_entry_completed_json;
-          if (jeSource && jeValid) {
-            variantPayload.journal_entry_completed_json = jeSource;
-            variantPayload.journal_entry_template_json = deriveJETemplate(jeSource);
-          }
+
           const { data: insertedVariant, error: insertVariantError } = await supabase
             .from("problem_variants")
             .insert(variantPayload as any)
@@ -469,6 +457,20 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             allVariantIds.push(vid);
             if (!firstVariantId) firstVariantId = vid;
           }
+
+          await logActivity({
+            actor_type: "system",
+            entity_type: "source_problem",
+            entity_id: problem.id,
+            event_type: "variant_je_persisted",
+            severity: "info",
+            message: completed ? "journal_entry_completed_json persisted" : "journal_entry_completed_json missing",
+            payload_json: {
+              variant_id: vid,
+              persisted: !!completed,
+              ...counts,
+            },
+          });
         }
 
         await supabase
@@ -530,14 +532,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   const approveMutation = useMutation({
     mutationFn: async ({ candidate, problem }: { candidate: any; problem: ChapterProblem }) => {
-      // Use structured JE from je_structured or journal_entry_completed_json
-      let jeCompleted = candidate.journal_entry_completed_json || candidate.je_structured || null;
-      let jeTemplate = candidate.journal_entry_template_json || (jeCompleted && isCanonicalJE(jeCompleted) ? deriveJETemplate(jeCompleted) : null);
+      // Canonical JE source of truth for persistence
+      let jeCompleted = normalizeJournalEntryCompletedJson(
+        candidate.journal_entry_completed_json || candidate.je_structured || null
+      );
+      let jeTemplate = buildJournalEntryTemplateFromCompleted(jeCompleted);
+
       if (!jeCompleted && candidate.answer_only) {
         const parsed = parseLegacyAnswerOnly(candidate.answer_only);
         if (parsed.length > 0) {
-          jeCompleted = parsed;
-          jeTemplate = toTemplate(parsed);
+          jeCompleted = parsed as any;
+          jeTemplate = toTemplate(parsed) as any;
         }
       }
 
