@@ -1419,6 +1419,7 @@ export type Database = {
           variant_label: string
           variant_problem_text: string
           variant_solution_text: string
+          variant_status: string
         }
         Insert: {
           base_problem_id: string
@@ -1433,6 +1434,7 @@ export type Database = {
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
+          variant_status?: string
         }
         Update: {
           base_problem_id?: string
@@ -1447,6 +1449,7 @@ export type Database = {
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
+          variant_status?: string
         }
         Relationships: [
           {

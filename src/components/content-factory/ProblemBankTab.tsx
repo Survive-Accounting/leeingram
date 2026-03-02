@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert } from "lucide-react";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 import { Progress } from "@/components/ui/progress";
@@ -173,6 +174,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [reviewDrawerVariant, setReviewDrawerVariant] = useState<any>(null);
+  const [variantStatusFilter, setVariantStatusFilter] = useState<string>("active");
+  const [showArchived, setShowArchived] = useState(false);
 
   // Fetch user's variant count preference
   const { data: variantCount } = useQuery({
@@ -852,12 +855,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     if (!error && data) {
       setReviewCandidates(data.map((v: any) => {
         const cd = v.candidate_data || {};
-        // Merge DB-persisted structured JE back into candidate for rendering
         const jeCompleted = v.journal_entry_completed_json || cd.je_structured || cd.journal_entry_completed_json || null;
         const jeTemplate = v.journal_entry_template_json || cd.journal_entry_template_json || (jeCompleted ? buildJournalEntryTemplateFromCompleted(jeCompleted) : null);
         return {
           ...cd,
           _variantId: v.id,
+          _variantStatus: v.variant_status || "draft",
           survive_problem_text: cd.survive_problem_text || v.variant_problem_text,
           survive_solution_text: cd.survive_solution_text || v.variant_solution_text,
           journal_entry_completed_json: jeCompleted,
@@ -1150,14 +1153,98 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             </div>
           ) : (
             <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
-                {allCandidates.length} Variant{allCandidates.length !== 1 ? "s" : ""} to Review
-              </h4>
-              {allCandidates.map((c: any, idx: number) => {
+              {/* Variant status filter + bulk actions */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
+                    {allCandidates.length} Variant{allCandidates.length !== 1 ? "s" : ""}
+                  </h4>
+                  <Select value={variantStatusFilter} onValueChange={setVariantStatusFilter}>
+                    <SelectTrigger className="h-7 w-[120px] text-[10px]">
+                      <Filter className="h-3 w-3 mr-1" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="banked">Banked</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline" size="sm" className="h-7 text-[10px]"
+                    onClick={async () => {
+                      if (!rp) return;
+                      const sorted = [...allCandidates].sort((a, b) =>
+                        (b._variantId || "").localeCompare(a._variantId || "")
+                      );
+                      const toArchive = sorted.slice(1).filter((c: any) => c._variantStatus !== "archived");
+                      if (toArchive.length === 0) { toast("Nothing to archive"); return; }
+                      for (const c of toArchive) {
+                        await supabase.from("problem_variants").update({ variant_status: "archived" } as any).eq("id", c._variantId);
+                      }
+                      await logActivity({
+                        actor_type: "user", entity_type: "source_problem",
+                        entity_id: rp.id,
+                        event_type: "BULK_ARCHIVE_VARIANTS",
+                        payload_json: { count: toArchive.length, kept: sorted[0]?._variantId },
+                      });
+                      await loadReviewCandidates(rp.id);
+                      toast.success(`Archived ${toArchive.length} variant(s)`);
+                    }}
+                  >
+                    <Archive className="h-3 w-3 mr-0.5" /> Archive except newest
+                  </Button>
+                  <Button
+                    variant="outline" size="sm" className="h-7 text-[10px]"
+                    onClick={async () => {
+                      if (!rp) return;
+                      const drafts = allCandidates.filter((c: any) => c._variantStatus === "draft");
+                      if (drafts.length === 0) { toast("No drafts to archive"); return; }
+                      for (const c of drafts) {
+                        await supabase.from("problem_variants").update({ variant_status: "archived" } as any).eq("id", c._variantId);
+                      }
+                      await logActivity({
+                        actor_type: "user", entity_type: "source_problem",
+                        entity_id: rp.id,
+                        event_type: "BULK_ARCHIVE_DRAFTS",
+                        payload_json: { count: drafts.length },
+                      });
+                      await loadReviewCandidates(rp.id);
+                      toast.success(`Archived ${drafts.length} draft(s)`);
+                    }}
+                  >
+                    <Archive className="h-3 w-3 mr-0.5" /> Archive all drafts
+                  </Button>
+                </div>
+              </div>
+
+              {(() => {
+                const filtered = allCandidates.filter((c: any) => {
+                  const st = c._variantStatus || "draft";
+                  if (variantStatusFilter === "active") return st !== "archived";
+                  if (variantStatusFilter === "all") return true;
+                  return st === variantStatusFilter;
+                });
+                if (filtered.length === 0) {
+                  return <p className="text-xs text-muted-foreground text-center py-6">No variants match this filter.</p>;
+                }
+                return filtered.map((c: any, idx: number) => {
                 const summaryLine = c.survive_problem_text?.split(/[.\n]/)?.[0]?.trim() || "—";
+                const vStatus = c._variantStatus || "draft";
+                const statusColors: Record<string, string> = {
+                  draft: "text-muted-foreground border-border",
+                  approved: "text-green-400 border-green-500/30 bg-green-500/10",
+                  banked: "text-primary border-primary/30 bg-primary/10",
+                  archived: "text-foreground/40 border-border bg-muted/30",
+                };
 
                 return (
-                  <Collapsible key={idx} className="rounded-lg border border-border bg-background/95 overflow-hidden">
+                  <Collapsible key={c._variantId || idx} className="rounded-lg border border-border bg-background/95 overflow-hidden">
                     <div className="flex items-center gap-3 px-4 py-3">
                       <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left min-w-0">
                         <ChevronRight className="h-4 w-4 text-foreground/50 flex-shrink-0 transition-transform [[data-state=open]_&]:rotate-90" />
@@ -1165,11 +1252,40 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="text-[10px] text-foreground/50 uppercase tracking-wider">V{idx + 1}</span>
                             <h5 className="text-sm font-semibold text-foreground truncate">{c.asset_name || `Variant ${idx + 1}`}</h5>
+                            <Badge variant="outline" className={cn("text-[9px] h-4 capitalize", statusColors[vStatus] || statusColors.draft)}>
+                              {vStatus}
+                            </Badge>
                           </div>
                           <p className="text-xs text-foreground/60 truncate">{summaryLine}</p>
                         </div>
                       </CollapsibleTrigger>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {/* Status quick-set */}
+                        <Select
+                          value={vStatus}
+                          onValueChange={async (newStatus) => {
+                            if (!c._variantId) return;
+                            await supabase.from("problem_variants").update({ variant_status: newStatus } as any).eq("id", c._variantId);
+                            await logActivity({
+                              actor_type: "user", entity_type: "source_problem",
+                              entity_id: rp?.id || "unknown",
+                              event_type: "VARIANT_STATUS_CHANGE",
+                              payload_json: { variant_id: c._variantId, from: vStatus, to: newStatus },
+                            });
+                            if (rp) await loadReviewCandidates(rp.id);
+                            toast.success(`Status → ${newStatus}`);
+                          }}
+                        >
+                          <SelectTrigger className="h-6 w-[90px] text-[10px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="banked">Banked</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Button
                           size="sm"
                           variant="outline"
@@ -1249,8 +1365,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                     </CollapsibleContent>
                   </Collapsible>
                 );
-              })}
-
+              });
+              })()}
               {/* Quick navigation after reviewing */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <Button size="sm" variant="outline" onClick={() => {
