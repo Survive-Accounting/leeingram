@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { SourceProblemPreview } from "@/components/content-factory/SourceProblem
 import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
-import { VariantReviewDrawer } from "@/components/content-factory/VariantReviewDrawer";
+import { VariantReviewContent } from "@/components/content-factory/VariantReviewDrawer";
 import { logActivity } from "@/lib/activityLogger";
 import {
   normalizeCandidateJournalEntry,
@@ -146,6 +146,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [activeDiffToggles, setActiveDiffToggles] = useState<string[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [expandedVariantIdx, setExpandedVariantIdx] = useState<number | null>(null);
+  const variantRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const [generatedAssetId, setGeneratedAssetId] = useState<string | null>(null);
   const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set());
   const [genProvider, setGenProvider] = useState<"lovable" | "openai">("lovable");
@@ -176,8 +178,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewCandidates, setReviewCandidates] = useState<any[]>([]);
   const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
-  const [reviewDrawerVariant, setReviewDrawerVariant] = useState<any>(null);
   const [variantStatusFilter, setVariantStatusFilter] = useState<string>("active");
   const [showArchived, setShowArchived] = useState(false);
 
@@ -1382,8 +1382,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           variant="outline"
                           className="h-7 px-2.5 text-xs"
                           onClick={() => {
-                            setReviewDrawerVariant(c);
-                            setReviewDrawerOpen(true);
+                            // Expand the collapsible inline — no drawer
+                            // The Collapsible in this review queue section will handle it
                           }}
                         >
                           <Pencil className="h-3 w-3 mr-1" /> Review & Edit
@@ -1416,67 +1416,23 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       </div>
                     </div>
                     <CollapsibleContent>
-                      <div className="border-t border-border px-4 py-4 space-y-4">
-                        {c.tags?.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {c.tags.map((t: string) => (
-                              <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Problem Text</p>
-                          <div className="rounded-md border border-border bg-muted/20 p-3">
-                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
-                          </div>
-                        </div>
-                        {/* NON_JE: Answer Parts accordion */}
-                        {(c.answer_parts || c._generation_mode === "NON_JE") && c.answer_parts?.length > 0 ? (
-                          <div>
-                            <p className="text-[10px] text-foreground/50 uppercase tracking-wider font-semibold mb-1.5">Answer Parts</p>
-                            <div className="space-y-2">
-                              {c.answer_parts.map((part: any, pi: number) => (
-                                <Collapsible key={pi} className="rounded-md border border-border overflow-hidden">
-                                  <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 text-left">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <Badge variant="outline" className="text-[10px] shrink-0">{part.label}</Badge>
-                                      <span className="text-sm font-medium text-foreground truncate">{part.final_answer}</span>
-                                    </div>
-                                    <ChevronDown className="h-3 w-3 text-foreground/50 shrink-0" />
-                                  </CollapsibleTrigger>
-                                  <CollapsibleContent className="px-3 pb-3 border-t border-border">
-                                    <pre className="text-xs text-foreground whitespace-pre-wrap mt-2 leading-relaxed">{part.steps}</pre>
-                                  </CollapsibleContent>
-                                </Collapsible>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <JournalEntryTable
-                              legacyAnswerText={c.answer_only}
-                              completedJson={c.journal_entry_completed_json}
-                              heading="Answer (Journal Entry)"
-                              mode="completed"
-                            />
-                            <JournalEntryTable
-                              legacyJEBlock={c.journal_entry_block}
-                              legacyAnswerText={c.answer_only}
-                              completedJson={c.journal_entry_completed_json}
-                              templateJson={c.journal_entry_template_json}
-                              heading="Journal Entry (Template)"
-                              mode="template"
-                            />
-                          </>
-                        )}
-                        {c.exam_trap_note && (
-                          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
-                            <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
-                              <AlertTriangle className="h-3 w-3" /> Exam Trap Note
-                            </p>
-                            <p className="text-sm text-foreground">{c.exam_trap_note}</p>
-                          </div>
-                        )}
+                      <div className="border-t border-border px-4 py-4">
+                        <VariantReviewContent
+                          variant={c}
+                          problem={rp}
+                          chapterId={rp.chapter_id}
+                          onApproved={() => {
+                            setSavingIndex(idx);
+                            setAfRequiresJE(!!c.journal_entry_block);
+                            approveMutation.mutate({ candidate: c, problem: rp as any });
+                          }}
+                          onRejected={() => {
+                            setRejectingIndex(idx);
+                            setRejectReason("");
+                            setRejectNote("");
+                            setViewingProblem(rp as any);
+                          }}
+                        />
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -1507,33 +1463,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             </div>
           )}
 
-          {/* Variant Review Drawer */}
-          <VariantReviewDrawer
-            open={reviewDrawerOpen}
-            onOpenChange={setReviewDrawerOpen}
-            variant={reviewDrawerVariant}
-            problem={rp}
-            chapterId={rp.chapter_id}
-            onApproved={() => {
-              setReviewDrawerOpen(false);
-              const c = reviewDrawerVariant;
-              if (c) {
-                setSavingIndex(allCandidates.indexOf(c));
-                setAfRequiresJE(!!c.journal_entry_block);
-                approveMutation.mutate({ candidate: c, problem: rp as any });
-              }
-            }}
-            onRejected={() => {
-              setReviewDrawerOpen(false);
-              const idx = allCandidates.indexOf(reviewDrawerVariant);
-              if (idx >= 0) {
-                setRejectingIndex(idx);
-                setRejectReason("");
-                setRejectNote("");
-                setViewingProblem(rp as any);
-              }
-            }}
-          />
+          {/* Drawer removed — unified inline review */}
 
           {/* Rejection Dialog (reuse) */}
           <Dialog open={rejectingIndex !== null} onOpenChange={(o) => { if (!o) { setRejectingIndex(null); setViewingProblem(null); } }}>
@@ -1960,7 +1890,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   const approveBlocked = hasNonJeFailures && !c._override_approve;
 
                   return (
-                    <Collapsible key={idx} className="rounded-lg border border-border bg-card overflow-hidden">
+                    <Collapsible
+                      key={idx}
+                      open={expandedVariantIdx === idx}
+                      onOpenChange={(open) => setExpandedVariantIdx(open ? idx : null)}
+                      className="rounded-lg border border-border bg-card overflow-hidden"
+                    >
                       {/* Collapsed Header */}
                       <div className="flex items-center gap-3 px-4 py-3">
                         <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left min-w-0">
@@ -1981,8 +1916,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             variant="outline"
                             className="h-7 px-2.5 text-xs"
                             onClick={() => {
-                              setReviewDrawerVariant(c);
-                              setReviewDrawerOpen(true);
+                              setExpandedVariantIdx(idx);
+                              setTimeout(() => {
+                                variantRefs.current[idx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 100);
                             }}
                           >
                             <Pencil className="h-3 w-3 mr-1" /> Review & Edit
@@ -2017,10 +1954,10 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
                       {/* Expanded Content */}
                       <CollapsibleContent>
-                        <div className="border-t border-border px-4 py-4 space-y-4">
+                        <div ref={(el) => { variantRefs.current[idx] = el; }} className="border-t border-border px-4 py-4">
                           {/* NON_JE Quality Issues Banner */}
                           {hasNonJeFailures && (
-                            <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 space-y-2">
+                            <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 space-y-2 mb-4">
                               <p className="text-[10px] text-red-400 uppercase tracking-wider font-semibold flex items-center gap-1">
                                 <ShieldAlert className="h-3 w-3" /> Quality Validation Failures ({nonJeFailures.length})
                               </p>
@@ -2045,64 +1982,28 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             </div>
                           )}
                           {needsReview && !hasNonJeFailures && (
-                            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+                            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 mb-4">
                               <p className="text-[10px] text-amber-400 flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" /> Steps were auto-cleaned (trailing commentary stripped). Review before approving.
                               </p>
                             </div>
                           )}
-                          {/* Tags */}
-                          {c.tags?.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {c.tags.map((t: string) => (
-                                <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-                              ))}
-                            </div>
-                          )}
 
-                          {/* 1) Problem Text */}
-                          <div>
-                            <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">1 — Problem Text</p>
-                            <div className="rounded-md border border-border bg-muted/20 p-3">
-                              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{c.survive_problem_text}</p>
-                            </div>
-                          </div>
-
-                          {/* 2) Answer (Journal Entry) */}
-                          <JournalEntryTable
-                            legacyAnswerText={c.answer_only}
-                            completedJson={c.journal_entry_completed_json}
-                            heading="2 — Answer (Journal Entry)"
-                            mode="completed"
+                          {/* Unified Review Content */}
+                          <VariantReviewContent
+                            variant={c}
+                            problem={p}
+                            chapterId={p.chapter_id}
+                            onApproved={() => {
+                              setSavingIndex(idx);
+                              approveMutation.mutate({ candidate: c, problem: p });
+                            }}
+                            onRejected={() => {
+                              setRejectingIndex(idx);
+                              setRejectReason("");
+                              setRejectNote("");
+                            }}
                           />
-
-                          {/* 3) Worked Steps */}
-                          <div>
-                            <p className="text-[10px] text-foreground/60 uppercase tracking-wider font-semibold mb-1.5">3 — Worked Steps (internal)</p>
-                            <div className="rounded-md border border-border bg-muted/20 p-3 max-h-80 overflow-y-auto">
-                              <FormatWorkedSteps text={c.survive_solution_text} />
-                            </div>
-                          </div>
-
-                          {/* 4) Journal Entry (Template) */}
-                          <JournalEntryTable
-                            legacyJEBlock={c.journal_entry_block}
-                            legacyAnswerText={c.answer_only}
-                            completedJson={c.journal_entry_completed_json}
-                            templateJson={c.journal_entry_template_json}
-                            heading="4 — Journal Entry (Template)"
-                            mode="template"
-                          />
-
-                          {/* Exam Trap Note */}
-                          {c.exam_trap_note && (
-                            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
-                              <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
-                                <AlertTriangle className="h-3 w-3" /> Exam Trap Note
-                              </p>
-                              <p className="text-sm text-foreground">{c.exam_trap_note}</p>
-                            </div>
-                          )}
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
@@ -2113,32 +2014,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           )}
         </div>
 
-        {/* Variant Review Drawer (detail view) */}
-        <VariantReviewDrawer
-          open={reviewDrawerOpen}
-          onOpenChange={setReviewDrawerOpen}
-          variant={reviewDrawerVariant}
-          problem={p}
-          chapterId={p.chapter_id}
-          onApproved={() => {
-            setReviewDrawerOpen(false);
-            const c = reviewDrawerVariant;
-            if (c) {
-              const idx = candidates.indexOf(c);
-              setSavingIndex(idx);
-              approveMutation.mutate({ candidate: c, problem: p });
-            }
-          }}
-          onRejected={() => {
-            setReviewDrawerOpen(false);
-            const idx = candidates.indexOf(reviewDrawerVariant);
-            if (idx >= 0) {
-              setRejectingIndex(idx);
-              setRejectReason("");
-              setRejectNote("");
-            }
-          }}
-        />
+        {/* Drawer removed — unified inline review */}
 
         {/* Rejection Feedback Dialog */}
         <Dialog open={rejectingIndex !== null} onOpenChange={(o) => { if (!o) setRejectingIndex(null); }}>
