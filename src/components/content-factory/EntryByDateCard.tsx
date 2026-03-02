@@ -1,14 +1,16 @@
 /**
  * EntryByDateCard — Single date entry card showing a JE table,
  * balance status, validation errors, and "Mark Entry Correct" button.
- * Supports both read-only and editor modes.
+ * Supports both read-only and editor modes, with manual override for admin.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   CheckCircle2, Circle, XCircle, Lock, Sparkles,
-  Loader2, Pencil, AlertTriangle, Copy,
+  Loader2, Pencil, AlertTriangle, Copy, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -35,7 +37,7 @@ interface EntryByDateCardProps {
   balance: { balanced: boolean; diff: number } | null;
   validationErrors: { status: string; message: string }[];
   onGenerateRows: () => void;
-  onMarkCorrect: () => void;
+  onMarkCorrect: (override?: boolean) => void;
   onEditRows?: () => void;
   /** Render prop for the inline editor */
   editorSlot?: React.ReactNode;
@@ -44,8 +46,12 @@ interface EntryByDateCardProps {
 
 function formatDate(d: string): string {
   try {
-    const dt = new Date(d + "T00:00:00");
-    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const match = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const dt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+    return d;
   } catch { return d; }
 }
 
@@ -63,8 +69,14 @@ export function EntryByDateCard({
   editorSlot,
   isEditing,
 }: EntryByDateCardProps) {
-  const hasRows = rows.length > 0;
+  const [manualOverride, setManualOverride] = useState(false);
+  const hasRows = rows.length >= 2;
+  const hasAnyRows = rows.length > 0;
   const dateFails = validationErrors.some(r => r.status === "fail");
+
+  // Core enablement: needs >= 2 rows AND (balanced + no fails, OR manual override)
+  const passesAutomatic = hasRows && balance?.balanced === true && !dateFails;
+  const canMarkCorrect = passesAutomatic || (hasRows && manualOverride);
 
   const StatusIcon = status === "validated"
     ? CheckCircle2
@@ -83,6 +95,10 @@ export function EntryByDateCard({
     }));
     navigator.clipboard.writeText(canonicalRowsToTSV(canonical));
     toast.success("Copied for Google Sheets");
+  };
+
+  const handleMarkCorrect = () => {
+    onMarkCorrect(manualOverride);
   };
 
   return (
@@ -112,6 +128,11 @@ export function EntryByDateCard({
         {status === "drafted" && (
           <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground border-border">Drafted</Badge>
         )}
+        {hasAnyRows && rows.length < 2 && (
+          <Badge variant="outline" className="text-[9px] h-4 text-amber-400 border-amber-500/30">
+            Need ≥2 rows
+          </Badge>
+        )}
         {hasRows && !balance?.balanced && (
           <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
             Off ${balance!.diff.toFixed(2)}
@@ -124,7 +145,7 @@ export function EntryByDateCard({
         {/* Action buttons */}
         {unlocked && (
           <div className="flex gap-1">
-            {!hasRows && (
+            {!hasAnyRows && (
               <Button
                 variant="outline" size="sm" className="h-6 text-[10px]"
                 onClick={onGenerateRows}
@@ -137,7 +158,7 @@ export function EntryByDateCard({
                 )}
               </Button>
             )}
-            {hasRows && onEditRows && (
+            {hasAnyRows && onEditRows && (
               <Button
                 variant="ghost" size="sm" className="h-6 text-[10px]"
                 onClick={onEditRows}
@@ -145,7 +166,7 @@ export function EntryByDateCard({
                 <Pencil className="h-3 w-3 mr-0.5" /> {isEditing ? "Close" : "Edit"}
               </Button>
             )}
-            {hasRows && (
+            {hasAnyRows && (
               <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={handleCopy}>
                 <Copy className="h-3 w-3 mr-0.5" /> Copy
               </Button>
@@ -155,7 +176,7 @@ export function EntryByDateCard({
       </div>
 
       {/* Read-only JE table (shown when rows exist and NOT editing) */}
-      {hasRows && !isEditing && unlocked && (
+      {hasAnyRows && !isEditing && unlocked && (
         <div className="border-t border-border">
           <table className="w-full text-sm">
             <thead>
@@ -199,7 +220,7 @@ export function EntryByDateCard({
       )}
 
       {/* Editor slot (shown when editing) */}
-      {isEditing && hasRows && unlocked && (
+      {isEditing && hasAnyRows && unlocked && (
         <div className="border-t border-border px-3 py-3 space-y-3">
           {editorSlot}
 
@@ -220,43 +241,77 @@ export function EntryByDateCard({
             </div>
           )}
 
-          {/* Balance + mark correct */}
-          <div className="flex items-center justify-between pt-1">
-            <div className="text-[10px] text-muted-foreground">
-              {balance?.balanced ? (
-                <span className="text-green-400 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" /> Balanced
-                </span>
+          {/* Balance + override + mark correct */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] text-muted-foreground">
+                {balance?.balanced ? (
+                  <span className="text-green-400 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Balanced
+                  </span>
+                ) : (
+                  <span className="text-destructive flex items-center gap-1">
+                    <XCircle className="h-3 w-3" /> Off by ${balance?.diff.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              {status !== "validated" ? (
+                <Button
+                  size="sm" className="h-7 text-xs"
+                  disabled={!canMarkCorrect}
+                  onClick={handleMarkCorrect}
+                >
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Entry Correct
+                </Button>
               ) : (
-                <span className="text-destructive flex items-center gap-1">
-                  <XCircle className="h-3 w-3" /> Off by ${balance?.diff.toFixed(2)}
-                </span>
+                <Badge variant="outline" className="text-[10px] text-green-400 border-green-500/30 bg-green-500/10">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Validated
+                </Badge>
               )}
             </div>
-            {status !== "validated" ? (
-              <Button
-                size="sm" className="h-7 text-xs"
-                disabled={!balance?.balanced || dateFails}
-                onClick={onMarkCorrect}
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Entry Correct
-              </Button>
-            ) : (
-              <Badge variant="outline" className="text-[10px] text-green-400 border-green-500/30 bg-green-500/10">
-                <CheckCircle2 className="h-3 w-3 mr-1" /> Validated
-              </Badge>
+
+            {/* Manual override toggle — shown when automatic pass fails */}
+            {!passesAutomatic && hasRows && status !== "validated" && (
+              <div className="flex items-center gap-2 rounded border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <Label htmlFor="manual-override" className="text-[10px] text-amber-400 flex-1 cursor-pointer">
+                  Allow manual pass (admin override)
+                </Label>
+                <Switch
+                  id="manual-override"
+                  checked={manualOverride}
+                  onCheckedChange={setManualOverride}
+                  className="h-4 w-7"
+                />
+              </div>
             )}
           </div>
         </div>
       )}
 
       {/* Collapsed: show mark correct button inline for non-editing read-only view */}
-      {hasRows && !isEditing && unlocked && status !== "validated" && (
-        <div className="border-t border-border px-3 py-2 flex items-center justify-end">
+      {hasAnyRows && !isEditing && unlocked && status !== "validated" && (
+        <div className="border-t border-border px-3 py-2 flex items-center justify-between">
+          {/* Manual override in collapsed view too */}
+          {!passesAutomatic && hasRows && (
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3 w-3 text-amber-400" />
+              <Label htmlFor="manual-override-collapsed" className="text-[9px] text-amber-400 cursor-pointer">
+                Override
+              </Label>
+              <Switch
+                id="manual-override-collapsed"
+                checked={manualOverride}
+                onCheckedChange={setManualOverride}
+                className="h-3.5 w-6"
+              />
+            </div>
+          )}
+          <div className="flex-1" />
           <Button
             size="sm" className="h-6 text-[10px]"
-            disabled={!balance?.balanced || dateFails}
-            onClick={onMarkCorrect}
+            disabled={!canMarkCorrect}
+            onClick={handleMarkCorrect}
           >
             <CheckCircle2 className="h-3 w-3 mr-0.5" /> Mark Entry Correct
           </Button>

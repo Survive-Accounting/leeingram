@@ -560,26 +560,46 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
   };
 
   // ── Mark Entry Correct ──
-  const handleMarkCorrect = async (key: string) => {
+  const handleMarkCorrect = async (key: string, override?: boolean) => {
     const entry = entries[key];
-    if (!entry) return;
-
-    const bal = entryBalanceFromRows(entry.rows);
-    if (!bal.balanced) {
-      toast.error(`Entry is off by $${bal.diff.toFixed(2)} — fix balance first`);
+    if (!entry || entry.rows.length < 2) {
+      toast.error("Entry needs at least 2 rows");
       return;
     }
 
-    const vr = runDateValidation(entry.rows, requiresJE);
-    if (vr.some(r => r.status === "fail")) {
-      toast.error("Fix validation errors before marking correct");
-      return;
+    if (!override) {
+      const bal = entryBalanceFromRows(entry.rows);
+      if (!bal.balanced) {
+        toast.error(`Entry is off by $${bal.diff.toFixed(2)} — fix balance first or use manual override`);
+        return;
+      }
+
+      const vr = runDateValidation(entry.rows, requiresJE);
+      if (vr.some(r => r.status === "fail")) {
+        toast.error("Fix validation errors or use manual override");
+        return;
+      }
     }
 
     setStatuses(prev => ({ ...prev, [key]: "validated" }));
     const newStatuses = { ...statuses, [key]: "validated" as DateEntryStatus };
     await persistEntriesToDB(entries, newStatuses);
-    toast.success("Entry marked as validated");
+
+    if (override) {
+      await logActivity({
+        actor_type: "user", entity_type: "source_problem",
+        entity_id: problem?.id || "unknown",
+        event_type: "JE_MANUAL_OVERRIDE",
+        severity: "warn",
+        payload_json: {
+          variant_id: variant._variantId || variant.id,
+          date_key: key,
+          row_count: entry.rows.length,
+        },
+      });
+    }
+
+    toast.success(override ? "Entry validated (manual override)" : "Entry marked as validated");
   };
 
   // ── Persist to DB ──
@@ -844,7 +864,7 @@ export function VariantReviewDrawer({ open, onOpenChange, variant, problem, chap
                               balance={bal}
                               validationErrors={dateVR.map(r => ({ status: r.status, message: r.message }))}
                               onGenerateRows={() => handleGenerateRows(sc.scenario_label, date)}
-                              onMarkCorrect={() => handleMarkCorrect(key)}
+                              onMarkCorrect={(override?: boolean) => handleMarkCorrect(key, override)}
                               onEditRows={() => setEditingDate(isEditing ? null : key)}
                               isEditing={isEditing}
                               editorSlot={
