@@ -92,7 +92,7 @@ Return results using the provided tool.`,
                 properties: {
                   detected_label: { type: "string", description: "Problem label e.g. 'E13-3'. Empty if not found." },
                   detected_lo: { type: "string", description: "Learning Objective numbers. Empty if not found." },
-                  detected_title: { type: "string", description: "Problem title. Empty if not found." },
+                  detected_title: { type: "string", description: "Problem title — the short descriptive name after the label (e.g. 'Record Bonds Issued at a Discount'). Empty if not found." },
                   detected_type: { type: "string", description: "Exercise, Problem, or Custom. Empty if not found." },
                   extracted_problem_text: { type: "string", description: "Full extracted text from problem screenshots." },
                   extracted_solution_text: { type: "string", description: "Full extracted text from solution screenshots." },
