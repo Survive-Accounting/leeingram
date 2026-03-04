@@ -47,10 +47,11 @@ export default function ScreenshotCapture() {
         .from("chapter_problems")
         .select("id, source_label, source_code, solution_text, import_status")
         .eq("chapter_id", chapterId!)
-        .eq("import_status", "needs_problem_screenshot" as any)
-        .order("source_label");
+        .eq("import_status", "needs_problem_screenshot" as any);
       if (error) throw error;
-      return data as QueueItem[];
+      return (data as QueueItem[]).sort((a, b) =>
+        (a.source_label || "").localeCompare(b.source_label || "", undefined, { numeric: true, sensitivity: "base" })
+      );
     },
     enabled: !!chapterId,
   });
