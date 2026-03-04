@@ -1401,6 +1401,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="needs_fix">Needs Fix</SelectItem>
                             <SelectItem value="approved">Approved</SelectItem>
                             <SelectItem value="banked">Banked</SelectItem>
                             <SelectItem value="archived">Archived</SelectItem>
@@ -1460,6 +1461,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             setRejectReason("");
                             setRejectNote("");
                             setViewingProblem(rp as any);
+                          }}
+                          onNeedsFix={async () => {
+                            if (!c._variantId) return;
+                            await supabase.from("problem_variants").update({ variant_status: "needs_fix" } as any).eq("id", c._variantId);
+                            toast.success("Marked as needs fix");
+                            if (rp) await loadReviewCandidates(rp.id);
                           }}
                         />
                       </div>
@@ -2031,6 +2038,25 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                               setRejectingIndex(idx);
                               setRejectReason("");
                               setRejectNote("");
+                            }}
+                            onNeedsFix={async () => {
+                              if (!c._variantId) return;
+                              await supabase.from("problem_variants").update({ variant_status: "needs_fix" } as any).eq("id", c._variantId);
+                              toast.success("Marked as needs fix");
+                            }}
+                            onApproveAndNext={() => {
+                              setSavingIndex(idx);
+                              approveMutation.mutate({ candidate: c, problem: p });
+                              // Open next variant after approval
+                              const nextIdx = idx + 1;
+                              if (nextIdx < candidates.length) {
+                                setTimeout(() => {
+                                  setExpandedVariantIdx(nextIdx);
+                                  setTimeout(() => {
+                                    variantRefs.current[nextIdx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  }, 100);
+                                }, 300);
+                              }
                             }}
                           />
                         </div>
