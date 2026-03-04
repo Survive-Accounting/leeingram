@@ -250,10 +250,10 @@ export default function SolutionsPdfUpload() {
     <SurviveSidebarLayout>
       <div className="mb-4">
         <Link
-          to={`/workspace/${chapterId}`}
+          to="/problem-bank"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to Workspace
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Problem Import
         </Link>
       </div>
 
