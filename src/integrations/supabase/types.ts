@@ -415,6 +415,7 @@ export type Database = {
         Row: {
           build_run_id: string | null
           chapter_id: string
+          combined_group_id: string | null
           contains_no_journal_entries: boolean
           course_id: string
           created_at: string
@@ -459,6 +460,7 @@ export type Database = {
         Insert: {
           build_run_id?: string | null
           chapter_id: string
+          combined_group_id?: string | null
           contains_no_journal_entries?: boolean
           course_id: string
           created_at?: string
@@ -503,6 +505,7 @@ export type Database = {
         Update: {
           build_run_id?: string | null
           chapter_id?: string
+          combined_group_id?: string | null
           contains_no_journal_entries?: boolean
           course_id?: string
           created_at?: string
