@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link2, SkipForward, Merge, AlertTriangle } from "lucide-react";
+import { Link2, SkipForward, Merge, AlertTriangle, Unlink } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -62,6 +62,26 @@ export function DependentProblemsQueue({ chapterId, courseId }: Props) {
       qc.invalidateQueries({ queryKey: ["dependent-problems", chapterId] });
       qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
       toast.success("Marked for combined case — merge source material manually, then mark ready.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const uncombineMutation = useMutation({
+    mutationFn: async (problemId: string) => {
+      const { error } = await supabase
+        .from("chapter_problems")
+        .update({
+          dependency_type: "standalone",
+          dependency_status: "none",
+          combined_group_id: null,
+        } as any)
+        .eq("id", problemId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dependent-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      toast.success("Unlinked — problem is now standalone.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -148,7 +168,20 @@ export function DependentProblemsQueue({ chapterId, courseId }: Props) {
             {handled.map(p => (
               <div key={p.id} className="flex items-center justify-between px-3 py-1.5 rounded-md bg-muted/30">
                 <span className="text-xs font-mono text-foreground/70">{p.ocr_detected_label || p.source_label}</span>
-                <Badge variant="outline" className="text-[9px]">{p.dependency_status}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[9px]">{p.dependency_status}</Badge>
+                  {p.dependency_status === "combined" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] px-1.5"
+                      onClick={() => uncombineMutation.mutate(p.id)}
+                      disabled={uncombineMutation.isPending}
+                    >
+                      <Unlink className="h-2.5 w-2.5 mr-0.5" /> Unlink
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

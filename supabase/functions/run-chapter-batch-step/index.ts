@@ -110,8 +110,8 @@ serve(async (req) => {
       return respondWithProgress(sb, batch_run_id, run.total_sources, "failed", nextItem.source_problem_id);
     }
 
-    // Skip dependent problems
-    if (sourceProblem.dependency_type === "dependent_problem") {
+    // Skip dependent problems that haven't been combined yet
+    if (sourceProblem.dependency_type === "dependent_problem" && sourceProblem.dependency_status !== "combined") {
       await sb.from("chapter_batch_run_items").update({
         status: "failed",
         last_error: "Skipped: dependent problem (needs review)",
@@ -125,10 +125,34 @@ serve(async (req) => {
 
     // Call the convert-to-asset function
     try {
-      const problemText = sourceProblem.ocr_extracted_problem_text || sourceProblem.problem_text || "";
-      const solutionText = sourceProblem.ocr_extracted_solution_text || sourceProblem.solution_text || "";
+      let problemText = sourceProblem.ocr_extracted_problem_text || sourceProblem.problem_text || "";
+      let solutionText = sourceProblem.ocr_extracted_solution_text || sourceProblem.solution_text || "";
       const sourceLabel = sourceProblem.ocr_detected_label || sourceProblem.source_label || "";
       const title = sourceProblem.ocr_detected_title || sourceProblem.title || "";
+
+      // If this problem is part of a combined group, concatenate text from all group members
+      if (sourceProblem.combined_group_id) {
+        const { data: groupMembers } = await sb.from("chapter_problems")
+          .select("source_label, ocr_extracted_problem_text, problem_text, ocr_extracted_solution_text, solution_text, ocr_detected_label")
+          .eq("combined_group_id", sourceProblem.combined_group_id)
+          .neq("id", sourceProblem.id);
+
+        if (groupMembers && groupMembers.length > 0) {
+          // Sort by label for consistent ordering
+          const sorted = groupMembers.sort((a: any, b: any) =>
+            (a.ocr_detected_label || a.source_label || "").localeCompare(
+              b.ocr_detected_label || b.source_label || "", undefined, { numeric: true }
+            )
+          );
+          for (const member of sorted) {
+            const memberLabel = member.ocr_detected_label || member.source_label || "Related Problem";
+            const memberProblem = member.ocr_extracted_problem_text || member.problem_text || "";
+            const memberSolution = member.ocr_extracted_solution_text || member.solution_text || "";
+            if (memberProblem) problemText += `\n\n--- ${memberLabel} (Combined) ---\n${memberProblem}`;
+            if (memberSolution) solutionText += `\n\n--- ${memberLabel} Solution (Combined) ---\n${memberSolution}`;
+          }
+        }
+      }
 
       const convertRes = await fetch(`${supabaseUrl}/functions/v1/convert-to-asset`, {
         method: "POST",

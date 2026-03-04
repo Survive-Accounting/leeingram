@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_problems ADD COLUMN combined_group_id uuid DEFAULT NULL;
