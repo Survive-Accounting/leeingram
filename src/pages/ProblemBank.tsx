@@ -382,6 +382,11 @@ export default function ProblemBank() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Dependent Problems Queue */}
+        <div className="mt-6">
+          <DependentProblemsQueue chapterId={chapterFilter} courseId={courseFilter} />
+        </div>
       }
 
       {/* Add Source Problem Dialog */}
