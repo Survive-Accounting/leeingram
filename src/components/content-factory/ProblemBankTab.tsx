@@ -206,10 +206,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       const { data, error } = await supabase
         .from("chapter_problems")
         .select("*")
-        .eq("chapter_id", chapterId)
-        .order("created_at", { ascending: false });
+        .eq("chapter_id", chapterId);
       if (error) throw error;
-      return data as ChapterProblem[];
+      return (data as ChapterProblem[]).sort((a, b) =>
+        (a.source_label || "").localeCompare(b.source_label || "", undefined, { numeric: true, sensitivity: "base" })
+      );
     },
   });
 
