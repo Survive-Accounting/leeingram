@@ -789,7 +789,7 @@ serve(async (req) => {
 
       const { error: updateErr } = await supabase
         .from("chapter_problems")
-        .update({ status: "approved" })
+        .update({ status: "approved", pipeline_status: "approved" })
         .eq("id", problemId);
       if (updateErr) console.error("Failed to update problem status:", updateErr);
 

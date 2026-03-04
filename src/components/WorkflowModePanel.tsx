@@ -129,7 +129,7 @@ export function WorkflowModePanel() {
   }, [selectedChapter, allChapters]);
 
   return (
-    <aside className="w-72 shrink-0 border-r border-border flex flex-col overflow-hidden bg-[hsl(220,20%,7%)]">
+    <aside className="w-72 shrink-0 border-r border-border flex flex-col overflow-hidden bg-[hsl(220,20%,7%)] sticky top-0 h-screen">
       {/* Header with selectors */}
       <div className="px-4 pt-4 pb-3 border-b border-border space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
