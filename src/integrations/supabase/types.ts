@@ -418,6 +418,9 @@ export type Database = {
           contains_no_journal_entries: boolean
           course_id: string
           created_at: string
+          dependency_status: string
+          dependency_type: string
+          detected_dependency_ref: string
           difficulty_internal:
             | Database["public"]["Enums"]["difficulty_level"]
             | null
@@ -459,6 +462,9 @@ export type Database = {
           contains_no_journal_entries?: boolean
           course_id: string
           created_at?: string
+          dependency_status?: string
+          dependency_type?: string
+          detected_dependency_ref?: string
           difficulty_internal?:
             | Database["public"]["Enums"]["difficulty_level"]
             | null
@@ -500,6 +506,9 @@ export type Database = {
           contains_no_journal_entries?: boolean
           course_id?: string
           created_at?: string
+          dependency_status?: string
+          dependency_type?: string
+          detected_dependency_ref?: string
           difficulty_internal?:
             | Database["public"]["Enums"]["difficulty_level"]
             | null
