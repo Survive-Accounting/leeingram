@@ -56,6 +56,8 @@ EXTRACTION RULES:
 - For journal entries, preserve the grid structure (Account | Debit | Credit)
 - Identify and extract: problem label (e.g. "E13-3", "P14-2", "BE16-1"), Learning Objective numbers (e.g. "LO 3"), problem TITLE (the descriptive name that appears after the label, e.g. "Record Bonds Issued at a Discount"), and problem type (Exercise/Problem/Brief Exercise)
 - IMPORTANT: The title is the short descriptive phrase that follows the label and LO line. It is NOT the full problem text. Examples: "Straight-Line Amortization", "Record Bond Retirement", "Compute EPS". Always extract this if present.
+- CRITICAL: Brief Exercises (BE) do NOT have titles in the textbook. If the problem type is "Brief Exercise", set detected_title to an EMPTY string. Do NOT extract problem text as the title for Brief Exercises.
+- For Brief Exercises ONLY: Also return a "suggested_title" field — a concise 3-6 word descriptive title you would give this problem based on its content (e.g. "Classify Investment Securities", "Record Dividend Revenue"). This is AI-generated, not extracted.
 - Separate problem text from solution text based on the image categories provided
 - Rate your confidence: "high" if text is clearly readable, "medium" if some parts are unclear, "low" if significant portions are illegible
 
