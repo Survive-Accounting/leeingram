@@ -186,12 +186,17 @@ Return results using the provided tool.`,
 
     // Persist OCR results to DB
     if (problemId) {
+      const isBriefExercise = (ocrResult.detected_type || "").toLowerCase().includes("brief");
+      // For BEs, clear any detected_title (it's noise) and use AI-suggested title instead
+      const effectiveTitle = isBriefExercise ? "" : (ocrResult.detected_title || "");
+      const suggestedTitle = isBriefExercise ? (ocrResult.suggested_title || "") : "";
+
       const updateData: any = {
         ocr_extracted_problem_text: ocrResult.extracted_problem_text || "",
         ocr_extracted_solution_text: ocrResult.extracted_solution_text || "",
         ocr_detected_label: ocrResult.detected_label || "",
         ocr_detected_lo: ocrResult.detected_lo || "",
-        ocr_detected_title: ocrResult.detected_title || "",
+        ocr_detected_title: effectiveTitle,
         ocr_detected_type: ocrResult.detected_type || "",
         ocr_confidence: ocrResult.confidence || "",
         ocr_confidence_notes: ocrResult.confidence_notes || "",
@@ -204,7 +209,9 @@ Return results using the provided tool.`,
       const { data: existing } = await supabase.from("chapter_problems").select("source_label, title, problem_type, status").eq("id", problemId).single();
       if (existing) {
         if (!existing.source_label && ocrResult.detected_label) updateData.source_label = ocrResult.detected_label;
-        if (!existing.title && ocrResult.detected_title) updateData.title = ocrResult.detected_title;
+        // For BEs use AI-suggested title; for E/P use OCR-extracted title
+        const titleToApply = isBriefExercise ? suggestedTitle : effectiveTitle;
+        if (!existing.title && titleToApply) updateData.title = titleToApply;
         if (existing.status === "raw") updateData.status = "tagged";
       }
       await supabase.from("chapter_problems").update(updateData).eq("id", problemId);
