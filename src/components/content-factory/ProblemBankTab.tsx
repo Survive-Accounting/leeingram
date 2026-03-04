@@ -16,7 +16,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
