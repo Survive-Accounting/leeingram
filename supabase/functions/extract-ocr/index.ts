@@ -54,7 +54,8 @@ Extract ALL text from the provided images with high fidelity. The images are fro
 EXTRACTION RULES:
 - Preserve all numbers, account names, dates, and formatting exactly
 - For journal entries, preserve the grid structure (Account | Debit | Credit)
-- Identify and extract: problem label (e.g. "E13-3", "P14-2"), Learning Objective numbers (e.g. "LO 3"), title, and problem type (Exercise/Problem)
+- Identify and extract: problem label (e.g. "E13-3", "P14-2", "BE16-1"), Learning Objective numbers (e.g. "LO 3"), problem TITLE (the descriptive name that appears after the label, e.g. "Record Bonds Issued at a Discount"), and problem type (Exercise/Problem/Brief Exercise)
+- IMPORTANT: The title is the short descriptive phrase that follows the label and LO line. It is NOT the full problem text. Examples: "Straight-Line Amortization", "Record Bond Retirement", "Compute EPS". Always extract this if present.
 - Separate problem text from solution text based on the image categories provided
 - Rate your confidence: "high" if text is clearly readable, "medium" if some parts are unclear, "low" if significant portions are illegible
 
