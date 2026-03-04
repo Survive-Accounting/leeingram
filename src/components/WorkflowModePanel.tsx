@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { Factory, Inbox, Library, Package, Video, GraduationCap, ChevronDown, ChevronRight, Rocket } from "lucide-react";
+import { BuildTimerWidget } from "@/components/BuildTimerWidget";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -206,6 +207,9 @@ export function WorkflowModePanel() {
           </p>
         )}
       </div>
+
+      {/* Build Timer */}
+      {selectedChapter && <BuildTimerWidget />}
 
       {/* Collapsible Navigation */}
       <NavToggle />

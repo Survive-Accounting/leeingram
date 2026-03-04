@@ -213,8 +213,78 @@ export type Database = {
           },
         ]
       }
+      chapter_build_runs: {
+        Row: {
+          approved_count: number
+          avg_seconds_per_approved: number | null
+          avg_seconds_per_terminal: number | null
+          chapter_id: string
+          course_id: string
+          ended_at: string | null
+          id: string
+          import_count: number
+          imported_source_ids: Json
+          needs_fix_count: number
+          notes: string | null
+          started_at: string
+          status: string
+          terminal_count: number
+          total_seconds: number | null
+        }
+        Insert: {
+          approved_count?: number
+          avg_seconds_per_approved?: number | null
+          avg_seconds_per_terminal?: number | null
+          chapter_id: string
+          course_id: string
+          ended_at?: string | null
+          id?: string
+          import_count?: number
+          imported_source_ids?: Json
+          needs_fix_count?: number
+          notes?: string | null
+          started_at?: string
+          status?: string
+          terminal_count?: number
+          total_seconds?: number | null
+        }
+        Update: {
+          approved_count?: number
+          avg_seconds_per_approved?: number | null
+          avg_seconds_per_terminal?: number | null
+          chapter_id?: string
+          course_id?: string
+          ended_at?: string | null
+          id?: string
+          import_count?: number
+          imported_source_ids?: Json
+          needs_fix_count?: number
+          notes?: string | null
+          started_at?: string
+          status?: string
+          terminal_count?: number
+          total_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_build_runs_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_build_runs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_problems: {
         Row: {
+          build_run_id: string | null
           chapter_id: string
           contains_no_journal_entries: boolean
           course_id: string
@@ -247,6 +317,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          build_run_id?: string | null
           chapter_id: string
           contains_no_journal_entries?: boolean
           course_id: string
@@ -279,6 +350,7 @@ export type Database = {
           title?: string
         }
         Update: {
+          build_run_id?: string | null
           chapter_id?: string
           contains_no_journal_entries?: boolean
           course_id?: string
@@ -311,6 +383,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chapter_problems_build_run_id_fkey"
+            columns: ["build_run_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_build_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chapter_problems_chapter_id_fkey"
             columns: ["chapter_id"]
@@ -1424,6 +1503,7 @@ export type Database = {
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
           parts_json: Json | null
+          reviewed_at: string | null
           variant_label: string
           variant_problem_text: string
           variant_solution_text: string
@@ -1441,6 +1521,7 @@ export type Database = {
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           parts_json?: Json | null
+          reviewed_at?: string | null
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
@@ -1458,6 +1539,7 @@ export type Database = {
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           parts_json?: Json | null
+          reviewed_at?: string | null
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
