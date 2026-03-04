@@ -162,13 +162,19 @@ export default function AssetsLibrary() {
 
   const revertMutation = useMutation({
     mutationFn: async (asset: TeachingAsset) => {
-      // Revert linked variants back to draft
       if (asset.base_raw_problem_id) {
-        await supabase.from("problem_variants").update({ variant_status: "draft" } as any)
-          .eq("base_problem_id", asset.base_raw_problem_id).eq("variant_status", "approved");
-        // Revert source problem pipeline back to generated
-        await supabase.from("chapter_problems").update({ pipeline_status: "generated" } as any)
+        // Revert ALL approved variants for this problem back to draft
+        const { error: varErr } = await supabase.from("problem_variants")
+          .update({ variant_status: "draft" } as any)
+          .eq("base_problem_id", asset.base_raw_problem_id)
+          .eq("variant_status", "approved");
+        if (varErr) console.error("Variant revert error:", varErr);
+
+        // Revert source problem pipeline AND status back to generated
+        const { error: probErr } = await supabase.from("chapter_problems")
+          .update({ pipeline_status: "generated", status: "generated" } as any)
           .eq("id", asset.base_raw_problem_id);
+        if (probErr) console.error("Problem revert error:", probErr);
       }
       // Delete the teaching asset
       const { error } = await supabase.from("teaching_assets").delete().eq("id", asset.id);
@@ -177,8 +183,10 @@ export default function AssetsLibrary() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      qc.invalidateQueries({ queryKey: ["problem-variants"] });
+      qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
       setRevertId(null);
-      toast.success("Asset reverted to Generated stage");
+      toast.success("Asset reverted to Generated — variants set back to draft");
     },
     onError: (e: Error) => toast.error(e.message)
   });
