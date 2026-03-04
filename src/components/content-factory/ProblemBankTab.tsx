@@ -186,7 +186,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [variantStatusFilter, setVariantStatusFilter] = useState<string>("active");
   const [showArchived, setShowArchived] = useState(false);
-
+  const [startOverOpen, setStartOverOpen] = useState(false);
+  const [startOverRunning, setStartOverRunning] = useState(false);
   // Fetch user's variant count preference
   const { data: variantCount } = useQuery({
     queryKey: ["variant-count-setting"],
