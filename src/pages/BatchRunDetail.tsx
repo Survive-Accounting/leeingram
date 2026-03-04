@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Pause, XCircle, Loader2, CheckCircle2, AlertTriangle, Clock, ArrowLeft, Copy } from "lucide-react";
+import { Play, Pause, XCircle, Loader2, CheckCircle2, AlertTriangle, Clock, ArrowLeft, Copy, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 function formatDuration(ms: number | null): string {
