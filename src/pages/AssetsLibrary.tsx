@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText } from "lucide-react";
+import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
@@ -56,6 +56,7 @@ export default function AssetsLibrary() {
     if (workspace?.chapterId) setChapterFilter(workspace.chapterId);
   }, [workspace?.courseId, workspace?.chapterId]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [revertId, setRevertId] = useState<string | null>(null);
   const [viewingAsset, setViewingAsset] = useState<TeachingAsset | null>(null);
 
   // Selection & Export state
@@ -158,6 +159,29 @@ export default function AssetsLibrary() {
     }
     addToSetMutation.mutate({ setId: targetSetId, assetIds });
   };
+
+  const revertMutation = useMutation({
+    mutationFn: async (asset: TeachingAsset) => {
+      // Revert linked variants back to draft
+      if (asset.base_raw_problem_id) {
+        await supabase.from("problem_variants").update({ variant_status: "draft" } as any)
+          .eq("base_problem_id", asset.base_raw_problem_id).eq("variant_status", "approved");
+        // Revert source problem pipeline back to generated
+        await supabase.from("chapter_problems").update({ pipeline_status: "generated" } as any)
+          .eq("id", asset.base_raw_problem_id);
+      }
+      // Delete the teaching asset
+      const { error } = await supabase.from("teaching_assets").delete().eq("id", asset.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      setRevertId(null);
+      toast.success("Asset reverted to Generated stage");
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -295,6 +319,9 @@ export default function AssetsLibrary() {
           </div>
 
           <div className="flex gap-2 pt-2">
+            <Button size="sm" variant="outline" onClick={() => {setRevertId(viewingAsset.id);setViewingAsset(null);}}>
+              <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
+            </Button>
             <Button size="sm" variant="destructive" onClick={() => {setDeleteId(viewingAsset.id);setViewingAsset(null);}}>
               <Trash2 className="h-3 w-3 mr-1" /> Delete
             </Button>
@@ -449,6 +476,9 @@ export default function AssetsLibrary() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAsset(a)}>
                         <Eye className="h-3 w-3" />
                       </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-400" onClick={() => setRevertId(a.id)} title="Revert to Generated">
+                        <Undo2 className="h-3 w-3" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(a.id)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -520,6 +550,25 @@ export default function AssetsLibrary() {
             <Button variant="outline" size="sm" onClick={() => setDeleteId(null)}>Cancel</Button>
             <Button variant="destructive" size="sm" onClick={() => deleteId && deleteMutation.mutate(deleteId)} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revert to Generated confirmation */}
+      <Dialog open={!!revertId} onOpenChange={() => setRevertId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Revert to Generated</DialogTitle>
+            <DialogDescription>This will delete this asset, revert its variants back to draft, and set the source problem back to "Generated" so you can make modifications. Continue?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setRevertId(null)}>Cancel</Button>
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => {
+              const asset = assets?.find(a => a.id === revertId);
+              if (asset) revertMutation.mutate(asset);
+            }} disabled={revertMutation.isPending}>
+              {revertMutation.isPending ? "Reverting…" : "Revert"}
             </Button>
           </DialogFooter>
         </DialogContent>
