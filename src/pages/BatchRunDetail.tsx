@@ -46,6 +46,7 @@ const ITEM_STATUS_COLORS: Record<string, string> = {
 export default function BatchRunDetail() {
   const { batchRunId } = useParams<{ batchRunId: string }>();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [loopRunning, setLoopRunning] = useState(false);
   const loopRef = useRef(false);
   const [elapsed, setElapsed] = useState(0);
