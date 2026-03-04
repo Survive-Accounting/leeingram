@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
 
     // Use pdf-parse to extract text
     const pdfParse = (await import("npm:pdf-parse@1.1.1")).default;
-    const buffer = await fileData.arrayBuffer();
-    const pdfData = await pdfParse(Buffer.from(buffer));
+    const buffer = new Uint8Array(await fileData.arrayBuffer());
+    const pdfData = await pdfParse(buffer);
 
     // Build per-page text (pdf-parse gives us combined text; we split by form feeds or use numpages)
     // pdf-parse doesn't give per-page easily, so we'll use a page-marker approach
