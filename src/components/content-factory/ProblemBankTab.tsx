@@ -175,6 +175,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [batchCompleted, setBatchCompleted] = useState(0);
   const [batchCurrentLabel, setBatchCurrentLabel] = useState("");
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
+  const [launchingBatch, setLaunchingBatch] = useState(false);
 
   // Review queue state
   const [reviewMode, setReviewMode] = useState(false);
