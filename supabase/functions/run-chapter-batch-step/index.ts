@@ -207,7 +207,7 @@ serve(async (req) => {
           solutionText,
           journalEntryText: sourceProblem.journal_entry_text,
           provider: run.provider,
-          // Universal mode: let convert-to-asset auto-detect problem type
+          variant_count: 1, // Force V1 only in batch
           source_problem_id: sourceProblem.id,
           course_id: run.course_id,
           chapter_id: run.chapter_id,
