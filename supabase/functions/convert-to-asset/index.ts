@@ -972,7 +972,8 @@ serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
 
-    const variantCount = genSettings?.variants_per_request ?? 3;
+    // Allow explicit variant_count override (e.g. from batch generate)
+    const variantCount = body.variant_count ?? genSettings?.variants_per_request ?? 3;
 
     const teachingTone: string[] = genSettings?.teaching_tone || [
       "Neutral but memorable", "Mix of playful and professional",

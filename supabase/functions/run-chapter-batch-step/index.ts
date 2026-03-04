@@ -207,7 +207,7 @@ serve(async (req) => {
           solutionText,
           journalEntryText: sourceProblem.journal_entry_text,
           provider: run.provider,
-          // Universal mode: let convert-to-asset auto-detect problem type
+          variant_count: 1, // Force V1 only in batch
           source_problem_id: sourceProblem.id,
           course_id: run.course_id,
           chapter_id: run.chapter_id,
@@ -232,34 +232,81 @@ serve(async (req) => {
         throw new Error("No candidates returned from generation");
       }
 
+      // Only persist V1 (first candidate)
       const variantIds: string[] = [];
-      for (let i = 0; i < candidates.length; i++) {
-        const c = candidates[i];
-        const variantLabel = `Variation ${String.fromCharCode(65 + i)}`;
+      const c = candidates[0];
+      const variantLabel = "Variation A";
 
-        // Use parts[] from AI output (universal schema)
-        const parts = Array.isArray(c.parts) && c.parts.length > 0 ? c.parts : null;
+      // Use parts[] from AI output (universal schema)
+      const parts = Array.isArray(c.parts) && c.parts.length > 0 ? c.parts : null;
 
-        const { data: variant, error: vErr } = await sb.from("problem_variants").insert({
-          base_problem_id: sourceProblem.id,
-          variant_label: variantLabel,
-          variant_problem_text: c.survive_problem_text || "",
-          variant_solution_text: c.survive_solution_text || "",
-          variant_status: "draft",
-          candidate_data: c,
-          journal_entry_completed_json: c.je_structured || null,
-          journal_entry_template_json: c.je_template || null,
-          je_skeleton_json: c.je_skeleton || null,
-          parts_json: parts,
-          answer_parts_json: parts ? null : (c.answer_parts || null),
-        }).select("id").single();
+      // Build journal_entry_completed_json and je_skeleton_json from parts JE data
+      let jeCompletedJson: any = c.je_structured || null;
+      let jeSkeletonJson: any = c.je_skeleton || null;
 
-        if (vErr) {
-          console.error("Failed to insert variant:", vErr);
-          continue;
+      if (parts && !jeCompletedJson) {
+        // Extract JE from parts[] for backward compat + skeleton workflow
+        const jeParts = parts.filter((p: any) => p.type === "je" && Array.isArray(p.je_structured));
+        if (jeParts.length > 0) {
+          const scenarioSections = jeParts.map((jp: any, i: number) => ({
+            label: jp.label ? `Part ${jp.label}` : `Part ${String.fromCharCode(97 + i)}`,
+            entries_by_date: (jp.je_structured || []).map((entry: any) => ({
+              entry_date: entry.date || "Undated",
+              rows: (entry.entries || []).map((e: any) => ({
+                account_name: e.account || "",
+                debit: e.debit != null ? Number(e.debit) : null,
+                credit: e.credit != null ? Number(e.credit) : null,
+              })),
+            })),
+          }));
+          jeCompletedJson = { scenario_sections: scenarioSections };
+          // Auto-build skeleton from JE parts
+          jeSkeletonJson = {
+            scenario_sections: scenarioSections.map((sc: any) => ({
+              scenario_label: sc.label,
+              entry_dates: sc.entries_by_date.map((e: any) => e.entry_date),
+            })),
+          };
         }
-        if (variant) variantIds.push(variant.id);
       }
+
+      // Build je_entries_json and je_entry_status_json from skeleton + completed data
+      let jeEntriesJson: any = null;
+      let jeEntryStatusJson: any = null;
+      if (jeSkeletonJson && jeCompletedJson?.scenario_sections) {
+        const entriesMap: Record<string, any> = {};
+        const statusMap: Record<string, string> = {};
+        for (const sc of jeCompletedJson.scenario_sections) {
+          for (const entry of (sc.entries_by_date || [])) {
+            const key = `${sc.label}::${entry.entry_date}`;
+            entriesMap[key] = { rows: entry.rows || [] };
+            statusMap[key] = "validated"; // Auto-validate from AI generation
+          }
+        }
+        jeEntriesJson = entriesMap;
+        jeEntryStatusJson = statusMap;
+      }
+
+      const { data: variant, error: vErr } = await sb.from("problem_variants").insert({
+        base_problem_id: sourceProblem.id,
+        variant_label: variantLabel,
+        variant_problem_text: c.survive_problem_text || "",
+        variant_solution_text: c.survive_solution_text || "",
+        variant_status: "draft",
+        candidate_data: c,
+        journal_entry_completed_json: jeCompletedJson,
+        journal_entry_template_json: c.je_template || null,
+        je_skeleton_json: jeSkeletonJson,
+        je_entries_json: jeEntriesJson,
+        je_entry_status_json: jeEntryStatusJson,
+        parts_json: parts,
+        answer_parts_json: parts ? null : (c.answer_parts || null),
+      }).select("id").single();
+
+      if (vErr) {
+        console.error("Failed to insert variant:", vErr);
+      }
+      if (variant) variantIds.push(variant.id);
 
       // Update source problem status
       await sb.from("chapter_problems").update({

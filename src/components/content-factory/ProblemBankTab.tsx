@@ -1455,7 +1455,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   setReviewMode(false);
                   openDetail(rp as any);
                 }}>
-                  <Sparkles className="h-3 w-3 mr-1" /> Regenerate Variants
+                  <Sparkles className="h-3 w-3 mr-1" /> New Variant
                 </Button>
                 <div className="flex items-center gap-2">
                   {reviewIndex < generatedProblems.length - 1 && (
@@ -1812,7 +1812,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
             {candidates.length > 0 && (
               <Button size="sm" variant="outline" onClick={() => generateMutation.mutate({ problem: p })} disabled={generateMutation.isPending || !canGenerate}>
-                <Sparkles className="h-3.5 w-3.5 mr-1" /> Regenerate {vCount} More
+                <Sparkles className="h-3.5 w-3.5 mr-1" /> New Variant
               </Button>
             )}
 
