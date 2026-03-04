@@ -2100,8 +2100,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Batch run created with ${data.total} problems`);
-      // Navigate to batch run detail
-      window.location.href = `/batch-run/${data.batch_run_id}`;
+      // Navigate to batch run detail with smooth transition
+      navigate(`/batch-run/${data.batch_run_id}`);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
