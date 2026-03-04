@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, FileText, Loader2, Check, Archive, AlertTriangle, Sparkles } from "lucide-react";
+import { ArrowLeft, Upload, FileText, Loader2, Check, Archive, AlertTriangle, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type ParsedBlock = {
@@ -69,10 +69,12 @@ export default function SolutionsPdfUpload() {
       const { data, error } = await supabase
         .from("parsed_solution_blocks")
         .select("*")
-        .eq("file_id", activeFileId!)
-        .order("source_code");
+        .eq("file_id", activeFileId!);
       if (error) throw error;
-      return data as ParsedBlock[];
+      // Natural sort by source_code
+      return (data as ParsedBlock[]).sort((a, b) => {
+        return a.source_code.localeCompare(b.source_code, undefined, { numeric: true, sensitivity: "base" });
+      });
     },
     enabled: !!activeFileId,
   });
@@ -216,6 +218,21 @@ export default function SolutionsPdfUpload() {
       qc.invalidateQueries({ queryKey: ["parsed-blocks", activeFileId] });
       toast.success("Archived");
     },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (blockIds: string[]) => {
+      const { error } = await supabase
+        .from("parsed_solution_blocks")
+        .delete()
+        .in("id", blockIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["parsed-blocks", activeFileId] });
+      toast.success("Deleted");
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const pendingBlocks = parsedBlocks?.filter((b) => b.status === "pending") ?? [];
@@ -456,6 +473,15 @@ export default function SolutionsPdfUpload() {
                                   onClick={() => archiveMutation.mutate([block.id])}
                                 >
                                   <Archive className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 text-[10px] px-2 text-destructive"
+                                  onClick={() => deleteMutation.mutate([block.id])}
+                                  disabled={deleteMutation.isPending}
+                                >
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             )}
