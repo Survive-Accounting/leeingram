@@ -283,7 +283,7 @@ export default function BatchRunDetail() {
           <div className="grid grid-cols-4 gap-4 text-xs">
             <div>
               <div className="text-muted-foreground">Success</div>
-              <div className="text-lg font-bold text-green-400">{run.completed_sources}</div>
+              <div className="text-lg font-bold text-success">{run.completed_sources}</div>
             </div>
             <div>
               <div className="text-muted-foreground">Failed</div>
