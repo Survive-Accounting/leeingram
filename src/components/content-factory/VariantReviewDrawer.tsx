@@ -21,6 +21,8 @@ import { runValidation, hasFailures, type AnswerPackageData, type ValidationResu
 import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE } from "@/lib/journalEntryParser";
 import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 import { logActivity } from "@/lib/activityLogger";
+import { normalizeToParts } from "@/lib/variantParts";
+import { VariantPartsDisplay } from "./VariantPartsDisplay";
 import { useChapterApprovedAccounts } from "./ChapterAccountsSetup";
 import { ActivityLogPanel } from "./ActivityLogPanel";
 import {
@@ -615,14 +617,23 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
         })),
     })) || [];
 
+    const jeCompletedJson = {
+      scenario_sections: completedSections,
+      updated_by_user: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Rebuild parts_json from current data
+    const updatedParts = normalizeToParts({
+      ...variant,
+      journal_entry_completed_json: jeCompletedJson,
+    });
+
     await supabase.from("problem_variants").update({
       je_entries_json: ent as any,
       je_entry_status_json: sts as any,
-      journal_entry_completed_json: {
-        scenario_sections: completedSections,
-        updated_by_user: true,
-        updated_at: new Date().toISOString(),
-      } as any,
+      journal_entry_completed_json: jeCompletedJson as any,
+      parts_json: updatedParts.length > 0 ? updatedParts as any : null,
     } as any).eq("id", variantId);
   };
 
@@ -747,8 +758,14 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
           </div>
         </div>
 
-        {/* Answer Summary */}
-        {variant.answer_only && (
+        {/* Unified Parts Display */}
+        {(() => {
+          const parts = normalizeToParts(variant);
+          return parts.length > 0 ? <VariantPartsDisplay parts={parts} /> : null;
+        })()}
+
+        {/* Answer Summary (legacy fallback) */}
+        {variant.answer_only && !variant.parts_json && (
           <div>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">Answer Summary</p>
             <div className="rounded-md border border-border bg-muted/20 p-3 max-h-32 overflow-y-auto">

@@ -1423,6 +1423,7 @@ export type Database = {
           je_skeleton_json: Json | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
+          parts_json: Json | null
           variant_label: string
           variant_problem_text: string
           variant_solution_text: string
@@ -1439,6 +1440,7 @@ export type Database = {
           je_skeleton_json?: Json | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
+          parts_json?: Json | null
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string
@@ -1455,6 +1457,7 @@ export type Database = {
           je_skeleton_json?: Json | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
+          parts_json?: Json | null
           variant_label?: string
           variant_problem_text?: string
           variant_solution_text?: string

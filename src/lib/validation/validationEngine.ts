@@ -113,8 +113,9 @@ export const ALL_VALIDATORS: Validator[] = [...BASE_VALIDATORS, ...JE_VALIDATORS
 // --- Validation Pipeline ---
 
 export function runValidation(pkg: AnswerPackageData, extraValidators: Validator[] = []): ValidationResult[] {
-  // Use NON_JE validators if answer_parts exist and no JE required
-  const isNonJE = pkg.answer_payload?.answer_parts && !pkg.requires_je;
+  // Use NON_JE validators if answer_parts or parts_json exist and no JE required
+  const hasPartsSchema = pkg.answer_payload?.answer_parts || pkg.answer_payload?.parts_json;
+  const isNonJE = hasPartsSchema && !pkg.requires_je;
   const baseSet = isNonJE ? [...BASE_VALIDATORS, ...NON_JE_VALIDATORS] : ALL_VALIDATORS;
   const all = [...baseSet, ...extraValidators];
   return all.map((v) => v(pkg));

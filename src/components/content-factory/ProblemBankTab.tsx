@@ -32,6 +32,7 @@ import {
 import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
 import { GenerationLogger } from "@/lib/generationLogger";
 import { detectRequiresJE } from "@/lib/legacyJENormalizer";
+import { normalizeToParts, partsToLegacyFields } from "@/lib/variantParts";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -513,6 +514,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           const c = newCandidates[ci];
           const { normalizedCandidate, completed, template, counts } = getCandidateJEPersistence(c);
           const isNonJE = !!(problem as any).contains_no_journal_entries || !!c.answer_parts || c._generation_mode === "NON_JE";
+          
+          // Build unified parts_json from candidate data
+          const candidateForParts = {
+            ...normalizedCandidate,
+            journal_entry_completed_json: isNonJE ? null : completed,
+            answer_parts_json: isNonJE && c.answer_parts ? c.answer_parts : null,
+          };
+          const parts = normalizeToParts(candidateForParts);
+          
           const variantPayload: Record<string, any> = {
             base_problem_id: problem.id,
             variant_label: `Variant ${String.fromCharCode(65 + ci)}`,
@@ -522,6 +532,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             journal_entry_completed_json: isNonJE ? null : completed,
             journal_entry_template_json: isNonJE ? null : template,
             ...(isNonJE && c.answer_parts ? { answer_parts_json: c.answer_parts } : {}),
+            parts_json: parts.length > 0 ? parts : null,
           };
 
           const { data: insertedVariant, error: insertVariantError } = await supabase
@@ -631,13 +642,21 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         journal_entry_template_json: jeTemplate,
       };
 
+      // Build parts from enriched candidate
+      const parts = normalizeToParts(enrichedCandidate);
+
+      const enrichedWithParts = {
+        ...enrichedCandidate,
+        parts_json: parts.length > 0 ? parts : null,
+      };
+
       const { data, error } = await supabase.functions.invoke("convert-to-asset", {
         body: {
           mode: "save",
           problemId: problem.id,
           courseId: problem.course_id,
           chapterId: problem.chapter_id,
-          candidate: enrichedCandidate,
+          candidate: enrichedWithParts,
           requiresJournalEntry: afRequiresJE,
         },
       });
