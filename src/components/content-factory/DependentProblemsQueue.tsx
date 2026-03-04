@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link2, SkipForward, Merge, AlertTriangle } from "lucide-react";
+import { Link2, SkipForward, Merge, AlertTriangle, Unlink } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
