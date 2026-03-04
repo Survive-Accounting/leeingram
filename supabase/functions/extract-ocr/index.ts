@@ -56,6 +56,8 @@ EXTRACTION RULES:
 - For journal entries, preserve the grid structure (Account | Debit | Credit)
 - Identify and extract: problem label (e.g. "E13-3", "P14-2", "BE16-1"), Learning Objective numbers (e.g. "LO 3"), problem TITLE (the descriptive name that appears after the label, e.g. "Record Bonds Issued at a Discount"), and problem type (Exercise/Problem/Brief Exercise)
 - IMPORTANT: The title is the short descriptive phrase that follows the label and LO line. It is NOT the full problem text. Examples: "Straight-Line Amortization", "Record Bond Retirement", "Compute EPS". Always extract this if present.
+- CRITICAL: Brief Exercises (BE) do NOT have titles in the textbook. If the problem type is "Brief Exercise", set detected_title to an EMPTY string. Do NOT extract problem text as the title for Brief Exercises.
+- For Brief Exercises ONLY: Also return a "suggested_title" field — a concise 3-6 word descriptive title you would give this problem based on its content (e.g. "Classify Investment Securities", "Record Dividend Revenue"). This is AI-generated, not extracted.
 - Separate problem text from solution text based on the image categories provided
 - Rate your confidence: "high" if text is clearly readable, "medium" if some parts are unclear, "low" if significant portions are illegible
 
@@ -92,14 +94,15 @@ Return results using the provided tool.`,
                 properties: {
                   detected_label: { type: "string", description: "Problem label e.g. 'E13-3'. Empty if not found." },
                   detected_lo: { type: "string", description: "Learning Objective numbers. Empty if not found." },
-                  detected_title: { type: "string", description: "Problem title — the short descriptive name after the label (e.g. 'Record Bonds Issued at a Discount'). Empty if not found." },
-                  detected_type: { type: "string", description: "Exercise, Problem, or Custom. Empty if not found." },
+                  detected_title: { type: "string", description: "Problem title — the short descriptive name after the label (e.g. 'Record Bonds Issued at a Discount'). MUST be empty string for Brief Exercises." },
+                  suggested_title: { type: "string", description: "AI-generated 3-6 word descriptive title for Brief Exercises only. Empty string for Exercises/Problems." },
+                  detected_type: { type: "string", description: "Exercise, Problem, Brief Exercise, or Custom. Empty if not found." },
                   extracted_problem_text: { type: "string", description: "Full extracted text from problem screenshots." },
                   extracted_solution_text: { type: "string", description: "Full extracted text from solution screenshots." },
                   confidence: { type: "string", enum: ["high", "medium", "low"], description: "Overall OCR confidence" },
                   confidence_notes: { type: "string", description: "Brief explanation of confidence issues." },
                 },
-                required: ["detected_label", "detected_lo", "detected_title", "detected_type", "extracted_problem_text", "extracted_solution_text", "confidence", "confidence_notes"],
+                required: ["detected_label", "detected_lo", "detected_title", "suggested_title", "detected_type", "extracted_problem_text", "extracted_solution_text", "confidence", "confidence_notes"],
                 additionalProperties: false,
               },
             },
@@ -183,12 +186,17 @@ Return results using the provided tool.`,
 
     // Persist OCR results to DB
     if (problemId) {
+      const isBriefExercise = (ocrResult.detected_type || "").toLowerCase().includes("brief");
+      // For BEs, clear any detected_title (it's noise) and use AI-suggested title instead
+      const effectiveTitle = isBriefExercise ? "" : (ocrResult.detected_title || "");
+      const suggestedTitle = isBriefExercise ? (ocrResult.suggested_title || "") : "";
+
       const updateData: any = {
         ocr_extracted_problem_text: ocrResult.extracted_problem_text || "",
         ocr_extracted_solution_text: ocrResult.extracted_solution_text || "",
         ocr_detected_label: ocrResult.detected_label || "",
         ocr_detected_lo: ocrResult.detected_lo || "",
-        ocr_detected_title: ocrResult.detected_title || "",
+        ocr_detected_title: effectiveTitle,
         ocr_detected_type: ocrResult.detected_type || "",
         ocr_confidence: ocrResult.confidence || "",
         ocr_confidence_notes: ocrResult.confidence_notes || "",
@@ -201,7 +209,9 @@ Return results using the provided tool.`,
       const { data: existing } = await supabase.from("chapter_problems").select("source_label, title, problem_type, status").eq("id", problemId).single();
       if (existing) {
         if (!existing.source_label && ocrResult.detected_label) updateData.source_label = ocrResult.detected_label;
-        if (!existing.title && ocrResult.detected_title) updateData.title = ocrResult.detected_title;
+        // For BEs use AI-suggested title; for E/P use OCR-extracted title
+        const titleToApply = isBriefExercise ? suggestedTitle : effectiveTitle;
+        if (!existing.title && titleToApply) updateData.title = titleToApply;
         if (existing.status === "raw") updateData.status = "tagged";
       }
       await supabase.from("chapter_problems").update(updateData).eq("id", problemId);
