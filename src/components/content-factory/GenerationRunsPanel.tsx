@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ChevronDown, Copy, CheckCircle2, XCircle, Clock, Cpu, RefreshCw,
-  AlertTriangle, Info, AlertCircle, Bug,
+  AlertTriangle, Info, AlertCircle, Bug, Layers, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   chapterId: string;
@@ -44,6 +45,48 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [scopeFilter, setScopeFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
+  const [batchCreating, setBatchCreating] = useState(false);
+  const navigate = useNavigate();
+
+  // Fetch source problems for batch generate
+  const { data: sourceProblems } = useQuery({
+    queryKey: ["chapter-problems-ids", chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_problems")
+        .select("id, source_label, status")
+        .eq("chapter_id", chapterId)
+        .in("status", ["ready", "imported", "generated"]);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!chapterId,
+  });
+
+  const handleBatchGenerate = async () => {
+    if (!courseId || !sourceProblems?.length) return;
+    setBatchCreating(true);
+    try {
+      const ids = sourceProblems.map(p => p.id);
+      const { data, error } = await supabase.functions.invoke("start-chapter-batch-run", {
+        body: {
+          course_id: courseId,
+          chapter_id: chapterId,
+          source_problem_ids: ids,
+          variant_count: 1,
+          provider: "lovable",
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Batch created with ${ids.length} sources`);
+      navigate(`/batch-run/${data.batch_run_id}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBatchCreating(false);
+    }
+  };
 
   // Fetch runs for this chapter
   const { data: runs, isLoading: runsLoading, refetch } = useQuery({
@@ -125,9 +168,21 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
       <div className="flex items-center gap-2 text-xs">
         <span className="font-semibold text-sm">Generation Runs</span>
         <span className="text-muted-foreground">{runs?.length ?? 0} runs</span>
-        <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => refetch()}>
-          <RefreshCw className="h-3 w-3 mr-1" /> Refresh
-        </Button>
+        <div className="ml-auto flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[11px] px-2.5"
+            onClick={handleBatchGenerate}
+            disabled={batchCreating || !sourceProblems?.length}
+          >
+            {batchCreating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Layers className="h-3 w-3 mr-1" />}
+            Batch Generate{sourceProblems?.length ? ` (${sourceProblems.length})` : ""}
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => refetch()}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">
