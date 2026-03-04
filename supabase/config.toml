@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.parse-solutions-pdf]
 verify_jwt = false
+
+[functions.start-chapter-batch-run]
+verify_jwt = false
+
+[functions.run-chapter-batch-step]
+verify_jwt = false

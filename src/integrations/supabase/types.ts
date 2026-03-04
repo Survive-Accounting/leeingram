@@ -213,6 +213,135 @@ export type Database = {
           },
         ]
       }
+      chapter_batch_run_items: {
+        Row: {
+          attempts: number
+          batch_run_id: string
+          created_variant_ids: Json | null
+          duration_ms: number | null
+          ended_at: string | null
+          id: string
+          last_error: string | null
+          seq: number
+          source_problem_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          batch_run_id: string
+          created_variant_ids?: Json | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          last_error?: string | null
+          seq: number
+          source_problem_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          batch_run_id?: string
+          created_variant_ids?: Json | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          last_error?: string | null
+          seq?: number
+          source_problem_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_batch_run_items_batch_run_id_fkey"
+            columns: ["batch_run_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_batch_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_batch_run_items_source_problem_id_fkey"
+            columns: ["source_problem_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapter_batch_runs: {
+        Row: {
+          avg_seconds_per_source: number | null
+          chapter_id: string
+          completed_sources: number
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          ended_at: string | null
+          failed_sources: number
+          id: string
+          notes: string | null
+          provider: string
+          started_at: string | null
+          status: string
+          total_sources: number
+          variant_count: number
+        }
+        Insert: {
+          avg_seconds_per_source?: number | null
+          chapter_id: string
+          completed_sources?: number
+          course_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          ended_at?: string | null
+          failed_sources?: number
+          id?: string
+          notes?: string | null
+          provider?: string
+          started_at?: string | null
+          status?: string
+          total_sources?: number
+          variant_count?: number
+        }
+        Update: {
+          avg_seconds_per_source?: number | null
+          chapter_id?: string
+          completed_sources?: number
+          course_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          ended_at?: string | null
+          failed_sources?: number
+          id?: string
+          notes?: string | null
+          provider?: string
+          started_at?: string | null
+          status?: string
+          total_sources?: number
+          variant_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_batch_runs_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_batch_runs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_build_runs: {
         Row: {
           approved_count: number
