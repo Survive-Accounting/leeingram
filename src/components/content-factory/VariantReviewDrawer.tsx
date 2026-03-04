@@ -9,7 +9,7 @@ import {
 import {
   Check, X, Save, ChevronDown, AlertTriangle, Info, Lock, CheckCircle2,
   Circle, XCircle, ScrollText, Plus, Sparkles, Loader2, Pencil, Code, Copy,
-  ChevronRight, Wrench, SkipForward,
+  ChevronRight, Wrench, SkipForward, Eye,
 } from "lucide-react";
 import { ScenarioAccordion } from "./ScenarioAccordion";
 import { EntryByDateCard, type DateEntryStatus as CardDateEntryStatus } from "./EntryByDateCard";
@@ -176,7 +176,7 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
   const [payloadLoading, setPayloadLoading] = useState(false);
 
   // Section toggles
-  const [showMainSection, setShowMainSection] = useState(true);
+  const [showMainSection, setShowMainSection] = useState(false);
   const [showJESection, setShowJESection] = useState(false);
   const [showTextSection, setShowTextSection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
@@ -680,43 +680,54 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
           </div>
         </div>
 
-        {/* ═══ MAIN SECTION: Problem + Answer (open by default) ═══ */}
-        <Collapsible open={showMainSection} onOpenChange={setShowMainSection}>
-          <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-2 border-b border-border hover:text-foreground">
-            <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", showMainSection && "rotate-90")} />
-            <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Problem & Answer</span>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3 space-y-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
-              <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-28 overflow-y-auto">
-                <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
-                  {variant.survive_problem_text || variant.variant_problem_text || "—"}
-                </p>
-              </div>
-            </div>
-
-            {(variant.answer_only || hasTextParts) && (
+        {/* ═══ MAIN SECTION: Problem + Answer (hold to peek) ═══ */}
+        <div
+          className="select-none"
+          onMouseDown={() => setShowMainSection(true)}
+          onMouseUp={() => setShowMainSection(false)}
+          onMouseLeave={() => setShowMainSection(false)}
+          onTouchStart={() => setShowMainSection(true)}
+          onTouchEnd={() => setShowMainSection(false)}
+        >
+          <div className="flex items-center gap-2 py-2 border-b border-border cursor-pointer">
+            <Eye className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {showMainSection ? "Problem & Answer" : "Hold to view Problem & Answer"}
+            </span>
+          </div>
+          {showMainSection && (
+            <div className="pt-3 space-y-3 animate-in fade-in-0 duration-150">
               <div>
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Summary</p>
-                <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-24 overflow-y-auto">
-                  {hasTextParts ? (
-                    <div className="space-y-1">
-                      {textParts.map((tp, i) => (
-                        <p key={i} className="text-xs text-foreground">
-                          <span className="font-semibold text-primary">{formatPartLabel(tp.label)}</span>{" "}
-                          {tp.final_answer}
-                        </p>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-foreground font-mono">{variant.answer_only}</p>
-                  )}
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
+                <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-28 overflow-y-auto">
+                  <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
+                    {variant.survive_problem_text || variant.variant_problem_text || "—"}
+                  </p>
                 </div>
               </div>
-            )}
-          </CollapsibleContent>
-        </Collapsible>
+
+              {(variant.answer_only || hasTextParts) && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Summary</p>
+                  <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-24 overflow-y-auto">
+                    {hasTextParts ? (
+                      <div className="space-y-1">
+                        {textParts.map((tp, i) => (
+                          <p key={i} className="text-xs text-foreground">
+                            <span className="font-semibold text-primary">{formatPartLabel(tp.label)}</span>{" "}
+                            {tp.final_answer}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-foreground font-mono">{variant.answer_only}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Recent Fixes */}
         {recentFixes.length > 0 && (
