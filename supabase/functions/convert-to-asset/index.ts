@@ -623,14 +623,19 @@ serve(async (req) => {
     );
 
     // Allow service-role calls (from batch step) to bypass user JWT validation
+    let claimsData: any = null;
     if (!isServiceRole) {
-      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-      if (claimsError || !claimsData?.claims) {
+      const { data: cd, error: claimsError } = await supabase.auth.getClaims(token);
+      if (claimsError || !cd?.claims) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      claimsData = cd;
+    } else {
+      // Service-role calls don't have user claims; use a placeholder
+      claimsData = { claims: { sub: "service-role" } };
     }
 
     const body = await req.json();
