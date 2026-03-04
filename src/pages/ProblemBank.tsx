@@ -358,9 +358,9 @@ export default function ProblemBank() {
             </Button>
           </>
         )}
-        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={runBulkOcr} disabled={ocrRunning}>
+        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(ocrHasRun)} disabled={ocrRunning}>
           {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
-          {ocrRunning ? "Running OCR…" : "Run OCR"}
+          {ocrRunning ? "Running OCR…" : ocrHasRun ? "Re-run OCR" : "Run OCR"}
         </Button>
         {selectedIds.size > 0 && (
           <>
