@@ -128,6 +128,7 @@ type ChapterProblem = {
 
 export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { recomputeProgress } = useBuildRun();
   const [addOpen, setAddOpen] = useState(false);
   const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
