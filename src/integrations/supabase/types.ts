@@ -293,6 +293,7 @@ export type Database = {
             | Database["public"]["Enums"]["difficulty_level"]
             | null
           id: string
+          import_status: string
           journal_entry_text: string | null
           ocr_confidence: string
           ocr_confidence_notes: string
@@ -309,10 +310,17 @@ export type Database = {
           problem_text: string
           problem_type: Database["public"]["Enums"]["problem_type"]
           scenario_blocks_json: Json | null
+          solution_pdf_file_id: string | null
+          solution_pdf_page_end: number | null
+          solution_pdf_page_start: number | null
           solution_screenshot_url: string | null
           solution_screenshot_urls: string[]
+          solution_source: string
           solution_text: string
+          solution_text_confidence: number | null
+          source_code: string
           source_label: string
+          source_type: string
           status: string
           title: string
         }
@@ -326,6 +334,7 @@ export type Database = {
             | Database["public"]["Enums"]["difficulty_level"]
             | null
           id?: string
+          import_status?: string
           journal_entry_text?: string | null
           ocr_confidence?: string
           ocr_confidence_notes?: string
@@ -342,10 +351,17 @@ export type Database = {
           problem_text?: string
           problem_type?: Database["public"]["Enums"]["problem_type"]
           scenario_blocks_json?: Json | null
+          solution_pdf_file_id?: string | null
+          solution_pdf_page_end?: number | null
+          solution_pdf_page_start?: number | null
           solution_screenshot_url?: string | null
           solution_screenshot_urls?: string[]
+          solution_source?: string
           solution_text?: string
+          solution_text_confidence?: number | null
+          source_code?: string
           source_label?: string
+          source_type?: string
           status?: string
           title?: string
         }
@@ -359,6 +375,7 @@ export type Database = {
             | Database["public"]["Enums"]["difficulty_level"]
             | null
           id?: string
+          import_status?: string
           journal_entry_text?: string | null
           ocr_confidence?: string
           ocr_confidence_notes?: string
@@ -375,10 +392,17 @@ export type Database = {
           problem_text?: string
           problem_type?: Database["public"]["Enums"]["problem_type"]
           scenario_blocks_json?: Json | null
+          solution_pdf_file_id?: string | null
+          solution_pdf_page_end?: number | null
+          solution_pdf_page_start?: number | null
           solution_screenshot_url?: string | null
           solution_screenshot_urls?: string[]
+          solution_source?: string
           solution_text?: string
+          solution_text_confidence?: number | null
+          source_code?: string
           source_label?: string
+          source_type?: string
           status?: string
           title?: string
         }
@@ -402,6 +426,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_problems_solution_pdf_file_id_fkey"
+            columns: ["solution_pdf_file_id"]
+            isOneToOne: false
+            referencedRelation: "uploaded_files"
             referencedColumns: ["id"]
           },
         ]
@@ -1405,6 +1436,76 @@ export type Database = {
         }
         Relationships: []
       }
+      parsed_solution_blocks: {
+        Row: {
+          chapter_id: string
+          cleaned_text: string
+          confidence: number
+          course_id: string
+          created_at: string
+          file_id: string
+          id: string
+          page_end: number | null
+          page_start: number | null
+          raw_text: string
+          source_code: string
+          source_type: string
+          status: string
+        }
+        Insert: {
+          chapter_id: string
+          cleaned_text?: string
+          confidence?: number
+          course_id: string
+          created_at?: string
+          file_id: string
+          id?: string
+          page_end?: number | null
+          page_start?: number | null
+          raw_text?: string
+          source_code?: string
+          source_type?: string
+          status?: string
+        }
+        Update: {
+          chapter_id?: string
+          cleaned_text?: string
+          confidence?: number
+          course_id?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          page_end?: number | null
+          page_start?: number | null
+          raw_text?: string
+          source_code?: string
+          source_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parsed_solution_blocks_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parsed_solution_blocks_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parsed_solution_blocks_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "uploaded_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       problem_assets: {
         Row: {
           asset_type: string
@@ -2096,6 +2197,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      uploaded_files: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type?: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uploaded_files_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uploaded_files_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {
