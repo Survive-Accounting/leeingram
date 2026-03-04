@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { ChapterActivityLog } from "@/components/content-factory/ChapterActivityLog";
 import { GenerationRunsPanel } from "@/components/content-factory/GenerationRunsPanel";
+import { DependentProblemsQueue } from "@/components/content-factory/DependentProblemsQueue";
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useBuildRun, type BuildRun } from "@/hooks/useBuildRun";
