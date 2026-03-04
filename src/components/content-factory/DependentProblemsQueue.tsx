@@ -168,7 +168,20 @@ export function DependentProblemsQueue({ chapterId, courseId }: Props) {
             {handled.map(p => (
               <div key={p.id} className="flex items-center justify-between px-3 py-1.5 rounded-md bg-muted/30">
                 <span className="text-xs font-mono text-foreground/70">{p.ocr_detected_label || p.source_label}</span>
-                <Badge variant="outline" className="text-[9px]">{p.dependency_status}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[9px]">{p.dependency_status}</Badge>
+                  {p.dependency_status === "combined" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] px-1.5"
+                      onClick={() => uncombineMutation.mutate(p.id)}
+                      disabled={uncombineMutation.isPending}
+                    >
+                      <Unlink className="h-2.5 w-2.5 mr-0.5" /> Unlink
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
