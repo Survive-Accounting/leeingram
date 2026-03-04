@@ -137,10 +137,10 @@ export default function ScreenshotCapture() {
     <SurviveSidebarLayout>
       <div className="mb-4">
         <Link
-          to={`/solutions-upload/${chapterId}`}
+          to="/problem-bank"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to Solutions Upload
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Problem Import
         </Link>
       </div>
 
@@ -171,7 +171,7 @@ export default function ScreenshotCapture() {
             <Check className="h-8 w-8 text-green-400 mx-auto mb-2" />
             <p className="text-sm text-foreground">All sources have problem screenshots attached!</p>
             <Button size="sm" variant="outline" className="mt-3" asChild>
-              <Link to={`/workspace/${chapterId}`}>Back to Workspace</Link>
+              <Link to="/problem-bank">Back to Problem Import</Link>
             </Button>
           </CardContent>
         </Card>
