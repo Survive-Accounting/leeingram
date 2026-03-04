@@ -314,7 +314,8 @@ export default function ProblemBank() {
 
       {/* Source problems table */}
       {canAdd &&
-      <div className="rounded-lg overflow-hidden border border-border bg-background/95">
+      <>
+        <div className="rounded-lg overflow-hidden border border-border bg-background/95">
           <Table>
             <TableHeader>
               <TableRow className="border-border">
@@ -326,7 +327,6 @@ export default function ProblemBank() {
                     if (selectedIds.size === problems.length) setSelectedIds(new Set());else
                     setSelectedIds(new Set(problems.map((p) => p.id)));
                   }} />
-
                 </TableHead>
                 <TableHead className="text-xs">Status</TableHead>
                 <TableHead className="text-xs">Label</TableHead>
@@ -387,6 +387,7 @@ export default function ProblemBank() {
         <div className="mt-6">
           <DependentProblemsQueue chapterId={chapterFilter} courseId={courseFilter} />
         </div>
+      </>
       }
 
       {/* Add Source Problem Dialog */}
