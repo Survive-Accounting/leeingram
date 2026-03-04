@@ -231,13 +231,14 @@ serve(async (req) => {
         pipeline_status: "generated",
       }).eq("id", sourceProblem.id);
 
-      // Mark item success
+      // Mark item success (clear any last_error from previous attempt)
       const durationMs = Date.now() - itemStart;
       await sb.from("chapter_batch_run_items").update({
         status: "success",
         ended_at: new Date().toISOString(),
         duration_ms: durationMs,
         created_variant_ids: variantIds,
+        last_error: null,
         updated_at: new Date().toISOString(),
       }).eq("id", nextItem.id);
 
