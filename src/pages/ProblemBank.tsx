@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
@@ -241,6 +241,23 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const bulkCombine = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("chapter_problems").update({
+        dependency_type: "dependent_problem",
+        dependency_status: "combined",
+      } as any).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      qc.invalidateQueries({ queryKey: ["dependent-problems"] });
+      setSelectedIds(new Set());
+      toast.success("Problems linked as combined case — merge source material, then mark ready.");
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
   const markReady = async (id: string) => {
     const { error } = await supabase.from("chapter_problems").update({ status: "ready", pipeline_status: "imported" } as any).eq("id", id);
     if (error) {toast.error(error.message);return;}
@@ -302,9 +319,16 @@ export default function ProblemBank() {
           </>
         )}
         {selectedIds.size > 0 && (
-          <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
-            <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Ready ({selectedIds.size})
-          </Button>
+          <>
+            <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
+              <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Ready ({selectedIds.size})
+            </Button>
+            {selectedIds.size >= 2 && (
+              <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => bulkCombine.mutate(Array.from(selectedIds))} disabled={bulkCombine.isPending}>
+                <Merge className="h-3 w-3 mr-1" /> Combine ({selectedIds.size})
+              </Button>
+            )}
+          </>
         )}
       </div>
 
