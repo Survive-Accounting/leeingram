@@ -293,6 +293,7 @@ export default function ProblemBank() {
       }
     }
     setOcrRunning(false);
+    setOcrHasRun(true);
     qc.invalidateQueries({ queryKey: ["chapter-problems"] });
     toast.success(`OCR complete: ${success} succeeded, ${failed} failed`);
   }, [problems, qc]);
