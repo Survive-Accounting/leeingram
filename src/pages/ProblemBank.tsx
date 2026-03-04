@@ -262,12 +262,13 @@ export default function ProblemBank() {
   });
 
   const [ocrRunning, setOcrRunning] = useState(false);
+  const [ocrHasRun, setOcrHasRun] = useState(false);
 
-  const runBulkOcr = useCallback(async () => {
+  const runBulkOcr = useCallback(async (forceAll = false) => {
     if (!problems) return;
     const pending = problems.filter(
       (p) =>
-        ((p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
+        (forceAll || (p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
         (p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url)
     );
     if (pending.length === 0) {
