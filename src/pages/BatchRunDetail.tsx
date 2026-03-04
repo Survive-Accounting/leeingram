@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Pause, XCircle, Loader2, CheckCircle2, AlertTriangle, Clock, ArrowLeft } from "lucide-react";
+import { Play, Pause, XCircle, Loader2, CheckCircle2, AlertTriangle, Clock, ArrowLeft, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 function formatDuration(ms: number | null): string {
@@ -16,6 +16,14 @@ function formatDuration(ms: number | null): string {
   const m = Math.floor(s / 60);
   const rem = s % 60;
   return m > 0 ? `${m}m ${rem}s` : `${s}s`;
+}
+
+function formatElapsed(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -40,6 +48,8 @@ export default function BatchRunDetail() {
   const qc = useQueryClient();
   const [loopRunning, setLoopRunning] = useState(false);
   const loopRef = useRef(false);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: run, refetch: refetchRun } = useQuery({
     queryKey: ["batch-run", batchRunId],
@@ -67,6 +77,23 @@ export default function BatchRunDetail() {
     refetchInterval: loopRunning ? 2000 : false,
   });
 
+  // Live elapsed timer
+  useEffect(() => {
+    if (loopRunning) {
+      const startTime = run?.started_at ? new Date(run.started_at).getTime() : Date.now();
+      timerRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      // Show final elapsed if completed
+      if (run?.started_at && run?.ended_at) {
+        setElapsed(Math.floor((new Date(run.ended_at).getTime() - new Date(run.started_at).getTime()) / 1000));
+      }
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [loopRunning, run?.started_at, run?.ended_at]);
+
   const runStep = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke("run-chapter-batch-step", {
       body: { batch_run_id: batchRunId },
@@ -80,9 +107,8 @@ export default function BatchRunDetail() {
     loopRef.current = true;
     setLoopRunning(true);
 
-    // Set status to running if draft/paused/failed
     if (run && ["draft", "paused", "failed"].includes(run.status)) {
-      await supabase.from("chapter_batch_runs").update({ status: "running" }).eq("id", batchRunId!);
+      await supabase.from("chapter_batch_runs").update({ status: "running", started_at: run.started_at || new Date().toISOString() }).eq("id", batchRunId!);
     }
 
     try {
@@ -96,7 +122,6 @@ export default function BatchRunDetail() {
           break;
         }
 
-        // Small delay between steps
         await new Promise((r) => setTimeout(r, 500));
       }
     } catch (e: any) {
@@ -128,7 +153,52 @@ export default function BatchRunDetail() {
     toast.info("Batch canceled");
   }, [batchRunId, refetchRun]);
 
-  // Cleanup on unmount
+  const copyDebugBundle = useCallback(async () => {
+    if (!run || !items) return;
+    // Fetch generation_runs for all source problems in this batch
+    const sourceIds = items.map(i => i.source_problem_id);
+    const { data: genRuns } = await supabase.from("generation_runs")
+      .select("*")
+      .in("source_problem_id", sourceIds)
+      .gte("created_at", run.created_at)
+      .order("created_at");
+
+    const runIds = (genRuns ?? []).map(r => r.id);
+    let genEvents: any[] = [];
+    if (runIds.length > 0) {
+      const { data } = await supabase.from("generation_events")
+        .select("*")
+        .in("run_id", runIds)
+        .order("created_at");
+      genEvents = data ?? [];
+    }
+
+    const bundle = {
+      batch_run: run,
+      items: items.map(i => ({
+        seq: i.seq,
+        source_label: (i.chapter_problems as any)?.source_label,
+        status: i.status,
+        attempts: i.attempts,
+        duration_ms: i.duration_ms,
+        last_error: i.last_error,
+        created_variant_ids: i.created_variant_ids,
+      })),
+      generation_runs: genRuns ?? [],
+      generation_events: genEvents,
+      summary: {
+        total: run.total_sources,
+        completed: run.completed_sources,
+        failed: run.failed_sources,
+        avg_seconds_per_source: run.avg_seconds_per_source,
+        elapsed_seconds: elapsed,
+      },
+    };
+
+    await navigator.clipboard.writeText(JSON.stringify(bundle, null, 2));
+    toast.success("Debug bundle copied to clipboard");
+  }, [run, items, elapsed]);
+
   useEffect(() => {
     return () => { loopRef.current = false; };
   }, []);
@@ -141,6 +211,7 @@ export default function BatchRunDetail() {
   const remaining = run.total_sources - run.completed_sources - run.failed_sources;
   const canRun = ["draft", "paused", "failed"].includes(run.status) || (run.status === "running" && !loopRunning);
   const canPause = run.status === "running" && loopRunning;
+  const isTerminal = run.status === "completed" || run.status === "canceled";
 
   return (
     <SurviveSidebarLayout>
@@ -161,6 +232,9 @@ export default function BatchRunDetail() {
           </div>
 
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={copyDebugBundle}>
+              <Copy className="h-3.5 w-3.5 mr-1" /> Debug Bundle
+            </Button>
             {canRun && (
               <Button size="sm" onClick={startLoop} disabled={loopRunning}>
                 {loopRunning ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Play className="h-3.5 w-3.5 mr-1" />}
@@ -172,13 +246,32 @@ export default function BatchRunDetail() {
                 <Pause className="h-3.5 w-3.5 mr-1" /> Pause
               </Button>
             )}
-            {run.status !== "completed" && run.status !== "canceled" && (
+            {!isTerminal && (
               <Button size="sm" variant="destructive" onClick={cancelRun}>
                 <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
               </Button>
             )}
           </div>
         </div>
+
+        {/* Live Timer */}
+        {(loopRunning || isTerminal) && (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+            <Clock className={`h-4 w-4 ${loopRunning ? "text-emerald-400 animate-pulse" : "text-muted-foreground"}`} />
+            <div>
+              <span className="text-sm font-bold text-foreground">{formatElapsed(elapsed)}</span>
+              <span className="text-xs text-muted-foreground ml-2">
+                {loopRunning ? "elapsed" : "total time"}
+              </span>
+            </div>
+            {run.avg_seconds_per_source && (
+              <div className="ml-auto text-right">
+                <span className="text-sm font-bold text-foreground">{Math.round(Number(run.avg_seconds_per_source))}s</span>
+                <span className="text-xs text-muted-foreground ml-1">avg/problem</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Progress card */}
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
@@ -203,7 +296,7 @@ export default function BatchRunDetail() {
             <div>
               <div className="text-muted-foreground">Avg/source</div>
               <div className="text-lg font-bold text-foreground">
-                {run.avg_seconds_per_source ? `${Math.round(run.avg_seconds_per_source)}s` : "—"}
+                {run.avg_seconds_per_source ? `${Math.round(Number(run.avg_seconds_per_source))}s` : "—"}
               </div>
             </div>
           </div>

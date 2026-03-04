@@ -54,7 +54,8 @@ Extract ALL text from the provided images with high fidelity. The images are fro
 EXTRACTION RULES:
 - Preserve all numbers, account names, dates, and formatting exactly
 - For journal entries, preserve the grid structure (Account | Debit | Credit)
-- Identify and extract: problem label (e.g. "E13-3", "P14-2"), Learning Objective numbers (e.g. "LO 3"), title, and problem type (Exercise/Problem)
+- Identify and extract: problem label (e.g. "E13-3", "P14-2", "BE16-1"), Learning Objective numbers (e.g. "LO 3"), problem TITLE (the descriptive name that appears after the label, e.g. "Record Bonds Issued at a Discount"), and problem type (Exercise/Problem/Brief Exercise)
+- IMPORTANT: The title is the short descriptive phrase that follows the label and LO line. It is NOT the full problem text. Examples: "Straight-Line Amortization", "Record Bond Retirement", "Compute EPS". Always extract this if present.
 - Separate problem text from solution text based on the image categories provided
 - Rate your confidence: "high" if text is clearly readable, "medium" if some parts are unclear, "low" if significant portions are illegible
 
@@ -91,7 +92,7 @@ Return results using the provided tool.`,
                 properties: {
                   detected_label: { type: "string", description: "Problem label e.g. 'E13-3'. Empty if not found." },
                   detected_lo: { type: "string", description: "Learning Objective numbers. Empty if not found." },
-                  detected_title: { type: "string", description: "Problem title. Empty if not found." },
+                  detected_title: { type: "string", description: "Problem title — the short descriptive name after the label (e.g. 'Record Bonds Issued at a Discount'). Empty if not found." },
                   detected_type: { type: "string", description: "Exercise, Problem, or Custom. Empty if not found." },
                   extracted_problem_text: { type: "string", description: "Full extracted text from problem screenshots." },
                   extracted_solution_text: { type: "string", description: "Full extracted text from solution screenshots." },
@@ -151,21 +152,6 @@ Return results using the provided tool.`,
       { regex: /see (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
     ];
 
-    // Multi-label detection: if OCR found a label like "E16.20" but the text also mentions "E16.19",
-    // that's a strong signal this problem depends on another
-    const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
-    if (detectedLabel && dependencyType === "standalone") {
-      // Find other problem labels mentioned in the text (e.g. E16.19 in an E16.20 screenshot)
-      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
-      const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
-      const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
-      if (otherLabels.length > 0) {
-        dependencyType = "dependent_problem";
-        dependencyStatus = "needs_review";
-        detectedDependencyRef = otherLabels[0];
-      }
-    }
-
     let dependencyType = "standalone";
     let dependencyStatus = "none";
     let detectedDependencyRef = "";
@@ -178,6 +164,20 @@ Return results using the provided tool.`,
         dependencyStatus = "needs_review";
         detectedDependencyRef = extractRef && match[1] ? match[1].trim() : "";
         break;
+      }
+    }
+
+    // Multi-label detection: if OCR found a label like "E16.20" but the text also mentions "E16.19",
+    // that's a strong signal this problem depends on another
+    const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
+    if (detectedLabel && dependencyType === "standalone") {
+      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
+      const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
+      const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
+      if (otherLabels.length > 0) {
+        dependencyType = "dependent_problem";
+        dependencyStatus = "needs_review";
+        detectedDependencyRef = otherLabels[0];
       }
     }
 

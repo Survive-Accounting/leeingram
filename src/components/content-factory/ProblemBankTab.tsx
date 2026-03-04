@@ -175,6 +175,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [batchCompleted, setBatchCompleted] = useState(0);
   const [batchCurrentLabel, setBatchCurrentLabel] = useState("");
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
+  const [launchingBatch, setLaunchingBatch] = useState(false);
 
   // Review queue state
   const [reviewMode, setReviewMode] = useState(false);
@@ -2080,6 +2081,33 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
 
+  const launchServerBatch = async () => {
+    if (!problems?.length) return;
+    const eligible = problems.filter(p => p.status === "ready" && (p as any).dependency_type !== "dependent_problem");
+    if (eligible.length === 0) { toast.info("No Ready problems to generate."); return; }
+    setLaunchingBatch(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("start-chapter-batch-run", {
+        body: {
+          course_id: courseId,
+          chapter_id: chapterId,
+          source_problem_ids: eligible.map(p => p.id),
+          variant_count: vCount,
+          provider: "lovable",
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Batch run created with ${data.total} problems`);
+      // Navigate to batch run detail
+      window.location.href = `/batch-run/${data.batch_run_id}`;
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLaunchingBatch(false);
+    }
+  };
+
   // ─── Table View ───
   return (
     <div>
@@ -2098,16 +2126,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <Eye className="h-3 w-3 mr-1" /> Review Generated ({generatedProblems.length})
             </Button>
           )}
-          {readyCount > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs"
-              onClick={() => { setBatchForceRegen(false); setBatchErrors([]); setBatchModalOpen(true); }}
-            >
-              <Sparkles className="h-3 w-3 mr-1" /> Batch Generate ({readyCount} ready)
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={launchServerBatch}
+            disabled={launchingBatch || readyCount === 0}
+          >
+            {launchingBatch ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Batch Generate ({readyCount} ready)
+          </Button>
         </div>
       </div>
 
