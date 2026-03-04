@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.generate-ai-output]
 verify_jwt = false
+
+[functions.parse-solutions-pdf]
+verify_jwt = false

@@ -36,6 +36,8 @@ import TripPlanning from "./pages/TripPlanning";
 import TripExploring from "./pages/TripExploring";
 import Auth from "./pages/Auth";
 import ChartOfAccounts from "./pages/ChartOfAccounts";
+import SolutionsPdfUpload from "./pages/SolutionsPdfUpload";
+import ScreenshotCapture from "./pages/ScreenshotCapture";
 import NotFound from "./pages/NotFound";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 
@@ -97,6 +99,8 @@ const AppRoutes = () => {
       <Route path="/travel/:tripId/exploring" element={<ProtectedRoute><TripExploring /></ProtectedRoute>} />
       <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
       <Route path="/chart-of-accounts" element={<ProtectedRoute><ChartOfAccounts /></ProtectedRoute>} />
+      <Route path="/solutions-upload/:chapterId" element={<ProtectedRoute><SolutionsPdfUpload /></ProtectedRoute>} />
+      <Route path="/screenshot-capture/:chapterId" element={<ProtectedRoute><ScreenshotCapture /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

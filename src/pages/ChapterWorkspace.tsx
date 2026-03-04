@@ -1,7 +1,8 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -12,7 +13,7 @@ import { GenerationRunsPanel } from "@/components/content-factory/GenerationRuns
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useBuildRun, type BuildRun } from "@/hooks/useBuildRun";
-import { Timer } from "lucide-react";
+import { Timer, FileUp } from "lucide-react";
 import { toast } from "sonner";
 
 function formatElapsed(seconds: number): string {
@@ -121,6 +122,11 @@ export default function ChapterWorkspace() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
+            <Link to={`/solutions-upload/${chapterId}`}>
+              <FileUp className="h-3 w-3 mr-1" /> Upload Solutions PDF
+            </Link>
+          </Button>
           <Switch
             id="je-only-mode"
             checked={chapter.je_only_mode ?? true}
