@@ -256,8 +256,8 @@ export default function BatchRunDetail() {
 
         {/* Live Timer */}
         {(loopRunning || isTerminal) && (
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-            <Clock className={`h-4 w-4 ${loopRunning ? "text-emerald-400 animate-pulse" : "text-muted-foreground"}`} />
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+            <Clock className={`h-4 w-4 ${loopRunning ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
             <div>
               <span className="text-sm font-bold text-foreground">{formatElapsed(elapsed)}</span>
               <span className="text-xs text-muted-foreground ml-2">
