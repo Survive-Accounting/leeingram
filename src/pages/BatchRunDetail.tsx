@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Pause, XCircle, Loader2, CheckCircle2, AlertTriangle, Clock, ArrowLeft, Copy } from "lucide-react";
+import { Play, Pause, XCircle, Loader2, CheckCircle2, AlertTriangle, Clock, ArrowLeft, Copy, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 function formatDuration(ms: number | null): string {
@@ -46,6 +46,7 @@ const ITEM_STATUS_COLORS: Record<string, string> = {
 export default function BatchRunDetail() {
   const { batchRunId } = useParams<{ batchRunId: string }>();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [loopRunning, setLoopRunning] = useState(false);
   const loopRef = useRef(false);
   const [elapsed, setElapsed] = useState(0);
@@ -338,6 +339,20 @@ export default function BatchRunDetail() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Review Generated button when complete */}
+        {isTerminal && run.chapter_id && (
+          <div className="flex justify-center pt-2">
+            <Button
+              size="lg"
+              onClick={() => navigate(`/workspace/${run.chapter_id}`)}
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Review Generated ({run.completed_sources})
+            </Button>
+          </div>
+        )}
 
         {/* Timing info */}
         {run.started_at && (

@@ -123,6 +123,42 @@ serve(async (req) => {
       return respondWithProgress(sb, batch_run_id, run.total_sources, "failed", nextItem.source_problem_id);
     }
 
+    // For combined groups, only process if this problem is the primary (first by label sort)
+    if (sourceProblem.combined_group_id) {
+      const { data: groupMembers } = await sb.from("chapter_problems")
+        .select("id, source_label, ocr_detected_label")
+        .eq("combined_group_id", sourceProblem.combined_group_id)
+        .order("source_label", { ascending: true });
+
+      if (groupMembers && groupMembers.length > 1) {
+        // Sort by label numerically
+        const sorted = groupMembers.sort((a: any, b: any) =>
+          (a.ocr_detected_label || a.source_label || "").localeCompare(
+            b.ocr_detected_label || b.source_label || "", undefined, { numeric: true }
+          )
+        );
+        const primaryId = sorted[0].id;
+        if (sourceProblem.id !== primaryId) {
+          // This is a secondary member — skip it, the primary will handle the combined text
+          await sb.from("chapter_batch_run_items").update({
+            status: "success",
+            last_error: "Skipped: secondary combined member (processed via primary)",
+            ended_at: new Date().toISOString(),
+            duration_ms: Date.now() - itemStart,
+            updated_at: new Date().toISOString(),
+          }).eq("id", nextItem.id);
+
+          // Also advance pipeline status for secondary members
+          await sb.from("chapter_problems").update({
+            status: "generated",
+            pipeline_status: "generated",
+          }).eq("id", sourceProblem.id);
+
+          return respondWithProgress(sb, batch_run_id, run.total_sources, "success", nextItem.source_problem_id);
+        }
+      }
+    }
+
     // Call the convert-to-asset function
     try {
       let problemText = sourceProblem.ocr_extracted_problem_text || sourceProblem.problem_text || "";
@@ -231,13 +267,14 @@ serve(async (req) => {
         pipeline_status: "generated",
       }).eq("id", sourceProblem.id);
 
-      // Mark item success
+      // Mark item success (clear any last_error from previous attempt)
       const durationMs = Date.now() - itemStart;
       await sb.from("chapter_batch_run_items").update({
         status: "success",
         ended_at: new Date().toISOString(),
         duration_ms: durationMs,
         created_variant_ids: variantIds,
+        last_error: null,
         updated_at: new Date().toISOString(),
       }).eq("id", nextItem.id);
 
