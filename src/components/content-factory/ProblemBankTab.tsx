@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import { detectAndSplitScenarios } from "@/lib/scenarioSegmentation";
 import { GenerationLogger } from "@/lib/generationLogger";
 import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 import { normalizeToParts, partsToLegacyFields } from "@/lib/variantParts";
+import { useBuildRun } from "@/hooks/useBuildRun";
 
 const REJECTION_REASONS = [
   "Too easy",
@@ -127,6 +128,7 @@ type ChapterProblem = {
 
 export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const qc = useQueryClient();
+  const { recomputeProgress } = useBuildRun();
   const [addOpen, setAddOpen] = useState(false);
   const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
   const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
@@ -695,6 +697,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         });
       }
       toast.success("Variant approved & saved to Assets Library!");
+      // Recompute build run progress
+      recomputeProgress();
     },
     onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
@@ -1464,8 +1468,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                           }}
                           onNeedsFix={async () => {
                             if (!c._variantId) return;
-                            await supabase.from("problem_variants").update({ variant_status: "needs_fix" } as any).eq("id", c._variantId);
+                            await supabase.from("problem_variants").update({ variant_status: "needs_fix", reviewed_at: new Date().toISOString() } as any).eq("id", c._variantId);
                             toast.success("Marked as needs fix");
+                            recomputeProgress();
                             if (rp) await loadReviewCandidates(rp.id);
                           }}
                         />
@@ -2041,8 +2046,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                             }}
                             onNeedsFix={async () => {
                               if (!c._variantId) return;
-                              await supabase.from("problem_variants").update({ variant_status: "needs_fix" } as any).eq("id", c._variantId);
+                              await supabase.from("problem_variants").update({ variant_status: "needs_fix", reviewed_at: new Date().toISOString() } as any).eq("id", c._variantId);
                               toast.success("Marked as needs fix");
+                              recomputeProgress();
                             }}
                             onApproveAndNext={() => {
                               setSavingIndex(idx);

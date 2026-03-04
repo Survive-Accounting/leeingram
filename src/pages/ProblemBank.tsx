@@ -1,8 +1,10 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { useBuildRun } from "@/hooks/useBuildRun";
+import { StartBuildRunModal } from "@/components/BuildTimerWidget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +58,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function ProblemBank() {
   const qc = useQueryClient();
   const { workspace } = useActiveWorkspace();
+  const { activeRun, isRunning, registerImport } = useBuildRun();
 
   const courseFilter = workspace?.courseId || "all";
   const chapterFilter = workspace?.chapterId || "all";
@@ -66,6 +69,8 @@ export default function ProblemBank() {
   const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
+  const pendingSaveRef = useRef<{ keepOpen: boolean } | null>(null);
   
 
   // Add Source Problem form state
@@ -146,6 +151,11 @@ export default function ProblemBank() {
       }).select("id").single();
       if (error) throw error;
 
+      // Register with active build run
+      if (inserted?.id) {
+        await registerImport(inserted.id);
+      }
+
       // Auto-trigger OCR in background (fire-and-forget)
       if (inserted?.id && problemUrls.length > 0) {
         supabase.functions.invoke("extract-ocr", {
@@ -161,6 +171,7 @@ export default function ProblemBank() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      qc.invalidateQueries({ queryKey: ["build-run"] });
       setProblemFiles([]);
       setSolutionFiles([]);
       setFormType("");
@@ -280,7 +291,14 @@ export default function ProblemBank() {
             </Button>
           }
         </div>
-        <Button size="sm" onClick={() => setAddDialogOpen(true)} disabled={!canAdd}>
+        <Button size="sm" onClick={() => {
+          if (!isRunning && canAdd) {
+            // Show build run modal if no active run
+            setBuildRunModalOpen(true);
+          } else {
+            setAddDialogOpen(true);
+          }
+        }} disabled={!canAdd}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Add Source Problem
         </Button>
       </div>
@@ -512,6 +530,12 @@ export default function ProblemBank() {
         open={!!previewProblem}
         onOpenChange={(open) => {if (!open) setPreviewProblem(null);}} />
 
+      {/* Build Run Start Modal */}
+      <StartBuildRunModal
+        open={buildRunModalOpen}
+        onOpenChange={setBuildRunModalOpen}
+        onStarted={() => setAddDialogOpen(true)}
+      />
     </SurviveSidebarLayout>);
 
 }
