@@ -46,12 +46,14 @@ interface EntryByDateCardProps {
 
 function formatDate(d: string): string {
   try {
-    const match = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    // Strip parenthetical labels like "(Dividends)" or "(Fair Value)"
+    const cleaned = d.replace(/\s*\(.*?\)\s*$/, "").trim();
+    const match = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
       const dt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
       return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     }
-    return d;
+    return cleaned;
   } catch { return d; }
 }
 

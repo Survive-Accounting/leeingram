@@ -80,8 +80,14 @@ function dateKey(scenario: string, date: string): string {
 
 function formatDate(d: string): string {
   try {
-    const dt = new Date(d + "T00:00:00");
-    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    // Strip parenthetical labels like "(Dividends)" or "(Fair Value)"
+    const cleaned = d.replace(/\s*\(.*?\)\s*$/, "").trim();
+    const match = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const dt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+    return cleaned;
   } catch { return d; }
 }
 
@@ -1019,7 +1025,7 @@ function JEPartInlineCard({ part }: { part: VariantJEPart }) {
           return (
             <div key={ei}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-foreground">{entry.date}</span>
+                <span className="text-xs font-medium text-foreground">{formatDate(entry.date)}</span>
                 <Badge variant="outline" className={cn("text-[9px] h-4", balanced ? "text-green-400 border-green-500/30" : "text-red-400 border-red-500/30")}>
                   {balanced ? "Balanced" : `Off by $${Math.abs(totalDebit - totalCredit).toLocaleString()}`}
                 </Badge>
