@@ -110,6 +110,19 @@ serve(async (req) => {
       return respondWithProgress(sb, batch_run_id, run.total_sources, "failed", nextItem.source_problem_id);
     }
 
+    // Skip dependent problems
+    if (sourceProblem.dependency_type === "dependent_problem") {
+      await sb.from("chapter_batch_run_items").update({
+        status: "failed",
+        last_error: "Skipped: dependent problem (needs review)",
+        ended_at: new Date().toISOString(),
+        duration_ms: Date.now() - itemStart,
+        updated_at: new Date().toISOString(),
+      }).eq("id", nextItem.id);
+
+      return respondWithProgress(sb, batch_run_id, run.total_sources, "failed", nextItem.source_problem_id);
+    }
+
     // Call the convert-to-asset function
     try {
       const problemText = sourceProblem.ocr_extracted_problem_text || sourceProblem.problem_text || "";
