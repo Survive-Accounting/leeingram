@@ -69,6 +69,11 @@ export function normalizeToParts(variant: Record<string, any>): VariantPart[] {
 
   const parts: VariantPart[] = [];
 
+  // Check candidate_data.parts first (parts-based format stored in candidate_data)
+  if (Array.isArray(variant.candidate_data?.parts) && variant.candidate_data.parts.length > 0) {
+    return variant.candidate_data.parts as VariantPart[];
+  }
+
   // Extract answer_parts from various locations
   const answerParts: any[] | null =
     variant.answer_parts_json ??
