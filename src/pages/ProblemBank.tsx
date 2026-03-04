@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
@@ -261,6 +261,41 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const [ocrRunning, setOcrRunning] = useState(false);
+
+  const runBulkOcr = useCallback(async () => {
+    if (!problems) return;
+    const pending = problems.filter(
+      (p) =>
+        ((p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
+        (p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url)
+    );
+    if (pending.length === 0) {
+      toast.info("No problems need OCR — all already processed.");
+      return;
+    }
+    setOcrRunning(true);
+    toast.info(`Running OCR on ${pending.length} problems…`);
+    let success = 0;
+    let failed = 0;
+    // Process sequentially to avoid rate limits
+    for (const p of pending) {
+      const pUrls = p.problem_screenshot_urls.length > 0 ? p.problem_screenshot_urls : p.problem_screenshot_url ? [p.problem_screenshot_url] : [];
+      const sUrls = p.solution_screenshot_urls.length > 0 ? p.solution_screenshot_urls : p.solution_screenshot_url ? [p.solution_screenshot_url] : [];
+      try {
+        const { error } = await supabase.functions.invoke("extract-ocr", {
+          body: { problemId: p.id, problemImageUrls: pUrls, solutionImageUrls: sUrls },
+        });
+        if (error) { failed++; } else { success++; }
+      } catch {
+        failed++;
+      }
+    }
+    setOcrRunning(false);
+    qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+    toast.success(`OCR complete: ${success} succeeded, ${failed} failed`);
+  }, [problems, qc]);
+
   const markReady = async (id: string) => {
     const { error } = await supabase.from("chapter_problems").update({ status: "ready", pipeline_status: "imported" } as any).eq("id", id);
     if (error) {toast.error(error.message);return;}
@@ -321,6 +356,10 @@ export default function ProblemBank() {
             </Button>
           </>
         )}
+        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={runBulkOcr} disabled={ocrRunning}>
+          {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
+          {ocrRunning ? "Running OCR…" : "Run OCR"}
+        </Button>
         {selectedIds.size > 0 && (
           <>
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
