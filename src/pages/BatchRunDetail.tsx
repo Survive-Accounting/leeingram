@@ -215,7 +215,7 @@ export default function BatchRunDetail() {
 
   return (
     <SurviveSidebarLayout>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-page-enter">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
