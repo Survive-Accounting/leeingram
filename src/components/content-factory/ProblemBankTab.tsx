@@ -649,6 +649,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
       qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
+      qc.invalidateQueries({ queryKey: ["pipeline-problems"] });
+      qc.invalidateQueries({ queryKey: ["pipeline-strip-problems"] });
       setGeneratedAssetId(data.asset?.id ?? null);
       setSavingIndex(null);
       if (viewingProblem) {

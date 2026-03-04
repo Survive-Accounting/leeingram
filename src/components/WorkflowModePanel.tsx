@@ -98,10 +98,24 @@ export function WorkflowModePanel() {
   });
 
   const total = problems?.length ?? 0;
+  // Cumulative counts: each stage shows items at that stage OR any later stage
+  const STAGE_ORDER: Record<string, number> = {
+    imported: 0, generated: 1, approved: 2, banked: 3, ready_to_film: 4, deployed: 5,
+  };
+
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     PIPELINE_STAGES.forEach((s) => (counts[s.key] = 0));
-    problems?.forEach((p) => { if (counts[p.pipeline_status] !== undefined) counts[p.pipeline_status]++; });
+    problems?.forEach((p) => {
+      const problemOrder = STAGE_ORDER[p.pipeline_status];
+      if (problemOrder === undefined) return;
+      // Count this problem for its stage AND all earlier stages
+      PIPELINE_STAGES.forEach((s) => {
+        if (STAGE_ORDER[s.key] <= problemOrder) {
+          counts[s.key]++;
+        }
+      });
+    });
     return counts;
   }, [problems]);
 
