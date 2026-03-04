@@ -241,6 +241,23 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const bulkCombine = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("chapter_problems").update({
+        dependency_type: "dependent_problem",
+        dependency_status: "combined",
+      } as any).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      qc.invalidateQueries({ queryKey: ["dependent-problems"] });
+      setSelectedIds(new Set());
+      toast.success("Problems linked as combined case — merge source material, then mark ready.");
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
   const markReady = async (id: string) => {
     const { error } = await supabase.from("chapter_problems").update({ status: "ready", pipeline_status: "imported" } as any).eq("id", id);
     if (error) {toast.error(error.message);return;}
