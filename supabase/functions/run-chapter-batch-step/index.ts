@@ -270,6 +270,23 @@ serve(async (req) => {
         }
       }
 
+      // Build je_entries_json and je_entry_status_json from skeleton + completed data
+      let jeEntriesJson: any = null;
+      let jeEntryStatusJson: any = null;
+      if (jeSkeletonJson && jeCompletedJson?.scenario_sections) {
+        const entriesMap: Record<string, any> = {};
+        const statusMap: Record<string, string> = {};
+        for (const sc of jeCompletedJson.scenario_sections) {
+          for (const entry of (sc.entries_by_date || [])) {
+            const key = `${sc.label}::${entry.entry_date}`;
+            entriesMap[key] = { rows: entry.rows || [] };
+            statusMap[key] = "validated"; // Auto-validate from AI generation
+          }
+        }
+        jeEntriesJson = entriesMap;
+        jeEntryStatusJson = statusMap;
+      }
+
       const { data: variant, error: vErr } = await sb.from("problem_variants").insert({
         base_problem_id: sourceProblem.id,
         variant_label: variantLabel,
@@ -280,6 +297,8 @@ serve(async (req) => {
         journal_entry_completed_json: jeCompletedJson,
         journal_entry_template_json: c.je_template || null,
         je_skeleton_json: jeSkeletonJson,
+        je_entries_json: jeEntriesJson,
+        je_entry_status_json: jeEntryStatusJson,
         parts_json: parts,
         answer_parts_json: parts ? null : (c.answer_parts || null),
       }).select("id").single();
