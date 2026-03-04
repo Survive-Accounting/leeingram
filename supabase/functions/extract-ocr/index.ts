@@ -138,6 +138,32 @@ Return results using the provided tool.`,
 
     const ocrResult = JSON.parse(toolCall.function.arguments);
 
+    // ── Dependency Detection ──
+    const DEPENDENCY_PATTERNS = [
+      { regex: /assume the same (?:information|facts|data) as in\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /using the (?:information|data|facts) (?:from|in)\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /based on the previous (?:problem|exercise)/i, extractRef: false },
+      { regex: /refer(?:ring)? to\s+(?:the data in\s+)?(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /using the data (?:from|in)\s+(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /in (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /see (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
+    ];
+
+    let dependencyType = "standalone";
+    let dependencyStatus = "none";
+    let detectedDependencyRef = "";
+
+    const textToCheck = (ocrResult.extracted_problem_text || "").slice(0, 500);
+    for (const { regex, extractRef } of DEPENDENCY_PATTERNS) {
+      const match = textToCheck.match(regex);
+      if (match) {
+        dependencyType = "dependent_problem";
+        dependencyStatus = "needs_review";
+        detectedDependencyRef = extractRef && match[1] ? match[1].trim() : "";
+        break;
+      }
+    }
+
     // Persist OCR results to DB
     if (problemId) {
       const updateData: any = {
@@ -150,6 +176,9 @@ Return results using the provided tool.`,
         ocr_confidence: ocrResult.confidence || "",
         ocr_confidence_notes: ocrResult.confidence_notes || "",
         ocr_status: "success",
+        dependency_type: dependencyType,
+        dependency_status: dependencyStatus,
+        detected_dependency_ref: detectedDependencyRef,
       };
       // Auto-fill empty fields from OCR detection
       const { data: existing } = await supabase.from("chapter_problems").select("source_label, title, problem_type, status").eq("id", problemId).single();

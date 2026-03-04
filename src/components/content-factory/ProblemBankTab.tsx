@@ -724,12 +724,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   // Batch generate function
   const startBatchGenerate = async () => {
     if (!problems?.length) return;
-    let eligible = problems.filter(p => p.status === "ready");
+    let eligible = problems.filter(p => p.status === "ready" && (p as any).dependency_type !== "dependent_problem");
     if (batchForceRegen) {
-      eligible = problems.filter(p => p.status === "ready" || p.status === "generated");
+      eligible = problems.filter(p => (p.status === "ready" || p.status === "generated") && (p as any).dependency_type !== "dependent_problem");
     }
 
-    // Universal mode — all problem types eligible for batch generation
+    // Universal mode — all problem types eligible for batch generation (except dependent problems)
 
     if (eligible.length === 0) {
       toast.info("No eligible problems to generate variants for.");

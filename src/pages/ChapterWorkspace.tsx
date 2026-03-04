@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { ChapterActivityLog } from "@/components/content-factory/ChapterActivityLog";
 import { GenerationRunsPanel } from "@/components/content-factory/GenerationRunsPanel";
+import { DependentProblemsQueue } from "@/components/content-factory/DependentProblemsQueue";
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useBuildRun, type BuildRun } from "@/hooks/useBuildRun";
@@ -125,12 +126,17 @@ export default function ChapterWorkspace() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Problems</TabsTrigger>
+          <TabsTrigger value="dependent">Dependent</TabsTrigger>
           <TabsTrigger value="generation">Generation Runs</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="problems">
           <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="dependent">
+          <DependentProblemsQueue chapterId={chapterId!} courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="generation">
