@@ -1103,7 +1103,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       if (generatedSourceIds.length > 0) {
                         const { error: resetErr } = await supabase
                           .from("chapter_problems")
-                          .update({ status: "ready", pipeline_status: "ready" } as any)
+                          .update({ status: "ready", pipeline_status: "imported" } as any)
                           .in("id", generatedSourceIds);
                         if (resetErr) throw resetErr;
                       }
