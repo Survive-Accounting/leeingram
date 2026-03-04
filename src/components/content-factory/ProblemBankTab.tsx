@@ -1455,7 +1455,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                   setReviewMode(false);
                   openDetail(rp as any);
                 }}>
-                  <Sparkles className="h-3 w-3 mr-1" /> Regenerate Variants
+                  <Sparkles className="h-3 w-3 mr-1" /> New Variant
                 </Button>
                 <div className="flex items-center gap-2">
                   {reviewIndex < generatedProblems.length - 1 && (
