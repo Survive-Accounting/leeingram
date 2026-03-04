@@ -2080,7 +2080,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     );
   }
 
-  const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
+  const readyCount = problems?.filter(p => p.status === "ready" && (p as any).dependency_type !== "dependent_problem").length ?? 0;
 
   const launchServerBatch = async () => {
     if (!problems?.length) return;

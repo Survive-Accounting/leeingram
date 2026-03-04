@@ -340,6 +340,20 @@ export default function BatchRunDetail() {
           </Table>
         </div>
 
+        {/* Review Generated button when complete */}
+        {isTerminal && run.chapter_id && (
+          <div className="flex justify-center pt-2">
+            <Button
+              size="lg"
+              onClick={() => navigate(`/workspace/${run.chapter_id}`)}
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Review Generated ({run.completed_sources})
+            </Button>
+          </div>
+        )}
+
         {/* Timing info */}
         {run.started_at && (
           <div className="text-xs text-muted-foreground flex items-center gap-4">
