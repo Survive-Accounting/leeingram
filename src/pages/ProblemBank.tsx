@@ -262,12 +262,13 @@ export default function ProblemBank() {
   });
 
   const [ocrRunning, setOcrRunning] = useState(false);
+  const [ocrHasRun, setOcrHasRun] = useState(false);
 
-  const runBulkOcr = useCallback(async () => {
+  const runBulkOcr = useCallback(async (forceAll = false) => {
     if (!problems) return;
     const pending = problems.filter(
       (p) =>
-        ((p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
+        (forceAll || (p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
         (p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url)
     );
     if (pending.length === 0) {
@@ -292,6 +293,7 @@ export default function ProblemBank() {
       }
     }
     setOcrRunning(false);
+    setOcrHasRun(true);
     qc.invalidateQueries({ queryKey: ["chapter-problems"] });
     toast.success(`OCR complete: ${success} succeeded, ${failed} failed`);
   }, [problems, qc]);
@@ -356,9 +358,9 @@ export default function ProblemBank() {
             </Button>
           </>
         )}
-        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={runBulkOcr} disabled={ocrRunning}>
+        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(ocrHasRun)} disabled={ocrRunning}>
           {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
-          {ocrRunning ? "Running OCR…" : "Run OCR"}
+          {ocrRunning ? "Running OCR…" : ocrHasRun ? "Re-run OCR" : "Run OCR"}
         </Button>
         {selectedIds.size > 0 && (
           <>
