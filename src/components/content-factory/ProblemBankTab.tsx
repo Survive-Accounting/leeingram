@@ -16,7 +16,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SourceProblemPreview } from "@/components/content-factory/SourceProblemPreview";
 import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
@@ -128,6 +128,7 @@ type ChapterProblem = {
 
 export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { recomputeProgress } = useBuildRun();
   const [addOpen, setAddOpen] = useState(false);
   const [viewingProblem, setViewingProblem] = useState<ChapterProblem | null>(null);
@@ -2099,8 +2100,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Batch run created with ${data.total} problems`);
-      // Navigate to batch run detail
-      window.location.href = `/batch-run/${data.batch_run_id}`;
+      // Navigate to batch run detail with smooth transition
+      navigate(`/batch-run/${data.batch_run_id}`);
     } catch (e: any) {
       toast.error(e.message);
     } finally {

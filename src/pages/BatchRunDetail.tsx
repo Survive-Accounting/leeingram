@@ -28,18 +28,18 @@ function formatElapsed(seconds: number): string {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
-  running: "bg-emerald-500/20 text-emerald-400",
-  paused: "bg-amber-500/20 text-amber-400",
-  completed: "bg-green-500/20 text-green-400",
-  failed: "bg-destructive/20 text-destructive",
+  running: "bg-primary/15 text-primary",
+  paused: "bg-warning/15 text-warning",
+  completed: "bg-success/15 text-success",
+  failed: "bg-destructive/15 text-destructive",
   canceled: "bg-muted text-muted-foreground",
 };
 
 const ITEM_STATUS_COLORS: Record<string, string> = {
   queued: "bg-muted text-muted-foreground",
-  generating: "bg-sky-500/20 text-sky-400",
-  success: "bg-green-500/20 text-green-400",
-  failed: "bg-destructive/20 text-destructive",
+  generating: "bg-primary/15 text-primary",
+  success: "bg-success/15 text-success",
+  failed: "bg-destructive/15 text-destructive",
   skipped: "bg-muted text-muted-foreground",
 };
 
@@ -215,7 +215,7 @@ export default function BatchRunDetail() {
 
   return (
     <SurviveSidebarLayout>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-page-enter">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -256,8 +256,8 @@ export default function BatchRunDetail() {
 
         {/* Live Timer */}
         {(loopRunning || isTerminal) && (
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-            <Clock className={`h-4 w-4 ${loopRunning ? "text-emerald-400 animate-pulse" : "text-muted-foreground"}`} />
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+            <Clock className={`h-4 w-4 ${loopRunning ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
             <div>
               <span className="text-sm font-bold text-foreground">{formatElapsed(elapsed)}</span>
               <span className="text-xs text-muted-foreground ml-2">
@@ -283,7 +283,7 @@ export default function BatchRunDetail() {
           <div className="grid grid-cols-4 gap-4 text-xs">
             <div>
               <div className="text-muted-foreground">Success</div>
-              <div className="text-lg font-bold text-green-400">{run.completed_sources}</div>
+              <div className="text-lg font-bold text-success">{run.completed_sources}</div>
             </div>
             <div>
               <div className="text-muted-foreground">Failed</div>

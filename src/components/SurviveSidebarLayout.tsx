@@ -148,11 +148,12 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         <main className="flex-1 overflow-auto relative">
           <PipelineProgressStrip />
           <div
-            className="mx-6 mb-6 rounded-xl p-5"
+            className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5"
             style={{
-              background: "hsl(220 20% 7% / 0.95)",
-              backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.10)",
+              background: "hsl(222 20% 7% / 0.92)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid hsl(220 12% 18% / 0.6)",
+              boxShadow: "0 4px 24px -4px rgba(0,0,0,0.3)",
             }}
           >
             {children}
