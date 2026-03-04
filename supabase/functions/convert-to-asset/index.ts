@@ -1718,6 +1718,12 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
       candidate_count: candidates.length,
     });
 
+    // Compute validator summary from candidate annotations
+    const _nonJeFailures = candidates.some((c: any) => (c._non_je_quality_results || []).some((r: any) => r.status === "fail"));
+    const validatorFailed = _nonJeFailures;
+    const jeValidationFailed = false; // JE validation runs separately in normalize_validate_persist
+    const validatorResults = candidates.map((c: any) => c._non_je_quality_results || []).flat();
+
     await logGenEvent(
       sbService,
       runId,
@@ -1725,8 +1731,8 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
       "validator",
       validatorFailed ? "warn" : "info",
       "RUN_VALIDATORS_END",
-      jeValidationFailed
-        ? `JE validation failed for ${(jeValidator?.per_candidate || []).filter((p: any) => !p.valid).length} candidates`
+      validatorFailed
+        ? `Quality validation warnings detected`
         : "Validator pass complete",
       {
         validator_results: validatorResults,
