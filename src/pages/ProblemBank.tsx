@@ -96,7 +96,7 @@ export default function ProblemBank() {
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", courseFilter, chapterFilter],
     queryFn: async () => {
-      let q = supabase.from("chapter_problems").select("*").order("created_at", { ascending: false });
+      let q = supabase.from("chapter_problems").select("*");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
       const { data, error } = await q;
@@ -105,7 +105,9 @@ export default function ProblemBank() {
         ...d,
         problem_screenshot_urls: d.problem_screenshot_urls ?? [],
         solution_screenshot_urls: d.solution_screenshot_urls ?? []
-      })) as ChapterProblem[];
+      })).sort((a: any, b: any) =>
+        (a.source_label || "").localeCompare(b.source_label || "", undefined, { numeric: true, sensitivity: "base" })
+      ) as ChapterProblem[];
     }
   });
 
