@@ -95,7 +95,7 @@ export default function AssetsLibrary() {
   const { data: assets, isLoading } = useQuery({
     queryKey: ["teaching-assets", courseFilter, chapterFilter, search],
     queryFn: async () => {
-      let q = supabase.from("teaching_assets").select("*").order("created_at", { ascending: false });
+      let q = supabase.from("teaching_assets").select("*");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
       if (search.trim()) {
@@ -103,7 +103,9 @@ export default function AssetsLibrary() {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return data as TeachingAsset[];
+      return (data as TeachingAsset[]).sort((a, b) =>
+        (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" })
+      );
     }
   });
 
