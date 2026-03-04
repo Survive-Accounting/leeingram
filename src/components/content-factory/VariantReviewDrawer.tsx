@@ -176,9 +176,11 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
   const [payloadLoading, setPayloadLoading] = useState(false);
 
   // Section toggles
-  const [showJESection, setShowJESection] = useState(true);
-  const [showTextSection, setShowTextSection] = useState(true);
+  const [showMainSection, setShowMainSection] = useState(true);
+  const [showJESection, setShowJESection] = useState(false);
+  const [showTextSection, setShowTextSection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
 
   // Parts
   const parts = useMemo(() => normalizeToParts(variant), [variant]);
@@ -620,40 +622,8 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
   return (
     <>
       <div className="space-y-4">
-        {/* ═══ TOP SECTION: Problem + Answer + Actions ═══ */}
+        {/* ─── ACTION BAR ─── */}
         <div className="space-y-3">
-          {/* Problem Text — compact */}
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
-            <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-28 overflow-y-auto">
-              <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
-                {variant.survive_problem_text || variant.variant_problem_text || "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* Answer Summary — quick glance */}
-          {(variant.answer_only || hasTextParts) && (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Summary</p>
-              <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-24 overflow-y-auto">
-                {hasTextParts ? (
-                  <div className="space-y-1">
-                    {textParts.map((tp, i) => (
-                      <p key={i} className="text-xs text-foreground">
-                        <span className="font-semibold text-primary">{formatPartLabel(tp.label)}</span>{" "}
-                        {tp.final_answer}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-foreground font-mono">{variant.answer_only}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ─── ACTION BAR ─── */}
           <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-md border border-border bg-muted/10">
             <Button
               size="sm"
@@ -685,10 +655,9 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
             )}
             <span className="text-[9px] text-muted-foreground ml-auto hidden sm:inline">Ctrl+F = Approve & Next</span>
           </div>
-        </div>
 
-        {/* Status badges */}
-        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status badges */}
+          <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="text-[10px]">
             {variant.asset_name || variant.variant_label || "Variant"}
           </Badge>
@@ -708,7 +677,46 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
               <AlertTriangle className="h-3 w-3 mr-1" /> Validation errors
             </Badge>
           )}
+          </div>
         </div>
+
+        {/* ═══ MAIN SECTION: Problem + Answer (open by default) ═══ */}
+        <Collapsible open={showMainSection} onOpenChange={setShowMainSection}>
+          <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-2 border-b border-border hover:text-foreground">
+            <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", showMainSection && "rotate-90")} />
+            <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Problem & Answer</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
+              <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-28 overflow-y-auto">
+                <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
+                  {variant.survive_problem_text || variant.variant_problem_text || "—"}
+                </p>
+              </div>
+            </div>
+
+            {(variant.answer_only || hasTextParts) && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Summary</p>
+                <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-24 overflow-y-auto">
+                  {hasTextParts ? (
+                    <div className="space-y-1">
+                      {textParts.map((tp, i) => (
+                        <p key={i} className="text-xs text-foreground">
+                          <span className="font-semibold text-primary">{formatPartLabel(tp.label)}</span>{" "}
+                          {tp.final_answer}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-foreground font-mono">{variant.answer_only}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Recent Fixes */}
         {recentFixes.length > 0 && (
@@ -863,18 +871,23 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
           </Collapsible>
         )}
 
-        {/* Exam Trap Note */}
-        {variant.exam_trap_note && (
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5">
-            <p className="text-[10px] text-amber-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 font-semibold">
-              <AlertTriangle className="h-3 w-3" /> Exam Trap Note
-            </p>
-            <p className="text-xs text-foreground">{variant.exam_trap_note}</p>
-          </div>
+        {/* Global Validation (collapsible) */}
+        {globalValidation.length > 0 && (
+          <Collapsible open={showValidation} onOpenChange={setShowValidation}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-2 border-b border-border hover:text-foreground">
+              <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", showValidation && "rotate-90")} />
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Validation Results</span>
+              {globalFailed && (
+                <Badge variant="outline" className="text-[9px] h-4 ml-auto text-red-400 border-red-500/30 bg-red-500/10">
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Errors
+                </Badge>
+              )}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-3">
+              <ValidationPanel results={globalValidation} />
+            </CollapsibleContent>
+          </Collapsible>
         )}
-
-        {/* Global Validation */}
-        {globalValidation.length > 0 && <ValidationPanel results={globalValidation} />}
 
         {/* ═══ BOTTOM: Debug tools ═══ */}
         <div className="pt-3 border-t border-border space-y-2">
