@@ -13,8 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Layers } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
 
@@ -70,7 +71,9 @@ export default function ProblemBank() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
+  const [batchCreating, setBatchCreating] = useState(false);
   const pendingSaveRef = useRef<{ keepOpen: boolean } | null>(null);
+  const navigate = useNavigate();
   
 
   // Add Source Problem form state
@@ -285,22 +288,58 @@ export default function ProblemBank() {
       {/* Add button + bulk actions */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex gap-2">
-          {selectedIds.size > 0 &&
-          <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Bulk Mark Ready ({selectedIds.size})
-            </Button>
-          }
+          {selectedIds.size > 0 && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Bulk Mark Ready ({selectedIds.size})
+              </Button>
+              <Button size="sm" variant="outline" onClick={async () => {
+                if (!canAdd) return;
+                setBatchCreating(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("start-chapter-batch-run", {
+                    body: {
+                      course_id: courseFilter,
+                      chapter_id: chapterFilter,
+                      source_problem_ids: Array.from(selectedIds),
+                      variant_count: 1,
+                      provider: "lovable",
+                    },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success(`Batch created with ${selectedIds.size} sources`);
+                  navigate(`/batch-run/${data.batch_run_id}`);
+                } catch (e: any) {
+                  toast.error(e.message);
+                } finally {
+                  setBatchCreating(false);
+                }
+              }} disabled={batchCreating}>
+                {batchCreating ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Layers className="h-3.5 w-3.5 mr-1" />}
+                Batch Generate ({selectedIds.size})
+              </Button>
+            </>
+          )}
         </div>
-        <Button size="sm" onClick={() => {
-          if (!isRunning && canAdd) {
-            // Show build run modal if no active run
-            setBuildRunModalOpen(true);
-          } else {
-            setAddDialogOpen(true);
-          }
-        }} disabled={!canAdd}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Add Source Problem
-        </Button>
+        <div className="flex gap-2">
+          {canAdd && chapterFilter && chapterFilter !== "all" && (
+            <Button size="sm" variant="outline" asChild>
+              <Link to={`/solutions-upload/${chapterFilter}`}>
+                <FileUp className="h-3.5 w-3.5 mr-1" /> Upload Solutions PDF
+              </Link>
+            </Button>
+          )}
+          <Button size="sm" onClick={() => {
+            if (!isRunning && canAdd) {
+              setBuildRunModalOpen(true);
+            } else {
+              setAddDialogOpen(true);
+            }
+          }} disabled={!canAdd}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Source Problem
+          </Button>
+        </div>
       </div>
 
       {!canAdd &&
