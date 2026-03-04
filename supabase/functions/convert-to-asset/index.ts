@@ -1686,10 +1686,26 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
       }
     }
 
-    // Annotate candidates with generation_mode
+    // Annotate candidates with generation_mode and parts counts
     for (const c of candidates) {
       c._generation_mode = generationMode;
+      const parts = c.parts || [];
+      c._problem_type_detected = generationMode;
+      c._parts_detected = parts.length;
+      c._je_parts_count = parts.filter((p: any) => p.type === "je").length;
+      c._text_parts_count = parts.filter((p: any) => p.type === "text").length;
     }
+
+    // Log problem type detection summary
+    const firstCandidate = candidates[0];
+    await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PROBLEM_TYPE_SUMMARY",
+      `Detected: ${generationMode} | Parts: ${firstCandidate?._parts_detected ?? 0} (${firstCandidate?._text_parts_count ?? 0} text, ${firstCandidate?._je_parts_count ?? 0} JE)`, {
+      problem_type_detected: generationMode,
+      parts_detected: firstCandidate?._parts_detected ?? 0,
+      je_parts_count: firstCandidate?._je_parts_count ?? 0,
+      text_parts_count: firstCandidate?._text_parts_count ?? 0,
+      candidate_count: candidates.length,
+    });
 
     await logGenEvent(
       sbService,

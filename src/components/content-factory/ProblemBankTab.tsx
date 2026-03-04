@@ -237,16 +237,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     },
   });
 
-  // Fetch chapter je_only_mode setting
-  const { data: chapterSettings } = useQuery({
-    queryKey: ["chapter-settings", chapterId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("chapters").select("je_only_mode").eq("id", chapterId).single();
-      if (error) throw error;
-      return data;
-    },
-  });
-  const jeOnlyMode = chapterSettings?.je_only_mode ?? true;
+  // je_only_mode removed — universal problem type detection is now handled by the backend
 
   const { data: topicRules } = useQuery({
     queryKey: ["topic-rules", course?.code, chapterNumber],
@@ -351,13 +342,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       const selectedModel = selectedProvider === "openai" ? (model ?? genModel) : undefined;
       setLastGenError(null);
 
-      // JE-only mode gate
-      if (jeOnlyMode) {
-        const probText = problem.ocr_extracted_problem_text || problem.problem_text;
-        if (!detectRequiresJE(probText) && !afRequiresJE) {
-          throw new Error("Skipped: not a journal entry problem (JE-only mode enabled).");
-        }
-      }
+      // Universal mode — no JE-only gating, backend auto-detects problem type
 
       const logger = new GenerationLogger({
         course_id: problem.course_id,
@@ -418,8 +403,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               solutionText: useSolutionText,
               journalEntryText: problem.journal_entry_text,
               notes: afNotes,
-              requiresJournalEntry: afRequiresJE,
-              containsNoJournalEntries: !!(problem as any).contains_no_journal_entries,
               provider: selectedProvider,
               model: selectedModel,
               scenarioBlocks,
@@ -434,9 +417,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               ui_settings: {
                 variant_count: vCount,
                 difficulty_toggles: activeDiffToggles,
-                requires_je_forced: afRequiresJE,
                 notes_present: !!afNotes?.trim(),
-                contains_no_journal_entries: !!(problem as any).contains_no_journal_entries,
               },
             },
           });
@@ -516,7 +497,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
           const { normalizedCandidate, completed, template, counts } = getCandidateJEPersistence(c);
-          const isNonJE = !!(problem as any).contains_no_journal_entries || !!c.answer_parts || c._generation_mode === "NON_JE" || c._generation_mode === "text_only";
+          const isNonJE = c._generation_mode === "text_only" || c._generation_mode === "NON_JE" || !!c.answer_parts;
           
           // Use parts directly from AI output if available, otherwise normalize from legacy fields
           let parts: any[] | null = null;
@@ -748,18 +729,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       eligible = problems.filter(p => p.status === "ready" || p.status === "generated");
     }
 
-    // JE-only mode: filter out non-JE problems
-    if (jeOnlyMode) {
-      const beforeCount = eligible.length;
-      eligible = eligible.filter(p => {
-        const txt = p.ocr_extracted_problem_text || p.problem_text;
-        return detectRequiresJE(txt) || !!p.journal_entry_text;
-      });
-      const skipped = beforeCount - eligible.length;
-      if (skipped > 0) {
-        toast.info(`JE-only mode: skipped ${skipped} non-JE problem(s).`);
-      }
-    }
+    // Universal mode — all problem types eligible for batch generation
 
     if (eligible.length === 0) {
       toast.info("No eligible problems to generate variants for.");
@@ -815,7 +785,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             solutionText: useSolutionText,
             journalEntryText: problem.journal_entry_text,
             notes: "",
-            requiresJournalEntry: !!problem.journal_entry_text,
             difficultyToggles: undefined,
             run_id: logger.runId,
             course_id: problem.course_id,
@@ -825,7 +794,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             ui_settings: {
               variant_count: 1,
               difficulty_toggles: [],
-              requires_je_forced: !!problem.journal_entry_text,
             },
           },
         });
@@ -1185,7 +1153,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       solutionText: useSolutionText,
                       journalEntryText: rp.journal_entry_text,
                       notes: "",
-                      requiresJournalEntry: !!rp.journal_entry_text,
                       run_id: logger.runId,
                       course_id: rp.course_id,
                       chapter_id: rp.chapter_id,
@@ -1194,7 +1161,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       ui_settings: {
                         variant_count: 1,
                         difficulty_toggles: [],
-                        requires_je_forced: !!rp.journal_entry_text,
                       },
                     },
                   });
@@ -1563,7 +1529,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
     const canGenerate = (ocrOk && !ocrLow) || (!!(p.problem_text));
     const probTextForJECheck = p.ocr_extracted_problem_text || p.problem_text;
     const problemRequiresJE = detectRequiresJE(probTextForJECheck) || afRequiresJE;
-    const jeOnlyBlocked = jeOnlyMode && !problemRequiresJE;
+    const jeOnlyBlocked = false; // Universal mode — no longer gated
 
     // Screenshot URLs
     const problemUrls = p.problem_screenshot_urls?.length ? p.problem_screenshot_urls
@@ -1747,24 +1713,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           </div>
         )}
 
-        {/* JE-only mode blocked banner */}
-        {jeOnlyBlocked && (
-          <div className="flex items-center gap-2 rounded-lg border border-muted bg-muted/30 px-4 py-3">
-            <AlertTriangle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <p className="text-xs text-muted-foreground">
-              <span className="font-semibold">Skipped:</span> not a journal entry problem (JE-only mode enabled). Toggle "Journal entry required" or disable JE-only mode in chapter settings.
-            </p>
-          </div>
-        )}
+        {/* JE-only mode removed — universal problem type detection */}
 
         {/* Generate Variants Panel */}
-        <div className={cn("rounded-lg border border-primary/30 bg-primary/[0.05] p-5", jeOnlyBlocked && "opacity-50 pointer-events-none")}>
+        <div className={cn("rounded-lg border border-primary/30 bg-primary/[0.05] p-5")}>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">AI Variant Maker V2</h3>
-            {jeOnlyMode && (
-              <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground">JE-only mode</Badge>
-            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 mb-4">

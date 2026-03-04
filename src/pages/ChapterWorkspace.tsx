@@ -5,8 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { ProblemBankTab } from "@/components/content-factory/ProblemBankTab";
 import { ChapterActivityLog } from "@/components/content-factory/ChapterActivityLog";
 import { GenerationRunsPanel } from "@/components/content-factory/GenerationRunsPanel";
@@ -122,18 +120,6 @@ export default function ChapterWorkspace() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Switch
-            id="je-only-mode"
-            checked={chapter.je_only_mode ?? true}
-            onCheckedChange={async (checked) => {
-              await supabase.from("chapters").update({ je_only_mode: checked } as any).eq("id", chapterId!);
-              qc.invalidateQueries({ queryKey: ["chapter", chapterId] });
-              qc.invalidateQueries({ queryKey: ["chapter-settings", chapterId] });
-              toast.success(`JE-only mode ${checked ? "enabled" : "disabled"}`);
-            }}
-            className="scale-75"
-          />
-          <Label htmlFor="je-only-mode" className="text-[11px] text-muted-foreground cursor-pointer">JE-only mode</Label>
         </div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">

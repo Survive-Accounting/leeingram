@@ -134,8 +134,7 @@ serve(async (req) => {
           solutionText,
           journalEntryText: sourceProblem.journal_entry_text,
           provider: run.provider,
-          requiresJournalEntry: !sourceProblem.contains_no_journal_entries,
-          containsNoJournalEntries: sourceProblem.contains_no_journal_entries,
+          // Universal mode: let convert-to-asset auto-detect problem type
           source_problem_id: sourceProblem.id,
           course_id: run.course_id,
           chapter_id: run.chapter_id,
@@ -154,7 +153,8 @@ serve(async (req) => {
       }
 
       // Parse candidates and persist variants
-      const candidates = result.parsed?.candidates || result.parsed?.teaching_aids?.candidates || [];
+      // Use candidates directly from response (convert-to-asset returns them at top level now)
+      const candidates = result.candidates || result.parsed?.candidates || result.parsed?.teaching_aids?.candidates || [];
       if (!Array.isArray(candidates) || candidates.length === 0) {
         throw new Error("No candidates returned from generation");
       }
@@ -163,6 +163,9 @@ serve(async (req) => {
       for (let i = 0; i < candidates.length; i++) {
         const c = candidates[i];
         const variantLabel = `Variation ${String.fromCharCode(65 + i)}`;
+
+        // Use parts[] from AI output (universal schema)
+        const parts = Array.isArray(c.parts) && c.parts.length > 0 ? c.parts : null;
 
         const { data: variant, error: vErr } = await sb.from("problem_variants").insert({
           base_problem_id: sourceProblem.id,
@@ -174,7 +177,8 @@ serve(async (req) => {
           journal_entry_completed_json: c.je_structured || null,
           journal_entry_template_json: c.je_template || null,
           je_skeleton_json: c.je_skeleton || null,
-          parts_json: c.answer_parts || null,
+          parts_json: parts,
+          answer_parts_json: parts ? null : (c.answer_parts || null),
         }).select("id").single();
 
         if (vErr) {
