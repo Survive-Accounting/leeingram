@@ -28,18 +28,18 @@ function formatElapsed(seconds: number): string {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
-  running: "bg-emerald-500/20 text-emerald-400",
-  paused: "bg-amber-500/20 text-amber-400",
-  completed: "bg-green-500/20 text-green-400",
-  failed: "bg-destructive/20 text-destructive",
+  running: "bg-primary/15 text-primary",
+  paused: "bg-warning/15 text-warning",
+  completed: "bg-success/15 text-success",
+  failed: "bg-destructive/15 text-destructive",
   canceled: "bg-muted text-muted-foreground",
 };
 
 const ITEM_STATUS_COLORS: Record<string, string> = {
   queued: "bg-muted text-muted-foreground",
-  generating: "bg-sky-500/20 text-sky-400",
-  success: "bg-green-500/20 text-green-400",
-  failed: "bg-destructive/20 text-destructive",
+  generating: "bg-primary/15 text-primary",
+  success: "bg-success/15 text-success",
+  failed: "bg-destructive/15 text-destructive",
   skipped: "bg-muted text-muted-foreground",
 };
 
