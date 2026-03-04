@@ -366,6 +366,8 @@ function stripTrailingCommentary(steps: string): string {
   }
   return steps;
 }
+
+function validateCandidates(candidates: any[], expectedCount: number): string[] {
   const errors: string[] = [];
 
   if (!Array.isArray(candidates)) {
@@ -875,55 +877,70 @@ serve(async (req) => {
       solution_image_count: Array.isArray(body.solutionImageUrls) ? body.solutionImageUrls.length : null,
     });
 
-    // ── Backend requirement detection (overrides UI flags) ──
-    const DETECTION_RULES_VERSION = "v2_non_je";
+    // ── Backend requirement detection (3-way: text_only, je_only, hybrid) ──
+    const DETECTION_RULES_VERSION = "v3_parts";
     const combinedText = [problemText, solutionText, journalEntryText, notes].filter(Boolean).join(" ").toLowerCase();
 
-    // Determine generation mode
-    const generationMode = containsNoJournalEntries ? "NON_JE" : "JE";
+    // JE indicators
+    const jePatterns = [
+      /prepare\s+(the\s+)?journal\s+entr(y|ies)/i,
+      /record\s+(the\s+)?(following\s+)?journal\s+entr(y|ies)/i,
+      /journalize\s+(the|each|all)/i,
+      /make\s+(the\s+)?journal\s+entr(y|ies)/i,
+      /\bjournal\s+entr(y|ies)\b/i,
+    ];
+    const jeMatchedRule = jePatterns.findIndex((p) => p.test(combinedText));
+    const hasJEIndicators = jeMatchedRule >= 0 || !!journalEntryText?.trim() || uiRequiresJournalEntry;
 
-    // JE detection: skip entirely in NON_JE mode
-    let requiresJeDetected = false;
-    let jeMatchedRule = -1;
-    let requiresJournalEntry = false;
-    let hasScenarios = false;
+    // Text/numeric indicators
+    const textPatterns = [
+      /\bcompute\b/i,
+      /\bcalculate\b/i,
+      /\bdetermine\b/i,
+      /\bwhat\s+amount\b/i,
+      /\bwhat\s+is\s+the\b/i,
+      /\bhow\s+much\b/i,
+      /\bcredit\s+loss\b/i,
+      /\bnet\s+income\b/i,
+      /\bearnings\s+per\s+share\b/i,
+      /\bEPS\b/,
+    ];
+    const textMatchedRule = textPatterns.findIndex((p) => p.test(combinedText));
+    const hasTextIndicators = textMatchedRule >= 0;
 
-    if (generationMode === "JE") {
-      // JE detection: regex over combined text
-      const jePatterns = [
-        /prepare\s+(the\s+)?journal\s+entr(y|ies)/i,
-        /record\s+(the\s+)?(following\s+)?journal\s+entr(y|ies)/i,
-        /journalize\s+(the|each|all)/i,
-        /make\s+(the\s+)?journal\s+entr(y|ies)/i,
-        /\bjournal\s+entr(y|ies)\b/i,
-      ];
-      jeMatchedRule = jePatterns.findIndex((p) => p.test(combinedText));
-      requiresJeDetected = jeMatchedRule >= 0 || !!journalEntryText?.trim();
-
-      // Scenario detection: regex over problem text
-      const scenarioPatterns = [
-        /\b(situation|scenario|case)\s+(1|2|a|b|i|ii)\b/i,
-        /\bindependent\s+(situations|scenarios|cases)\b/i,
-        /\b(situation|scenario)\s*#?\s*\d/i,
-      ];
-      const scenarioMatchedRule = scenarioPatterns.findIndex((p) => p.test(problemText || ""));
-      const hasScenariosDetected = scenarioMatchedRule >= 0;
-
-      // Final values: backend detection OR UI override
-      requiresJournalEntry = requiresJeDetected || uiRequiresJournalEntry;
-      hasScenarios = hasScenariosDetected || uiHasScenarios;
+    // 3-way classification
+    let generationMode: "text_only" | "je_only" | "hybrid";
+    if (containsNoJournalEntries) {
+      generationMode = "text_only";
+    } else if (hasJEIndicators && hasTextIndicators) {
+      generationMode = "hybrid";
+    } else if (hasJEIndicators) {
+      generationMode = "je_only";
+    } else {
+      generationMode = "text_only";
     }
+
+    const requiresJournalEntry = generationMode === "je_only" || generationMode === "hybrid";
+
+    // Scenario detection
+    const scenarioPatterns = [
+      /\b(situation|scenario|case)\s+(1|2|a|b|i|ii)\b/i,
+      /\bindependent\s+(situations|scenarios|cases)\b/i,
+      /\b(situation|scenario)\s*#?\s*\d/i,
+    ];
+    const scenarioMatchedRule = scenarioPatterns.findIndex((p) => p.test(problemText || ""));
+    const hasScenarios = scenarioMatchedRule >= 0 || uiHasScenarios;
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "DETECT_REQUIREMENTS",
       `Mode: ${generationMode}, JE: ${requiresJournalEntry ? "required" : "not required"}, Scenarios: ${hasScenarios ? "detected" : "none"}`, {
       detection_rules_version: DETECTION_RULES_VERSION,
       generation_mode: generationMode,
       contains_no_journal_entries: containsNoJournalEntries,
-      requires_je_detected: requiresJeDetected,
-      requires_je_ui: uiRequiresJournalEntry,
+      has_je_indicators: hasJEIndicators,
+      has_text_indicators: hasTextIndicators,
       requires_je_final: requiresJournalEntry,
       je_matched_rule: jeMatchedRule >= 0 ? `rule_${jeMatchedRule}` : null,
-      je_has_journal_entry_text: !!journalEntryText?.trim(),
+      text_matched_rule: textMatchedRule >= 0 ? `rule_${textMatchedRule}` : null,
       has_scenarios_final: hasScenarios,
       scenario_blocks_from_ui: scenarioBlocks?.length ?? 0,
     });
@@ -1074,9 +1091,8 @@ Do NOT invent or use account names outside this list. If an account is needed bu
     let systemPrompt: string;
     let userPrompt: string;
 
-    if (generationMode === "NON_JE") {
-      // ── NON_JE Prompt (convert_to_asset_non_je_v3_eps) ──
-      systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
+    // ── Shared prompt preamble ──
+    const preamble = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
 
 TEACHING TONE:
 ${teachingTone.map((t: string) => `- ${t}`).join("\n")}
@@ -1095,21 +1111,49 @@ CORE RULES:
 - Do NOT include "Survive Accounting" in student-facing text.
 
 ${difficultySection}
-${constraintsBlock}
+${constraintsBlock}`;
 
-THIS IS A NON-JOURNAL ENTRY PROBLEM. Do NOT generate any journal entries.
-Do NOT include je_structured, journal_entry_block, or any journal entry fields.
+    // ── Parts-based output instructions (universal) ──
+    const partsInstruction = `
+PARTS-BASED ANSWER FORMAT (CRITICAL):
+Every variant's answer MUST be an ordered array called "parts".
+Each part has a "label" (store as "a", "b", "c" — UI renders as (a), (b), (c)) and a "type" which is either "text" or "je".
 
-STRICT OUTPUT QUALITY RULES (CRITICAL — violations will be rejected):
-1. NO SELF-CORRECTIONS: Do NOT use phrases like "wait", "check", "re-", "however", "actually", "verify", "to match", "incorrect", "let's", "fix", "recalculating", "recalculate", "let's verify", "to match source". Every step must be decisive and final.
-2. ONE COMPUTATION PATH ONLY: Each answer_part.steps must be a clean numbered list with exactly ONE final computation path. No alternative approaches, no backtracking, no "but if we use X instead" language.
-3. ANSWER CONSISTENCY: The "answer_only" field must exactly match the final_answer values from answer_parts. For example, if answer_parts has (a) "$2.50" and (b) "12.5%", then answer_only must contain those exact strings.
-4. SOLUTION CONSISTENCY: survive_solution_text must use the SAME numbers, denominators, and formulas as answer_parts.steps. If answer_parts says "Net Income / Shares = 500,000 / 200,000 = $2.50", the solution text must use those same values.
-5. DENOMINATOR CONSISTENCY: If a division is performed (e.g., EPS = Net Income / Shares), the denominator must be identical in answer_parts.steps AND survive_solution_text. Do NOT use different share counts or different bases.
-6. CLEAN STEPS FORMAT: Each step in answer_parts[].steps should be a numbered line like "1. Identify net income: $500,000" — no narrative filler, no hedging, no commentary after the final calculation.
+TEXT parts (type: "text"):
+- final_answer: short statement (e.g. "The credit loss is $10,000.")
+- explanation: 1-4 sentence reasoning
+- worked_steps: compact calculation (e.g. "50,000 − 40,000 = 10,000")
+- final_value: optional numeric value (number, not string)
+- units: optional (e.g. "USD", "%")
+
+JOURNAL ENTRY parts (type: "je"):
+- je_structured: array of { date: string, entries: [{ account: string, debit: number|null, credit: number|null }] }
+- Each entry must balance (total debits = total credits)
+- Account names must be CLEAN: no "$", no ":", no narrative text
+${accountWhitelistBlock ? `- Use ONLY accounts from the approved whitelist\n${accountWhitelistBlock}` : ""}
+
+HYBRID problems: Maintain the same order as the problem instructions.
+Example: (a) text, (b) journal entry, (c) text, (d) journal entry
+
+The number of parts MUST match the number of requirements in the source problem.
+Round to whole dollars unless the problem requires cents (e.g. EPS).`;
+
+    const qualityRules = `
+STRICT OUTPUT QUALITY RULES (CRITICAL):
+1. NO SELF-CORRECTIONS: Do NOT use "wait", "check", "re-", "however", "actually", "verify", "let's fix". Every step must be decisive and final.
+2. ONE COMPUTATION PATH ONLY: Each text part's worked_steps must have exactly ONE final computation path.
+3. ANSWER CONSISTENCY: answer_only must match the final_answer values from text parts.
+4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.`;
+
+    if (generationMode === "text_only") {
+      systemPrompt = `${preamble}
+
+THIS IS A TEXT/NUMERIC-ONLY PROBLEM. Do NOT generate any journal entry parts.
+All parts must have type: "text".
+${partsInstruction}
+${qualityRules}
 
 ${(() => {
-  // Detect EPS / If-Converted topics from problem text + tags
   const upperProblem = (problemText || "").toUpperCase();
   const upperSolution = (solutionText || "").toUpperCase();
   const combinedUpper = upperProblem + " " + upperSolution + " " + (title || "").toUpperCase();
@@ -1117,40 +1161,16 @@ ${(() => {
   if (!isEPS) return "";
   return `
 EPS / IF-CONVERTED METHOD — MANDATORY RULES (CRITICAL):
-These rules apply because this problem involves EPS or diluted EPS calculations.
-
-A) BONDS/CONVERTIBLES ISSUED DURING THE YEAR (Part b or Diluted EPS):
-   - When convertible bonds are issued DURING the year (not Jan 1), assume conversion at the DATE OF ISSUANCE.
-   - TIME-WEIGHT BOTH components:
-     (1) Interest addback (after-tax) = Annual interest × (months outstanding / 12)
-     (2) Incremental shares = Shares from conversion × (months outstanding / 12)
-   - The denominator MUST be: base weighted-average common shares + time-weighted incremental shares.
-   - NEVER use a full-year incremental share count when bonds were issued mid-year.
-   - Example: If 200 bonds convertible into 6,000 shares are issued Sept 1, months outstanding = 4/12.
-     Incremental shares = 6,000 × 4/12 = 2,000 (NOT 6,000).
-     Interest addback = Annual interest × 4/12 × (1 - tax rate).
-
-B) FINAL EPS LINE:
-   - The final "Diluted EPS = Numerator / Denominator" line MUST use the exact denominator computed above.
-   - Do NOT restate with a different denominator. Do NOT "simplify" by using full-year shares.
-
-C) NO ALTERNATE DENOMINATOR LOGIC:
-   - Do NOT use "matching source complexity" as a reason to change the denominator.
-   - Do NOT provide two denominator options. There is exactly ONE correct denominator.
-   - Do NOT self-correct denominator calculations. Get it right the first time.
+A) BONDS/CONVERTIBLES ISSUED DURING THE YEAR: Time-weight BOTH interest addback and incremental shares.
+B) FINAL EPS LINE: Use the exact denominator computed. Do NOT simplify.
+C) ONE correct denominator. No alternates.
 `;
 })()}
 
-ANSWER PARTS:
-- Produce "answer_parts" aligned to the source problem's structure (a/b/c or 1/2/3).
-- Each part must include: label (e.g. "(a)" or "1"), final_answer (short string), steps (concise worked solution).
-- The number of answer_parts MUST match the number of requirements in the source problem.
-- Round to whole dollars unless the problem requires cents (e.g. EPS).
-
-SOLUTION STORAGE — For every variant, provide:
-1. answer_only: Final numeric answers summary (concise) — must exactly match answer_parts final_answer values
-2. survive_solution_text: Fully worked steps with all solution logic (step-by-step, compact) — must be consistent with answer_parts
-3. answer_parts: Array of {label, final_answer, steps}
+SOLUTION STORAGE — For every variant:
+1. answer_only: Final numeric answers summary (concise)
+2. survive_solution_text: Fully worked steps (step-by-step, compact)
+3. parts: Array of text parts
 
 OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
 
@@ -1164,40 +1184,22 @@ ${solutionText || "Not provided"}
 
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants. This is NOT a journal entry problem — focus on calculations, ratios, and analysis.
-REMINDER: No self-corrections, no "wait/check/however" language, no alternate computation paths. One clean path per answer part.`;
+Generate ${variantCount} exam-style practice variants. Focus on calculations, ratios, and analysis.
+REMINDER: No self-corrections. One clean computation path per part.`;
 
-    } else {
-      // ── JE Prompt (existing v3) ──
-      systemPrompt = `You are an expert accounting instructor creating Scalable Teaching Assets for exam prep.
-
-TEACHING TONE:
-${teachingTone.map((t: string) => `- ${t}`).join("\n")}
-
-EXAM REALISM RULES:
-${examRealism.map((r: string) => `- ${r}`).join("\n")}
-
-CORE RULES:
-- Generate exactly ${variantCount} exam-style practice problem variants from the source.
-- Each variant must teach the SAME core accounting concept as the source.
-- Use DIFFERENT numerical values across all ${variantCount} variants.
-- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity.
-- If a second entity is needed (counterparty, investor, lender, etc.), use "${SURVIVE_COUNTERPARTY}".
-- Do NOT use any other fictional company names.
-- All scenarios must feel realistic and finance/accounting related.
-- Do NOT include "Survive Accounting" in student-facing text.
-
-${difficultySection}
-${constraintsBlock}
+    } else if (generationMode === "je_only") {
+      systemPrompt = `${preamble}
 ${accountWhitelistBlock}
 
-${journalInstruction}
+THIS IS A JOURNAL-ENTRY-ONLY PROBLEM. All parts must have type: "je".
+${partsInstruction}
 ${scenarioInstruction}
 
-SOLUTION STORAGE — For every variant, provide BOTH:
-1. answer_only: Final numeric answers + JE summary (concise)
-2. survive_solution_text: Fully worked steps with all internal solution logic (step-by-step)
-- Do not generate written teaching explanations — student-facing explanation will be video-linked.
+SOLUTION STORAGE — For every variant:
+1. answer_only: Final JE summary (concise)
+2. survive_solution_text: Fully worked steps with solution logic
+3. parts: Array of je parts
+4. journal_entry_block: Text summary for backward compatibility
 
 OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
 
@@ -1210,14 +1212,45 @@ Original Solution:
 ${solutionText || "Not provided"}
 
 ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
-
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants.`;
+Generate ${variantCount} exam-style practice variants with structured journal entries.`;
+
+    } else {
+      // hybrid
+      systemPrompt = `${preamble}
+${accountWhitelistBlock}
+
+THIS IS A HYBRID PROBLEM with both text/numeric answers AND journal entries.
+Parts must maintain the same order as the source problem instructions.
+${partsInstruction}
+${qualityRules}
+${scenarioInstruction}
+
+SOLUTION STORAGE — For every variant:
+1. answer_only: Final answers summary (concise)
+2. survive_solution_text: Fully worked steps with all solution logic
+3. parts: Ordered array mixing text and je parts as needed
+4. journal_entry_block: Text summary for backward compatibility (JE portions only)
+
+OUTPUT: Return exactly ${variantCount} candidates using tool calling.`;
+
+      userPrompt = `Source Problem: ${sourceLabel} — ${title}
+
+Original Problem Text:
+${problemText || "Not provided"}
+
+Original Solution:
+${solutionText || "Not provided"}
+
+${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
+${notes ? `Instructor Notes:\n${notes}` : ""}
+
+Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
-      prompt_version: generationMode === "NON_JE" ? "convert_to_asset_non_je_v3_eps" : "convert_to_asset_v3_trace",
+      prompt_version: "convert_to_asset_parts_v1",
       generation_mode: generationMode,
       provider,
       model: aiModel,
@@ -1257,7 +1290,7 @@ Generate ${variantCount} exam-style practice variants.`;
         type: "function",
         function: {
           name: "create_teaching_asset_candidates",
-          description: `Create ${variantCount} candidate scalable teaching assets from a raw problem`,
+          description: `Create ${variantCount} candidate scalable teaching assets from a raw problem. Each candidate uses a parts-based answer format.`,
           parameters: {
             type: "object",
             properties: {
@@ -1269,75 +1302,58 @@ Generate ${variantCount} exam-style practice variants.`;
                     asset_name: { type: "string", description: "Short clear name for this variant" },
                     tags: { type: "array", items: { type: "string" }, description: "2-6 concise concept tags" },
                     survive_problem_text: { type: "string", description: "Student-facing practice problem text" },
-                    ...(generationMode === "JE" ? {
-                      journal_entry_block: { type: "string", description: "Account | Debit | Credit text grid or null" },
-                    } : {}),
-                    ...(requiresJournalEntry ? {
-                      je_structured: {
+                    parts: {
+                      type: "array",
+                      description: "Ordered array of answer parts. Each part is either text or je type.",
+                      items: {
                         type: "object",
-                        description: "Structured journal entry with scenario_sections containing entries_by_date with rows of account_name/debit/credit",
                         properties: {
-                          scenario_sections: {
+                          label: { type: "string", description: "Part label: a, b, c, etc. (lowercase letter)" },
+                          type: { type: "string", enum: ["text", "je"], description: "Part type" },
+                          // Text part fields
+                          final_answer: { type: "string", description: "Short final answer (text parts only)" },
+                          explanation: { type: "string", description: "1-4 sentence reasoning (text parts only)" },
+                          worked_steps: { type: "string", description: "Compact calculation steps (text parts only)" },
+                          final_value: { type: "number", description: "Optional numeric value (text parts only)" },
+                          units: { type: "string", description: "Optional units e.g. USD, % (text parts only)" },
+                          // JE part fields
+                          je_structured: {
                             type: "array",
+                            description: "Array of journal entries by date (je parts only)",
                             items: {
                               type: "object",
                               properties: {
-                                label: { type: "string", description: "Scenario label e.g. 'Main' or 'Situation 1'" },
-                                entries_by_date: {
+                                date: { type: "string", description: "Entry date" },
+                                entries: {
                                   type: "array",
                                   items: {
                                     type: "object",
                                     properties: {
-                                      date: { type: "string", description: "Entry date or descriptive label" },
-                                      rows: {
-                                        type: "array",
-                                        items: {
-                                          type: "object",
-                                          properties: {
-                                            account_name: { type: "string" },
-                                            debit: { type: ["number", "null"] },
-                                            credit: { type: ["number", "null"] },
-                                          },
-                                          required: ["account_name", "debit", "credit"],
-                                        },
-                                      },
+                                      account: { type: "string" },
+                                      debit: { type: ["number", "null"] },
+                                      credit: { type: ["number", "null"] },
                                     },
-                                    required: ["date", "rows"],
+                                    required: ["account", "debit", "credit"],
                                   },
                                 },
                               },
-                              required: ["label", "entries_by_date"],
+                              required: ["date", "entries"],
                             },
                           },
                         },
-                        required: ["scenario_sections"],
+                        required: ["label", "type"],
                       },
-                    } : {}),
-                    ...(generationMode === "NON_JE" ? {
-                      answer_parts: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            label: { type: "string", description: "Part label e.g. '(a)' or '1'" },
-                            final_answer: { type: "string", description: "Short final answer string" },
-                            steps: { type: "string", description: "Concise worked solution steps" },
-                          },
-                          required: ["label", "final_answer", "steps"],
-                        },
-                        description: "Answer parts aligned to source problem structure",
-                      },
-                    } : {}),
+                    },
                     answer_only: { type: "string", description: "Final numeric answers + JE summary only" },
                     survive_solution_text: { type: "string", description: "Fully worked step-by-step solution" },
-                    exam_trap_note: { type: "string", description: "Internal note on what makes this tricky (if difficulty toggles active)" },
+                    ...(requiresJournalEntry ? {
+                      journal_entry_block: { type: "string", description: "Text summary of JE for backward compatibility" },
+                    } : {}),
+                    exam_trap_note: { type: "string", description: "Internal note on what makes this tricky" },
                   },
                   required: [
-                    "asset_name", "tags", "survive_problem_text", "answer_only", "survive_solution_text",
-                    ...(requiresJournalEntry ? ["je_structured"] : []),
-                    ...(generationMode === "NON_JE" ? ["answer_parts"] : []),
+                    "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",
                   ],
-                  additionalProperties: false,
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,
               },
@@ -1625,90 +1641,54 @@ Generate ${variantCount} exam-style practice variants.`;
       zod_errors: [],
     });
 
-    // NON_JE explicit schema validation + quality validators
-    if (generationMode === "NON_JE") {
-      const nonJeValidation = validateNonJeCandidates(candidates);
-      await logGenEvent(sbService, runId, ++eventSeq, "validator", nonJeValidation.valid ? "info" : "warn", "VALIDATE_NON_JE_SCHEMA",
-        nonJeValidation.valid ? "NON_JE schema valid" : `NON_JE schema issues: ${nonJeValidation.errors.length}`, {
-          valid: nonJeValidation.valid,
-          errors: nonJeValidation.errors,
-        }
+    // Parts-based validation for all modes
+    const allHaveParts = candidates.every((c: any) => Array.isArray(c.parts) && c.parts.length >= 1);
+    if (!allHaveParts) {
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", "warn", "VALIDATE_PARTS",
+        "Some candidates missing parts[] array — will attempt legacy conversion on frontend", {});
+    } else {
+      // Validate parts structure
+      const partsErrors: string[] = [];
+      candidates.forEach((c: any, ci: number) => {
+        (c.parts || []).forEach((p: any, pi: number) => {
+          if (!p.label) partsErrors.push(`candidates[${ci}].parts[${pi}] missing label`);
+          if (!["text", "je"].includes(p.type)) partsErrors.push(`candidates[${ci}].parts[${pi}] invalid type: ${p.type}`);
+          if (p.type === "text" && !p.final_answer) partsErrors.push(`candidates[${ci}].parts[${pi}] text part missing final_answer`);
+          if (p.type === "je" && !Array.isArray(p.je_structured)) partsErrors.push(`candidates[${ci}].parts[${pi}] je part missing je_structured`);
+        });
+      });
+      await logGenEvent(sbService, runId, ++eventSeq, "validator", partsErrors.length > 0 ? "warn" : "info", "VALIDATE_PARTS",
+        partsErrors.length > 0 ? `Parts validation: ${partsErrors.length} issues` : "Parts validation passed",
+        { errors: partsErrors }
       );
+    }
 
-      // Run NON_JE quality validators + automatic cleanup
-      const nonJeQualityResults = runNonJeQualityValidators(candidates, problemText, solutionText);
+    // Quality validators for text parts (same self-correction checks)
+    if (generationMode !== "je_only") {
+      // Build legacy answer_parts from parts for quality validators
+      const legacyCandidates = candidates.map((c: any) => ({
+        ...c,
+        answer_parts: (c.parts || []).filter((p: any) => p.type === "text").map((p: any) => ({
+          label: p.label,
+          final_answer: p.final_answer,
+          steps: p.worked_steps || p.explanation || "",
+        })),
+      }));
+      const nonJeQualityResults = runNonJeQualityValidators(legacyCandidates, problemText, solutionText);
       await logGenEvent(sbService, runId, ++eventSeq, "validator",
         nonJeQualityResults.some(r => r.status === "fail") ? "warn" : "info",
-        "VALIDATE_NON_JE_QUALITY",
-        `NON_JE quality: ${nonJeQualityResults.filter(r => r.status === "fail").length} failures, ${nonJeQualityResults.filter(r => r.status === "pass").length} passes`,
+        "VALIDATE_TEXT_QUALITY",
+        `Text quality: ${nonJeQualityResults.filter(r => r.status === "fail").length} failures`,
         { results: nonJeQualityResults }
       );
-
-      // Annotate candidates with quality validation results
       for (const c of candidates) {
         c._non_je_quality_results = nonJeQualityResults.filter((r: any) => r.candidate_index !== undefined ? r.candidate_index === candidates.indexOf(c) : true);
       }
-
-      // Automatic cleanup: strip trailing commentary from steps
-      for (let ci = 0; ci < candidates.length; ci++) {
-        const c = candidates[ci];
-        if (Array.isArray(c.answer_parts)) {
-          for (const part of c.answer_parts) {
-            if (typeof part.steps === "string") {
-              const cleaned = stripTrailingCommentary(part.steps);
-              if (cleaned !== part.steps) {
-                part.steps = cleaned;
-                c._needs_review = true;
-              }
-            }
-          }
-        }
-      }
     }
 
-    await logGenEvent(sbService, runId, ++eventSeq, "validator", "info", "RUN_VALIDATORS_START", "Running candidate validators", {
-      validator_set_used: generationMode === "NON_JE" ? "NON_JE_VALIDATORS" : "JE_VALIDATORS",
-      generation_mode: generationMode,
-    });
-
-    const validatorResults = runCandidateValidators(candidates, requiresJournalEntry);
-
-    // NON_JE answer_parts validation
-    if (generationMode === "NON_JE") {
-      const allHaveAnswerParts = candidates.every((c: any) => Array.isArray(c.answer_parts) && c.answer_parts.length >= 1);
-      const partsValid = allHaveAnswerParts && candidates.every((c: any) =>
-        c.answer_parts.every((p: any) => typeof p.label === "string" && typeof p.final_answer === "string" && typeof p.steps === "string")
-      );
-      validatorResults.push({
-        name: "answer_parts_present",
-        status: partsValid ? "pass" : "fail",
-        details_if_fail: partsValid ? undefined : "One or more candidates missing valid answer_parts",
-      });
-    }
-
-    const jeValidator = validatorResults.find((r) => r.name === "je_structured_valid");
-    const jeValidationFailed = requiresJournalEntry && jeValidator?.status === "fail";
-    const validatorFailed = validatorResults.some((r) => r.status === "fail");
-
-    // Annotate each candidate with _je_valid and _je_errors for the frontend
-    if (requiresJournalEntry && jeValidator?.per_candidate) {
-      for (const pc of jeValidator.per_candidate) {
-        if (candidates[pc.index]) {
-          candidates[pc.index]._je_valid = pc.valid;
-          candidates[pc.index]._je_errors = pc.errors;
-          if (!pc.valid) {
-            candidates[pc.index]._status = "needs_repair";
-            candidates[pc.index]._ai_raw_je = candidates[pc.index].journal_entry_block || null;
-          }
-        }
-      }
-    }
-
-    // Annotate NON_JE candidates with _generation_mode
-    if (generationMode === "NON_JE") {
-      for (const c of candidates) {
-        c._generation_mode = "NON_JE";
-      }
+    // Annotate candidates with generation_mode
+    for (const c of candidates) {
+      c._generation_mode = generationMode;
     }
 
     await logGenEvent(
@@ -1726,7 +1706,7 @@ Generate ${variantCount} exam-style practice variants.`;
         je_validation_failed: jeValidationFailed,
         requires_je: requiresJournalEntry,
         generation_mode: generationMode,
-        validator_set_used: generationMode === "NON_JE" ? "NON_JE_VALIDATORS" : "JE_VALIDATORS",
+        validator_set_used: generationMode === "text_only" ? "TEXT_VALIDATORS" : generationMode === "je_only" ? "JE_VALIDATORS" : "HYBRID_VALIDATORS",
         candidate_keys_present: candidates.length > 0 ? Object.keys(candidates[0]) : [],
       }
     );

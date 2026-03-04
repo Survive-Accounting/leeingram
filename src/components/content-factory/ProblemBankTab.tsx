@@ -513,15 +513,23 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
         for (let ci = 0; ci < newCandidates.length; ci++) {
           const c = newCandidates[ci];
           const { normalizedCandidate, completed, template, counts } = getCandidateJEPersistence(c);
-          const isNonJE = !!(problem as any).contains_no_journal_entries || !!c.answer_parts || c._generation_mode === "NON_JE";
+          const isNonJE = !!(problem as any).contains_no_journal_entries || !!c.answer_parts || c._generation_mode === "NON_JE" || c._generation_mode === "text_only";
           
-          // Build unified parts_json from candidate data
-          const candidateForParts = {
-            ...normalizedCandidate,
-            journal_entry_completed_json: isNonJE ? null : completed,
-            answer_parts_json: isNonJE && c.answer_parts ? c.answer_parts : null,
-          };
-          const parts = normalizeToParts(candidateForParts);
+          // Use parts directly from AI output if available, otherwise normalize from legacy fields
+          let parts: any[] | null = null;
+          if (Array.isArray(c.parts) && c.parts.length > 0) {
+            // AI returned parts directly — use as-is
+            parts = c.parts;
+          } else {
+            // Fallback: build parts from legacy fields
+            const candidateForParts = {
+              ...normalizedCandidate,
+              journal_entry_completed_json: isNonJE ? null : completed,
+              answer_parts_json: isNonJE && c.answer_parts ? c.answer_parts : null,
+            };
+            const normalized = normalizeToParts(candidateForParts);
+            parts = normalized.length > 0 ? normalized : null;
+          }
           
           const variantPayload: Record<string, any> = {
             base_problem_id: problem.id,
@@ -532,7 +540,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             journal_entry_completed_json: isNonJE ? null : completed,
             journal_entry_template_json: isNonJE ? null : template,
             ...(isNonJE && c.answer_parts ? { answer_parts_json: c.answer_parts } : {}),
-            parts_json: parts.length > 0 ? parts : null,
+            parts_json: parts,
           };
 
           const { data: insertedVariant, error: insertVariantError } = await supabase
