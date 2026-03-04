@@ -243,9 +243,12 @@ export default function ProblemBank() {
 
   const bulkCombine = useMutation({
     mutationFn: async (ids: string[]) => {
+      // Generate a shared group ID so generation can merge their text
+      const groupId = crypto.randomUUID();
       const { error } = await supabase.from("chapter_problems").update({
         dependency_type: "dependent_problem",
         dependency_status: "combined",
+        combined_group_id: groupId,
       } as any).in("id", ids);
       if (error) throw error;
     },
@@ -253,7 +256,7 @@ export default function ProblemBank() {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
       qc.invalidateQueries({ queryKey: ["dependent-problems"] });
       setSelectedIds(new Set());
-      toast.success("Problems linked as combined case — merge source material, then mark ready.");
+      toast.success("Problems linked as combined group — generation will merge their text automatically.");
     },
     onError: (e: Error) => toast.error(e.message)
   });
