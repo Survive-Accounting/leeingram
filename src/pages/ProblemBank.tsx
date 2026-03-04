@@ -261,6 +261,41 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const [ocrRunning, setOcrRunning] = useState(false);
+
+  const runBulkOcr = useCallback(async () => {
+    if (!problems) return;
+    const pending = problems.filter(
+      (p) =>
+        ((p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
+        (p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url)
+    );
+    if (pending.length === 0) {
+      toast.info("No problems need OCR — all already processed.");
+      return;
+    }
+    setOcrRunning(true);
+    toast.info(`Running OCR on ${pending.length} problems…`);
+    let success = 0;
+    let failed = 0;
+    // Process sequentially to avoid rate limits
+    for (const p of pending) {
+      const pUrls = p.problem_screenshot_urls.length > 0 ? p.problem_screenshot_urls : p.problem_screenshot_url ? [p.problem_screenshot_url] : [];
+      const sUrls = p.solution_screenshot_urls.length > 0 ? p.solution_screenshot_urls : p.solution_screenshot_url ? [p.solution_screenshot_url] : [];
+      try {
+        const { error } = await supabase.functions.invoke("extract-ocr", {
+          body: { problemId: p.id, problemImageUrls: pUrls, solutionImageUrls: sUrls },
+        });
+        if (error) { failed++; } else { success++; }
+      } catch {
+        failed++;
+      }
+    }
+    setOcrRunning(false);
+    qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+    toast.success(`OCR complete: ${success} succeeded, ${failed} failed`);
+  }, [problems, qc]);
+
   const markReady = async (id: string) => {
     const { error } = await supabase.from("chapter_problems").update({ status: "ready", pipeline_status: "imported" } as any).eq("id", id);
     if (error) {toast.error(error.message);return;}
