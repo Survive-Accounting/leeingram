@@ -151,21 +151,6 @@ Return results using the provided tool.`,
       { regex: /see (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
     ];
 
-    // Multi-label detection: if OCR found a label like "E16.20" but the text also mentions "E16.19",
-    // that's a strong signal this problem depends on another
-    const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
-    if (detectedLabel && dependencyType === "standalone") {
-      // Find other problem labels mentioned in the text (e.g. E16.19 in an E16.20 screenshot)
-      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
-      const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
-      const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
-      if (otherLabels.length > 0) {
-        dependencyType = "dependent_problem";
-        dependencyStatus = "needs_review";
-        detectedDependencyRef = otherLabels[0];
-      }
-    }
-
     let dependencyType = "standalone";
     let dependencyStatus = "none";
     let detectedDependencyRef = "";
@@ -178,6 +163,20 @@ Return results using the provided tool.`,
         dependencyStatus = "needs_review";
         detectedDependencyRef = extractRef && match[1] ? match[1].trim() : "";
         break;
+      }
+    }
+
+    // Multi-label detection: if OCR found a label like "E16.20" but the text also mentions "E16.19",
+    // that's a strong signal this problem depends on another
+    const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
+    if (detectedLabel && dependencyType === "standalone") {
+      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
+      const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
+      const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
+      if (otherLabels.length > 0) {
+        dependencyType = "dependent_problem";
+        dependencyStatus = "needs_review";
+        detectedDependencyRef = otherLabels[0];
       }
     }
 
