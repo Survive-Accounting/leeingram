@@ -66,6 +66,26 @@ export function DependentProblemsQueue({ chapterId, courseId }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const uncombineMutation = useMutation({
+    mutationFn: async (problemId: string) => {
+      const { error } = await supabase
+        .from("chapter_problems")
+        .update({
+          dependency_type: "standalone",
+          dependency_status: "none",
+          combined_group_id: null,
+        } as any)
+        .eq("id", problemId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dependent-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      toast.success("Unlinked — problem is now standalone.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading...</p>;
 
   const needsReview = dependentProblems?.filter(p => p.dependency_status === "needs_review") ?? [];
