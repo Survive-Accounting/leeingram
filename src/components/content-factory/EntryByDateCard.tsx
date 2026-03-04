@@ -69,7 +69,7 @@ export function EntryByDateCard({
   editorSlot,
   isEditing,
 }: EntryByDateCardProps) {
-  const [manualOverride, setManualOverride] = useState(false);
+  const [manualOverride, setManualOverride] = useState(true);
   const hasRows = rows.length >= 2;
   const hasAnyRows = rows.length > 0;
   const dateFails = validationErrors.some(r => r.status === "fail");

@@ -57,7 +57,7 @@ export function PipelineProgressStrip() {
     (path === "/content" && location.pathname.startsWith("/workspace/"));
 
   return (
-    <div className="px-6 pt-4 pb-3">
+    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-6 pt-4 pb-3">
       {/* Course + Chapter header */}
       <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
         {workspace.courseName}
