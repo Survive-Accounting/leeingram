@@ -2080,7 +2080,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   }
 
   const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
-  const [launchingBatch, setLaunchingBatch] = useState(false);
 
   const launchServerBatch = async () => {
     if (!problems?.length) return;
