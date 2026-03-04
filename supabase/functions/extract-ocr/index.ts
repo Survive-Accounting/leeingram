@@ -141,13 +141,30 @@ Return results using the provided tool.`,
     // ── Dependency Detection ──
     const DEPENDENCY_PATTERNS = [
       { regex: /assume the same (?:information|facts|data) as in\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /assume the same (?:information|facts|data) as in\s+(?:Exercise|Problem|BE|Brief Exercise)\s*(\d+[\-\.]\d+)/i, extractRef: true },
       { regex: /using the (?:information|data|facts) (?:from|in)\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: /using the (?:information|data|facts) (?:from|in)\s+(?:Exercise|Problem|BE|Brief Exercise)\s*(\d+[\-\.]\d+)/i, extractRef: true },
       { regex: /based on the previous (?:problem|exercise)/i, extractRef: false },
       { regex: /refer(?:ring)? to\s+(?:the data in\s+)?(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
       { regex: /using the data (?:from|in)\s+(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
       { regex: /in (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
       { regex: /see (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
     ];
+
+    // Multi-label detection: if OCR found a label like "E16.20" but the text also mentions "E16.19",
+    // that's a strong signal this problem depends on another
+    const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
+    if (detectedLabel && dependencyType === "standalone") {
+      // Find other problem labels mentioned in the text (e.g. E16.19 in an E16.20 screenshot)
+      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
+      const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
+      const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
+      if (otherLabels.length > 0) {
+        dependencyType = "dependent_problem";
+        dependencyStatus = "needs_review";
+        detectedDependencyRef = otherLabels[0];
+      }
+    }
 
     let dependencyType = "standalone";
     let dependencyStatus = "none";

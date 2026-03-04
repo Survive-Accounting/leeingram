@@ -4,8 +4,12 @@
  */
 
 const DEPENDENCY_PATTERNS: { regex: RegExp; extractRef: boolean }[] = [
+  // "Assume the same information as in E16.19" — most common textbook dependency phrase
   { regex: /assume the same (?:information|facts|data) as in\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
+  // "Assume the same information as in Exercise 16-19"
+  { regex: /assume the same (?:information|facts|data) as in\s+(?:Exercise|Problem|BE|Brief Exercise)\s*(\d+[\-\.]\d+)/i, extractRef: true },
   { regex: /using the (?:information|data|facts) (?:from|in)\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
+  { regex: /using the (?:information|data|facts) (?:from|in)\s+(?:Exercise|Problem|BE|Brief Exercise)\s*(\d+[\-\.]\d+)/i, extractRef: true },
   { regex: /based on the previous (?:problem|exercise)/i, extractRef: false },
   { regex: /refer(?:ring)? to\s+(?:the data in\s+)?(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
   { regex: /using the data (?:from|in)\s+(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
