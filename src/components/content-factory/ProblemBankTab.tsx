@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter } from "lucide-react";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter, RefreshCw } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
@@ -185,7 +186,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [variantStatusFilter, setVariantStatusFilter] = useState<string>("active");
   const [showArchived, setShowArchived] = useState(false);
-
+  const [startOverOpen, setStartOverOpen] = useState(false);
+  const [startOverRunning, setStartOverRunning] = useState(false);
   // Fetch user's variant count preference
   const { data: variantCount } = useQuery({
     queryKey: ["variant-count-setting"],
@@ -1022,6 +1024,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <ArrowLeft className="h-3 w-3 mr-1" /> Exit Review
             </Button>
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => setStartOverOpen(true)}
+                disabled={startOverRunning}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" /> Start Over (Archive Variants)
+              </Button>
               <span className="text-xs text-foreground/70 font-medium">
                 {reviewIndex + 1} / {generatedProblems.length}
               </span>
@@ -1033,6 +1044,107 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               </Button>
             </div>
           </div>
+
+          {/* Start Over Confirmation Dialog */}
+          <AlertDialog open={startOverOpen} onOpenChange={setStartOverOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Start Over Variant Generation?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will archive all existing variants for this chapter and allow new V1 variants to be generated.
+                  <br /><br />
+                  Nothing will be deleted. Archived variants remain available for debugging.
+                  <br /><br />
+                  Do you want to continue?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={startOverRunning}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={startOverRunning}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    setStartOverRunning(true);
+                    try {
+                      // Step 1: Get all non-approved variant IDs for this chapter's sources
+                      const chapterSourceIds = (problems ?? []).map(p => p.id);
+                      if (chapterSourceIds.length === 0) {
+                        toast.info("No source problems in this chapter.");
+                        return;
+                      }
+
+                      const { data: variants, error: fetchErr } = await supabase
+                        .from("problem_variants")
+                        .select("id, variant_status")
+                        .in("base_problem_id", chapterSourceIds)
+                        .neq("variant_status", "archived");
+
+                      if (fetchErr) throw fetchErr;
+                      
+                      const toArchive = (variants ?? []).filter(v => v.variant_status !== "approved");
+                      const archivedCount = toArchive.length;
+
+                      // Step 1: Archive variants (batch update)
+                      if (toArchive.length > 0) {
+                        const ids = toArchive.map(v => v.id);
+                        const { error: archiveErr } = await supabase
+                          .from("problem_variants")
+                          .update({ variant_status: "archived" } as any)
+                          .in("id", ids);
+                        if (archiveErr) throw archiveErr;
+                      }
+
+                      // Step 2: Reset source pipeline status back to "ready" for generated sources
+                      const generatedSourceIds = (problems ?? [])
+                        .filter(p => p.status === "generated")
+                        .map(p => p.id);
+                      
+                      if (generatedSourceIds.length > 0) {
+                        const { error: resetErr } = await supabase
+                          .from("chapter_problems")
+                          .update({ status: "ready", pipeline_status: "ready" } as any)
+                          .in("id", generatedSourceIds);
+                        if (resetErr) throw resetErr;
+                      }
+
+                      // Step 3: Log the reset
+                      await logActivity({
+                        actor_type: "user",
+                        entity_type: "chapter",
+                        entity_id: chapterId,
+                        event_type: "generation_reset",
+                        severity: "warn",
+                        message: `Archived ${archivedCount} variant(s), reset ${generatedSourceIds.length} source(s) to ready`,
+                        payload_json: {
+                          variants_archived: archivedCount,
+                          sources_reset: generatedSourceIds.length,
+                          chapter_id: chapterId,
+                        },
+                      });
+
+                      // Step 4: Refresh data and exit review
+                      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+                      qc.invalidateQueries({ queryKey: ["chapter-activity-log", chapterId] });
+                      exitReview();
+                      setStartOverOpen(false);
+                      toast.success(`Variants archived. Ready to generate fresh V1 variants.`);
+                    } catch (err: any) {
+                      toast.error(`Reset failed: ${err?.message}`);
+                    } finally {
+                      setStartOverRunning(false);
+                    }
+                  }}
+                >
+                  {startOverRunning ? (
+                    <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Archiving…</>
+                  ) : (
+                    "Archive & Reset"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Problem Header */}
           <div className="rounded-lg border border-border bg-background/95 p-4">
