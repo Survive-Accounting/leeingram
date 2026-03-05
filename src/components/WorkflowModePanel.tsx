@@ -101,7 +101,7 @@ export function WorkflowModePanel() {
   const total = problems?.length ?? 0;
   // Cumulative counts: each stage shows items at that stage OR any later stage
   const STAGE_ORDER: Record<string, number> = {
-    imported: 0, generated: 1, approved: 2, banked: 3, ready_to_film: 4, deployed: 5,
+    imported: 0, generated: 1, approved: 2, banked: 3, deployed: 4,
   };
 
   const stageCounts = useMemo(() => {
