@@ -782,28 +782,6 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
           )}
         </div>
 
-              {(variant.answer_only || hasTextParts) && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Summary</p>
-                  <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-24 overflow-y-auto">
-                    {hasTextParts ? (
-                      <div className="space-y-1">
-                        {textParts.map((tp, i) => (
-                          <p key={i} className="text-xs text-foreground">
-                            <span className="font-semibold text-primary">{formatPartLabel(tp.label)}</span>{" "}
-                            {tp.final_answer}
-                          </p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-foreground font-mono">{variant.answer_only}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Recent Fixes */}
         {recentFixes.length > 0 && (
