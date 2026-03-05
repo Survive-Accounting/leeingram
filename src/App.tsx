@@ -39,6 +39,7 @@ import ChartOfAccounts from "./pages/ChartOfAccounts";
 import SolutionsPdfUpload from "./pages/SolutionsPdfUpload";
 import ScreenshotCapture from "./pages/ScreenshotCapture";
 import BatchRunDetail from "./pages/BatchRunDetail";
+import BankedQuestionReview from "./pages/BankedQuestionReview";
 import NotFound from "./pages/NotFound";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 
