@@ -120,7 +120,7 @@ export function WorkflowModePanel() {
     return counts;
   }, [problems]);
 
-  const approvedTotal = stageCounts.approved + stageCounts.banked + stageCounts.ready_to_film + stageCounts.deployed;
+  const approvedTotal = stageCounts.approved + stageCounts.banked + stageCounts.deployed;
   const progressPercent = approvedTotal > 0 ? (stageCounts.deployed / approvedTotal) * 100 : 0;
 
   const chapterLabel = useMemo(() => {
