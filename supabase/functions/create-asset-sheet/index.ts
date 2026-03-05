@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       await verifyRes.text();
     }
 
-    const { asset_id, asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, created_at } = await req.json();
+    const { asset_id, asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, created_at, problem_text, highlight_key_json } = await req.json();
 
     if (!asset_id || !asset_code || !course_code || !chapter_number) {
       return new Response(JSON.stringify({ error: "Missing required fields: asset_id, asset_code, course_code, chapter_number" }), {
