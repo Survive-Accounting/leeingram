@@ -985,8 +985,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           survive_solution_text: cd.survive_solution_text || v.variant_solution_text,
           journal_entry_completed_json: jeCompleted,
           journal_entry_template_json: jeTemplate,
+          highlight_key_json: v.highlight_key_json,
+          parts_json: v.parts_json,
+          confidence_score: v.confidence_score,
+          difficulty_estimate: v.difficulty_estimate,
         };
       }));
+      setSpeedReviewVariantIndex(0);
     }
     setReviewLoading(false);
   };
