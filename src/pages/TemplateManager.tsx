@@ -216,7 +216,7 @@ export default function TemplateManager() {
                     <span className="font-medium text-foreground">{t.name}</span>
                     <span className="text-xs text-muted-foreground font-mono flex-1">{t.template_file_id}</span>
                     {t.is_active ? (
-                      <Badge className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>
+                      <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => toggleActive.mutate(t.id)}>
                         Set Active
