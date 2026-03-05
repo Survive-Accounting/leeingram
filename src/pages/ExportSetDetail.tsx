@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Download, Trash2, GripVertical, Loader2 } from "lucide-react";
+import { QuestionBankExport } from "@/components/content-factory/QuestionBankExport";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -245,24 +247,40 @@ export default function ExportSetDetail() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <p className="text-sm text-foreground/80">Loading…</p>
-      ) : !items?.length ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-sm">No assets in this set yet.</p>
-          <p className="text-xs mt-1">Go to Assets Library → select assets → "Add to Export Set"</p>
-        </div>
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {items.map((item) => (
-                <SortableItem key={item.id} item={item} onRemove={(id) => removeMutation.mutate(id)} />
-              ))}
+      <Tabs defaultValue="assets" className="space-y-3">
+        <TabsList>
+          <TabsTrigger value="assets">Assets</TabsTrigger>
+          <TabsTrigger value="questions">Questions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="assets">
+          {isLoading ? (
+            <p className="text-sm text-foreground/80">Loading…</p>
+          ) : !items?.length ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">No assets in this set yet.</p>
+              <p className="text-xs mt-1">Go to Assets Library → select assets → "Add to Export Set"</p>
             </div>
-          </SortableContext>
-        </DndContext>
-      )}
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <SortableItem key={item.id} item={item} onRemove={(id) => removeMutation.mutate(id)} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+        </TabsContent>
+
+        <TabsContent value="questions">
+          <QuestionBankExport
+            exportSetId={setId!}
+            exportSetName={exportSet?.name || "Export"}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Export Dialog */}
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
