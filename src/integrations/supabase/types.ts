@@ -245,6 +245,74 @@ export type Database = {
           },
         ]
       }
+      banked_questions: {
+        Row: {
+          ai_confidence_score: number
+          answer_a: string
+          answer_b: string
+          answer_c: string
+          answer_d: string
+          answer_e: string
+          asset_id: string
+          correct_answer: string
+          created_at: string
+          difficulty: number
+          id: string
+          question_text: string
+          question_type: Database["public"]["Enums"]["banked_question_type"]
+          rating: number | null
+          rejection_notes: string | null
+          review_status: Database["public"]["Enums"]["question_review_status"]
+          short_explanation: string
+        }
+        Insert: {
+          ai_confidence_score?: number
+          answer_a?: string
+          answer_b?: string
+          answer_c?: string
+          answer_d?: string
+          answer_e?: string
+          asset_id: string
+          correct_answer?: string
+          created_at?: string
+          difficulty?: number
+          id?: string
+          question_text?: string
+          question_type: Database["public"]["Enums"]["banked_question_type"]
+          rating?: number | null
+          rejection_notes?: string | null
+          review_status?: Database["public"]["Enums"]["question_review_status"]
+          short_explanation?: string
+        }
+        Update: {
+          ai_confidence_score?: number
+          answer_a?: string
+          answer_b?: string
+          answer_c?: string
+          answer_d?: string
+          answer_e?: string
+          asset_id?: string
+          correct_answer?: string
+          created_at?: string
+          difficulty?: number
+          id?: string
+          question_text?: string
+          question_type?: Database["public"]["Enums"]["banked_question_type"]
+          rating?: number | null
+          rejection_notes?: string | null
+          review_status?: Database["public"]["Enums"]["question_review_status"]
+          short_explanation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banked_questions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       changelog: {
         Row: {
           created_at: string
@@ -2818,6 +2886,14 @@ export type Database = {
         | "concept_review"
         | "exam_prep"
       asset_video_status: "none" | "coming_soon" | "published"
+      banked_question_type:
+        | "JE_MC"
+        | "CALC_MC"
+        | "CONCEPT_MC"
+        | "TRUE_FALSE"
+        | "TRAP"
+        | "RELEVANT_INFO"
+        | "IRRELEVANT_INFO"
       difficulty_level: "easy" | "medium" | "hard" | "tricky"
       entity_type:
         | "source_problem"
@@ -2843,6 +2919,7 @@ export type Database = {
         | "ready_to_film"
         | "deployed"
       problem_type: "exercise" | "problem" | "custom"
+      question_review_status: "pending" | "approved" | "rejected"
       repair_note_status: "open" | "resolved"
       repair_note_type:
         | "math_fix"
@@ -2996,6 +3073,15 @@ export const Constants = {
         "exam_prep",
       ],
       asset_video_status: ["none", "coming_soon", "published"],
+      banked_question_type: [
+        "JE_MC",
+        "CALC_MC",
+        "CONCEPT_MC",
+        "TRUE_FALSE",
+        "TRAP",
+        "RELEVANT_INFO",
+        "IRRELEVANT_INFO",
+      ],
       difficulty_level: ["easy", "medium", "hard", "tricky"],
       entity_type: [
         "source_problem",
@@ -3024,6 +3110,7 @@ export const Constants = {
         "deployed",
       ],
       problem_type: ["exercise", "problem", "custom"],
+      question_review_status: ["pending", "approved", "rejected"],
       repair_note_status: ["open", "resolved"],
       repair_note_type: [
         "math_fix",
