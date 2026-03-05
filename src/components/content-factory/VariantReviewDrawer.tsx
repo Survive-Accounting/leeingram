@@ -191,6 +191,10 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
+  // Highlights
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [showHighlights, setShowHighlights] = useState(true);
+
   // Parts
   const parts = useMemo(() => normalizeToParts(variant), [variant]);
   const textParts = useMemo(() => parts.filter(isTextPart), [parts]);
