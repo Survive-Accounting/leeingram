@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 import { VariantReviewContent } from "@/components/content-factory/VariantReviewDrawer";
+import { SpeedReviewPanel } from "@/components/content-factory/SpeedReviewPanel";
 import { logActivity } from "@/lib/activityLogger";
 import {
   normalizeCandidateJournalEntry,
