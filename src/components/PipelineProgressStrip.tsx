@@ -8,9 +8,8 @@ const STAGES = [
   { key: "imported", label: "IMPORTED", path: "/problem-bank" },
   { key: "generated", label: "GENERATED", path: "/content" },
   { key: "approved", label: "APPROVED", path: "/assets-library" },
-  { key: "banked", label: "BANKED", path: "/export-sets" },
-  { key: "ready_to_film", label: "READY TO FILM", path: "/filming" },
-  { key: "deployed", label: "DEPLOYED", path: "/deployment" },
+  { key: "banked", label: "BANKED", path: "/question-review" },
+  { key: "deployed", label: "DEPLOYED", path: "/filming" },
 ] as const;
 
 // Order index for "completion" logic
@@ -19,8 +18,7 @@ const STAGE_ORDER: Record<string, number> = {
   generated: 1,
   approved: 2,
   banked: 3,
-  ready_to_film: 4,
-  deployed: 5,
+  deployed: 4,
 };
 
 export function PipelineProgressStrip() {
@@ -67,7 +65,7 @@ export function PipelineProgressStrip() {
       </h2>
 
       {/* Stage progress bars */}
-      <div className="grid grid-cols-6 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {STAGES.map((stage, idx) => {
           const isFilled = idx <= highestReached;
           const isCurrentPage = isActive(stage.path);

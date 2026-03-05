@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, Undo2 } from "lucide-react";
+import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, Undo2, Sheet } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
@@ -108,6 +108,25 @@ export default function AssetsLibrary() {
         (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" })
       );
     }
+  });
+
+  // Fetch google_sheet_url from assets table keyed by asset_code matching teaching asset names
+  const { data: sheetUrls } = useQuery({
+    queryKey: ["asset-sheet-urls", assets?.map(a => a.asset_name).join(",")],
+    queryFn: async () => {
+      if (!assets?.length) return {};
+      const names = assets.map(a => a.asset_name).filter(Boolean);
+      const { data, error } = await supabase
+        .from("assets")
+        .select("asset_code, google_sheet_url")
+        .in("asset_code", names)
+        .neq("google_sheet_url", "");
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      data?.forEach(a => { if (a.google_sheet_url) map[a.asset_code] = a.google_sheet_url; });
+      return map;
+    },
+    enabled: !!assets?.length,
   });
 
   const { data: exportSets } = useQuery({
@@ -484,6 +503,13 @@ export default function AssetsLibrary() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAsset(a)}>
                         <Eye className="h-3 w-3" />
                       </Button>
+                      {sheetUrls?.[a.asset_name] && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" asChild title="Open Google Sheet">
+                          <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer">
+                            <Sheet className="h-3 w-3" />
+                          </a>
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-400" onClick={() => setRevertId(a.id)} title="Revert to Generated">
                         <Undo2 className="h-3 w-3" />
                       </Button>
