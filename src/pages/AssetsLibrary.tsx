@@ -110,6 +110,25 @@ export default function AssetsLibrary() {
     }
   });
 
+  // Fetch google_sheet_url from assets table keyed by asset_code matching teaching asset names
+  const { data: sheetUrls } = useQuery({
+    queryKey: ["asset-sheet-urls", assets?.map(a => a.asset_name).join(",")],
+    queryFn: async () => {
+      if (!assets?.length) return {};
+      const names = assets.map(a => a.asset_name).filter(Boolean);
+      const { data, error } = await supabase
+        .from("assets")
+        .select("asset_code, google_sheet_url")
+        .in("asset_code", names)
+        .neq("google_sheet_url", "");
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      data?.forEach(a => { if (a.google_sheet_url) map[a.asset_code] = a.google_sheet_url; });
+      return map;
+    },
+    enabled: !!assets?.length,
+  });
+
   const { data: exportSets } = useQuery({
     queryKey: ["export-sets"],
     queryFn: async () => {
