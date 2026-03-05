@@ -15,6 +15,7 @@ import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
+import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 
 type TeachingAsset = {
   id: string;
@@ -31,6 +32,8 @@ type TeachingAsset = {
   asset_type: string;
   created_at: string;
   updated_at: string;
+  journal_entry_completed_json: any;
+  journal_entry_template_json: any;
 };
 
 type JournalOption = "question" | "feedback" | "none";
@@ -58,6 +61,7 @@ export default function AssetsLibrary() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [revertId, setRevertId] = useState<string | null>(null);
   const [viewingAsset, setViewingAsset] = useState<TeachingAsset | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Selection & Export state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -302,61 +306,7 @@ export default function AssetsLibrary() {
     return ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
   };
 
-  // Detail view
-  if (viewingAsset) {
-    return (
-      <SurviveSidebarLayout>
-        <div className="mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setViewingAsset(null)} className="text-muted-foreground hover:text-foreground">
-            ← Back to Library
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{viewingAsset.asset_name}</h1>
-            <p className="text-xs text-muted-foreground mt-1">{chapterLabel(viewingAsset.chapter_id)}</p>
-          </div>
-
-          {viewingAsset.tags?.length > 0 &&
-          <div className="flex flex-wrap gap-1.5">
-              {viewingAsset.tags.map((tag) =>
-            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-            )}
-            </div>
-          }
-
-          <div className="space-y-4">
-            <div className="rounded-lg border border-border bg-background/95 p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Survive Problem</h2>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_problem_text || "—"}</p>
-            </div>
-
-            {viewingAsset.journal_entry_block &&
-            <div className="rounded-lg border border-border bg-background/95 p-4">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry Block</h2>
-                <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{viewingAsset.journal_entry_block}</pre>
-              </div>
-            }
-
-            <div className="rounded-lg border border-border bg-background/95 p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Full Solution Steps</h2>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_solution_text || "—"}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button size="sm" variant="outline" onClick={() => {setRevertId(viewingAsset.id);setViewingAsset(null);}}>
-              <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => {setDeleteId(viewingAsset.id);setViewingAsset(null);}}>
-              <Trash2 className="h-3 w-3 mr-1" /> Delete
-            </Button>
-          </div>
-        </div>
-      </SurviveSidebarLayout>);
-
-  }
+  // Detail drawer instead of full-page view
 
   return (
     <SurviveSidebarLayout>
@@ -500,7 +450,7 @@ export default function AssetsLibrary() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAsset(a)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setViewingAsset(a); setDrawerOpen(true); }}>
                         <Eye className="h-3 w-3" />
                       </Button>
                       {sheetUrls?.[a.asset_name] && (
@@ -643,6 +593,16 @@ export default function AssetsLibrary() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AssetDetailDrawer
+        asset={viewingAsset}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setViewingAsset(null); }}
+        chapterLabel={viewingAsset ? chapterLabel(viewingAsset.chapter_id) : ""}
+        sheetUrl={viewingAsset ? sheetUrls?.[viewingAsset.asset_name] : undefined}
+        onRevert={() => { if (viewingAsset) { setRevertId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
+        onDelete={() => { if (viewingAsset) { setDeleteId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
+      />
     </SurviveSidebarLayout>);
 
 }
