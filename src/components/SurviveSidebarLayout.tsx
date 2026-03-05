@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, Workflow, GraduationCap, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, Workflow, GraduationCap, PanelLeftClose, PanelLeft, HelpCircle, FileCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
