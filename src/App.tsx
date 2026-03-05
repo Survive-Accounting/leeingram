@@ -41,6 +41,7 @@ import ScreenshotCapture from "./pages/ScreenshotCapture";
 import BatchRunDetail from "./pages/BatchRunDetail";
 import BankedQuestionReview from "./pages/BankedQuestionReview";
 import NotFound from "./pages/NotFound";
+import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 
 const queryClient = new QueryClient();
