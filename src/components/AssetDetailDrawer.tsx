@@ -189,14 +189,20 @@ function JETable({ entries }: { entries: NormalizedEntry[] }) {
 
 function entriesToTSV(entries: NormalizedEntry[]): string {
   const lines: string[] = [];
-  for (const entry of entries) {
-    lines.push(entry.label);
-    lines.push("Account\tDebit\tCredit");
+  entries.forEach((entry, idx) => {
+    if (idx > 0) lines.push(""); // blank row between groups
+    lines.push(entry.label); // date row
+    lines.push(""); // blank row after date
     for (const row of entry.rows) {
-      lines.push(`${row.account}\t${formatAmount(row.debit)}\t${formatAmount(row.credit)}`);
+      const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
+      const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
+      if (isCredit) {
+        lines.push(`\t${row.account}\t${amount}`);
+      } else {
+        lines.push(`${row.account}\t${amount}`);
+      }
     }
-    lines.push("");
-  }
+  });
   return lines.join("\n");
 }
 
