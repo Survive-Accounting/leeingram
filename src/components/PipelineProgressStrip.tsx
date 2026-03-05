@@ -65,7 +65,7 @@ export function PipelineProgressStrip() {
       </h2>
 
       {/* Stage progress bars */}
-      <div className="grid grid-cols-6 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {STAGES.map((stage, idx) => {
           const isFilled = idx <= highestReached;
           const isCurrentPage = isActive(stage.path);
