@@ -12,18 +12,18 @@ import { cn } from "@/lib/utils";
 const PIPELINE_STAGES = [
   { key: "imported", label: "Imported", color: "bg-sky-500", path: "/problem-bank", icon: Inbox },
   { key: "generated", label: "Generated", color: "bg-violet-500", path: "/content", icon: Factory },
-  { key: "approved", label: "Approved", color: "bg-amber-500", path: "/assets-library", icon: Library },
-  { key: "banked", label: "Banked", color: "bg-blue-500", path: "/export-sets", icon: Package },
-  { key: "ready_to_film", label: "Ready to Film", color: "bg-orange-500", path: "/filming", icon: Video },
-  { key: "deployed", label: "Deployed", color: "bg-emerald-500", path: "/deployment", icon: Rocket },
+  { key: "approved", label: "Approved & Ready", color: "bg-amber-500", path: "/assets-library", icon: Library },
+  { key: "banked", label: "Banked", color: "bg-blue-500", path: "/question-review", icon: FileCheck },
+  { key: "deployed", label: "Deployed", color: "bg-emerald-500", path: "/filming", icon: Rocket },
 ] as const;
 
 const NAV_LINKS = [
   { label: "Problem Import", path: "/problem-bank", icon: Inbox },
   { label: "Variant Generator", path: "/content", icon: Factory },
-  { label: "Assets Library", path: "/assets-library", icon: Library },
-  { label: "Export Sets", path: "/export-sets", icon: Package },
-  { label: "Filming Queue", path: "/filming", icon: Video },
+  { label: "Approved & Ready", path: "/assets-library", icon: Library },
+  { label: "Question Bank", path: "/question-review", icon: FileCheck },
+  { label: "LW Exports", path: "/export-sets", icon: Package },
+  { label: "Deployment Queue", path: "/filming", icon: Video },
   { label: "Tutoring", path: "/tutoring/review", icon: GraduationCap },
 ];
 

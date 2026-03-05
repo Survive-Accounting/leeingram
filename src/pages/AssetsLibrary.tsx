@@ -503,6 +503,13 @@ export default function AssetsLibrary() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAsset(a)}>
                         <Eye className="h-3 w-3" />
                       </Button>
+                      {sheetUrls?.[a.asset_name] && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" asChild title="Open Google Sheet">
+                          <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer">
+                            <Sheet className="h-3 w-3" />
+                          </a>
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-400" onClick={() => setRevertId(a.id)} title="Revert to Generated">
                         <Undo2 className="h-3 w-3" />
                       </Button>
