@@ -63,10 +63,30 @@ interface AssetDetailDrawerProps {
 
 // ── Normalize JE data from various formats ──────────────────────────
 
+function applyMode(row: JERow, mode: JEMode): { account: string; debit: number | string | null; credit: number | string | null; side: "debit" | "credit" } {
+  const account = row.account_name || row.account || "";
+  const rawDebit = row.debit;
+  const rawCredit = row.credit;
+  const side: "debit" | "credit" = row.side === "credit" ? "credit"
+    : row.side === "debit" ? "debit"
+    : (rawCredit != null && rawCredit !== "" && rawCredit !== 0) ? "credit" : "debit";
+
+  if (mode === "completed") {
+    return { account, debit: rawDebit, credit: rawCredit, side };
+  }
+  if (mode === "template") {
+    return { account, debit: null, credit: null, side };
+  }
+  // all_question_marks — show ??? on the active side
+  return { account, debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
+}
+
 function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
   if (!json) return null;
   try {
     const data = typeof json === "string" ? JSON.parse(json) : json;
+
+    const processRows = (rawRows: any[]) => rawRows.map((r: JERow) => applyMode(r, mode));
 
     // Format 1: scenario_sections (our canonical format)
     if (data.scenario_sections && Array.isArray(data.scenario_sections)) {
@@ -76,21 +96,7 @@ function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
         for (const entry of dateEntries) {
           const dateStr = entry.date || entry.entry_date || entry.requirement || section.label || "";
           const rawRows = entry.rows || entry.accounts || [];
-          const rows = rawRows.map((r: JERow) => {
-            const account = r.account_name || r.account || "";
-            let debit = r.debit;
-            let credit = r.credit;
-
-            // For template/??? mode, use side info to show placeholders
-            if (mode !== "completed") {
-              const side = r.side || (debit != null && debit !== "" && debit !== 0 ? "debit" : credit != null && credit !== "" && credit !== 0 ? "credit" : null);
-              debit = side === "debit" ? "???" : null;
-              credit = side === "credit" ? "???" : null;
-            }
-
-            return { account, debit, credit };
-          });
-          entries.push({ label: stripDateParens(dateStr), rows });
+          entries.push({ label: stripDateParens(dateStr), rows: processRows(rawRows) });
         }
       }
       return entries.length > 0 ? entries : null;
@@ -98,44 +104,21 @@ function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
 
     // Format 2: flat array of entries
     if (Array.isArray(data)) {
-      return data.map((entry: any, idx: number) => {
-        const label = entry.date || entry.requirement || `Entry ${idx + 1}`;
-        const rawRows = entry.accounts || entry.rows || [];
-        const rows = rawRows.map((r: any) => {
-          const account = r.account_name || r.account || "";
-          let debit = r.debit;
-          let credit = r.credit;
-          if (mode !== "completed") {
-            const hasDebit = debit != null && debit !== "" && debit !== 0;
-            const hasCredit = credit != null && credit !== "" && credit !== 0;
-            debit = hasDebit ? "???" : null;
-            credit = hasCredit ? "???" : null;
-          }
-          return { account, debit, credit };
-        });
-        return { label: stripDateParens(label), rows };
-      });
+      return data.map((entry: any, idx: number) => ({
+        label: stripDateParens(entry.date || entry.requirement || `Entry ${idx + 1}`),
+        rows: processRows(entry.accounts || entry.rows || []),
+      }));
     }
 
     // Format 3: { parts: [...] }
     if (data.parts && Array.isArray(data.parts)) {
       const entries: NormalizedEntry[] = [];
       for (const part of data.parts) {
-        const subEntries = part.journal_entries || part.entries || [];
-        for (const entry of subEntries) {
-          const label = entry.date || entry.requirement || "";
-          const rawRows = entry.accounts || entry.rows || [];
-          const rows = rawRows.map((r: any) => {
-            const account = r.account_name || r.account || "";
-            let debit = r.debit;
-            let credit = r.credit;
-            if (mode !== "completed") {
-              debit = (debit != null && debit !== "" && debit !== 0) ? "???" : null;
-              credit = (credit != null && credit !== "" && credit !== 0) ? "???" : null;
-            }
-            return { account, debit, credit };
+        for (const entry of (part.journal_entries || part.entries || [])) {
+          entries.push({
+            label: stripDateParens(entry.date || entry.requirement || ""),
+            rows: processRows(entry.accounts || entry.rows || []),
           });
-          entries.push({ label: stripDateParens(label), rows });
         }
       }
       return entries.length > 0 ? entries : null;
@@ -144,21 +127,10 @@ function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
     // Format 4: { journal_entries: [...] } or { entries: [...] }
     const arr = data.journal_entries || data.entries;
     if (Array.isArray(arr)) {
-      return arr.map((entry: any, idx: number) => {
-        const label = entry.date || entry.requirement || `Entry ${idx + 1}`;
-        const rawRows = entry.accounts || entry.rows || [];
-        const rows = rawRows.map((r: any) => {
-          const account = r.account_name || r.account || "";
-          let debit = r.debit;
-          let credit = r.credit;
-          if (mode !== "completed") {
-            debit = (debit != null && debit !== "" && debit !== 0) ? "???" : null;
-            credit = (credit != null && credit !== "" && credit !== 0) ? "???" : null;
-          }
-          return { account, debit, credit };
-        });
-        return { label: stripDateParens(label), rows };
-      });
+      return arr.map((entry: any, idx: number) => ({
+        label: stripDateParens(entry.date || entry.requirement || `Entry ${idx + 1}`),
+        rows: processRows(entry.accounts || entry.rows || []),
+      }));
     }
 
     return null;
