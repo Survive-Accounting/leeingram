@@ -65,10 +65,13 @@ async function googleFetch(url: string, token: string, opts: RequestInit = {}): 
 
 async function findOrCreateFolder(token: string, name: string, parentId?: string): Promise<string> {
   const q = `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ""}`;
-  const searchData = await googleFetch(`${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)`, token);
+  const searchData = await googleFetch(
+    `${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    token
+  );
   if (searchData.files?.length) return searchData.files[0].id;
 
-  const createData = await googleFetch(GOOGLE_DRIVE_API, token, {
+  const createData = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
     method: "POST",
     body: JSON.stringify({
       name,
