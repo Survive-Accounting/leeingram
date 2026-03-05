@@ -1396,6 +1396,60 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                 )}
               </div>
             </div>
+          ) : speedReviewMode && allCandidates.filter((c: any) => (c._variantStatus || "draft") !== "archived").length > 0 ? (
+            /* ═══ SPEED REVIEW MODE ═══ */
+            (() => {
+              const activeVariants = allCandidates.filter((c: any) => (c._variantStatus || "draft") !== "archived");
+              const currentVariant = activeVariants[speedReviewVariantIndex] || activeVariants[0];
+              if (!currentVariant) return null;
+              return (
+                <SpeedReviewPanel
+                  variant={currentVariant}
+                  problem={rp}
+                  variantIndex={speedReviewVariantIndex}
+                  totalVariants={activeVariants.length}
+                  onApprove={() => {
+                    setSavingIndex(speedReviewVariantIndex);
+                    setAfRequiresJE(!!currentVariant.journal_entry_block);
+                    approveMutation.mutate({ candidate: currentVariant, problem: rp as any });
+                    // Auto-advance after approve
+                    if (speedReviewVariantIndex < activeVariants.length - 1) {
+                      setSpeedReviewVariantIndex(prev => prev + 1);
+                    } else if (reviewIndex < generatedProblems.length - 1) {
+                      navigateReview("next");
+                    }
+                  }}
+                  onReject={() => {
+                    setRejectingIndex(speedReviewVariantIndex);
+                    setRejectReason("");
+                    setRejectNote("");
+                    setViewingProblem(rp as any);
+                  }}
+                  onRegenerate={async () => {
+                    if (!currentVariant._variantId) return;
+                    await supabase.from("problem_variants").update({ variant_status: "archived" } as any).eq("id", currentVariant._variantId);
+                    toast.success("Variant archived — regenerate from Full Review");
+                    if (rp) await loadReviewCandidates(rp.id);
+                  }}
+                  onFlagForDeepReview={async () => {
+                    if (!currentVariant._variantId) return;
+                    await supabase.from("problem_variants").update({ variant_status: "needs_fix", reviewed_at: new Date().toISOString() } as any).eq("id", currentVariant._variantId);
+                    toast.success("Flagged for deep review");
+                    if (rp) await loadReviewCandidates(rp.id);
+                  }}
+                  onNext={() => {
+                    if (speedReviewVariantIndex < activeVariants.length - 1) {
+                      setSpeedReviewVariantIndex(prev => prev + 1);
+                    } else if (reviewIndex < generatedProblems.length - 1) {
+                      navigateReview("next");
+                    } else {
+                      toast.info("No more variants to review");
+                    }
+                  }}
+                  onOpenFullReview={() => setSpeedReviewMode(false)}
+                />
+              );
+            })()
           ) : (
             <div className="space-y-3">
               {/* Variant status filter + bulk actions */}
