@@ -171,19 +171,14 @@ Deno.serve(async (req) => {
       ["sheet_url", sheetUrl],
     ];
 
-    const updateRes = await fetch(
-      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
-      {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }),
-      }
-    );
-    if (!updateRes.ok) {
-      const updateErr = await updateRes.json();
-      console.error("Metadata write failed (non-fatal):", updateErr);
-    } else {
-      await updateRes.text();
+    try {
+      await googleFetch(
+        `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
+        token,
+        { method: "PUT", body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }) }
+      );
+    } catch (metaErr) {
+      console.error("Metadata write failed (non-fatal):", metaErr);
     }
 
     // Update asset in DB with sheet URL
