@@ -42,27 +42,40 @@ async function getAccessToken(sa: { client_email: string; private_key: string })
   return data.access_token;
 }
 
+// ── Google API helpers ───────────────────────────────────────────────
+
+async function googleFetch(url: string, token: string, opts: RequestInit = {}): Promise<any> {
+  const res = await fetch(url, {
+    ...opts,
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(opts.headers || {}) },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const ge = data?.error;
+    const code = ge?.code ?? res.status;
+    const status = ge?.status ?? "UNKNOWN";
+    const message = ge?.message ?? JSON.stringify(data);
+    console.error(`Google API ${code} (${status}): ${message}`, { url: url.split("?")[0], errors: ge?.errors });
+    throw Object.assign(new Error(`Google API ${code}: ${message}`), { googleCode: code, googleStatus: status });
+  }
+  return data;
+}
+
 // ── Drive helpers ────────────────────────────────────────────────────
 
 async function findOrCreateFolder(token: string, name: string, parentId?: string): Promise<string> {
   const q = `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ""}`;
-  const searchRes = await fetch(`${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const searchData = await searchRes.json();
+  const searchData = await googleFetch(`${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)`, token);
   if (searchData.files?.length) return searchData.files[0].id;
 
-  const createRes = await fetch(GOOGLE_DRIVE_API, {
+  const createData = await googleFetch(GOOGLE_DRIVE_API, token, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       name,
       mimeType: "application/vnd.google-apps.folder",
       ...(parentId ? { parents: [parentId] } : {}),
     }),
   });
-  const createData = await createRes.json();
-  if (!createRes.ok) throw new Error(`Drive folder create failed: ${JSON.stringify(createData)}`);
   return createData.id;
 }
 
