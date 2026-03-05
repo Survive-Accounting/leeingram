@@ -271,6 +271,16 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
       }
     }
 
+    // Init highlights
+    const rawHighlights = variant.highlight_key_json;
+    const problemTextForHighlights = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+    if (Array.isArray(rawHighlights) && rawHighlights.length > 0) {
+      setHighlights(validateHighlights(rawHighlights, problemTextForHighlights));
+      setShowHighlights(true);
+    } else {
+      setHighlights([]);
+    }
+
     setHasEdits(false);
     setEditVersion(0);
     setEditingDate(null);
