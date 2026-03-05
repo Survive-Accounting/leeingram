@@ -61,6 +61,7 @@ export default function AssetsLibrary() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [revertId, setRevertId] = useState<string | null>(null);
   const [viewingAsset, setViewingAsset] = useState<TeachingAsset | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Selection & Export state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
