@@ -1053,6 +1053,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <ArrowLeft className="h-3 w-3 mr-1" /> Exit Review
             </Button>
             <div className="flex items-center gap-2">
+              {/* Speed / Full Review Toggle */}
+              <div className="flex items-center gap-1.5 mr-2">
+                <Switch
+                  checked={speedReviewMode}
+                  onCheckedChange={setSpeedReviewMode}
+                  className="h-5 w-9"
+                />
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {speedReviewMode ? "Speed" : "Full"}
+                </span>
+              </div>
               <Button
                 size="sm"
                 variant="outline"
