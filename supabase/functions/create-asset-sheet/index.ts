@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
 
     // Create spreadsheet via Drive API (avoids Sheets API permission issues)
-    const driveFile = await googleFetch(GOOGLE_DRIVE_API, token, {
+    const driveFile = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
       method: "POST",
       body: JSON.stringify({
         name: asset_code,
