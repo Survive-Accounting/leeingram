@@ -1,27 +1,36 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, Workflow, GraduationCap, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { WorkflowModePanel } from "@/components/WorkflowModePanel";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
 
+const PIPELINE_STAGE_ORDER: Record<string, number> = {
+  imported: 0, generated: 1, approved: 2, banked: 3, ready_to_film: 4, deployed: 5,
+};
+
 const NAV_ITEMS = [
-  { label: "Problem Import", sub: "Paste source screenshots", path: "/problem-bank", icon: Inbox },
-  { label: "Variant Generator", sub: "Generate exam-style variants", path: "/content", icon: Factory },
-  { label: "Assets Library", sub: "Approved problems vault", path: "/assets-library", icon: Library },
-  { label: "Export Sets", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package },
-  { label: "Filming Queue", sub: "Video walkthrough tracking", path: "/filming", icon: Video },
-  { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap },
+  { label: "Problem Import", sub: "Paste source screenshots", path: "/problem-bank", icon: Inbox, stageKey: "imported" },
+  { label: "Variant Generator", sub: "Generate exam-style variants", path: "/content", icon: Factory, stageKey: "generated" },
+  { label: "Assets Library", sub: "Approved problems vault", path: "/assets-library", icon: Library, stageKey: "approved" },
+  { label: "Export Sets", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package, stageKey: "banked" },
+  { label: "Filming Queue", sub: "Video walkthrough tracking", path: "/filming", icon: Video, stageKey: "ready_to_film" },
+  { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap, stageKey: null },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { workspace, setWorkspace } = useActiveWorkspace();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
   const [workflowMode, setWorkflowMode] = useState(() => localStorage.getItem("wf-mode-active") !== "false");
@@ -43,6 +52,68 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   };
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
+
+  // --- Course / Chapter data for header selectors ---
+  const { data: courses } = useQuery({
+    queryKey: ["courses"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("courses").select("id, course_name").order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: allChapters } = useQuery({
+    queryKey: ["chapters-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("chapters").select("id, chapter_number, chapter_name, course_id").order("chapter_number");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const filteredChapters = useMemo(
+    () => (allChapters ?? []).filter((ch) => ch.course_id === workspace?.courseId),
+    [allChapters, workspace?.courseId]
+  );
+
+  const handleCourseChange = (courseId: string) => {
+    const course = courses?.find((c) => c.id === courseId);
+    if (!course) return;
+    setWorkspace({ courseId: course.id, courseName: course.course_name, chapterId: "", chapterName: "", chapterNumber: 0 });
+  };
+
+  const handleChapterChange = (chapterId: string) => {
+    const ch = allChapters?.find((c) => c.id === chapterId);
+    if (!ch || !workspace) return;
+    setWorkspace({ ...workspace, chapterId: ch.id, chapterName: ch.chapter_name, chapterNumber: ch.chapter_number });
+  };
+
+  // --- Pipeline counts for nav badges ---
+  const { data: pipelineProblems } = useQuery({
+    queryKey: ["pipeline-counts-sidebar", workspace?.chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_problems")
+        .select("id, pipeline_status")
+        .eq("chapter_id", workspace!.chapterId);
+      if (error) throw error;
+      return data as { id: string; pipeline_status: string }[];
+    },
+    enabled: !!workspace?.chapterId,
+  });
+
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = { imported: 0, generated: 0, approved: 0, banked: 0, ready_to_film: 0, deployed: 0 };
+    pipelineProblems?.forEach((p) => {
+      const order = PIPELINE_STAGE_ORDER[p.pipeline_status];
+      if (order === undefined) return;
+      Object.keys(counts).forEach((key) => {
+        if (PIPELINE_STAGE_ORDER[key] <= order) counts[key]++;
+      });
+    });
+    return counts;
+  }, [pipelineProblems]);
 
   return (
     <div className="min-h-screen relative">
@@ -67,7 +138,38 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           </button>
           <span className="text-muted-foreground/30">|</span>
           <h1 className="font-semibold text-foreground text-sm">Survive Accounting</h1>
-          <span className="text-xs text-muted-foreground hidden sm:inline">Scalable Teaching Assets</span>
+
+          {/* Workspace Selectors */}
+          <span className="text-muted-foreground/30 hidden sm:inline">|</span>
+          <div className="hidden sm:flex items-center gap-2">
+            <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
+              <SelectTrigger className="h-7 text-[11px] w-36 bg-muted/50 border-border text-foreground">
+                <SelectValue placeholder="Course…" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses?.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">{c.course_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={workspace?.chapterId || ""}
+              onValueChange={handleChapterChange}
+              disabled={!workspace?.courseId}
+            >
+              <SelectTrigger className="h-7 text-[11px] w-44 bg-muted/50 border-border text-foreground">
+                <SelectValue placeholder="Chapter…" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredChapters.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">
+                    Ch {c.chapter_number} — {c.chapter_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="ml-auto flex items-center gap-2">
             {!workflowMode && (
               <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground hover:bg-accent" title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}>
@@ -101,6 +203,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
+                const count = item.stageKey && workspace?.chapterId ? stageCounts[item.stageKey] : null;
                 return (
                   <Link
                     key={item.path}
@@ -108,15 +211,20 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                     className={cn(
                       "flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors",
                       active
-                        ? "bg-accent text-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                        ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <span className="text-sm block">{item.label}</span>
                       {item.sub && <span className="text-[10px] text-muted-foreground block leading-tight">{item.sub}</span>}
                     </div>
+                    {count !== null && count > 0 && (
+                      <span className="text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
+                        {count}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -126,7 +234,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   to="/marketing"
                   className={cn(
                     "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/marketing") ? "bg-accent text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    isActive("/marketing") ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )}
                 >
                   Marketing
@@ -135,7 +243,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   to="/ideas?domain=survive"
                   className={cn(
                     "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                    location.pathname === "/ideas" ? "bg-accent text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    location.pathname === "/ideas" ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )}
                 >
                   Ideas
