@@ -14,15 +14,16 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
 
 const PIPELINE_STAGE_ORDER: Record<string, number> = {
-  imported: 0, generated: 1, approved: 2, banked: 3, ready_to_film: 4, deployed: 5,
+  imported: 0, generated: 1, approved: 2, banked: 3, deployed: 4,
 };
 
 const NAV_ITEMS = [
   { label: "Problem Import", sub: "Paste source screenshots", path: "/problem-bank", icon: Inbox, stageKey: "imported" },
   { label: "Variant Generator", sub: "Generate exam-style variants", path: "/content", icon: Factory, stageKey: "generated" },
-  { label: "Assets Library", sub: "Approved problems vault", path: "/assets-library", icon: Library, stageKey: "approved" },
-  { label: "Export Sets", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package, stageKey: "banked" },
-  { label: "Filming Queue", sub: "Video walkthrough tracking", path: "/filming", icon: Video, stageKey: "ready_to_film" },
+  { label: "Approved & Ready", sub: "Approved problems vault", path: "/assets-library", icon: Library, stageKey: "approved" },
+  { label: "Question Bank", sub: "Review banked questions", path: "/question-review", icon: FileCheck, stageKey: "banked" },
+  { label: "LW Exports", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package, stageKey: null },
+  { label: "Deployment Queue", sub: "Track deployment status", path: "/filming", icon: Video, stageKey: "deployed" },
   { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap, stageKey: null },
 ];
 
