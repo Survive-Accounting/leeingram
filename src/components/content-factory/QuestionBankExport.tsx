@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Loader2, AlertCircle } from "lucide-react";
+import { Download, Loader2, AlertCircle, ClipboardCopy } from "lucide-react";
 import { toast } from "sonner";
+import { renderQuestionHtml, copyHtmlToClipboard } from "@/lib/questionHtmlRenderer";
 
 interface QuestionBankExportProps {
   exportSetId: string;
