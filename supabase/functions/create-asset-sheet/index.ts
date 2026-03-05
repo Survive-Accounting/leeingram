@@ -239,9 +239,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update asset in DB with sheet URL
+    // Update teaching_assets in DB with sheet URL and file ID
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const dbRes = await fetch(`${supabaseUrl}/rest/v1/assets?id=eq.${asset_id}`, {
+    const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${serviceRoleKey}`,
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
-      body: JSON.stringify({ google_sheet_url: sheetUrl }),
+      body: JSON.stringify({ google_sheet_url: sheetUrl, google_sheet_file_id: spreadsheetId }),
     });
     if (!dbRes.ok) {
       const dbErr = await dbRes.text();
