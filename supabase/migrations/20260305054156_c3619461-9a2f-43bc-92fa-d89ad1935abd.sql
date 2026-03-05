@@ -1,0 +1,1 @@
+ALTER TABLE public.problem_variants ADD COLUMN IF NOT EXISTS highlight_key_json jsonb DEFAULT NULL;
