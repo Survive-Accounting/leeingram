@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, Undo2 } from "lucide-react";
+import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, Undo2, Sheet } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
