@@ -142,15 +142,35 @@ export type Database = {
           },
         ]
       }
+      asset_groups: {
+        Row: {
+          created_at: string
+          group_code: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          group_code?: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          group_code?: string
+          id?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_code: string
           chapter_number: number
+          confidence_score: number
           course_id: string
           created_at: string
           difficulty_estimate: number
           exercise_code: string
           google_sheet_url: string
+          group_id: string | null
           id: string
           ocr_text: string
           source_problem_text: string
@@ -164,11 +184,13 @@ export type Database = {
         Insert: {
           asset_code: string
           chapter_number: number
+          confidence_score?: number
           course_id: string
           created_at?: string
           difficulty_estimate?: number
           exercise_code?: string
           google_sheet_url?: string
+          group_id?: string | null
           id?: string
           ocr_text?: string
           source_problem_text?: string
@@ -182,11 +204,13 @@ export type Database = {
         Update: {
           asset_code?: string
           chapter_number?: number
+          confidence_score?: number
           course_id?: string
           created_at?: string
           difficulty_estimate?: number
           exercise_code?: string
           google_sheet_url?: string
+          group_id?: string | null
           id?: string
           ocr_text?: string
           source_problem_text?: string
@@ -203,6 +227,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "asset_groups"
             referencedColumns: ["id"]
           },
           {
