@@ -1161,6 +1161,45 @@ export type Database = {
           },
         ]
       }
+      export_set_questions: {
+        Row: {
+          banked_question_id: string
+          created_at: string
+          export_set_id: string
+          id: string
+          order_index: number
+        }
+        Insert: {
+          banked_question_id: string
+          created_at?: string
+          export_set_id: string
+          id?: string
+          order_index?: number
+        }
+        Update: {
+          banked_question_id?: string
+          created_at?: string
+          export_set_id?: string
+          id?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_set_questions_banked_question_id_fkey"
+            columns: ["banked_question_id"]
+            isOneToOne: false
+            referencedRelation: "banked_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_set_questions_export_set_id_fkey"
+            columns: ["export_set_id"]
+            isOneToOne: false
+            referencedRelation: "export_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_sets: {
         Row: {
           chapter_id: string | null
