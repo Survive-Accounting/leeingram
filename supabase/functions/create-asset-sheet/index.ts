@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       await verifyRes.text();
     }
 
-    const { asset_id, asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, created_at } = await req.json();
+    const { asset_id, asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, created_at, problem_text, highlight_key_json } = await req.json();
 
     if (!asset_id || !asset_code || !course_code || !chapter_number) {
       return new Response(JSON.stringify({ error: "Missing required fields: asset_id, asset_code, course_code, chapter_number" }), {
@@ -179,6 +179,48 @@ Deno.serve(async (req) => {
       );
     } catch (metaErr) {
       console.error("Metadata write failed (non-fatal):", metaErr);
+    }
+
+    // Populate HIGHLIGHTED tab with problem text and highlight annotations
+    if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
+      try {
+        const highlightedSheetId = spreadsheet.sheets?.find((s: any) => s.properties?.title === "HIGHLIGHTED")?.properties?.sheetId;
+
+        // Write problem text in A1
+        await googleFetch(
+          `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A1?valueInputOption=RAW`,
+          token,
+          { method: "PUT", body: JSON.stringify({ range: "HIGHLIGHTED!A1", values: [[problem_text]] }) }
+        );
+
+        // Write highlight legend starting at A3
+        const legendValues = [
+          ["Highlighted Text", "Type"],
+          ...highlight_key_json.map((h: any) => [h.text || "", h.type || ""]),
+        ];
+        await googleFetch(
+          `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A3:B${3 + legendValues.length - 1}?valueInputOption=RAW`,
+          token,
+          { method: "PUT", body: JSON.stringify({ range: `HIGHLIGHTED!A3:B${3 + legendValues.length - 1}`, majorDimension: "ROWS", values: legendValues }) }
+        );
+
+        // Apply yellow background to highlighted text cells in the legend (rows 4+, column A)
+        if (highlightedSheetId != null) {
+          const requests = highlight_key_json.map((_: any, i: number) => ({
+            repeatCell: {
+              range: { sheetId: highlightedSheetId, startRowIndex: 3 + i, endRowIndex: 4 + i, startColumnIndex: 0, endColumnIndex: 1 },
+              cell: { userEnteredFormat: { backgroundColor: { red: 1, green: 0.96, blue: 0.616 } } },
+              fields: "userEnteredFormat.backgroundColor",
+            },
+          }));
+          await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+            method: "POST",
+            body: JSON.stringify({ requests }),
+          });
+        }
+      } catch (hlErr) {
+        console.error("Highlight write failed (non-fatal):", hlErr);
+      }
     }
 
     // Update asset in DB with sheet URL

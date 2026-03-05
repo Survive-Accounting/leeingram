@@ -1987,6 +1987,7 @@ export type Database = {
           base_problem_id: string
           candidate_data: Json
           created_at: string
+          highlight_key_json: Json | null
           id: string
           je_entries_json: Json | null
           je_entry_status_json: Json | null
@@ -2005,6 +2006,7 @@ export type Database = {
           base_problem_id: string
           candidate_data?: Json
           created_at?: string
+          highlight_key_json?: Json | null
           id?: string
           je_entries_json?: Json | null
           je_entry_status_json?: Json | null
@@ -2023,6 +2025,7 @@ export type Database = {
           base_problem_id?: string
           candidate_data?: Json
           created_at?: string
+          highlight_key_json?: Json | null
           id?: string
           je_entries_json?: Json | null
           je_entry_status_json?: Json | null
