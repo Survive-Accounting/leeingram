@@ -15,6 +15,7 @@ import { Trash2, Search, Eye, Library, Download, Loader2, FolderPlus, FileText, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
+import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 
 type TeachingAsset = {
   id: string;
