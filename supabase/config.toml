@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.run-chapter-batch-step]
 verify_jwt = false
+
+[functions.create-asset-sheet]
+verify_jwt = false
