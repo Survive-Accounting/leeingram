@@ -142,6 +142,78 @@ export type Database = {
           },
         ]
       }
+      assets: {
+        Row: {
+          asset_code: string
+          chapter_number: number
+          course_id: string
+          created_at: string
+          difficulty_estimate: number
+          exercise_code: string
+          google_sheet_url: string
+          id: string
+          ocr_text: string
+          source_problem_text: string
+          status: Database["public"]["Enums"]["asset_status"]
+          textbook_id: string | null
+          variant_problem_text: string
+          variant_solution_text: string
+          video_status: Database["public"]["Enums"]["asset_video_status"]
+          walkthrough_video_url: string
+        }
+        Insert: {
+          asset_code: string
+          chapter_number: number
+          course_id: string
+          created_at?: string
+          difficulty_estimate?: number
+          exercise_code?: string
+          google_sheet_url?: string
+          id?: string
+          ocr_text?: string
+          source_problem_text?: string
+          status?: Database["public"]["Enums"]["asset_status"]
+          textbook_id?: string | null
+          variant_problem_text?: string
+          variant_solution_text?: string
+          video_status?: Database["public"]["Enums"]["asset_video_status"]
+          walkthrough_video_url?: string
+        }
+        Update: {
+          asset_code?: string
+          chapter_number?: number
+          course_id?: string
+          created_at?: string
+          difficulty_estimate?: number
+          exercise_code?: string
+          google_sheet_url?: string
+          id?: string
+          ocr_text?: string
+          source_problem_text?: string
+          status?: Database["public"]["Enums"]["asset_status"]
+          textbook_id?: string | null
+          variant_problem_text?: string
+          variant_solution_text?: string
+          video_status?: Database["public"]["Enums"]["asset_video_status"]
+          walkthrough_video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       changelog: {
         Row: {
           created_at: string
@@ -2708,11 +2780,13 @@ export type Database = {
         | "mixed"
       answer_status: "drafted" | "needs_review" | "approved"
       asset_difficulty: "standard" | "harder" | "tricky"
+      asset_status: "imported" | "variant_generated" | "approved" | "banked"
       asset_type:
         | "practice_problem"
         | "journal_entry"
         | "concept_review"
         | "exam_prep"
+      asset_video_status: "none" | "coming_soon" | "published"
       difficulty_level: "easy" | "medium" | "hard" | "tricky"
       entity_type:
         | "source_problem"
@@ -2883,12 +2957,14 @@ export const Constants = {
       ],
       answer_status: ["drafted", "needs_review", "approved"],
       asset_difficulty: ["standard", "harder", "tricky"],
+      asset_status: ["imported", "variant_generated", "approved", "banked"],
       asset_type: [
         "practice_problem",
         "journal_entry",
         "concept_review",
         "exam_prep",
       ],
+      asset_video_status: ["none", "coming_soon", "published"],
       difficulty_level: ["easy", "medium", "hard", "tricky"],
       entity_type: [
         "source_problem",
