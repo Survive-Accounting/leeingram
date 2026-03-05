@@ -20,7 +20,7 @@ import { format } from "date-fns";
 type JERow = { account_name?: string; account?: string; debit?: number | string | null; credit?: number | string | null; side?: string };
 type JEEntryByDate = { date?: string; entry_date?: string; requirement?: string; rows?: JERow[]; accounts?: JERow[] };
 type JESection = { label?: string; entries_by_date?: JEEntryByDate[]; journal_entries?: JEEntryByDate[] };
-type NormalizedEntry = { label: string; rows: { account: string; debit: number | string | null; credit: number | string | null }[] };
+type NormalizedEntry = { label: string; rows: { account: string; debit: number | string | null; credit: number | string | null; side?: "debit" | "credit" }[] };
 
 export type TeachingAssetFull = {
   id: string;
