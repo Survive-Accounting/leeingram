@@ -41,6 +41,7 @@ import ScreenshotCapture from "./pages/ScreenshotCapture";
 import BatchRunDetail from "./pages/BatchRunDetail";
 import BankedQuestionReview from "./pages/BankedQuestionReview";
 import NotFound from "./pages/NotFound";
+import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 
 const queryClient = new QueryClient();
@@ -105,6 +106,7 @@ const AppRoutes = () => {
       <Route path="/screenshot-capture/:chapterId" element={<ProtectedRoute><ScreenshotCapture /></ProtectedRoute>} />
       <Route path="/batch-run/:batchRunId" element={<ProtectedRoute><BatchRunDetail /></ProtectedRoute>} />
       <Route path="/question-review" element={<ProtectedRoute><BankedQuestionReview /></ProtectedRoute>} />
+      <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

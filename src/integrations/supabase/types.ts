@@ -2165,6 +2165,33 @@ export type Database = {
           },
         ]
       }
+      sheet_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          template_file_id: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          template_file_id: string
+          version?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          template_file_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       sprint_activity_log: {
         Row: {
           action_detail: string | null
@@ -2281,11 +2308,15 @@ export type Database = {
           course_id: string
           created_at: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
+          google_sheet_file_id: string | null
+          google_sheet_url: string | null
           id: string
           journal_entry_block: string | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
           last_tutored_at: string | null
+          sheet_last_synced_at: string | null
+          sheet_template_version: string | null
           source_ref: string | null
           survive_problem_text: string
           survive_solution_text: string
@@ -2301,11 +2332,15 @@ export type Database = {
           course_id: string
           created_at?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
+          google_sheet_file_id?: string | null
+          google_sheet_url?: string | null
           id?: string
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           last_tutored_at?: string | null
+          sheet_last_synced_at?: string | null
+          sheet_template_version?: string | null
           source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
@@ -2321,11 +2356,15 @@ export type Database = {
           course_id?: string
           created_at?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
+          google_sheet_file_id?: string | null
+          google_sheet_url?: string | null
           id?: string
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           last_tutored_at?: string | null
+          sheet_last_synced_at?: string | null
+          sheet_template_version?: string | null
           source_ref?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
