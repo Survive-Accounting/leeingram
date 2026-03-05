@@ -32,6 +32,8 @@ type TeachingAsset = {
   asset_type: string;
   created_at: string;
   updated_at: string;
+  journal_entry_completed_json: any;
+  journal_entry_template_json: any;
 };
 
 type JournalOption = "question" | "feedback" | "none";
