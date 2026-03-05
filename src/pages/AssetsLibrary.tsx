@@ -306,61 +306,7 @@ export default function AssetsLibrary() {
     return ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
   };
 
-  // Detail view
-  if (viewingAsset) {
-    return (
-      <SurviveSidebarLayout>
-        <div className="mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setViewingAsset(null)} className="text-muted-foreground hover:text-foreground">
-            ← Back to Library
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{viewingAsset.asset_name}</h1>
-            <p className="text-xs text-muted-foreground mt-1">{chapterLabel(viewingAsset.chapter_id)}</p>
-          </div>
-
-          {viewingAsset.tags?.length > 0 &&
-          <div className="flex flex-wrap gap-1.5">
-              {viewingAsset.tags.map((tag) =>
-            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-            )}
-            </div>
-          }
-
-          <div className="space-y-4">
-            <div className="rounded-lg border border-border bg-background/95 p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Survive Problem</h2>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_problem_text || "—"}</p>
-            </div>
-
-            {viewingAsset.journal_entry_block &&
-            <div className="rounded-lg border border-border bg-background/95 p-4">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Journal Entry Block</h2>
-                <pre className="text-sm text-foreground whitespace-pre-wrap font-mono">{viewingAsset.journal_entry_block}</pre>
-              </div>
-            }
-
-            <div className="rounded-lg border border-border bg-background/95 p-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Full Solution Steps</h2>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{viewingAsset.survive_solution_text || "—"}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button size="sm" variant="outline" onClick={() => {setRevertId(viewingAsset.id);setViewingAsset(null);}}>
-              <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => {setDeleteId(viewingAsset.id);setViewingAsset(null);}}>
-              <Trash2 className="h-3 w-3 mr-1" /> Delete
-            </Button>
-          </div>
-        </div>
-      </SurviveSidebarLayout>);
-
-  }
+  // Detail drawer instead of full-page view
 
   return (
     <SurviveSidebarLayout>
