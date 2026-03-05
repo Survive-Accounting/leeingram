@@ -703,23 +703,15 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
           </div>
         </div>
 
-        {/* ═══ MAIN SECTION: Problem + Answer (hold to peek) ═══ */}
-        <div
-          className="select-none"
-          onMouseDown={() => setShowMainSection(true)}
-          onMouseUp={() => setShowMainSection(false)}
-          onMouseLeave={() => setShowMainSection(false)}
-          onTouchStart={() => setShowMainSection(true)}
-          onTouchEnd={() => setShowMainSection(false)}
-        >
-          <div className="flex items-center gap-2 py-2 border-b border-border cursor-pointer">
-            <Eye className="h-4 w-4 text-muted-foreground" />
+        {/* ═══ MAIN SECTION: Problem + Answer (collapsible) ═══ */}
+        <Collapsible open={showMainSection} onOpenChange={setShowMainSection}>
+          <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showMainSection && "rotate-180")} />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {showMainSection ? "Problem & Answer" : "Hold to view Problem & Answer"}
+              Problem & Answer
             </span>
-          </div>
-          {showMainSection && (
-            <div className="pt-3 space-y-3 animate-in fade-in-0 duration-150">
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-3 animate-in fade-in-0 duration-150">
               {/* Highlight Controls */}
               <HighlightControls
                 variantId={variant._variantId || variant.id}
@@ -778,9 +770,8 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
                   </div>
                 </div>
               )}
-            </div>
-          )}
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
 
 
         {/* Recent Fixes */}
