@@ -37,6 +37,11 @@ type TeachingAsset = {
   journal_entry_template_json: any;
   times_used?: number;
   sheet_template_version?: string | null;
+  google_sheet_url?: string | null;
+  google_sheet_file_id?: string | null;
+  source_type?: string | null;
+  source_number?: string | null;
+  problem_type?: string | null;
 };
 
 type JournalOption = "question" | "feedback" | "none";
