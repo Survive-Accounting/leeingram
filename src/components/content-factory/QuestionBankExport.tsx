@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Loader2, AlertCircle } from "lucide-react";
+import { Download, Loader2, AlertCircle, ClipboardCopy } from "lucide-react";
 import { toast } from "sonner";
+import { renderQuestionHtml, copyHtmlToClipboard } from "@/lib/questionHtmlRenderer";
 
 interface QuestionBankExportProps {
   exportSetId: string;
@@ -244,6 +245,20 @@ export function QuestionBankExport({ exportSetId, exportSetName }: QuestionBankE
           {questions.map((q) => {
             const bq = q.banked_questions;
             const isApproved = bq?.review_status === "approved";
+
+            const handleCopyHtml = async () => {
+              const answers = [bq?.answer_a, bq?.answer_b, bq?.answer_c, bq?.answer_d, bq?.answer_e].filter(Boolean) as string[];
+              const html = renderQuestionHtml({
+                questionId: bq?.assets?.asset_code || "Q",
+                questionText: bq?.question_text || "",
+                answers,
+                correctAnswer: bq?.correct_answer || "",
+                explanation: bq?.short_explanation || "",
+              });
+              await copyHtmlToClipboard(html);
+              toast.success("HTML copied successfully");
+            };
+
             return (
               <div
                 key={q.id}
@@ -279,6 +294,14 @@ export function QuestionBankExport({ exportSetId, exportSetName }: QuestionBankE
                     {bq?.assets?.asset_code} · Difficulty {bq?.difficulty}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] shrink-0"
+                  onClick={handleCopyHtml}
+                >
+                  <ClipboardCopy className="h-3 w-3 mr-1" /> Copy HTML
+                </Button>
               </div>
             );
           })}
