@@ -720,14 +720,67 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
           </div>
           {showMainSection && (
             <div className="pt-3 space-y-3 animate-in fade-in-0 duration-150">
+              {/* Highlight Controls */}
+              <HighlightControls
+                variantId={variant._variantId || variant.id}
+                problemText={variant.survive_problem_text || variant.variant_problem_text || ""}
+                solutionText={variant.survive_solution_text || variant.variant_solution_text || ""}
+                highlights={highlights}
+                showHighlights={showHighlights}
+                onShowHighlightsChange={setShowHighlights}
+                onHighlightsChange={setHighlights}
+                sourceProblemId={problem?.id || variant.base_problem_id || "unknown"}
+              />
+
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
                 <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-28 overflow-y-auto">
-                  <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
-                    {variant.survive_problem_text || variant.variant_problem_text || "—"}
-                  </p>
+                  <HighlightedText
+                    text={variant.survive_problem_text || variant.variant_problem_text || "—"}
+                    highlights={highlights}
+                    showHighlights={showHighlights}
+                    editable={true}
+                    onRemoveHighlight={async (index) => {
+                      const updated = highlights.filter((_, i) => i !== index);
+                      setHighlights(updated);
+                      await supabase.from("problem_variants").update({
+                        highlight_key_json: updated.length > 0 ? updated as any : null,
+                      } as any).eq("id", variant._variantId || variant.id);
+                    }}
+                    onAddHighlight={async (h) => {
+                      const updated = [...highlights, h];
+                      setHighlights(updated);
+                      await supabase.from("problem_variants").update({
+                        highlight_key_json: updated as any,
+                      } as any).eq("id", variant._variantId || variant.id);
+                      toast.success(`Highlight added: "${h.text}"`);
+                    }}
+                  />
                 </div>
               </div>
+
+              {(variant.answer_only || hasTextParts) && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Summary</p>
+                  <div className="rounded-md border border-border bg-muted/20 p-2.5 max-h-24 overflow-y-auto">
+                    {hasTextParts ? (
+                      <div className="space-y-1">
+                        {textParts.map((tp, i) => (
+                          <p key={i} className="text-xs text-foreground">
+                            <span className="font-semibold text-primary">{formatPartLabel(tp.label)}</span>{" "}
+                            {tp.final_answer}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-foreground font-mono">{variant.answer_only}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
               {(variant.answer_only || hasTextParts) && (
                 <div>
