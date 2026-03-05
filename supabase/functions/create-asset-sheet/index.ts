@@ -184,7 +184,8 @@ Deno.serve(async (req) => {
     // Populate HIGHLIGHTED tab with problem text and highlight annotations
     if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
       try {
-        const highlightedSheetId = spreadsheet.sheets?.find((s: any) => s.properties?.title === "HIGHLIGHTED")?.properties?.sheetId;
+        const highlightedReply = batchRes.replies?.find((r: any) => r.addSheet?.properties?.title === "HIGHLIGHTED");
+        const highlightedSheetId = highlightedReply?.addSheet?.properties?.sheetId;
 
         // Write problem text in A1
         await googleFetch(
