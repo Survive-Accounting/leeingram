@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
-import { Factory, Inbox, Library, Package, Video, GraduationCap, ChevronDown, ChevronRight, Rocket } from "lucide-react";
+import { Factory, Inbox, Library, Package, Video, GraduationCap, ChevronDown, ChevronRight, Rocket, FileCheck } from "lucide-react";
 import { BuildTimerWidget } from "@/components/BuildTimerWidget";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
