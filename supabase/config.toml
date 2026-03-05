@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.create-asset-sheet]
 verify_jwt = false
+
+[functions.sync-asset-sheet-to-template]
+verify_jwt = false
