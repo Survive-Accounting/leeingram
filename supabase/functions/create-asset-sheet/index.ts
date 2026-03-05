@@ -123,8 +123,20 @@ Deno.serve(async (req) => {
     const sa = JSON.parse(saJson);
     const token = await getAccessToken(sa);
 
-    // Build folder structure: Shared "Survive Accounting Assets" folder / COURSE / Chapter XX
+    // Verify shared root folder is accessible, then build: COURSE / Chapter XX
     const rootFolderId = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
+    try {
+      await googleFetch(
+        `${GOOGLE_DRIVE_API}/${rootFolderId}?fields=id,name&supportsAllDrives=true`,
+        token
+      );
+    } catch (e: any) {
+      console.error("Root folder check failed. SA email:", sa.client_email);
+      throw new Error(
+        `Cannot access shared root folder ${rootFolderId}. ` +
+        `Make sure it is shared with the service account: ${sa.client_email}`
+      );
+    }
     const courseFolderId = await findOrCreateFolder(token, course_code, rootFolderId);
     const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
