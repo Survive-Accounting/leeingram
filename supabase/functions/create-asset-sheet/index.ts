@@ -126,23 +126,35 @@ Deno.serve(async (req) => {
     const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
 
-    // Create spreadsheet
-    const spreadsheet = await googleFetch(GOOGLE_SHEETS_API, token, {
+    // Create spreadsheet via Drive API (avoids Sheets API permission issues)
+    const driveFile = await googleFetch(GOOGLE_DRIVE_API, token, {
       method: "POST",
       body: JSON.stringify({
-        properties: { title: asset_code },
-        sheets: [
-          { properties: { title: "BRANDED", index: 0 } },
-          { properties: { title: "WHITEBOARD", index: 1 } },
-          { properties: { title: "SOLUTION", index: 2 } },
-          { properties: { title: "HIGHLIGHTED", index: 3 } },
-          { properties: { title: "METADATA", index: 4 } },
-        ],
+        name: asset_code,
+        mimeType: "application/vnd.google-apps.spreadsheet",
+        parents: [chapterFolderId],
       }),
     });
 
-    const spreadsheetId = spreadsheet.spreadsheetId;
+    const spreadsheetId = driveFile.id;
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+
+    // Rename default "Sheet1" and add the remaining tabs via Sheets API batchUpdate
+    const defaultSheet = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
+    const defaultSheetId = defaultSheet.sheets?.[0]?.properties?.sheetId ?? 0;
+
+    const tabRequests = [
+      { updateSheetProperties: { properties: { sheetId: defaultSheetId, title: "BRANDED" }, fields: "title" } },
+      { addSheet: { properties: { title: "WHITEBOARD" } } },
+      { addSheet: { properties: { title: "SOLUTION" } } },
+      { addSheet: { properties: { title: "HIGHLIGHTED" } } },
+      { addSheet: { properties: { title: "METADATA" } } },
+    ];
+
+    const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+      method: "POST",
+      body: JSON.stringify({ requests: tabRequests }),
+    });
 
     // Move spreadsheet into chapter folder
     const fileData = await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, token);
