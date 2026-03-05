@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
     const sa = JSON.parse(saJson);
     const token = await getAccessToken(sa);
 
-    // Build folder structure: Survive Accounting Assets / COURSE / Chapter XX
-    const rootFolderId = await findOrCreateFolder(token, "Survive Accounting Assets");
+    // Build folder structure: Shared "Survive Accounting Assets" folder / COURSE / Chapter XX
+    const rootFolderId = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
     const courseFolderId = await findOrCreateFolder(token, course_code, rootFolderId);
     const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
