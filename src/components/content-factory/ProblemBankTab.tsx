@@ -685,6 +685,27 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
       toast.success("Variant approved & saved to Assets Library!");
       // Recompute build run progress
       recomputeProgress();
+
+      // Trigger Google Sheets workbook creation (fire-and-forget)
+      if (data.asset?.id && data.asset?.asset_name) {
+        supabase.functions.invoke("create-asset-sheet", {
+          body: {
+            asset_id: data.asset.id,
+            asset_code: data.asset.asset_name,
+            course_code: course?.code || "",
+            chapter_number: chapterNumber,
+            exercise_code: viewingProblem?.source_label || "",
+            difficulty_estimate: data.asset?.difficulty ?? 5,
+            created_at: new Date().toISOString(),
+          },
+        }).then((res) => {
+          if (res.data?.sheet_url) {
+            toast.success("Google Sheet created", { description: "Workbook ready in Drive" });
+          } else if (res.error) {
+            console.error("Sheet creation failed:", res.error);
+          }
+        }).catch((err) => console.error("Sheet creation error:", err));
+      }
     },
     onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
