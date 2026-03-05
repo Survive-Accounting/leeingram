@@ -450,7 +450,7 @@ export default function AssetsLibrary() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAsset(a)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setViewingAsset(a); setDrawerOpen(true); }}>
                         <Eye className="h-3 w-3" />
                       </Button>
                       {sheetUrls?.[a.asset_name] && (
