@@ -42,27 +42,40 @@ async function getAccessToken(sa: { client_email: string; private_key: string })
   return data.access_token;
 }
 
+// ── Google API helpers ───────────────────────────────────────────────
+
+async function googleFetch(url: string, token: string, opts: RequestInit = {}): Promise<any> {
+  const res = await fetch(url, {
+    ...opts,
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(opts.headers || {}) },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const ge = data?.error;
+    const code = ge?.code ?? res.status;
+    const status = ge?.status ?? "UNKNOWN";
+    const message = ge?.message ?? JSON.stringify(data);
+    console.error(`Google API ${code} (${status}): ${message}`, { url: url.split("?")[0], errors: ge?.errors });
+    throw Object.assign(new Error(`Google API ${code}: ${message}`), { googleCode: code, googleStatus: status });
+  }
+  return data;
+}
+
 // ── Drive helpers ────────────────────────────────────────────────────
 
 async function findOrCreateFolder(token: string, name: string, parentId?: string): Promise<string> {
   const q = `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ""}`;
-  const searchRes = await fetch(`${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const searchData = await searchRes.json();
+  const searchData = await googleFetch(`${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)`, token);
   if (searchData.files?.length) return searchData.files[0].id;
 
-  const createRes = await fetch(GOOGLE_DRIVE_API, {
+  const createData = await googleFetch(GOOGLE_DRIVE_API, token, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       name,
       mimeType: "application/vnd.google-apps.folder",
       ...(parentId ? { parents: [parentId] } : {}),
     }),
   });
-  const createData = await createRes.json();
-  if (!createRes.ok) throw new Error(`Drive folder create failed: ${JSON.stringify(createData)}`);
   return createData.id;
 }
 
@@ -114,9 +127,8 @@ Deno.serve(async (req) => {
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
 
     // Create spreadsheet
-    const sheetsRes = await fetch(GOOGLE_SHEETS_API, {
+    const spreadsheet = await googleFetch(GOOGLE_SHEETS_API, token, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         properties: { title: asset_code },
         sheets: [
@@ -128,28 +140,22 @@ Deno.serve(async (req) => {
         ],
       }),
     });
-    const spreadsheet = await sheetsRes.json();
-    if (!sheetsRes.ok) throw new Error(`Sheets create failed: ${JSON.stringify(spreadsheet)}`);
 
     const spreadsheetId = spreadsheet.spreadsheetId;
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
     // Move spreadsheet into chapter folder
-    const getFileRes = await fetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const fileData = await getFileRes.json();
+    const fileData = await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, token);
     const previousParents = (fileData.parents || []).join(",");
 
-    const moveRes = await fetch(
-      `${GOOGLE_DRIVE_API}/${spreadsheetId}?addParents=${chapterFolderId}&removeParents=${previousParents}`,
-      { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-    );
-    if (!moveRes.ok) {
-      const moveErr = await moveRes.json();
+    try {
+      await googleFetch(
+        `${GOOGLE_DRIVE_API}/${spreadsheetId}?addParents=${chapterFolderId}&removeParents=${previousParents}`,
+        token,
+        { method: "PATCH" }
+      );
+    } catch (moveErr) {
       console.error("Move failed (non-fatal):", moveErr);
-    } else {
-      await moveRes.text();
     }
 
     // Populate METADATA sheet
@@ -165,19 +171,14 @@ Deno.serve(async (req) => {
       ["sheet_url", sheetUrl],
     ];
 
-    const updateRes = await fetch(
-      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
-      {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }),
-      }
-    );
-    if (!updateRes.ok) {
-      const updateErr = await updateRes.json();
-      console.error("Metadata write failed (non-fatal):", updateErr);
-    } else {
-      await updateRes.text();
+    try {
+      await googleFetch(
+        `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
+        token,
+        { method: "PUT", body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }) }
+      );
+    } catch (metaErr) {
+      console.error("Metadata write failed (non-fatal):", metaErr);
     }
 
     // Update asset in DB with sheet URL
@@ -203,11 +204,12 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("create-asset-sheet error:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const httpStatus = err.googleCode && err.googleCode >= 400 && err.googleCode < 500 ? err.googleCode : 500;
+    return new Response(JSON.stringify({ error: msg, google_status: err.googleStatus ?? null }), {
+      status: httpStatus, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
