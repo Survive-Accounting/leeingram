@@ -1,4 +1,8 @@
-import { corsHeaders } from "../_shared/cors.ts";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 const GOOGLE_SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
