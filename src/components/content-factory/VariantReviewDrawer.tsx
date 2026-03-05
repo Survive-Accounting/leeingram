@@ -23,6 +23,9 @@ import { parseLegacyAnswerOnly, parseLegacyJEBlock, isCanonicalJE } from "@/lib/
 import { detectRequiresJE } from "@/lib/legacyJENormalizer";
 import { logActivity } from "@/lib/activityLogger";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel, type VariantPart, type VariantTextPart, type VariantJEPart } from "@/lib/variantParts";
+import { type Highlight, validateHighlights } from "@/lib/highlightTypes";
+import { HighlightedText } from "./HighlightedText";
+import { HighlightControls } from "./HighlightControls";
 import { useChapterApprovedAccounts } from "./ChapterAccountsSetup";
 import { ActivityLogPanel } from "./ActivityLogPanel";
 import {
