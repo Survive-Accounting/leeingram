@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { parseLegacyAnswerOnly, toTemplate } from "@/lib/journalEntryParser";
 import { VariantReviewContent } from "@/components/content-factory/VariantReviewDrawer";
+import { SpeedReviewPanel } from "@/components/content-factory/SpeedReviewPanel";
 import { logActivity } from "@/lib/activityLogger";
 import {
   normalizeCandidateJournalEntry,
@@ -186,6 +187,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [variantStatusFilter, setVariantStatusFilter] = useState<string>("active");
   const [showArchived, setShowArchived] = useState(false);
+  const [speedReviewMode, setSpeedReviewMode] = useState(true);
+  const [speedReviewVariantIndex, setSpeedReviewVariantIndex] = useState(0);
   const [startOverOpen, setStartOverOpen] = useState(false);
   const [startOverRunning, setStartOverRunning] = useState(false);
   // Fetch user's variant count preference
@@ -982,8 +985,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           survive_solution_text: cd.survive_solution_text || v.variant_solution_text,
           journal_entry_completed_json: jeCompleted,
           journal_entry_template_json: jeTemplate,
+          highlight_key_json: v.highlight_key_json,
+          parts_json: v.parts_json,
+          confidence_score: v.confidence_score,
+          difficulty_estimate: v.difficulty_estimate,
         };
       }));
+      setSpeedReviewVariantIndex(0);
     }
     setReviewLoading(false);
   };
@@ -1045,6 +1053,17 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
               <ArrowLeft className="h-3 w-3 mr-1" /> Exit Review
             </Button>
             <div className="flex items-center gap-2">
+              {/* Speed / Full Review Toggle */}
+              <div className="flex items-center gap-1.5 mr-2">
+                <Switch
+                  checked={speedReviewMode}
+                  onCheckedChange={setSpeedReviewMode}
+                  className="h-5 w-9"
+                />
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {speedReviewMode ? "Speed" : "Full"}
+                </span>
+              </div>
               <Button
                 size="sm"
                 variant="outline"
@@ -1377,6 +1396,60 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                 )}
               </div>
             </div>
+          ) : speedReviewMode && allCandidates.filter((c: any) => (c._variantStatus || "draft") !== "archived").length > 0 ? (
+            /* ═══ SPEED REVIEW MODE ═══ */
+            (() => {
+              const activeVariants = allCandidates.filter((c: any) => (c._variantStatus || "draft") !== "archived");
+              const currentVariant = activeVariants[speedReviewVariantIndex] || activeVariants[0];
+              if (!currentVariant) return null;
+              return (
+                <SpeedReviewPanel
+                  variant={currentVariant}
+                  problem={rp}
+                  variantIndex={speedReviewVariantIndex}
+                  totalVariants={activeVariants.length}
+                  onApprove={() => {
+                    setSavingIndex(speedReviewVariantIndex);
+                    setAfRequiresJE(!!currentVariant.journal_entry_block);
+                    approveMutation.mutate({ candidate: currentVariant, problem: rp as any });
+                    // Auto-advance after approve
+                    if (speedReviewVariantIndex < activeVariants.length - 1) {
+                      setSpeedReviewVariantIndex(prev => prev + 1);
+                    } else if (reviewIndex < generatedProblems.length - 1) {
+                      navigateReview("next");
+                    }
+                  }}
+                  onReject={() => {
+                    setRejectingIndex(speedReviewVariantIndex);
+                    setRejectReason("");
+                    setRejectNote("");
+                    setViewingProblem(rp as any);
+                  }}
+                  onRegenerate={async () => {
+                    if (!currentVariant._variantId) return;
+                    await supabase.from("problem_variants").update({ variant_status: "archived" } as any).eq("id", currentVariant._variantId);
+                    toast.success("Variant archived — regenerate from Full Review");
+                    if (rp) await loadReviewCandidates(rp.id);
+                  }}
+                  onFlagForDeepReview={async () => {
+                    if (!currentVariant._variantId) return;
+                    await supabase.from("problem_variants").update({ variant_status: "needs_fix", reviewed_at: new Date().toISOString() } as any).eq("id", currentVariant._variantId);
+                    toast.success("Flagged for deep review");
+                    if (rp) await loadReviewCandidates(rp.id);
+                  }}
+                  onNext={() => {
+                    if (speedReviewVariantIndex < activeVariants.length - 1) {
+                      setSpeedReviewVariantIndex(prev => prev + 1);
+                    } else if (reviewIndex < generatedProblems.length - 1) {
+                      navigateReview("next");
+                    } else {
+                      toast.info("No more variants to review");
+                    }
+                  }}
+                  onOpenFullReview={() => setSpeedReviewMode(false)}
+                />
+              );
+            })()
           ) : (
             <div className="space-y-3">
               {/* Variant status filter + bulk actions */}
