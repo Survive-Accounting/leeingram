@@ -127,9 +127,8 @@ Deno.serve(async (req) => {
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
 
     // Create spreadsheet
-    const sheetsRes = await fetch(GOOGLE_SHEETS_API, {
+    const spreadsheet = await googleFetch(GOOGLE_SHEETS_API, token, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         properties: { title: asset_code },
         sheets: [
@@ -141,28 +140,22 @@ Deno.serve(async (req) => {
         ],
       }),
     });
-    const spreadsheet = await sheetsRes.json();
-    if (!sheetsRes.ok) throw new Error(`Sheets create failed: ${JSON.stringify(spreadsheet)}`);
 
     const spreadsheetId = spreadsheet.spreadsheetId;
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
     // Move spreadsheet into chapter folder
-    const getFileRes = await fetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const fileData = await getFileRes.json();
+    const fileData = await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, token);
     const previousParents = (fileData.parents || []).join(",");
 
-    const moveRes = await fetch(
-      `${GOOGLE_DRIVE_API}/${spreadsheetId}?addParents=${chapterFolderId}&removeParents=${previousParents}`,
-      { method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-    );
-    if (!moveRes.ok) {
-      const moveErr = await moveRes.json();
+    try {
+      await googleFetch(
+        `${GOOGLE_DRIVE_API}/${spreadsheetId}?addParents=${chapterFolderId}&removeParents=${previousParents}`,
+        token,
+        { method: "PATCH" }
+      );
+    } catch (moveErr) {
       console.error("Move failed (non-fatal):", moveErr);
-    } else {
-      await moveRes.text();
     }
 
     // Populate METADATA sheet
