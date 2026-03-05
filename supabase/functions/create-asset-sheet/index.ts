@@ -126,37 +126,37 @@ Deno.serve(async (req) => {
     const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
     const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
 
-    // Create spreadsheet
-    const spreadsheet = await googleFetch(GOOGLE_SHEETS_API, token, {
+    // Create spreadsheet via Drive API (avoids Sheets API permission issues)
+    const driveFile = await googleFetch(GOOGLE_DRIVE_API, token, {
       method: "POST",
       body: JSON.stringify({
-        properties: { title: asset_code },
-        sheets: [
-          { properties: { title: "BRANDED", index: 0 } },
-          { properties: { title: "WHITEBOARD", index: 1 } },
-          { properties: { title: "SOLUTION", index: 2 } },
-          { properties: { title: "HIGHLIGHTED", index: 3 } },
-          { properties: { title: "METADATA", index: 4 } },
-        ],
+        name: asset_code,
+        mimeType: "application/vnd.google-apps.spreadsheet",
+        parents: [chapterFolderId],
       }),
     });
 
-    const spreadsheetId = spreadsheet.spreadsheetId;
+    const spreadsheetId = driveFile.id;
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
-    // Move spreadsheet into chapter folder
-    const fileData = await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, token);
-    const previousParents = (fileData.parents || []).join(",");
+    // Rename default "Sheet1" and add the remaining tabs via Sheets API batchUpdate
+    const defaultSheet = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
+    const defaultSheetId = defaultSheet.sheets?.[0]?.properties?.sheetId ?? 0;
 
-    try {
-      await googleFetch(
-        `${GOOGLE_DRIVE_API}/${spreadsheetId}?addParents=${chapterFolderId}&removeParents=${previousParents}`,
-        token,
-        { method: "PATCH" }
-      );
-    } catch (moveErr) {
-      console.error("Move failed (non-fatal):", moveErr);
-    }
+    const tabRequests = [
+      { updateSheetProperties: { properties: { sheetId: defaultSheetId, title: "BRANDED" }, fields: "title" } },
+      { addSheet: { properties: { title: "WHITEBOARD" } } },
+      { addSheet: { properties: { title: "SOLUTION" } } },
+      { addSheet: { properties: { title: "HIGHLIGHTED" } } },
+      { addSheet: { properties: { title: "METADATA" } } },
+    ];
+
+    const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+      method: "POST",
+      body: JSON.stringify({ requests: tabRequests }),
+    });
+
+    // File already created in chapterFolderId via parents param above
 
     // Populate METADATA sheet
     const metadataValues = [
@@ -184,7 +184,8 @@ Deno.serve(async (req) => {
     // Populate HIGHLIGHTED tab with problem text and highlight annotations
     if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
       try {
-        const highlightedSheetId = spreadsheet.sheets?.find((s: any) => s.properties?.title === "HIGHLIGHTED")?.properties?.sheetId;
+        const highlightedReply = batchRes.replies?.find((r: any) => r.addSheet?.properties?.title === "HIGHLIGHTED");
+        const highlightedSheetId = highlightedReply?.addSheet?.properties?.sheetId;
 
         // Write problem text in A1
         await googleFetch(
