@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Play, FileSpreadsheet, CheckCircle, AlertTriangle, Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import AppLayout from "@/components/AppLayout";
+import { AppLayout } from "@/components/AppLayout";
 
 export default function TemplateManager() {
   const qc = useQueryClient();
