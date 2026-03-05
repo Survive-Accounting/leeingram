@@ -204,11 +204,12 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("create-asset-sheet error:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const httpStatus = err.googleCode && err.googleCode >= 400 && err.googleCode < 500 ? err.googleCode : 500;
+    return new Response(JSON.stringify({ error: msg, google_status: err.googleStatus ?? null }), {
+      status: httpStatus, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
