@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,17 +10,17 @@ import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Lightbulb, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, Clock, Users, BarChart3, CheckCircle2, Layers,
+  AlertTriangle, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 // ── Types ────────────────────────────────────────────────────────────
 
-type JEEntry = {
-  date?: string;
-  requirement?: string;
-  accounts: { account: string; debit?: number | string; credit?: number | string }[];
-};
+type JERow = { account_name?: string; account?: string; debit?: number | string | null; credit?: number | string | null; side?: string };
+type JEEntryByDate = { date?: string; entry_date?: string; requirement?: string; rows?: JERow[]; accounts?: JERow[] };
+type JESection = { label?: string; entries_by_date?: JEEntryByDate[]; journal_entries?: JEEntryByDate[] };
+type NormalizedEntry = { label: string; rows: { account: string; debit: number | string | null; credit: number | string | null }[] };
 
 export type TeachingAssetFull = {
   id: string;
@@ -40,8 +40,12 @@ export type TeachingAssetFull = {
   journal_entry_completed_json: any;
   journal_entry_template_json: any;
   google_sheet_url?: string | null;
+  google_sheet_file_id?: string | null;
   times_used?: number;
   sheet_template_version?: string | null;
+  source_type?: string | null;
+  source_number?: string | null;
+  problem_type?: string | null;
 };
 
 type JEMode = "completed" | "template" | "all_question_marks";
@@ -57,30 +61,113 @@ interface AssetDetailDrawerProps {
   onDelete: () => void;
 }
 
-// ── JE Helpers ───────────────────────────────────────────────────────
+// ── Normalize JE data from various formats ──────────────────────────
 
-function parseJEData(json: any): JEEntry[] | null {
+function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
   if (!json) return null;
   try {
     const data = typeof json === "string" ? JSON.parse(json) : json;
-    if (Array.isArray(data)) return data;
-    if (data.parts && Array.isArray(data.parts)) {
-      const entries: JEEntry[] = [];
-      for (const part of data.parts) {
-        if (part.journal_entries && Array.isArray(part.journal_entries)) entries.push(...part.journal_entries);
-        if (part.entries && Array.isArray(part.entries)) entries.push(...part.entries);
+
+    // Format 1: scenario_sections (our canonical format)
+    if (data.scenario_sections && Array.isArray(data.scenario_sections)) {
+      const entries: NormalizedEntry[] = [];
+      for (const section of data.scenario_sections as JESection[]) {
+        const dateEntries = section.entries_by_date || section.journal_entries || [];
+        for (const entry of dateEntries) {
+          const dateStr = entry.date || entry.entry_date || entry.requirement || section.label || "";
+          const rawRows = entry.rows || entry.accounts || [];
+          const rows = rawRows.map((r: JERow) => {
+            const account = r.account_name || r.account || "";
+            let debit = r.debit;
+            let credit = r.credit;
+
+            // For template/??? mode, use side info to show placeholders
+            if (mode !== "completed") {
+              const side = r.side || (debit != null && debit !== "" && debit !== 0 ? "debit" : credit != null && credit !== "" && credit !== 0 ? "credit" : null);
+              debit = side === "debit" ? "???" : null;
+              credit = side === "credit" ? "???" : null;
+            }
+
+            return { account, debit, credit };
+          });
+          entries.push({ label: stripDateParens(dateStr), rows });
+        }
       }
       return entries.length > 0 ? entries : null;
     }
-    if (data.journal_entries) return data.journal_entries;
-    if (data.entries) return data.entries;
+
+    // Format 2: flat array of entries
+    if (Array.isArray(data)) {
+      return data.map((entry: any, idx: number) => {
+        const label = entry.date || entry.requirement || `Entry ${idx + 1}`;
+        const rawRows = entry.accounts || entry.rows || [];
+        const rows = rawRows.map((r: any) => {
+          const account = r.account_name || r.account || "";
+          let debit = r.debit;
+          let credit = r.credit;
+          if (mode !== "completed") {
+            const hasDebit = debit != null && debit !== "" && debit !== 0;
+            const hasCredit = credit != null && credit !== "" && credit !== 0;
+            debit = hasDebit ? "???" : null;
+            credit = hasCredit ? "???" : null;
+          }
+          return { account, debit, credit };
+        });
+        return { label: stripDateParens(label), rows };
+      });
+    }
+
+    // Format 3: { parts: [...] }
+    if (data.parts && Array.isArray(data.parts)) {
+      const entries: NormalizedEntry[] = [];
+      for (const part of data.parts) {
+        const subEntries = part.journal_entries || part.entries || [];
+        for (const entry of subEntries) {
+          const label = entry.date || entry.requirement || "";
+          const rawRows = entry.accounts || entry.rows || [];
+          const rows = rawRows.map((r: any) => {
+            const account = r.account_name || r.account || "";
+            let debit = r.debit;
+            let credit = r.credit;
+            if (mode !== "completed") {
+              debit = (debit != null && debit !== "" && debit !== 0) ? "???" : null;
+              credit = (credit != null && credit !== "" && credit !== 0) ? "???" : null;
+            }
+            return { account, debit, credit };
+          });
+          entries.push({ label: stripDateParens(label), rows });
+        }
+      }
+      return entries.length > 0 ? entries : null;
+    }
+
+    // Format 4: { journal_entries: [...] } or { entries: [...] }
+    const arr = data.journal_entries || data.entries;
+    if (Array.isArray(arr)) {
+      return arr.map((entry: any, idx: number) => {
+        const label = entry.date || entry.requirement || `Entry ${idx + 1}`;
+        const rawRows = entry.accounts || entry.rows || [];
+        const rows = rawRows.map((r: any) => {
+          const account = r.account_name || r.account || "";
+          let debit = r.debit;
+          let credit = r.credit;
+          if (mode !== "completed") {
+            debit = (debit != null && debit !== "" && debit !== 0) ? "???" : null;
+            credit = (credit != null && credit !== "" && credit !== 0) ? "???" : null;
+          }
+          return { account, debit, credit };
+        });
+        return { label: stripDateParens(label), rows };
+      });
+    }
+
     return null;
   } catch { return null; }
 }
 
-function formatAmount(val: number | string | undefined | null, mode: JEMode): string {
-  if (mode !== "completed") return val != null && val !== "" && val !== 0 ? "???" : "";
+function formatAmount(val: number | string | null | undefined): string {
   if (val == null || val === "") return "";
+  if (val === "???") return "???";
   if (typeof val === "number") return val.toLocaleString();
   return String(val);
 }
@@ -89,100 +176,106 @@ function stripDateParens(dateStr: string): string {
   return dateStr.replace(/\s*\(.*?\)\s*$/, "").trim();
 }
 
-function JETable({ entries, mode }: { entries: JEEntry[]; mode: JEMode }) {
+// ── JE Table Component ──────────────────────────────────────────────
+
+function JETable({ entries }: { entries: NormalizedEntry[] }) {
   return (
     <div className="space-y-3">
-      {entries.map((entry, idx) => {
-        const label = entry.date ? stripDateParens(entry.date) : entry.requirement || `Entry ${idx + 1}`;
-        return (
-          <div key={idx} className="border border-border rounded-md overflow-hidden">
-            <div className="bg-muted px-3 py-1.5 text-xs font-semibold text-foreground border-b border-border">
-              {label}
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground">
-                  <th className="text-left px-3 py-1 w-1/2">Account</th>
-                  <th className="text-right px-3 py-1 w-1/4">Debit</th>
-                  <th className="text-right px-3 py-1 w-1/4">Credit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(entry.accounts || []).map((acc, aIdx) => {
-                  const isCredit = acc.credit != null && acc.credit !== "" && acc.credit !== 0;
-                  return (
-                    <tr key={aIdx} className="border-b border-border/50 last:border-0">
-                      <td className={`px-3 py-1 text-foreground ${isCredit ? "pl-8" : ""}`}>{acc.account}</td>
-                      <td className="px-3 py-1 text-right text-foreground font-mono text-xs">
-                        {mode === "completed" ? formatAmount(acc.debit, mode) : (acc.debit != null && acc.debit !== "" && acc.debit !== 0 ? "???" : "")}
-                      </td>
-                      <td className="px-3 py-1 text-right text-foreground font-mono text-xs">
-                        {mode === "completed" ? formatAmount(acc.credit, mode) : (acc.credit != null && acc.credit !== "" && acc.credit !== 0 ? "???" : "")}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {entries.map((entry, idx) => (
+        <div key={idx} className="border border-border rounded-md overflow-hidden">
+          <div className="bg-muted px-3 py-1.5 text-xs font-semibold text-foreground border-b border-border">
+            {entry.label}
           </div>
-        );
-      })}
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs text-muted-foreground">
+                <th className="text-left px-3 py-1 w-1/2">Account</th>
+                <th className="text-right px-3 py-1 w-1/4">Debit</th>
+                <th className="text-right px-3 py-1 w-1/4">Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entry.rows.map((row, rIdx) => {
+                const isCredit = row.credit != null && row.credit !== "";
+                return (
+                  <tr key={rIdx} className="border-b border-border/50 last:border-0">
+                    <td className={`px-3 py-1 text-foreground ${isCredit ? "pl-8" : ""}`}>{row.account}</td>
+                    <td className="px-3 py-1 text-right text-foreground font-mono text-xs">{formatAmount(row.debit)}</td>
+                    <td className="px-3 py-1 text-right text-foreground font-mono text-xs">{formatAmount(row.credit)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
     </div>
   );
 }
 
-function entriesToTSV(entries: JEEntry[], mode: JEMode): string {
+// ── Export helpers ───────────────────────────────────────────────────
+
+function entriesToTSV(entries: NormalizedEntry[]): string {
   const lines: string[] = [];
   for (const entry of entries) {
-    const label = entry.date ? stripDateParens(entry.date) : entry.requirement || "";
-    lines.push(label);
+    lines.push(entry.label);
     lines.push("Account\tDebit\tCredit");
-    for (const acc of entry.accounts || []) {
-      const d = mode === "completed" ? formatAmount(acc.debit, mode) : (acc.debit != null && acc.debit !== "" && acc.debit !== 0 ? "???" : "");
-      const c = mode === "completed" ? formatAmount(acc.credit, mode) : (acc.credit != null && acc.credit !== "" && acc.credit !== 0 ? "???" : "");
-      lines.push(`${acc.account}\t${d}\t${c}`);
+    for (const row of entry.rows) {
+      lines.push(`${row.account}\t${formatAmount(row.debit)}\t${formatAmount(row.credit)}`);
     }
     lines.push("");
   }
   return lines.join("\n");
 }
 
-function entriesToPlainText(entries: JEEntry[], mode: JEMode): string {
+function entriesToPlainText(entries: NormalizedEntry[]): string {
   const lines: string[] = [];
   for (const entry of entries) {
-    const label = entry.date ? stripDateParens(entry.date) : entry.requirement || "";
-    if (label) lines.push(label);
-    for (const acc of entry.accounts || []) {
-      const isCredit = acc.credit != null && acc.credit !== "" && acc.credit !== 0;
-      const d = mode === "completed" ? formatAmount(acc.debit, mode) : (acc.debit != null && acc.debit !== "" && acc.debit !== 0 ? "???" : "");
-      const c = mode === "completed" ? formatAmount(acc.credit, mode) : (acc.credit != null && acc.credit !== "" && acc.credit !== 0 ? "???" : "");
+    if (entry.label) lines.push(entry.label);
+    for (const row of entry.rows) {
+      const isCredit = row.credit != null && row.credit !== "";
       const indent = isCredit ? "    " : "";
-      const amount = d || c;
-      lines.push(`${indent}${acc.account}${amount ? "  " + amount : ""}`);
+      const amount = formatAmount(row.debit) || formatAmount(row.credit);
+      lines.push(`${indent}${row.account}${amount ? "  " + amount : ""}`);
     }
     lines.push("");
   }
   return lines.join("\n");
 }
 
-// ── Derive source type from asset code ───────────────────────────────
+// ── Parse asset code ────────────────────────────────────────────────
 
 function parseAssetCode(code: string) {
-  // e.g. INTRO1_CH03_E16.19  or  INTRO1_CH03_BE8.1
   const match = code.match(/^([A-Z0-9]+)_CH(\d+)_([A-Z]+)([\d.]+)$/i);
   if (!match) return { course: "", chapter: "", sourceType: "", sourceNumber: "" };
-  return {
-    course: match[1],
-    chapter: parseInt(match[2], 10).toString(),
-    sourceType: match[3], // BE, EX, PR, etc.
-    sourceNumber: match[4],
-  };
+  return { course: match[1], chapter: parseInt(match[2], 10).toString(), sourceType: match[3], sourceNumber: match[4] };
+}
+
+// ── Data Health ─────────────────────────────────────────────────────
+
+function DataHealthStrip({ asset, hasJE, sheetUrl }: { asset: TeachingAssetFull; hasJE: boolean; sheetUrl?: string }) {
+  const items = [
+    { label: "JE", ok: hasJE },
+    { label: "Sheet", ok: !!(sheetUrl || asset.google_sheet_url) },
+    { label: "Source", ok: !!(asset.source_type || asset.source_number) },
+    { label: "Difficulty", ok: !!asset.difficulty },
+  ];
+  return (
+    <div className="flex gap-2 flex-wrap">
+      {items.map((item) => (
+        <span key={item.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          {item.ok ? <Check className="h-2.5 w-2.5 text-green-500" /> : <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />}
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 // ── Link Card ────────────────────────────────────────────────────────
 
-function LinkCard({ icon: Icon, label, href, onCopy, disabled, comingSoon }: {
-  icon: any; label: string; href?: string; onCopy?: () => void; disabled?: boolean; comingSoon?: boolean;
+function LinkCard({ icon: Icon, label, subtitle, href, onCopy, disabled, comingSoon }: {
+  icon: any; label: string; subtitle?: string; href?: string; onCopy?: () => void; disabled?: boolean; comingSoon?: boolean;
 }) {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg border border-border ${disabled ? "opacity-40" : "bg-card"}`}>
@@ -190,6 +283,7 @@ function LinkCard({ icon: Icon, label, href, onCopy, disabled, comingSoon }: {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{label}</p>
         {comingSoon && <p className="text-[10px] text-muted-foreground">Coming soon</p>}
+        {subtitle && !comingSoon && <p className="text-[10px] text-muted-foreground truncate">{subtitle}</p>}
       </div>
       <div className="flex gap-1 shrink-0">
         {href && !disabled && (
@@ -207,7 +301,7 @@ function LinkCard({ icon: Icon, label, href, onCopy, disabled, comingSoon }: {
   );
 }
 
-// ── Future placeholder item ──────────────────────────────────────────
+// ── Future placeholder ──────────────────────────────────────────────
 
 function FuturePlaceholder({ icon: Icon, label }: { icon: any; label: string }) {
   return (
@@ -221,6 +315,17 @@ function FuturePlaceholder({ icon: Icon, label }: { icon: any; label: string }) 
   );
 }
 
+// ── Meta Item ───────────────────────────────────────────────────────
+
+function MetaItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border p-2.5">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium text-foreground mt-0.5">{value}</p>
+    </div>
+  );
+}
+
 // ── Main Drawer ──────────────────────────────────────────────────────
 
 export default function AssetDetailDrawer({
@@ -229,51 +334,76 @@ export default function AssetDetailDrawer({
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
 
+  // Keyboard: Esc to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
   if (!asset) return null;
 
-  const completedEntries = parseJEData(asset.journal_entry_completed_json);
-  const templateEntries = parseJEData(asset.journal_entry_template_json);
-  const activeEntries = jeMode === "completed" ? completedEntries : (templateEntries || completedEntries);
-  const hasJE = !!activeEntries && activeEntries.length > 0;
+  // Resolve effective sheet URL: prefer teaching_assets.google_sheet_url, fall back to sheetUrls lookup
+  const effectiveSheetUrl = asset.google_sheet_url || sheetUrl;
+
+  // Parse JE with robust format handling
+  const activeSource = jeMode === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json);
+  const activeEntries = normalizeJEEntries(activeSource, jeMode);
+  const hasJE = !!(normalizeJEEntries(asset.journal_entry_completed_json, "completed") || normalizeJEEntries(asset.journal_entry_template_json, "completed"));
+
   const parsed = parseAssetCode(asset.asset_name);
 
   const handleCopy = (fmt: "tsv" | "text" | "json") => {
     if (!activeEntries) return;
     let content: string;
-    if (fmt === "json") content = JSON.stringify(activeEntries, null, 2);
-    else if (fmt === "tsv") content = entriesToTSV(activeEntries, jeMode);
-    else content = entriesToPlainText(activeEntries, jeMode);
+    if (fmt === "json") content = JSON.stringify(activeSource, null, 2);
+    else if (fmt === "tsv") content = entriesToTSV(activeEntries);
+    else content = entriesToPlainText(activeEntries);
     navigator.clipboard.writeText(content);
     toast.success(`Copied as ${fmt.toUpperCase()}`);
   };
 
-  // Problem preview: first ~10 lines
   const problemLines = (asset.survive_problem_text || "").split("\n");
   const previewLines = problemLines.slice(0, 10);
   const hasMoreLines = problemLines.length > 10;
 
+  // Derive display values
+  const sourceType = asset.source_type || parsed.sourceType || "—";
+  const sourceNumber = asset.source_number || parsed.sourceNumber || "—";
+
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col">
-        {/* ── Header ─────────────────────────────────────────── */}
+        {/* Header */}
         <SheetHeader className="px-6 pt-6 pb-3 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <SheetTitle className="text-lg font-bold font-mono tracking-tight">{asset.asset_name}</SheetTitle>
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-lg font-bold font-mono tracking-tight">{asset.asset_name}</SheetTitle>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => {
+                  navigator.clipboard.writeText(asset.asset_name);
+                  toast.success("Asset code copied");
+                }} title="Copy Asset Code">
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {courseLabel} · {chapterLabel} · Created {format(new Date(asset.created_at), "MMM d, yyyy")}
               </p>
             </div>
             <div className="flex gap-1.5 shrink-0">
-              {sheetUrl && (
+              {effectiveSheetUrl && (
                 <>
                   <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                    <a href={sheetUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={effectiveSheetUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-3 w-3 mr-1" /> Open Sheet
                     </a>
                   </Button>
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => {
-                    navigator.clipboard.writeText(sheetUrl);
+                    navigator.clipboard.writeText(effectiveSheetUrl);
                     toast.success("Sheet link copied");
                   }}>
                     <Copy className="h-3 w-3" />
@@ -283,7 +413,7 @@ export default function AssetDetailDrawer({
             </div>
           </div>
 
-          {/* Status badges */}
+          {/* Status badges + type chips */}
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="default" className="text-[10px]">
               <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Approved
@@ -293,25 +423,35 @@ export default function AssetDetailDrawer({
                 <TableProperties className="h-2.5 w-2.5 mr-0.5" /> Has JE
               </Badge>
             )}
-            {sheetUrl && (
+            {effectiveSheetUrl && (
               <Badge variant="secondary" className="text-[10px]">
                 <Layers className="h-2.5 w-2.5 mr-0.5" /> Sheet
               </Badge>
             )}
+            {asset.problem_type && (
+              <Badge variant="outline" className="text-[10px]">{asset.problem_type}</Badge>
+            )}
+            {asset.difficulty && (
+              <Badge variant="outline" className="text-[10px]">Diff: {asset.difficulty}</Badge>
+            )}
+            {(sourceType !== "—" || sourceNumber !== "—") && sourceType !== "—" && (
+              <Badge variant="outline" className="text-[10px]">{sourceType} {sourceNumber}</Badge>
+            )}
             {asset.sheet_template_version && (
-              <Badge variant="outline" className="text-[10px]">
-                Tmpl {asset.sheet_template_version}
-              </Badge>
+              <Badge variant="outline" className="text-[10px]">Tmpl {asset.sheet_template_version}</Badge>
             )}
             {asset.tags?.map((t) => (
               <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
             ))}
           </div>
+
+          {/* Data Health */}
+          <DataHealthStrip asset={asset} hasJE={hasJE} sheetUrl={effectiveSheetUrl} />
         </SheetHeader>
 
         <Separator />
 
-        {/* ── Tabs ────────────────────────────────────────────── */}
+        {/* Tabs */}
         <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-6 mt-3 mb-0 w-fit">
             <TabsTrigger value="overview" className="text-xs gap-1"><BookOpen className="h-3 w-3" />Overview</TabsTrigger>
@@ -321,19 +461,18 @@ export default function AssetDetailDrawer({
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
-            {/* ─── Overview ────────────────────────────────── */}
+            {/* Overview */}
             <TabsContent value="overview" className="px-6 pb-6 space-y-4 mt-4">
-              {/* Metadata grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <MetaItem label="Course" value={parsed.course || courseLabel} />
                 <MetaItem label="Chapter" value={parsed.chapter ? `Ch ${parsed.chapter}` : chapterLabel} />
-                <MetaItem label="Source Type" value={parsed.sourceType || "—"} />
-                <MetaItem label="Source #" value={parsed.sourceNumber || "—"} />
+                <MetaItem label="Source Type" value={sourceType} />
+                <MetaItem label="Source #" value={sourceNumber} />
                 <MetaItem label="Difficulty" value={asset.difficulty ?? "—"} />
+                <MetaItem label="Problem Type" value={asset.problem_type || "—"} />
                 <MetaItem label="Template Ver." value={asset.sheet_template_version || "—"} />
               </div>
 
-              {/* Problem preview */}
               <div className="rounded-lg border border-border p-4">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem Text</h2>
                 <p className="text-sm text-foreground whitespace-pre-wrap">
@@ -346,7 +485,6 @@ export default function AssetDetailDrawer({
                 )}
               </div>
 
-              {/* Solution / JE preview */}
               {(asset.journal_entry_block || asset.survive_solution_text) && (
                 <div className="rounded-lg border border-border p-4">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution / JE Preview</h2>
@@ -357,7 +495,6 @@ export default function AssetDetailDrawer({
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={onRevert}>
                   <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
@@ -368,9 +505,9 @@ export default function AssetDetailDrawer({
               </div>
             </TabsContent>
 
-            {/* ─── Journal Entries ─────────────────────────── */}
+            {/* Journal Entries */}
             <TabsContent value="journal" className="px-6 pb-6 space-y-4 mt-4">
-              {!hasJE && !completedEntries ? (
+              {!hasJE ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                   No journal entries for this asset.
                 </div>
@@ -384,7 +521,7 @@ export default function AssetDetailDrawer({
                     ))}
                   </div>
 
-                  {activeEntries && <JETable entries={activeEntries} mode={jeMode} />}
+                  {activeEntries && <JETable entries={activeEntries} />}
 
                   <div className="flex gap-2 flex-wrap pt-2 border-t border-border">
                     <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
@@ -410,22 +547,31 @@ export default function AssetDetailDrawer({
               )}
             </TabsContent>
 
-            {/* ─── Links ──────────────────────────────────── */}
+            {/* Links */}
             <TabsContent value="links" className="px-6 pb-6 space-y-3 mt-4">
-              <LinkCard
-                icon={Layers}
-                label="Google Sheet"
-                href={sheetUrl}
-                onCopy={sheetUrl ? () => { navigator.clipboard.writeText(sheetUrl); toast.success("Copied"); } : undefined}
-                disabled={!sheetUrl}
-                comingSoon={!sheetUrl}
-              />
+              {effectiveSheetUrl ? (
+                <LinkCard
+                  icon={Layers}
+                  label="Google Sheet"
+                  subtitle={asset.google_sheet_file_id ? `File: ${asset.google_sheet_file_id.slice(0, 20)}…` : "Open in Drive"}
+                  href={effectiveSheetUrl}
+                  onCopy={() => { navigator.clipboard.writeText(effectiveSheetUrl); toast.success("Copied"); }}
+                />
+              ) : (
+                <LinkCard
+                  icon={Layers}
+                  label="Google Sheet"
+                  subtitle="No google_sheet_url stored for this asset."
+                  disabled
+                  comingSoon
+                />
+              )}
               <LinkCard icon={Video} label="Walkthrough Video" disabled comingSoon />
               <LinkCard icon={BookMarked} label="LearnWorlds / eBook" disabled comingSoon />
               <LinkCard icon={Share2} label="Share Link" disabled comingSoon />
             </TabsContent>
 
-            {/* ─── Future ─────────────────────────────────── */}
+            {/* Future */}
             <TabsContent value="future" className="px-6 pb-6 space-y-3 mt-4">
               <p className="text-xs text-muted-foreground mb-2">These modules will be activated as features are built.</p>
               <FuturePlaceholder icon={Clock} label="Times used in tutoring" />
@@ -440,16 +586,5 @@ export default function AssetDetailDrawer({
         </Tabs>
       </SheetContent>
     </Sheet>
-  );
-}
-
-// ── Small metadata display ───────────────────────────────────────────
-
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border p-2.5">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium text-foreground mt-0.5">{value}</p>
-    </div>
   );
 }

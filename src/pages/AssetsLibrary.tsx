@@ -37,6 +37,11 @@ type TeachingAsset = {
   journal_entry_template_json: any;
   times_used?: number;
   sheet_template_version?: string | null;
+  google_sheet_url?: string | null;
+  google_sheet_file_id?: string | null;
+  source_type?: string | null;
+  source_number?: string | null;
+  problem_type?: string | null;
 };
 
 type JournalOption = "question" | "feedback" | "none";
@@ -115,11 +120,20 @@ export default function AssetsLibrary() {
     },
   });
 
-  const { data: sheetUrls } = useQuery({
-    queryKey: ["asset-sheet-urls", assets?.map((a) => a.asset_name).join(",")],
+  // Build sheet URL map from teaching_assets themselves + fallback to assets table
+  const sheetUrls: Record<string, string> = {};
+  if (assets) {
+    for (const a of assets) {
+      if (a.google_sheet_url) sheetUrls[a.asset_name] = a.google_sheet_url;
+    }
+  }
+
+  const { data: fallbackSheetUrls } = useQuery({
+    queryKey: ["asset-sheet-urls-fallback", assets?.filter(a => !a.google_sheet_url).map(a => a.asset_name).join(",")],
     queryFn: async () => {
       if (!assets?.length) return {};
-      const names = assets.map((a) => a.asset_name).filter(Boolean);
+      const names = assets.filter(a => !a.google_sheet_url).map(a => a.asset_name).filter(Boolean);
+      if (!names.length) return {};
       const { data, error } = await supabase
         .from("assets")
         .select("asset_code, google_sheet_url")
@@ -132,6 +146,13 @@ export default function AssetsLibrary() {
     },
     enabled: !!assets?.length,
   });
+
+  // Merge fallback URLs
+  if (fallbackSheetUrls) {
+    for (const [k, v] of Object.entries(fallbackSheetUrls)) {
+      if (!sheetUrls[k]) sheetUrls[k] = v;
+    }
+  }
 
   const { data: exportSets } = useQuery({
     queryKey: ["export-sets"],
@@ -607,12 +628,12 @@ export default function AssetsLibrary() {
 
       {/* Asset Detail Drawer */}
       <AssetDetailDrawer
-        asset={viewingAsset}
+        asset={viewingAsset as any}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setViewingAsset(null); }}
         chapterLabel={viewingAsset ? chapterLabel(viewingAsset.chapter_id) : ""}
         courseLabel={viewingAsset ? courseLabel(viewingAsset.course_id) : ""}
-        sheetUrl={viewingAsset ? sheetUrls?.[viewingAsset.asset_name] : undefined}
+        sheetUrl={viewingAsset ? sheetUrls[viewingAsset.asset_name] : undefined}
         onRevert={() => { if (viewingAsset) { setRevertId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
         onDelete={() => { if (viewingAsset) { setDeleteId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
       />

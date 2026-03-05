@@ -2315,9 +2315,12 @@ export type Database = {
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
           last_tutored_at: string | null
+          problem_type: string | null
           sheet_last_synced_at: string | null
           sheet_template_version: string | null
+          source_number: string | null
           source_ref: string | null
+          source_type: string | null
           survive_problem_text: string
           survive_solution_text: string
           tags: string[]
@@ -2339,9 +2342,12 @@ export type Database = {
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           last_tutored_at?: string | null
+          problem_type?: string | null
           sheet_last_synced_at?: string | null
           sheet_template_version?: string | null
+          source_number?: string | null
           source_ref?: string | null
+          source_type?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
           tags?: string[]
@@ -2363,9 +2369,12 @@ export type Database = {
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           last_tutored_at?: string | null
+          problem_type?: string | null
           sheet_last_synced_at?: string | null
           sheet_template_version?: string | null
+          source_number?: string | null
           source_ref?: string | null
+          source_type?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
           tags?: string[]
