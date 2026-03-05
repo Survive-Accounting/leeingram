@@ -105,7 +105,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   });
 
   const stageCounts = useMemo(() => {
-    const counts: Record<string, number> = { imported: 0, generated: 0, approved: 0, banked: 0, ready_to_film: 0, deployed: 0 };
+    const counts: Record<string, number> = { imported: 0, generated: 0, approved: 0, banked: 0, deployed: 0 };
     pipelineProblems?.forEach((p) => {
       const order = PIPELINE_STAGE_ORDER[p.pipeline_status];
       if (order === undefined) return;
