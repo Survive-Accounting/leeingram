@@ -477,6 +477,25 @@ function LWItemCard({
                 className="scale-75"
               />
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[10px]"
+              onClick={async () => {
+                const answers = Array.from({ length: 10 }, (_, i) => item[`answer_${i + 1}`] || "").filter(Boolean);
+                const html = renderQuestionHtml({
+                  questionId: item.item_key || "Q",
+                  questionText: item.question_text || "",
+                  answers,
+                  correctAnswer: item.correct_answer || "",
+                  explanation: item.correct_explanation || "",
+                });
+                await copyHtmlToClipboard(html);
+                toast.success("HTML copied successfully");
+              }}
+            >
+              <ClipboardCopy className="h-3 w-3 mr-1" /> Copy HTML
+            </Button>
             {item.status === "drafted" && (
               <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={onApprove}>
                 <Check className="h-3 w-3 mr-1" /> Approve
