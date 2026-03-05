@@ -156,19 +156,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ requests: tabRequests }),
     });
 
-    // Move spreadsheet into chapter folder
-    const fileData = await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=parents`, token);
-    const previousParents = (fileData.parents || []).join(",");
-
-    try {
-      await googleFetch(
-        `${GOOGLE_DRIVE_API}/${spreadsheetId}?addParents=${chapterFolderId}&removeParents=${previousParents}`,
-        token,
-        { method: "PATCH" }
-      );
-    } catch (moveErr) {
-      console.error("Move failed (non-fatal):", moveErr);
-    }
+    // File already created in chapterFolderId via parents param above
 
     // Populate METADATA sheet
     const metadataValues = [
