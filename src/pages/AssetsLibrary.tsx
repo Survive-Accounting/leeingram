@@ -628,12 +628,12 @@ export default function AssetsLibrary() {
 
       {/* Asset Detail Drawer */}
       <AssetDetailDrawer
-        asset={viewingAsset}
+        asset={viewingAsset as any}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setViewingAsset(null); }}
         chapterLabel={viewingAsset ? chapterLabel(viewingAsset.chapter_id) : ""}
         courseLabel={viewingAsset ? courseLabel(viewingAsset.course_id) : ""}
-        sheetUrl={viewingAsset ? sheetUrls?.[viewingAsset.asset_name] : undefined}
+        sheetUrl={viewingAsset ? sheetUrls[viewingAsset.asset_name] : undefined}
         onRevert={() => { if (viewingAsset) { setRevertId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
         onDelete={() => { if (viewingAsset) { setDeleteId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
       />
