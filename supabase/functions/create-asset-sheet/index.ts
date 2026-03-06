@@ -8,6 +8,8 @@ const GOOGLE_SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"];
 
+const REQUIRED_TABS = ["BRANDED", "WHITEBOARD", "SOLUTION", "HIGHLIGHTED", "METADATA"];
+
 // ── Google Auth helpers ──────────────────────────────────────────────
 
 function base64url(buf: ArrayBuffer): string {
@@ -82,6 +84,106 @@ async function findOrCreateFolder(token: string, name: string, parentId?: string
   return createData.id;
 }
 
+// ── Sheet tab helpers ────────────────────────────────────────────────
+
+async function ensureTabsExist(token: string, spreadsheetId: string): Promise<Record<string, number>> {
+  const meta = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
+  const existing: Record<string, number> = {};
+  for (const s of meta.sheets || []) {
+    existing[s.properties.title] = s.properties.sheetId;
+  }
+
+  const missing = REQUIRED_TABS.filter(t => !(t in existing));
+  if (missing.length > 0) {
+    const addRequests = missing.map(title => ({ addSheet: { properties: { title } } }));
+    const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+      method: "POST",
+      body: JSON.stringify({ requests: addRequests }),
+    });
+    for (const reply of (batchRes.replies || [])) {
+      if (reply.addSheet?.properties) {
+        existing[reply.addSheet.properties.title] = reply.addSheet.properties.sheetId;
+      }
+    }
+  }
+
+  return existing;
+}
+
+async function clearTab(token: string, spreadsheetId: string, tabName: string) {
+  try {
+    await googleFetch(
+      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${tabName}?valueInputOption=RAW`,
+      token,
+      { method: "PUT", body: JSON.stringify({ range: tabName, values: [[""]] }) }
+    );
+    // Clear the whole sheet content
+    await googleFetch(
+      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${tabName}:clear`,
+      token,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  } catch (e) {
+    console.error(`clearTab ${tabName} failed (non-fatal):`, e);
+  }
+}
+
+async function writeMetadata(token: string, spreadsheetId: string, sheetUrl: string, params: any) {
+  const { asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, asset_id, created_at } = params;
+  const metadataValues = [
+    ["Field", "Value"],
+    ["asset_code", asset_code],
+    ["course_code", course_code],
+    ["chapter_number", String(chapter_number)],
+    ["exercise_number", exercise_code || ""],
+    ["difficulty_estimate", String(difficulty_estimate ?? "")],
+    ["asset_id", asset_id],
+    ["created_at", created_at || ""],
+    ["sheet_url", sheetUrl],
+  ];
+  await googleFetch(
+    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
+    token,
+    { method: "PUT", body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }) }
+  );
+}
+
+async function writeHighlights(token: string, spreadsheetId: string, tabSheetIds: Record<string, number>, problem_text: string, highlight_key_json: any[]) {
+  // Write problem text in A1
+  await googleFetch(
+    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A1?valueInputOption=RAW`,
+    token,
+    { method: "PUT", body: JSON.stringify({ range: "HIGHLIGHTED!A1", values: [[problem_text]] }) }
+  );
+
+  // Write highlight legend starting at A3
+  const legendValues = [
+    ["Highlighted Text", "Type"],
+    ...highlight_key_json.map((h: any) => [h.text || "", h.type || ""]),
+  ];
+  await googleFetch(
+    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A3:B${3 + legendValues.length - 1}?valueInputOption=RAW`,
+    token,
+    { method: "PUT", body: JSON.stringify({ range: `HIGHLIGHTED!A3:B${3 + legendValues.length - 1}`, majorDimension: "ROWS", values: legendValues }) }
+  );
+
+  // Apply yellow background to highlighted text cells
+  const highlightedSheetId = tabSheetIds["HIGHLIGHTED"];
+  if (highlightedSheetId != null) {
+    const requests = highlight_key_json.map((_: any, i: number) => ({
+      repeatCell: {
+        range: { sheetId: highlightedSheetId, startRowIndex: 3 + i, endRowIndex: 4 + i, startColumnIndex: 0, endColumnIndex: 1 },
+        cell: { userEnteredFormat: { backgroundColor: { red: 1, green: 0.96, blue: 0.616 } } },
+        fields: "userEnteredFormat.backgroundColor",
+      },
+    }));
+    await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+      method: "POST",
+      body: JSON.stringify({ requests }),
+    });
+  }
+}
+
 // ── Main handler ─────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -94,7 +196,6 @@ Deno.serve(async (req) => {
     const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
 
     if (!isServiceRole) {
-      // Verify JWT via Supabase
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
       const verifyRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -109,7 +210,11 @@ Deno.serve(async (req) => {
       await verifyRes.text();
     }
 
-    const { asset_id, asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, created_at, problem_text, highlight_key_json } = await req.json();
+    const {
+      asset_id, asset_code, course_code, chapter_number, exercise_code,
+      difficulty_estimate, created_at, problem_text, highlight_key_json,
+      existing_file_id, force_new_copy,
+    } = await req.json();
 
     if (!asset_id || !asset_code || !course_code || !chapter_number) {
       return new Response(JSON.stringify({ error: "Missing required fields: asset_id, asset_code, course_code, chapter_number" }), {
@@ -123,123 +228,133 @@ Deno.serve(async (req) => {
     const sa = JSON.parse(saJson);
     const token = await getAccessToken(sa);
 
-    // Verify shared root folder is accessible, then build: COURSE / Chapter XX
-    const rootFolderId = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
-    try {
-      await googleFetch(
-        `${GOOGLE_DRIVE_API}/${rootFolderId}?fields=id,name&supportsAllDrives=true`,
-        token
-      );
-    } catch (e: any) {
-      console.error("Root folder check failed. SA email:", sa.client_email);
-      throw new Error(
-        `Cannot access shared root folder ${rootFolderId}. ` +
-        `Make sure it is shared with the service account: ${sa.client_email}`
-      );
-    }
-    const courseFolderId = await findOrCreateFolder(token, course_code, rootFolderId);
-    const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
-    const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
+    let spreadsheetId: string;
+    let sheetUrl: string;
+    let isUpdate = false;
 
-    // Create spreadsheet via Drive API (avoids Sheets API permission issues)
-    const driveFile = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
-      method: "POST",
-      body: JSON.stringify({
-        name: asset_code,
-        mimeType: "application/vnd.google-apps.spreadsheet",
-        parents: [chapterFolderId],
-      }),
-    });
+    // ── UPSERT LOGIC ─────────────────────────────────────────────────
+    if (existing_file_id && !force_new_copy) {
+      // UPDATE path: reuse existing spreadsheet
+      isUpdate = true;
+      spreadsheetId = existing_file_id;
+      sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
-    const spreadsheetId = driveFile.id;
-    const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
-
-    // Rename default "Sheet1" and add the remaining tabs via Sheets API batchUpdate
-    const defaultSheet = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
-    const defaultSheetId = defaultSheet.sheets?.[0]?.properties?.sheetId ?? 0;
-
-    const tabRequests = [
-      { updateSheetProperties: { properties: { sheetId: defaultSheetId, title: "BRANDED" }, fields: "title" } },
-      { addSheet: { properties: { title: "WHITEBOARD" } } },
-      { addSheet: { properties: { title: "SOLUTION" } } },
-      { addSheet: { properties: { title: "HIGHLIGHTED" } } },
-      { addSheet: { properties: { title: "METADATA" } } },
-    ];
-
-    const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-      method: "POST",
-      body: JSON.stringify({ requests: tabRequests }),
-    });
-
-    // File already created in chapterFolderId via parents param above
-
-    // Populate METADATA sheet
-    const metadataValues = [
-      ["Field", "Value"],
-      ["asset_code", asset_code],
-      ["course_code", course_code],
-      ["chapter_number", String(chapter_number)],
-      ["exercise_number", exercise_code || ""],
-      ["difficulty_estimate", String(difficulty_estimate ?? "")],
-      ["asset_id", asset_id],
-      ["created_at", created_at || ""],
-      ["sheet_url", sheetUrl],
-    ];
-
-    try {
-      await googleFetch(
-        `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
-        token,
-        { method: "PUT", body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }) }
-      );
-    } catch (metaErr) {
-      console.error("Metadata write failed (non-fatal):", metaErr);
-    }
-
-    // Populate HIGHLIGHTED tab with problem text and highlight annotations
-    if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
+      // Verify the file still exists / is accessible
       try {
-        const highlightedReply = batchRes.replies?.find((r: any) => r.addSheet?.properties?.title === "HIGHLIGHTED");
-        const highlightedSheetId = highlightedReply?.addSheet?.properties?.sheetId;
+        await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=id,name&supportsAllDrives=true`, token);
+      } catch (e: any) {
+        console.error("Existing sheet not accessible, will create new:", e.message);
+        // Fall through to create path
+        isUpdate = false;
+      }
 
-        // Write problem text in A1
-        await googleFetch(
-          `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A1?valueInputOption=RAW`,
-          token,
-          { method: "PUT", body: JSON.stringify({ range: "HIGHLIGHTED!A1", values: [[problem_text]] }) }
-        );
+      if (isUpdate) {
+        // Ensure all required tabs exist
+        const tabSheetIds = await ensureTabsExist(token, spreadsheetId);
 
-        // Write highlight legend starting at A3
-        const legendValues = [
-          ["Highlighted Text", "Type"],
-          ...highlight_key_json.map((h: any) => [h.text || "", h.type || ""]),
-        ];
-        await googleFetch(
-          `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A3:B${3 + legendValues.length - 1}?valueInputOption=RAW`,
-          token,
-          { method: "PUT", body: JSON.stringify({ range: `HIGHLIGHTED!A3:B${3 + legendValues.length - 1}`, majorDimension: "ROWS", values: legendValues }) }
-        );
-
-        // Apply yellow background to highlighted text cells in the legend (rows 4+, column A)
-        if (highlightedSheetId != null) {
-          const requests = highlight_key_json.map((_: any, i: number) => ({
-            repeatCell: {
-              range: { sheetId: highlightedSheetId, startRowIndex: 3 + i, endRowIndex: 4 + i, startColumnIndex: 0, endColumnIndex: 1 },
-              cell: { userEnteredFormat: { backgroundColor: { red: 1, green: 0.96, blue: 0.616 } } },
-              fields: "userEnteredFormat.backgroundColor",
-            },
-          }));
-          await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-            method: "POST",
-            body: JSON.stringify({ requests }),
+        // Rename file if asset_code changed
+        try {
+          await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?supportsAllDrives=true`, token, {
+            method: "PATCH",
+            body: JSON.stringify({ name: asset_code }),
           });
+        } catch (e) {
+          console.error("Rename failed (non-fatal):", e);
         }
-      } catch (hlErr) {
-        console.error("Highlight write failed (non-fatal):", hlErr);
+
+        // Clear and rewrite METADATA
+        await clearTab(token, spreadsheetId, "METADATA");
+        try {
+          await writeMetadata(token, spreadsheetId, sheetUrl, {
+            asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, asset_id, created_at,
+          });
+        } catch (e) { console.error("Metadata write failed (non-fatal):", e); }
+
+        // Clear and rewrite HIGHLIGHTED
+        await clearTab(token, spreadsheetId, "HIGHLIGHTED");
+        if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
+          try {
+            await writeHighlights(token, spreadsheetId, tabSheetIds, problem_text, highlight_key_json);
+          } catch (e) { console.error("Highlight write failed (non-fatal):", e); }
+        }
+
+        // Clear content tabs (BRANDED, WHITEBOARD, SOLUTION) for fresh population
+        for (const tab of ["BRANDED", "WHITEBOARD", "SOLUTION"]) {
+          await clearTab(token, spreadsheetId, tab);
+        }
       }
     }
 
-    // Update teaching_assets in DB with sheet URL and file ID
+    if (!isUpdate) {
+      // CREATE path: new spreadsheet
+      const rootFolderId = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
+      try {
+        await googleFetch(`${GOOGLE_DRIVE_API}/${rootFolderId}?fields=id,name&supportsAllDrives=true`, token);
+      } catch (e: any) {
+        console.error("Root folder check failed. SA email:", sa.client_email);
+        throw new Error(
+          `Cannot access shared root folder ${rootFolderId}. ` +
+          `Make sure it is shared with the service account: ${sa.client_email}`
+        );
+      }
+
+      const courseFolderId = await findOrCreateFolder(token, course_code, rootFolderId);
+      const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
+      const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
+
+      const driveFile = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
+        method: "POST",
+        body: JSON.stringify({
+          name: asset_code,
+          mimeType: "application/vnd.google-apps.spreadsheet",
+          parents: [chapterFolderId],
+        }),
+      });
+
+      spreadsheetId = driveFile.id;
+      sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+
+      // Rename default "Sheet1" and add remaining tabs
+      const defaultSheet = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
+      const defaultSheetId = defaultSheet.sheets?.[0]?.properties?.sheetId ?? 0;
+
+      const tabRequests = [
+        { updateSheetProperties: { properties: { sheetId: defaultSheetId, title: "BRANDED" }, fields: "title" } },
+        { addSheet: { properties: { title: "WHITEBOARD" } } },
+        { addSheet: { properties: { title: "SOLUTION" } } },
+        { addSheet: { properties: { title: "HIGHLIGHTED" } } },
+        { addSheet: { properties: { title: "METADATA" } } },
+      ];
+
+      const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+        method: "POST",
+        body: JSON.stringify({ requests: tabRequests }),
+      });
+
+      // Build tab sheet ID map
+      const tabSheetIds: Record<string, number> = { BRANDED: defaultSheetId };
+      for (const reply of (batchRes.replies || [])) {
+        if (reply.addSheet?.properties) {
+          tabSheetIds[reply.addSheet.properties.title] = reply.addSheet.properties.sheetId;
+        }
+      }
+
+      // Populate METADATA
+      try {
+        await writeMetadata(token, spreadsheetId, sheetUrl, {
+          asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, asset_id, created_at,
+        });
+      } catch (e) { console.error("Metadata write failed (non-fatal):", e); }
+
+      // Populate HIGHLIGHTED
+      if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
+        try {
+          await writeHighlights(token, spreadsheetId, tabSheetIds, problem_text, highlight_key_json);
+        } catch (e) { console.error("Highlight write failed (non-fatal):", e); }
+      }
+    }
+
+    // Update teaching_assets in DB with sheet URL, file ID, and sync timestamp
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
@@ -249,7 +364,11 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
-      body: JSON.stringify({ google_sheet_url: sheetUrl, google_sheet_file_id: spreadsheetId }),
+      body: JSON.stringify({
+        google_sheet_url: sheetUrl,
+        google_sheet_file_id: spreadsheetId,
+        sheet_last_synced_at: new Date().toISOString(),
+      }),
     });
     if (!dbRes.ok) {
       const dbErr = await dbRes.text();
@@ -258,7 +377,12 @@ Deno.serve(async (req) => {
       await dbRes.text();
     }
 
-    return new Response(JSON.stringify({ success: true, sheet_url: sheetUrl, spreadsheet_id: spreadsheetId }), {
+    return new Response(JSON.stringify({
+      success: true,
+      sheet_url: sheetUrl,
+      spreadsheet_id: spreadsheetId,
+      is_update: isUpdate,
+    }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
