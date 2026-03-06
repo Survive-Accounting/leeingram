@@ -83,8 +83,7 @@ export default function BankedQuestionReview() {
   const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState("");
   const [editExplanation, setEditExplanation] = useState("");
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectNotes, setRejectNotes] = useState("");
+  
 
   // Fetch courses
   const { data: courses } = useQuery({
@@ -195,17 +194,10 @@ export default function BankedQuestionReview() {
 
   const reject = useCallback(() => {
     if (!current) return;
-    setRejectOpen(true);
-  }, [current]);
-
-  const confirmReject = useCallback(() => {
-    if (!current) return;
-    updateMutation.mutate({ review_status: "rejected", rejection_notes: rejectNotes || null } as any);
+    updateMutation.mutate({ review_status: "rejected" } as any);
     toast.success("Rejected");
-    setRejectOpen(false);
-    setRejectNotes("");
     if (currentIdx < filtered.length - 1) setCurrentIdx((i) => i + 1);
-  }, [current, rejectNotes, currentIdx, filtered.length, updateMutation]);
+  }, [current, currentIdx, filtered.length, updateMutation]);
 
   const rate = useCallback((r: number) => {
     if (!current) return;
@@ -237,7 +229,7 @@ export default function BankedQuestionReview() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (editOpen || rejectOpen) return;
+      if (editOpen) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
@@ -261,7 +253,7 @@ export default function BankedQuestionReview() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [approve, reject, rate, filtered.length, editOpen, rejectOpen]);
+  }, [approve, reject, rate, filtered.length, editOpen]);
 
   const pendingCount = filtered.filter((q) => q.review_status === "pending").length;
   const approvedCount = filtered.filter((q) => q.review_status === "approved").length;
@@ -545,22 +537,6 @@ export default function BankedQuestionReview() {
         </DialogContent>
       </Dialog>
 
-      {/* Reject Dialog */}
-      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reject Question</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label className="text-xs">Rejection Notes (optional)</Label>
-            <Textarea value={rejectNotes} onChange={(e) => setRejectNotes(e.target.value)} rows={3} className="text-xs" placeholder="Why is this question being rejected?" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setRejectOpen(false)}>Cancel</Button>
-            <Button variant="destructive" size="sm" onClick={confirmReject}>Reject</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </SurviveSidebarLayout>
   );
 }
