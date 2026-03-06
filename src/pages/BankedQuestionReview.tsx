@@ -83,8 +83,7 @@ export default function BankedQuestionReview() {
   const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState("");
   const [editExplanation, setEditExplanation] = useState("");
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectNotes, setRejectNotes] = useState("");
+  
 
   // Fetch courses
   const { data: courses } = useQuery({
