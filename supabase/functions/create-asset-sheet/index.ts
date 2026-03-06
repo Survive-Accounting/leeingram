@@ -457,10 +457,16 @@ Deno.serve(async (req) => {
 
     // Update teaching_assets in DB with sheet URL, file ID, and sync timestamp
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const dbAuthHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : authHeader;
+
+    if (!dbAuthHeader || !dbAuthHeader.startsWith("Bearer ") || dbAuthHeader.trim() === "Bearer") {
+      throw new Error("Cannot persist sheet metadata: missing valid database token");
+    }
+
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
+        Authorization: dbAuthHeader,
         apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
@@ -471,12 +477,14 @@ Deno.serve(async (req) => {
         sheet_last_synced_at: new Date().toISOString(),
       }),
     });
+
     if (!dbRes.ok) {
       const dbErr = await dbRes.text();
       console.error("DB update failed:", dbErr);
-    } else {
-      await dbRes.text();
+      throw new Error(`Failed to persist sheet metadata for asset ${asset_id}: ${dbErr}`);
     }
+
+    await dbRes.text();
 
     return new Response(JSON.stringify({
       success: true,
