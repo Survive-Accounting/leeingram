@@ -307,11 +307,49 @@ Deno.serve(async (req) => {
     let sheetUrl: string;
     let isUpdate = false;
 
+    let resolvedCourseFolderId: string | null = null;
+    let resolvedChapterFolderId: string | null = null;
+
+    const getFolderHierarchy = async () => {
+      if (resolvedCourseFolderId && resolvedChapterFolderId) {
+        return {
+          courseFolderId: resolvedCourseFolderId,
+          chapterFolderId: resolvedChapterFolderId,
+        };
+      }
+
+      const folders = await ensureFolderHierarchy(token, course_code, chapter_number, sa.client_email);
+      resolvedCourseFolderId = folders.courseFolderId;
+      resolvedChapterFolderId = folders.chapterFolderId;
+      return folders;
+    };
+
+    let candidateExistingFileId: string | null = existing_file_id || null;
+
     // ── UPSERT LOGIC ─────────────────────────────────────────────────
-    if (existing_file_id && !force_new_copy) {
+    // If DB metadata wasn't persisted previously, recover by name in the chapter folder.
+    if (!candidateExistingFileId && !force_new_copy) {
+      try {
+        const { chapterFolderId } = await getFolderHierarchy();
+        const matchingSheets = await findSheetsByNameInFolder(token, asset_code, chapterFolderId);
+
+        if (matchingSheets.length > 0) {
+          candidateExistingFileId = matchingSheets[0].id;
+          console.log(`Recovered existing sheet by name for ${asset_code}: ${candidateExistingFileId}`);
+
+          if (matchingSheets.length > 1) {
+            await archiveDuplicateSheets(token, matchingSheets.slice(1), chapterFolderId);
+          }
+        }
+      } catch (e) {
+        console.error("Name-based sheet recovery failed (non-fatal):", e);
+      }
+    }
+
+    if (candidateExistingFileId && !force_new_copy) {
       // UPDATE path: reuse existing spreadsheet
       isUpdate = true;
-      spreadsheetId = existing_file_id;
+      spreadsheetId = candidateExistingFileId;
       sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
       // Verify the file still exists / is accessible
@@ -321,6 +359,7 @@ Deno.serve(async (req) => {
         console.error("Existing sheet not accessible, will create new:", e.message);
         // Fall through to create path
         isUpdate = false;
+        candidateExistingFileId = null;
       }
 
       if (isUpdate) {
@@ -362,20 +401,7 @@ Deno.serve(async (req) => {
 
     if (!isUpdate) {
       // CREATE path: new spreadsheet
-      const rootFolderId = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
-      try {
-        await googleFetch(`${GOOGLE_DRIVE_API}/${rootFolderId}?fields=id,name&supportsAllDrives=true`, token);
-      } catch (e: any) {
-        console.error("Root folder check failed. SA email:", sa.client_email);
-        throw new Error(
-          `Cannot access shared root folder ${rootFolderId}. ` +
-          `Make sure it is shared with the service account: ${sa.client_email}`
-        );
-      }
-
-      const courseFolderId = await findOrCreateFolder(token, course_code, rootFolderId);
-      const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
-      const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
+      const { chapterFolderId } = await getFolderHierarchy();
 
       const driveFile = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
         method: "POST",
