@@ -412,10 +412,14 @@ export default function AssetDetailDrawer({
     if (!activeEntries) return;
     let content: string;
     if (fmt === "json") content = JSON.stringify(activeSource, null, 2);
-    else if (fmt === "tsv") content = entriesToTSV(activeEntries);
+    else if (fmt === "tsv") content = entriesToTSV(activeEntries, copySettings);
     else content = entriesToPlainText(activeEntries);
     navigator.clipboard.writeText(content);
-    toast.success(`Copied as ${fmt.toUpperCase()}`);
+    if (fmt === "tsv") {
+      toast.success(`TSV copied with spacer = ${copySettings.spacerColumns} column${copySettings.spacerColumns !== 1 ? "s" : ""}`);
+    } else {
+      toast.success(`Copied as ${fmt.toUpperCase()}`);
+    }
   };
 
   const problemLines = (asset.survive_problem_text || "").split("\n");
