@@ -86,6 +86,79 @@ async function findOrCreateFolder(token: string, name: string, parentId?: string
   return createData.id;
 }
 
+type DriveSheetFile = {
+  id: string;
+  name: string;
+  parents?: string[];
+  modifiedTime?: string;
+};
+
+function escapeDriveQueryValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+async function findSheetsByNameInFolder(token: string, fileName: string, folderId: string): Promise<DriveSheetFile[]> {
+  const safeName = escapeDriveQueryValue(fileName);
+  const q = `mimeType='application/vnd.google-apps.spreadsheet' and name='${safeName}' and trashed=false and '${folderId}' in parents`;
+  const searchData = await googleFetch(
+    `${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name,parents,modifiedTime)&orderBy=modifiedTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    token
+  );
+  return (searchData.files || []) as DriveSheetFile[];
+}
+
+async function moveFileToFolder(token: string, fileId: string, addParentId: string, removeParentIds: string[]) {
+  const params = new URLSearchParams({
+    supportsAllDrives: "true",
+    addParents: addParentId,
+  });
+
+  if (removeParentIds.length > 0) {
+    params.set("removeParents", removeParentIds.join(","));
+  }
+
+  await googleFetch(`${GOOGLE_DRIVE_API}/${fileId}?${params.toString()}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({}),
+  });
+}
+
+async function archiveDuplicateSheets(token: string, duplicates: DriveSheetFile[], chapterFolderId: string) {
+  if (duplicates.length === 0) return;
+
+  const archiveFolderId = await findOrCreateFolder(token, ARCHIVE_FOLDER_NAME, chapterFolderId);
+  for (const duplicate of duplicates) {
+    const removeParents = duplicate.parents?.length ? duplicate.parents : [chapterFolderId];
+    try {
+      await moveFileToFolder(token, duplicate.id, archiveFolderId, removeParents);
+      console.log(`Archived duplicate sheet ${duplicate.id} -> ${archiveFolderId}`);
+    } catch (e) {
+      console.error(`Failed to archive duplicate sheet ${duplicate.id} (non-fatal):`, e);
+    }
+  }
+}
+
+async function ensureFolderHierarchy(
+  token: string,
+  courseCode: string,
+  chapterNumber: string | number,
+  serviceAccountEmail: string
+): Promise<{ courseFolderId: string; chapterFolderId: string }> {
+  try {
+    await googleFetch(`${GOOGLE_DRIVE_API}/${ROOT_FOLDER_ID}?fields=id,name&supportsAllDrives=true`, token);
+  } catch (e) {
+    throw new Error(
+      `Cannot access shared root folder ${ROOT_FOLDER_ID}. ` +
+      `Make sure it is shared with the service account: ${serviceAccountEmail}`
+    );
+  }
+
+  const courseFolderId = await findOrCreateFolder(token, courseCode, ROOT_FOLDER_ID);
+  const chapterLabel = `Chapter ${String(chapterNumber).padStart(2, "0")}`;
+  const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
+  return { courseFolderId, chapterFolderId };
+}
+
 // ── Sheet tab helpers ────────────────────────────────────────────────
 
 async function ensureTabsExist(token: string, spreadsheetId: string): Promise<Record<string, number>> {
