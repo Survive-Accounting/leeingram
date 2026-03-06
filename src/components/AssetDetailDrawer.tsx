@@ -349,6 +349,16 @@ export default function AssetDetailDrawer({
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [copySettings, setCopySettings] = useState<JECopySettings>(loadCopySettings);
+  const [showCopySettings, setShowCopySettings] = useState(false);
+
+  const updateCopySettings = (patch: Partial<JECopySettings>) => {
+    setCopySettings(prev => {
+      const next = { ...prev, ...patch };
+      saveCopySettings(next);
+      return next;
+    });
+  };
 
   const handleResyncSheet = async () => {
     if (!asset) return;
