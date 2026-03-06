@@ -39,6 +39,7 @@ type TeachingAsset = {
   sheet_template_version?: string | null;
   google_sheet_url?: string | null;
   google_sheet_file_id?: string | null;
+  sheet_last_synced_at?: string | null;
   source_type?: string | null;
   source_number?: string | null;
   problem_type?: string | null;
