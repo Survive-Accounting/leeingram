@@ -8,6 +8,8 @@ const GOOGLE_SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"];
 
+const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
+const ARCHIVE_FOLDER_NAME = "_ARCHIVE_DUPLICATES";
 const REQUIRED_TABS = ["BRANDED", "WHITEBOARD", "SOLUTION", "HIGHLIGHTED", "METADATA"];
 
 // ── Google Auth helpers ──────────────────────────────────────────────
@@ -82,6 +84,79 @@ async function findOrCreateFolder(token: string, name: string, parentId?: string
     }),
   });
   return createData.id;
+}
+
+type DriveSheetFile = {
+  id: string;
+  name: string;
+  parents?: string[];
+  modifiedTime?: string;
+};
+
+function escapeDriveQueryValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+async function findSheetsByNameInFolder(token: string, fileName: string, folderId: string): Promise<DriveSheetFile[]> {
+  const safeName = escapeDriveQueryValue(fileName);
+  const q = `mimeType='application/vnd.google-apps.spreadsheet' and name='${safeName}' and trashed=false and '${folderId}' in parents`;
+  const searchData = await googleFetch(
+    `${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name,parents,modifiedTime)&orderBy=modifiedTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    token
+  );
+  return (searchData.files || []) as DriveSheetFile[];
+}
+
+async function moveFileToFolder(token: string, fileId: string, addParentId: string, removeParentIds: string[]) {
+  const params = new URLSearchParams({
+    supportsAllDrives: "true",
+    addParents: addParentId,
+  });
+
+  if (removeParentIds.length > 0) {
+    params.set("removeParents", removeParentIds.join(","));
+  }
+
+  await googleFetch(`${GOOGLE_DRIVE_API}/${fileId}?${params.toString()}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({}),
+  });
+}
+
+async function archiveDuplicateSheets(token: string, duplicates: DriveSheetFile[], chapterFolderId: string) {
+  if (duplicates.length === 0) return;
+
+  const archiveFolderId = await findOrCreateFolder(token, ARCHIVE_FOLDER_NAME, chapterFolderId);
+  for (const duplicate of duplicates) {
+    const removeParents = duplicate.parents?.length ? duplicate.parents : [chapterFolderId];
+    try {
+      await moveFileToFolder(token, duplicate.id, archiveFolderId, removeParents);
+      console.log(`Archived duplicate sheet ${duplicate.id} -> ${archiveFolderId}`);
+    } catch (e) {
+      console.error(`Failed to archive duplicate sheet ${duplicate.id} (non-fatal):`, e);
+    }
+  }
+}
+
+async function ensureFolderHierarchy(
+  token: string,
+  courseCode: string,
+  chapterNumber: string | number,
+  serviceAccountEmail: string
+): Promise<{ courseFolderId: string; chapterFolderId: string }> {
+  try {
+    await googleFetch(`${GOOGLE_DRIVE_API}/${ROOT_FOLDER_ID}?fields=id,name&supportsAllDrives=true`, token);
+  } catch (e) {
+    throw new Error(
+      `Cannot access shared root folder ${ROOT_FOLDER_ID}. ` +
+      `Make sure it is shared with the service account: ${serviceAccountEmail}`
+    );
+  }
+
+  const courseFolderId = await findOrCreateFolder(token, courseCode, ROOT_FOLDER_ID);
+  const chapterLabel = `Chapter ${String(chapterNumber).padStart(2, "0")}`;
+  const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
+  return { courseFolderId, chapterFolderId };
 }
 
 // ── Sheet tab helpers ────────────────────────────────────────────────
@@ -232,11 +307,49 @@ Deno.serve(async (req) => {
     let sheetUrl: string;
     let isUpdate = false;
 
+    let resolvedCourseFolderId: string | null = null;
+    let resolvedChapterFolderId: string | null = null;
+
+    const getFolderHierarchy = async () => {
+      if (resolvedCourseFolderId && resolvedChapterFolderId) {
+        return {
+          courseFolderId: resolvedCourseFolderId,
+          chapterFolderId: resolvedChapterFolderId,
+        };
+      }
+
+      const folders = await ensureFolderHierarchy(token, course_code, chapter_number, sa.client_email);
+      resolvedCourseFolderId = folders.courseFolderId;
+      resolvedChapterFolderId = folders.chapterFolderId;
+      return folders;
+    };
+
+    let candidateExistingFileId: string | null = existing_file_id || null;
+
     // ── UPSERT LOGIC ─────────────────────────────────────────────────
-    if (existing_file_id && !force_new_copy) {
+    // If DB metadata wasn't persisted previously, recover by name in the chapter folder.
+    if (!candidateExistingFileId && !force_new_copy) {
+      try {
+        const { chapterFolderId } = await getFolderHierarchy();
+        const matchingSheets = await findSheetsByNameInFolder(token, asset_code, chapterFolderId);
+
+        if (matchingSheets.length > 0) {
+          candidateExistingFileId = matchingSheets[0].id;
+          console.log(`Recovered existing sheet by name for ${asset_code}: ${candidateExistingFileId}`);
+
+          if (matchingSheets.length > 1) {
+            await archiveDuplicateSheets(token, matchingSheets.slice(1), chapterFolderId);
+          }
+        }
+      } catch (e) {
+        console.error("Name-based sheet recovery failed (non-fatal):", e);
+      }
+    }
+
+    if (candidateExistingFileId && !force_new_copy) {
       // UPDATE path: reuse existing spreadsheet
       isUpdate = true;
-      spreadsheetId = existing_file_id;
+      spreadsheetId = candidateExistingFileId;
       sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
       // Verify the file still exists / is accessible
@@ -246,6 +359,7 @@ Deno.serve(async (req) => {
         console.error("Existing sheet not accessible, will create new:", e.message);
         // Fall through to create path
         isUpdate = false;
+        candidateExistingFileId = null;
       }
 
       if (isUpdate) {
@@ -287,20 +401,7 @@ Deno.serve(async (req) => {
 
     if (!isUpdate) {
       // CREATE path: new spreadsheet
-      const rootFolderId = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
-      try {
-        await googleFetch(`${GOOGLE_DRIVE_API}/${rootFolderId}?fields=id,name&supportsAllDrives=true`, token);
-      } catch (e: any) {
-        console.error("Root folder check failed. SA email:", sa.client_email);
-        throw new Error(
-          `Cannot access shared root folder ${rootFolderId}. ` +
-          `Make sure it is shared with the service account: ${sa.client_email}`
-        );
-      }
-
-      const courseFolderId = await findOrCreateFolder(token, course_code, rootFolderId);
-      const chapterLabel = `Chapter ${String(chapter_number).padStart(2, "0")}`;
-      const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
+      const { chapterFolderId } = await getFolderHierarchy();
 
       const driveFile = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
         method: "POST",
@@ -356,10 +457,16 @@ Deno.serve(async (req) => {
 
     // Update teaching_assets in DB with sheet URL, file ID, and sync timestamp
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const dbAuthHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : authHeader;
+
+    if (!dbAuthHeader || !dbAuthHeader.startsWith("Bearer ") || dbAuthHeader.trim() === "Bearer") {
+      throw new Error("Cannot persist sheet metadata: missing valid database token");
+    }
+
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
+        Authorization: dbAuthHeader,
         apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
@@ -370,12 +477,14 @@ Deno.serve(async (req) => {
         sheet_last_synced_at: new Date().toISOString(),
       }),
     });
+
     if (!dbRes.ok) {
       const dbErr = await dbRes.text();
       console.error("DB update failed:", dbErr);
-    } else {
-      await dbRes.text();
+      throw new Error(`Failed to persist sheet metadata for asset ${asset_id}: ${dbErr}`);
     }
+
+    await dbRes.text();
 
     return new Response(JSON.stringify({
       success: true,

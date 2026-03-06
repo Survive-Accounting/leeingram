@@ -700,6 +700,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
             exercise_code: viewingProblem?.source_label || "",
             difficulty_estimate: data.asset?.difficulty ?? 5,
             created_at: new Date().toISOString(),
+            existing_file_id: (data.asset as any)?.google_sheet_file_id || undefined,
+            force_new_copy: false,
           },
         }).then((res) => {
           if (res.data?.sheet_url) {
