@@ -192,19 +192,51 @@ function JETable({ entries }: { entries: NormalizedEntry[] }) {
 
 // ── Export helpers ───────────────────────────────────────────────────
 
-function entriesToTSV(entries: NormalizedEntry[]): string {
+// ── Copy Settings ───────────────────────────────────────────────────
+
+type JECopySettings = { includeDate: boolean; spacerColumns: number };
+
+function loadCopySettings(): JECopySettings {
+  try {
+    const raw = localStorage.getItem("je_copy_settings");
+    if (raw) return { includeDate: true, spacerColumns: 1, ...JSON.parse(raw) };
+  } catch {}
+  return { includeDate: true, spacerColumns: 1 };
+}
+
+function saveCopySettings(s: JECopySettings) {
+  localStorage.setItem("je_copy_settings", JSON.stringify(s));
+}
+
+/** Format a date label to short M/d/yy for TSV */
+function toShortDate(label: string): string {
+  try {
+    // Try parsing common formats
+    const d = new Date(label);
+    if (!isNaN(d.getTime())) {
+      return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+    }
+  } catch {}
+  return label;
+}
+
+function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): string {
   const lines: string[] = [];
+  const spacer = "\t".repeat(settings.spacerColumns);
   entries.forEach((entry, idx) => {
     if (idx > 0) lines.push(""); // blank row between groups
-    lines.push(entry.label); // date row
-    lines.push(""); // blank row after date
+    if (settings.includeDate) {
+      lines.push(toShortDate(entry.label));
+    }
     for (const row of entry.rows) {
       const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
       const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
       if (isCredit) {
-        lines.push(`\t${row.account}\t${amount}`);
+        // Credit: tab-indented account, spacer, then blank debit + amount in credit col
+        lines.push(`\t${row.account}${spacer}\t${amount}`);
       } else {
-        lines.push(`${row.account}\t${amount}`);
+        // Debit: account, spacer, then amount in debit col
+        lines.push(`${row.account}${spacer}${amount}`);
       }
     }
   });
