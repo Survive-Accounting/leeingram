@@ -141,7 +141,7 @@ export default function BankedQuestionReview() {
       if (courseFilter !== "all" && courseId !== courseFilter) return false;
       if (chapterFilter !== "all") {
         const ch = chapters?.find((c) => c.id === chapterFilter);
-        if (ch && q.assets?.chapter_number !== ch.chapter_number) return false;
+        if (ch && q.assets?.chapter_number !== ch.chapter_number && q.teaching_assets?.chapter_id !== chapterFilter) return false;
       }
       if (typeFilter !== "all" && q.question_type !== typeFilter) return false;
       if (statusFilter !== "all" && q.review_status !== statusFilter) return false;
