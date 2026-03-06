@@ -6,11 +6,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Lightbulb, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, Clock, Users, BarChart3, CheckCircle2, Layers,
-  AlertTriangle, Check, RefreshCw, Loader2,
+  AlertTriangle, Check, RefreshCw, Loader2, Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -190,19 +192,51 @@ function JETable({ entries }: { entries: NormalizedEntry[] }) {
 
 // ── Export helpers ───────────────────────────────────────────────────
 
-function entriesToTSV(entries: NormalizedEntry[]): string {
+// ── Copy Settings ───────────────────────────────────────────────────
+
+type JECopySettings = { includeDate: boolean; spacerColumns: number };
+
+function loadCopySettings(): JECopySettings {
+  try {
+    const raw = localStorage.getItem("je_copy_settings");
+    if (raw) return { includeDate: true, spacerColumns: 1, ...JSON.parse(raw) };
+  } catch {}
+  return { includeDate: true, spacerColumns: 1 };
+}
+
+function saveCopySettings(s: JECopySettings) {
+  localStorage.setItem("je_copy_settings", JSON.stringify(s));
+}
+
+/** Format a date label to short M/d/yy for TSV */
+function toShortDate(label: string): string {
+  try {
+    // Try parsing common formats
+    const d = new Date(label);
+    if (!isNaN(d.getTime())) {
+      return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+    }
+  } catch {}
+  return label;
+}
+
+function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): string {
   const lines: string[] = [];
+  const spacer = "\t".repeat(settings.spacerColumns);
   entries.forEach((entry, idx) => {
     if (idx > 0) lines.push(""); // blank row between groups
-    lines.push(entry.label); // date row
-    lines.push(""); // blank row after date
+    if (settings.includeDate) {
+      lines.push(toShortDate(entry.label));
+    }
     for (const row of entry.rows) {
       const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
       const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
       if (isCredit) {
-        lines.push(`\t${row.account}\t${amount}`);
+        // Credit: tab-indented account, spacer, then blank debit + amount in credit col
+        lines.push(`\t${row.account}${spacer}\t${amount}`);
       } else {
-        lines.push(`${row.account}\t${amount}`);
+        // Debit: account, spacer, then amount in debit col
+        lines.push(`${row.account}${spacer}${amount}`);
       }
     }
   });
@@ -315,6 +349,16 @@ export default function AssetDetailDrawer({
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [copySettings, setCopySettings] = useState<JECopySettings>(loadCopySettings);
+  const [showCopySettings, setShowCopySettings] = useState(false);
+
+  const updateCopySettings = (patch: Partial<JECopySettings>) => {
+    setCopySettings(prev => {
+      const next = { ...prev, ...patch };
+      saveCopySettings(next);
+      return next;
+    });
+  };
 
   const handleResyncSheet = async () => {
     if (!asset) return;
@@ -368,10 +412,14 @@ export default function AssetDetailDrawer({
     if (!activeEntries) return;
     let content: string;
     if (fmt === "json") content = JSON.stringify(activeSource, null, 2);
-    else if (fmt === "tsv") content = entriesToTSV(activeEntries);
+    else if (fmt === "tsv") content = entriesToTSV(activeEntries, copySettings);
     else content = entriesToPlainText(activeEntries);
     navigator.clipboard.writeText(content);
-    toast.success(`Copied as ${fmt.toUpperCase()}`);
+    if (fmt === "tsv") {
+      toast.success(`TSV copied with spacer = ${copySettings.spacerColumns} column${copySettings.spacerColumns !== 1 ? "s" : ""}`);
+    } else {
+      toast.success(`Copied as ${fmt.toUpperCase()}`);
+    }
   };
 
   const problemLines = (asset.survive_problem_text || "").split("\n");
@@ -531,16 +579,54 @@ export default function AssetDetailDrawer({
 
                   {activeEntries && <JETable entries={activeEntries} />}
 
-                  <div className="flex gap-2 flex-wrap pt-2 border-t border-border">
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
-                      <ClipboardList className="h-3 w-3 mr-1" /> Copy TSV
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
-                      <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("json")}>
-                      <FileJson className="h-3 w-3 mr-1" /> Copy JSON
-                    </Button>
+                  {/* Copy Settings Panel */}
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
+                          <ClipboardList className="h-3 w-3 mr-1" /> Copy TSV
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
+                          <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("json")}>
+                          <FileJson className="h-3 w-3 mr-1" /> Copy JSON
+                        </Button>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
+                        <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
+                      </Button>
+                    </div>
+
+                    {showCopySettings && (
+                      <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="include-date"
+                            checked={copySettings.includeDate}
+                            onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
+                          />
+                          <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-foreground">Spacer Columns:</label>
+                          <Select
+                            value={String(copySettings.spacerColumns)}
+                            onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
+                          >
+                            <SelectTrigger className="h-7 w-16 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="2">2</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
+                      </div>
+                    )}
                   </div>
 
                   <Tooltip>
