@@ -217,7 +217,7 @@ export default function BankedQuestionReview() {
     if (!current) return;
     const answers = [current.answer_a, current.answer_b, current.answer_c, current.answer_d, current.answer_e].filter(Boolean);
     const html = renderQuestionHtml({
-      questionId: current.assets?.asset_code || "Q",
+      questionId: current.assets?.asset_code || current.teaching_assets?.asset_name || "Q",
       questionText: current.question_text,
       answers,
       correctAnswer: current.correct_answer,
