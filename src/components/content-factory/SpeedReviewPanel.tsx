@@ -255,6 +255,12 @@ export function SpeedReviewPanel({
 
       {/* ── Action Bar ── */}
       <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-md border border-border bg-muted/10">
+        {onBack && (
+          <Button size="sm" variant="ghost" onClick={onBack} className="h-8 text-xs">
+            Back
+            <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">B</kbd>
+          </Button>
+        )}
         <Button size="sm" onClick={onApprove} className="h-8 text-xs font-medium">
           <Check className="h-3.5 w-3.5 mr-1" /> Approve
           <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">A</kbd>
@@ -268,8 +274,8 @@ export function SpeedReviewPanel({
           <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">F</kbd>
         </Button>
         <Button size="sm" variant="ghost" onClick={onNext} className="h-8 text-xs">
-          Next
-          <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">N</kbd>
+          Skip
+          <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">S</kbd>
         </Button>
         <div className="ml-auto">
           <Button size="sm" variant="outline" onClick={onOpenFullReview} className="h-8 text-xs">
