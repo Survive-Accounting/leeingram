@@ -66,6 +66,7 @@ export function SpeedReviewPanel({
   onRegenerate,
   onFlagForDeepReview,
   onNext,
+  onBack,
   onOpenFullReview,
 }: SpeedReviewPanelProps) {
   const parts = useMemo(() => normalizeToParts(variant), [variant]);
