@@ -229,7 +229,7 @@ export default function BankedQuestionReview() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (editOpen || rejectOpen) return;
+      if (editOpen) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
