@@ -253,7 +253,7 @@ export default function BankedQuestionReview() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [approve, reject, rate, filtered.length, editOpen, rejectOpen]);
+  }, [approve, reject, rate, filtered.length, editOpen]);
 
   const pendingCount = filtered.filter((q) => q.review_status === "pending").length;
   const approvedCount = filtered.filter((q) => q.review_status === "approved").length;
