@@ -115,13 +115,16 @@ export default function BankedQuestionReview() {
       const { data, error } = await supabase
         .from("banked_questions")
         .select(`
-          id, asset_id, question_type, question_text,
+          id, asset_id, teaching_asset_id, question_type, question_text,
           answer_a, answer_b, answer_c, answer_d, answer_e,
           correct_answer, short_explanation, difficulty,
           ai_confidence_score, review_status, rating, rejection_notes,
           assets (
             asset_code, chapter_number, course_id,
             courses ( code )
+          ),
+          teaching_assets (
+            asset_name, course_id, chapter_id
           )
         `)
         .order("created_at", { ascending: false });
