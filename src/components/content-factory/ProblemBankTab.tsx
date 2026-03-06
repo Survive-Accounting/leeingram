@@ -1430,12 +1430,24 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                     await supabase.from("problem_variants").update({ variant_status: "archived" } as any).eq("id", currentVariant._variantId);
                     toast.success("Variant archived — regenerate from Full Review");
                     if (rp) await loadReviewCandidates(rp.id);
+                    // Auto-advance after regenerate
+                    if (speedReviewVariantIndex < activeVariants.length - 1) {
+                      setSpeedReviewVariantIndex(prev => prev + 1);
+                    } else if (reviewIndex < generatedProblems.length - 1) {
+                      navigateReview("next");
+                    }
                   }}
                   onFlagForDeepReview={async () => {
                     if (!currentVariant._variantId) return;
                     await supabase.from("problem_variants").update({ variant_status: "needs_fix", reviewed_at: new Date().toISOString() } as any).eq("id", currentVariant._variantId);
                     toast.success("Flagged for deep review");
                     if (rp) await loadReviewCandidates(rp.id);
+                    // Auto-advance after flag
+                    if (speedReviewVariantIndex < activeVariants.length - 1) {
+                      setSpeedReviewVariantIndex(prev => prev + 1);
+                    } else if (reviewIndex < generatedProblems.length - 1) {
+                      navigateReview("next");
+                    }
                   }}
                   onNext={() => {
                     if (speedReviewVariantIndex < activeVariants.length - 1) {
@@ -1444,6 +1456,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
                       navigateReview("next");
                     } else {
                       toast.info("No more variants to review");
+                    }
+                  }}
+                  onBack={() => {
+                    if (speedReviewVariantIndex > 0) {
+                      setSpeedReviewVariantIndex(prev => prev - 1);
+                    } else if (reviewIndex > 0) {
+                      navigateReview("prev");
+                    } else {
+                      toast.info("Already at the first item");
                     }
                   }}
                   onOpenFullReview={() => setSpeedReviewMode(false)}
