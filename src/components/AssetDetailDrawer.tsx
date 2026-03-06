@@ -82,8 +82,8 @@ function applyMode(row: JERow, mode: JEMode): { account: string; debit: number |
   if (mode === "template") {
     return { account, debit: null, credit: null, side };
   }
-  // all_question_marks — show ??? on the active side
-  return { account, debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
+  // all_question_marks — hide both account and amount with ???
+  return { account: "???", debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
 }
 
 function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
@@ -232,11 +232,11 @@ function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): str
       const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
       const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
       if (isCredit) {
-        // Credit: tab-indented account, spacer, blank debit col, amount in credit col
-        lines.push(`\t${row.account}${spacer}\t\t${amount}`);
+        // Credit: tab-indented account, spacer, debit col blank, credit amount
+        lines.push(`\t${row.account}${spacer}\t${amount}`);
       } else {
-        // Debit: account, spacer, amount in debit col
-        lines.push(`${row.account}${spacer}\t${amount}`);
+        // Debit: account, spacer, debit amount, credit blank
+        lines.push(`${row.account}${spacer}${amount}`);
       }
     }
   });
