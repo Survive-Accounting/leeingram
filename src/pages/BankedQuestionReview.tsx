@@ -27,7 +27,8 @@ import { Label } from "@/components/ui/label";
 
 type BankedQuestion = {
   id: string;
-  asset_id: string;
+  asset_id: string | null;
+  teaching_asset_id: string | null;
   question_type: string;
   question_text: string;
   answer_a: string;
@@ -47,7 +48,12 @@ type BankedQuestion = {
     chapter_number: number;
     course_id: string;
     courses: { code: string };
-  };
+  } | null;
+  teaching_assets: {
+    asset_name: string;
+    course_id: string;
+    chapter_id: string;
+  } | null;
 };
 
 const QUESTION_TYPES = ["JE_MC", "CALC_MC", "CONCEPT_MC", "TRUE_FALSE", "TRAP", "RELEVANT_INFO", "IRRELEVANT_INFO"];
