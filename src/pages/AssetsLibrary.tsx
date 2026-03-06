@@ -39,6 +39,7 @@ type TeachingAsset = {
   sheet_template_version?: string | null;
   google_sheet_url?: string | null;
   google_sheet_file_id?: string | null;
+  sheet_last_synced_at?: string | null;
   source_type?: string | null;
   source_number?: string | null;
   problem_type?: string | null;
@@ -636,6 +637,7 @@ export default function AssetsLibrary() {
         sheetUrl={viewingAsset ? sheetUrls[viewingAsset.asset_name] : undefined}
         onRevert={() => { if (viewingAsset) { setRevertId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
         onDelete={() => { if (viewingAsset) { setDeleteId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
+        onAssetUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })}
       />
     </SurviveSidebarLayout>
   );

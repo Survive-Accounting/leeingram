@@ -10,10 +10,11 @@ import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Lightbulb, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, Clock, Users, BarChart3, CheckCircle2, Layers,
-  AlertTriangle, Check,
+  AlertTriangle, Check, RefreshCw, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -41,6 +42,7 @@ export type TeachingAssetFull = {
   journal_entry_template_json: any;
   google_sheet_url?: string | null;
   google_sheet_file_id?: string | null;
+  sheet_last_synced_at?: string | null;
   times_used?: number;
   sheet_template_version?: string | null;
   source_type?: string | null;
@@ -59,6 +61,7 @@ interface AssetDetailDrawerProps {
   sheetUrl?: string;
   onRevert: () => void;
   onDelete: () => void;
+  onAssetUpdated?: () => void;
 }
 
 // ── Normalize JE data from various formats ──────────────────────────
@@ -307,10 +310,37 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 // ── Main Drawer ──────────────────────────────────────────────────────
 
 export default function AssetDetailDrawer({
-  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete,
+  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated,
 }: AssetDetailDrawerProps) {
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleResyncSheet = async () => {
+    if (!asset) return;
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
+        body: {
+          asset_id: asset.id,
+          asset_code: asset.asset_name,
+          course_code: courseLabel,
+          chapter_number: chapterLabel.match(/\d+/)?.[0] || "0",
+          existing_file_id: asset.google_sheet_file_id || undefined,
+          force_new_copy: false,
+          problem_text: asset.survive_problem_text,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(data?.is_update ? "Sheet synced successfully" : "New sheet created");
+      onAssetUpdated?.();
+    } catch (e: any) {
+      toast.error(e.message || "Sheet sync failed");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Keyboard: Esc to close
   useEffect(() => {
@@ -544,6 +574,26 @@ export default function AssetDetailDrawer({
                   comingSoon
                 />
               )}
+
+              {/* Last synced + Resync */}
+              <div className="flex items-center justify-between gap-2 px-1">
+                <span className="text-[10px] text-muted-foreground">
+                  {asset.sheet_last_synced_at
+                    ? `Last synced: ${format(new Date(asset.sheet_last_synced_at), "MMM d, yyyy h:mm a")}`
+                    : "Never synced"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7"
+                  disabled={isSyncing}
+                  onClick={handleResyncSheet}
+                >
+                  {isSyncing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                  {asset.google_sheet_file_id ? "Resync Sheet" : "Create Sheet"}
+                </Button>
+              </div>
+
               <LinkCard icon={Video} label="Walkthrough Video" disabled comingSoon />
               <LinkCard icon={BookMarked} label="LearnWorlds / eBook" disabled comingSoon />
               <LinkCard icon={Share2} label="Share Link" disabled comingSoon />
