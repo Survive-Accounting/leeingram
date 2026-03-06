@@ -159,7 +159,7 @@ export default function BankedQuestionReview() {
   const grouped = useMemo(() => {
     const map = new Map<string, BankedQuestion[]>();
     for (const q of filtered) {
-      const key = q.assets?.asset_code || q.asset_id;
+      const key = q.assets?.asset_code || q.teaching_assets?.asset_name || q.asset_id || q.teaching_asset_id || "unknown";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(q);
     }
