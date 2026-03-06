@@ -137,7 +137,8 @@ export default function BankedQuestionReview() {
   const filtered = useMemo(() => {
     if (!allQuestions) return [];
     return allQuestions.filter((q) => {
-      if (courseFilter !== "all" && q.assets?.course_id !== courseFilter) return false;
+      const courseId = q.assets?.course_id || q.teaching_assets?.course_id;
+      if (courseFilter !== "all" && courseId !== courseFilter) return false;
       if (chapterFilter !== "all") {
         const ch = chapters?.find((c) => c.id === chapterFilter);
         if (ch && q.assets?.chapter_number !== ch.chapter_number) return false;
