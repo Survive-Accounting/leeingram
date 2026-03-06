@@ -574,6 +574,26 @@ export default function AssetDetailDrawer({
                   comingSoon
                 />
               )}
+
+              {/* Last synced + Resync */}
+              <div className="flex items-center justify-between gap-2 px-1">
+                <span className="text-[10px] text-muted-foreground">
+                  {asset.sheet_last_synced_at
+                    ? `Last synced: ${format(new Date(asset.sheet_last_synced_at), "MMM d, yyyy h:mm a")}`
+                    : "Never synced"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7"
+                  disabled={isSyncing}
+                  onClick={handleResyncSheet}
+                >
+                  {isSyncing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                  {asset.google_sheet_file_id ? "Resync Sheet" : "Create Sheet"}
+                </Button>
+              </div>
+
               <LinkCard icon={Video} label="Walkthrough Video" disabled comingSoon />
               <LinkCard icon={BookMarked} label="LearnWorlds / eBook" disabled comingSoon />
               <LinkCard icon={Share2} label="Share Link" disabled comingSoon />
