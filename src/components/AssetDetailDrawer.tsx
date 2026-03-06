@@ -6,11 +6,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Lightbulb, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, Clock, Users, BarChart3, CheckCircle2, Layers,
-  AlertTriangle, Check, RefreshCw, Loader2,
+  AlertTriangle, Check, RefreshCw, Loader2, Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
