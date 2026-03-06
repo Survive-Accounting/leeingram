@@ -27,7 +27,8 @@ import { Label } from "@/components/ui/label";
 
 type BankedQuestion = {
   id: string;
-  asset_id: string;
+  asset_id: string | null;
+  teaching_asset_id: string | null;
   question_type: string;
   question_text: string;
   answer_a: string;
@@ -47,7 +48,12 @@ type BankedQuestion = {
     chapter_number: number;
     course_id: string;
     courses: { code: string };
-  };
+  } | null;
+  teaching_assets: {
+    asset_name: string;
+    course_id: string;
+    chapter_id: string;
+  } | null;
 };
 
 const QUESTION_TYPES = ["JE_MC", "CALC_MC", "CONCEPT_MC", "TRUE_FALSE", "TRAP", "RELEVANT_INFO", "IRRELEVANT_INFO"];
@@ -109,13 +115,16 @@ export default function BankedQuestionReview() {
       const { data, error } = await supabase
         .from("banked_questions")
         .select(`
-          id, asset_id, question_type, question_text,
+          id, asset_id, teaching_asset_id, question_type, question_text,
           answer_a, answer_b, answer_c, answer_d, answer_e,
           correct_answer, short_explanation, difficulty,
           ai_confidence_score, review_status, rating, rejection_notes,
           assets (
             asset_code, chapter_number, course_id,
             courses ( code )
+          ),
+          teaching_assets (
+            asset_name, course_id, chapter_id
           )
         `)
         .order("created_at", { ascending: false });
@@ -128,10 +137,11 @@ export default function BankedQuestionReview() {
   const filtered = useMemo(() => {
     if (!allQuestions) return [];
     return allQuestions.filter((q) => {
-      if (courseFilter !== "all" && q.assets?.course_id !== courseFilter) return false;
+      const courseId = q.assets?.course_id || q.teaching_assets?.course_id;
+      if (courseFilter !== "all" && courseId !== courseFilter) return false;
       if (chapterFilter !== "all") {
         const ch = chapters?.find((c) => c.id === chapterFilter);
-        if (ch && q.assets?.chapter_number !== ch.chapter_number) return false;
+        if (ch && q.assets?.chapter_number !== ch.chapter_number && q.teaching_assets?.chapter_id !== chapterFilter) return false;
       }
       if (typeFilter !== "all" && q.question_type !== typeFilter) return false;
       if (statusFilter !== "all" && q.review_status !== statusFilter) return false;
@@ -149,7 +159,7 @@ export default function BankedQuestionReview() {
   const grouped = useMemo(() => {
     const map = new Map<string, BankedQuestion[]>();
     for (const q of filtered) {
-      const key = q.assets?.asset_code || q.asset_id;
+      const key = q.assets?.asset_code || q.teaching_assets?.asset_name || q.asset_id || q.teaching_asset_id || "unknown";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(q);
     }
@@ -207,7 +217,7 @@ export default function BankedQuestionReview() {
     if (!current) return;
     const answers = [current.answer_a, current.answer_b, current.answer_c, current.answer_d, current.answer_e].filter(Boolean);
     const html = renderQuestionHtml({
-      questionId: current.assets?.asset_code || "Q",
+      questionId: current.assets?.asset_code || current.teaching_assets?.asset_name || "Q",
       questionText: current.question_text,
       answers,
       correctAnswer: current.correct_answer,

@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.sync-asset-sheet-to-template]
 verify_jwt = false
+
+[functions.bank-teaching-asset]
+verify_jwt = false
