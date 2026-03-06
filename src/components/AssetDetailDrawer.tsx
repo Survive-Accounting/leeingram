@@ -42,6 +42,7 @@ export type TeachingAssetFull = {
   journal_entry_template_json: any;
   google_sheet_url?: string | null;
   google_sheet_file_id?: string | null;
+  sheet_last_synced_at?: string | null;
   times_used?: number;
   sheet_template_version?: string | null;
   source_type?: string | null;
