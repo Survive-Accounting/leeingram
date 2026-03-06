@@ -81,10 +81,9 @@ export function SpeedReviewPanel({
     return [];
   }, [variant.highlight_key_json, problemText]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — A/R/F auto-advance, S=skip, B=back
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Don't trigger in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
@@ -101,15 +100,19 @@ export function SpeedReviewPanel({
           e.preventDefault();
           onFlagForDeepReview();
           break;
-        case "n":
+        case "s":
           e.preventDefault();
           onNext();
+          break;
+        case "b":
+          e.preventDefault();
+          onBack?.();
           break;
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onApprove, onRegenerate, onFlagForDeepReview, onNext]);
+  }, [onApprove, onRegenerate, onFlagForDeepReview, onNext, onBack]);
 
   const confidence = variant.confidence_score ?? variant.candidate_data?.confidence_score ?? null;
   const difficulty = variant.difficulty_estimate ?? variant.candidate_data?.difficulty ?? null;
