@@ -457,11 +457,8 @@ Deno.serve(async (req) => {
 
     // Update teaching_assets in DB with sheet URL, file ID, and sync timestamp
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const dbAuthHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : authHeader;
-
-    if (!dbAuthHeader || !dbAuthHeader.startsWith("Bearer ") || dbAuthHeader.trim() === "Bearer") {
-      throw new Error("Cannot persist sheet metadata: missing valid database token");
-    }
+    // Use caller's auth header — teaching_assets RLS allows any authenticated user to update
+    const dbAuthHeader = authHeader;
 
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
