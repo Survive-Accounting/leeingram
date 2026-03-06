@@ -82,8 +82,8 @@ function applyMode(row: JERow, mode: JEMode): { account: string; debit: number |
   if (mode === "template") {
     return { account, debit: null, credit: null, side };
   }
-  // all_question_marks — show ??? on the active side
-  return { account, debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
+  // all_question_marks — hide both account and amount with ???
+  return { account: "???", debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
 }
 
 function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
