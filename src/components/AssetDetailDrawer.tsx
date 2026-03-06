@@ -579,16 +579,54 @@ export default function AssetDetailDrawer({
 
                   {activeEntries && <JETable entries={activeEntries} />}
 
-                  <div className="flex gap-2 flex-wrap pt-2 border-t border-border">
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
-                      <ClipboardList className="h-3 w-3 mr-1" /> Copy TSV
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
-                      <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("json")}>
-                      <FileJson className="h-3 w-3 mr-1" /> Copy JSON
-                    </Button>
+                  {/* Copy Settings Panel */}
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
+                          <ClipboardList className="h-3 w-3 mr-1" /> Copy TSV
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
+                          <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("json")}>
+                          <FileJson className="h-3 w-3 mr-1" /> Copy JSON
+                        </Button>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
+                        <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
+                      </Button>
+                    </div>
+
+                    {showCopySettings && (
+                      <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="include-date"
+                            checked={copySettings.includeDate}
+                            onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
+                          />
+                          <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-foreground">Spacer Columns:</label>
+                          <Select
+                            value={String(copySettings.spacerColumns)}
+                            onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
+                          >
+                            <SelectTrigger className="h-7 w-16 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="2">2</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
+                      </div>
+                    )}
                   </div>
 
                   <Tooltip>
