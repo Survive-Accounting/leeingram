@@ -253,7 +253,7 @@ export type Database = {
           answer_c: string
           answer_d: string
           answer_e: string
-          asset_id: string
+          asset_id: string | null
           correct_answer: string
           created_at: string
           difficulty: number
@@ -264,6 +264,7 @@ export type Database = {
           rejection_notes: string | null
           review_status: Database["public"]["Enums"]["question_review_status"]
           short_explanation: string
+          teaching_asset_id: string | null
         }
         Insert: {
           ai_confidence_score?: number
@@ -272,7 +273,7 @@ export type Database = {
           answer_c?: string
           answer_d?: string
           answer_e?: string
-          asset_id: string
+          asset_id?: string | null
           correct_answer?: string
           created_at?: string
           difficulty?: number
@@ -283,6 +284,7 @@ export type Database = {
           rejection_notes?: string | null
           review_status?: Database["public"]["Enums"]["question_review_status"]
           short_explanation?: string
+          teaching_asset_id?: string | null
         }
         Update: {
           ai_confidence_score?: number
@@ -291,7 +293,7 @@ export type Database = {
           answer_c?: string
           answer_d?: string
           answer_e?: string
-          asset_id?: string
+          asset_id?: string | null
           correct_answer?: string
           created_at?: string
           difficulty?: number
@@ -302,6 +304,7 @@ export type Database = {
           rejection_notes?: string | null
           review_status?: Database["public"]["Enums"]["question_review_status"]
           short_explanation?: string
+          teaching_asset_id?: string | null
         }
         Relationships: [
           {
@@ -309,6 +312,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banked_questions_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
             referencedColumns: ["id"]
           },
         ]
