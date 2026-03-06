@@ -310,10 +310,37 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 // ── Main Drawer ──────────────────────────────────────────────────────
 
 export default function AssetDetailDrawer({
-  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete,
+  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated,
 }: AssetDetailDrawerProps) {
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleResyncSheet = async () => {
+    if (!asset) return;
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
+        body: {
+          asset_id: asset.id,
+          asset_code: asset.asset_name,
+          course_code: courseLabel,
+          chapter_number: chapterLabel.match(/\d+/)?.[0] || "0",
+          existing_file_id: asset.google_sheet_file_id || undefined,
+          force_new_copy: false,
+          problem_text: asset.survive_problem_text,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(data?.is_update ? "Sheet synced successfully" : "New sheet created");
+      onAssetUpdated?.();
+    } catch (e: any) {
+      toast.error(e.message || "Sheet sync failed");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Keyboard: Esc to close
   useEffect(() => {
