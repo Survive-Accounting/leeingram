@@ -194,17 +194,10 @@ export default function BankedQuestionReview() {
 
   const reject = useCallback(() => {
     if (!current) return;
-    setRejectOpen(true);
-  }, [current]);
-
-  const confirmReject = useCallback(() => {
-    if (!current) return;
-    updateMutation.mutate({ review_status: "rejected", rejection_notes: rejectNotes || null } as any);
+    updateMutation.mutate({ review_status: "rejected" } as any);
     toast.success("Rejected");
-    setRejectOpen(false);
-    setRejectNotes("");
     if (currentIdx < filtered.length - 1) setCurrentIdx((i) => i + 1);
-  }, [current, rejectNotes, currentIdx, filtered.length, updateMutation]);
+  }, [current, currentIdx, filtered.length, updateMutation]);
 
   const rate = useCallback((r: number) => {
     if (!current) return;
