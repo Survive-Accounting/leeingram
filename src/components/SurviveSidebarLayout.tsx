@@ -1,6 +1,10 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Factory, Inbox, Library, Video, LogOut, Settings, Package, Workflow, GraduationCap, PanelLeftClose, PanelLeft, HelpCircle, FileCheck } from "lucide-react";
+import {
+  Home, LogOut, Settings, Workflow, PanelLeftClose, PanelLeft,
+  Inbox, Factory, Library, FileCheck, Package, Video, GraduationCap,
+  Rocket, LayoutDashboard,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,18 +17,21 @@ import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
 
-const PIPELINE_STAGE_ORDER: Record<string, number> = {
-  imported: 0, generated: 1, approved: 2, banked: 3, deployed: 4,
-};
+// ── Phase 1: VA Production ─────────────────────────────────────────
+const PHASE_1_ITEMS = [
+  { label: "Pipeline Overview", path: "/pipeline", icon: LayoutDashboard, section: null },
+  { label: "Problem Import", sub: "Screenshot intake", path: "/problem-bank", icon: Inbox, section: "INTAKE" },
+  { label: "Variant Generator", sub: "Generate & review", path: "/content", icon: Factory, section: "ASSET PRODUCTION" },
+  { label: "Approved Assets", sub: "Ready for banking", path: "/assets-library", icon: Library, section: "ASSET PRODUCTION" },
+  { label: "Question Bank", sub: "MC review & approve", path: "/question-review", icon: FileCheck, section: "BANKED" },
+];
 
-const NAV_ITEMS = [
-  { label: "Problem Import", sub: "Paste source screenshots", path: "/problem-bank", icon: Inbox, stageKey: "imported" },
-  { label: "Variant Generator", sub: "Generate exam-style variants", path: "/content", icon: Factory, stageKey: "generated" },
-  { label: "Approved & Ready", sub: "Approved problems vault", path: "/assets-library", icon: Library, stageKey: "approved" },
-  { label: "Question Bank", sub: "Review banked questions", path: "/question-review", icon: FileCheck, stageKey: "banked" },
-  { label: "LW Exports", sub: "Bundle for LearnWorlds CSV", path: "/export-sets", icon: Package, stageKey: null },
-  { label: "Deployment Queue", sub: "Track deployment status", path: "/filming", icon: Video, stageKey: "deployed" },
-  { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap, stageKey: null },
+// ── Phase 2: Instructor ────────────────────────────────────────────
+const PHASE_2_ITEMS = [
+  { label: "LW Exports", sub: "CSV bundles", path: "/export-sets", icon: Package, section: "EXPORT" },
+  { label: "Video Queue", sub: "Record & deploy", path: "/filming", icon: Video, section: "VIDEO" },
+  { label: "Deployment", sub: "VA checklist", path: "/deployment", icon: Rocket, section: "DEPLOY" },
+  { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap, section: null },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +61,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  // --- Course / Chapter data for header selectors ---
+  // ── Course / Chapter selectors ───────────────────────────────────
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -90,45 +97,93 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     setWorkspace({ ...workspace, chapterId: ch.id, chapterName: ch.chapter_name, chapterNumber: ch.chapter_number });
   };
 
-  // --- Pipeline counts for nav badges ---
-  const { data: pipelineProblems } = useQuery({
-    queryKey: ["pipeline-counts-sidebar", workspace?.chapterId],
+  // ── Pipeline badge counts ────────────────────────────────────────
+  const { data: pipelineCounts } = useQuery({
+    queryKey: ["pipeline-sidebar-counts", workspace?.chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const chId = workspace!.chapterId;
+      // Chapter problems counts
+      const { data: problems } = await supabase
         .from("chapter_problems")
         .select("id, pipeline_status")
-        .eq("chapter_id", workspace!.chapterId);
-      if (error) throw error;
-      return data as { id: string; pipeline_status: string }[];
+        .eq("chapter_id", chId);
+
+      const imported = problems?.filter(p => p.pipeline_status === "imported").length ?? 0;
+      const generated = problems?.filter(p => ["generated", "approved", "banked", "deployed"].includes(p.pipeline_status)).length ?? 0;
+
+      // Teaching assets count
+      const { count: approvedCount } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("chapter_id", chId);
+
+      // Banked questions count (global)
+      const { count: bankedCount } = await supabase
+        .from("banked_questions")
+        .select("id", { count: "exact", head: true });
+
+      return {
+        imported,
+        generated,
+        approved: approvedCount ?? 0,
+        banked: bankedCount ?? 0,
+      };
     },
     enabled: !!workspace?.chapterId,
   });
 
-  // Banked questions count
-  const { data: bankedCount } = useQuery({
-    queryKey: ["banked-questions-count"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("banked_questions")
-        .select("id", { count: "exact", head: true });
-      if (error) throw error;
-      return count || 0;
-    },
-  });
+  const getBadge = (path: string) => {
+    if (!pipelineCounts) return null;
+    if (path === "/problem-bank") return pipelineCounts.imported || null;
+    if (path === "/content") return pipelineCounts.generated || null;
+    if (path === "/assets-library") return pipelineCounts.approved || null;
+    if (path === "/question-review") return pipelineCounts.banked || null;
+    return null;
+  };
 
-  const stageCounts = useMemo(() => {
-    const counts: Record<string, number> = { imported: 0, generated: 0, approved: 0, banked: 0, deployed: 0 };
-    pipelineProblems?.forEach((p) => {
-      const order = PIPELINE_STAGE_ORDER[p.pipeline_status];
-      if (order === undefined) return;
-      Object.keys(counts).forEach((key) => {
-        if (PIPELINE_STAGE_ORDER[key] <= order) counts[key]++;
-      });
+  // ── Render nav section ───────────────────────────────────────────
+  const renderNavItems = (items: typeof PHASE_1_ITEMS, dimmed = false) => {
+    let lastSection: string | null = "__init__";
+    return items.map((item) => {
+      const Icon = item.icon;
+      const active = isActive(item.path);
+      const badge = getBadge(item.path);
+      const showHeader = item.section !== lastSection && item.section !== null;
+      lastSection = item.section;
+
+      return (
+        <div key={item.path}>
+          {showHeader && (
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 px-3 pt-3 pb-1">
+              {item.section}
+            </p>
+          )}
+          <Link
+            to={item.path}
+            className={cn(
+              "flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors",
+              active
+                ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                : dimmed
+                  ? "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <span className="text-sm block">{item.label}</span>
+              {item.sub && <span className="text-[10px] text-muted-foreground block leading-tight">{item.sub}</span>}
+            </div>
+            {badge !== null && badge > 0 && (
+              <span className="text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
+                {badge}
+              </span>
+            )}
+          </Link>
+        </div>
+      );
     });
-    // Override banked count with actual banked_questions count
-    if (bankedCount !== undefined) counts.banked = bankedCount;
-    return counts;
-  }, [pipelineProblems, bankedCount]);
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -192,15 +247,15 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-muted-foreground hover:text-foreground hover:bg-accent">
-              <Workflow className="mr-1 h-3.5 w-3.5" /> {workflowMode ? "Dashboard View" : "Workflow View"}
+              <Workflow className="mr-1 h-3.5 w-3.5" /> {workflowMode ? "Dashboard" : "Workflow"}
             </Button>
             <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground hover:bg-accent">
               <Link to="/style-guide">
-                <Settings className="mr-1 h-3.5 w-3.5" /> Preferences
+                <Settings className="mr-1 h-3.5 w-3.5" /> Prefs
               </Link>
             </Button>
             <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground hover:bg-accent">
-              <LogOut className="mr-1 h-3.5 w-3.5" /> Sign Out
+              <LogOut className="mr-1 h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -211,59 +266,52 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
         {!workflowMode && !sidebarCollapsed && (
           <nav
-            className="w-56 shrink-0 border-r border-border py-4 px-2 space-y-1 flex flex-col"
+            className="w-56 shrink-0 border-r border-border py-3 px-2 flex flex-col overflow-y-auto"
             style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
           >
-            <div className="space-y-1 flex-1">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                const count = item.stageKey && workspace?.chapterId ? stageCounts[item.stageKey] : null;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors",
-                      active
-                        ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-sm block">{item.label}</span>
-                      {item.sub && <span className="text-[10px] text-muted-foreground block leading-tight">{item.sub}</span>}
-                    </div>
-                    {count !== null && count > 0 && (
-                      <span className="text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
-                        {count}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-
-              <div className="pt-4 mt-4 border-t border-border space-y-1">
-                <Link
-                  to="/marketing"
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/marketing") ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                  )}
-                >
-                  Marketing
-                </Link>
-                <Link
-                  to="/ideas?domain=survive"
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-colors",
-                    location.pathname === "/ideas" ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                  )}
-                >
-                  Ideas
-                </Link>
+            {/* Phase 1 */}
+            <div className="mb-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
+                Phase 1 · VA Production
+              </p>
+              <div className="space-y-0.5">
+                {renderNavItems(PHASE_1_ITEMS)}
               </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border my-3" />
+
+            {/* Phase 2 */}
+            <div className="mb-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
+                Phase 2 · Instructor
+              </p>
+              <div className="space-y-0.5">
+                {renderNavItems(PHASE_2_ITEMS, true)}
+              </div>
+            </div>
+
+            {/* Bottom links */}
+            <div className="mt-auto pt-3 border-t border-border space-y-0.5">
+              <Link
+                to="/marketing"
+                className={cn(
+                  "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs transition-colors",
+                  isActive("/marketing") ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
+                )}
+              >
+                Marketing
+              </Link>
+              <Link
+                to="/ideas?domain=survive"
+                className={cn(
+                  "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs transition-colors",
+                  location.pathname === "/ideas" ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
+                )}
+              >
+                Ideas
+              </Link>
             </div>
           </nav>
         )}

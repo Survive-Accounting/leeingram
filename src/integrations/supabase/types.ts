@@ -2311,12 +2311,21 @@ export type Database = {
       }
       teaching_assets: {
         Row: {
+          asset_approved_at: string | null
           asset_name: string
           asset_type: Database["public"]["Enums"]["asset_type"]
+          banked_generated_at: string | null
+          banked_generation_status: string
+          banked_review_status: string
+          banked_reviewed_at: string | null
           base_raw_problem_id: string | null
           chapter_id: string
           course_id: string
           created_at: string
+          csv_export_status: string
+          csv_exported_at: string | null
+          deployment_completed_at: string | null
+          deployment_status: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
           google_sheet_file_id: string | null
           google_sheet_url: string | null
@@ -2325,6 +2334,11 @@ export type Database = {
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
           last_tutored_at: string | null
+          lw_ebook_url: string | null
+          lw_import_status: string
+          lw_imported_at: string | null
+          lw_quiz_url: string | null
+          lw_video_url: string | null
           problem_type: string | null
           sheet_last_synced_at: string | null
           sheet_template_version: string | null
@@ -2336,14 +2350,25 @@ export type Database = {
           tags: string[]
           times_used: number
           updated_at: string
+          video_production_status: string
+          video_ready_at: string | null
         }
         Insert: {
+          asset_approved_at?: string | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["asset_type"]
+          banked_generated_at?: string | null
+          banked_generation_status?: string
+          banked_review_status?: string
+          banked_reviewed_at?: string | null
           base_raw_problem_id?: string | null
           chapter_id: string
           course_id: string
           created_at?: string
+          csv_export_status?: string
+          csv_exported_at?: string | null
+          deployment_completed_at?: string | null
+          deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           google_sheet_file_id?: string | null
           google_sheet_url?: string | null
@@ -2352,6 +2377,11 @@ export type Database = {
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           last_tutored_at?: string | null
+          lw_ebook_url?: string | null
+          lw_import_status?: string
+          lw_imported_at?: string | null
+          lw_quiz_url?: string | null
+          lw_video_url?: string | null
           problem_type?: string | null
           sheet_last_synced_at?: string | null
           sheet_template_version?: string | null
@@ -2363,14 +2393,25 @@ export type Database = {
           tags?: string[]
           times_used?: number
           updated_at?: string
+          video_production_status?: string
+          video_ready_at?: string | null
         }
         Update: {
+          asset_approved_at?: string | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["asset_type"]
+          banked_generated_at?: string | null
+          banked_generation_status?: string
+          banked_review_status?: string
+          banked_reviewed_at?: string | null
           base_raw_problem_id?: string | null
           chapter_id?: string
           course_id?: string
           created_at?: string
+          csv_export_status?: string
+          csv_exported_at?: string | null
+          deployment_completed_at?: string | null
+          deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           google_sheet_file_id?: string | null
           google_sheet_url?: string | null
@@ -2379,6 +2420,11 @@ export type Database = {
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
           last_tutored_at?: string | null
+          lw_ebook_url?: string | null
+          lw_import_status?: string
+          lw_imported_at?: string | null
+          lw_quiz_url?: string | null
+          lw_video_url?: string | null
           problem_type?: string | null
           sheet_last_synced_at?: string | null
           sheet_template_version?: string | null
@@ -2390,6 +2436,8 @@ export type Database = {
           tags?: string[]
           times_used?: number
           updated_at?: string
+          video_production_status?: string
+          video_ready_at?: string | null
         }
         Relationships: [
           {
