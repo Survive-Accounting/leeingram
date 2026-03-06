@@ -108,6 +108,8 @@ const AppRoutes = () => {
       <Route path="/screenshot-capture/:chapterId" element={<ProtectedRoute><ScreenshotCapture /></ProtectedRoute>} />
       <Route path="/batch-run/:batchRunId" element={<ProtectedRoute><BatchRunDetail /></ProtectedRoute>} />
       <Route path="/question-review" element={<ProtectedRoute><BankedQuestionReview /></ProtectedRoute>} />
+      <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
+      <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
       <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
