@@ -8,6 +8,8 @@ const GOOGLE_SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"];
 
+const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
+const ARCHIVE_FOLDER_NAME = "_ARCHIVE_DUPLICATES";
 const REQUIRED_TABS = ["BRANDED", "WHITEBOARD", "SOLUTION", "HIGHLIGHTED", "METADATA"];
 
 // ── Google Auth helpers ──────────────────────────────────────────────
