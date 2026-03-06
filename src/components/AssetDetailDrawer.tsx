@@ -60,6 +60,7 @@ interface AssetDetailDrawerProps {
   sheetUrl?: string;
   onRevert: () => void;
   onDelete: () => void;
+  onAssetUpdated?: () => void;
 }
 
 // ── Normalize JE data from various formats ──────────────────────────
