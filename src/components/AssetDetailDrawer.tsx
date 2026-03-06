@@ -232,11 +232,11 @@ function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): str
       const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
       const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
       if (isCredit) {
-        // Credit: tab-indented account, spacer, then blank debit + amount in credit col
-        lines.push(`\t${row.account}${spacer}\t${amount}`);
+        // Credit: tab-indented account, spacer, blank debit col, amount in credit col
+        lines.push(`\t${row.account}${spacer}\t\t${amount}`);
       } else {
-        // Debit: account, spacer, then amount in debit col
-        lines.push(`${row.account}${spacer}${amount}`);
+        // Debit: account, spacer, amount in debit col
+        lines.push(`${row.account}${spacer}\t${amount}`);
       }
     }
   });
