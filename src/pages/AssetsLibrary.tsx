@@ -637,6 +637,7 @@ export default function AssetsLibrary() {
         sheetUrl={viewingAsset ? sheetUrls[viewingAsset.asset_name] : undefined}
         onRevert={() => { if (viewingAsset) { setRevertId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
         onDelete={() => { if (viewingAsset) { setDeleteId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
+        onAssetUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })}
       />
     </SurviveSidebarLayout>
   );
