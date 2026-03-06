@@ -356,98 +356,105 @@ export default function AssetsLibrary() {
           </p>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          {/* Bulk action dropdown */}
+        <div className="flex gap-2 flex-wrap items-center">
           {selectedIds.size > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  Actions ({selectedIds.size}) <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setExportOpen(true)}>
-                  <Download className="h-3.5 w-3.5 mr-2" /> Export to CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setSelectedSetId("__new__"); setNewSetName(""); setAddToSetOpen(true); }}>
-                  <FolderPlus className="h-3.5 w-3.5 mr-2" /> Add to Export Set
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  if (!assets) return;
+            <>
+              <Select value={bulkAction || ""} onValueChange={(v) => setBulkAction(v)}>
+                <SelectTrigger className="h-8 text-xs w-[220px] bg-background/95 border-border">
+                  <SelectValue placeholder={`Action for ${selectedIds.size} selected…`} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="export-csv">
+                    <span className="flex items-center gap-1.5"><Download className="h-3 w-3" /> Export to CSV</span>
+                  </SelectItem>
+                  <SelectItem value="add-to-set">
+                    <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
+                  </SelectItem>
+                  <SelectItem value="generate-ebook">
+                    <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> Generate eBook</span>
+                  </SelectItem>
+                  <SelectItem value="bank-mc">
+                    <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                disabled={!bulkAction || isBanking || isGeneratingEbook || isExporting}
+                onClick={async () => {
+                  if (!assets || !bulkAction) return;
                   const selected = assets.filter((a) => selectedIds.has(a.id));
                   if (!selected.length) return;
-                  setIsGeneratingEbook(true);
-                  try {
-                    const chapterMap = new Map(chapters?.map((c) => [c.id, c]) ?? []);
-                    const courseMap = new Map(courses?.map((c) => [c.id, c]) ?? []);
-                    const ebookAssets = selected.map((a) => ({
-                      id: a.id,
-                      asset_name: a.asset_name,
-                      survive_problem_text: a.survive_problem_text,
-                      survive_solution_text: a.survive_solution_text,
-                      journal_entry_block: a.journal_entry_block,
-                      course_slug: courseMap.get(a.course_id)?.slug ?? "COURSE",
-                      chapter_number: chapterMap.get(a.chapter_id)?.chapter_number ?? 0,
-                      chapter_name: chapterMap.get(a.chapter_id)?.chapter_name ?? "",
-                    }));
-                    await generateEbookDocx(ebookAssets);
-                    toast.success(`Generated eBook with ${selected.length} problems`);
-                  } catch (e: any) {
-                    toast.error(e.message || "eBook generation failed");
-                  } finally {
-                    setIsGeneratingEbook(false);
-                  }
-                }}>
-                  <FileText className="h-3.5 w-3.5 mr-2" /> Generate eBook
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="opacity-40">
-                  <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync Sheets to Template
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  if (!assets) return;
-                  const selected = assets.filter((a) => selectedIds.has(a.id));
-                  if (!selected.length) return;
-                  setIsBanking(true);
-                  let successCount = 0;
-                  let failCount = 0;
-                  for (const asset of selected) {
+
+                  if (bulkAction === "export-csv") {
+                    setExportOpen(true);
+                  } else if (bulkAction === "add-to-set") {
+                    setSelectedSetId("__new__");
+                    setNewSetName("");
+                    setAddToSetOpen(true);
+                  } else if (bulkAction === "generate-ebook") {
+                    setIsGeneratingEbook(true);
                     try {
-                      const { data, error } = await supabase.functions.invoke("bank-teaching-asset", {
-                        body: {
-                          teaching_asset_id: asset.id,
-                          asset_name: asset.asset_name,
-                          problem_text: asset.survive_problem_text,
-                          solution_text: asset.survive_solution_text,
-                          journal_entry_block: asset.journal_entry_block,
-                          difficulty: asset.difficulty,
-                        },
-                      });
-                      if (error) throw error;
-                      if (data?.error) throw new Error(data.error);
-                      successCount++;
-                      toast.success(`Banked ${asset.asset_name}`, { description: `${data.questions_generated} questions generated` });
+                      const chapterMap = new Map(chapters?.map((c) => [c.id, c]) ?? []);
+                      const courseMap = new Map(courses?.map((c) => [c.id, c]) ?? []);
+                      const ebookAssets = selected.map((a) => ({
+                        id: a.id,
+                        asset_name: a.asset_name,
+                        survive_problem_text: a.survive_problem_text,
+                        survive_solution_text: a.survive_solution_text,
+                        journal_entry_block: a.journal_entry_block,
+                        course_slug: courseMap.get(a.course_id)?.slug ?? "COURSE",
+                        chapter_number: chapterMap.get(a.chapter_id)?.chapter_number ?? 0,
+                        chapter_name: chapterMap.get(a.chapter_id)?.chapter_name ?? "",
+                      }));
+                      await generateEbookDocx(ebookAssets);
+                      toast.success(`Generated eBook with ${selected.length} problems`);
                     } catch (e: any) {
-                      failCount++;
-                      toast.error(`Failed to bank ${asset.asset_name}`, { description: e.message });
+                      toast.error(e.message || "eBook generation failed");
+                    } finally {
+                      setIsGeneratingEbook(false);
+                    }
+                  } else if (bulkAction === "bank-mc") {
+                    setIsBanking(true);
+                    let successCount = 0;
+                    let failCount = 0;
+                    for (const asset of selected) {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("bank-teaching-asset", {
+                          body: {
+                            teaching_asset_id: asset.id,
+                            asset_name: asset.asset_name,
+                            problem_text: asset.survive_problem_text,
+                            solution_text: asset.survive_solution_text,
+                            journal_entry_block: asset.journal_entry_block,
+                            difficulty: asset.difficulty,
+                          },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        successCount++;
+                        toast.success(`Banked ${asset.asset_name}`, { description: `${data.questions_generated} questions generated` });
+                      } catch (e: any) {
+                        failCount++;
+                        toast.error(`Failed to bank ${asset.asset_name}`, { description: e.message });
+                      }
+                    }
+                    setIsBanking(false);
+                    if (successCount > 0) {
+                      qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
+                      setSelectedIds(new Set());
                     }
                   }
-                  setIsBanking(false);
-                  if (successCount > 0) {
-                    qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
-                    setSelectedIds(new Set());
-                  }
-                }} disabled={isBanking}>
-                  {isBanking ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Landmark className="h-3.5 w-3.5 mr-2" />}
-                  {isBanking ? "Banking…" : "Bank (Generate MC Questions)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="opacity-40">
-                  <Tag className="h-3.5 w-3.5 mr-2" /> Mark as Banked Candidate
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="opacity-40">
-                  <Link2 className="h-3.5 w-3.5 mr-2" /> Export Links
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  setBulkAction(null);
+                }}
+              >
+                {(isBanking || isGeneratingEbook || isExporting) ? (
+                  <><Loader2 className="h-3 w-3 animate-spin" /> Running…</>
+                ) : (
+                  "Go"
+                )}
+              </Button>
+            </>
           )}
         </div>
       </div>
