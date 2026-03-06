@@ -104,6 +104,18 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     enabled: !!workspace?.chapterId,
   });
 
+  // Banked questions count
+  const { data: bankedCount } = useQuery({
+    queryKey: ["banked-questions-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("banked_questions")
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = { imported: 0, generated: 0, approved: 0, banked: 0, deployed: 0 };
     pipelineProblems?.forEach((p) => {
@@ -113,8 +125,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         if (PIPELINE_STAGE_ORDER[key] <= order) counts[key]++;
       });
     });
+    // Override banked count with actual banked_questions count
+    if (bankedCount !== undefined) counts.banked = bankedCount;
     return counts;
-  }, [pipelineProblems]);
+  }, [pipelineProblems, bankedCount]);
 
   return (
     <div className="min-h-screen relative">

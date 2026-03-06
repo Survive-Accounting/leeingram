@@ -537,22 +537,6 @@ export default function BankedQuestionReview() {
         </DialogContent>
       </Dialog>
 
-      {/* Reject Dialog */}
-      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reject Question</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label className="text-xs">Rejection Notes (optional)</Label>
-            <Textarea value={rejectNotes} onChange={(e) => setRejectNotes(e.target.value)} rows={3} className="text-xs" placeholder="Why is this question being rejected?" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setRejectOpen(false)}>Cancel</Button>
-            <Button variant="destructive" size="sm" onClick={confirmReject}>Reject</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </SurviveSidebarLayout>
   );
 }
