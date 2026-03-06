@@ -52,6 +52,7 @@ interface SpeedReviewPanelProps {
   onRegenerate: () => void;
   onFlagForDeepReview: () => void;
   onNext: () => void;
+  onBack?: () => void;
   onOpenFullReview: () => void;
 }
 
