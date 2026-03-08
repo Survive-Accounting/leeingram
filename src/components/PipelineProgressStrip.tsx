@@ -7,15 +7,17 @@ import { cn } from "@/lib/utils";
 const STAGES = [
   { key: "imported", label: "Import", path: "/problem-bank" },
   { key: "generated", label: "Generate", path: "/content" },
-  { key: "reviewed", label: "Review", path: "/question-review" },
+  { key: "reviewed", label: "Review", path: "/review" },
   { key: "approved", label: "Teaching Assets", path: "/assets-library" },
-  { key: "mc_generated", label: "MC Generator", path: "/export-sets" },
-  { key: "video", label: "Video Queue", path: "/filming" },
+  { key: "mc_generated", label: "MC Generator", path: "/question-review" },
+  { key: "quizzes_ready", label: "Quizzes Ready", path: "/quizzes-ready" },
+  { key: "video_pending", label: "Video Pending", path: "/video-pending" },
+  { key: "video_ready", label: "Videos Ready", path: "/videos-ready" },
   { key: "deployed", label: "Deploy", path: "/deployment" },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
-  imported: 0, generated: 1, reviewed: 2, approved: 3, mc_generated: 4, video: 5, deployed: 6,
+  imported: 0, generated: 1, reviewed: 2, approved: 3, mc_generated: 4, quizzes_ready: 5, video_pending: 6, video_ready: 7, deployed: 8,
 };
 
 function getActiveStageIdx(pathname: string): number {
