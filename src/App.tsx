@@ -87,10 +87,12 @@ const AppRoutes = () => {
       <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
       <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
       <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
+      <Route path="/review" element={<ProtectedRoute><ReviewRedirect /></ProtectedRoute>} />
       <Route path="/filming" element={<Navigate to="/video-pending" replace />} />
       <Route path="/quizzes-ready" element={<ProtectedRoute><QuizzesReady /></ProtectedRoute>} />
       <Route path="/video-pending" element={<ProtectedRoute><VideoPending /></ProtectedRoute>} />
       <Route path="/videos-ready" element={<ProtectedRoute><VideosReady /></ProtectedRoute>} />
+      <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
       <Route path="/tutoring/review" element={<ProtectedRoute><TutoringReview /></ProtectedRoute>} />
       <Route path="/tutoring/review/source/:problemId" element={<ProtectedRoute><TutoringSourceDetail /></ProtectedRoute>} />
       <Route path="/tutoring/review/:problemId" element={<ProtectedRoute><TutoringReviewDetail /></ProtectedRoute>} />
