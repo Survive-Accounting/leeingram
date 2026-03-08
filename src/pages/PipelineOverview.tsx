@@ -189,7 +189,7 @@ export default function PipelineOverview() {
 
         {/* Phase 2 */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-3">Phase 2 · Instructor</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-3">Phase 2 · Instructor</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {stages.filter(s => s.phase === 2).map((stage) => {
               const Icon = stage.icon;
