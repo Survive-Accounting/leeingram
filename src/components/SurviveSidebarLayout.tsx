@@ -209,7 +209,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             "shrink-0 border-r border-border py-3 px-2 flex flex-col overflow-y-auto transition-all",
             sidebarCollapsed ? "w-14" : "w-48"
           )}
-          style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
+          style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
           {!sidebarCollapsed && (
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
