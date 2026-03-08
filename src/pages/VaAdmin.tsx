@@ -105,32 +105,17 @@ export default function VaAdmin() {
   // Create VA account
   const createMutation = useMutation({
     mutationFn: async () => {
-      // 1. Create auth user via edge function or directly
-      // For simplicity, we create the auth user via supabase admin signUp
-      // Note: This creates a user. In production, use an edge function with service role.
-      // For now, we'll create the va_accounts row assuming the user already exists or will be invited.
-      
-      // Create auth user (auto-confirm for test purposes)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formEmail,
-        password: formPassword,
-        options: { data: { full_name: formName } },
+      const { data, error } = await supabase.functions.invoke("create-va-user", {
+        body: {
+          email: formEmail,
+          password: formPassword,
+          full_name: formName,
+          assigned_course_id: formCourseId || null,
+          assigned_chapter_id: formChapterId || null,
+        },
       });
-      
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("User creation failed");
-
-      // 2. Create va_accounts row
-      const { error } = await supabase.from("va_accounts").insert({
-        user_id: authData.user.id,
-        full_name: formName,
-        email: formEmail,
-        role: "va_test",
-        assigned_course_id: formCourseId || null,
-        assigned_chapter_id: formChapterId || null,
-        account_status: "active",
-      } as any);
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["va-accounts-admin"] });
