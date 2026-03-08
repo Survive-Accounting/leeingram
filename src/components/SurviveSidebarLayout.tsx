@@ -332,12 +332,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <PipelineProgressStrip />
           <NextTaskBanner />
           <div
-            className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5"
+            className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5 bg-card border border-border"
             style={{
-              background: "hsl(222 20% 7% / 0.92)",
-              backdropFilter: "blur(24px)",
-              border: "1px solid hsl(220 12% 18% / 0.6)",
-              boxShadow: "0 4px 24px -4px rgba(0,0,0,0.3)",
+              boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)",
             }}
           >
             {children}
