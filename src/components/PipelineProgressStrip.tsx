@@ -8,7 +8,7 @@ const STAGES = [
   { key: "imported", label: "Import", path: "/problem-bank" },
   { key: "generated", label: "Generate", path: "/content" },
   { key: "reviewed", label: "Review", path: "/question-review" },
-  { key: "approved", label: "Asset Library", path: "/assets-library" },
+  { key: "approved", label: "Teaching Assets", path: "/assets-library" },
   { key: "mc_generated", label: "MC Generator", path: "/export-sets" },
   { key: "video", label: "Video Queue", path: "/filming" },
   { key: "deployed", label: "Deploy", path: "/deployment" },
@@ -94,7 +94,7 @@ export function PipelineProgressStrip() {
       <div className="flex gap-4 items-end">
         {/* Phase 1 */}
         <div className="flex-1">
-          <p className="text-[8px] uppercase tracking-widest text-primary/60 font-bold mb-1">Phase 1 · Asset Creation</p>
+          <p className="text-[8px] uppercase tracking-widest text-primary/60 font-bold mb-1">Phase 1 · Teaching Asset Creation</p>
           <div className="grid grid-cols-4 gap-1">
             {phase1Stages.map((stage, idx) => {
               const isFilled = idx <= highestReached;
