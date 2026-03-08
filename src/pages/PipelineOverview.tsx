@@ -221,8 +221,8 @@ export default function PipelineOverview() {
         </div>
 
         {/* Next actions summary */}
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-1.5">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
             <AlertCircle className="h-3.5 w-3.5 text-amber-400" /> Next Actions
           </h3>
           <div className="space-y-2 text-sm">
