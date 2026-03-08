@@ -39,7 +39,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-6">
-        <div className="rounded-xl p-5" style={{ background: "hsl(220 20% 7% / 0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.10)" }}>
+        <div className="rounded-xl p-5 bg-card border border-border" style={{ boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)" }}>
           {children}
         </div>
       </main>
