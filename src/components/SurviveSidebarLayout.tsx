@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
-  Inbox, Factory, Library, FileCheck, Package, Video,
-  Rocket, Users, CheckCircle2, Loader2,
+  Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
+  Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,14 +25,16 @@ import { toast } from "sonner";
 const PHASE_1_ITEMS = [
   { label: "Import", path: "/problem-bank", icon: Inbox },
   { label: "Generate", path: "/content", icon: Factory },
-  { label: "Review", path: "/question-review", icon: FileCheck },
+  { label: "Review", path: "/review", icon: FileCheck },
   { label: "Teaching Assets", path: "/assets-library", icon: Library },
 ];
 
 const PHASE_2_ITEMS = [
-  { label: "MC Generator", path: "/export-sets", icon: Package },
-  { label: "Video Queue", path: "/filming", icon: Video },
-  { label: "Deploy to LW", path: "/deployment", icon: Rocket },
+  { label: "MC Generator", path: "/question-review", icon: Package },
+  { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
+  { label: "Video Pending", path: "/video-pending", icon: VideoOff },
+  { label: "Videos Ready", path: "/videos-ready", icon: Video },
+  { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {

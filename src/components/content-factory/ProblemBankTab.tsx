@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,7 @@ interface Props {
   chapterId: string;
   chapterNumber: number;
   courseId: string;
+  autoReview?: boolean;
 }
 
 /* Legacy parseJournalEntry removed — now using shared JournalEntryTable component */
@@ -128,7 +129,7 @@ type ChapterProblem = {
   ocr_status?: string;
 };
 
-export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
+export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { recomputeProgress } = useBuildRun();
@@ -955,6 +956,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
 
   // Review queue helpers
   const generatedProblems = problems?.filter(p => p.status === "generated") ?? [];
+
+  // Auto-start review if navigated with ?mode=review
+  const autoReviewTriggered = useRef(false);
+  useEffect(() => {
+    if (autoReview && !autoReviewTriggered.current && generatedProblems.length > 0 && !reviewMode) {
+      autoReviewTriggered.current = true;
+      startReviewQueue(0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoReview, generatedProblems.length]);
 
   const startReviewQueue = async (startIdx = 0) => {
     if (generatedProblems.length === 0) {
@@ -2346,16 +2357,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
         <div className="flex items-center gap-2">
-          {generatedProblems.length > 0 && (
-            <Button
-              size="sm"
-              variant="default"
-              className="text-xs"
-              onClick={() => startReviewQueue(0)}
-            >
-              <Eye className="h-3 w-3 mr-1" /> Review Generated ({generatedProblems.length})
-            </Button>
-          )}
           <Button
             size="sm"
             variant="outline"

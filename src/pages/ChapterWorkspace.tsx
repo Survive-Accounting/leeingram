@@ -62,6 +62,7 @@ export default function ChapterWorkspace() {
   const { activeRun, isRunning } = useBuildRun();
   const qc = useQueryClient();
   const initialTab = searchParams.get("tab") || "problems";
+  const autoReview = searchParams.get("mode") === "review";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const { data: chapter } = useQuery({
@@ -132,7 +133,7 @@ export default function ChapterWorkspace() {
         </TabsList>
 
         <TabsContent value="problems">
-          <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} />
+          <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} autoReview={autoReview} />
         </TabsContent>
 
         <TabsContent value="dependent">

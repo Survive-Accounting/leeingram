@@ -7,10 +7,12 @@ import { ArrowRight } from "lucide-react";
 const ROUTE_TASKS: Record<string, { task: string; countQuery?: string }> = {
   "/problem-bank": { task: "Import textbook screenshots for this chapter.", countQuery: "imported" },
   "/content": { task: "Generate variants from imported problems.", countQuery: "generated" },
-  "/question-review": { task: "Review generated questions.", countQuery: "review" },
-  "/assets-library": { task: "Manage approved assets for production." },
-  "/export-sets": { task: "Generate MC quiz sets from approved assets." },
-  "/filming": { task: "Record walkthrough videos for assets." },
+  "/review": { task: "Review generated variants — approve or send back." },
+  "/assets-library": { task: "Manage approved teaching assets for production." },
+  "/question-review": { task: "Review MC questions generated from teaching assets.", countQuery: "review" },
+  "/quizzes-ready": { task: "Download quiz CSV files for LearnWorlds import." },
+  "/video-pending": { task: "Assets waiting for walkthrough video recording." },
+  "/videos-ready": { task: "Assets with completed videos ready for deployment." },
   "/deployment": { task: "Deploy quizzes and videos to LearnWorlds." },
 };
 

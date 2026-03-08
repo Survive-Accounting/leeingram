@@ -17,6 +17,9 @@ import AssetsLibrary from "./pages/AssetsLibrary";
 import ExportSets from "./pages/ExportSets";
 import ExportSetDetail from "./pages/ExportSetDetail";
 import FilmingControlPanel from "./pages/FilmingControlPanel";
+import QuizzesReady from "./pages/QuizzesReady";
+import VideoPending from "./pages/VideoPending";
+import VideosReady from "./pages/VideosReady";
 import TutoringControlPanel from "./pages/TutoringControlPanel";
 import TutoringReview from "./pages/TutoringReview";
 import TutoringReviewDetail from "./pages/TutoringReviewDetail";
@@ -46,6 +49,7 @@ import VaAdmin from "./pages/VaAdmin";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) return <div className="flex min-h-screen items-center justify-center text-foreground/80">Loading...</div>;
   if (!session) return <Navigate to="/admin" replace />;
   return <>{children}</>;
+}
+
+function ReviewRedirect() {
+  const { workspace } = useActiveWorkspace();
+  if (workspace?.chapterId) {
+    return <Navigate to={`/workspace/${workspace.chapterId}?mode=review`} replace />;
+  }
+  return <Navigate to="/content" replace />;
 }
 
 const AppRoutes = () => {
@@ -84,7 +96,11 @@ const AppRoutes = () => {
       <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
       <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
       <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
-      <Route path="/filming" element={<ProtectedRoute><FilmingControlPanel /></ProtectedRoute>} />
+      <Route path="/review" element={<ProtectedRoute><ReviewRedirect /></ProtectedRoute>} />
+      <Route path="/filming" element={<Navigate to="/video-pending" replace />} />
+      <Route path="/quizzes-ready" element={<ProtectedRoute><QuizzesReady /></ProtectedRoute>} />
+      <Route path="/video-pending" element={<ProtectedRoute><VideoPending /></ProtectedRoute>} />
+      <Route path="/videos-ready" element={<ProtectedRoute><VideosReady /></ProtectedRoute>} />
       <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
       <Route path="/tutoring/review" element={<ProtectedRoute><TutoringReview /></ProtectedRoute>} />
       <Route path="/tutoring/review/source/:problemId" element={<ProtectedRoute><TutoringSourceDetail /></ProtectedRoute>} />

@@ -7,15 +7,17 @@ import { cn } from "@/lib/utils";
 const STAGES = [
   { key: "imported", label: "Import", path: "/problem-bank" },
   { key: "generated", label: "Generate", path: "/content" },
-  { key: "reviewed", label: "Review", path: "/question-review" },
+  { key: "reviewed", label: "Review", path: "/review" },
   { key: "approved", label: "Teaching Assets", path: "/assets-library" },
-  { key: "mc_generated", label: "MC Generator", path: "/export-sets" },
-  { key: "video", label: "Video Queue", path: "/filming" },
+  { key: "mc_generated", label: "MC Generator", path: "/question-review" },
+  { key: "quizzes_ready", label: "Quizzes Ready", path: "/quizzes-ready" },
+  { key: "video_pending", label: "Video Pending", path: "/video-pending" },
+  { key: "video_ready", label: "Videos Ready", path: "/videos-ready" },
   { key: "deployed", label: "Deploy", path: "/deployment" },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
-  imported: 0, generated: 1, reviewed: 2, approved: 3, mc_generated: 4, video: 5, deployed: 6,
+  imported: 0, generated: 1, reviewed: 2, approved: 3, mc_generated: 4, quizzes_ready: 5, video_pending: 6, video_ready: 7, deployed: 8,
 };
 
 function getActiveStageIdx(pathname: string): number {
@@ -29,10 +31,12 @@ function getActiveStageIdx(pathname: string): number {
 const STAGE_INSTRUCTIONS: Record<string, string> = {
   "/problem-bank": "Import textbook screenshots for variant generation.",
   "/content": "Generate variants from imported source problems.",
-  "/question-review": "Review generated questions — approve or reject.",
+  "/review": "Review generated variants — approve or send back.",
   "/assets-library": "Finalized assets ready for production.",
-  "/export-sets": "Generate MC quiz sets from approved assets.",
-  "/filming": "Record walkthrough videos for assets.",
+  "/question-review": "Review MC questions generated from teaching assets.",
+  "/quizzes-ready": "Download quiz CSV files ready for LearnWorlds import.",
+  "/video-pending": "Assets waiting for walkthrough video recording.",
+  "/videos-ready": "Assets with completed videos ready for deployment.",
   "/deployment": "Deploy quizzes and videos to LearnWorlds.",
 };
 
@@ -68,6 +72,7 @@ export function PipelineProgressStrip() {
   const isPhase1 = activeStageIdx >= 0 && activeStageIdx <= 3;
   const phase1Stages = STAGES.slice(0, 4);
   const phase2Stages = STAGES.slice(4);
+  const phase2Cols = phase2Stages.length;
 
   const instruction = Object.entries(STAGE_INSTRUCTIONS).find(
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
@@ -119,7 +124,7 @@ export function PipelineProgressStrip() {
         {/* Phase 2 */}
         <div className="flex-1">
           <p className="text-[8px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1">Phase 2 · Content Production</p>
-          <div className="grid grid-cols-3 gap-1">
+          <div className={`grid gap-1`} style={{ gridTemplateColumns: `repeat(${phase2Cols}, minmax(0, 1fr))` }}>
             {phase2Stages.map((stage, idx) => {
               const globalIdx = idx + 4;
               const isFilled = globalIdx <= highestReached;
