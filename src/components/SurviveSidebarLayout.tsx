@@ -284,7 +284,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             <>
               <div className="border-t border-border my-3" />
               {!sidebarCollapsed && (
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-3 pb-1.5">
                   Phase 2 · Content Production
                 </p>
               )}
