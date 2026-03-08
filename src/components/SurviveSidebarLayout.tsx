@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
-  Inbox, Factory, Library, FileCheck, Package, Video,
-  Rocket, Users, CheckCircle2, Loader2,
+  Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
+  Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
