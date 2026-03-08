@@ -201,11 +201,11 @@ export default function VaAdmin() {
 
         {/* Account list */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-white/50">
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
           </div>
         ) : !vaAccounts?.length ? (
-          <div className="text-center py-16 text-white/40">
+          <div className="text-center py-16 text-muted-foreground">
             No VA test accounts yet. Create one to get started.
           </div>
         ) : (
@@ -219,23 +219,23 @@ export default function VaAdmin() {
               return (
                 <div
                   key={va.id}
-                  className="rounded-lg border border-white/10 bg-white/5 overflow-hidden"
+                  className="rounded-lg border border-border bg-card overflow-hidden"
                 >
                   {/* Summary row */}
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : va.id)}
-                    className="w-full text-left px-4 py-3 flex items-center gap-4 hover:bg-white/[0.03] transition-colors"
+                    className="w-full text-left px-4 py-3 flex items-center gap-4 hover:bg-secondary transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white">{va.full_name}</span>
+                        <span className="text-sm font-semibold text-foreground">{va.full_name}</span>
                         <Badge
                           variant="outline"
                           className={cn(
                             "text-[9px]",
                             va.account_status === "active"
                               ? "border-emerald-500/40 text-emerald-400"
-                              : "border-white/20 text-white/40"
+                              : "border-border text-muted-foreground"
                           )}
                         >
                           {va.account_status}
@@ -246,77 +246,77 @@ export default function VaAdmin() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-white/40 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {getCourseLabel(va.assigned_course_id)} · {getChapterLabel(va.assigned_chapter_id)}
                       </p>
                     </div>
 
                     {/* Quick metrics */}
-                    <div className="hidden sm:flex items-center gap-5 text-xs text-white/50">
+                    <div className="hidden sm:flex items-center gap-5 text-xs text-muted-foreground">
                       <div className="text-center">
-                        <p className="text-white font-bold tabular-nums">{activity?.count ?? 0}</p>
+                        <p className="text-foreground font-bold tabular-nums">{activity?.count ?? 0}</p>
                         <p className="text-[9px]">Actions</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-bold tabular-nums">{metrics.activeMins}m</p>
+                        <p className="text-foreground font-bold tabular-nums">{metrics.activeMins}m</p>
                         <p className="text-[9px]">Active</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-bold tabular-nums">{metrics.elapsedMins}m</p>
+                        <p className="text-foreground font-bold tabular-nums">{metrics.elapsedMins}m</p>
                         <p className="text-[9px]">Elapsed</p>
                       </div>
                     </div>
 
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-white/30" /> : <ChevronDown className="h-4 w-4 text-white/30" />}
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </button>
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-white/[0.06] space-y-3">
+                    <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div>
-                          <p className="text-white/40">Email</p>
-                          <p className="text-white/80">{va.email}</p>
+                          <p className="text-muted-foreground">Email</p>
+                          <p className="text-foreground">{va.email}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Assigned</p>
-                          <p className="text-white/80">{formatTime(va.test_assigned_at)}</p>
+                          <p className="text-muted-foreground">Assigned</p>
+                          <p className="text-foreground">{formatTime(va.test_assigned_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">First Login</p>
-                          <p className="text-white/80">{formatTime(va.first_login_at)}</p>
+                          <p className="text-muted-foreground">First Login</p>
+                          <p className="text-foreground">{formatTime(va.first_login_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">First Action</p>
-                          <p className="text-white/80">{formatTime(va.first_action_at)}</p>
+                          <p className="text-muted-foreground">First Action</p>
+                          <p className="text-foreground">{formatTime(va.first_action_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Last Action</p>
-                          <p className="text-white/80">{formatTime(va.last_action_at)}</p>
+                          <p className="text-muted-foreground">Last Action</p>
+                          <p className="text-foreground">{formatTime(va.last_action_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Active Time</p>
-                          <p className="text-white/80">{metrics.activeMins} min</p>
+                          <p className="text-muted-foreground">Active Time</p>
+                          <p className="text-foreground">{metrics.activeMins} min</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Idle Time</p>
-                          <p className="text-white/80">{metrics.idleMins} min</p>
+                          <p className="text-muted-foreground">Idle Time</p>
+                          <p className="text-foreground">{metrics.idleMins} min</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Completed</p>
-                          <p className="text-white/80">{va.completed_at ? formatTime(va.completed_at) : "Not yet"}</p>
+                          <p className="text-muted-foreground">Completed</p>
+                          <p className="text-foreground">{va.completed_at ? formatTime(va.completed_at) : "Not yet"}</p>
                         </div>
                       </div>
 
                       {/* Pipeline progress for assigned chapter */}
                       {pipeline && (
                         <div>
-                          <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1">Pipeline Progress</p>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Pipeline Progress</p>
                           <div className="flex gap-3 text-xs">
                             {["imported", "generated", "approved", "banked", "deployed"].map((s) => (
                               <div key={s} className="text-center">
-                                <p className="text-white font-bold tabular-nums">{pipeline[s] ?? 0}</p>
-                                <p className="text-[9px] text-white/40 capitalize">{s}</p>
+                                <p className="text-foreground font-bold tabular-nums">{pipeline[s] ?? 0}</p>
+                                <p className="text-[9px] text-muted-foreground capitalize">{s}</p>
                               </div>
                             ))}
                           </div>

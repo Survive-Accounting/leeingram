@@ -178,10 +178,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           className={cn(
             "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
             active
-              ? "bg-primary/20 text-white font-medium border border-primary/30"
+              ? "bg-primary/20 text-foreground font-medium border border-primary/30"
               : dimmed
-                ? "text-white/40 hover:text-white/70 hover:bg-muted/20"
-                : "text-white/70 hover:text-white hover:bg-muted/30"
+                ? "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                : "text-foreground/80 hover:text-foreground hover:bg-muted/30"
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
@@ -284,7 +284,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             <>
               <div className="border-t border-border my-3" />
               {!sidebarCollapsed && (
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-3 pb-1.5">
                   Phase 2 · Content Production
                 </p>
               )}
@@ -318,8 +318,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 className={cn(
                   "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
                   isActive("/va-admin")
-                    ? "bg-primary/20 text-white font-medium border border-primary/30"
-                    : "text-white/40 hover:text-white/70 hover:bg-muted/20"
+                    ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 <Users className="h-3.5 w-3.5" /> VA Admin
@@ -332,12 +332,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           <PipelineProgressStrip />
           <NextTaskBanner />
           <div
-            className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5"
+            className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5 bg-card border border-border"
             style={{
-              background: "hsl(222 20% 7% / 0.92)",
-              backdropFilter: "blur(24px)",
-              border: "1px solid hsl(220 12% 18% / 0.6)",
-              boxShadow: "0 4px 24px -4px rgba(0,0,0,0.3)",
+              boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)",
             }}
           >
             {children}

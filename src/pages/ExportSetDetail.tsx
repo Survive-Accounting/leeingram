@@ -63,7 +63,7 @@ function SortableItem({ item, onRemove }: { item: SetItem; onRemove: (id: string
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
+      className="flex items-center gap-3 rounded-lg border border-border bg-muted p-3"
     >
       <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground">
         <GripVertical className="h-4 w-4" />

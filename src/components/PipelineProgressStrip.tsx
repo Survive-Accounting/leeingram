@@ -79,7 +79,7 @@ export function PipelineProgressStrip() {
   )?.[1];
 
   return (
-    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-6 pt-3 pb-3">
+    <div className="sticky top-0 z-30 bg-background border-b border-border px-6 pt-3 pb-3">
       {/* Chapter header */}
       <div className="flex items-center gap-3 mb-3">
         <div>

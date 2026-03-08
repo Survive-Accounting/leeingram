@@ -164,17 +164,17 @@ export default function PipelineOverview() {
                 <button
                   key={stage.key}
                   onClick={() => navigate(stage.path)}
-                  className="text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors p-4 group"
+                  className="text-left rounded-lg border border-border bg-card hover:bg-secondary transition-colors p-4 group"
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-white">{stage.label}</span>
-                    <ArrowRight className="h-3 w-3 text-white/40 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
-                        <span className="text-xs text-white/50">{m.label}</span>
+                        <span className="text-xs text-muted-foreground">{m.label}</span>
                         <span className={cn("text-sm font-bold tabular-nums", variantForMetric(m.variant))}>
                           {m.value}
                         </span>
@@ -189,7 +189,7 @@ export default function PipelineOverview() {
 
         {/* Phase 2 */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-3">Phase 2 · Instructor</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-3">Phase 2 · Instructor</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {stages.filter(s => s.phase === 2).map((stage) => {
               const Icon = stage.icon;
@@ -197,17 +197,17 @@ export default function PipelineOverview() {
                 <button
                   key={stage.key}
                   onClick={() => navigate(stage.path)}
-                  className="text-left rounded-lg border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] transition-colors p-4 group"
+                  className="text-left rounded-lg border border-border bg-card hover:bg-secondary transition-colors p-4 group"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <Icon className="h-4 w-4 text-white/40" />
-                    <span className="text-sm font-semibold text-white/60">{stage.label}</span>
-                    <ArrowRight className="h-3 w-3 text-white/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
-                        <span className="text-xs text-white/40">{m.label}</span>
+                        <span className="text-xs text-muted-foreground">{m.label}</span>
                         <span className={cn("text-sm font-bold tabular-nums", variantForMetric(m.variant))}>
                           {m.value}
                         </span>
@@ -221,8 +221,8 @@ export default function PipelineOverview() {
         </div>
 
         {/* Next actions summary */}
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-1.5">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
             <AlertCircle className="h-3.5 w-3.5 text-amber-400" /> Next Actions
           </h3>
           <div className="space-y-2 text-sm">
