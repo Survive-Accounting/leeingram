@@ -133,7 +133,7 @@ export default function ChapterWorkspace() {
         </TabsList>
 
         <TabsContent value="problems">
-          <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} />
+          <ProblemBankTab chapterId={chapterId!} chapterNumber={chapterNum} courseId={course.id} autoReview={autoReview} />
         </TabsContent>
 
         <TabsContent value="dependent">
