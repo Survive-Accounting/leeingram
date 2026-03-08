@@ -957,6 +957,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   // Review queue helpers
   const generatedProblems = problems?.filter(p => p.status === "generated") ?? [];
 
+  // Auto-start review if navigated with ?mode=review
+  const autoReviewTriggered = useRef(false);
+  useEffect(() => {
+    if (autoReview && !autoReviewTriggered.current && generatedProblems.length > 0 && !reviewMode) {
+      autoReviewTriggered.current = true;
+      startReviewQueue(0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoReview, generatedProblems.length]);
+
   const startReviewQueue = async (startIdx = 0) => {
     if (generatedProblems.length === 0) {
       toast.info("No generated problems to review.");
