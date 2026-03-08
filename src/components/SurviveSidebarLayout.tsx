@@ -1,20 +1,24 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, GraduationCap,
-  Rocket, LayoutDashboard,
+  Rocket, LayoutDashboard, Users, CheckCircle2, Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { useVaAccount } from "@/hooks/useVaAccount";
+import { recordVaLogin, logVaActivity } from "@/lib/vaActivityLogger";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
@@ -35,10 +39,13 @@ const PHASE_2_ITEMS = [
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { workspace, setWorkspace } = useActiveWorkspace();
+  const { vaAccount, isVa } = useVaAccount();
+  const qc = useQueryClient();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+  const [completeOpen, setCompleteOpen] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -50,7 +57,14 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  // ── Course / Chapter selectors ───────────────────────────────────
+  // ── VA: auto-lock workspace to assigned chapter ──────────────────
+  useEffect(() => {
+    if (!isVa || !vaAccount?.assigned_course_id || !vaAccount?.assigned_chapter_id) return;
+    // Record login
+    if (user?.id) recordVaLogin(user.id);
+  }, [isVa, vaAccount, user?.id]);
+
+  // Fetch courses & chapters for workspace selector
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -68,6 +82,26 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       return data;
     },
   });
+
+  // Auto-set workspace for VA users once data is loaded
+  useEffect(() => {
+    if (!isVa || !vaAccount?.assigned_course_id || !vaAccount?.assigned_chapter_id) return;
+    if (!courses || !allChapters) return;
+    // Already set to correct chapter?
+    if (workspace?.chapterId === vaAccount.assigned_chapter_id) return;
+
+    const course = courses.find(c => c.id === vaAccount.assigned_course_id);
+    const chapter = allChapters.find(c => c.id === vaAccount.assigned_chapter_id);
+    if (course && chapter) {
+      setWorkspace({
+        courseId: course.id,
+        courseName: course.course_name,
+        chapterId: chapter.id,
+        chapterName: chapter.chapter_name,
+        chapterNumber: chapter.chapter_number,
+      });
+    }
+  }, [isVa, vaAccount, courses, allChapters, workspace?.chapterId, setWorkspace]);
 
   const filteredChapters = useMemo(
     () => (allChapters ?? []).filter((ch) => ch.course_id === workspace?.courseId),
@@ -110,6 +144,26 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     return null;
   };
 
+  // ── Mark chapter complete mutation ───────────────────────────────
+  const completeMutation = useMutation({
+    mutationFn: async () => {
+      if (!vaAccount || !user) return;
+      const now = new Date().toISOString();
+      await supabase.from("va_accounts").update({ completed_at: now } as any).eq("id", vaAccount.id);
+      await logVaActivity({
+        userId: user.id,
+        chapterId: vaAccount.assigned_chapter_id || undefined,
+        actionType: "chapter_marked_complete",
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["va-account"] });
+      toast.success("Chapter marked complete!");
+      setCompleteOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   // ── Render nav ──────────────────────────────────────────────────
   const renderNavItems = (items: typeof PHASE_1_ITEMS, dimmed = false) =>
     items.map((item) => {
@@ -130,9 +184,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
-          {!sidebarCollapsed && (
-            <span className="text-sm">{item.label}</span>
-          )}
+          {!sidebarCollapsed && <span className="text-sm">{item.label}</span>}
           {badge !== null && badge > 0 && !sidebarCollapsed && (
             <span className="ml-auto text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
               {badge}
@@ -156,40 +208,48 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
       >
         <div className="flex h-12 items-center gap-3 px-4">
-          <button
-            onClick={() => navigate("/domains")}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs uppercase tracking-widest"
-          >
-            <Home className="h-3.5 w-3.5" />
-          </button>
-          <span className="text-muted-foreground/30">|</span>
-          <h1 className="font-semibold text-white text-sm">Survive</h1>
+          {!isVa && (
+            <>
+              <button
+                onClick={() => navigate("/domains")}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs uppercase tracking-widest"
+              >
+                <Home className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-muted-foreground/30">|</span>
+            </>
+          )}
+          <h1 className="font-semibold text-white text-sm">
+            {isVa ? `${vaAccount?.full_name} — VA Test` : "Survive"}
+          </h1>
 
-          {/* Workspace Selectors */}
-          <div className="hidden sm:flex items-center gap-2 ml-2">
-            <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
-              <SelectTrigger className="h-7 text-[11px] w-32 bg-muted/50 border-border text-foreground">
-                <SelectValue placeholder="Course…" />
-              </SelectTrigger>
-              <SelectContent>
-                {courses?.map((c) => (
-                  <SelectItem key={c.id} value={c.id} className="text-xs">{c.course_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange} disabled={!workspace?.courseId}>
-              <SelectTrigger className="h-7 text-[11px] w-40 bg-muted/50 border-border text-foreground">
-                <SelectValue placeholder="Chapter…" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredChapters.map((c) => (
-                  <SelectItem key={c.id} value={c.id} className="text-xs">
-                    Ch {c.chapter_number} — {c.chapter_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Workspace Selectors — hidden for VA users (locked to assigned chapter) */}
+          {!isVa && (
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
+                <SelectTrigger className="h-7 text-[11px] w-32 bg-muted/50 border-border text-foreground">
+                  <SelectValue placeholder="Course…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses?.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">{c.course_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange} disabled={!workspace?.courseId}>
+                <SelectTrigger className="h-7 text-[11px] w-40 bg-muted/50 border-border text-foreground">
+                  <SelectValue placeholder="Chapter…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredChapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">
+                      Ch {c.chapter_number} — {c.chapter_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
@@ -218,14 +278,53 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
           <div className="space-y-0.5">{renderNavItems(PHASE_1_ITEMS)}</div>
 
-          <div className="border-t border-border my-3" />
-
-          {!sidebarCollapsed && (
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
-              Phase 2 · Instructor
-            </p>
+          {/* Phase 2 — hidden for VA test users */}
+          {!isVa && (
+            <>
+              <div className="border-t border-border my-3" />
+              {!sidebarCollapsed && (
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
+                  Phase 2 · Instructor
+                </p>
+              )}
+              <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
+            </>
           )}
-          <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
+
+          {/* Bottom section */}
+          <div className="mt-auto pt-3 border-t border-border space-y-1">
+            {/* VA: Mark Complete button */}
+            {isVa && !vaAccount?.completed_at && !sidebarCollapsed && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                onClick={() => setCompleteOpen(true)}
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1.5" /> Mark Complete
+              </Button>
+            )}
+            {isVa && vaAccount?.completed_at && !sidebarCollapsed && (
+              <div className="text-[10px] text-emerald-400 text-center py-1.5">
+                ✓ Chapter Complete
+              </div>
+            )}
+
+            {/* Admin: VA Admin link */}
+            {!isVa && !sidebarCollapsed && (
+              <Link
+                to="/va-admin"
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                  isActive("/va-admin")
+                    ? "bg-primary/20 text-white font-medium border border-primary/30"
+                    : "text-white/40 hover:text-white/70 hover:bg-muted/20"
+                )}
+              >
+                <Users className="h-3.5 w-3.5" /> VA Admin
+              </Link>
+            )}
+          </div>
         </nav>
 
         <main className="flex-1 overflow-auto relative">
@@ -243,6 +342,30 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           </div>
         </main>
       </div>
+
+      {/* Mark Complete confirmation dialog */}
+      <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Mark Chapter Complete?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will stamp your completion time. You can still access the chapter afterward for review.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setCompleteOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => completeMutation.mutate()}
+              disabled={completeMutation.isPending}
+            >
+              {completeMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+              Confirm Complete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2814,6 +2814,110 @@ export type Database = {
         }
         Relationships: []
       }
+      va_accounts: {
+        Row: {
+          account_status: string
+          assigned_chapter_id: string | null
+          assigned_course_id: string | null
+          completed_at: string | null
+          created_at: string
+          email: string
+          first_action_at: string | null
+          first_login_at: string | null
+          full_name: string
+          id: string
+          last_action_at: string | null
+          role: string
+          test_assigned_at: string
+          user_id: string
+        }
+        Insert: {
+          account_status?: string
+          assigned_chapter_id?: string | null
+          assigned_course_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          email: string
+          first_action_at?: string | null
+          first_login_at?: string | null
+          full_name: string
+          id?: string
+          last_action_at?: string | null
+          role?: string
+          test_assigned_at?: string
+          user_id: string
+        }
+        Update: {
+          account_status?: string
+          assigned_chapter_id?: string | null
+          assigned_course_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          email?: string
+          first_action_at?: string | null
+          first_login_at?: string | null
+          full_name?: string
+          id?: string
+          last_action_at?: string | null
+          role?: string
+          test_assigned_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_accounts_assigned_chapter_id_fkey"
+            columns: ["assigned_chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_accounts_assigned_course_id_fkey"
+            columns: ["assigned_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_activity_log: {
+        Row: {
+          action_type: string
+          asset_id: string | null
+          chapter_id: string | null
+          created_at: string
+          id: string
+          payload_json: Json | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          asset_id?: string | null
+          chapter_id?: string | null
+          created_at?: string
+          id?: string
+          payload_json?: Json | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          asset_id?: string | null
+          chapter_id?: string | null
+          created_at?: string
+          id?: string
+          payload_json?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_activity_log_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       variant_feedback: {
         Row: {
           created_at: string
