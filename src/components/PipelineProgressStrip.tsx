@@ -8,7 +8,7 @@ const STAGES = [
   { key: "imported", label: "Import", path: "/problem-bank" },
   { key: "generated", label: "Generate", path: "/content" },
   { key: "reviewed", label: "Review", path: "/question-review" },
-  { key: "approved", label: "Asset Library", path: "/assets-library" },
+  { key: "approved", label: "Teaching Assets", path: "/assets-library" },
   { key: "mc_generated", label: "MC Generator", path: "/export-sets" },
   { key: "video", label: "Video Queue", path: "/filming" },
   { key: "deployed", label: "Deploy", path: "/deployment" },
