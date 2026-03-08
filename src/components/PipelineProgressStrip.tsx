@@ -5,20 +5,32 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
 
 const STAGES = [
-  { key: "imported", label: "IMPORTED", path: "/problem-bank" },
-  { key: "generated", label: "GENERATED", path: "/content" },
-  { key: "approved", label: "APPROVED", path: "/assets-library" },
-  { key: "banked", label: "BANKED", path: "/question-review" },
-  { key: "deployed", label: "DEPLOYED", path: "/filming" },
+  { key: "imported", label: "Imported", path: "/problem-bank" },
+  { key: "generated", label: "Generated", path: "/content" },
+  { key: "approved", label: "Approved", path: "/assets-library" },
+  { key: "banked", label: "Banked", path: "/question-review" },
+  { key: "deployed", label: "Deployed", path: "/filming" },
 ] as const;
 
-// Order index for "completion" logic
 const STAGE_ORDER: Record<string, number> = {
-  imported: 0,
-  generated: 1,
-  approved: 2,
-  banked: 3,
-  deployed: 4,
+  imported: 0, generated: 1, approved: 2, banked: 3, deployed: 4,
+};
+
+// Map current path to the active stage index
+function getActiveStageIdx(pathname: string): number {
+  const idx = STAGES.findIndex(
+    (s) => pathname === s.path || pathname.startsWith(s.path + "/")
+  );
+  if (pathname.startsWith("/workspace/")) return 1; // content/generated
+  return idx;
+}
+
+const STAGE_INSTRUCTIONS: Record<string, string> = {
+  "/problem-bank": "Import textbook screenshots for variant generation.",
+  "/content": "Generate and speed-review problem variants.",
+  "/assets-library": "Approve assets and send to banked generation.",
+  "/question-review": "Review generated questions and approve or reject.",
+  "/filming": "Record walkthrough videos and prepare deployment.",
 };
 
 export function PipelineProgressStrip() {
@@ -41,7 +53,6 @@ export function PipelineProgressStrip() {
 
   if (!workspace?.chapterId || !workspace?.courseName) return null;
 
-  // Compute the highest stage reached (any problem at that stage = stage complete)
   let highestReached = -1;
   if (problems) {
     problems.forEach((p) => {
@@ -50,25 +61,35 @@ export function PipelineProgressStrip() {
     });
   }
 
-  const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + "/") ||
-    (path === "/content" && location.pathname.startsWith("/workspace/"));
+  const activeStageIdx = getActiveStageIdx(location.pathname);
+
+  // Find instruction for current page
+  const instruction = Object.entries(STAGE_INSTRUCTIONS).find(
+    ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
+  )?.[1];
 
   return (
-    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-6 pt-4 pb-3">
-      {/* Course + Chapter header */}
-      <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-        {workspace.courseName}
-      </p>
-      <h2 className="text-base font-bold text-foreground mb-3">
-        Ch {workspace.chapterNumber} — {workspace.chapterName}
-      </h2>
+    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-6 pt-3 pb-3">
+      {/* Chapter header */}
+      <div className="flex items-center gap-3 mb-3">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{workspace.courseName}</p>
+          <h2 className="text-sm font-bold text-foreground">
+            Ch {workspace.chapterNumber} — {workspace.chapterName}
+          </h2>
+        </div>
+        {instruction && (
+          <p className="ml-auto text-xs text-muted-foreground italic hidden sm:block">
+            {instruction}
+          </p>
+        )}
+      </div>
 
-      {/* Stage progress bars */}
+      {/* Stage progress */}
       <div className="grid grid-cols-5 gap-1">
         {STAGES.map((stage, idx) => {
           const isFilled = idx <= highestReached;
-          const isCurrentPage = isActive(stage.path);
+          const isActivePage = idx === activeStageIdx;
 
           return (
             <button
@@ -79,21 +100,28 @@ export function PipelineProgressStrip() {
               <p
                 className={cn(
                   "text-[9px] uppercase tracking-wider mb-1 transition-colors",
-                  isCurrentPage
-                    ? "text-foreground font-semibold"
-                    : "text-muted-foreground group-hover:text-foreground/70"
+                  isActivePage
+                    ? "text-foreground font-bold"
+                    : "text-muted-foreground/50 group-hover:text-muted-foreground"
                 )}
               >
                 {stage.label}
               </p>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    isFilled ? "bg-primary" : "bg-transparent"
-                  )}
-                  style={{ width: isFilled ? "100%" : "0%" }}
-                />
+              <div className={cn(
+                "h-2 rounded-full overflow-hidden transition-all",
+                isActivePage ? "ring-1 ring-primary/50" : ""
+              )}>
+                <div className="h-full w-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      isFilled
+                        ? isActivePage ? "bg-primary" : "bg-primary/40"
+                        : "bg-transparent"
+                    )}
+                    style={{ width: isFilled ? "100%" : "0%" }}
+                  />
+                </div>
               </div>
             </button>
           );

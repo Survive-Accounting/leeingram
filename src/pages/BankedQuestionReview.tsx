@@ -4,26 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { renderQuestionHtml, copyHtmlToClipboard } from "@/lib/questionHtmlRenderer";
 import {
-  CheckCircle2,
-  XCircle,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardCopy,
-  Filter,
-  Keyboard,
-  Pencil,
-  Loader2,
+  CheckCircle2, XCircle, ChevronLeft, ChevronRight, Pencil,
+  ClipboardCopy, Keyboard, Loader2, Zap, ChevronDown, ChevronUp,
+  FileQuestion, Calculator, BookOpen, HelpCircle, ToggleLeft,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { cn } from "@/lib/utils";
 
 type BankedQuestion = {
   id: string;
@@ -43,20 +39,18 @@ type BankedQuestion = {
   review_status: string;
   rating: number | null;
   rejection_notes: string | null;
-  assets: {
-    asset_code: string;
-    chapter_number: number;
-    course_id: string;
-    courses: { code: string };
-  } | null;
-  teaching_assets: {
-    asset_name: string;
-    course_id: string;
-    chapter_id: string;
-  } | null;
+  assets: { asset_code: string; chapter_number: number; course_id: string; courses: { code: string } } | null;
+  teaching_assets: { asset_name: string; course_id: string; chapter_id: string } | null;
 };
 
 const QUESTION_TYPES = ["JE_MC", "CALC_MC", "CONCEPT_MC", "TRUE_FALSE", "TRAP", "RELEVANT_INFO", "IRRELEVANT_INFO"];
+
+const TYPE_ICON: Record<string, typeof FileQuestion> = {
+  JE_MC: FileQuestion,
+  CALC_MC: Calculator,
+  CONCEPT_MC: BookOpen,
+  TRUE_FALSE: ToggleLeft,
+};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
@@ -66,112 +60,75 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function BankedQuestionReview() {
   const qc = useQueryClient();
+  const { workspace } = useActiveWorkspace();
 
-  // Filters
-  const [courseFilter, setCourseFilter] = useState("all");
-  const [chapterFilter, setChapterFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [minDifficulty, setMinDifficulty] = useState(1);
-  const [maxDifficulty, setMaxDifficulty] = useState(10);
-  const [minConfidence, setMinConfidence] = useState(0);
-  const [ratingFilter, setRatingFilter] = useState("all");
-
-  // Current question index
-  const [currentIdx, setCurrentIdx] = useState(0);
+  // Speed review mode (default on for VA)
+  const [speedMode, setSpeedMode] = useState(() => localStorage.getItem("qr-speed-mode") !== "false");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Filters — simplified: only status visible by default
+  const [statusFilter, setStatusFilter] = useState("pending");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [ratingFilter, setRatingFilter] = useState("all");
+  const [minConfidence, setMinConfidence] = useState(0);
+
+  const [currentIdx, setCurrentIdx] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState("");
   const [editExplanation, setEditExplanation] = useState("");
-  
 
-  // Fetch courses
-  const { data: courses } = useQuery({
-    queryKey: ["courses"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("id, code, course_name").order("code");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const toggleSpeedMode = (v: boolean) => {
+    setSpeedMode(v);
+    localStorage.setItem("qr-speed-mode", String(v));
+  };
 
-  // Fetch chapters
-  const { data: chapters } = useQuery({
-    queryKey: ["chapters-for-review", courseFilter],
-    queryFn: async () => {
-      let q = supabase.from("chapters").select("id, chapter_number, chapter_name, course_id").order("chapter_number");
-      if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Fetch all banked questions
+  // Fetch questions scoped to active workspace chapter
   const { data: allQuestions, isLoading } = useQuery({
-    queryKey: ["banked-questions-review"],
+    queryKey: ["banked-questions-review", workspace?.chapterId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("banked_questions")
         .select(`
           id, asset_id, teaching_asset_id, question_type, question_text,
           answer_a, answer_b, answer_c, answer_d, answer_e,
           correct_answer, short_explanation, difficulty,
           ai_confidence_score, review_status, rating, rejection_notes,
-          assets (
-            asset_code, chapter_number, course_id,
-            courses ( code )
-          ),
-          teaching_assets (
-            asset_name, course_id, chapter_id
-          )
+          assets ( asset_code, chapter_number, course_id, courses ( code ) ),
+          teaching_assets ( asset_name, course_id, chapter_id )
         `)
         .order("created_at", { ascending: false });
+
+      const { data, error } = await q;
       if (error) throw error;
-      return data as unknown as BankedQuestion[];
+
+      // Client-side filter to workspace chapter if set
+      let results = data as unknown as BankedQuestion[];
+      if (workspace?.chapterId) {
+        results = results.filter(
+          (q) => q.teaching_assets?.chapter_id === workspace.chapterId
+        );
+      }
+      return results;
     },
   });
 
-  // Apply filters
   const filtered = useMemo(() => {
     if (!allQuestions) return [];
     return allQuestions.filter((q) => {
-      const courseId = q.assets?.course_id || q.teaching_assets?.course_id;
-      if (courseFilter !== "all" && courseId !== courseFilter) return false;
-      if (chapterFilter !== "all") {
-        const ch = chapters?.find((c) => c.id === chapterFilter);
-        if (ch && q.assets?.chapter_number !== ch.chapter_number && q.teaching_assets?.chapter_id !== chapterFilter) return false;
-      }
-      if (typeFilter !== "all" && q.question_type !== typeFilter) return false;
       if (statusFilter !== "all" && q.review_status !== statusFilter) return false;
-      if (q.difficulty < minDifficulty || q.difficulty > maxDifficulty) return false;
+      if (typeFilter !== "all" && q.question_type !== typeFilter) return false;
       if (q.ai_confidence_score < minConfidence) return false;
-      if (ratingFilter !== "all") {
-        const r = parseInt(ratingFilter);
-        if (q.rating !== r) return false;
-      }
+      if (ratingFilter !== "all" && q.rating !== parseInt(ratingFilter)) return false;
       return true;
     });
-  }, [allQuestions, courseFilter, chapterFilter, typeFilter, statusFilter, minDifficulty, maxDifficulty, minConfidence, ratingFilter, chapters]);
-
-  // Group by asset
-  const grouped = useMemo(() => {
-    const map = new Map<string, BankedQuestion[]>();
-    for (const q of filtered) {
-      const key = q.assets?.asset_code || q.teaching_assets?.asset_name || q.asset_id || q.teaching_asset_id || "unknown";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(q);
-    }
-    return map;
-  }, [filtered]);
+  }, [allQuestions, statusFilter, typeFilter, minConfidence, ratingFilter]);
 
   const current = filtered[currentIdx] || null;
 
-  // Clamp index
   useEffect(() => {
-    if (currentIdx >= filtered.length && filtered.length > 0) {
-      setCurrentIdx(filtered.length - 1);
-    }
+    if (currentIdx >= filtered.length && filtered.length > 0) setCurrentIdx(filtered.length - 1);
   }, [filtered.length, currentIdx]);
 
   // Mutations
@@ -210,20 +167,18 @@ export default function BankedQuestionReview() {
     const answers = [current.answer_a, current.answer_b, current.answer_c, current.answer_d, current.answer_e].filter(Boolean);
     const html = renderQuestionHtml({
       questionId: current.assets?.asset_code || current.teaching_assets?.asset_name || "Q",
-      questionText: current.question_text,
-      answers,
-      correctAnswer: current.correct_answer,
-      explanation: current.short_explanation,
+      questionText: current.question_text, answers,
+      correctAnswer: current.correct_answer, explanation: current.short_explanation,
     });
     await copyHtmlToClipboard(html);
-    toast.success("HTML copied successfully");
+    toast.success("HTML copied");
   }, [current]);
 
   const saveEdit = useCallback(() => {
     if (!current) return;
     updateMutation.mutate({ question_text: editText, short_explanation: editExplanation } as any);
     setEditOpen(false);
-    toast.success("Question updated");
+    toast.success("Saved");
   }, [current, editText, editExplanation, updateMutation]);
 
   // Keyboard shortcuts
@@ -232,229 +187,213 @@ export default function BankedQuestionReview() {
       if (editOpen) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-
       switch (e.key.toLowerCase()) {
         case "a": approve(); break;
         case "r": reject(); break;
-        case "1": rate(1); break;
-        case "2": rate(2); break;
-        case "3": rate(3); break;
-        case "4": rate(4); break;
-        case "5": rate(5); break;
+        case "e":
+          if (current && !speedMode) {
+            setEditText(current.question_text);
+            setEditExplanation(current.short_explanation);
+            setEditOpen(true);
+          }
+          break;
+        case "1": case "2": case "3": case "4": case "5":
+          if (!speedMode) rate(parseInt(e.key));
+          break;
         case "arrowleft":
-          e.preventDefault();
-          setCurrentIdx((i) => Math.max(0, i - 1));
-          break;
+          e.preventDefault(); setCurrentIdx((i) => Math.max(0, i - 1)); break;
         case "arrowright":
-          e.preventDefault();
-          setCurrentIdx((i) => Math.min(filtered.length - 1, i + 1));
-          break;
+          e.preventDefault(); setCurrentIdx((i) => Math.min(filtered.length - 1, i + 1)); break;
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [approve, reject, rate, filtered.length, editOpen]);
+  }, [approve, reject, rate, filtered.length, editOpen, current, speedMode]);
 
-  const pendingCount = filtered.filter((q) => q.review_status === "pending").length;
-  const approvedCount = filtered.filter((q) => q.review_status === "approved").length;
-  const rejectedCount = filtered.filter((q) => q.review_status === "rejected").length;
+  const pendingCount = allQuestions?.filter((q) => q.review_status === "pending").length ?? 0;
+
+  const TypeIcon = current ? (TYPE_ICON[current.question_type] || HelpCircle) : HelpCircle;
 
   return (
     <SurviveSidebarLayout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              Question Review
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {filtered.length} questions · {pendingCount} pending · {approvedCount} approved · {rejectedCount} rejected
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => setShowShortcuts(!showShortcuts)}>
-            <Keyboard className="h-3 w-3 mr-1" /> Shortcuts
-          </Button>
+        {/* ── Next Action Banner ── */}
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary">Next Task</p>
+          <p className="text-sm text-foreground mt-0.5">
+            Review generated questions and approve or reject.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {pendingCount} pending questions to review
+          </p>
         </div>
 
+        {/* ── Header Row ── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-bold text-foreground">Question Review</h1>
+            <Badge variant="outline" className={cn("text-[10px]", statusFilter === "pending" ? "border-primary/40 text-primary" : "")}>
+              {filtered.length} shown
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Speed review toggle */}
+            <div className="flex items-center gap-1.5">
+              <Zap className={cn("h-3.5 w-3.5", speedMode ? "text-primary" : "text-muted-foreground")} />
+              <Label className="text-[11px] text-muted-foreground cursor-pointer" htmlFor="speed-toggle">Speed</Label>
+              <Switch id="speed-toggle" checked={speedMode} onCheckedChange={toggleSpeedMode} className="scale-75" />
+            </div>
+
+            {/* Status quick filter */}
+            <div className="flex items-center rounded-md border border-border overflow-hidden">
+              {(["pending", "approved", "rejected", "all"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setStatusFilter(s); setCurrentIdx(0); }}
+                  className={cn(
+                    "px-2.5 py-1 text-[11px] capitalize transition-colors",
+                    statusFilter === s ? "bg-primary/20 text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Advanced filters toggle */}
+            <Button variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
+              {showAdvancedFilters ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+              Filters
+            </Button>
+
+            <Button variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground" onClick={() => setShowShortcuts(!showShortcuts)}>
+              <Keyboard className="h-3 w-3 mr-1" /> Keys
+            </Button>
+          </div>
+        </div>
+
+        {/* Keyboard shortcuts panel */}
         {showShortcuts && (
-          <div className="rounded-lg border border-border bg-card/50 p-3 text-xs text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
+          <div className="rounded-lg border border-border bg-card/50 p-3 text-xs text-muted-foreground grid grid-cols-3 gap-x-6 gap-y-1">
             <span><kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-[10px]">A</kbd> Approve</span>
             <span><kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-[10px]">R</kbd> Reject</span>
-            <span><kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-[10px]">1-5</kbd> Rate</span>
             <span><kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-[10px]">←→</kbd> Navigate</span>
+            {!speedMode && <>
+              <span><kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-[10px]">E</kbd> Edit</span>
+              <span><kbd className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-[10px]">1-5</kbd> Rate</span>
+            </>}
           </div>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 items-end">
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Course</Label>
-            <Select value={courseFilter} onValueChange={setCourseFilter}>
-              <SelectTrigger className="h-7 text-[11px] w-[130px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Courses</SelectItem>
-                {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        {/* Advanced filters (collapsed by default) */}
+        {showAdvancedFilters && (
+          <div className="flex flex-wrap gap-3 items-end rounded-lg border border-border bg-card/30 p-3">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Type</Label>
+              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentIdx(0); }}>
+                <SelectTrigger className="h-7 text-[11px] w-[130px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {QUESTION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Rating</Label>
+              <Select value={ratingFilter} onValueChange={(v) => { setRatingFilter(v); setCurrentIdx(0); }}>
+                <SelectTrigger className="h-7 text-[11px] w-[90px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {[1,2,3,4,5].map((r) => <SelectItem key={r} value={String(r)}>{r}★</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 w-[140px]">
+              <Label className="text-[10px] text-muted-foreground">Min Confidence: {minConfidence}%</Label>
+              <Slider value={[minConfidence]} onValueChange={([v]) => { setMinConfidence(v); setCurrentIdx(0); }} min={0} max={100} step={5} />
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Chapter</Label>
-            <Select value={chapterFilter} onValueChange={setChapterFilter}>
-              <SelectTrigger className="h-7 text-[11px] w-[130px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Chapters</SelectItem>
-                {chapters?.map((c) => <SelectItem key={c.id} value={c.id}>CH{String(c.chapter_number).padStart(2, "0")}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Type</Label>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="h-7 text-[11px] w-[130px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {QUESTION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-7 text-[11px] w-[110px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Rating</Label>
-            <Select value={ratingFilter} onValueChange={setRatingFilter}>
-              <SelectTrigger className="h-7 text-[11px] w-[90px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {[1,2,3,4,5].map((r) => <SelectItem key={r} value={String(r)}>{r}★</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1 w-[120px]">
-            <Label className="text-[10px] text-muted-foreground">Min Confidence: {minConfidence}%</Label>
-            <Slider value={[minConfidence]} onValueChange={([v]) => setMinConfidence(v)} min={0} max={100} step={5} className="mt-1" />
-          </div>
-        </div>
+        )}
 
+        {/* ── Main Content ── */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading questions…
+          <div className="flex items-center justify-center py-20 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground text-sm">
-            No questions match your filters.
+          <div className="text-center py-20 text-muted-foreground">
+            <p className="text-base">No questions match your filters.</p>
+            <p className="text-xs mt-1">Try changing the status filter above.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
-            {/* Left: question list grouped by asset */}
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_180px] gap-4">
+            {/* ── LEFT: Question List ── */}
             <div className="rounded-lg border border-border bg-card/30 overflow-hidden">
-              <div className="p-2 border-b border-border bg-card/50">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  {filtered.length} Questions · {grouped.size} Assets
+              <div className="p-2.5 border-b border-border bg-card/50">
+                <p className="text-[11px] font-medium text-foreground/80">
+                  {filtered.length} Questions
                 </p>
               </div>
-              <div className="max-h-[calc(100vh-320px)] overflow-y-auto">
-                {Array.from(grouped.entries()).map(([assetCode, questions]) => (
-                  <div key={assetCode}>
-                    <div className="px-2 py-1.5 bg-muted/30 border-b border-border">
-                      <p className="text-[10px] font-semibold text-foreground/80 truncate">{assetCode}</p>
-                    </div>
-                    {questions.map((q) => {
-                      const globalIdx = filtered.indexOf(q);
-                      const isActive = globalIdx === currentIdx;
-                      return (
-                        <button
-                          key={q.id}
-                          onClick={() => setCurrentIdx(globalIdx)}
-                          className={`w-full text-left px-2 py-1.5 border-b border-border/50 transition-colors text-[11px] ${
-                            isActive ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-muted/30"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className={`text-[9px] px-1 py-0 ${STATUS_COLORS[q.review_status] || ""}`}>
-                              {q.review_status === "approved" ? "✓" : q.review_status === "rejected" ? "✗" : "•"}
-                            </Badge>
-                            <span className="text-muted-foreground">{q.question_type}</span>
-                            <span className="ml-auto text-muted-foreground/60">D{q.difficulty}</span>
-                            {q.rating && <span className="text-warning text-[9px]">{q.rating}★</span>}
-                          </div>
-                          <p className="text-foreground/70 line-clamp-1 mt-0.5">{q.question_text}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
+              <div className="max-h-[calc(100vh-380px)] overflow-y-auto">
+                {filtered.map((q, idx) => {
+                  const isActive = idx === currentIdx;
+                  const Icon = TYPE_ICON[q.question_type] || HelpCircle;
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => setCurrentIdx(idx)}
+                      className={cn(
+                        "w-full text-left px-3 py-3 border-b border-border/40 transition-colors",
+                        isActive
+                          ? "bg-primary/15 border-l-[3px] border-l-primary"
+                          : "hover:bg-muted/20 border-l-[3px] border-l-transparent"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "text-muted-foreground/60")} />
+                        <span className={cn("text-xs font-medium truncate", isActive ? "text-foreground" : "text-foreground/70")}>
+                          #{idx + 1}
+                        </span>
+                        <Badge variant="outline" className={cn("text-[8px] px-1 py-0 ml-auto", STATUS_COLORS[q.review_status] || "")}>
+                          {q.review_status === "approved" ? "✓" : q.review_status === "rejected" ? "✗" : "○"}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-foreground/60 line-clamp-2 mt-1 leading-relaxed">{q.question_text}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Right: current question detail */}
+            {/* ── CENTER: Question Detail ── */}
             {current && (
-              <div className="space-y-3">
-                {/* Navigation */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))} disabled={currentIdx === 0}>
-                      <ChevronLeft className="h-3.5 w-3.5" />
-                    </Button>
-                    <span className="text-xs text-muted-foreground font-mono">{currentIdx + 1}/{filtered.length}</span>
-                    <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setCurrentIdx((i) => Math.min(filtered.length - 1, i + 1))} disabled={currentIdx >= filtered.length - 1}>
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white" onClick={approve}>
-                      <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
-                    </Button>
-                    <Button size="sm" variant="destructive" className="h-7 text-[11px]" onClick={reject}>
-                      <XCircle className="h-3 w-3 mr-1" /> Reject
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => {
-                      setEditText(current.question_text);
-                      setEditExplanation(current.short_explanation);
-                      setEditOpen(true);
-                    }}>
-                      <Pencil className="h-3 w-3 mr-1" /> Edit
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={copyHtml}>
-                      <ClipboardCopy className="h-3 w-3 mr-1" /> Copy HTML
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Meta badges */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-[10px]">{current.assets?.asset_code}</Badge>
-                  <Badge variant="outline" className="text-[10px]">{current.question_type}</Badge>
-                  <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[current.review_status] || ""}`}>
-                    {current.review_status}
-                  </Badge>
-                  <Badge variant="outline" className="text-[10px]">Difficulty: {current.difficulty}/10</Badge>
-                  <Badge variant="outline" className="text-[10px]">Confidence: {current.ai_confidence_score}%</Badge>
-                  {current.rating && (
-                    <Badge variant="outline" className="text-[10px] text-warning border-warning/30">
-                      Rating: {current.rating}/5
+              <div className="space-y-4">
+                {/* Navigation bar */}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))} disabled={currentIdx === 0}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground font-mono">{currentIdx + 1} / {filtered.length}</span>
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setCurrentIdx((i) => Math.min(filtered.length - 1, i + 1))} disabled={currentIdx >= filtered.length - 1}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <div className="ml-2 flex items-center gap-1.5">
+                    <Badge variant="outline" className="text-[10px]">{current.question_type}</Badge>
+                    <Badge variant="outline" className={cn("text-[10px]", STATUS_COLORS[current.review_status] || "")}>
+                      {current.review_status}
                     </Badge>
-                  )}
+                  </div>
                 </div>
 
-                {/* Question text */}
-                <div className="rounded-lg border border-border bg-card/50 p-4">
-                  <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{current.question_text}</p>
+                {/* Question text — larger font */}
+                <div className="rounded-xl border border-border bg-card/60 p-5">
+                  <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap">{current.question_text}</p>
                 </div>
 
-                {/* Answers */}
-                <div className="rounded-lg border border-border bg-card/50 p-3 space-y-1.5">
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Answer Choices</p>
+                {/* Answer choices — separated cards */}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Answers</p>
                   {[
                     { label: "A", text: current.answer_a },
                     { label: "B", text: current.answer_b },
@@ -464,50 +403,125 @@ export default function BankedQuestionReview() {
                   ].filter((a) => a.text?.trim()).map((a) => {
                     const isCorrect = current.correct_answer?.toUpperCase().includes(a.label);
                     return (
-                      <div key={a.label} className={`flex items-start gap-2 rounded px-2 py-1.5 text-xs ${
-                        isCorrect ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-muted/20"
-                      }`}>
-                        <span className={`font-mono font-bold ${isCorrect ? "text-emerald-400" : "text-muted-foreground"}`}>{a.label}.</span>
-                        <span className="text-foreground/80">{a.text}</span>
-                        {isCorrect && <Badge className="ml-auto text-[8px] bg-emerald-600/20 text-emerald-400 border-emerald-500/30">Correct</Badge>}
+                      <div
+                        key={a.label}
+                        className={cn(
+                          "rounded-lg border px-4 py-3 flex items-start gap-3",
+                          isCorrect
+                            ? "border-emerald-500/40 bg-emerald-500/10"
+                            : "border-border bg-card/30"
+                        )}
+                      >
+                        <span className={cn(
+                          "font-mono font-bold text-sm mt-0.5",
+                          isCorrect ? "text-emerald-400" : "text-muted-foreground"
+                        )}>
+                          {a.label}.
+                        </span>
+                        <span className={cn("text-sm leading-relaxed", isCorrect ? "text-foreground font-medium" : "text-foreground/80")}>
+                          {a.text}
+                        </span>
+                        {isCorrect && (
+                          <Badge className="ml-auto text-[9px] bg-emerald-600/20 text-emerald-400 border-emerald-500/30 shrink-0">
+                            ✓ Correct
+                          </Badge>
+                        )}
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Explanation */}
-                {current.short_explanation && (
-                  <div className="rounded-lg border border-border bg-card/50 p-3">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Explanation</p>
-                    <p className="text-xs text-foreground/70">{current.short_explanation}</p>
+                {/* Explanation — hidden in speed mode */}
+                {!speedMode && current.short_explanation && (
+                  <div className="rounded-lg border border-border bg-card/40 p-4">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Explanation</p>
+                    <p className="text-sm text-foreground/70 leading-relaxed">{current.short_explanation}</p>
                   </div>
                 )}
 
-                {/* Rejection notes */}
-                {current.rejection_notes && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                    <p className="text-[10px] font-medium text-destructive uppercase tracking-wider mb-1">Rejection Notes</p>
-                    <p className="text-xs text-foreground/70">{current.rejection_notes}</p>
-                  </div>
+                {/* Details — expandable */}
+                {!speedMode && (
+                  <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+                    <CollapsibleTrigger asChild>
+                      <button className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                        {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        Details
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <div className="rounded-lg border border-border bg-card/30 p-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <span>Difficulty: <span className="text-foreground">{current.difficulty}/10</span></span>
+                        <span>Confidence: <span className="text-foreground">{current.ai_confidence_score}%</span></span>
+                        <span>Asset: <span className="text-foreground">{current.assets?.asset_code || current.teaching_assets?.asset_name || "—"}</span></span>
+                        {current.rating && <span>Rating: <span className="text-foreground">{current.rating}/5</span></span>}
+                        {current.rejection_notes && (
+                          <span className="col-span-2 text-destructive">Rejection: {current.rejection_notes}</span>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
 
-                {/* Rating */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Rate:</span>
-                  {[1, 2, 3, 4, 5].map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => rate(r)}
-                      className={`h-7 w-7 rounded flex items-center justify-center text-xs transition-colors ${
-                        current.rating === r
-                          ? "bg-warning/20 text-warning border border-warning/30"
-                          : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                      }`}
+                {/* Rating row — hidden in speed mode */}
+                {!speedMode && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Rate:</span>
+                    {[1, 2, 3, 4, 5].map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => rate(r)}
+                        className={cn(
+                          "h-7 w-7 rounded flex items-center justify-center text-xs transition-colors",
+                          current.rating === r
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── RIGHT: Actions Panel ── */}
+            {current && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Actions</p>
+                <Button
+                  className="w-full h-12 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={approve}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="w-full h-12 text-sm font-semibold"
+                  onClick={reject}
+                >
+                  <XCircle className="h-4 w-4 mr-2" /> Reject
+                </Button>
+
+                {!speedMode && (
+                  <>
+                    <div className="border-t border-border my-2" />
+                    <Button
+                      variant="outline"
+                      className="w-full h-9 text-xs"
+                      onClick={() => {
+                        setEditText(current.question_text);
+                        setEditExplanation(current.short_explanation);
+                        setEditOpen(true);
+                      }}
                     >
-                      {r}
-                    </button>
-                  ))}
-                </div>
+                      <Pencil className="h-3 w-3 mr-1.5" /> Edit
+                    </Button>
+                    <Button variant="outline" className="w-full h-9 text-xs" onClick={copyHtml}>
+                      <ClipboardCopy className="h-3 w-3 mr-1.5" /> Copy HTML
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -517,17 +531,15 @@ export default function BankedQuestionReview() {
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Question</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit Question</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs">Question Text</Label>
-              <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={6} className="text-xs" />
+              <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={6} className="text-sm" />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Explanation</Label>
-              <Textarea value={editExplanation} onChange={(e) => setEditExplanation(e.target.value)} rows={3} className="text-xs" />
+              <Textarea value={editExplanation} onChange={(e) => setEditExplanation(e.target.value)} rows={3} className="text-sm" />
             </div>
           </div>
           <DialogFooter>
@@ -536,7 +548,6 @@ export default function BankedQuestionReview() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </SurviveSidebarLayout>
   );
 }

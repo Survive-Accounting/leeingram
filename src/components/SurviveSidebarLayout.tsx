@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, LogOut, Settings, Workflow, PanelLeftClose, PanelLeft,
+  Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, GraduationCap,
   Rocket, LayoutDashboard,
 } from "lucide-react";
@@ -12,26 +12,24 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
-import { WorkflowModePanel } from "@/components/WorkflowModePanel";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
 
-// ── Phase 1: VA Production ─────────────────────────────────────────
+// ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
-  { label: "Pipeline Overview", path: "/pipeline", icon: LayoutDashboard, section: null },
-  { label: "Problem Import", sub: "Screenshot intake", path: "/problem-bank", icon: Inbox, section: "INTAKE" },
-  { label: "Variant Generator", sub: "Generate & review", path: "/content", icon: Factory, section: "ASSET PRODUCTION" },
-  { label: "Approved Assets", sub: "Ready for banking", path: "/assets-library", icon: Library, section: "ASSET PRODUCTION" },
-  { label: "Question Bank", sub: "MC review & approve", path: "/question-review", icon: FileCheck, section: "BANKED" },
+  { label: "Pipeline", path: "/pipeline", icon: LayoutDashboard },
+  { label: "Import", path: "/problem-bank", icon: Inbox },
+  { label: "Generate", path: "/content", icon: Factory },
+  { label: "Approved", path: "/assets-library", icon: Library },
+  { label: "Banked", path: "/question-review", icon: FileCheck },
 ];
 
-// ── Phase 2: Instructor ────────────────────────────────────────────
 const PHASE_2_ITEMS = [
-  { label: "LW Exports", sub: "CSV bundles", path: "/export-sets", icon: Package, section: "EXPORT" },
-  { label: "Video Queue", sub: "Record & deploy", path: "/filming", icon: Video, section: "VIDEO" },
-  { label: "Deployment", sub: "VA checklist", path: "/deployment", icon: Rocket, section: "DEPLOY" },
-  { label: "Tutoring", sub: "Pre-session review", path: "/tutoring/review", icon: GraduationCap, section: null },
+  { label: "Exports", path: "/export-sets", icon: Package },
+  { label: "Video", path: "/filming", icon: Video },
+  { label: "Deploy", path: "/deployment", icon: Rocket },
+  { label: "Tutoring", path: "/tutoring/review", icon: GraduationCap },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
@@ -41,15 +39,6 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   const { workspace, setWorkspace } = useActiveWorkspace();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
-  const [workflowMode, setWorkflowMode] = useState(() => localStorage.getItem("wf-mode-active") !== "false");
-
-  const toggleWorkflowMode = () => {
-    setWorkflowMode((prev) => {
-      const next = !prev;
-      localStorage.setItem("wf-mode-active", String(next));
-      return next;
-    });
-  };
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -97,37 +86,17 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     setWorkspace({ ...workspace, chapterId: ch.id, chapterName: ch.chapter_name, chapterNumber: ch.chapter_number });
   };
 
-  // ── Pipeline badge counts ────────────────────────────────────────
+  // ── Badge counts ────────────────────────────────────────────────
   const { data: pipelineCounts } = useQuery({
     queryKey: ["pipeline-sidebar-counts", workspace?.chapterId],
     queryFn: async () => {
       const chId = workspace!.chapterId;
-      // Chapter problems counts
-      const { data: problems } = await supabase
-        .from("chapter_problems")
-        .select("id, pipeline_status")
-        .eq("chapter_id", chId);
-
+      const { data: problems } = await supabase.from("chapter_problems").select("id, pipeline_status").eq("chapter_id", chId);
       const imported = problems?.filter(p => p.pipeline_status === "imported").length ?? 0;
       const generated = problems?.filter(p => ["generated", "approved", "banked", "deployed"].includes(p.pipeline_status)).length ?? 0;
-
-      // Teaching assets count
-      const { count: approvedCount } = await supabase
-        .from("teaching_assets")
-        .select("id", { count: "exact", head: true })
-        .eq("chapter_id", chId);
-
-      // Banked questions count (global)
-      const { count: bankedCount } = await supabase
-        .from("banked_questions")
-        .select("id", { count: "exact", head: true });
-
-      return {
-        imported,
-        generated,
-        approved: approvedCount ?? 0,
-        banked: bankedCount ?? 0,
-      };
+      const { count: approvedCount } = await supabase.from("teaching_assets").select("id", { count: "exact", head: true }).eq("chapter_id", chId);
+      const { count: bankedCount } = await supabase.from("banked_questions").select("id", { count: "exact", head: true });
+      return { imported, generated, approved: approvedCount ?? 0, banked: bankedCount ?? 0 };
     },
     enabled: !!workspace?.chapterId,
   });
@@ -141,49 +110,37 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     return null;
   };
 
-  // ── Render nav section ───────────────────────────────────────────
-  const renderNavItems = (items: typeof PHASE_1_ITEMS, dimmed = false) => {
-    let lastSection: string | null = "__init__";
-    return items.map((item) => {
+  // ── Render nav ──────────────────────────────────────────────────
+  const renderNavItems = (items: typeof PHASE_1_ITEMS, dimmed = false) =>
+    items.map((item) => {
       const Icon = item.icon;
       const active = isActive(item.path);
       const badge = getBadge(item.path);
-      const showHeader = item.section !== lastSection && item.section !== null;
-      lastSection = item.section;
-
       return (
-        <div key={item.path}>
-          {showHeader && (
-            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 px-3 pt-3 pb-1">
-              {item.section}
-            </p>
+        <Link
+          key={item.path}
+          to={item.path}
+          className={cn(
+            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+            active
+              ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+              : dimmed
+                ? "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
           )}
-          <Link
-            to={item.path}
-            className={cn(
-              "flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors",
-              active
-                ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                : dimmed
-                  ? "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <span className="text-sm block">{item.label}</span>
-              {item.sub && <span className="text-[10px] text-muted-foreground block leading-tight">{item.sub}</span>}
-            </div>
-            {badge !== null && badge > 0 && (
-              <span className="text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
-                {badge}
-              </span>
-            )}
-          </Link>
-        </div>
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          {!sidebarCollapsed && (
+            <span className="text-sm">{item.label}</span>
+          )}
+          {badge !== null && badge > 0 && !sidebarCollapsed && (
+            <span className="ml-auto text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
+              {badge}
+            </span>
+          )}
+        </Link>
       );
     });
-  };
 
   return (
     <div className="min-h-screen relative">
@@ -198,22 +155,20 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         className="relative z-10 border-b border-border"
         style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
       >
-        <div className="flex h-14 items-center gap-3 px-4">
+        <div className="flex h-12 items-center gap-3 px-4">
           <button
             onClick={() => navigate("/domains")}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-xs uppercase tracking-widest"
           >
             <Home className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Home</span>
           </button>
           <span className="text-muted-foreground/30">|</span>
-          <h1 className="font-semibold text-foreground text-sm">Survive Accounting</h1>
+          <h1 className="font-semibold text-foreground text-sm">Survive</h1>
 
           {/* Workspace Selectors */}
-          <span className="text-muted-foreground/30 hidden sm:inline">|</span>
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 ml-2">
             <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
-              <SelectTrigger className="h-7 text-[11px] w-36 bg-muted/50 border-border text-foreground">
+              <SelectTrigger className="h-7 text-[11px] w-32 bg-muted/50 border-border text-foreground">
                 <SelectValue placeholder="Course…" />
               </SelectTrigger>
               <SelectContent>
@@ -222,12 +177,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={workspace?.chapterId || ""}
-              onValueChange={handleChapterChange}
-              disabled={!workspace?.courseId}
-            >
-              <SelectTrigger className="h-7 text-[11px] w-44 bg-muted/50 border-border text-foreground">
+            <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange} disabled={!workspace?.courseId}>
+              <SelectTrigger className="h-7 text-[11px] w-40 bg-muted/50 border-border text-foreground">
                 <SelectValue placeholder="Chapter…" />
               </SelectTrigger>
               <SelectContent>
@@ -240,81 +191,42 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             </Select>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            {!workflowMode && (
-              <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground hover:bg-accent" title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}>
-                {sidebarCollapsed ? <PanelLeft className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={toggleWorkflowMode} className="text-muted-foreground hover:text-foreground hover:bg-accent">
-              <Workflow className="mr-1 h-3.5 w-3.5" /> {workflowMode ? "Dashboard" : "Workflow"}
+          <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
+              {sidebarCollapsed ? <PanelLeft className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
             </Button>
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground hover:bg-accent">
-              <Link to="/style-guide">
-                <Settings className="mr-1 h-3.5 w-3.5" /> Prefs
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground hover:bg-accent">
-              <LogOut className="mr-1 h-3.5 w-3.5" />
+            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
+              <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 flex min-h-[calc(100vh-3.5rem)]">
-        {workflowMode && <WorkflowModePanel />}
+      <div className="relative z-10 flex min-h-[calc(100vh-3rem)]">
+        {/* Sidebar */}
+        <nav
+          className={cn(
+            "shrink-0 border-r border-border py-3 px-2 flex flex-col overflow-y-auto transition-all",
+            sidebarCollapsed ? "w-14" : "w-48"
+          )}
+          style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
+        >
+          {!sidebarCollapsed && (
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
+              Phase 1 · VA
+            </p>
+          )}
+          <div className="space-y-0.5">{renderNavItems(PHASE_1_ITEMS)}</div>
 
-        {!workflowMode && !sidebarCollapsed && (
-          <nav
-            className="w-56 shrink-0 border-r border-border py-3 px-2 flex flex-col overflow-y-auto"
-            style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
-          >
-            {/* Phase 1 */}
-            <div className="mb-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
-                Phase 1 · VA Production
-              </p>
-              <div className="space-y-0.5">
-                {renderNavItems(PHASE_1_ITEMS)}
-              </div>
-            </div>
+          <div className="border-t border-border my-3" />
 
-            {/* Divider */}
-            <div className="border-t border-border my-3" />
-
-            {/* Phase 2 */}
-            <div className="mb-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
-                Phase 2 · Instructor
-              </p>
-              <div className="space-y-0.5">
-                {renderNavItems(PHASE_2_ITEMS, true)}
-              </div>
-            </div>
-
-            {/* Bottom links */}
-            <div className="mt-auto pt-3 border-t border-border space-y-0.5">
-              <Link
-                to="/marketing"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs transition-colors",
-                  isActive("/marketing") ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
-                )}
-              >
-                Marketing
-              </Link>
-              <Link
-                to="/ideas?domain=survive"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs transition-colors",
-                  location.pathname === "/ideas" ? "bg-primary/20 text-foreground font-medium border border-primary/30" : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
-                )}
-              >
-                Ideas
-              </Link>
-            </div>
-          </nav>
-        )}
+          {!sidebarCollapsed && (
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
+              Phase 2 · Instructor
+            </p>
+          )}
+          <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
+        </nav>
 
         <main className="flex-1 overflow-auto relative">
           <PipelineProgressStrip />
