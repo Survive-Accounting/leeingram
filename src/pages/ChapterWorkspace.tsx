@@ -62,6 +62,7 @@ export default function ChapterWorkspace() {
   const { activeRun, isRunning } = useBuildRun();
   const qc = useQueryClient();
   const initialTab = searchParams.get("tab") || "problems";
+  const autoReview = searchParams.get("mode") === "review";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const { data: chapter } = useQuery({
