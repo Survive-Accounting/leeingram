@@ -10,7 +10,7 @@ export default function TutoringControlPanel() {
           Tutoring Control Panel
         </h1>
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-12 text-center">
+      <div className="rounded-lg border border-border bg-muted p-12 text-center">
         <p className="text-muted-foreground">
           Coming soon: connected workflows built from Teaching Assets.
         </p>
