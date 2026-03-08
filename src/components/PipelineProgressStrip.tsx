@@ -72,6 +72,7 @@ export function PipelineProgressStrip() {
   const isPhase1 = activeStageIdx >= 0 && activeStageIdx <= 3;
   const phase1Stages = STAGES.slice(0, 4);
   const phase2Stages = STAGES.slice(4);
+  const phase2Cols = phase2Stages.length;
 
   const instruction = Object.entries(STAGE_INSTRUCTIONS).find(
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
