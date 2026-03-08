@@ -74,7 +74,7 @@ export default function DeploymentChecklist() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-foreground leading-snug">
-                  <span className="text-muted-foreground/50 mr-2 tabular-nums">{i + 1}.</span>
+                  <span className="text-muted-foreground mr-2 tabular-nums">{i + 1}.</span>
                   {item.title}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
