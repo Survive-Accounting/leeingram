@@ -282,7 +282,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               <div className="border-t border-border my-3" />
               {!sidebarCollapsed && (
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
-                  Phase 2 · Instructor
+                  Phase 2 · Content Production
                 </p>
               )}
               <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
