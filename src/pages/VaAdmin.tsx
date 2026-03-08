@@ -224,7 +224,7 @@ export default function VaAdmin() {
                   {/* Summary row */}
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : va.id)}
-                    className="w-full text-left px-4 py-3 flex items-center gap-4 hover:bg-white/[0.03] transition-colors"
+                    className="w-full text-left px-4 py-3 flex items-center gap-4 hover:bg-secondary transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">

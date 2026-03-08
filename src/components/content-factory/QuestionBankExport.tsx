@@ -264,8 +264,8 @@ export function QuestionBankExport({ exportSetId, exportSetName }: QuestionBankE
                 key={q.id}
                 className={`flex items-start gap-3 rounded-lg border p-3 ${
                   isApproved
-                    ? "border-white/10 bg-white/[0.04]"
-                    : "border-yellow-500/20 bg-yellow-500/[0.03] opacity-60"
+                    ? "border-border bg-card"
+                    : "border-yellow-500/20 bg-yellow-500/5 opacity-60"
                 }`}
               >
                 <div className="flex-1 min-w-0">
