@@ -124,7 +124,7 @@ export function PipelineProgressStrip() {
         {/* Phase 2 */}
         <div className="flex-1">
           <p className="text-[8px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1">Phase 2 · Content Production</p>
-          <div className="grid grid-cols-3 gap-1">
+          <div className={`grid gap-1`} style={{ gridTemplateColumns: `repeat(${phase2Cols}, minmax(0, 1fr))` }}>
             {phase2Stages.map((stage, idx) => {
               const globalIdx = idx + 4;
               const isFilled = globalIdx <= highestReached;
