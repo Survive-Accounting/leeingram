@@ -153,7 +153,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       {/* Header */}
       <header
         className="relative z-10 border-b border-border"
-        style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
+        style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
       >
         <div className="flex h-12 items-center gap-3 px-4">
           <button
