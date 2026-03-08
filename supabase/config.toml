@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.bank-teaching-asset]
 verify_jwt = false
+
+[functions.create-va-user]
+verify_jwt = false
