@@ -31,10 +31,12 @@ function getActiveStageIdx(pathname: string): number {
 const STAGE_INSTRUCTIONS: Record<string, string> = {
   "/problem-bank": "Import textbook screenshots for variant generation.",
   "/content": "Generate variants from imported source problems.",
-  "/question-review": "Review generated questions — approve or reject.",
+  "/review": "Review generated variants — approve or send back.",
   "/assets-library": "Finalized assets ready for production.",
-  "/export-sets": "Generate MC quiz sets from approved assets.",
-  "/filming": "Record walkthrough videos for assets.",
+  "/question-review": "Review MC questions generated from teaching assets.",
+  "/quizzes-ready": "Download quiz CSV files ready for LearnWorlds import.",
+  "/video-pending": "Assets waiting for walkthrough video recording.",
+  "/videos-ready": "Assets with completed videos ready for deployment.",
   "/deployment": "Deploy quizzes and videos to LearnWorlds.",
 };
 
