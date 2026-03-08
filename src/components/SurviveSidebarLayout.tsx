@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
+import { NextTaskBanner } from "@/components/NextTaskBanner";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { recordVaLogin, logVaActivity } from "@/lib/vaActivityLogger";
