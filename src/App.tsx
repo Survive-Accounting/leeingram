@@ -59,6 +59,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ReviewRedirect() {
+  const { workspace } = useActiveWorkspace();
+  if (workspace?.chapterId) {
+    return <Navigate to={`/workspace/${workspace.chapterId}?mode=review`} replace />;
+  }
+  return <Navigate to="/content" replace />;
+}
+
 const AppRoutes = () => {
   const { session, loading } = useAuth();
 
