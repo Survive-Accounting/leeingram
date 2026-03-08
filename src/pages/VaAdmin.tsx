@@ -228,14 +228,14 @@ export default function VaAdmin() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white">{va.full_name}</span>
+                        <span className="text-sm font-semibold text-foreground">{va.full_name}</span>
                         <Badge
                           variant="outline"
                           className={cn(
                             "text-[9px]",
                             va.account_status === "active"
                               ? "border-emerald-500/40 text-emerald-400"
-                              : "border-white/20 text-white/40"
+                              : "border-border text-muted-foreground"
                           )}
                         >
                           {va.account_status}
@@ -246,28 +246,28 @@ export default function VaAdmin() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-white/40 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {getCourseLabel(va.assigned_course_id)} · {getChapterLabel(va.assigned_chapter_id)}
                       </p>
                     </div>
 
                     {/* Quick metrics */}
-                    <div className="hidden sm:flex items-center gap-5 text-xs text-white/50">
+                    <div className="hidden sm:flex items-center gap-5 text-xs text-muted-foreground">
                       <div className="text-center">
-                        <p className="text-white font-bold tabular-nums">{activity?.count ?? 0}</p>
+                        <p className="text-foreground font-bold tabular-nums">{activity?.count ?? 0}</p>
                         <p className="text-[9px]">Actions</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-bold tabular-nums">{metrics.activeMins}m</p>
+                        <p className="text-foreground font-bold tabular-nums">{metrics.activeMins}m</p>
                         <p className="text-[9px]">Active</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-bold tabular-nums">{metrics.elapsedMins}m</p>
+                        <p className="text-foreground font-bold tabular-nums">{metrics.elapsedMins}m</p>
                         <p className="text-[9px]">Elapsed</p>
                       </div>
                     </div>
 
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-white/30" /> : <ChevronDown className="h-4 w-4 text-white/30" />}
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </button>
 
                   {/* Expanded detail */}
