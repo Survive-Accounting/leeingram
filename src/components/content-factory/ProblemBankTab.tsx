@@ -2357,16 +2357,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
         <div className="flex items-center gap-2">
-          {generatedProblems.length > 0 && (
-            <Button
-              size="sm"
-              variant="default"
-              className="text-xs"
-              onClick={() => startReviewQueue(0)}
-            >
-              <Eye className="h-3 w-3 mr-1" /> Review Generated ({generatedProblems.length})
-            </Button>
-          )}
           <Button
             size="sm"
             variant="outline"
