@@ -49,6 +49,7 @@ import VaAdmin from "./pages/VaAdmin";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
+import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 
 const queryClient = new QueryClient();
 
