@@ -78,6 +78,8 @@ interface Props {
   chapterId: string;
   chapterNumber: number;
   courseId: string;
+  autoReview?: boolean;
+  courseId: string;
 }
 
 /* Legacy parseJournalEntry removed — now using shared JournalEntryTable component */
