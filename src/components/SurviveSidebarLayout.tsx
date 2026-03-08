@@ -328,6 +328,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
         <main className="flex-1 overflow-auto relative">
           <PipelineProgressStrip />
+          <NextTaskBanner />
           <div
             className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5"
             style={{
