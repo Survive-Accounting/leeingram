@@ -123,10 +123,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           className={cn(
             "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
             active
-              ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+              ? "bg-primary/20 text-white font-medium border border-primary/30"
               : dimmed
-                ? "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                ? "text-white/40 hover:text-white/70 hover:bg-muted/20"
+                : "text-white/70 hover:text-white hover:bg-muted/30"
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
@@ -153,7 +153,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       {/* Header */}
       <header
         className="relative z-10 border-b border-border"
-        style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
+        style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
       >
         <div className="flex h-12 items-center gap-3 px-4">
           <button
@@ -163,7 +163,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             <Home className="h-3.5 w-3.5" />
           </button>
           <span className="text-muted-foreground/30">|</span>
-          <h1 className="font-semibold text-foreground text-sm">Survive</h1>
+          <h1 className="font-semibold text-white text-sm">Survive</h1>
 
           {/* Workspace Selectors */}
           <div className="hidden sm:flex items-center gap-2 ml-2">
@@ -209,7 +209,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             "shrink-0 border-r border-border py-3 px-2 flex flex-col overflow-y-auto transition-all",
             sidebarCollapsed ? "w-14" : "w-48"
           )}
-          style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}
+          style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
           {!sidebarCollapsed && (
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
