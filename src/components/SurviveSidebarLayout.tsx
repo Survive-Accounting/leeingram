@@ -163,7 +163,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             <Home className="h-3.5 w-3.5" />
           </button>
           <span className="text-muted-foreground/30">|</span>
-          <h1 className="font-semibold text-foreground text-sm">Survive</h1>
+          <h1 className="font-semibold text-white text-sm">Survive</h1>
 
           {/* Workspace Selectors */}
           <div className="hidden sm:flex items-center gap-2 ml-2">
