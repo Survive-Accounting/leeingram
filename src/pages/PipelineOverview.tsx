@@ -168,8 +168,8 @@ export default function PipelineOverview() {
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-white">{stage.label}</span>
-                    <ArrowRight className="h-3 w-3 text-white/40 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
