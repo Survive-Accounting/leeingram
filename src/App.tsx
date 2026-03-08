@@ -112,6 +112,7 @@ const AppRoutes = () => {
       <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
       <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
       <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
+      <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
