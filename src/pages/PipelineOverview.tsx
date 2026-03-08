@@ -197,7 +197,7 @@ export default function PipelineOverview() {
                 <button
                   key={stage.key}
                   onClick={() => navigate(stage.path)}
-                  className="text-left rounded-lg border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] transition-colors p-4 group"
+                  className="text-left rounded-lg border border-border bg-card hover:bg-secondary transition-colors p-4 group"
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className="h-4 w-4 text-white/40" />
