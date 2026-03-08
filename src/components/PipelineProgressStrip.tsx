@@ -5,32 +5,35 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
 
 const STAGES = [
-  { key: "imported", label: "Imported", path: "/problem-bank" },
-  { key: "generated", label: "Generated", path: "/content" },
-  { key: "approved", label: "Approved", path: "/assets-library" },
-  { key: "banked", label: "Banked", path: "/question-review" },
-  { key: "deployed", label: "Deployed", path: "/filming" },
+  { key: "imported", label: "Import", path: "/problem-bank" },
+  { key: "generated", label: "Generate", path: "/content" },
+  { key: "reviewed", label: "Review", path: "/question-review" },
+  { key: "approved", label: "Asset Library", path: "/assets-library" },
+  { key: "mc_generated", label: "MC Generator", path: "/export-sets" },
+  { key: "video", label: "Video Queue", path: "/filming" },
+  { key: "deployed", label: "Deploy", path: "/deployment" },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
-  imported: 0, generated: 1, approved: 2, banked: 3, deployed: 4,
+  imported: 0, generated: 1, reviewed: 2, approved: 3, mc_generated: 4, video: 5, deployed: 6,
 };
 
-// Map current path to the active stage index
 function getActiveStageIdx(pathname: string): number {
   const idx = STAGES.findIndex(
     (s) => pathname === s.path || pathname.startsWith(s.path + "/")
   );
-  if (pathname.startsWith("/workspace/")) return 1; // content/generated
+  if (pathname.startsWith("/workspace/")) return 1;
   return idx;
 }
 
 const STAGE_INSTRUCTIONS: Record<string, string> = {
   "/problem-bank": "Import textbook screenshots for variant generation.",
-  "/content": "Generate and speed-review problem variants.",
-  "/assets-library": "Approve assets and send to banked generation.",
-  "/question-review": "Review generated questions and approve or reject.",
-  "/filming": "Record walkthrough videos and prepare deployment.",
+  "/content": "Generate variants from imported source problems.",
+  "/question-review": "Review generated questions — approve or reject.",
+  "/assets-library": "Finalized assets ready for production.",
+  "/export-sets": "Generate MC quiz sets from approved assets.",
+  "/filming": "Record walkthrough videos for assets.",
+  "/deployment": "Deploy quizzes and videos to LearnWorlds.",
 };
 
 export function PipelineProgressStrip() {
@@ -62,8 +65,10 @@ export function PipelineProgressStrip() {
   }
 
   const activeStageIdx = getActiveStageIdx(location.pathname);
+  const isPhase1 = activeStageIdx >= 0 && activeStageIdx <= 3;
+  const phase1Stages = STAGES.slice(0, 4);
+  const phase2Stages = STAGES.slice(4);
 
-  // Find instruction for current page
   const instruction = Object.entries(STAGE_INSTRUCTIONS).find(
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
   )?.[1];
@@ -85,47 +90,53 @@ export function PipelineProgressStrip() {
         )}
       </div>
 
-      {/* Stage progress */}
-      <div className="grid grid-cols-5 gap-1">
-        {STAGES.map((stage, idx) => {
-          const isFilled = idx <= highestReached;
-          const isActivePage = idx === activeStageIdx;
+      {/* Two-phase progress */}
+      <div className="flex gap-4 items-end">
+        {/* Phase 1 */}
+        <div className="flex-1">
+          <p className="text-[8px] uppercase tracking-widest text-primary/60 font-bold mb-1">Phase 1 · Asset Creation</p>
+          <div className="grid grid-cols-4 gap-1">
+            {phase1Stages.map((stage, idx) => {
+              const isFilled = idx <= highestReached;
+              const isActivePage = idx === activeStageIdx;
+              return (
+                <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
+                  <p className={cn("text-[9px] uppercase tracking-wider mb-1 transition-colors", isActivePage ? "text-foreground font-bold" : "text-muted-foreground/50 group-hover:text-muted-foreground")}>{stage.label}</p>
+                  <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
+                    <div className="h-full w-full bg-muted">
+                      <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          return (
-            <button
-              key={stage.key}
-              onClick={() => navigate(stage.path)}
-              className="text-center group cursor-pointer"
-            >
-              <p
-                className={cn(
-                  "text-[9px] uppercase tracking-wider mb-1 transition-colors",
-                  isActivePage
-                    ? "text-foreground font-bold"
-                    : "text-muted-foreground/50 group-hover:text-muted-foreground"
-                )}
-              >
-                {stage.label}
-              </p>
-              <div className={cn(
-                "h-2 rounded-full overflow-hidden transition-all",
-                isActivePage ? "ring-1 ring-primary/50" : ""
-              )}>
-                <div className="h-full w-full bg-muted">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      isFilled
-                        ? isActivePage ? "bg-primary" : "bg-primary/40"
-                        : "bg-transparent"
-                    )}
-                    style={{ width: isFilled ? "100%" : "0%" }}
-                  />
-                </div>
-              </div>
-            </button>
-          );
-        })}
+        {/* Divider */}
+        <div className="h-8 w-px bg-border shrink-0" />
+
+        {/* Phase 2 */}
+        <div className="flex-1">
+          <p className="text-[8px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1">Phase 2 · Content Production</p>
+          <div className="grid grid-cols-3 gap-1">
+            {phase2Stages.map((stage, idx) => {
+              const globalIdx = idx + 4;
+              const isFilled = globalIdx <= highestReached;
+              const isActivePage = globalIdx === activeStageIdx;
+              return (
+                <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
+                  <p className={cn("text-[9px] uppercase tracking-wider mb-1 transition-colors", isActivePage ? "text-foreground font-bold" : "text-muted-foreground/50 group-hover:text-muted-foreground")}>{stage.label}</p>
+                  <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
+                    <div className="h-full w-full bg-muted">
+                      <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

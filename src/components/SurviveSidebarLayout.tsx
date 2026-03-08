@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
-  Inbox, Factory, Library, FileCheck, Package, Video, GraduationCap,
-  Rocket, LayoutDashboard, Users, CheckCircle2, Loader2,
+  Inbox, Factory, Library, FileCheck, Package, Video,
+  Rocket, Users, CheckCircle2, Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
+import { NextTaskBanner } from "@/components/NextTaskBanner";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { recordVaLogin, logVaActivity } from "@/lib/vaActivityLogger";
@@ -22,18 +23,16 @@ import { toast } from "sonner";
 
 // ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
-  { label: "Pipeline", path: "/pipeline", icon: LayoutDashboard },
   { label: "Import", path: "/problem-bank", icon: Inbox },
   { label: "Generate", path: "/content", icon: Factory },
-  { label: "Approved", path: "/assets-library", icon: Library },
-  { label: "Banked", path: "/question-review", icon: FileCheck },
+  { label: "Review", path: "/question-review", icon: FileCheck },
+  { label: "Asset Library", path: "/assets-library", icon: Library },
 ];
 
 const PHASE_2_ITEMS = [
-  { label: "Exports", path: "/export-sets", icon: Package },
-  { label: "Video", path: "/filming", icon: Video },
-  { label: "Deploy", path: "/deployment", icon: Rocket },
-  { label: "Tutoring", path: "/tutoring/review", icon: GraduationCap },
+  { label: "MC Generator", path: "/export-sets", icon: Package },
+  { label: "Video Queue", path: "/filming", icon: Video },
+  { label: "Deploy to LW", path: "/deployment", icon: Rocket },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
@@ -273,7 +272,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         >
           {!sidebarCollapsed && (
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
-              Phase 1 · VA
+              Phase 1 · Asset Creation
             </p>
           )}
           <div className="space-y-0.5">{renderNavItems(PHASE_1_ITEMS)}</div>
@@ -284,7 +283,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               <div className="border-t border-border my-3" />
               {!sidebarCollapsed && (
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-3 pb-1.5">
-                  Phase 2 · Instructor
+                  Phase 2 · Content Production
                 </p>
               )}
               <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
@@ -329,6 +328,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
         <main className="flex-1 overflow-auto relative">
           <PipelineProgressStrip />
+          <NextTaskBanner />
           <div
             className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5"
             style={{
