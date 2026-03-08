@@ -174,7 +174,7 @@ export default function PipelineOverview() {
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
-                        <span className="text-xs text-white/50">{m.label}</span>
+                        <span className="text-xs text-muted-foreground">{m.label}</span>
                         <span className={cn("text-sm font-bold tabular-nums", variantForMetric(m.variant))}>
                           {m.value}
                         </span>
