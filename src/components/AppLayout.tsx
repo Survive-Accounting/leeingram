@@ -15,7 +15,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 bg-black/60" />
       <div className="fixed inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40" />
       <NightSkyOverlay />
-      <header className="relative z-10 border-b border-white/10" style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.85)" }}>
+      <header className="relative z-10 border-b border-border" style={{ backdropFilter: "blur(16px)", background: "rgba(5,8,18,0.95)" }}>
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
           <Link to="/domains" className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs uppercase tracking-widest">
             <Home className="h-3.5 w-3.5" />
