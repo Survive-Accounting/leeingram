@@ -148,15 +148,15 @@ export default function PipelineOverview() {
     <SurviveSidebarLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Production Pipeline</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <h1 className="text-xl font-bold text-white">Production Pipeline</h1>
+          <p className="text-sm text-white/60 mt-0.5">
             {workspace?.courseName} · Ch {workspace?.chapterNumber} — {workspace?.chapterName}
           </p>
         </div>
 
         {/* Phase 1 */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70 mb-3">Phase 1 · VA Production</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-3">Phase 1 · VA Production</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {stages.filter(s => s.phase === 1).map((stage) => {
               const Icon = stage.icon;
@@ -164,17 +164,17 @@ export default function PipelineOverview() {
                 <button
                   key={stage.key}
                   onClick={() => navigate(stage.path)}
-                  className="text-left rounded-lg border border-border bg-card/50 hover:bg-card/80 transition-colors p-4 group"
+                  className="text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors p-4 group"
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-foreground">{stage.label}</span>
-                    <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-sm font-semibold text-white">{stage.label}</span>
+                    <ArrowRight className="h-3 w-3 text-white/40 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">{m.label}</span>
+                        <span className="text-xs text-white/50">{m.label}</span>
                         <span className={cn("text-sm font-bold tabular-nums", variantForMetric(m.variant))}>
                           {m.value}
                         </span>
@@ -189,7 +189,7 @@ export default function PipelineOverview() {
 
         {/* Phase 2 */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-3">Phase 2 · Instructor</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-3">Phase 2 · Instructor</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {stages.filter(s => s.phase === 2).map((stage) => {
               const Icon = stage.icon;
@@ -197,17 +197,17 @@ export default function PipelineOverview() {
                 <button
                   key={stage.key}
                   onClick={() => navigate(stage.path)}
-                  className="text-left rounded-lg border border-border/50 bg-card/30 hover:bg-card/50 transition-colors p-4 group opacity-70"
+                  className="text-left rounded-lg border border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06] transition-colors p-4 group"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold text-muted-foreground">{stage.label}</span>
-                    <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Icon className="h-4 w-4 text-white/40" />
+                    <span className="text-sm font-semibold text-white/60">{stage.label}</span>
+                    <ArrowRight className="h-3 w-3 text-white/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">{m.label}</span>
+                        <span className="text-xs text-white/40">{m.label}</span>
                         <span className={cn("text-sm font-bold tabular-nums", variantForMetric(m.variant))}>
                           {m.value}
                         </span>
@@ -221,51 +221,51 @@ export default function PipelineOverview() {
         </div>
 
         {/* Next actions summary */}
-        <div className="rounded-lg border border-border bg-card/40 p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-1.5">
             <AlertCircle className="h-3.5 w-3.5 text-amber-400" /> Next Actions
           </h3>
-          <div className="space-y-1.5 text-[12px]">
+          <div className="space-y-2 text-sm">
             {awaitingGeneration > 0 && (
               <div className="flex items-center gap-2">
-                <Clock className="h-3 w-3 text-amber-400" />
-                <span className="text-muted-foreground">
-                  <strong className="text-foreground">{awaitingGeneration}</strong> problems awaiting variant generation
+                <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-white/70">
+                  <strong className="text-white">{awaitingGeneration}</strong> problems awaiting variant generation
                 </span>
-                <button onClick={() => navigate("/content")} className="text-primary text-[11px] hover:underline ml-auto">Go →</button>
+                <button onClick={() => navigate("/content")} className="text-primary text-xs hover:underline ml-auto shrink-0">Go →</button>
               </div>
             )}
             {generated > 0 && (
               <div className="flex items-center gap-2">
-                <Clock className="h-3 w-3 text-amber-400" />
-                <span className="text-muted-foreground">
-                  <strong className="text-foreground">{generated}</strong> variants awaiting speed review
+                <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-white/70">
+                  <strong className="text-white">{generated}</strong> variants awaiting speed review
                 </span>
-                <button onClick={() => navigate("/content")} className="text-primary text-[11px] hover:underline ml-auto">Go →</button>
+                <button onClick={() => navigate("/content")} className="text-primary text-xs hover:underline ml-auto shrink-0">Go →</button>
               </div>
             )}
             {readyForBanking > 0 && (
               <div className="flex items-center gap-2">
-                <Clock className="h-3 w-3 text-amber-400" />
-                <span className="text-muted-foreground">
-                  <strong className="text-foreground">{readyForBanking}</strong> approved assets ready for MC banking
+                <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-white/70">
+                  <strong className="text-white">{readyForBanking}</strong> approved assets ready for MC banking
                 </span>
-                <button onClick={() => navigate("/assets-library")} className="text-primary text-[11px] hover:underline ml-auto">Go →</button>
+                <button onClick={() => navigate("/assets-library")} className="text-primary text-xs hover:underline ml-auto shrink-0">Go →</button>
               </div>
             )}
             {pendingReview > 0 && (
               <div className="flex items-center gap-2">
-                <Clock className="h-3 w-3 text-amber-400" />
-                <span className="text-muted-foreground">
-                  <strong className="text-foreground">{pendingReview}</strong> banked questions pending instructor review
+                <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-white/70">
+                  <strong className="text-white">{pendingReview}</strong> banked questions pending instructor review
                 </span>
-                <button onClick={() => navigate("/question-review")} className="text-primary text-[11px] hover:underline ml-auto">Go →</button>
+                <button onClick={() => navigate("/question-review")} className="text-primary text-xs hover:underline ml-auto shrink-0">Go →</button>
               </div>
             )}
             {awaitingGeneration === 0 && generated === 0 && readyForBanking === 0 && pendingReview === 0 && (
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                <span className="text-muted-foreground">All clear — no pending actions for this chapter</span>
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-white/70">All clear — no pending actions for this chapter</span>
               </div>
             )}
           </div>
