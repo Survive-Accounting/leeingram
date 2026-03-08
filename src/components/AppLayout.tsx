@@ -27,12 +27,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span>Survive Accounting</span>
           </Link>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="text-white/50 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground hover:bg-muted">
               <Link to="/style-guide">
                 <Settings className="mr-1 h-3.5 w-3.5" /> Preferences
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-white/50 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground hover:bg-muted">
               <LogOut className="mr-1 h-3.5 w-3.5" /> Sign Out
             </Button>
           </div>
