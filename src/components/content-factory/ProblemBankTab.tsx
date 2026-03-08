@@ -130,7 +130,7 @@ type ChapterProblem = {
   ocr_status?: string;
 };
 
-export function ProblemBankTab({ chapterId, chapterNumber, courseId }: Props) {
+export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { recomputeProgress } = useBuildRun();
