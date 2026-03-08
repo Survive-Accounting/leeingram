@@ -59,11 +59,11 @@ export default function DeploymentChecklist() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card/50 p-5 space-y-1">
+        <div className="rounded-lg border border-border bg-card p-5 space-y-1">
           {CHECKLIST.map((item, i) => (
             <div
               key={i}
-              className="flex items-start gap-4 rounded-lg px-4 py-4 hover:bg-muted/20 transition-colors"
+              className="flex items-start gap-4 rounded-lg px-4 py-4 hover:bg-muted/30 transition-colors"
             >
               <div className="pt-0.5">
                 {item.done ? (
