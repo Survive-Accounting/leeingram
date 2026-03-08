@@ -22,18 +22,16 @@ import { toast } from "sonner";
 
 // ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
-  { label: "Pipeline", path: "/pipeline", icon: LayoutDashboard },
   { label: "Import", path: "/problem-bank", icon: Inbox },
   { label: "Generate", path: "/content", icon: Factory },
-  { label: "Approved", path: "/assets-library", icon: Library },
-  { label: "Banked", path: "/question-review", icon: FileCheck },
+  { label: "Review", path: "/question-review", icon: FileCheck },
+  { label: "Asset Library", path: "/assets-library", icon: Library },
 ];
 
 const PHASE_2_ITEMS = [
-  { label: "Exports", path: "/export-sets", icon: Package },
-  { label: "Video", path: "/filming", icon: Video },
-  { label: "Deploy", path: "/deployment", icon: Rocket },
-  { label: "Tutoring", path: "/tutoring/review", icon: GraduationCap },
+  { label: "MC Generator", path: "/export-sets", icon: Package },
+  { label: "Video Queue", path: "/filming", icon: Video },
+  { label: "Deploy to LW", path: "/deployment", icon: Rocket },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
