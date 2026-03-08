@@ -272,51 +272,51 @@ export default function VaAdmin() {
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-white/[0.06] space-y-3">
+                    <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div>
-                          <p className="text-white/40">Email</p>
-                          <p className="text-white/80">{va.email}</p>
+                          <p className="text-muted-foreground">Email</p>
+                          <p className="text-foreground">{va.email}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Assigned</p>
-                          <p className="text-white/80">{formatTime(va.test_assigned_at)}</p>
+                          <p className="text-muted-foreground">Assigned</p>
+                          <p className="text-foreground">{formatTime(va.test_assigned_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">First Login</p>
-                          <p className="text-white/80">{formatTime(va.first_login_at)}</p>
+                          <p className="text-muted-foreground">First Login</p>
+                          <p className="text-foreground">{formatTime(va.first_login_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">First Action</p>
-                          <p className="text-white/80">{formatTime(va.first_action_at)}</p>
+                          <p className="text-muted-foreground">First Action</p>
+                          <p className="text-foreground">{formatTime(va.first_action_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Last Action</p>
-                          <p className="text-white/80">{formatTime(va.last_action_at)}</p>
+                          <p className="text-muted-foreground">Last Action</p>
+                          <p className="text-foreground">{formatTime(va.last_action_at)}</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Active Time</p>
-                          <p className="text-white/80">{metrics.activeMins} min</p>
+                          <p className="text-muted-foreground">Active Time</p>
+                          <p className="text-foreground">{metrics.activeMins} min</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Idle Time</p>
-                          <p className="text-white/80">{metrics.idleMins} min</p>
+                          <p className="text-muted-foreground">Idle Time</p>
+                          <p className="text-foreground">{metrics.idleMins} min</p>
                         </div>
                         <div>
-                          <p className="text-white/40">Completed</p>
-                          <p className="text-white/80">{va.completed_at ? formatTime(va.completed_at) : "Not yet"}</p>
+                          <p className="text-muted-foreground">Completed</p>
+                          <p className="text-foreground">{va.completed_at ? formatTime(va.completed_at) : "Not yet"}</p>
                         </div>
                       </div>
 
                       {/* Pipeline progress for assigned chapter */}
                       {pipeline && (
                         <div>
-                          <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1">Pipeline Progress</p>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Pipeline Progress</p>
                           <div className="flex gap-3 text-xs">
                             {["imported", "generated", "approved", "banked", "deployed"].map((s) => (
                               <div key={s} className="text-center">
-                                <p className="text-white font-bold tabular-nums">{pipeline[s] ?? 0}</p>
-                                <p className="text-[9px] text-white/40 capitalize">{s}</p>
+                                <p className="text-foreground font-bold tabular-nums">{pipeline[s] ?? 0}</p>
+                                <p className="text-[9px] text-muted-foreground capitalize">{s}</p>
                               </div>
                             ))}
                           </div>
