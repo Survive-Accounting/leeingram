@@ -42,6 +42,7 @@ import BatchRunDetail from "./pages/BatchRunDetail";
 import BankedQuestionReview from "./pages/BankedQuestionReview";
 import PipelineOverview from "./pages/PipelineOverview";
 import DeploymentChecklist from "./pages/DeploymentChecklist";
+import VaAdmin from "./pages/VaAdmin";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
