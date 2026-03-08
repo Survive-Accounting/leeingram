@@ -200,9 +200,9 @@ export default function PipelineOverview() {
                   className="text-left rounded-lg border border-border bg-card hover:bg-secondary transition-colors p-4 group"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <Icon className="h-4 w-4 text-white/40" />
-                    <span className="text-sm font-semibold text-white/60">{stage.label}</span>
-                    <ArrowRight className="h-3 w-3 text-white/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="space-y-1.5">
                     {stage.metrics.map((m) => (
