@@ -219,7 +219,7 @@ export default function VaAdmin() {
               return (
                 <div
                   key={va.id}
-                  className="rounded-lg border border-white/10 bg-white/5 overflow-hidden"
+                  className="rounded-lg border border-border bg-card overflow-hidden"
                 >
                   {/* Summary row */}
                   <button
