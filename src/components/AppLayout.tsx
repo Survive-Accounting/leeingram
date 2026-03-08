@@ -21,9 +21,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Home className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Home</span>
           </Link>
-          <span className="text-white/20">|</span>
-          <Link to="/" className="flex items-center gap-2 font-semibold text-white text-sm">
-            <BookOpen className="h-4 w-4 text-white/70" />
+          <span className="text-muted-foreground/30">|</span>
+          <Link to="/" className="flex items-center gap-2 font-semibold text-foreground text-sm">
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
             <span>Survive Accounting</span>
           </Link>
           <div className="ml-auto flex items-center gap-2">
