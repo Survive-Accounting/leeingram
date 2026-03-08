@@ -178,10 +178,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           className={cn(
             "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
             active
-              ? "bg-primary/20 text-white font-medium border border-primary/30"
+              ? "bg-primary/20 text-foreground font-medium border border-primary/30"
               : dimmed
-                ? "text-white/40 hover:text-white/70 hover:bg-muted/20"
-                : "text-white/70 hover:text-white hover:bg-muted/30"
+                ? "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                : "text-foreground/80 hover:text-foreground hover:bg-muted/30"
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
