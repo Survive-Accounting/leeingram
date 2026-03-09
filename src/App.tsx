@@ -47,6 +47,7 @@ import BankedQuestionReview from "./pages/BankedQuestionReview";
 import PipelineOverview from "./pages/PipelineOverview";
 import DeploymentChecklist from "./pages/DeploymentChecklist";
 import VaAdmin from "./pages/VaAdmin";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
