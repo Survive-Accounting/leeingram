@@ -5,10 +5,11 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { ArrowRight, Lock } from "lucide-react";
 
-const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string }> = {
+const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
-    task: "Paste textbook problem screenshots and upload solution PDFs for each source item.",
+    task: "Paste textbook problem screenshots for each source item.",
     countQuery: "imported",
+    sopLabel: "Import SOP",
   },
   "/content": {
     task: "Generate Survive Teaching Assets from ready source problems.",
