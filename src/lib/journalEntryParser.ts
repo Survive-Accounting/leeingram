@@ -271,17 +271,27 @@ export function formatAmount(n: number | null | undefined): string {
 }
 
 export function groupsToTSV(groups: JournalEntryGroup[], mode: "completed" | "template" = "completed"): string {
-  const rows: string[] = ["Account\tDebit\tCredit"];
-  for (const g of groups) {
-    if (groups.length > 1) rows.push(`${g.label}\t\t`);
+  const rows: string[] = [];
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi];
+    if (gi > 0) rows.push("\t\t\t"); // blank row between groups
+    if (groups.length > 1) rows.push(`${g.label}\t\t\t`);
     for (const l of g.lines) {
+      const isCredit = l.side === "credit";
       if (mode === "template") {
-        rows.push(`${l.account}\t${l.side === "debit" ? "X" : ""}\t${l.side === "credit" ? "X" : ""}`);
+        if (isCredit) {
+          rows.push(`\t${l.account}\t\tX`);
+        } else {
+          rows.push(`${l.account}\t\tX\t`);
+        }
       } else {
-        rows.push(`${l.account}\t${l.debit ?? ""}\t${l.credit ?? ""}`);
+        if (isCredit) {
+          rows.push(`\t${l.account}\t\t${l.credit ?? ""}`);
+        } else {
+          rows.push(`${l.account}\t\t${l.debit ?? ""}\t`);
+        }
       }
     }
-    if (g.note) rows.push(`${g.note}\t\t`);
   }
   return rows.join("\n");
 }
