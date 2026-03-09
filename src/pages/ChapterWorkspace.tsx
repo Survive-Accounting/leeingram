@@ -126,7 +126,7 @@ export default function ChapterWorkspace() {
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="problems">Problems</TabsTrigger>
+          <TabsTrigger value="problems">Survive Teaching Assets</TabsTrigger>
           <TabsTrigger value="dependent">Dependent</TabsTrigger>
           <TabsTrigger value="generation">Generation Runs</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
