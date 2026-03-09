@@ -382,6 +382,11 @@ export default function ProblemBank() {
           {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
           {ocrRunning ? "Running OCR…" : ocrHasRun ? "Re-run OCR" : "Run OCR"}
         </Button>
+        {canAdd && !isVa && problems && problems.length > 0 && (
+          <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10 ml-auto" onClick={() => setDeleteAllOpen(true)}>
+            <Trash2 className="h-3 w-3 mr-1" /> Delete All Sources
+          </Button>
+        )}
         {selectedIds.size > 0 && (
           <>
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
