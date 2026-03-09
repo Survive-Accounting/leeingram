@@ -513,6 +513,35 @@ export default function SolutionsPdfUpload() {
           </CardContent>
         </Card>
       )}
+
+      {/* Solution text preview dialog */}
+      <Dialog open={!!previewBlock} onOpenChange={(open) => !open && setPreviewBlock(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-mono">{previewBlock?.source_code}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="outline" className="text-[10px]">{previewBlock?.source_type}</Badge>
+              <Badge variant="outline" className={`text-[10px] ${
+                (previewBlock?.confidence ?? 0) >= 0.8 ? "text-green-400 border-green-500/30"
+                : (previewBlock?.confidence ?? 0) >= 0.6 ? "text-amber-400 border-amber-500/30"
+                : "text-red-400 border-red-500/30"
+              }`}>
+                {Math.round((previewBlock?.confidence ?? 0) * 100)}% confidence
+              </Badge>
+              {previewBlock?.page_start && (
+                <span className="text-xs text-muted-foreground">
+                  Page {previewBlock.page_start}{previewBlock.page_end && previewBlock.page_end !== previewBlock.page_start ? `–${previewBlock.page_end}` : ""}
+                </span>
+              )}
+            </div>
+            <pre className="text-sm text-foreground whitespace-pre-wrap font-mono bg-muted/30 rounded-md border border-border p-4 leading-relaxed">
+              {previewBlock?.cleaned_text}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </SurviveSidebarLayout>
   );
 }
