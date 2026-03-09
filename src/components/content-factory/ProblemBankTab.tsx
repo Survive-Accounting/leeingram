@@ -2377,6 +2377,21 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
         </div>
       </div>
 
+      {/* Warning: no ready problems */}
+      {problems && problems.length > 0 && readyCount === 0 && (
+        <div className={cn(
+          "flex items-center gap-2 rounded-lg border px-4 py-3 mb-3 text-sm transition-all",
+          notReadyWarningFlash
+            ? "border-destructive bg-destructive/10 text-destructive"
+            : "border-border bg-muted/50 text-muted-foreground"
+        )}>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            <strong>Import textbook problems first.</strong> Each source needs both a solution and textbook problem screenshot before it can be generated.
+          </span>
+        </div>
+      )}
+
       <div className="rounded-lg border border-border overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <Table>
           <TableHeader>
