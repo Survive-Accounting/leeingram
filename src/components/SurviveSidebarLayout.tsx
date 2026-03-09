@@ -115,10 +115,21 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     setWorkspace({ courseId: course.id, courseName: course.course_name, chapterId: "", chapterName: "", chapterNumber: 0 });
   };
 
-  const handleChapterChange = (chapterId: string) => {
+  const handleChapterChange = async (chapterId: string) => {
     const ch = allChapters?.find((c) => c.id === chapterId);
     if (!ch || !workspace) return;
     setWorkspace({ ...workspace, chapterId: ch.id, chapterName: ch.chapter_name, chapterNumber: ch.chapter_number });
+
+    // Check if chapter has approved teaching assets → navigate to assets library, else import
+    const { count } = await supabase
+      .from("teaching_assets")
+      .select("id", { count: "exact", head: true })
+      .eq("chapter_id", chapterId);
+    if (count && count > 0) {
+      navigate("/assets-library");
+    } else {
+      navigate("/problem-bank");
+    }
   };
 
   // ── Badge counts ────────────────────────────────────────────────
