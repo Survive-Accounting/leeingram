@@ -310,16 +310,15 @@ export default function SolutionsPdfUpload() {
         </CardContent>
       </Card>
 
-      {/* Parse Section */}
-      {activeFileId && (
-        <Card className="mb-4">
+      {/* Parse Section — always visible */}
+      <Card className="mb-4">
           <CardHeader className="pb-3 flex-row items-center justify-between">
             <CardTitle className="text-sm">2. Parse & Review</CardTitle>
             <div className="flex gap-2">
               <Button
                 size="sm"
-                onClick={() => parseMutation.mutate(activeFileId)}
-                disabled={parsing}
+                onClick={() => parseMutation.mutate(activeFileId!)}
+                disabled={parsing || !activeFileId}
               >
                 {parsing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
                 {parsing ? "Parsing…" : "Parse PDF"}
@@ -327,7 +326,11 @@ export default function SolutionsPdfUpload() {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {blocksLoading ? (
+            {!activeFileId ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">
+                Upload a PDF above, then click "Parse PDF" to extract solution blocks.
+              </p>
+            ) : blocksLoading ? (
               <div className="text-xs text-muted-foreground py-4 text-center">Loading blocks…</div>
             ) : !parsedBlocks?.length ? (
               <p className="text-xs text-muted-foreground py-4 text-center">
@@ -495,7 +498,6 @@ export default function SolutionsPdfUpload() {
             )}
           </CardContent>
         </Card>
-      )}
 
       {/* Screenshot Capture Mode Link */}
       {chapterId && (
