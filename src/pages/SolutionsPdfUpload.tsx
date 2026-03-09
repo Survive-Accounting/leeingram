@@ -317,8 +317,8 @@ export default function SolutionsPdfUpload() {
             <div className="flex gap-2">
               <Button
                 size="sm"
-                onClick={() => parseMutation.mutate(activeFileId)}
-                disabled={parsing}
+                onClick={() => parseMutation.mutate(activeFileId!)}
+                disabled={parsing || !activeFileId}
               >
                 {parsing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
                 {parsing ? "Parsing…" : "Parse PDF"}
