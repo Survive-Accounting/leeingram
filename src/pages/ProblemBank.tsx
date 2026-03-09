@@ -351,11 +351,6 @@ export default function ProblemBank() {
                 <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
               </Link>
             </Button>
-            <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
-              <Link to={`/screenshot-capture/${chapterFilter}`}>
-                <FileUp className="h-3 w-3 mr-1" /> Upload Textbook
-              </Link>
-            </Button>
           </>
         )}
         <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(ocrHasRun)} disabled={ocrRunning}>

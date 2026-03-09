@@ -29,7 +29,7 @@ function getActiveStageIdx(pathname: string): number {
 }
 
 const STAGE_INSTRUCTIONS: Record<string, string> = {
-  "/problem-bank": "Import textbook screenshots for variant generation.",
+  "/problem-bank": "Paste textbook problem screenshots for each source item.",
   "/content": "Generate variants from imported source problems.",
   "/review": "Review generated variants — approve or send back.",
   "/assets-library": "Finalized assets ready for production.",

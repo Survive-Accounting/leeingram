@@ -51,18 +51,20 @@ export function NextTaskBanner() {
 
   return (
     <div className="mx-4 sm:mx-6 mt-4 rounded-lg border border-primary/30 bg-primary/10 px-5 py-3.5">
-      <div className="flex items-center gap-2">
-        <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Next Task</p>
-          <p className="text-sm text-white mt-0.5">
-            {config.task}
-            {pendingCount !== undefined && pendingCount > 0 && (
-              <span className="ml-2 text-white/60">
-                {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
-              </span>
-            )}
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">Current Task</p>
+            <p className="text-sm text-white mt-0.5">
+              {config.task}
+              {pendingCount !== undefined && pendingCount > 0 && (
+                <span className="ml-2 text-white/60">
+                  {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
+                </span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>
