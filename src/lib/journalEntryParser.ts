@@ -300,7 +300,7 @@ export function groupsToTSV(groups: JournalEntryGroup[], mode: "completed" | "te
 export function canonicalRowsToTSV(rows: CanonicalJERow[]): string {
   const lines: string[] = [];
   for (const r of rows) {
-    const isCredit = r.credit != null && r.credit !== "" && (r.debit == null || r.debit === "");
+    const isCredit = r.credit != null && r.debit == null;
     if (isCredit) {
       lines.push(`\t${r.account_name}\t\t${r.credit}`);
     } else {
