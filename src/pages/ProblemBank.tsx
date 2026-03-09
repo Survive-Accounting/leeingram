@@ -404,16 +404,14 @@ export default function ProblemBank() {
                 <TableHead className="text-xs">Label</TableHead>
                 <TableHead className="text-xs">Title</TableHead>
                 <TableHead className="text-xs">Type</TableHead>
-                <TableHead className="text-xs"># Prob Imgs</TableHead>
-                <TableHead className="text-xs"># Sol Imgs</TableHead>
                 <TableHead className="text-xs w-36">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ?
-            <TableRow><TableCell colSpan={8} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
             !problems?.length ?
-            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No imported sources yet.</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">No imported sources yet.</TableCell></TableRow> :
 
             problems.map((p) =>
             <TableRow key={p.id} className="border-border">
@@ -428,8 +426,6 @@ export default function ProblemBank() {
                     <TableCell className="text-xs font-mono">{p.source_label || "—"}</TableCell>
                     <TableCell className="text-xs">{p.title || "—"}</TableCell>
                     <TableCell className="text-xs capitalize">{p.problem_type}</TableCell>
-                    <TableCell className="text-xs">{imgCount(p.problem_screenshot_urls, p.problem_screenshot_url)}</TableCell>
-                    <TableCell className="text-xs">{imgCount(p.solution_screenshot_urls, p.solution_screenshot_url)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         {(p.status === "raw" || p.status === "tagged") &&
