@@ -337,7 +337,7 @@ export default function ProblemBank() {
           Problem Import
         </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
+          Paste textbook problem screenshots for each item in this chapter.
         </p>
       </div>
 
@@ -349,11 +349,6 @@ export default function ProblemBank() {
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
               <Link to={`/solutions-upload/${chapterFilter}`}>
                 <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
-              </Link>
-            </Button>
-            <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
-              <Link to={`/screenshot-capture/${chapterFilter}`}>
-                <FileUp className="h-3 w-3 mr-1" /> Upload Textbook
               </Link>
             </Button>
           </>
