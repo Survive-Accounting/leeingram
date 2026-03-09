@@ -178,10 +178,10 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           className={cn(
             "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
             active
-              ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+              ? "bg-primary/20 text-white font-medium border border-primary/30"
               : dimmed
-                ? "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                : "text-foreground/80 hover:text-foreground hover:bg-muted/30"
+                ? "text-white/70 hover:text-white hover:bg-muted/30"
+                : "text-white/90 hover:text-white hover:bg-muted/30"
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
@@ -273,7 +273,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
           {!sidebarCollapsed && (
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
               Phase 1 · Teaching Asset Creation
             </p>
           )}
@@ -284,7 +284,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             <>
               <div className="border-t border-border my-3" />
               {!sidebarCollapsed && (
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-3 pb-1.5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
                   Phase 2 · Content Production
                 </p>
               )}
@@ -319,7 +319,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
                   isActive("/va-admin")
                     ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                    : "text-white/70 hover:text-white hover:bg-muted/30"
                 )}
               >
                 <Users className="h-3.5 w-3.5" /> VA Admin
