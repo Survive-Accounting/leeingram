@@ -56,6 +56,7 @@ export function NextTaskBanner() {
   const location = useLocation();
   const { workspace } = useActiveWorkspace();
   const { isVa } = useVaAccount();
+  const [sopOpen, setSopOpen] = useState(false);
 
   const routeConfig = Object.entries(ROUTE_TASKS).find(
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
