@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useBuildRun } from "@/hooks/useBuildRun";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { StartBuildRunModal } from "@/components/BuildTimerWidget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
@@ -61,6 +62,7 @@ export default function ProblemBank() {
   const qc = useQueryClient();
   const { workspace } = useActiveWorkspace();
   const { activeRun, isRunning, registerImport } = useBuildRun();
+  const { isVa } = useVaAccount();
 
   const courseFilter = workspace?.courseId || "all";
   const chapterFilter = workspace?.chapterId || "all";
@@ -346,9 +348,16 @@ export default function ProblemBank() {
       <div className="flex items-center gap-1.5 mb-3">
         {canAdd && chapterFilter && chapterFilter !== "all" && (
           <>
+            {!isVa && (
+              <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
+                <Link to={`/solutions-upload/${chapterFilter}`}>
+                  <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
+                </Link>
+              </Button>
+            )}
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
-              <Link to={`/solutions-upload/${chapterFilter}`}>
-                <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
+              <Link to={`/screenshot-capture/${chapterFilter}`}>
+                <Camera className="h-3 w-3 mr-1" /> Upload Textbook
               </Link>
             </Button>
           </>
