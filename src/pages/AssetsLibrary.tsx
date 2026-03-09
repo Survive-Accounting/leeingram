@@ -504,7 +504,7 @@ export default function AssetsLibrary() {
                 />
               </TableHead>
               <TableHead className="text-xs">Asset Code</TableHead>
-              <TableHead className="text-xs">Tags</TableHead>
+              <TableHead className="text-xs">Textbook Ref</TableHead>
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-16 text-right">Quick</TableHead>
             </TableRow>
