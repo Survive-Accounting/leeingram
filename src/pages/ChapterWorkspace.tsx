@@ -12,6 +12,7 @@ import { DependentProblemsQueue } from "@/components/content-factory/DependentPr
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useBuildRun, type BuildRun } from "@/hooks/useBuildRun";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { Timer } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,6 +61,7 @@ export default function ChapterWorkspace() {
   const { saveSession } = useProductionSession();
   const { setWorkspace } = useActiveWorkspace();
   const { activeRun, isRunning } = useBuildRun();
+  const { isVa } = useVaAccount();
   const qc = useQueryClient();
   const initialTab = searchParams.get("tab") || "problems";
   const autoReview = searchParams.get("mode") === "review";
@@ -128,8 +130,8 @@ export default function ChapterWorkspace() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Survive Teaching Assets</TabsTrigger>
           <TabsTrigger value="dependent">Dependent</TabsTrigger>
-          <TabsTrigger value="generation">Generation Runs</TabsTrigger>
-          <TabsTrigger value="activity">Activity Log</TabsTrigger>
+          {!isVa && <TabsTrigger value="generation">Generation Runs</TabsTrigger>}
+          {!isVa && <TabsTrigger value="activity">Activity Log</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="problems">
