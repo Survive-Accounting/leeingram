@@ -943,6 +943,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   });
 
   const openDetail = (p: ChapterProblem) => {
+    if (p.status !== "ready" && p.status !== "generated") {
+      toast.warning("This problem isn't ready yet. Import both the textbook problem and solution before generating.");
+      setNotReadyWarningFlash(true);
+      setTimeout(() => setNotReadyWarningFlash(false), 2000);
+      return;
+    }
     setViewingProblem(p);
     setAfNotes("");
     setAfRequiresJE(!!p.journal_entry_text);
