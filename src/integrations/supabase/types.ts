@@ -86,6 +86,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          note: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type?: string
+          id?: string
+          note?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          note?: string
+        }
+        Relationships: []
+      }
       answer_packages: {
         Row: {
           answer_payload: Json
@@ -138,6 +165,54 @@ export type Database = {
             columns: ["source_problem_id"]
             isOneToOne: false
             referencedRelation: "chapter_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_flags: {
+        Row: {
+          created_at: string
+          flag_reason: string
+          flagged_by_va_id: string | null
+          id: string
+          notes: string | null
+          resolved_at: string | null
+          status: string
+          teaching_asset_id: string
+        }
+        Insert: {
+          created_at?: string
+          flag_reason?: string
+          flagged_by_va_id?: string | null
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          teaching_asset_id: string
+        }
+        Update: {
+          created_at?: string
+          flag_reason?: string
+          flagged_by_va_id?: string | null
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          teaching_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_flags_flagged_by_va_id_fkey"
+            columns: ["flagged_by_va_id"]
+            isOneToOne: false
+            referencedRelation: "va_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_flags_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -2328,6 +2403,7 @@ export type Database = {
           deployment_status: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
           google_sheet_file_id: string | null
+          google_sheet_status: string
           google_sheet_url: string | null
           id: string
           journal_entry_block: string | null
@@ -2371,6 +2447,7 @@ export type Database = {
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           google_sheet_file_id?: string | null
+          google_sheet_status?: string
           google_sheet_url?: string | null
           id?: string
           journal_entry_block?: string | null
@@ -2414,6 +2491,7 @@ export type Database = {
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           google_sheet_file_id?: string | null
+          google_sheet_status?: string
           google_sheet_url?: string | null
           id?: string
           journal_entry_block?: string | null
@@ -2914,6 +2992,112 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_assignments: {
+        Row: {
+          assigned_at: string
+          chapter_id: string
+          course_id: string
+          created_at: string
+          hours_logged: number
+          id: string
+          notes: string | null
+          status: string
+          va_account_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          chapter_id: string
+          course_id: string
+          created_at?: string
+          hours_logged?: number
+          id?: string
+          notes?: string | null
+          status?: string
+          va_account_id: string
+        }
+        Update: {
+          assigned_at?: string
+          chapter_id?: string
+          course_id?: string
+          created_at?: string
+          hours_logged?: number
+          id?: string
+          notes?: string | null
+          status?: string
+          va_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_assignments_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_assignments_va_account_id_fkey"
+            columns: ["va_account_id"]
+            isOneToOne: false
+            referencedRelation: "va_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_questions: {
+        Row: {
+          addressed_at: string | null
+          admin_response: string | null
+          chapter_id: string | null
+          created_at: string
+          id: string
+          question: string
+          status: string
+          va_account_id: string
+        }
+        Insert: {
+          addressed_at?: string | null
+          admin_response?: string | null
+          chapter_id?: string | null
+          created_at?: string
+          id?: string
+          question?: string
+          status?: string
+          va_account_id: string
+        }
+        Update: {
+          addressed_at?: string | null
+          admin_response?: string | null
+          chapter_id?: string | null
+          created_at?: string
+          id?: string
+          question?: string
+          status?: string
+          va_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_questions_va_account_id_fkey"
+            columns: ["va_account_id"]
+            isOneToOne: false
+            referencedRelation: "va_accounts"
             referencedColumns: ["id"]
           },
         ]
