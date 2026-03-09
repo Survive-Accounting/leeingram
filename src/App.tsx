@@ -12,6 +12,7 @@ import ContentRoadmap from "./pages/ContentRoadmap";
 import ChapterPage from "./pages/ChapterPage";
 import ChapterWorkspace from "./pages/ChapterWorkspace";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
+import ReviewVariants from "./pages/ReviewVariants";
 import ProblemBank from "./pages/ProblemBank";
 import AssetsLibrary from "./pages/AssetsLibrary";
 import ExportSets from "./pages/ExportSets";
