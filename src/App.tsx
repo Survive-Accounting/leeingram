@@ -12,6 +12,7 @@ import ContentRoadmap from "./pages/ContentRoadmap";
 import ChapterPage from "./pages/ChapterPage";
 import ChapterWorkspace from "./pages/ChapterWorkspace";
 import IdeasRoadmap from "./pages/IdeasRoadmap";
+import ReviewVariants from "./pages/ReviewVariants";
 import ProblemBank from "./pages/ProblemBank";
 import AssetsLibrary from "./pages/AssetsLibrary";
 import ExportSets from "./pages/ExportSets";
@@ -49,7 +50,7 @@ import VaAdmin from "./pages/VaAdmin";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
-import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+
 
 const queryClient = new QueryClient();
 
@@ -60,13 +61,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function ReviewRedirect() {
-  const { workspace } = useActiveWorkspace();
-  if (workspace?.chapterId) {
-    return <Navigate to={`/workspace/${workspace.chapterId}?mode=review`} replace />;
-  }
-  return <Navigate to="/content" replace />;
-}
 
 const AppRoutes = () => {
   const { session, loading } = useAuth();
@@ -96,7 +90,7 @@ const AppRoutes = () => {
       <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
       <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
       <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
-      <Route path="/review" element={<ProtectedRoute><ReviewRedirect /></ProtectedRoute>} />
+      <Route path="/review" element={<ProtectedRoute><ReviewVariants /></ProtectedRoute>} />
       <Route path="/filming" element={<Navigate to="/video-pending" replace />} />
       <Route path="/quizzes-ready" element={<ProtectedRoute><QuizzesReady /></ProtectedRoute>} />
       <Route path="/video-pending" element={<ProtectedRoute><VideoPending /></ProtectedRoute>} />

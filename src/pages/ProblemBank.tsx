@@ -413,7 +413,7 @@ export default function ProblemBank() {
               {isLoading ?
             <TableRow><TableCell colSpan={8} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
             !problems?.length ?
-            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No source problems yet. Click "+ Add Source Problem" to start.</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground text-xs">No imported sources yet.</TableCell></TableRow> :
 
             problems.map((p) =>
             <TableRow key={p.id} className="border-border">
