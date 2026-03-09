@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
-  Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download,
+  Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +35,7 @@ const PHASE_2_ITEMS = [
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
   { label: "Videos Ready", path: "/videos-ready", icon: Video },
   { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
+  { label: "Dashboard", path: "/dashboard", icon: BarChart3 },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
