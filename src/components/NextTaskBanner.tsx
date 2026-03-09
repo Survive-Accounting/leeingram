@@ -88,30 +88,57 @@ export function NextTaskBanner() {
   const [, config] = routeConfig;
 
   return (
-    <div className="mx-4 sm:mx-6 mt-4 rounded-lg border border-primary/30 bg-primary/10 px-5 py-3.5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">This Task</p>
-              {config.adminOnly && isVa && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Lock className="h-2.5 w-2.5" /> Instructor only
-                </span>
-              )}
+    <>
+      <div className="mx-4 sm:mx-6 mt-4 rounded-lg border border-primary/30 bg-primary/10 px-5 py-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-primary">This Task</p>
+                {config.adminOnly && isVa && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Lock className="h-2.5 w-2.5" /> Instructor only
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-white mt-0.5">
+                {config.task}
+                {pendingCount !== undefined && pendingCount > 0 && (
+                  <span className="ml-2 text-white/60">
+                    {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
+                  </span>
+                )}
+              </p>
             </div>
-            <p className="text-sm text-white mt-0.5">
-              {config.task}
-              {pendingCount !== undefined && pendingCount > 0 && (
-                <span className="ml-2 text-white/60">
-                  {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
-                </span>
-              )}
-            </p>
           </div>
+          {config.sopLabel && (
+            <Button
+              size="sm"
+              className="shrink-0 h-7 text-[11px] px-3 bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+              onClick={() => setSopOpen(true)}
+            >
+              <Play className="h-3 w-3 mr-1" /> Watch SOP Video
+            </Button>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* SOP Video Modal */}
+      <Dialog open={sopOpen} onOpenChange={setSopOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{config.sopLabel}</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video bg-muted/30 rounded-lg flex items-center justify-center border border-border">
+            <div className="text-center space-y-2">
+              <Play className="h-10 w-10 text-muted-foreground/40 mx-auto" />
+              <p className="text-sm text-muted-foreground">SOP video coming soon.</p>
+              <p className="text-xs text-muted-foreground/60">This will contain step-by-step instructions for this task.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
