@@ -298,9 +298,14 @@ export function groupsToTSV(groups: JournalEntryGroup[], mode: "completed" | "te
 
 /** TSV export for canonical rows */
 export function canonicalRowsToTSV(rows: CanonicalJERow[]): string {
-  const lines: string[] = ["Account\tDebit\tCredit"];
+  const lines: string[] = [];
   for (const r of rows) {
-    lines.push(`${r.account_name}\t${r.debit ?? ""}\t${r.credit ?? ""}`);
+    const isCredit = r.credit != null && r.credit !== "" && (r.debit == null || r.debit === "");
+    if (isCredit) {
+      lines.push(`\t${r.account_name}\t\t${r.credit}`);
+    } else {
+      lines.push(`${r.account_name}\t\t${r.debit ?? ""}\t`);
+    }
   }
   return lines.join("\n");
 }

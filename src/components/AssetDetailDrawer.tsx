@@ -224,19 +224,17 @@ function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): str
   const lines: string[] = [];
   const spacer = "\t".repeat(settings.spacerColumns);
   entries.forEach((entry, idx) => {
-    if (idx > 0) lines.push(""); // blank row between groups
+    if (idx > 0) lines.push("\t\t\t"); // blank row between groups
     if (settings.includeDate) {
-      lines.push(toShortDate(entry.label));
+      lines.push(`${toShortDate(entry.label)}\t\t\t`);
     }
     for (const row of entry.rows) {
       const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
       const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
       if (isCredit) {
-        // Credit: tab-indented account, spacer, debit col blank, credit amount
         lines.push(`\t${row.account}${spacer}\t${amount}`);
       } else {
-        // Debit: account, spacer, debit amount, credit blank
-        lines.push(`${row.account}${spacer}${amount}`);
+        lines.push(`${row.account}${spacer}${amount}\t`);
       }
     }
   });
