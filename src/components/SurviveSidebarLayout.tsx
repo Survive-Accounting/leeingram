@@ -35,6 +35,7 @@ const PHASE_2_ITEMS = [
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
   { label: "Videos Ready", path: "/videos-ready", icon: Video },
   { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
+  { label: "Dashboard", path: "/dashboard", icon: BarChart3 },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
