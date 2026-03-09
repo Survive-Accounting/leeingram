@@ -2,23 +2,51 @@ import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
-import { ArrowRight } from "lucide-react";
+import { useVaAccount } from "@/hooks/useVaAccount";
+import { ArrowRight, Lock } from "lucide-react";
 
-const ROUTE_TASKS: Record<string, { task: string; countQuery?: string }> = {
-  "/problem-bank": { task: "Paste textbook problem screenshots for each source item.", countQuery: "imported" },
-  "/content": { task: "Generate variants from imported problems.", countQuery: "generated" },
-  "/review": { task: "Review generated variants — approve or send back." },
-  "/assets-library": { task: "Manage approved teaching assets for production." },
-  "/question-review": { task: "Review MC questions generated from teaching assets.", countQuery: "review" },
-  "/quizzes-ready": { task: "Download quiz CSV files for LearnWorlds import." },
-  "/video-pending": { task: "Assets waiting for walkthrough video recording." },
-  "/videos-ready": { task: "Assets with completed videos ready for deployment." },
-  "/deployment": { task: "Deploy quizzes and videos to LearnWorlds." },
+const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string }> = {
+  "/problem-bank": {
+    task: "Paste textbook problem screenshots and upload solution PDFs for each source item.",
+    countQuery: "imported",
+  },
+  "/content": {
+    task: "Generate Survive Teaching Assets from ready source problems.",
+    countQuery: "generated",
+  },
+  "/review": {
+    task: "Review generated variants — approve good ones, send back the rest.",
+  },
+  "/assets-library": {
+    task: "Verify each asset's Google Sheet is set up correctly for tutoring and filming.",
+  },
+  "/question-review": {
+    task: "Review auto-generated MC questions — approve or reject each one.",
+    adminOnly: true,
+    countQuery: "review",
+  },
+  "/quizzes-ready": {
+    task: "Download quiz CSV files for LearnWorlds import.",
+    adminOnly: true,
+  },
+  "/video-pending": {
+    task: "Record walkthrough videos for each teaching asset.",
+    adminOnly: true,
+  },
+  "/videos-ready": {
+    task: "Attach completed videos and prepare assets for deployment.",
+    adminOnly: true,
+  },
+  "/deployment": {
+    task: "Complete the deployment checklist to publish content to LearnWorlds.",
+    adminOnly: true,
+  },
 };
 
 export function NextTaskBanner() {
   const location = useLocation();
   const { workspace } = useActiveWorkspace();
+  const { isVa } = useVaAccount();
 
   const routeConfig = Object.entries(ROUTE_TASKS).find(
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
@@ -55,7 +83,14 @@ export function NextTaskBanner() {
         <div className="flex items-center gap-2">
           <ArrowRight className="h-4 w-4 text-primary shrink-0" />
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-primary">Current Task</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">This Task</p>
+              {config.adminOnly && isVa && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Lock className="h-2.5 w-2.5" /> Instructor only
+                </span>
+              )}
+            </div>
             <p className="text-sm text-white mt-0.5">
               {config.task}
               {pendingCount !== undefined && pendingCount > 0 && (

@@ -528,15 +528,8 @@ export default function AssetsLibrary() {
                     />
                   </TableCell>
                   <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>
-                  <TableCell className="text-xs">
-                    <div className="flex flex-wrap gap-1">
-                      {(a.tags ?? []).slice(0, 3).map((t) => (
-                        <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-                      ))}
-                      {(a.tags ?? []).length > 3 && (
-                        <span className="text-[10px] text-muted-foreground">+{a.tags.length - 3}</span>
-                      )}
-                    </div>
+                  <TableCell className="text-xs font-mono text-muted-foreground">
+                    {a.source_ref || "—"}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(a.created_at), "MMM d")}
