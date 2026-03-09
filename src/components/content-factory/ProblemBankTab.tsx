@@ -991,6 +991,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       .from("problem_variants")
       .select("*")
       .eq("base_problem_id", problemId)
+      .neq("variant_status", "archived")
       .order("created_at", { ascending: true });
     if (!error && data) {
       setReviewCandidates(data.map((v: any) => {
