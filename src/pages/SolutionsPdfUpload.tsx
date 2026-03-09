@@ -310,9 +310,8 @@ export default function SolutionsPdfUpload() {
         </CardContent>
       </Card>
 
-      {/* Parse Section */}
-      {activeFileId && (
-        <Card className="mb-4">
+      {/* Parse Section — always visible */}
+      <Card className="mb-4">
           <CardHeader className="pb-3 flex-row items-center justify-between">
             <CardTitle className="text-sm">2. Parse & Review</CardTitle>
             <div className="flex gap-2">
