@@ -2405,7 +2405,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {(p.status === "raw" || p.status === "imported" || p.status === "ready" || p.status === "tagged") && (
+                      {(p.status === "ready") && (
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
                           <Sparkles className="h-3 w-3 mr-1" /> Generate
                         </Button>
