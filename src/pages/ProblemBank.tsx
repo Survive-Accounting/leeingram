@@ -348,9 +348,16 @@ export default function ProblemBank() {
       <div className="flex items-center gap-1.5 mb-3">
         {canAdd && chapterFilter && chapterFilter !== "all" && (
           <>
+            {!isVa && (
+              <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
+                <Link to={`/solutions-upload/${chapterFilter}`}>
+                  <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
+                </Link>
+              </Button>
+            )}
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
-              <Link to={`/solutions-upload/${chapterFilter}`}>
-                <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
+              <Link to={`/screenshot-capture/${chapterFilter}`}>
+                <Camera className="h-3 w-3 mr-1" /> Upload Textbook
               </Link>
             </Button>
           </>
