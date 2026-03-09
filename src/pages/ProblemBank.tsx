@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
@@ -74,6 +74,7 @@ export default function ProblemBank() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const pendingSaveRef = useRef<{ keepOpen: boolean } | null>(null);
   const navigate = useNavigate();
   
@@ -263,6 +264,21 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      if (!chapterFilter || chapterFilter === "all") throw new Error("No chapter selected");
+      const { error } = await supabase.from("chapter_problems").delete().eq("chapter_id", chapterFilter);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      setSelectedIds(new Set());
+      setDeleteAllOpen(false);
+      toast.success("All sources deleted for this chapter");
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
   const [ocrRunning, setOcrRunning] = useState(false);
   const [ocrHasRun, setOcrHasRun] = useState(false);
 
@@ -366,6 +382,11 @@ export default function ProblemBank() {
           {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
           {ocrRunning ? "Running OCR…" : ocrHasRun ? "Re-run OCR" : "Run OCR"}
         </Button>
+        {canAdd && !isVa && problems && problems.length > 0 && (
+          <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10 ml-auto" onClick={() => setDeleteAllOpen(true)}>
+            <Trash2 className="h-3 w-3 mr-1" /> Delete All Sources
+          </Button>
+        )}
         {selectedIds.size > 0 && (
           <>
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
@@ -615,6 +636,26 @@ export default function ProblemBank() {
         onOpenChange={setBuildRunModalOpen}
         onStarted={() => setAddDialogOpen(true)}
       />
+      {/* Delete All Confirmation */}
+      <Dialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" /> Delete All Sources
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>all {problems?.length ?? 0} source problems</strong> for this chapter. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDeleteAllOpen(false)}>Cancel</Button>
+            <Button variant="destructive" size="sm" onClick={() => deleteAllMutation.mutate()} disabled={deleteAllMutation.isPending}>
+              {deleteAllMutation.isPending ? "Deleting…" : "Delete All"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </SurviveSidebarLayout>);
 
 }
