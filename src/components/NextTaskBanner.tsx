@@ -5,7 +5,7 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { ArrowRight } from "lucide-react";
 
 const ROUTE_TASKS: Record<string, { task: string; countQuery?: string }> = {
-  "/problem-bank": { task: "Import textbook screenshots for this chapter.", countQuery: "imported" },
+  "/problem-bank": { task: "Paste textbook problem screenshots for each source item.", countQuery: "imported" },
   "/content": { task: "Generate variants from imported problems.", countQuery: "generated" },
   "/review": { task: "Review generated variants — approve or send back." },
   "/assets-library": { task: "Manage approved teaching assets for production." },
