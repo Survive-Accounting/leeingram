@@ -326,7 +326,11 @@ export default function SolutionsPdfUpload() {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {blocksLoading ? (
+            {!activeFileId ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">
+                Upload a PDF above, then click "Parse PDF" to extract solution blocks.
+              </p>
+            ) : blocksLoading ? (
               <div className="text-xs text-muted-foreground py-4 text-center">Loading blocks…</div>
             ) : !parsedBlocks?.length ? (
               <p className="text-xs text-muted-foreground py-4 text-center">
