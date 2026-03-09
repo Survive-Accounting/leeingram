@@ -74,6 +74,7 @@ export default function ProblemBank() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const pendingSaveRef = useRef<{ keepOpen: boolean } | null>(null);
   const navigate = useNavigate();
   
