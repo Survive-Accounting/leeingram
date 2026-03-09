@@ -264,6 +264,21 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      if (!chapterFilter || chapterFilter === "all") throw new Error("No chapter selected");
+      const { error } = await supabase.from("chapter_problems").delete().eq("chapter_id", chapterFilter);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      setSelectedIds(new Set());
+      setDeleteAllOpen(false);
+      toast.success("All sources deleted for this chapter");
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
   const [ocrRunning, setOcrRunning] = useState(false);
   const [ocrHasRun, setOcrHasRun] = useState(false);
 
