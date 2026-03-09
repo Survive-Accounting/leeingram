@@ -90,7 +90,7 @@ const AppRoutes = () => {
       <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
       <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
       <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
-      <Route path="/review" element={<ProtectedRoute><ReviewRedirect /></ProtectedRoute>} />
+      <Route path="/review" element={<ProtectedRoute><ReviewVariants /></ProtectedRoute>} />
       <Route path="/filming" element={<Navigate to="/video-pending" replace />} />
       <Route path="/quizzes-ready" element={<ProtectedRoute><QuizzesReady /></ProtectedRoute>} />
       <Route path="/video-pending" element={<ProtectedRoute><VideoPending /></ProtectedRoute>} />
