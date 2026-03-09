@@ -12,6 +12,7 @@ import { DependentProblemsQueue } from "@/components/content-factory/DependentPr
 import { useProductionSession } from "@/hooks/useProductionSession";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useBuildRun, type BuildRun } from "@/hooks/useBuildRun";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { Timer } from "lucide-react";
 import { toast } from "sonner";
 
