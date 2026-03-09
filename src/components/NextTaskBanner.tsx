@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Lock, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
@@ -124,7 +127,6 @@ export function NextTaskBanner() {
         </div>
       </div>
 
-      {/* SOP Video Modal */}
       <Dialog open={sopOpen} onOpenChange={setSopOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
