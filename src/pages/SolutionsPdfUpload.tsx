@@ -498,7 +498,6 @@ export default function SolutionsPdfUpload() {
             )}
           </CardContent>
         </Card>
-      )}
 
       {/* Screenshot Capture Mode Link */}
       {chapterId && (
