@@ -197,11 +197,6 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         >
           <Icon className="h-4 w-4 shrink-0" />
           {!sidebarCollapsed && <span className="text-sm">{item.label}</span>}
-          {badge !== null && badge > 0 && !sidebarCollapsed && (
-            <span className="ml-auto text-[10px] font-bold tabular-nums text-primary bg-primary/15 rounded px-1.5 py-0.5">
-              {badge}
-            </span>
-          )}
         </Link>
       );
     });
