@@ -128,7 +128,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       const chId = workspace!.chapterId;
       const { data: problems } = await supabase.from("chapter_problems").select("id, pipeline_status").eq("chapter_id", chId);
       const imported = problems?.filter(p => p.pipeline_status === "imported").length ?? 0;
-      const generated = problems?.filter(p => ["generated", "approved", "banked", "deployed"].includes(p.pipeline_status)).length ?? 0;
+      const generated = problems?.filter(p => ["generated"].includes(p.pipeline_status)).length ?? 0;
       const { count: approvedCount } = await supabase.from("teaching_assets").select("id", { count: "exact", head: true }).eq("chapter_id", chId);
       const { count: bankedCount } = await supabase.from("banked_questions").select("id", { count: "exact", head: true });
       return { imported, generated, approved: approvedCount ?? 0, banked: bankedCount ?? 0 };
