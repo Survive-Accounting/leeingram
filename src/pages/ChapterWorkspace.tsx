@@ -61,6 +61,7 @@ export default function ChapterWorkspace() {
   const { saveSession } = useProductionSession();
   const { setWorkspace } = useActiveWorkspace();
   const { activeRun, isRunning } = useBuildRun();
+  const { isVa } = useVaAccount();
   const qc = useQueryClient();
   const initialTab = searchParams.get("tab") || "problems";
   const autoReview = searchParams.get("mode") === "review";
