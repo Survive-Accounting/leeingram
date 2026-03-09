@@ -14,33 +14,41 @@ const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuer
   "/content": {
     task: "Generate Survive Teaching Assets from ready source problems.",
     countQuery: "generated",
+    sopLabel: "Generate SOP",
   },
   "/review": {
     task: "Review generated variants — approve good ones, send back the rest.",
+    sopLabel: "Review SOP",
   },
   "/assets-library": {
     task: "Verify each asset's Google Sheet is set up correctly for tutoring and filming.",
+    sopLabel: "Assets SOP",
   },
   "/question-review": {
     task: "Review auto-generated MC questions — approve or reject each one.",
     adminOnly: true,
     countQuery: "review",
+    sopLabel: "MC Review SOP",
   },
   "/quizzes-ready": {
     task: "Download quiz CSV files for LearnWorlds import.",
     adminOnly: true,
+    sopLabel: "Quiz Export SOP",
   },
   "/video-pending": {
     task: "Record walkthrough videos for each teaching asset.",
     adminOnly: true,
+    sopLabel: "Video Recording SOP",
   },
   "/videos-ready": {
     task: "Attach completed videos and prepare assets for deployment.",
     adminOnly: true,
+    sopLabel: "Video Attach SOP",
   },
   "/deployment": {
     task: "Complete the deployment checklist to publish content to LearnWorlds.",
     adminOnly: true,
+    sopLabel: "Deploy SOP",
   },
 };
 
