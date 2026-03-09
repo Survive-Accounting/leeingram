@@ -636,6 +636,26 @@ export default function ProblemBank() {
         onOpenChange={setBuildRunModalOpen}
         onStarted={() => setAddDialogOpen(true)}
       />
+      {/* Delete All Confirmation */}
+      <Dialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" /> Delete All Sources
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>all {problems?.length ?? 0} source problems</strong> for this chapter. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDeleteAllOpen(false)}>Cancel</Button>
+            <Button variant="destructive" size="sm" onClick={() => deleteAllMutation.mutate()} disabled={deleteAllMutation.isPending}>
+              {deleteAllMutation.isPending ? "Deleting…" : "Delete All"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </SurviveSidebarLayout>);
 
 }
