@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Upload, FileText, Loader2, Check, Archive, AlertTriangle, Sparkles, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type ParsedBlock = {
@@ -30,6 +31,7 @@ export default function SolutionsPdfUpload() {
   const [parsing, setParsing] = useState(false);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
+  const [previewBlock, setPreviewBlock] = useState<ParsedBlock | null>(null);
 
   const { data: chapter } = useQuery({
     queryKey: ["chapter", chapterId],
@@ -431,16 +433,10 @@ export default function SolutionsPdfUpload() {
                           </TableCell>
                           <TableCell>
                             <button
-                              className="text-xs text-left text-foreground/80 hover:text-foreground max-w-[300px] truncate block"
-                              onClick={() =>
-                                setExpandedBlock(
-                                  expandedBlock === block.id ? null : block.id
-                                )
-                              }
+                              className="text-xs text-left text-foreground/80 hover:text-foreground hover:underline max-w-[300px] truncate block cursor-pointer"
+                              onClick={() => setPreviewBlock(block)}
                             >
-                              {expandedBlock === block.id
-                                ? block.cleaned_text
-                                : block.cleaned_text.slice(0, 120) + (block.cleaned_text.length > 120 ? "…" : "")}
+                              {block.cleaned_text.slice(0, 120) + (block.cleaned_text.length > 120 ? "…" : "")}
                             </button>
                           </TableCell>
                           <TableCell>
@@ -517,6 +513,35 @@ export default function SolutionsPdfUpload() {
           </CardContent>
         </Card>
       )}
+
+      {/* Solution text preview dialog */}
+      <Dialog open={!!previewBlock} onOpenChange={(open) => !open && setPreviewBlock(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-mono">{previewBlock?.source_code}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="outline" className="text-[10px]">{previewBlock?.source_type}</Badge>
+              <Badge variant="outline" className={`text-[10px] ${
+                (previewBlock?.confidence ?? 0) >= 0.8 ? "text-green-400 border-green-500/30"
+                : (previewBlock?.confidence ?? 0) >= 0.6 ? "text-amber-400 border-amber-500/30"
+                : "text-red-400 border-red-500/30"
+              }`}>
+                {Math.round((previewBlock?.confidence ?? 0) * 100)}% confidence
+              </Badge>
+              {previewBlock?.page_start && (
+                <span className="text-xs text-muted-foreground">
+                  Page {previewBlock.page_start}{previewBlock.page_end && previewBlock.page_end !== previewBlock.page_start ? `–${previewBlock.page_end}` : ""}
+                </span>
+              )}
+            </div>
+            <pre className="text-sm text-foreground whitespace-pre-wrap font-mono bg-muted/30 rounded-md border border-border p-4 leading-relaxed">
+              {previewBlock?.cleaned_text}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </SurviveSidebarLayout>
   );
 }
