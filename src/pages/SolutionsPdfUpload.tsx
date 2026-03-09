@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Upload, FileText, Loader2, Check, Archive, AlertTriangle, Sparkles, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type ParsedBlock = {
