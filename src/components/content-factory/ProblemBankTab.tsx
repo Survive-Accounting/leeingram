@@ -180,6 +180,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   const [batchCurrentLabel, setBatchCurrentLabel] = useState("");
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
   const [launchingBatch, setLaunchingBatch] = useState(false);
+  const [notReadyWarningFlash, setNotReadyWarningFlash] = useState(false);
 
   // Review queue state
   const [reviewMode, setReviewMode] = useState(false);
@@ -943,6 +944,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   });
 
   const openDetail = (p: ChapterProblem) => {
+    if (p.status !== "ready" && p.status !== "generated") {
+      toast.warning("This problem isn't ready yet. Import both the textbook problem and solution before generating.");
+      setNotReadyWarningFlash(true);
+      setTimeout(() => setNotReadyWarningFlash(false), 2000);
+      return;
+    }
     setViewingProblem(p);
     setAfNotes("");
     setAfRequiresJE(!!p.journal_entry_text);
@@ -2370,6 +2377,21 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
         </div>
       </div>
 
+      {/* Warning: no ready problems */}
+      {problems && problems.length > 0 && readyCount === 0 && (
+        <div className={cn(
+          "flex items-center gap-2 rounded-lg border px-4 py-3 mb-3 text-sm transition-all",
+          notReadyWarningFlash
+            ? "border-destructive bg-destructive/10 text-destructive"
+            : "border-border bg-muted/50 text-muted-foreground"
+        )}>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            <strong>Import textbook problems first.</strong> Each source needs both a solution and textbook problem screenshot before it can be generated.
+          </span>
+        </div>
+      )}
+
       <div className="rounded-lg border border-border overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <Table>
           <TableHeader>
@@ -2399,7 +2421,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {(p.status === "raw" || p.status === "imported" || p.status === "ready" || p.status === "tagged") && (
+                      {(p.status === "ready") && (
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
                           <Sparkles className="h-3 w-3 mr-1" /> Generate
                         </Button>
