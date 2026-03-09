@@ -234,7 +234,7 @@ function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): str
       if (isCredit) {
         lines.push(`\t${row.account}${spacer}\t${amount}`);
       } else {
-        lines.push(`${row.account}${spacer}${amount}\t`);
+        lines.push(`${row.account}${spacer}\t${amount}\t`);
       }
     }
   });
