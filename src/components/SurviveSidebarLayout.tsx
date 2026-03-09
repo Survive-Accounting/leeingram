@@ -273,7 +273,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
           {!sidebarCollapsed && (
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/70 px-3 pb-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
               Phase 1 · Teaching Asset Creation
             </p>
           )}
