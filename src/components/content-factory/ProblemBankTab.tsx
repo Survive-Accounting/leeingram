@@ -2385,7 +2385,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
             {isLoading ? (
               <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">Loading…</TableCell></TableRow>
             ) : !problems?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No source problems yet. Click "+ Add Source" to start.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No imported sources yet.</TableCell></TableRow>
             ) : (
               problems.map((p) => (
                 <TableRow key={p.id} className="bg-background/90 text-foreground hover:bg-accent/50 data-[state=selected]:bg-accent/60">
