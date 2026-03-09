@@ -433,16 +433,10 @@ export default function SolutionsPdfUpload() {
                           </TableCell>
                           <TableCell>
                             <button
-                              className="text-xs text-left text-foreground/80 hover:text-foreground max-w-[300px] truncate block"
-                              onClick={() =>
-                                setExpandedBlock(
-                                  expandedBlock === block.id ? null : block.id
-                                )
-                              }
+                              className="text-xs text-left text-foreground/80 hover:text-foreground hover:underline max-w-[300px] truncate block cursor-pointer"
+                              onClick={() => setPreviewBlock(block)}
                             >
-                              {expandedBlock === block.id
-                                ? block.cleaned_text
-                                : block.cleaned_text.slice(0, 120) + (block.cleaned_text.length > 120 ? "…" : "")}
+                              {block.cleaned_text.slice(0, 120) + (block.cleaned_text.length > 120 ? "…" : "")}
                             </button>
                           </TableCell>
                           <TableCell>
