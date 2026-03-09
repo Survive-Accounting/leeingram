@@ -337,7 +337,7 @@ export default function ProblemBank() {
           Problem Import
         </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Paste textbook problem + solution screenshots (source material). Tag later; AI extracts label/title.
+          Paste textbook problem screenshots for each item in this chapter.
         </p>
       </div>
 
