@@ -31,6 +31,7 @@ export default function SolutionsPdfUpload() {
   const [parsing, setParsing] = useState(false);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
+  const [previewBlock, setPreviewBlock] = useState<ParsedBlock | null>(null);
 
   const { data: chapter } = useQuery({
     queryKey: ["chapter", chapterId],
