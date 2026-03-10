@@ -3444,6 +3444,7 @@ export type Database = {
         | "export_job"
         | "topic"
         | "chapter"
+        | "system"
       file_type: "textbook" | "solutions" | "tutoring" | "transcript" | "other"
       generation_job_status: "queued" | "running" | "done" | "failed"
       generation_job_type: "generate" | "regenerate_with_repair_note"
@@ -3632,6 +3633,7 @@ export const Constants = {
         "export_job",
         "topic",
         "chapter",
+        "system",
       ],
       file_type: ["textbook", "solutions", "tutoring", "transcript", "other"],
       generation_job_status: ["queued", "running", "done", "failed"],
