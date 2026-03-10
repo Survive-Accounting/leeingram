@@ -43,6 +43,7 @@ const SubLink = ({ label, onClick }: { label: string; onClick: () => void }) => 
 );
 
 export default function DomainSelect() {
+  const { signOut } = useAuth();
   const { isVa, isLoading: vaLoading } = useVaAccount();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
