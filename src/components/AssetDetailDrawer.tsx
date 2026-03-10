@@ -445,19 +445,27 @@ export default function AssetDetailDrawer({
               </p>
             </div>
             <div className="flex gap-1.5 shrink-0">
-              {effectiveSheetUrl && (
+              {(asset.sheet_master_url || effectiveSheetUrl) && (
                 <>
                   <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                    <a href={effectiveSheetUrl} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3 w-3 mr-1" /> Open Sheet
+                    <a href={asset.sheet_master_url || effectiveSheetUrl!} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3 w-3 mr-1" /> Master
                     </a>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => {
-                    navigator.clipboard.writeText(effectiveSheetUrl);
-                    toast.success("Sheet link copied");
-                  }}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                  {asset.sheet_practice_url && (
+                    <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                      <a href={asset.sheet_practice_url} target="_blank" rel="noopener noreferrer">
+                        Practice
+                      </a>
+                    </Button>
+                  )}
+                  {asset.sheet_promo_url && (
+                    <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                      <a href={asset.sheet_promo_url} target="_blank" rel="noopener noreferrer">
+                        Promo
+                      </a>
+                    </Button>
+                  )}
                 </>
               )}
             </div>
