@@ -47,6 +47,7 @@ import BankedQuestionReview from "./pages/BankedQuestionReview";
 import PipelineOverview from "./pages/PipelineOverview";
 import DeploymentChecklist from "./pages/DeploymentChecklist";
 import VaAdmin from "./pages/VaAdmin";
+import VaDashboard from "./pages/VaDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
@@ -124,6 +125,7 @@ const AppRoutes = () => {
       <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
       <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
       <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
+      <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

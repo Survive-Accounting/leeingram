@@ -51,7 +51,7 @@ export default function DomainSelect() {
 
   useEffect(() => {
     if (!vaLoading && isVa) {
-      navigate("/content", { replace: true });
+      navigate("/va-dashboard", { replace: true });
     }
   }, [isVa, vaLoading, navigate]);
 
