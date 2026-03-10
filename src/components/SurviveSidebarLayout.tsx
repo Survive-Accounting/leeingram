@@ -401,8 +401,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               </div>
             )}
 
-            {/* Admin: VA Admin + VA Dashboard links */}
-            {!isVa && !sidebarCollapsed && (
+            {/* Admin: VA Admin + VA Dashboard links — hide during impersonation */}
+            {!isVa && !impersonating && !sidebarCollapsed && (
               <>
                 <Link
                   to="/va-dashboard"
@@ -432,7 +432,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         </nav>
 
         <main className="flex-1 overflow-auto relative">
-          <PipelineProgressStrip />
+          {!HIDE_PROGRESS_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r + "/")) && (
+            <PipelineProgressStrip />
+          )}
           <NextTaskBanner />
           <div
             className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5 bg-card border border-border"
