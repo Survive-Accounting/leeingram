@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChangelogDialog, PROMPT_COUNT } from "@/components/ChangelogDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
