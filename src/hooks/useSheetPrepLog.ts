@@ -14,6 +14,9 @@ export interface SheetPrepEntry {
   source_ref: string | null;
   course_name: string;
   google_sheet_url: string | null;
+  sheet_master_url: string | null;
+  sheet_practice_url: string | null;
+  sheet_promo_url: string | null;
   va_display_name: string | null;
 }
 
