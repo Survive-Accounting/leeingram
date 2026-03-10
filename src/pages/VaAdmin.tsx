@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { UserPlus, Users, Loader2, XCircle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { UserPlus, Users, Loader2, XCircle, CheckCircle2, Plus, Trash2, Eye } from "lucide-react";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { VA_ROLE_LABELS } from "@/hooks/useVaAccount";
 import type { VaAccount } from "@/hooks/useVaAccount";
 
@@ -19,6 +21,8 @@ const VA_ROLES = ["content_creation_va", "sheet_prep_va", "lead_va"];
 
 export default function VaAdmin() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { startImpersonating } = useImpersonation();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState<string | null>(null); // va_account_id
 
@@ -259,21 +263,34 @@ export default function VaAdmin() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{formatTime(va.last_action_at)}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 text-[10px] px-2"
-                          onClick={() => toggleStatus.mutate({
-                            id: va.id,
-                            newStatus: va.account_status === "active" ? "inactive" : "active",
-                          })}
-                        >
-                          {va.account_status === "active" ? (
-                            <><XCircle className="h-3 w-3 mr-1 text-destructive" /> Deactivate</>
-                          ) : (
-                            <><CheckCircle2 className="h-3 w-3 mr-1 text-emerald-400" /> Activate</>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => {
+                              startImpersonating(va);
+                              navigate("/va-dashboard");
+                            }}
+                          >
+                            <Eye className="h-3 w-3 mr-1 text-primary" /> Impersonate
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => toggleStatus.mutate({
+                              id: va.id,
+                              newStatus: va.account_status === "active" ? "inactive" : "active",
+                            })}
+                          >
+                            {va.account_status === "active" ? (
+                              <><XCircle className="h-3 w-3 mr-1 text-destructive" /> Deactivate</>
+                            ) : (
+                              <><CheckCircle2 className="h-3 w-3 mr-1 text-emerald-400" /> Activate</>
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
