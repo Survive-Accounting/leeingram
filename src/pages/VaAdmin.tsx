@@ -21,6 +21,8 @@ const VA_ROLES = ["content_creation_va", "sheet_prep_va", "lead_va"];
 
 export default function VaAdmin() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { startImpersonating } = useImpersonation();
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState<string | null>(null); // va_account_id
 
