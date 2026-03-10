@@ -203,15 +203,24 @@ export default function ReviewVariants() {
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
       qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
     },
-    onError: (err: any) => toast.error(`Approve failed: ${err.message}`),
+    onError: (err: any) => {
+      if (err.message === "ALREADY_APPROVED") return; // silent skip
+      toast.error(`Approve failed: ${err.message}`);
+    },
   });
 
   const handleApprove = async () => {
-    if (approveMutation.isPending) return;
+    // Use ref-based lock to prevent rapid double-fires from keyboard/clicks
+    if (approveInFlight.current) return;
+    approveInFlight.current = true;
+
     const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
     const current = activeVariants[speedIdx] || activeVariants[0];
     const problem = generatedProblems[reviewIndex];
-    if (!current || !problem) return;
+    if (!current || !problem) {
+      approveInFlight.current = false;
+      return;
+    }
 
     try {
       await approveMutation.mutateAsync({ candidate: current, problem });
@@ -222,13 +231,14 @@ export default function ReviewVariants() {
       } else if (reviewIndex < generatedProblems.length - 1) {
         navigateReview("next");
       } else {
-        // Last variant of last problem — show done state
         toast.success("All variants reviewed! 🎉");
         setReviewStarted(false);
         setCandidates([]);
       }
     } catch {
       // error toast already handled by mutation onError
+    } finally {
+      approveInFlight.current = false;
     }
   };
 
