@@ -40,6 +40,10 @@ type TeachingAsset = {
   google_sheet_url?: string | null;
   google_sheet_file_id?: string | null;
   sheet_last_synced_at?: string | null;
+  sheet_master_url?: string | null;
+  sheet_practice_url?: string | null;
+  sheet_promo_url?: string | null;
+  sheet_path_url?: string | null;
   source_type?: string | null;
   source_number?: string | null;
   problem_type?: string | null;
