@@ -637,23 +637,42 @@ export default function AssetDetailDrawer({
 
             {/* Links */}
             <TabsContent value="links" className="px-6 pb-6 space-y-3 mt-4">
-              {effectiveSheetUrl ? (
+              {/* 3-Sheet Links */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Google Sheets</h3>
                 <LinkCard
                   icon={Layers}
-                  label="Google Sheet"
-                  subtitle={asset.google_sheet_file_id ? `File: ${asset.google_sheet_file_id.slice(0, 20)}…` : "Open in Drive"}
-                  href={effectiveSheetUrl}
-                  onCopy={() => { navigator.clipboard.writeText(effectiveSheetUrl); toast.success("Copied"); }}
+                  label="Master Sheet"
+                  subtitle={asset.sheet_master_url ? "Open in Drive" : "Not created yet"}
+                  href={asset.sheet_master_url || effectiveSheetUrl || undefined}
+                  onCopy={asset.sheet_master_url || effectiveSheetUrl ? () => { navigator.clipboard.writeText((asset.sheet_master_url || effectiveSheetUrl)!); toast.success("Copied"); } : undefined}
+                  disabled={!asset.sheet_master_url && !effectiveSheetUrl}
                 />
-              ) : (
                 <LinkCard
                   icon={Layers}
-                  label="Google Sheet"
-                  subtitle="No google_sheet_url stored for this asset."
-                  disabled
-                  comingSoon
+                  label="Practice Sheet"
+                  subtitle={asset.sheet_practice_url ? "Open in Drive" : "Not created yet"}
+                  href={asset.sheet_practice_url || undefined}
+                  onCopy={asset.sheet_practice_url ? () => { navigator.clipboard.writeText(asset.sheet_practice_url!); toast.success("Copied"); } : undefined}
+                  disabled={!asset.sheet_practice_url}
                 />
-              )}
+                <LinkCard
+                  icon={Layers}
+                  label="Promo Sheet"
+                  subtitle={asset.sheet_promo_url ? "Open in Drive" : "Not created yet"}
+                  href={asset.sheet_promo_url || undefined}
+                  onCopy={asset.sheet_promo_url ? () => { navigator.clipboard.writeText(asset.sheet_promo_url!); toast.success("Copied"); } : undefined}
+                  disabled={!asset.sheet_promo_url}
+                />
+                {asset.sheet_path_url && (
+                  <LinkCard
+                    icon={ExternalLink}
+                    label="Chapter Folder"
+                    subtitle="Open Drive folder"
+                    href={asset.sheet_path_url}
+                  />
+                )}
+              </div>
 
               {/* Last synced + Resync */}
               <div className="flex items-center justify-between gap-2 px-1">
