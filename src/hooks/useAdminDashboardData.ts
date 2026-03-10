@@ -7,7 +7,8 @@ export function useTeachingAssets() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, course_id, chapter_id, asset_name, problem_type, difficulty, google_sheet_url, google_sheet_status, banked_generation_status, video_production_status, deployment_status, asset_approved_at, banked_generated_at, csv_export_status, lw_import_status, source_type, source_number, source_ref");
+        .select("id, course_id, chapter_id, asset_name, problem_type, difficulty, google_sheet_url, google_sheet_status, banked_generation_status, video_production_status, deployment_status, asset_approved_at, banked_generated_at, csv_export_status, lw_import_status, source_type, source_number, source_ref")
+        .neq("google_sheet_status", "archived");
       if (error) throw error;
       return data;
     },
