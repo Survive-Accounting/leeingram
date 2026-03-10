@@ -478,7 +478,7 @@ Deno.serve(async (req) => {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: anonKey,
+        apikey: serviceRoleKey,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
