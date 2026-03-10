@@ -106,12 +106,36 @@ export default function ReviewVariants() {
 
   const approveMutation = useMutation({
     mutationFn: async ({ candidate, problem }: { candidate: any; problem: any }) => {
+      // Generate proper asset code: {COURSE_CODE}_CH{NUM}_P{SEQ}_A
+      const { data: courseData } = await supabase
+        .from("courses")
+        .select("code")
+        .eq("id", courseId!)
+        .single();
+      const { data: chapterData } = await supabase
+        .from("chapters")
+        .select("chapter_number")
+        .eq("id", chapterId!)
+        .single();
+
+      // Count existing teaching assets in this chapter for sequential numbering
+      const { count } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("chapter_id", chapterId!);
+
+      const courseCode = courseData?.code || "COURSE";
+      const chNum = String(chapterData?.chapter_number ?? 0).padStart(2, "0");
+      const seqNum = String((count ?? 0) + 1).padStart(3, "0");
+      const assetCode = `${courseCode}_CH${chNum}_P${seqNum}_A`;
+
       // Create teaching asset from variant
       const { error: taErr } = await supabase.from("teaching_assets").insert({
         course_id: courseId!,
         chapter_id: chapterId!,
         base_raw_problem_id: problem.id,
-        asset_name: candidate.asset_name || candidate.survive_problem_text?.slice(0, 60) || "Teaching Asset",
+        asset_name: assetCode,
+        source_ref: problem.source_label || null,
         survive_problem_text: candidate.survive_problem_text || "",
         survive_solution_text: candidate.survive_solution_text || "",
         journal_entry_completed_json: candidate.journal_entry_completed_json,
@@ -144,8 +168,8 @@ export default function ReviewVariants() {
         entity_type: "variant",
         entity_id: candidate._variantId,
         event_type: "variant_approved",
-        message: `Approved variant for ${problem.source_label || problem.title}`,
-        payload_json: { source_problem_id: problem.id },
+        message: `Approved variant ${assetCode} for ${problem.source_label || problem.title}`,
+        payload_json: { source_problem_id: problem.id, asset_code: assetCode },
       });
     },
     onSuccess: () => {
@@ -153,17 +177,21 @@ export default function ReviewVariants() {
       qc.invalidateQueries({ queryKey: ["review-generated-problems", chapterId] });
       qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
     },
     onError: (err: any) => toast.error(`Approve failed: ${err.message}`),
   });
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
     const current = activeVariants[speedIdx] || activeVariants[0];
     const problem = generatedProblems[reviewIndex];
     if (!current || !problem) return;
-    approveMutation.mutate({ candidate: current, problem });
-    // Auto-advance
+
+    // Await mutation so it completes before any auto-advance
+    await approveMutation.mutateAsync({ candidate: current, problem });
+
+    // Auto-advance after mutation completes
     if (speedIdx < activeVariants.length - 1) {
       setSpeedIdx(prev => prev + 1);
     } else if (reviewIndex < generatedProblems.length - 1) {
