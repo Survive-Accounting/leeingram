@@ -72,7 +72,7 @@ export function useSheetPrepLog() {
           source_ref: asset?.source_ref || null,
           course_name: course?.course_name || "—",
           google_sheet_url: asset?.google_sheet_url || null,
-          va_display_name: va?.display_name || va?.email || null,
+          va_display_name: va?.full_name || va?.email || null,
         };
       });
     },
