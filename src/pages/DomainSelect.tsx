@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChangelogDialog, PROMPT_COUNT } from "@/components/ChangelogDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
@@ -43,9 +44,16 @@ const SubLink = ({ label, onClick }: { label: string; onClick: () => void }) => 
 
 export default function DomainSelect() {
   const { signOut } = useAuth();
+  const { isVa, isLoading: vaLoading } = useVaAccount();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [changelogOpen, setChangelogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!vaLoading && isVa) {
+      navigate("/content", { replace: true });
+    }
+  }, [isVa, vaLoading, navigate]);
 
   const toggle = (key: string) => setExpanded(expanded === key ? null : key);
 
