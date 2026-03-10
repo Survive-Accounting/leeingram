@@ -18,9 +18,13 @@ import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { NextTaskBanner } from "@/components/NextTaskBanner";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { recordVaLogin, logVaActivity } from "@/lib/vaActivityLogger";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+// ── Routes that should NOT show the pipeline progress strip ────────
+const HIDE_PROGRESS_ROUTES = ["/dashboard", "/va-dashboard", "/va-admin"];
 
 // ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
