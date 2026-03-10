@@ -229,11 +229,13 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
 
 // ── DB fetch helper ──────────────────────────────────────────────────
 
-async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonKey: string, assetId: string) {
+async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, _anonKey: string, assetId: string) {
+  // Use service role key for both auth and apikey to bypass RLS
+  const authHeaders = { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey };
   // Fetch teaching asset
   const assetRes = await fetch(
     `${supabaseUrl}/rest/v1/teaching_assets?id=eq.${assetId}&select=*`,
-    { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+    { headers: authHeaders }
   );
   const assets = await assetRes.json();
   const asset = assets?.[0];
