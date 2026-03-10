@@ -1,12 +1,17 @@
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
-import { ArrowRight, Lock, Play } from "lucide-react";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { ArrowRight, Lock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const JOB_DESC_LINKS: Record<string, string> = {
+  content_creation_va: "https://docs.google.com/document/d/1NFVw0i96s3USCwbbN0Xqr60P4RrbTQoV7p7kH52A0FY/edit?usp=sharing",
+  sheet_prep_va: "https://docs.google.com/document/d/1Y_zjOWtl0u28vA9kKZIYsEfSA98YJjXHIgiqIi1RMUI/edit?usp=sharing",
+  lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
+};
 
 const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
@@ -58,8 +63,12 @@ const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuer
 export function NextTaskBanner() {
   const location = useLocation();
   const { workspace } = useActiveWorkspace();
-  const { isVa } = useVaAccount();
-  const [sopOpen, setSopOpen] = useState(false);
+  const { isVa, vaAccount, primaryRole } = useVaAccount();
+  const { impersonating } = useImpersonation();
+
+  const activeRole = impersonating?.role
+    ? (impersonating.role === "va_test" ? "content_creation_va" : impersonating.role)
+    : primaryRole;
 
   const routeConfig = Object.entries(ROUTE_TASKS).find(
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
@@ -90,57 +99,43 @@ export function NextTaskBanner() {
   if (!routeConfig) return null;
   const [, config] = routeConfig;
 
-  return (
-    <>
-      <div className="mx-4 sm:mx-6 mt-4 rounded-lg border border-primary/30 bg-primary/10 px-5 py-3.5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-primary">This Task</p>
-                {config.adminOnly && isVa && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <Lock className="h-2.5 w-2.5" /> Instructor only
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-white mt-0.5">
-                {config.task}
-                {pendingCount !== undefined && pendingCount > 0 && (
-                  <span className="ml-2 text-white/60">
-                    {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-          {config.sopLabel && (
-            <Button
-              size="sm"
-              className="shrink-0 h-7 text-[11px] px-3 bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-              onClick={() => setSopOpen(true)}
-            >
-              <Play className="h-3 w-3 mr-1" /> Watch SOP Video
-            </Button>
-          )}
-        </div>
-      </div>
+  const jobDescLink = JOB_DESC_LINKS[activeRole] || JOB_DESC_LINKS.lead_va;
 
-      <Dialog open={sopOpen} onOpenChange={setSopOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{config.sopLabel}</DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video bg-muted/30 rounded-lg flex items-center justify-center border border-border">
-            <div className="text-center space-y-2">
-              <Play className="h-10 w-10 text-muted-foreground/40 mx-auto" />
-              <p className="text-sm text-muted-foreground">SOP video coming soon.</p>
-              <p className="text-xs text-muted-foreground/60">This will contain step-by-step instructions for this task.</p>
+  return (
+    <div className="mx-4 sm:mx-6 mt-4 rounded-lg border border-primary/30 bg-primary/10 px-5 py-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">This Task</p>
+              {config.adminOnly && isVa && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Lock className="h-2.5 w-2.5" /> Instructor only
+                </span>
+              )}
             </div>
+            <p className="text-sm text-foreground mt-0.5">
+              {config.task}
+              {pendingCount !== undefined && pendingCount > 0 && (
+                <span className="ml-2 text-muted-foreground">
+                  {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
+                </span>
+              )}
+            </p>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="shrink-0 h-7 text-[11px] px-3"
+          asChild
+        >
+          <a href={jobDescLink} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-3 w-3 mr-1" /> Read Job Description
+          </a>
+        </Button>
+      </div>
+    </div>
   );
 }
