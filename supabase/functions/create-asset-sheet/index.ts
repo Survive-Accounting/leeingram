@@ -9,7 +9,7 @@ const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"];
 
 const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
-const ARCHIVE_FOLDER_NAME = "_ARCHIVE_DUPLICATES";
+const ARCHIVE_FOLDER_NAME = "Archive";
 const V2_TEMPLATE_FILE_ID = "15yytFbb_tOLCIsR4dLoFVb0oNTFm9X6LfUVN1OKGY-A";
 
 // ── Google Auth helpers ──────────────────────────────────────────────
