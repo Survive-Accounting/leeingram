@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { UserPlus, Users, Loader2, XCircle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { UserPlus, Users, Loader2, XCircle, CheckCircle2, Plus, Trash2, Eye } from "lucide-react";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { VA_ROLE_LABELS } from "@/hooks/useVaAccount";
 import type { VaAccount } from "@/hooks/useVaAccount";
 
