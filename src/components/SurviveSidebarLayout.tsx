@@ -280,6 +280,22 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
+          {/* VA My Dashboard link */}
+          {isVa && !sidebarCollapsed && (
+            <Link
+              to="/va-dashboard"
+              className={cn(
+                "flex items-center gap-2.5 rounded-md px-3 py-2.5 mb-2 transition-colors",
+                isActive("/va-dashboard")
+                  ? "bg-primary/20 text-white font-medium border border-primary/30"
+                  : "text-white/90 hover:text-white hover:bg-muted/30"
+              )}
+            >
+              <LayoutDashboard className="h-4 w-4 shrink-0" />
+              <span className="text-sm">My Dashboard</span>
+            </Link>
+          )}
+
           {!sidebarCollapsed && (
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
               Phase 1 · Teaching Asset Creation
@@ -287,8 +303,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
           <div className="space-y-0.5">{renderNavItems(PHASE_1_ITEMS)}</div>
 
-          {/* Phase 2 — hidden for VA test users */}
-          {!isVa && (
+          {/* Phase 2 — visible for admin and lead_va */}
+          {(!isVa || vaAccount?.role === "lead_va") && (
             <>
               <div className="border-t border-border my-3" />
               {!sidebarCollapsed && (
