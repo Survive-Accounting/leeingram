@@ -375,6 +375,7 @@ export default function ReviewVariants() {
             problem={problem}
             variantIndex={speedIdx}
             totalVariants={activeVariants.length}
+            isApproving={approveMutation.isPending}
             onApprove={handleApprove}
             onReject={handleRegenerate}
             onRegenerate={handleRegenerate}
