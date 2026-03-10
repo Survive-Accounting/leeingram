@@ -194,42 +194,43 @@ export function SourceProblemPreview({ problem, open, onOpenChange }: Props) {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-3">
               <TabsTrigger value="preview">Preview</TabsTrigger>
-              <TabsTrigger value="answer">Answer Package</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="preview">
               {hasImages ? (
-                <div className={cn("gap-5", bothSides ? "grid grid-cols-2" : "")}>
-                  {hasProblems && <ImageGallery urls={problemUrls} label="Problem Screenshots" />}
-                  {hasSolutions && <ImageGallery urls={solutionUrls} label="Solution Screenshots" />}
-                </div>
-              ) : (
-                <div className={cn("gap-5", problem.problem_text && problem.solution_text ? "grid grid-cols-2" : "")}>
-                  {problem.problem_text && (
-                    <div className="rounded-lg border border-border bg-card p-4">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h3>
-                      <p className="text-sm text-foreground whitespace-pre-wrap">{problem.problem_text}</p>
-                    </div>
-                  )}
+                <div className="space-y-5">
+                  <div className={cn("gap-5", bothSides ? "grid grid-cols-2" : "")}>
+                    {hasProblems && <ImageGallery urls={problemUrls} label="Problem Screenshots" />}
+                    {hasSolutions && <ImageGallery urls={solutionUrls} label="Solution Screenshots" />}
+                  </div>
                   {problem.solution_text && (
                     <div className="rounded-lg border border-border bg-card p-4">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h3>
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution Text</h3>
                       <p className="text-sm text-foreground whitespace-pre-wrap">{problem.solution_text}</p>
                     </div>
                   )}
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div className={cn("gap-5", problem.problem_text && problem.solution_text ? "grid grid-cols-2" : "")}>
+                    {problem.problem_text && (
+                      <div className="rounded-lg border border-border bg-card p-4">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem</h3>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{problem.problem_text}</p>
+                      </div>
+                    )}
+                    {problem.solution_text && (
+                      <div className="rounded-lg border border-border bg-card p-4">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution</h3>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{problem.solution_text}</p>
+                      </div>
+                    )}
+                  </div>
                   {!problem.problem_text && !problem.solution_text && (
                     <p className="text-sm text-muted-foreground text-center py-8">No screenshots or text available.</p>
                   )}
                 </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="answer">
-              {problem.id ? (
-                <AnswerPackagePanel sourceProblemId={problem.id} problemText={problem.problem_text} solutionText={problem.solution_text} chapterId={problem.chapter_id} />
-              ) : (
-                <p className="text-xs text-muted-foreground">No problem ID available.</p>
               )}
             </TabsContent>
 
