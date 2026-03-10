@@ -1819,7 +1819,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
             disabled={launchingBatch || readyCount === 0}
           >
             {launchingBatch ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-            Batch Generate ({readyCount} ready)
+            Generate ({readyCount} ready)
           </Button>
         </div>
       </div>
