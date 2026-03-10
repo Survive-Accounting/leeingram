@@ -444,7 +444,25 @@ Deno.serve(async (req) => {
       session_transcript_link: "",
     };
 
-    // Clear metadata tab then write
+    // Ensure METADATA tab exists, then clear and write
+    try {
+      // Check if METADATA tab exists by trying to read it
+      await googleFetch(
+        `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1?majorDimension=ROWS`,
+        token
+      );
+    } catch {
+      // Tab doesn't exist — create it
+      try {
+        await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+          method: "POST",
+          body: JSON.stringify({
+            requests: [{ addSheet: { properties: { title: "METADATA" } } }],
+          }),
+        });
+      } catch (e) { console.error("METADATA tab creation failed:", e); }
+    }
+
     try {
       await googleFetch(
         `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA:clear`,
