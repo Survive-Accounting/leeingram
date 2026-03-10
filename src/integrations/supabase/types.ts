@@ -3056,6 +3056,7 @@ export type Database = {
       va_assignments: {
         Row: {
           assigned_at: string
+          assigned_role: string
           chapter_id: string
           course_id: string
           created_at: string
@@ -3067,6 +3068,7 @@ export type Database = {
         }
         Insert: {
           assigned_at?: string
+          assigned_role?: string
           chapter_id: string
           course_id: string
           created_at?: string
@@ -3078,6 +3080,7 @@ export type Database = {
         }
         Update: {
           assigned_at?: string
+          assigned_role?: string
           chapter_id?: string
           course_id?: string
           created_at?: string
