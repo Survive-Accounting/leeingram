@@ -62,6 +62,7 @@ export function SpeedReviewPanel({
   problem,
   variantIndex,
   totalVariants,
+  isApproving = false,
   onApprove,
   onReject,
   onRegenerate,
