@@ -540,13 +540,29 @@ export default function AssetsLibrary() {
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-0.5 justify-end">
-                      {sheetUrls?.[a.asset_name] && (
+                      {a.sheet_master_url ? (
+                        <>
+                          <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium text-primary" asChild title="Master: tutoring / filming version">
+                            <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer">M</a>
+                          </Button>
+                          {a.sheet_practice_url && (
+                            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium text-primary" asChild title="Practice: student practice version">
+                              <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer">P</a>
+                            </Button>
+                          )}
+                          {a.sheet_promo_url && (
+                            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium text-primary" asChild title="Promo: shareable promo version">
+                              <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer">Pr</a>
+                            </Button>
+                          )}
+                        </>
+                      ) : sheetUrls?.[a.asset_name] ? (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild title="Open Google Sheet">
                           <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer">
                             <Layers className="h-3 w-3" />
                           </a>
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   </TableCell>
                 </TableRow>
