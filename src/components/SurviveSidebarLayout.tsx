@@ -344,43 +344,49 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           })()}
 
           {/* VA Tools panel — show for actual VAs or when impersonating */}
-          {(isVa || impersonating) && !sidebarCollapsed && (
-            <>
-              <div className="border-t border-border my-3" />
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
-                VA Tools
-              </p>
-              <div className="space-y-0.5">
-                <a
-                  href="https://forms.gle/QnWFjHKc1DxaGVjMA"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
-                >
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <span className="text-xs">Report Issue</span>
-                </a>
-                <a
-                  href="https://forms.gle/7Dz2i8eKiRangmNs9"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
-                >
-                  <CheckSquare className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="text-xs">Sheet Prep Done</span>
-                </a>
-                <a
-                  href="https://forms.gle/QLCMqsV1YZMbkfSD8"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
-                >
-                  <MessageSquare className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                  <span className="text-xs">Feedback / Idea</span>
-                </a>
-              </div>
-            </>
-          )}
+          {(isVa || impersonating) && !sidebarCollapsed && (() => {
+            const toolsRole = impersonating?.role || (isVa ? vaAccount?.role : null);
+            const showSheetPrepDone = toolsRole === "sheet_prep_va";
+            return (
+              <>
+                <div className="border-t border-border my-3" />
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
+                  VA Tools
+                </p>
+                <div className="space-y-0.5">
+                  <a
+                    href="https://forms.gle/QnWFjHKc1DxaGVjMA"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <span className="text-xs">Report Issue</span>
+                  </a>
+                  {showSheetPrepDone && (
+                    <a
+                      href="https://forms.gle/7Dz2i8eKiRangmNs9"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
+                    >
+                      <CheckSquare className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-xs">Sheet Prep Done</span>
+                    </a>
+                  )}
+                  <a
+                    href="https://forms.gle/QLCMqsV1YZMbkfSD8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    <span className="text-xs">Feedback / Idea</span>
+                  </a>
+                </div>
+              </>
+            );
+          })()}
 
           {/* Bottom section */}
           <div className="mt-auto pt-3 border-t border-border space-y-1">
