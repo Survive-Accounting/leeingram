@@ -12,7 +12,7 @@ import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Lightbulb, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, Clock, Users, BarChart3, CheckCircle2, Layers,
-  AlertTriangle, Check, RefreshCw, Loader2, Settings2,
+  AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
