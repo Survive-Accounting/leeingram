@@ -3114,6 +3114,53 @@ export type Database = {
           },
         ]
       }
+      va_completion_log: {
+        Row: {
+          asset_name: string
+          chapter_number: number
+          completed_at: string
+          completion_type: string
+          course_code: string
+          id: string
+          source_code: string
+          teaching_asset_id: string | null
+          user_id: string
+          va_account_id: string
+        }
+        Insert: {
+          asset_name?: string
+          chapter_number?: number
+          completed_at?: string
+          completion_type?: string
+          course_code?: string
+          id?: string
+          source_code?: string
+          teaching_asset_id?: string | null
+          user_id: string
+          va_account_id: string
+        }
+        Update: {
+          asset_name?: string
+          chapter_number?: number
+          completed_at?: string
+          completion_type?: string
+          course_code?: string
+          id?: string
+          source_code?: string
+          teaching_asset_id?: string | null
+          user_id?: string
+          va_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_completion_log_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_questions: {
         Row: {
           addressed_at: string | null
