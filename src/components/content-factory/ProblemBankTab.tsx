@@ -1873,11 +1873,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {(p.status === "ready") && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openDetail(p)}>
-                          <Sparkles className="h-3 w-3 mr-1" /> Generate
-                        </Button>
-                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground/80 hover:text-foreground" onClick={() => setPreviewProblem(p)} title="Preview screenshots">
                         <Eye className="h-3 w-3" />
                       </Button>
