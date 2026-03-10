@@ -45,6 +45,10 @@ export type TeachingAssetFull = {
   google_sheet_url?: string | null;
   google_sheet_file_id?: string | null;
   sheet_last_synced_at?: string | null;
+  sheet_master_url?: string | null;
+  sheet_practice_url?: string | null;
+  sheet_promo_url?: string | null;
+  sheet_path_url?: string | null;
   times_used?: number;
   sheet_template_version?: string | null;
   source_type?: string | null;
