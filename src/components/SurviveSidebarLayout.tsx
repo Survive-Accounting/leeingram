@@ -4,6 +4,7 @@ import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
+  AlertTriangle, CheckSquare, MessageSquare, ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -296,6 +297,45 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 </p>
               )}
               <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
+            </>
+          )}
+
+          {/* VA Tools panel */}
+          {isVa && !sidebarCollapsed && (
+            <>
+              <div className="border-t border-border my-3" />
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
+                VA Tools
+              </p>
+              <div className="space-y-0.5">
+                <a
+                  href="https://forms.gle/QnWFjHKc1DxaGVjMA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
+                >
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span className="text-xs">Report Issue</span>
+                </a>
+                <a
+                  href="https://forms.gle/7Dz2i8eKiRangmNs9"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
+                >
+                  <CheckSquare className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-xs">Sheet Prep Done</span>
+                </a>
+                <a
+                  href="https://forms.gle/QLCMqsV1YZMbkfSD8"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-white/80 hover:text-white hover:bg-muted/30 transition-colors"
+                >
+                  <MessageSquare className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                  <span className="text-xs">Feedback / Idea</span>
+                </a>
+              </div>
             </>
           )}
 
