@@ -49,6 +49,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   const { signOut, user } = useAuth();
   const { workspace, setWorkspace } = useActiveWorkspace();
   const { vaAccount, isVa } = useVaAccount();
+  const { impersonating } = useImpersonation();
   const qc = useQueryClient();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
