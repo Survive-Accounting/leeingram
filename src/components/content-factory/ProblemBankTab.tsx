@@ -2356,6 +2356,18 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
         <div className="flex items-center gap-2">
+          <Select value={sourceStatusFilter} onValueChange={setSourceStatusFilter}>
+            <SelectTrigger className="h-8 w-[130px] text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ready">Ready Only</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="imported">Imported</SelectItem>
+              <SelectItem value="generated">Generated</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             size="sm"
             variant="outline"
