@@ -343,8 +343,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             );
           })()}
 
-          {/* VA Tools panel */}
-          {isVa && !sidebarCollapsed && (
+          {/* VA Tools panel — show for actual VAs or when impersonating */}
+          {(isVa || impersonating) && !sidebarCollapsed && (
             <>
               <div className="border-t border-border my-3" />
               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
