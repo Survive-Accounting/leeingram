@@ -141,13 +141,29 @@ export function SheetPrepLog() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      {e.google_sheet_url && (
+                      {(e as any).sheet_master_url ? (
+                        <>
+                          <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Master Sheet">
+                            <a href={(e as any).sheet_master_url} target="_blank" rel="noopener noreferrer">M</a>
+                          </Button>
+                          {(e as any).sheet_practice_url && (
+                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Practice Sheet">
+                              <a href={(e as any).sheet_practice_url} target="_blank" rel="noopener noreferrer">P</a>
+                            </Button>
+                          )}
+                          {(e as any).sheet_promo_url && (
+                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Promo Sheet">
+                              <a href={(e as any).sheet_promo_url} target="_blank" rel="noopener noreferrer">Pr</a>
+                            </Button>
+                          )}
+                        </>
+                      ) : e.google_sheet_url ? (
                         <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                           <a href={e.google_sheet_url} target="_blank" rel="noopener noreferrer" title="Open Google Sheet">
                             <Sheet className="h-3.5 w-3.5" />
                           </a>
                         </Button>
-                      )}
+                      ) : null}
                       <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                         <a href={`/assets`} title="Open Asset Library">
                           <ExternalLink className="h-3.5 w-3.5" />

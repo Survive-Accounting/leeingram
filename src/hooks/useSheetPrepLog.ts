@@ -14,6 +14,9 @@ export interface SheetPrepEntry {
   source_ref: string | null;
   course_name: string;
   google_sheet_url: string | null;
+  sheet_master_url: string | null;
+  sheet_practice_url: string | null;
+  sheet_promo_url: string | null;
   va_display_name: string | null;
 }
 
@@ -37,7 +40,7 @@ export function useSheetPrepLog() {
       // Fetch assets
       const { data: assets } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, course_id, google_sheet_url")
+        .select("id, asset_name, source_ref, course_id, google_sheet_url, sheet_master_url, sheet_practice_url, sheet_promo_url")
         .in("id", assetIds);
 
       // Fetch courses
@@ -72,6 +75,9 @@ export function useSheetPrepLog() {
           source_ref: asset?.source_ref || null,
           course_name: course?.course_name || "—",
           google_sheet_url: asset?.google_sheet_url || null,
+          sheet_master_url: (asset as any)?.sheet_master_url || null,
+          sheet_practice_url: (asset as any)?.sheet_practice_url || null,
+          sheet_promo_url: (asset as any)?.sheet_promo_url || null,
           va_display_name: va?.full_name || va?.email || null,
         };
       });

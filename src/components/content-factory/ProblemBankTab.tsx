@@ -697,8 +697,8 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
         supabase.functions.invoke("create-asset-sheet", {
           body: { asset_id: data.asset.id },
         }).then((res) => {
-          if (res.data?.sheet_url) {
-            toast.success("Google Sheet created", { description: "Workbook ready in Drive" });
+          if (res.data?.sheet_master_url || res.data?.sheet_url) {
+            toast.success("Google Sheets created", { description: "Master, Practice & Promo sheets ready in Drive" });
           } else if (res.error) {
             console.error("Sheet creation failed:", res.error);
           }
