@@ -49,7 +49,7 @@ export function useSheetPrepLog() {
 
       // Fetch VA accounts
       const { data: vas } = vaIds.length
-        ? await supabase.from("va_accounts").select("id, display_name, email").in("id", vaIds)
+        ? await supabase.from("va_accounts").select("id, full_name, email").in("id", vaIds)
         : { data: [] as any[] };
 
       const assetMap = new Map((assets || []).map(a => [a.id, a]));
