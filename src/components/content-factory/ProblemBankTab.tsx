@@ -2412,8 +2412,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
               <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">Loading…</TableCell></TableRow>
             ) : !problems?.length ? (
               <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No imported sources yet.</TableCell></TableRow>
-            ) : (
-              problems.map((p) => (
+            ) : (() => {
+              const filtered = sourceStatusFilter === "all"
+                ? problems
+                : problems.filter(p => p.status === sourceStatusFilter);
+              return filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No {sourceStatusFilter} problems found.</TableCell></TableRow>
+              ) : filtered.map((p) => (
                 <TableRow key={p.id} className="bg-background/90 text-foreground hover:bg-accent/50 data-[state=selected]:bg-accent/60">
                   <TableCell className="font-mono text-xs font-medium text-foreground">{p.source_label}</TableCell>
                   <TableCell className="text-xs truncate max-w-[200px] text-foreground/90">{p.title || "—"}</TableCell>
