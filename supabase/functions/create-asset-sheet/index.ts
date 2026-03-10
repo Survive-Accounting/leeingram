@@ -246,7 +246,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, _anon
   if (asset.chapter_id) {
     const chRes = await fetch(
       `${supabaseUrl}/rest/v1/chapters?id=eq.${asset.chapter_id}&select=id,chapter_number,chapter_name,course_id`,
-      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+      { headers: authHeaders }
     );
     const chapters = await chRes.json();
     chapter = chapters?.[0] || null;
@@ -257,7 +257,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, _anon
   if (asset.course_id) {
     const coRes = await fetch(
       `${supabaseUrl}/rest/v1/courses?id=eq.${asset.course_id}&select=id,course_name,code`,
-      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+      { headers: authHeaders }
     );
     const courses = await coRes.json();
     course = courses?.[0] || null;
@@ -266,7 +266,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, _anon
   // Count open flags
   const flagRes = await fetch(
     `${supabaseUrl}/rest/v1/asset_flags?teaching_asset_id=eq.${assetId}&status=eq.open&select=id`,
-    { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey, Prefer: "count=exact" } }
+    { headers: { ...authHeaders, Prefer: "count=exact" } }
   );
   const flagCount = parseInt(flagRes.headers.get("content-range")?.split("/")?.[1] || "0", 10);
 
@@ -275,7 +275,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, _anon
   if (asset.source_ref && asset.chapter_id) {
     const varRes = await fetch(
       `${supabaseUrl}/rest/v1/teaching_assets?chapter_id=eq.${asset.chapter_id}&source_ref=eq.${encodeURIComponent(asset.source_ref)}&select=id`,
-      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey, Prefer: "count=exact" } }
+      { headers: { ...authHeaders, Prefer: "count=exact" } }
     );
     variantCount = parseInt(varRes.headers.get("content-range")?.split("/")?.[1] || "1", 10);
   }
