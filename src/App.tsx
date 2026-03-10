@@ -141,10 +141,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <SprintProvider>
-            <SprintTimerBar />
-            <AppRoutes />
-          </SprintProvider>
+          <ImpersonationProvider>
+            <SprintProvider>
+              <ImpersonationBanner />
+              <SprintTimerBar />
+              <AppRoutes />
+            </SprintProvider>
+          </ImpersonationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
