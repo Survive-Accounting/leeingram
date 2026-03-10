@@ -229,11 +229,13 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
 
 // ── DB fetch helper ──────────────────────────────────────────────────
 
-async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonKey: string, assetId: string) {
+async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, _anonKey: string, assetId: string) {
+  // Use service role key for both auth and apikey to bypass RLS
+  const authHeaders = { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey };
   // Fetch teaching asset
   const assetRes = await fetch(
     `${supabaseUrl}/rest/v1/teaching_assets?id=eq.${assetId}&select=*`,
-    { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+    { headers: authHeaders }
   );
   const assets = await assetRes.json();
   const asset = assets?.[0];
@@ -244,7 +246,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonK
   if (asset.chapter_id) {
     const chRes = await fetch(
       `${supabaseUrl}/rest/v1/chapters?id=eq.${asset.chapter_id}&select=id,chapter_number,chapter_name,course_id`,
-      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+      { headers: authHeaders }
     );
     const chapters = await chRes.json();
     chapter = chapters?.[0] || null;
@@ -255,7 +257,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonK
   if (asset.course_id) {
     const coRes = await fetch(
       `${supabaseUrl}/rest/v1/courses?id=eq.${asset.course_id}&select=id,course_name,code`,
-      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+      { headers: authHeaders }
     );
     const courses = await coRes.json();
     course = courses?.[0] || null;
@@ -264,7 +266,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonK
   // Count open flags
   const flagRes = await fetch(
     `${supabaseUrl}/rest/v1/asset_flags?teaching_asset_id=eq.${assetId}&status=eq.open&select=id`,
-    { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey, Prefer: "count=exact" } }
+    { headers: { ...authHeaders, Prefer: "count=exact" } }
   );
   const flagCount = parseInt(flagRes.headers.get("content-range")?.split("/")?.[1] || "0", 10);
 
@@ -273,7 +275,7 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonK
   if (asset.source_ref && asset.chapter_id) {
     const varRes = await fetch(
       `${supabaseUrl}/rest/v1/teaching_assets?chapter_id=eq.${asset.chapter_id}&source_ref=eq.${encodeURIComponent(asset.source_ref)}&select=id`,
-      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey, Prefer: "count=exact" } }
+      { headers: { ...authHeaders, Prefer: "count=exact" } }
     );
     variantCount = parseInt(varRes.headers.get("content-range")?.split("/")?.[1] || "1", 10);
   }
@@ -442,7 +444,25 @@ Deno.serve(async (req) => {
       session_transcript_link: "",
     };
 
-    // Clear metadata tab then write
+    // Ensure METADATA tab exists, then clear and write
+    try {
+      // Check if METADATA tab exists by trying to read it
+      await googleFetch(
+        `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1?majorDimension=ROWS`,
+        token
+      );
+    } catch {
+      // Tab doesn't exist — create it
+      try {
+        await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+          method: "POST",
+          body: JSON.stringify({
+            requests: [{ addSheet: { properties: { title: "METADATA" } } }],
+          }),
+        });
+      } catch (e) { console.error("METADATA tab creation failed:", e); }
+    }
+
     try {
       await googleFetch(
         `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA:clear`,
@@ -458,7 +478,7 @@ Deno.serve(async (req) => {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: anonKey,
+        apikey: serviceRoleKey,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },

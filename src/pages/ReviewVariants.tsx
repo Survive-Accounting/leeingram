@@ -130,7 +130,7 @@ export default function ReviewVariants() {
       const assetCode = `${courseCode}_CH${chNum}_P${seqNum}_A`;
 
       // Create teaching asset from variant
-      const { error: taErr } = await supabase.from("teaching_assets").insert({
+      const { data: taData, error: taErr } = await supabase.from("teaching_assets").insert({
         course_id: courseId!,
         chapter_id: chapterId!,
         base_raw_problem_id: problem.id,
@@ -146,7 +146,7 @@ export default function ReviewVariants() {
         source_number: problem.source_label || null,
         problem_type: problem.problem_type || null,
         tags: [],
-      } as any);
+      } as any).select("id").single();
       if (taErr) throw taErr;
 
       // Update variant status to approved
@@ -171,6 +171,18 @@ export default function ReviewVariants() {
         message: `Approved variant ${assetCode} for ${problem.source_label || problem.title}`,
         payload_json: { source_problem_id: problem.id, asset_code: assetCode },
       });
+
+      // Auto-create Google Sheet for the new teaching asset
+      if (taData?.id) {
+        try {
+          const { error: sheetErr } = await supabase.functions.invoke("create-asset-sheet", {
+            body: { asset_id: taData.id },
+          });
+          if (sheetErr) console.error("Sheet creation failed (non-fatal):", sheetErr);
+        } catch (e) {
+          console.error("Sheet creation failed (non-fatal):", e);
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Variant approved ✓");
