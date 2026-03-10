@@ -5,6 +5,7 @@ import { BarChart3, Users, Sheet } from "lucide-react";
 import { ProductionOverview } from "@/components/admin-dashboard/ProductionOverview";
 import { VaManagement } from "@/components/admin-dashboard/VaManagement";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
+import { PipelineResetDialog } from "@/components/admin-dashboard/PipelineResetDialog";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState("production");
@@ -12,7 +13,10 @@ export default function AdminDashboard() {
   return (
     <SurviveSidebarLayout>
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
+          <PipelineResetDialog />
+        </div>
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-secondary">
