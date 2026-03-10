@@ -374,19 +374,32 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               </div>
             )}
 
-            {/* Admin: VA Admin link */}
+            {/* Admin: VA Admin + VA Dashboard links */}
             {!isVa && !sidebarCollapsed && (
-              <Link
-                to="/va-admin"
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                  isActive("/va-admin")
-                    ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                    : "text-white/70 hover:text-white hover:bg-muted/30"
-                )}
-              >
-                <Users className="h-3.5 w-3.5" /> VA Admin
-              </Link>
+              <>
+                <Link
+                  to="/va-dashboard"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/va-dashboard")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" /> VA Dashboard
+                </Link>
+                <Link
+                  to="/va-admin"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/va-admin")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <Users className="h-3.5 w-3.5" /> VA Admin
+                </Link>
+              </>
             )}
           </div>
         </nav>
