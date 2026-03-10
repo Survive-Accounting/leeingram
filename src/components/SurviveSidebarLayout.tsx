@@ -18,9 +18,13 @@ import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { NextTaskBanner } from "@/components/NextTaskBanner";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { recordVaLogin, logVaActivity } from "@/lib/vaActivityLogger";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+// ── Routes that should NOT show the pipeline progress strip ────────
+const HIDE_PROGRESS_ROUTES = ["/dashboard", "/va-dashboard", "/va-admin"];
 
 // ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
@@ -45,6 +49,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   const { signOut, user } = useAuth();
   const { workspace, setWorkspace } = useActiveWorkspace();
   const { vaAccount, isVa } = useVaAccount();
+  const { impersonating } = useImpersonation();
   const qc = useQueryClient();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
@@ -281,7 +286,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
           {/* VA My Dashboard link */}
-          {isVa && !sidebarCollapsed && (
+          {(isVa || impersonating) && !sidebarCollapsed && (
             <Link
               to="/va-dashboard"
               className={cn(
@@ -296,28 +301,50 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             </Link>
           )}
 
-          {!sidebarCollapsed && (
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
-              Phase 1 · Teaching Asset Creation
-            </p>
-          )}
-          <div className="space-y-0.5">{renderNavItems(PHASE_1_ITEMS)}</div>
+          {/* Determine effective role for sidebar filtering */}
+          {(() => {
+            const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
+            const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
+            const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+            const isLeadVaOrAdmin = effectiveRole === "lead_va" || effectiveRole === "admin" || !effectiveRole;
 
-          {/* Phase 2 — visible for admin and lead_va */}
-          {(!isVa || vaAccount?.role === "lead_va") && (
-            <>
-              <div className="border-t border-border my-3" />
-              {!sidebarCollapsed && (
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
-                  Phase 2 · Content Production
-                </p>
-              )}
-              <div className="space-y-0.5">{renderNavItems(PHASE_2_ITEMS, true)}</div>
-            </>
-          )}
+            // Content Creation VA: Import, Generate, Review, Teaching Assets
+            const phase1Items = isSheetPrepVa
+              ? PHASE_1_ITEMS.filter(i => i.path === "/assets-library")
+              : PHASE_1_ITEMS;
 
-          {/* VA Tools panel */}
-          {isVa && !sidebarCollapsed && (
+            // Sheet Prep VA: only Teaching Assets + Deploy Checklist
+            const showPhase2 = isLeadVaOrAdmin || isSheetPrepVa;
+            const phase2Items = isSheetPrepVa
+              ? PHASE_2_ITEMS.filter(i => i.path === "/deployment")
+              : PHASE_2_ITEMS;
+
+            return (
+              <>
+                {!sidebarCollapsed && (
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
+                    Phase 1 · Teaching Asset Creation
+                  </p>
+                )}
+                <div className="space-y-0.5">{renderNavItems(phase1Items)}</div>
+
+                {showPhase2 && (
+                  <>
+                    <div className="border-t border-border my-3" />
+                    {!sidebarCollapsed && (
+                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
+                        Phase 2 · Content Production
+                      </p>
+                    )}
+                    <div className="space-y-0.5">{renderNavItems(phase2Items, true)}</div>
+                  </>
+                )}
+              </>
+            );
+          })()}
+
+          {/* VA Tools panel — show for actual VAs or when impersonating */}
+          {(isVa || impersonating) && !sidebarCollapsed && (
             <>
               <div className="border-t border-border my-3" />
               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
@@ -374,8 +401,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               </div>
             )}
 
-            {/* Admin: VA Admin + VA Dashboard links */}
-            {!isVa && !sidebarCollapsed && (
+            {/* Admin: VA Admin + VA Dashboard links — hide during impersonation */}
+            {!isVa && !impersonating && !sidebarCollapsed && (
               <>
                 <Link
                   to="/va-dashboard"
@@ -405,7 +432,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         </nav>
 
         <main className="flex-1 overflow-auto relative">
-          <PipelineProgressStrip />
+          {!HIDE_PROGRESS_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r + "/")) && (
+            <PipelineProgressStrip />
+          )}
           <NextTaskBanner />
           <div
             className="mx-4 sm:mx-6 mb-6 mt-1 rounded-xl p-5 bg-card border border-border"
