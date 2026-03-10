@@ -2250,6 +2250,51 @@ export type Database = {
           },
         ]
       }
+      sheet_prep_log: {
+        Row: {
+          id: string
+          notes: string | null
+          reviewed: boolean
+          reviewed_at: string | null
+          submitted_at: string
+          teaching_asset_id: string
+          va_account_id: string | null
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          reviewed?: boolean
+          reviewed_at?: string | null
+          submitted_at?: string
+          teaching_asset_id: string
+          va_account_id?: string | null
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          reviewed?: boolean
+          reviewed_at?: string | null
+          submitted_at?: string
+          teaching_asset_id?: string
+          va_account_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sheet_prep_log_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sheet_prep_log_va_account_id_fkey"
+            columns: ["va_account_id"]
+            isOneToOne: false
+            referencedRelation: "va_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sheet_templates: {
         Row: {
           created_at: string

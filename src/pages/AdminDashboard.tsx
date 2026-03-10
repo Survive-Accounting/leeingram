@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users } from "lucide-react";
+import { BarChart3, Users, Sheet } from "lucide-react";
 import { ProductionOverview } from "@/components/admin-dashboard/ProductionOverview";
 import { VaManagement } from "@/components/admin-dashboard/VaManagement";
+import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState("production");
@@ -18,6 +19,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="production" className="gap-1.5 text-xs">
               <BarChart3 className="h-3.5 w-3.5" /> Production Overview
             </TabsTrigger>
+            <TabsTrigger value="sheet-prep" className="gap-1.5 text-xs">
+              <Sheet className="h-3.5 w-3.5" /> Sheet Prep Log
+            </TabsTrigger>
             <TabsTrigger value="va" className="gap-1.5 text-xs">
               <Users className="h-3.5 w-3.5" /> VA Management
             </TabsTrigger>
@@ -25,6 +29,9 @@ export default function AdminDashboard() {
 
           <TabsContent value="production" className="mt-4">
             <ProductionOverview />
+          </TabsContent>
+          <TabsContent value="sheet-prep" className="mt-4">
+            <SheetPrepLog />
           </TabsContent>
           <TabsContent value="va" className="mt-4">
             <VaManagement />
