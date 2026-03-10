@@ -49,7 +49,7 @@ export function useSheetPrepLog() {
 
       // Fetch VA accounts
       const { data: vas } = vaIds.length
-        ? await supabase.from("va_accounts").select("id, display_name, email").in("id", vaIds)
+        ? await supabase.from("va_accounts").select("id, full_name, email").in("id", vaIds)
         : { data: [] as any[] };
 
       const assetMap = new Map((assets || []).map(a => [a.id, a]));
@@ -72,7 +72,7 @@ export function useSheetPrepLog() {
           source_ref: asset?.source_ref || null,
           course_name: course?.course_name || "—",
           google_sheet_url: asset?.google_sheet_url || null,
-          va_display_name: va?.display_name || va?.email || null,
+          va_display_name: va?.full_name || va?.email || null,
         };
       });
     },
