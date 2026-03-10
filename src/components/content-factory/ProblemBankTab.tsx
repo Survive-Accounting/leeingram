@@ -181,6 +181,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
   const [launchingBatch, setLaunchingBatch] = useState(false);
   const [notReadyWarningFlash, setNotReadyWarningFlash] = useState(false);
+  const [sourceStatusFilter, setSourceStatusFilter] = useState<string>("ready");
 
   // Review queue state
   const [reviewMode, setReviewMode] = useState(false);
@@ -2355,6 +2356,18 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
         <div className="flex items-center gap-2">
+          <Select value={sourceStatusFilter} onValueChange={setSourceStatusFilter}>
+            <SelectTrigger className="h-8 w-[130px] text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ready">Ready Only</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="imported">Imported</SelectItem>
+              <SelectItem value="generated">Generated</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             size="sm"
             variant="outline"
@@ -2399,8 +2412,13 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
               <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">Loading…</TableCell></TableRow>
             ) : !problems?.length ? (
               <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No imported sources yet.</TableCell></TableRow>
-            ) : (
-              problems.map((p) => (
+            ) : (() => {
+              const filtered = sourceStatusFilter === "all"
+                ? problems
+                : problems.filter(p => p.status === sourceStatusFilter);
+              return filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No {sourceStatusFilter} problems found.</TableCell></TableRow>
+              ) : filtered.map((p) => (
                 <TableRow key={p.id} className="bg-background/90 text-foreground hover:bg-accent/50 data-[state=selected]:bg-accent/60">
                   <TableCell className="font-mono text-xs font-medium text-foreground">{p.source_label}</TableCell>
                   <TableCell className="text-xs truncate max-w-[200px] text-foreground/90">{p.title || "—"}</TableCell>
@@ -2426,8 +2444,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ));
+            })()}
+
           </TableBody>
         </Table>
       </div>
