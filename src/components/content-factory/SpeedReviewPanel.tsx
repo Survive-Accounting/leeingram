@@ -47,6 +47,7 @@ interface SpeedReviewPanelProps {
   problem: any;
   variantIndex: number;
   totalVariants: number;
+  isApproving?: boolean;
   onApprove: () => void;
   onReject: () => void;
   onRegenerate: () => void;

@@ -195,19 +195,28 @@ export default function ReviewVariants() {
   });
 
   const handleApprove = async () => {
+    if (approveMutation.isPending) return;
     const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
     const current = activeVariants[speedIdx] || activeVariants[0];
     const problem = generatedProblems[reviewIndex];
     if (!current || !problem) return;
 
-    // Await mutation so it completes before any auto-advance
-    await approveMutation.mutateAsync({ candidate: current, problem });
+    try {
+      await approveMutation.mutateAsync({ candidate: current, problem });
 
-    // Auto-advance after mutation completes
-    if (speedIdx < activeVariants.length - 1) {
-      setSpeedIdx(prev => prev + 1);
-    } else if (reviewIndex < generatedProblems.length - 1) {
-      navigateReview("next");
+      // Auto-advance after mutation completes
+      if (speedIdx < activeVariants.length - 1) {
+        setSpeedIdx(prev => prev + 1);
+      } else if (reviewIndex < generatedProblems.length - 1) {
+        navigateReview("next");
+      } else {
+        // Last variant of last problem — show done state
+        toast.success("All variants reviewed! 🎉");
+        setReviewStarted(false);
+        setCandidates([]);
+      }
+    } catch {
+      // error toast already handled by mutation onError
     }
   };
 
