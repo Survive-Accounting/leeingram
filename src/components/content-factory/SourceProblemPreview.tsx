@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ActivityLogPanel } from "./ActivityLogPanel";
-import { AnswerPackagePanel } from "./AnswerPackagePanel";
 
 export interface SourceProblemPreviewData {
   id?: string;
