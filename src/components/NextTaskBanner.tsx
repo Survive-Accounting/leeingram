@@ -1,12 +1,17 @@
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
-import { ArrowRight, Lock, Play } from "lucide-react";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { ArrowRight, Lock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const JOB_DESC_LINKS: Record<string, string> = {
+  content_creation_va: "https://docs.google.com/document/d/1NFVw0i96s3USCwbbN0Xqr60P4RrbTQoV7p7kH52A0FY/edit?usp=sharing",
+  sheet_prep_va: "https://docs.google.com/document/d/1Y_zjOWtl0u28vA9kKZIYsEfSA98YJjXHIgiqIi1RMUI/edit?usp=sharing",
+  lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
+};
 
 const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
