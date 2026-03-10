@@ -26,6 +26,7 @@ export default function ReviewVariants() {
   const [speedMode, setSpeedMode] = useState(true);
   const [speedIdx, setSpeedIdx] = useState(0);
   const autoStarted = useRef(false);
+  const approveInFlight = useRef(false);
 
   // Query generated problems for this chapter
   const { data: generatedProblems = [], isLoading: problemsLoading } = useQuery({
