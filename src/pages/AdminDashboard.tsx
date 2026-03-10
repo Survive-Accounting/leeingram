@@ -13,7 +13,10 @@ export default function AdminDashboard() {
   return (
     <SurviveSidebarLayout>
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
+          <PipelineResetDialog />
+        </div>
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-secondary">
