@@ -181,6 +181,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
   const [launchingBatch, setLaunchingBatch] = useState(false);
   const [notReadyWarningFlash, setNotReadyWarningFlash] = useState(false);
+  const [sourceStatusFilter, setSourceStatusFilter] = useState<string>("ready");
 
   // Review queue state
   const [reviewMode, setReviewMode] = useState(false);
