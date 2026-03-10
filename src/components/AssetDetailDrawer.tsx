@@ -363,15 +363,7 @@ export default function AssetDetailDrawer({
     setIsSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
-        body: {
-          asset_id: asset.id,
-          asset_code: asset.asset_name,
-          course_code: courseLabel,
-          chapter_number: chapterLabel.match(/\d+/)?.[0] || "0",
-          existing_file_id: asset.google_sheet_file_id || undefined,
-          force_new_copy: false,
-          problem_text: asset.survive_problem_text,
-        },
+        body: { asset_id: asset.id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

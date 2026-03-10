@@ -10,7 +10,7 @@ const SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.goo
 
 const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
 const ARCHIVE_FOLDER_NAME = "_ARCHIVE_DUPLICATES";
-const REQUIRED_TABS = ["BRANDED", "WHITEBOARD", "SOLUTION", "HIGHLIGHTED", "METADATA"];
+const V2_TEMPLATE_FILE_ID = "15yytFbb_tOLCIsR4dLoFVb0oNTFm9X6LfUVN1OKGY-A";
 
 // ── Google Auth helpers ──────────────────────────────────────────────
 
@@ -35,7 +35,6 @@ async function getAccessToken(sa: { client_email: string; private_key: string })
   const key = await importKey(sa.private_key);
   const sig = base64url(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(`${header}.${payload}`)));
   const jwt = `${header}.${payload}.${sig}`;
-
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -46,19 +45,21 @@ async function getAccessToken(sa: { client_email: string; private_key: string })
   return data.access_token;
 }
 
-// ── Google API helpers ───────────────────────────────────────────────
+// ── Google API helper ────────────────────────────────────────────────
 
 async function googleFetch(url: string, token: string, opts: RequestInit = {}): Promise<any> {
   const res = await fetch(url, {
     ...opts,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(opts.headers || {}) },
   });
-  const data = await res.json();
+  const text = await res.text();
+  let data: any;
+  try { data = JSON.parse(text); } catch { data = { rawBody: text }; }
   if (!res.ok) {
     const ge = data?.error;
     const code = ge?.code ?? res.status;
     const status = ge?.status ?? "UNKNOWN";
-    const message = ge?.message ?? JSON.stringify(data);
+    const message = ge?.message ?? text;
     console.error(`Google API ${code} (${status}): ${message}`, { url: url.split("?")[0], errors: ge?.errors });
     throw Object.assign(new Error(`Google API ${code}: ${message}`), { googleCode: code, googleStatus: status });
   }
@@ -86,16 +87,11 @@ async function findOrCreateFolder(token: string, name: string, parentId?: string
   return createData.id;
 }
 
-type DriveSheetFile = {
-  id: string;
-  name: string;
-  parents?: string[];
-  modifiedTime?: string;
-};
-
 function escapeDriveQueryValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
+
+type DriveSheetFile = { id: string; name: string; parents?: string[]; modifiedTime?: string };
 
 async function findSheetsByNameInFolder(token: string, fileName: string, folderId: string): Promise<DriveSheetFile[]> {
   const safeName = escapeDriveQueryValue(fileName);
@@ -108,15 +104,8 @@ async function findSheetsByNameInFolder(token: string, fileName: string, folderI
 }
 
 async function moveFileToFolder(token: string, fileId: string, addParentId: string, removeParentIds: string[]) {
-  const params = new URLSearchParams({
-    supportsAllDrives: "true",
-    addParents: addParentId,
-  });
-
-  if (removeParentIds.length > 0) {
-    params.set("removeParents", removeParentIds.join(","));
-  }
-
+  const params = new URLSearchParams({ supportsAllDrives: "true", addParents: addParentId });
+  if (removeParentIds.length > 0) params.set("removeParents", removeParentIds.join(","));
   await googleFetch(`${GOOGLE_DRIVE_API}/${fileId}?${params.toString()}`, token, {
     method: "PATCH",
     body: JSON.stringify({}),
@@ -125,138 +114,192 @@ async function moveFileToFolder(token: string, fileId: string, addParentId: stri
 
 async function archiveDuplicateSheets(token: string, duplicates: DriveSheetFile[], chapterFolderId: string) {
   if (duplicates.length === 0) return;
-
   const archiveFolderId = await findOrCreateFolder(token, ARCHIVE_FOLDER_NAME, chapterFolderId);
-  for (const duplicate of duplicates) {
-    const removeParents = duplicate.parents?.length ? duplicate.parents : [chapterFolderId];
+  for (const dup of duplicates) {
+    const removeParents = dup.parents?.length ? dup.parents : [chapterFolderId];
     try {
-      await moveFileToFolder(token, duplicate.id, archiveFolderId, removeParents);
-      console.log(`Archived duplicate sheet ${duplicate.id} -> ${archiveFolderId}`);
-    } catch (e) {
-      console.error(`Failed to archive duplicate sheet ${duplicate.id} (non-fatal):`, e);
-    }
+      await moveFileToFolder(token, dup.id, archiveFolderId, removeParents);
+      console.log(`Archived duplicate sheet ${dup.id}`);
+    } catch (e) { console.error(`Failed to archive duplicate ${dup.id} (non-fatal):`, e); }
   }
 }
 
 async function ensureFolderHierarchy(
-  token: string,
-  courseCode: string,
-  chapterNumber: string | number,
-  serviceAccountEmail: string
+  token: string, courseCode: string, chapterNumber: string | number, serviceAccountEmail: string
 ): Promise<{ courseFolderId: string; chapterFolderId: string }> {
   try {
     await googleFetch(`${GOOGLE_DRIVE_API}/${ROOT_FOLDER_ID}?fields=id,name&supportsAllDrives=true`, token);
   } catch (e) {
-    throw new Error(
-      `Cannot access shared root folder ${ROOT_FOLDER_ID}. ` +
-      `Make sure it is shared with the service account: ${serviceAccountEmail}`
-    );
+    throw new Error(`Cannot access shared root folder ${ROOT_FOLDER_ID}. Share with: ${serviceAccountEmail}`);
   }
-
   const courseFolderId = await findOrCreateFolder(token, courseCode, ROOT_FOLDER_ID);
   const chapterLabel = `Chapter ${String(chapterNumber).padStart(2, "0")}`;
   const chapterFolderId = await findOrCreateFolder(token, chapterLabel, courseFolderId);
   return { courseFolderId, chapterFolderId };
 }
 
-// ── Sheet tab helpers ────────────────────────────────────────────────
+// ── Template copy ────────────────────────────────────────────────────
 
-async function ensureTabsExist(token: string, spreadsheetId: string): Promise<Record<string, number>> {
-  const meta = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
-  const existing: Record<string, number> = {};
-  for (const s of meta.sheets || []) {
-    existing[s.properties.title] = s.properties.sheetId;
+async function copyTemplate(token: string, templateFileId: string, name: string, parentFolderId: string): Promise<string> {
+  const copyRes = await googleFetch(`${GOOGLE_DRIVE_API}/${templateFileId}/copy?supportsAllDrives=true`, token, {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+      parents: [parentFolderId],
+    }),
+  });
+  return copyRes.id;
+}
+
+// ── Metadata writer ──────────────────────────────────────────────────
+
+interface MetadataParams {
+  asset_code: string;
+  course_code: string;
+  chapter_number: string;
+  exercise_number: string;
+  difficulty_estimate: string;
+  asset_id: string;
+  created_at: string;
+  sheet_url: string;
+  source_problem_link: string;
+  source_solution_link: string;
+  ebook_page_link: string;
+  lw_video_link: string;
+  lw_quiz_link: string;
+  internal_asset_page: string;
+  flag_issue_url: string;
+  mark_verified_url: string;
+  contact_lee_url: string;
+  asset_type: string;
+  variant_letter: string;
+  va_creator: string;
+  sheet_instance_id: string;
+  variant_count: string;
+  journal_entry_count: string;
+  flag_status: string;
+  sheet_verified: string;
+  student_id_placeholder: string;
+  session_audio_link: string;
+  session_transcript_link: string;
+}
+
+async function writeMetadata(token: string, spreadsheetId: string, params: MetadataParams) {
+  const rows = [
+    ["Field", "Value"],
+    ["asset_code", params.asset_code],
+    ["course_code", params.course_code],
+    ["chapter_number", params.chapter_number],
+    ["exercise_number", params.exercise_number],
+    ["difficulty_estimate", params.difficulty_estimate],
+    ["asset_id", params.asset_id],
+    ["created_at", params.created_at],
+    ["sheet_url", params.sheet_url],
+    ["", ""],
+    ["source_problem_link", params.source_problem_link],
+    ["source_solution_link", params.source_solution_link],
+    ["ebook_page_link", params.ebook_page_link],
+    ["lw_video_link", params.lw_video_link],
+    ["lw_quiz_link", params.lw_quiz_link],
+    ["internal_asset_page", params.internal_asset_page],
+    ["flag_issue_url", params.flag_issue_url],
+    ["mark_verified_url", params.mark_verified_url],
+    ["contact_lee_url", params.contact_lee_url],
+    ["", ""],
+    ["asset_type", params.asset_type],
+    ["variant_letter", params.variant_letter],
+    ["va_creator", params.va_creator],
+    ["sheet_instance_id", params.sheet_instance_id],
+    ["variant_count", params.variant_count],
+    ["journal_entry_count", params.journal_entry_count],
+    ["flag_status", params.flag_status],
+    ["sheet_verified", params.sheet_verified],
+    ["student_id_placeholder", params.student_id_placeholder],
+    ["session_audio_link", params.session_audio_link],
+    ["session_transcript_link", params.session_transcript_link],
+  ];
+
+  const range = `METADATA!A1:B${rows.length}`;
+  await googleFetch(
+    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=RAW`,
+    token,
+    { method: "PUT", body: JSON.stringify({ range, majorDimension: "ROWS", values: rows }) }
+  );
+}
+
+// ── DB fetch helper ──────────────────────────────────────────────────
+
+async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, anonKey: string, assetId: string) {
+  // Fetch teaching asset
+  const assetRes = await fetch(
+    `${supabaseUrl}/rest/v1/teaching_assets?id=eq.${assetId}&select=*`,
+    { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+  );
+  const assets = await assetRes.json();
+  const asset = assets?.[0];
+  if (!asset) throw new Error(`Teaching asset not found: ${assetId}`);
+
+  // Fetch chapter
+  let chapter: any = null;
+  if (asset.chapter_id) {
+    const chRes = await fetch(
+      `${supabaseUrl}/rest/v1/chapters?id=eq.${asset.chapter_id}&select=id,chapter_number,chapter_name,course_id`,
+      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+    );
+    const chapters = await chRes.json();
+    chapter = chapters?.[0] || null;
   }
 
-  const missing = REQUIRED_TABS.filter(t => !(t in existing));
-  if (missing.length > 0) {
-    const addRequests = missing.map(title => ({ addSheet: { properties: { title } } }));
-    const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-      method: "POST",
-      body: JSON.stringify({ requests: addRequests }),
-    });
-    for (const reply of (batchRes.replies || [])) {
-      if (reply.addSheet?.properties) {
-        existing[reply.addSheet.properties.title] = reply.addSheet.properties.sheetId;
-      }
+  // Fetch course
+  let course: any = null;
+  if (asset.course_id) {
+    const coRes = await fetch(
+      `${supabaseUrl}/rest/v1/courses?id=eq.${asset.course_id}&select=id,course_name,code`,
+      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey } }
+    );
+    const courses = await coRes.json();
+    course = courses?.[0] || null;
+  }
+
+  // Count open flags
+  const flagRes = await fetch(
+    `${supabaseUrl}/rest/v1/asset_flags?teaching_asset_id=eq.${assetId}&status=eq.open&select=id`,
+    { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey, Prefer: "count=exact" } }
+  );
+  const flagCount = parseInt(flagRes.headers.get("content-range")?.split("/")?.[1] || "0", 10);
+
+  // Count sibling variants in same chapter with same source_ref
+  let variantCount = 1;
+  if (asset.source_ref && asset.chapter_id) {
+    const varRes = await fetch(
+      `${supabaseUrl}/rest/v1/teaching_assets?chapter_id=eq.${asset.chapter_id}&source_ref=eq.${encodeURIComponent(asset.source_ref)}&select=id`,
+      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: anonKey, Prefer: "count=exact" } }
+    );
+    variantCount = parseInt(varRes.headers.get("content-range")?.split("/")?.[1] || "1", 10);
+  }
+
+  // Count journal entries in JSON
+  let jeCount = 0;
+  if (asset.journal_entry_completed_json) {
+    const jeData = asset.journal_entry_completed_json;
+    if (Array.isArray(jeData)) {
+      jeCount = jeData.length;
+    } else if (typeof jeData === "object") {
+      // Could be { entries: [...] } or similar
+      const entries = jeData.entries || jeData.journal_entries || [];
+      jeCount = Array.isArray(entries) ? entries.length : 1;
     }
   }
 
-  return existing;
+  return { asset, chapter, course, flagCount, variantCount, jeCount };
 }
 
-async function clearTab(token: string, spreadsheetId: string, tabName: string) {
-  try {
-    await googleFetch(
-      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${tabName}?valueInputOption=RAW`,
-      token,
-      { method: "PUT", body: JSON.stringify({ range: tabName, values: [[""]] }) }
-    );
-    // Clear the whole sheet content
-    await googleFetch(
-      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${tabName}:clear`,
-      token,
-      { method: "POST", body: JSON.stringify({}) }
-    );
-  } catch (e) {
-    console.error(`clearTab ${tabName} failed (non-fatal):`, e);
-  }
-}
+// ── Extract variant letter from asset_name ───────────────────────────
 
-async function writeMetadata(token: string, spreadsheetId: string, sheetUrl: string, params: any) {
-  const { asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, asset_id, created_at } = params;
-  const metadataValues = [
-    ["Field", "Value"],
-    ["asset_code", asset_code],
-    ["course_code", course_code],
-    ["chapter_number", String(chapter_number)],
-    ["exercise_number", exercise_code || ""],
-    ["difficulty_estimate", String(difficulty_estimate ?? "")],
-    ["asset_id", asset_id],
-    ["created_at", created_at || ""],
-    ["sheet_url", sheetUrl],
-  ];
-  await googleFetch(
-    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1:B9?valueInputOption=RAW`,
-    token,
-    { method: "PUT", body: JSON.stringify({ range: "METADATA!A1:B9", majorDimension: "ROWS", values: metadataValues }) }
-  );
-}
-
-async function writeHighlights(token: string, spreadsheetId: string, tabSheetIds: Record<string, number>, problem_text: string, highlight_key_json: any[]) {
-  // Write problem text in A1
-  await googleFetch(
-    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A1?valueInputOption=RAW`,
-    token,
-    { method: "PUT", body: JSON.stringify({ range: "HIGHLIGHTED!A1", values: [[problem_text]] }) }
-  );
-
-  // Write highlight legend starting at A3
-  const legendValues = [
-    ["Highlighted Text", "Type"],
-    ...highlight_key_json.map((h: any) => [h.text || "", h.type || ""]),
-  ];
-  await googleFetch(
-    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/HIGHLIGHTED!A3:B${3 + legendValues.length - 1}?valueInputOption=RAW`,
-    token,
-    { method: "PUT", body: JSON.stringify({ range: `HIGHLIGHTED!A3:B${3 + legendValues.length - 1}`, majorDimension: "ROWS", values: legendValues }) }
-  );
-
-  // Apply yellow background to highlighted text cells
-  const highlightedSheetId = tabSheetIds["HIGHLIGHTED"];
-  if (highlightedSheetId != null) {
-    const requests = highlight_key_json.map((_: any, i: number) => ({
-      repeatCell: {
-        range: { sheetId: highlightedSheetId, startRowIndex: 3 + i, endRowIndex: 4 + i, startColumnIndex: 0, endColumnIndex: 1 },
-        cell: { userEnteredFormat: { backgroundColor: { red: 1, green: 0.96, blue: 0.616 } } },
-        fields: "userEnteredFormat.backgroundColor",
-      },
-    }));
-    await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-      method: "POST",
-      body: JSON.stringify({ requests }),
-    });
-  }
+function extractVariantLetter(assetName: string): string {
+  // Pattern: ..._P001A or ..._P001B etc. — last char before optional _V1
+  const match = assetName.match(/_P\d+([A-Z])(?:_V\d+)?$/i);
+  return match ? match[1].toUpperCase() : "A";
 }
 
 // ── Main handler ─────────────────────────────────────────────────────
@@ -265,9 +308,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth: accept service-role or anon with valid JWT
+    // Auth
     const authHeader = req.headers.get("Authorization") || "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
 
     if (!isServiceRole) {
@@ -285,17 +328,26 @@ Deno.serve(async (req) => {
       await verifyRes.text();
     }
 
-    const {
-      asset_id, asset_code, course_code, chapter_number, exercise_code,
-      difficulty_estimate, created_at, problem_text, highlight_key_json,
-      existing_file_id, force_new_copy,
-    } = await req.json();
+    const body = await req.json();
+    const { asset_id, force_new_copy = false } = body;
 
-    if (!asset_id || !asset_code || !course_code || !chapter_number) {
-      return new Response(JSON.stringify({ error: "Missing required fields: asset_id, asset_code, course_code, chapter_number" }), {
+    if (!asset_id) {
+      return new Response(JSON.stringify({ error: "Missing required field: asset_id" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // ── Fetch all asset data server-side ──────────────────────────────
+    const { asset, chapter, course, flagCount, variantCount, jeCount } = await fetchAssetData(
+      supabaseUrl, serviceRoleKey, anonKey, asset_id
+    );
+
+    const assetCode = asset.asset_name || "";
+    const courseCode = course?.code || "";
+    const chapterNumber = chapter?.chapter_number ?? 0;
 
     // Get Google credentials
     const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
@@ -307,36 +359,18 @@ Deno.serve(async (req) => {
     let sheetUrl: string;
     let isUpdate = false;
 
-    let resolvedCourseFolderId: string | null = null;
-    let resolvedChapterFolderId: string | null = null;
+    // Resolve folder hierarchy
+    const { chapterFolderId } = await ensureFolderHierarchy(token, courseCode, chapterNumber, sa.client_email);
 
-    const getFolderHierarchy = async () => {
-      if (resolvedCourseFolderId && resolvedChapterFolderId) {
-        return {
-          courseFolderId: resolvedCourseFolderId,
-          chapterFolderId: resolvedChapterFolderId,
-        };
-      }
+    // ── UPSERT: check for existing sheet ─────────────────────────────
+    let candidateExistingFileId: string | null = asset.google_sheet_file_id || null;
 
-      const folders = await ensureFolderHierarchy(token, course_code, chapter_number, sa.client_email);
-      resolvedCourseFolderId = folders.courseFolderId;
-      resolvedChapterFolderId = folders.chapterFolderId;
-      return folders;
-    };
-
-    let candidateExistingFileId: string | null = existing_file_id || null;
-
-    // ── UPSERT LOGIC ─────────────────────────────────────────────────
-    // If DB metadata wasn't persisted previously, recover by name in the chapter folder.
     if (!candidateExistingFileId && !force_new_copy) {
       try {
-        const { chapterFolderId } = await getFolderHierarchy();
-        const matchingSheets = await findSheetsByNameInFolder(token, asset_code, chapterFolderId);
-
+        const matchingSheets = await findSheetsByNameInFolder(token, assetCode, chapterFolderId);
         if (matchingSheets.length > 0) {
           candidateExistingFileId = matchingSheets[0].id;
-          console.log(`Recovered existing sheet by name for ${asset_code}: ${candidateExistingFileId}`);
-
+          console.log(`Recovered existing sheet by name for ${assetCode}: ${candidateExistingFileId}`);
           if (matchingSheets.length > 1) {
             await archiveDuplicateSheets(token, matchingSheets.slice(1), chapterFolderId);
           }
@@ -347,124 +381,84 @@ Deno.serve(async (req) => {
     }
 
     if (candidateExistingFileId && !force_new_copy) {
-      // UPDATE path: reuse existing spreadsheet
-      isUpdate = true;
-      spreadsheetId = candidateExistingFileId;
-      sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
-
-      // Verify the file still exists / is accessible
+      // UPDATE path — reuse existing sheet, just refresh metadata
       try {
-        await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?fields=id,name&supportsAllDrives=true`, token);
-      } catch (e: any) {
-        console.error("Existing sheet not accessible, will create new:", e.message);
-        // Fall through to create path
-        isUpdate = false;
-        candidateExistingFileId = null;
-      }
+        await googleFetch(`${GOOGLE_DRIVE_API}/${candidateExistingFileId}?fields=id,name&supportsAllDrives=true`, token);
+        isUpdate = true;
+        spreadsheetId = candidateExistingFileId;
+        sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
-      if (isUpdate) {
-        // Ensure all required tabs exist
-        const tabSheetIds = await ensureTabsExist(token, spreadsheetId);
-
-        // Rename file if asset_code changed
+        // Rename if needed
         try {
           await googleFetch(`${GOOGLE_DRIVE_API}/${spreadsheetId}?supportsAllDrives=true`, token, {
             method: "PATCH",
-            body: JSON.stringify({ name: asset_code }),
+            body: JSON.stringify({ name: assetCode }),
           });
-        } catch (e) {
-          console.error("Rename failed (non-fatal):", e);
-        }
-
-        // Clear and rewrite METADATA
-        await clearTab(token, spreadsheetId, "METADATA");
-        try {
-          await writeMetadata(token, spreadsheetId, sheetUrl, {
-            asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, asset_id, created_at,
-          });
-        } catch (e) { console.error("Metadata write failed (non-fatal):", e); }
-
-        // Clear and rewrite HIGHLIGHTED
-        await clearTab(token, spreadsheetId, "HIGHLIGHTED");
-        if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
-          try {
-            await writeHighlights(token, spreadsheetId, tabSheetIds, problem_text, highlight_key_json);
-          } catch (e) { console.error("Highlight write failed (non-fatal):", e); }
-        }
-
-        // Clear content tabs (BRANDED, WHITEBOARD, SOLUTION) for fresh population
-        for (const tab of ["BRANDED", "WHITEBOARD", "SOLUTION"]) {
-          await clearTab(token, spreadsheetId, tab);
-        }
+        } catch (e) { console.error("Rename failed (non-fatal):", e); }
+      } catch (e: any) {
+        console.error("Existing sheet not accessible, will create new:", e.message);
+        candidateExistingFileId = null;
       }
     }
 
     if (!isUpdate) {
-      // CREATE path: new spreadsheet
-      const { chapterFolderId } = await getFolderHierarchy();
-
-      const driveFile = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
-        method: "POST",
-        body: JSON.stringify({
-          name: asset_code,
-          mimeType: "application/vnd.google-apps.spreadsheet",
-          parents: [chapterFolderId],
-        }),
-      });
-
-      spreadsheetId = driveFile.id;
+      // CREATE path — duplicate V2 template
+      spreadsheetId = await copyTemplate(token, V2_TEMPLATE_FILE_ID, assetCode, chapterFolderId);
       sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
-
-      // Rename default "Sheet1" and add remaining tabs
-      const defaultSheet = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}?fields=sheets.properties`, token);
-      const defaultSheetId = defaultSheet.sheets?.[0]?.properties?.sheetId ?? 0;
-
-      const tabRequests = [
-        { updateSheetProperties: { properties: { sheetId: defaultSheetId, title: "BRANDED" }, fields: "title" } },
-        { addSheet: { properties: { title: "WHITEBOARD" } } },
-        { addSheet: { properties: { title: "SOLUTION" } } },
-        { addSheet: { properties: { title: "HIGHLIGHTED" } } },
-        { addSheet: { properties: { title: "METADATA" } } },
-      ];
-
-      const batchRes = await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-        method: "POST",
-        body: JSON.stringify({ requests: tabRequests }),
-      });
-
-      // Build tab sheet ID map
-      const tabSheetIds: Record<string, number> = { BRANDED: defaultSheetId };
-      for (const reply of (batchRes.replies || [])) {
-        if (reply.addSheet?.properties) {
-          tabSheetIds[reply.addSheet.properties.title] = reply.addSheet.properties.sheetId;
-        }
-      }
-
-      // Populate METADATA
-      try {
-        await writeMetadata(token, spreadsheetId, sheetUrl, {
-          asset_code, course_code, chapter_number, exercise_code, difficulty_estimate, asset_id, created_at,
-        });
-      } catch (e) { console.error("Metadata write failed (non-fatal):", e); }
-
-      // Populate HIGHLIGHTED
-      if (problem_text && Array.isArray(highlight_key_json) && highlight_key_json.length > 0) {
-        try {
-          await writeHighlights(token, spreadsheetId, tabSheetIds, problem_text, highlight_key_json);
-        } catch (e) { console.error("Highlight write failed (non-fatal):", e); }
-      }
     }
 
-    // Update teaching_assets in DB with sheet URL, file ID, and sync timestamp
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    // Use caller's auth header — teaching_assets RLS allows any authenticated user to update
-    const dbAuthHeader = authHeader;
+    // ── Build metadata params ────────────────────────────────────────
+    const appBaseUrl = "https://leeingram.lovable.app";
+    const metadataParams: MetadataParams = {
+      asset_code: assetCode,
+      course_code: courseCode,
+      chapter_number: String(chapterNumber),
+      exercise_number: asset.source_number || "",
+      difficulty_estimate: asset.difficulty || "",
+      asset_id: asset.id,
+      created_at: asset.created_at || "",
+      sheet_url: sheetUrl,
+      // Links
+      source_problem_link: "",
+      source_solution_link: "",
+      ebook_page_link: asset.lw_ebook_url || "",
+      lw_video_link: asset.lw_video_url || "",
+      lw_quiz_link: asset.lw_quiz_url || "",
+      internal_asset_page: `${appBaseUrl}/assets?asset=${asset.id}`,
+      flag_issue_url: `${appBaseUrl}/assets?asset=${asset.id}&action=flag`,
+      mark_verified_url: `${appBaseUrl}/assets?asset=${asset.id}&action=verify`,
+      contact_lee_url: `${appBaseUrl}/assets?asset=${asset.id}&action=contact`,
+      // Extra fields
+      asset_type: asset.problem_type || "",
+      variant_letter: extractVariantLetter(assetCode),
+      va_creator: "",
+      sheet_instance_id: spreadsheetId,
+      variant_count: String(variantCount),
+      journal_entry_count: String(jeCount),
+      flag_status: flagCount > 0 ? `${flagCount} open` : "clear",
+      sheet_verified: asset.google_sheet_status === "verified" ? "Yes" : "No",
+      student_id_placeholder: "",
+      session_audio_link: "",
+      session_transcript_link: "",
+    };
 
+    // Clear metadata tab then write
+    try {
+      await googleFetch(
+        `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA:clear`,
+        token,
+        { method: "POST", body: JSON.stringify({}) }
+      );
+    } catch (e) { console.error("Metadata clear failed (non-fatal):", e); }
+
+    await writeMetadata(token, spreadsheetId, metadataParams);
+
+    // ── Persist sheet info back to DB ─────────────────────────────────
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
       headers: {
-        Authorization: dbAuthHeader,
-        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: anonKey,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
@@ -472,15 +466,15 @@ Deno.serve(async (req) => {
         google_sheet_url: sheetUrl,
         google_sheet_file_id: spreadsheetId,
         sheet_last_synced_at: new Date().toISOString(),
+        google_sheet_status: isUpdate ? asset.google_sheet_status : "auto_created",
       }),
     });
 
     if (!dbRes.ok) {
       const dbErr = await dbRes.text();
       console.error("DB update failed:", dbErr);
-      throw new Error(`Failed to persist sheet metadata for asset ${asset_id}: ${dbErr}`);
+      throw new Error(`Failed to persist sheet metadata: ${dbErr}`);
     }
-
     await dbRes.text();
 
     return new Response(JSON.stringify({

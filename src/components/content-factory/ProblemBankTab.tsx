@@ -692,19 +692,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       recomputeProgress();
 
       // Trigger Google Sheets workbook creation (fire-and-forget)
-      if (data.asset?.id && data.asset?.asset_name) {
+      if (data.asset?.id) {
         supabase.functions.invoke("create-asset-sheet", {
-          body: {
-            asset_id: data.asset.id,
-            asset_code: data.asset.asset_name,
-            course_code: course?.code || "",
-            chapter_number: chapterNumber,
-            exercise_code: viewingProblem?.source_label || "",
-            difficulty_estimate: data.asset?.difficulty ?? 5,
-            created_at: new Date().toISOString(),
-            existing_file_id: (data.asset as any)?.google_sheet_file_id || undefined,
-            force_new_copy: false,
-          },
+          body: { asset_id: data.asset.id },
         }).then((res) => {
           if (res.data?.sheet_url) {
             toast.success("Google Sheet created", { description: "Workbook ready in Drive" });
