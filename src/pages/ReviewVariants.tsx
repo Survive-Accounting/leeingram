@@ -26,6 +26,7 @@ export default function ReviewVariants() {
   const [speedMode, setSpeedMode] = useState(true);
   const [speedIdx, setSpeedIdx] = useState(0);
   const autoStarted = useRef(false);
+  const approveInFlight = useRef(false);
 
   // Query generated problems for this chapter
   const { data: generatedProblems = [], isLoading: problemsLoading } = useQuery({
@@ -106,6 +107,16 @@ export default function ReviewVariants() {
 
   const approveMutation = useMutation({
     mutationFn: async ({ candidate, problem }: { candidate: any; problem: any }) => {
+      // Idempotency: check if this variant is already approved
+      const { data: existingVariant } = await supabase
+        .from("problem_variants")
+        .select("variant_status")
+        .eq("id", candidate._variantId)
+        .single();
+      if (existingVariant?.variant_status === "approved") {
+        throw new Error("ALREADY_APPROVED");
+      }
+
       // Generate proper asset code: {COURSE_CODE}_CH{NUM}_P{SEQ}_A
       const { data: courseData } = await supabase
         .from("courses")
@@ -129,6 +140,14 @@ export default function ReviewVariants() {
       const seqNum = String((count ?? 0) + 1).padStart(3, "0");
       const assetCode = `${courseCode}_CH${chNum}_P${seqNum}_A`;
 
+      // Update variant status FIRST to prevent duplicates
+      const { error: vsErr } = await supabase
+        .from("problem_variants")
+        .update({ variant_status: "approved" } as any)
+        .eq("id", candidate._variantId)
+        .eq("variant_status", "draft"); // Only approve if still draft
+      if (vsErr) throw vsErr;
+
       // Create teaching asset from variant
       const { data: taData, error: taErr } = await supabase.from("teaching_assets").insert({
         course_id: courseId!,
@@ -148,13 +167,6 @@ export default function ReviewVariants() {
         tags: [],
       } as any).select("id").single();
       if (taErr) throw taErr;
-
-      // Update variant status to approved
-      const { error: vsErr } = await supabase
-        .from("problem_variants")
-        .update({ variant_status: "approved" } as any)
-        .eq("id", candidate._variantId);
-      if (vsErr) throw vsErr;
 
       // Update source problem pipeline status
       const { error: spErr } = await supabase
@@ -191,15 +203,24 @@ export default function ReviewVariants() {
       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
       qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
     },
-    onError: (err: any) => toast.error(`Approve failed: ${err.message}`),
+    onError: (err: any) => {
+      if (err.message === "ALREADY_APPROVED") return; // silent skip
+      toast.error(`Approve failed: ${err.message}`);
+    },
   });
 
   const handleApprove = async () => {
-    if (approveMutation.isPending) return;
+    // Use ref-based lock to prevent rapid double-fires from keyboard/clicks
+    if (approveInFlight.current) return;
+    approveInFlight.current = true;
+
     const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
     const current = activeVariants[speedIdx] || activeVariants[0];
     const problem = generatedProblems[reviewIndex];
-    if (!current || !problem) return;
+    if (!current || !problem) {
+      approveInFlight.current = false;
+      return;
+    }
 
     try {
       await approveMutation.mutateAsync({ candidate: current, problem });
@@ -210,13 +231,14 @@ export default function ReviewVariants() {
       } else if (reviewIndex < generatedProblems.length - 1) {
         navigateReview("next");
       } else {
-        // Last variant of last problem — show done state
         toast.success("All variants reviewed! 🎉");
         setReviewStarted(false);
         setCandidates([]);
       }
     } catch {
       // error toast already handled by mutation onError
+    } finally {
+      approveInFlight.current = false;
     }
   };
 

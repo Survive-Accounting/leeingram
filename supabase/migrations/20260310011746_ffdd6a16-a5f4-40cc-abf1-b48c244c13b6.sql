@@ -1,0 +1,1 @@
+DELETE FROM teaching_assets WHERE id IN ('6ace882a-90cd-4d42-ae9a-f8541e4a4b9b', 'c1666011-30cc-4844-845a-b62a1d5a0252', 'dde2192c-d11b-4b91-adfe-7ecfee348b37', '8b91ba51-b361-491a-a050-cc910f00f6da', 'f961740e-6527-44dc-967b-996a511d177e', '0cdda0ba-14c6-467a-9bb2-83edf248700b');
