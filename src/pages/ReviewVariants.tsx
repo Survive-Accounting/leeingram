@@ -168,13 +168,6 @@ export default function ReviewVariants() {
       } as any).select("id").single();
       if (taErr) throw taErr;
 
-      // Update variant status to approved
-      const { error: vsErr } = await supabase
-        .from("problem_variants")
-        .update({ variant_status: "approved" } as any)
-        .eq("id", candidate._variantId);
-      if (vsErr) throw vsErr;
-
       // Update source problem pipeline status
       const { error: spErr } = await supabase
         .from("chapter_problems")
