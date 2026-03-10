@@ -2444,8 +2444,9 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ));
+            })()}
+
           </TableBody>
         </Table>
       </div>
