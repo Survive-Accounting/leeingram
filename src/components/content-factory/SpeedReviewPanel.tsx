@@ -263,9 +263,18 @@ export function SpeedReviewPanel({
             <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">B</kbd>
           </Button>
         )}
-        <Button size="sm" onClick={onApprove} className="h-8 text-xs font-medium">
-          <Check className="h-3.5 w-3.5 mr-1" /> Approve
-          <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">A</kbd>
+        <Button size="sm" onClick={onApprove} disabled={isApproving} className="h-8 text-xs font-medium">
+          {isApproving ? (
+            <>
+              <svg className="animate-spin h-3.5 w-3.5 mr-1" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              Approving…
+            </>
+          ) : (
+            <>
+              <Check className="h-3.5 w-3.5 mr-1" /> Approve
+              <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">A</kbd>
+            </>
+          )}
         </Button>
         <Button size="sm" variant="outline" onClick={onRegenerate} className="h-8 text-xs">
           <RefreshCw className="h-3.5 w-3.5 mr-1" /> Regenerate
