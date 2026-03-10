@@ -2462,6 +2462,10 @@ export type Database = {
           lw_video_url: string | null
           problem_type: string | null
           sheet_last_synced_at: string | null
+          sheet_master_url: string | null
+          sheet_path_url: string | null
+          sheet_practice_url: string | null
+          sheet_promo_url: string | null
           sheet_template_version: string | null
           source_number: string | null
           source_ref: string | null
@@ -2506,6 +2510,10 @@ export type Database = {
           lw_video_url?: string | null
           problem_type?: string | null
           sheet_last_synced_at?: string | null
+          sheet_master_url?: string | null
+          sheet_path_url?: string | null
+          sheet_practice_url?: string | null
+          sheet_promo_url?: string | null
           sheet_template_version?: string | null
           source_number?: string | null
           source_ref?: string | null
@@ -2550,6 +2558,10 @@ export type Database = {
           lw_video_url?: string | null
           problem_type?: string | null
           sheet_last_synced_at?: string | null
+          sheet_master_url?: string | null
+          sheet_path_url?: string | null
+          sheet_practice_url?: string | null
+          sheet_promo_url?: string | null
           sheet_template_version?: string | null
           source_number?: string | null
           source_ref?: string | null
