@@ -107,6 +107,16 @@ export default function ReviewVariants() {
 
   const approveMutation = useMutation({
     mutationFn: async ({ candidate, problem }: { candidate: any; problem: any }) => {
+      // Idempotency: check if this variant is already approved
+      const { data: existingVariant } = await supabase
+        .from("problem_variants")
+        .select("variant_status")
+        .eq("id", candidate._variantId)
+        .single();
+      if (existingVariant?.variant_status === "approved") {
+        throw new Error("ALREADY_APPROVED");
+      }
+
       // Generate proper asset code: {COURSE_CODE}_CH{NUM}_P{SEQ}_A
       const { data: courseData } = await supabase
         .from("courses")
@@ -129,6 +139,14 @@ export default function ReviewVariants() {
       const chNum = String(chapterData?.chapter_number ?? 0).padStart(2, "0");
       const seqNum = String((count ?? 0) + 1).padStart(3, "0");
       const assetCode = `${courseCode}_CH${chNum}_P${seqNum}_A`;
+
+      // Update variant status FIRST to prevent duplicates
+      const { error: vsErr } = await supabase
+        .from("problem_variants")
+        .update({ variant_status: "approved" } as any)
+        .eq("id", candidate._variantId)
+        .eq("variant_status", "draft"); // Only approve if still draft
+      if (vsErr) throw vsErr;
 
       // Create teaching asset from variant
       const { data: taData, error: taErr } = await supabase.from("teaching_assets").insert({
