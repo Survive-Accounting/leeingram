@@ -263,21 +263,34 @@ export default function VaAdmin() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{formatTime(va.last_action_at)}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 text-[10px] px-2"
-                          onClick={() => toggleStatus.mutate({
-                            id: va.id,
-                            newStatus: va.account_status === "active" ? "inactive" : "active",
-                          })}
-                        >
-                          {va.account_status === "active" ? (
-                            <><XCircle className="h-3 w-3 mr-1 text-destructive" /> Deactivate</>
-                          ) : (
-                            <><CheckCircle2 className="h-3 w-3 mr-1 text-emerald-400" /> Activate</>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => {
+                              startImpersonating(va);
+                              navigate("/va-dashboard");
+                            }}
+                          >
+                            <Eye className="h-3 w-3 mr-1 text-primary" /> Impersonate
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => toggleStatus.mutate({
+                              id: va.id,
+                              newStatus: va.account_status === "active" ? "inactive" : "active",
+                            })}
+                          >
+                            {va.account_status === "active" ? (
+                              <><XCircle className="h-3 w-3 mr-1 text-destructive" /> Deactivate</>
+                            ) : (
+                              <><CheckCircle2 className="h-3 w-3 mr-1 text-emerald-400" /> Activate</>
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
