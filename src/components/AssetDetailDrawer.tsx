@@ -673,6 +673,62 @@ export default function AssetDetailDrawer({
               <LinkCard icon={Video} label="Walkthrough Video" disabled comingSoon />
               <LinkCard icon={BookMarked} label="LearnWorlds / eBook" disabled comingSoon />
               <LinkCard icon={Share2} label="Share Link" disabled comingSoon />
+
+              {/* Asset Actions — VA quick-access forms */}
+              <Separator className="my-2" />
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Asset Actions</h3>
+                <div className="space-y-1.5">
+                  <a
+                    href={`https://forms.gle/QnWFjHKc1DxaGVjMA`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">Report Issue</p>
+                      <p className="text-[10px] text-muted-foreground">Something looks incorrect in a sheet or asset</p>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                  </a>
+                  <a
+                    href={`https://forms.gle/7Dz2i8eKiRangmNs9`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">Mark Sheet Prep Complete</p>
+                      <p className="text-[10px] text-muted-foreground">Finished organizing and preparing this sheet</p>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                  </a>
+                  <a
+                    href={`https://forms.gle/QLCMqsV1YZMbkfSD8`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">Submit Feedback / Idea</p>
+                      <p className="text-[10px] text-muted-foreground">Suggestions for improving the workflow</p>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                  </a>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 px-1">
+                  Asset code: <span className="font-mono font-medium text-foreground">{asset.asset_name}</span>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1 inline-flex" onClick={() => {
+                    navigator.clipboard.writeText(asset.asset_name);
+                    toast.success("Asset code copied");
+                  }}>
+                    <Copy className="h-2.5 w-2.5" />
+                  </Button>
+                </p>
+              </div>
             </TabsContent>
 
             {/* Future */}
