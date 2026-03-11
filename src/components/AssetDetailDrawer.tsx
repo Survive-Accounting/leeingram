@@ -1458,8 +1458,9 @@ Return valid JSON only.`,
                   size="sm"
                   variant="outline"
                   className="text-xs h-7"
-                  disabled={isSyncing}
+                  disabled={isSyncing || !isAdmin}
                   onClick={handleResyncSheet}
+                  title={!isAdmin ? "Only admin can create/sync sheets" : undefined}
                 >
                   {isSyncing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
                   {asset.google_sheet_file_id ? "Resync Sheet" : "Create Sheet"}
