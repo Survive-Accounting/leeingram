@@ -54,7 +54,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
-
+import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
 const queryClient = new QueryClient();
 
@@ -145,6 +145,7 @@ const App = () => (
             <SprintProvider>
               <ImpersonationBanner />
               <SprintTimerBar />
+              <RoleRouteGuard />
               <AppRoutes />
             </SprintProvider>
           </ImpersonationProvider>
