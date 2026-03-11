@@ -503,6 +503,7 @@ export default function AssetDetailDrawer({
     setShowProblemSection(true);
     setShowJESection(false);
     setShowWorkedSteps(false);
+    setShowSourceSection(false);
     setShowHighlights(false);
   }, [asset?.id]);
 
