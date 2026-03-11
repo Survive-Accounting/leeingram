@@ -249,7 +249,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
       >
         <div className="flex h-12 items-center gap-3 px-4">
-          {!isVa && (
+          {!isVa && !impersonating && (
             <>
               <button
                 onClick={() => navigate("/domains")}
@@ -261,7 +261,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             </>
           )}
           <h1 className="font-semibold text-white text-sm">
-            {isVa ? `${vaAccount?.full_name} — VA Test` : "Survive"}
+            {isVa ? `${vaAccount?.full_name}` : "Survive"}
           </h1>
 
           {/* Workspace Selectors — admin sees all courses+chapters, VA/impersonation sees only assigned chapters */}
