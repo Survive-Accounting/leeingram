@@ -210,7 +210,6 @@ export function ContentCreationDashboard({ chapterIds, vaAccountId }: Props) {
       <Tabs defaultValue="queue" className="w-full">
         <TabsList className="bg-secondary/50">
           <TabsTrigger value="queue" className="text-xs">Work Queue</TabsTrigger>
-          <TabsTrigger value="reports" className="text-xs">Reports</TabsTrigger>
           <TabsTrigger value="help" className="text-xs">Help / SOP</TabsTrigger>
         </TabsList>
 
