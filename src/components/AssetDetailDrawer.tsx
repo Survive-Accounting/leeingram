@@ -60,6 +60,9 @@ export type TeachingAssetFull = {
   source_type?: string | null;
   source_number?: string | null;
   problem_type?: string | null;
+  important_formulas?: string | null;
+  concept_notes?: string | null;
+  exam_traps?: string | null;
 };
 
 type JEMode = "completed" | "template" | "accounts_missing" | "all_question_marks";
