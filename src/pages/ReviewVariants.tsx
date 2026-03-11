@@ -449,6 +449,28 @@ export default function ReviewVariants() {
                 {speedMode ? "Speed" : "Full"}
               </span>
             </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
+                  <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all variants?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will delete all generated variants and teaching assets for this chapter's problems, resetting them back to the Generate stage. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearVariants} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Clear All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReviewStarted(false); setCandidates([]); }}>
               <Check className="h-3 w-3 mr-1" /> Done
             </Button>
