@@ -209,7 +209,7 @@ function saveCopySettings(s: JECopySettings) {
 function toShortDate(label: string): string {
   try {
     const d = new Date(label);
-    if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+    if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
   } catch {}
   return label;
 }
