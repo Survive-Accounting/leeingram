@@ -5,6 +5,7 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SpeedReviewPanel } from "@/components/content-factory/SpeedReviewPanel";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { VariantReviewContent } from "@/components/content-factory/VariantReviewDrawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
