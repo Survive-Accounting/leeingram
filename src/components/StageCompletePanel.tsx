@@ -25,8 +25,8 @@ const STAGE_CONFIG = {
   },
   assets: {
     headline: "Chapter Complete!",
-    ctaLabel: "View Summary",
-    ctaRoute: "",
+    ctaLabel: "Chapter Complete — View Summary",
+    ctaRoute: "/chapter-complete",
   },
 };
 
