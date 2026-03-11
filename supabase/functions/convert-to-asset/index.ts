@@ -809,6 +809,9 @@ serve(async (req) => {
           source_ref: candidate.answer_only || null,
           journal_entry_completed_json: candidate.journal_entry_completed_json || null,
           journal_entry_template_json: candidate.journal_entry_template_json || null,
+          important_formulas: candidate.important_formulas || null,
+          concept_notes: candidate.concept_notes || null,
+          exam_traps: candidate.exam_traps || null,
         })
         .select()
         .single();
@@ -1172,7 +1175,12 @@ STRICT OUTPUT QUALITY RULES (CRITICAL):
 1. NO SELF-CORRECTIONS: Do NOT use "wait", "check", "re-", "however", "actually", "verify", "let's fix". Every step must be decisive and final.
 2. ONE COMPUTATION PATH ONLY: Each text part's worked_steps must have exactly ONE final computation path.
 3. ANSWER CONSISTENCY: answer_only must match the final_answer values from text parts.
-4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.`;
+4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.
+
+SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
+- important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
+- concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
+- exam_traps: 2-4 common mistakes or traps students fall into. Be specific and actionable.`;
 
     if (generationMode === "text_only") {
       systemPrompt = `${preamble}
@@ -1223,6 +1231,11 @@ ${accountWhitelistBlock}
 THIS IS A JOURNAL-ENTRY-ONLY PROBLEM. All parts must have type: "je".
 ${partsInstruction}
 ${scenarioInstruction}
+
+SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
+- important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
+- concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
+- exam_traps: 2-4 common mistakes or traps students fall into. Be specific and actionable.
 
 SOLUTION STORAGE — For every variant:
 1. answer_only: Final JE summary (concise)
@@ -1379,9 +1392,13 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                       journal_entry_block: { type: "string", description: "Text summary of JE for backward compatibility" },
                     } : {}),
                     exam_trap_note: { type: "string", description: "Internal note on what makes this tricky" },
+                    important_formulas: { type: "string", description: "Formulas/equations needed, one per line" },
+                    concept_notes: { type: "string", description: "2-5 bullet points on key concepts tested" },
+                    exam_traps: { type: "string", description: "2-4 common student mistakes, specific and actionable" },
                   },
                   required: [
                     "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",
+                    "important_formulas", "concept_notes", "exam_traps",
                   ],
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,

@@ -201,6 +201,9 @@ export default function ReviewVariants() {
         source_number: problem.source_label || null,
         problem_type: problem.problem_type || null,
         tags: [],
+        important_formulas: candidate.important_formulas || null,
+        concept_notes: candidate.concept_notes || null,
+        exam_traps: candidate.exam_traps || null,
       } as any).select("id").single();
       if (taErr) throw taErr;
 
