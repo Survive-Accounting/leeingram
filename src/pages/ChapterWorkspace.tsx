@@ -152,6 +152,12 @@ export default function ChapterWorkspace() {
         <div className="flex items-center gap-2">
         </div>
       </div>
+      {generationComplete && (
+        <StageCompletePanel
+          stage="generate"
+          statLine={`${generatedCount} variant${generatedCount === 1 ? "" : "s"} ready for review`}
+        />
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Survive Teaching Assets</TabsTrigger>
