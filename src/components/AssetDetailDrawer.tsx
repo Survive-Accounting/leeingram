@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,17 +11,17 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Undo2, Trash2, Copy, ClipboardList, BookOpen, Link2,
-  Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
-  BookMarked, Share2, CheckCircle2, Layers, Highlighter,
-  AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
-  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles, Flag,
+  Undo2, Trash2, Copy, BookOpen, Link2,
+  ExternalLink, ChevronRight, Video,
+  BookMarked, Share2, Layers,
+  AlertTriangle, RefreshCw, Loader2, Settings2, MessageSquare,
+  ZoomIn, X, ChevronLeft, ChevronRight as ChevronRightIcon, Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { HighlightedText, HighlightLegend } from "@/components/content-factory/HighlightedText";
-import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
+import { HighlightedText } from "@/components/content-factory/HighlightedText";
+import { type Highlight, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
 import { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
 
@@ -65,6 +64,7 @@ export type TeachingAssetFull = {
   important_formulas?: string | null;
   concept_notes?: string | null;
   exam_traps?: string | null;
+  google_sheet_status?: string | null;
 };
 
 type JEMode = "completed" | "template" | "accounts_missing" | "all_question_marks";
@@ -92,18 +92,9 @@ function applyMode(row: JERow, mode: JEMode): { account: string; debit: number |
     : row.side === "debit" ? "debit"
     : (rawCredit != null && rawCredit !== "" && rawCredit !== 0) ? "credit" : "debit";
 
-  if (mode === "completed") {
-    return { account, debit: rawDebit, credit: rawCredit, side };
-  }
-  if (mode === "template") {
-    // Keep side info so indentation works, but null out amounts
-    return { account, debit: null, credit: null, side };
-  }
-  if (mode === "accounts_missing") {
-    // Show amounts, hide account names
-    return { account: "???", debit: rawDebit, credit: rawCredit, side };
-  }
-  // all_question_marks — hide both account and amount with ???
+  if (mode === "completed") return { account, debit: rawDebit, credit: rawCredit, side };
+  if (mode === "template") return { account, debit: null, credit: null, side };
+  if (mode === "accounts_missing") return { account: "???", debit: rawDebit, credit: rawCredit, side };
   return { account: "???", debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
 }
 
@@ -111,10 +102,8 @@ function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
   if (!json) return null;
   try {
     const data = typeof json === "string" ? JSON.parse(json) : json;
-
     const processRows = (rawRows: any[]) => rawRows.map((r: JERow) => applyMode(r, mode));
 
-    // Format 1: scenario_sections (our canonical format)
     if (data.scenario_sections && Array.isArray(data.scenario_sections)) {
       const entries: NormalizedEntry[] = [];
       for (const section of data.scenario_sections as JESection[]) {
@@ -127,30 +116,21 @@ function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
       }
       return entries.length > 0 ? entries : null;
     }
-
-    // Format 2: flat array of entries
     if (Array.isArray(data)) {
       return data.map((entry: any, idx: number) => ({
         label: stripDateParens(entry.date || entry.requirement || `Entry ${idx + 1}`),
         rows: processRows(entry.accounts || entry.rows || []),
       }));
     }
-
-    // Format 3: { parts: [...] }
     if (data.parts && Array.isArray(data.parts)) {
       const entries: NormalizedEntry[] = [];
       for (const part of data.parts) {
         for (const entry of (part.journal_entries || part.entries || [])) {
-          entries.push({
-            label: stripDateParens(entry.date || entry.requirement || ""),
-            rows: processRows(entry.accounts || entry.rows || []),
-          });
+          entries.push({ label: stripDateParens(entry.date || entry.requirement || ""), rows: processRows(entry.accounts || entry.rows || []) });
         }
       }
       return entries.length > 0 ? entries : null;
     }
-
-    // Format 4: { journal_entries: [...] } or { entries: [...] }
     const arr = data.journal_entries || data.entries;
     if (Array.isArray(arr)) {
       return arr.map((entry: any, idx: number) => ({
@@ -158,7 +138,6 @@ function normalizeJEEntries(json: any, mode: JEMode): NormalizedEntry[] | null {
         rows: processRows(entry.accounts || entry.rows || []),
       }));
     }
-
     return null;
   } catch { return null; }
 }
@@ -194,7 +173,6 @@ function JETable({ entries }: { entries: NormalizedEntry[] }) {
             </thead>
             <tbody>
               {entry.rows.map((row, rIdx) => {
-                // Use the side property for indentation (works even when amounts are null in template mode)
                 const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "");
                 return (
                   <tr key={rIdx} className="border-b border-border/50 last:border-0">
@@ -214,8 +192,6 @@ function JETable({ entries }: { entries: NormalizedEntry[] }) {
 
 // ── Export helpers ───────────────────────────────────────────────────
 
-// ── Copy Settings ───────────────────────────────────────────────────
-
 type JECopySettings = { includeDate: boolean; spacerColumns: number };
 
 function loadCopySettings(): JECopySettings {
@@ -230,14 +206,10 @@ function saveCopySettings(s: JECopySettings) {
   localStorage.setItem("je_copy_settings", JSON.stringify(s));
 }
 
-/** Format a date label to short M/d/yy for TSV */
 function toShortDate(label: string): string {
   try {
-    // Try parsing common formats
     const d = new Date(label);
-    if (!isNaN(d.getTime())) {
-      return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
-    }
+    if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
   } catch {}
   return label;
 }
@@ -246,18 +218,13 @@ function entriesToTSV(entries: NormalizedEntry[], settings: JECopySettings): str
   const lines: string[] = [];
   const spacer = "\t".repeat(settings.spacerColumns);
   entries.forEach((entry, idx) => {
-    if (idx > 0) lines.push("\t\t\t"); // blank row between groups
-    if (settings.includeDate) {
-      lines.push(`${toShortDate(entry.label)}\t\t\t`);
-    }
+    if (idx > 0) lines.push("\t\t\t");
+    if (settings.includeDate) lines.push(`${toShortDate(entry.label)}\t\t\t`);
     for (const row of entry.rows) {
       const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "" && (row.debit == null || row.debit === ""));
       const amount = isCredit ? formatAmount(row.credit) : formatAmount(row.debit);
-      if (isCredit) {
-        lines.push(`\t${row.account}${spacer}\t${amount}`);
-      } else {
-        lines.push(`${row.account}${spacer}\t${amount}\t`);
-      }
+      if (isCredit) lines.push(`\t${row.account}${spacer}\t${amount}`);
+      else lines.push(`${row.account}${spacer}\t${amount}\t`);
     }
   });
   return lines.join("\n");
@@ -286,23 +253,26 @@ function parseAssetCode(code: string) {
   return { course: match[1], chapter: parseInt(match[2], 10).toString(), sourceType: match[3], sourceNumber: match[4] };
 }
 
-// ── Data Health ─────────────────────────────────────────────────────
+// ── Pipeline Status Banner ──────────────────────────────────────────
 
-function DataHealthStrip({ asset, hasJE, sheetUrl }: { asset: TeachingAssetFull; hasJE: boolean; sheetUrl?: string }) {
-  const items = [
-    { label: "JE", ok: hasJE },
-    { label: "Sheet", ok: !!(sheetUrl || asset.google_sheet_url) },
-    { label: "Source", ok: !!(asset.source_type || asset.source_number) },
-    { label: "Difficulty", ok: !!asset.difficulty },
-  ];
+function PipelineStatusBanner({ asset }: { asset: TeachingAssetFull }) {
+  const status = (asset as any).google_sheet_status || "none";
+
+  const config: Record<string, { label: string; bg: string; text: string }> = {
+    none: { label: "Approved — Waiting for Sheet Creation", bg: "bg-blue-500/15", text: "text-blue-700 dark:text-blue-300" },
+    created: { label: "Master Sheet Created — Awaiting Sheet Prep", bg: "bg-orange-500/15", text: "text-orange-700 dark:text-orange-300" },
+    verified_by_va: { label: "Master Sheet Ready for Review", bg: "bg-purple-500/15", text: "text-purple-700 dark:text-purple-300" },
+    finalized: { label: "Master Sheet Finalized — Ready for Deployment", bg: "bg-green-500/15", text: "text-green-700 dark:text-green-300" },
+  };
+
+  const c = config[status] || config.none;
+
   return (
-    <div className="flex gap-2 flex-wrap">
-      {items.map((item) => (
-        <span key={item.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          {item.ok ? <Check className="h-2.5 w-2.5 text-green-500" /> : <AlertTriangle className="h-2.5 w-2.5 text-amber-500" />}
-          {item.label}
-        </span>
-      ))}
+    <div className={`rounded-lg px-4 py-3 ${c.bg}`}>
+      <p className={`text-sm font-semibold ${c.text}`}>{c.label}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">
+        Updated {format(new Date(asset.updated_at), "MMM d, yyyy")}
+      </p>
     </div>
   );
 }
@@ -379,7 +349,7 @@ function SourceImageGallery({ urls, label }: { urls: string[]; label: string }) 
               onClick={() => setCurrent((c) => c + 1)}
               disabled={current === urls.length - 1}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRightIcon className="h-4 w-4" />
             </button>
           </>
         )}
@@ -422,7 +392,7 @@ function SourceImageGallery({ urls, label }: { urls: string[]; label: string }) 
                 onClick={(e) => { e.stopPropagation(); setCurrent((c) => c + 1); }}
                 disabled={current === urls.length - 1}
               >
-                <ChevronRight className="h-6 w-6" />
+                <ChevronRightIcon className="h-6 w-6" />
               </button>
             </>
           )}
@@ -443,13 +413,28 @@ function MetaItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+// ── Section Header (improved hierarchy) ─────────────────────────────
+
+function SectionHeader({ label, open, copyText }: { label: string; open: boolean; copyText?: string }) {
+  return (
+    <div className="flex items-center gap-2 w-full">
+      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
+      <span className="text-sm font-bold tracking-tight text-foreground">{label}</span>
+      {copyText && (
+        <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(copyText); toast.success(`${label} copied`); }}>
+          <Copy className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // ── Main Drawer ──────────────────────────────────────────────────────
 
 export default function AssetDetailDrawer({
   asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated, isAdmin,
 }: AssetDetailDrawerProps) {
   const [jeMode, setJeMode] = useState<JEMode>("completed");
-  const [problemExpanded, setProblemExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [copySettings, setCopySettings] = useState<JECopySettings>(loadCopySettings);
   const [showCopySettings, setShowCopySettings] = useState(false);
@@ -471,16 +456,14 @@ export default function AssetDetailDrawer({
   const [flagReason, setFlagReason] = useState("");
   const [flagging, setFlagging] = useState(false);
 
-  // Instructions (read-only fetch)
+  // Instructions
   const [instructions, setInstructions] = useState<{ instruction_number: number; instruction_text: string }[]>([]);
 
-  // Highlights
+  // Highlights (kept for HighlightedText rendering but controls removed)
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [showHighlights, setShowHighlights] = useState(false);
-  const [generatingHighlights, setGeneratingHighlights] = useState(false);
   const [variantId, setVariantId] = useState<string | null>(null);
 
-  // Fetch linked source problem for images + title + variant highlights
   useEffect(() => {
     if (!open || !asset?.base_raw_problem_id) {
       setSourceProblem(null);
@@ -488,7 +471,6 @@ export default function AssetDetailDrawer({
       setVariantId(null);
       return;
     }
-    // Fetch source problem
     supabase
       .from("chapter_problems")
       .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label, problem_text, solution_text")
@@ -496,7 +478,6 @@ export default function AssetDetailDrawer({
       .single()
       .then(({ data }) => setSourceProblem(data || null));
 
-    // Fetch approved variant's highlights
     supabase
       .from("problem_variants")
       .select("id, highlight_key_json")
@@ -510,6 +491,7 @@ export default function AssetDetailDrawer({
           const raw = v.highlight_key_json as any;
           if (Array.isArray(raw) && raw.length > 0) {
             setHighlights(validateHighlights(raw, asset.survive_problem_text || ""));
+            setShowHighlights(true);
           } else {
             setHighlights([]);
           }
@@ -517,8 +499,6 @@ export default function AssetDetailDrawer({
       });
   }, [open, asset?.base_raw_problem_id, asset?.survive_problem_text]);
 
-  // Reset section states when asset changes
-  // Fetch instructions for this asset
   useEffect(() => {
     if (!open || !asset?.id) { setInstructions([]); return; }
     supabase
@@ -529,7 +509,6 @@ export default function AssetDetailDrawer({
       .then(({ data }) => setInstructions(data || []));
   }, [open, asset?.id]);
 
-  // Reset section states when asset changes
   useEffect(() => {
     setShowProblemSection(false);
     setShowAnswerSection(false);
@@ -540,7 +519,6 @@ export default function AssetDetailDrawer({
     setShowExamTrapsSection(false);
     setShowStructuresSection(false);
     setShowSourceSection(false);
-    setShowHighlights(false);
     setShowFlagForm(false);
     setFlagReason("");
   }, [asset?.id]);
@@ -571,7 +549,6 @@ export default function AssetDetailDrawer({
     }
   };
 
-  // Keyboard: Esc to close
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -581,7 +558,6 @@ export default function AssetDetailDrawer({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Parts analysis for collapsible sections (must be before early return for hooks rules)
   const parts = useMemo(() => asset ? normalizeToParts({
     survive_problem_text: asset.survive_problem_text,
     survive_solution_text: asset.survive_solution_text,
@@ -593,10 +569,7 @@ export default function AssetDetailDrawer({
 
   if (!asset) return null;
 
-  // Resolve effective sheet URL: prefer teaching_assets.google_sheet_url, fall back to sheetUrls lookup
   const effectiveSheetUrl = asset.google_sheet_url || sheetUrl;
-
-  // Parse JE with robust format handling
   const activeSource = jeMode === "completed" || jeMode === "accounts_missing"
     ? asset.journal_entry_completed_json
     : (asset.journal_entry_template_json || asset.journal_entry_completed_json);
@@ -604,108 +577,6 @@ export default function AssetDetailDrawer({
   const hasJE = !!(normalizeJEEntries(asset.journal_entry_completed_json, "completed") || normalizeJEEntries(asset.journal_entry_template_json, "completed"));
 
   const parsed = parseAssetCode(asset.asset_name);
-
-  const handleCopy = (fmt: "tsv" | "text" | "json") => {
-    if (!activeEntries) return;
-    let content: string;
-    if (fmt === "json") content = JSON.stringify(activeSource, null, 2);
-    else if (fmt === "tsv") content = entriesToTSV(activeEntries, copySettings);
-    else content = entriesToPlainText(activeEntries);
-    navigator.clipboard.writeText(content);
-    if (fmt === "tsv") {
-      toast.success(`TSV copied with spacer = ${copySettings.spacerColumns} column${copySettings.spacerColumns !== 1 ? "s" : ""}`);
-    } else {
-      toast.success(`Copied as ${fmt.toUpperCase()}`);
-    }
-  };
-
-  const handleGenerateHighlights = async () => {
-    if (!asset || !variantId) {
-      toast.error("No linked variant found for generation");
-      return;
-    }
-    setGeneratingHighlights(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-ai-output", {
-        body: {
-          provider: "lovable",
-          model: "google/gemini-2.5-flash",
-          temperature: 0.15,
-          max_output_tokens: 3000,
-          source_problem_id: asset.base_raw_problem_id || "unknown",
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert accounting instructor. Given a problem text and its solution steps, produce a JSON object with these keys:
-
-1. "highlights" — An array of 6-10 objects marking the most important information a student must notice. Each object: { "text": "<exact substring from problem>", "type": "key_input"|"rate"|"amount"|"timing"|"rule"|"definition" }. Rules: exact case-sensitive substrings only, no narrative filler, focus on inputs used in calculations.
-
-2. "important_formulas" — A concise list of formulas/equations needed to solve this problem. Use one formula per line, e.g. "Interest = Principal × Rate × Time". Only include formulas actually relevant to this specific problem.
-
-3. "concept_notes" — Brief concept notes (2-5 bullet points) explaining the key accounting concepts tested. Write for a student who understands basics but needs reminders.
-
-4. "exam_traps" — 2-4 common mistakes or traps students fall into when solving this type of problem. Be specific and actionable, e.g. "Don't forget to adjust for the partial-year period."
-
-Return valid JSON only.`,
-            },
-            {
-              role: "user",
-              content: `Problem Text:\n${asset.survive_problem_text}\n\nSolution Steps:\n${asset.survive_solution_text || "(not provided)"}`,
-            },
-          ],
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      const raw = data?.parsed;
-      const obj = typeof raw === "object" && raw !== null ? raw : {};
-
-      // Highlights
-      const hlArr = Array.isArray(obj) ? obj : (obj.highlights || []);
-      const valid = validateHighlights(Array.isArray(hlArr) ? hlArr : [], asset.survive_problem_text || "");
-      if (valid.length > 0) {
-        await supabase
-          .from("problem_variants")
-          .update({ highlight_key_json: valid as any } as any)
-          .eq("id", variantId);
-        setHighlights(valid);
-        setShowHighlights(true);
-      }
-
-      // Persist new fields to teaching_assets
-      const updates: Record<string, string> = {};
-      if (obj.important_formulas) updates.important_formulas = typeof obj.important_formulas === "string" ? obj.important_formulas : (Array.isArray(obj.important_formulas) ? obj.important_formulas.join("\n") : String(obj.important_formulas));
-      if (obj.concept_notes) updates.concept_notes = typeof obj.concept_notes === "string" ? obj.concept_notes : (Array.isArray(obj.concept_notes) ? obj.concept_notes.join("\n") : String(obj.concept_notes));
-      if (obj.exam_traps) updates.exam_traps = typeof obj.exam_traps === "string" ? obj.exam_traps : (Array.isArray(obj.exam_traps) ? obj.exam_traps.join("\n") : String(obj.exam_traps));
-
-      if (Object.keys(updates).length > 0) {
-        await supabase
-          .from("teaching_assets")
-          .update(updates as any)
-          .eq("id", asset.id);
-        // Update local asset state
-        if (updates.important_formulas) (asset as any).important_formulas = updates.important_formulas;
-        if (updates.concept_notes) (asset as any).concept_notes = updates.concept_notes;
-        if (updates.exam_traps) (asset as any).exam_traps = updates.exam_traps;
-      }
-
-      const parts = [
-        valid.length > 0 ? `${valid.length} highlights` : null,
-        updates.important_formulas ? "formulas" : null,
-        updates.concept_notes ? "concepts" : null,
-        updates.exam_traps ? "exam traps" : null,
-      ].filter(Boolean);
-      toast.success(`Generated: ${parts.join(", ") || "content"}`);
-      onAssetUpdated?.();
-    } catch (err: any) {
-      toast.error(err?.message || "Generation failed");
-    } finally {
-      setGeneratingHighlights(false);
-    }
-  };
-
-  // Derive display values
-  const sourceType = asset.source_type || parsed.sourceType || "—";
   const sourceNumber = asset.source_number || parsed.sourceNumber || "—";
 
   return (
@@ -724,29 +595,25 @@ Return valid JSON only.`,
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {courseLabel} · {chapterLabel} · Created {format(new Date(asset.created_at), "MMM d, yyyy")}
+              <p className="text-xs text-muted-foreground mt-1">
+                {courseLabel} · {chapterLabel}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Created {format(new Date(asset.created_at), "MMM d, yyyy")}
               </p>
             </div>
             <div className="flex gap-1.5 shrink-0">
               {(asset.sheet_master_url || effectiveSheetUrl) && (
                 <>
-                  <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                  <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
                     <a href={asset.sheet_master_url || effectiveSheetUrl!} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3 w-3 mr-1" /> Master
+                      <ExternalLink className="h-3 w-3 mr-1" /> Open Master Sheet
                     </a>
                   </Button>
                   {asset.sheet_practice_url && (
-                    <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
                       <a href={asset.sheet_practice_url} target="_blank" rel="noopener noreferrer">
                         Practice
-                      </a>
-                    </Button>
-                  )}
-                  {asset.sheet_promo_url && (
-                    <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                      <a href={asset.sheet_promo_url} target="_blank" rel="noopener noreferrer">
-                        Promo
                       </a>
                     </Button>
                   )}
@@ -755,40 +622,8 @@ Return valid JSON only.`,
             </div>
           </div>
 
-          {/* Status badges + type chips */}
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="default" className="text-[10px]">
-              <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Approved
-            </Badge>
-            {hasJE && (
-              <Badge variant="secondary" className="text-[10px]">
-                <TableProperties className="h-2.5 w-2.5 mr-0.5" /> Has JE
-              </Badge>
-            )}
-            {effectiveSheetUrl && (
-              <Badge variant="secondary" className="text-[10px]">
-                <Layers className="h-2.5 w-2.5 mr-0.5" /> Sheet
-              </Badge>
-            )}
-            {asset.problem_type && (
-              <Badge variant="outline" className="text-[10px]">{asset.problem_type}</Badge>
-            )}
-            {asset.difficulty && (
-              <Badge variant="outline" className="text-[10px]">Diff: {asset.difficulty}</Badge>
-            )}
-            {(sourceType !== "—" || sourceNumber !== "—") && sourceType !== "—" && (
-              <Badge variant="outline" className="text-[10px]">{sourceType} {sourceNumber}</Badge>
-            )}
-            {asset.sheet_template_version && (
-              <Badge variant="outline" className="text-[10px]">Tmpl {asset.sheet_template_version}</Badge>
-            )}
-            {asset.tags?.map((t) => (
-              <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
-            ))}
-          </div>
-
-          {/* Data Health */}
-          <DataHealthStrip asset={asset} hasJE={hasJE} sheetUrl={effectiveSheetUrl} />
+          {/* Pipeline Status Banner */}
+          <PipelineStatusBanner asset={asset} />
         </DialogHeader>
 
         <Separator />
@@ -802,62 +637,22 @@ Return valid JSON only.`,
 
           <ScrollArea className="flex-1 min-h-0">
             {/* Overview */}
-            <TabsContent value="overview" className="px-6 pb-6 space-y-3 mt-4">
-              {/* Metadata grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <TabsContent value="overview" className="px-6 pb-6 space-y-4 mt-4">
+              {/* Simplified metadata grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <MetaItem label="Course" value={parsed.course || courseLabel} />
                 <MetaItem label="Chapter" value={parsed.chapter ? `Ch ${parsed.chapter}` : chapterLabel} />
-                <MetaItem label="Source Type" value={sourceType} />
                 <MetaItem label="Source #" value={sourceNumber} />
-                <MetaItem label="Difficulty" value={asset.difficulty ?? "—"} />
                 <MetaItem label="Problem Type" value={asset.problem_type || "—"} />
-              </div>
-
-              {/* Highlights toggle */}
-              <div className="flex items-center gap-2 flex-wrap px-1">
-                <Highlighter className="h-3 w-3 text-yellow-500" />
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Highlights</span>
-                <Switch
-                  checked={showHighlights}
-                  onCheckedChange={setShowHighlights}
-                  className="h-4 w-8 [&>span]:h-3 [&>span]:w-3"
-                />
-                <span className="text-[10px] text-muted-foreground">{showHighlights ? "On" : "Off"}</span>
-                {variantId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-[10px] px-2"
-                    onClick={handleGenerateHighlights}
-                    disabled={generatingHighlights}
-                  >
-                    {generatingHighlights ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3 mr-1" />
-                    )}
-                    {highlights.length > 0 ? "Regenerate All" : "Generate All"}
-                  </Button>
-                )}
-                {showHighlights && highlights.length > 0 && (
-                  <HighlightLegend highlights={highlights} />
-                )}
               </div>
 
               {/* ── PROBLEM TEXT & INSTRUCTIONS ── */}
               <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showProblemSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Text & Instructions</span>
-                  {instructions.length > 0 && (
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{instructions.length} instr.</Badge>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.survive_problem_text || ""); toast.success("Problem text copied"); }}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Problem Text & Instructions" open={showProblemSection} copyText={asset.survive_problem_text} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
-                  <div className="rounded-lg border border-border bg-background p-3">
+                  <div className="rounded-lg border border-border bg-background p-4">
                     <div className="text-sm text-foreground leading-relaxed">
                       <HighlightedText
                         text={asset.survive_problem_text || "—"}
@@ -867,10 +662,9 @@ Return valid JSON only.`,
                     </div>
                   </div>
 
-                  {/* Read-only Instructions with copy buttons */}
                   {instructions.length > 0 && (
-                    <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Instructions</p>
+                    <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Instructions</p>
                       {instructions.map((inst, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <span className="text-xs font-mono font-bold text-primary w-5 shrink-0 text-right">
@@ -893,10 +687,9 @@ Return valid JSON only.`,
                     </div>
                   )}
 
-                  {/* Final Answer values from parts */}
                   {textParts.length > 0 && (
-                    <div className="rounded-lg border border-border bg-background p-3">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Final Answer</p>
+                    <div className="rounded-lg border border-border bg-background p-4">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Final Answer</p>
                       <div className="space-y-1.5">
                         {textParts.map((tp, i) => (
                           <div key={i} className="flex items-baseline gap-2">
@@ -919,15 +712,11 @@ Return valid JSON only.`,
               {/* ── ANSWER TEXT ── */}
               {asset.survive_solution_text && (
               <Collapsible open={showAnswerSection} onOpenChange={setShowAnswerSection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showAnswerSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Answer Text</span>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.survive_solution_text || ""); toast.success("Answer text copied"); }}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Answer Text" open={showAnswerSection} copyText={asset.survive_solution_text} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
-                  <div className="rounded-lg border border-border bg-background p-3">
+                  <div className="rounded-lg border border-border bg-background p-4">
                     <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                       {asset.survive_solution_text}
                     </p>
@@ -936,243 +725,210 @@ Return valid JSON only.`,
               </Collapsible>
               )}
 
+              {/* ── JOURNAL ENTRIES ── */}
               {hasJE && (
               <Collapsible open={showJESection} onOpenChange={setShowJESection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showJESection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Journal Entries</span>
-                  <div className="flex items-center gap-2 ml-auto">
-                    {jeParts.length > 0 && (
-                      <Badge variant="outline" className="text-[9px] h-4">{jeParts.length} {jeParts.length === 1 ? "part" : "parts"}</Badge>
-                    )}
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Journal Entries" open={showJESection} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 space-y-3">
+                  <div className="flex gap-1 flex-wrap">
+                    {([
+                      { key: "completed", label: "Completed" },
+                      { key: "accounts_missing", label: "Acct Titles Missing" },
+                      { key: "template", label: "Amounts Missing" },
+                      { key: "all_question_marks", label: "Fully Blank" },
+                    ] as { key: JEMode; label: string }[]).map((m) => (
+                      <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
+                        {m.label}
+                      </Button>
+                    ))}
                   </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {/* Mode selector */}
-                    <div className="flex gap-1 flex-wrap">
+
+                  {jeParts.length > 0 ? (
+                    <div className="space-y-2">
+                      {jeParts.map((jp, pi) => (
+                        <div key={pi} className="rounded border border-border overflow-hidden">
+                          {jp.je_structured.map((entry, ei) => {
+                            const modeRows = entry.entries.map((row) => applyMode({
+                              account: row.account,
+                              debit: row.debit,
+                              credit: row.credit,
+                              side: row.credit && row.credit > 0 ? "credit" : "debit",
+                            }, jeMode));
+                            const totalDebit = entry.entries.reduce((s, e) => s + (e.debit ?? 0), 0);
+                            const totalCredit = entry.entries.reduce((s, e) => s + (e.credit ?? 0), 0);
+                            const balanced = Math.abs(totalDebit - totalCredit) < 0.02;
+                            return (
+                              <div key={ei}>
+                                <div className="flex items-center justify-between px-2 py-1 bg-muted/20 border-b border-border/50">
+                                  <span className="text-[10px] font-medium text-foreground">{entry.date}</span>
+                                  {jeMode === "completed" && (
+                                    <Badge variant="outline" className={`text-[9px] h-3.5 ${balanced ? "text-green-600 dark:text-green-400 border-green-500/30" : "text-red-600 dark:text-red-400 border-red-500/30"}`}>
+                                      {balanced ? "✓" : `Off $${Math.abs(totalDebit - totalCredit).toFixed(0)}`}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <table className="w-full text-[11px]">
+                                  <tbody>
+                                    {modeRows.map((row, ri) => (
+                                      <tr key={ri} className="border-b border-border/20 last:border-0">
+                                        <td className={`px-2 py-0.5 text-foreground ${row.side === "credit" ? "pl-5" : ""}`}>
+                                          {row.account}
+                                        </td>
+                                        <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
+                                          {row.debit != null && row.debit !== "" ? (typeof row.debit === "number" ? `$${row.debit.toLocaleString()}` : row.debit) : ""}
+                                        </td>
+                                        <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
+                                          {row.credit != null && row.credit !== "" ? (typeof row.credit === "number" ? `$${row.credit.toLocaleString()}` : row.credit) : ""}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  ) : activeEntries ? (
+                    <JETable entries={activeEntries} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4 text-center">No structured JE data available.</p>
+                  )}
+
+                  {/* Copy TSV */}
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Copy TSV for Sheets</p>
+                    <div className="grid grid-cols-2 gap-1.5">
                       {([
-                        { key: "completed", label: "Completed" },
-                        { key: "accounts_missing", label: "Acct Titles Missing" },
-                        { key: "template", label: "Amounts Missing" },
-                        { key: "all_question_marks", label: "Fully Blank" },
-                      ] as { key: JEMode; label: string }[]).map((m) => (
-                        <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
-                          {m.label}
+                        { key: "completed" as JEMode, label: "Completed" },
+                        { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
+                        { key: "template" as JEMode, label: "Amounts Missing" },
+                        { key: "all_question_marks" as JEMode, label: "Fully Blank" },
+                      ]).map((m) => (
+                        <Button
+                          key={m.key}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 justify-start"
+                          onClick={() => {
+                            const modeEntries = normalizeJEEntries(
+                              m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
+                              m.key
+                            );
+                            if (!modeEntries) return;
+                            const tsv = entriesToTSV(modeEntries, copySettings);
+                            navigator.clipboard.writeText(tsv);
+                            toast.success(`${m.label} TSV copied`);
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
                         </Button>
                       ))}
                     </div>
 
-                    {/* JE Table */}
-                    {jeParts.length > 0 ? (
-                      <div className="space-y-2">
-                        {jeParts.map((jp, pi) => (
-                          <div key={pi} className="rounded border border-border overflow-hidden">
-                            {jp.je_structured.map((entry, ei) => {
-                              const modeRows = entry.entries.map((row) => applyMode({
-                                account: row.account,
-                                debit: row.debit,
-                                credit: row.credit,
-                                side: row.credit && row.credit > 0 ? "credit" : "debit",
-                              }, jeMode));
-                              const totalDebit = entry.entries.reduce((s, e) => s + (e.debit ?? 0), 0);
-                              const totalCredit = entry.entries.reduce((s, e) => s + (e.credit ?? 0), 0);
-                              const balanced = Math.abs(totalDebit - totalCredit) < 0.02;
-                              return (
-                                <div key={ei}>
-                                  <div className="flex items-center justify-between px-2 py-1 bg-muted/20 border-b border-border/50">
-                                    <span className="text-[10px] font-medium text-foreground">{entry.date}</span>
-                                    {jeMode === "completed" && (
-                                      <Badge variant="outline" className={`text-[9px] h-3.5 ${balanced ? "text-green-600 dark:text-green-400 border-green-500/30" : "text-red-600 dark:text-red-400 border-red-500/30"}`}>
-                                        {balanced ? "✓" : `Off $${Math.abs(totalDebit - totalCredit).toFixed(0)}`}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <table className="w-full text-[11px]">
-                                    <tbody>
-                                      {modeRows.map((row, ri) => (
-                                        <tr key={ri} className="border-b border-border/20 last:border-0">
-                                          <td className={`px-2 py-0.5 text-foreground ${row.side === "credit" ? "pl-5" : ""}`}>
-                                            {row.account}
-                                          </td>
-                                          <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
-                                            {row.debit != null && row.debit !== "" ? (typeof row.debit === "number" ? `$${row.debit.toLocaleString()}` : row.debit) : ""}
-                                          </td>
-                                          <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
-                                            {row.credit != null && row.credit !== "" ? (typeof row.credit === "number" ? `$${row.credit.toLocaleString()}` : row.credit) : ""}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
-                    ) : activeEntries ? (
-                      <JETable entries={activeEntries} />
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-4 text-center">No structured JE data available.</p>
-                    )}
-
-                    {/* Copy TSV for each mode */}
-                    <div className="pt-2 border-t border-border space-y-2">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Copy TSV for Sheets</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {([
-                          { key: "completed" as JEMode, label: "Completed" },
-                          { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
-                          { key: "template" as JEMode, label: "Amounts Missing" },
-                          { key: "all_question_marks" as JEMode, label: "Fully Blank" },
-                        ]).map((m) => (
-                          <Button
-                            key={m.key}
-                            size="sm"
-                            variant="outline"
-                            className="text-xs h-7 justify-start"
-                            onClick={() => {
-                              const modeEntries = normalizeJEEntries(
-                                m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
-                                m.key
-                              );
-                              if (!modeEntries) return;
-                              const tsv = entriesToTSV(modeEntries, copySettings);
-                              navigator.clipboard.writeText(tsv);
-                              toast.success(`${m.label} TSV copied`);
-                            }}
-                          >
-                            <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
-                          </Button>
-                        ))}
-                      </div>
-
-                      {/* Copy Settings */}
-                      <div className="flex items-center justify-end">
-                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
-                          <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
-                        </Button>
-                      </div>
-
-                      {showCopySettings && (
-                        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="include-date"
-                              checked={copySettings.includeDate}
-                              onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
-                            />
-                            <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-xs text-foreground">Spacer Columns:</label>
-                            <Select
-                              value={String(copySettings.spacerColumns)}
-                              onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
-                            >
-                              <SelectTrigger className="h-7 w-16 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0">0</SelectItem>
-                                <SelectItem value="1">1</SelectItem>
-                                <SelectItem value="2">2</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
-                        </div>
-                      )}
+                    <div className="flex items-center justify-end">
+                      <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
+                        <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
+                      </Button>
                     </div>
-                  </CollapsibleContent>
-                </Collapsible>
+
+                    {showCopySettings && (
+                      <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="include-date"
+                            checked={copySettings.includeDate}
+                            onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
+                          />
+                          <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-foreground">Spacer Columns:</label>
+                          <Select
+                            value={String(copySettings.spacerColumns)}
+                            onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
+                          >
+                            <SelectTrigger className="h-7 w-16 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="2">2</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
               )}
 
               {/* ── WORKED STEPS ── */}
               {asset.survive_solution_text && (
               <Collapsible open={showWorkedSteps} onOpenChange={setShowWorkedSteps}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showWorkedSteps ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Worked Steps</span>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.survive_solution_text || ""); toast.success("Worked steps copied"); }}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
-                    <div className="rounded-lg border border-border bg-background p-3">
-                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                        {asset.survive_solution_text}
-                      </p>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Worked Steps" open={showWorkedSteps} copyText={asset.survive_solution_text} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                      {asset.survive_solution_text}
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
               )}
 
               {/* ── IMPORTANT FORMULAS ── */}
               <Collapsible open={showFormulasSection} onOpenChange={setShowFormulasSection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFormulasSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Important Formulas</span>
-                  {!asset.important_formulas && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
-                  {asset.important_formulas && (
-                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.important_formulas || ""); toast.success("Formulas copied"); }}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  )}
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Important Formulas" open={showFormulasSection} copyText={asset.important_formulas || undefined} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.important_formulas ? (
-                    <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="rounded-lg border border-border bg-background p-4">
                       <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{asset.important_formulas}</p>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground py-4 text-center">Click Generate above to create important formulas.</p>
+                    <p className="text-sm text-muted-foreground py-4 text-center">No formulas available.</p>
                   )}
                 </CollapsibleContent>
               </Collapsible>
 
               {/* ── CONCEPTS ── */}
               <Collapsible open={showConceptsSection} onOpenChange={setShowConceptsSection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showConceptsSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Concepts</span>
-                  {!asset.concept_notes && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
-                  {asset.concept_notes && (
-                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.concept_notes || ""); toast.success("Concepts copied"); }}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  )}
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Concepts" open={showConceptsSection} copyText={asset.concept_notes || undefined} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.concept_notes ? (
-                    <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="rounded-lg border border-border bg-background p-4">
                       <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{asset.concept_notes}</p>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground py-4 text-center">Click Generate above to create concept notes.</p>
+                    <p className="text-sm text-muted-foreground py-4 text-center">No concept notes available.</p>
                   )}
                 </CollapsibleContent>
               </Collapsible>
 
               {/* ── EXAM TRAPS ── */}
               <Collapsible open={showExamTrapsSection} onOpenChange={setShowExamTrapsSection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showExamTrapsSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Traps</span>
-                  {!asset.exam_traps && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
-                  {asset.exam_traps && (
-                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.exam_traps || ""); toast.success("Exam traps copied"); }}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  )}
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Exam Traps" open={showExamTrapsSection} copyText={asset.exam_traps || undefined} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.exam_traps ? (
-                    <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="rounded-lg border border-border bg-background p-4">
                       <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{asset.exam_traps}</p>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground py-4 text-center">Click Generate above to create exam traps.</p>
+                    <p className="text-sm text-muted-foreground py-4 text-center">No exam traps available.</p>
                   )}
                 </CollapsibleContent>
               </Collapsible>
@@ -1186,20 +942,13 @@ Return valid JSON only.`,
                 if (!hasAnyStructures) return null;
                 return (
                   <Collapsible open={showStructuresSection} onOpenChange={setShowStructuresSection}>
-                    <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showStructuresSection ? "rotate-90" : ""}`} />
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Optional Learning Structures</span>
-                      <div className="flex gap-1 ml-auto">
-                        {tAccounts.length > 0 && <Badge variant="outline" className="text-[9px] h-4">T-Acct: {tAccounts.length}</Badge>}
-                        {tables.length > 0 && <Badge variant="outline" className="text-[9px] h-4">Tables: {tables.length}</Badge>}
-                        {fs.length > 0 && <Badge variant="outline" className="text-[9px] h-4">FS: {fs.length}</Badge>}
-                      </div>
+                    <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                      <SectionHeader label="Learning Structures" open={showStructuresSection} />
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pt-3 space-y-4">
-                      {/* T Accounts */}
                       {tAccounts.length > 0 && (
                         <div className="space-y-3">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">T Accounts</p>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">T Accounts</p>
                           {tAccounts.map((ta: any, i: number) => (
                             <div key={i} className="rounded-lg border border-border bg-background p-3">
                               <div className="flex items-center justify-between mb-2">
@@ -1231,10 +980,9 @@ Return valid JSON only.`,
                           ))}
                         </div>
                       )}
-                      {/* Tables */}
                       {tables.length > 0 && (
                         <div className="space-y-3">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tables</p>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tables</p>
                           {tables.map((t: any, i: number) => (
                             <div key={i} className="rounded-lg border border-border bg-background p-3">
                               <div className="flex items-center justify-between mb-2">
@@ -1251,10 +999,9 @@ Return valid JSON only.`,
                           ))}
                         </div>
                       )}
-                      {/* Financial Statements */}
                       {fs.length > 0 && (
                         <div className="space-y-3">
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Financial Statements</p>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Financial Statements</p>
                           {fs.map((s: any, i: number) => (
                             <div key={i} className="rounded-lg border border-border bg-background p-3">
                               <div className="flex items-center justify-between mb-2">
@@ -1278,9 +1025,8 @@ Return valid JSON only.`,
 
               {/* ── SOURCE (from import) ── */}
               <Collapsible open={showSourceSection} onOpenChange={setShowSourceSection}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showSourceSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source</span>
+                <CollapsibleTrigger className="w-full py-3 border-b border-border cursor-pointer">
+                  <SectionHeader label="Source" open={showSourceSection} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-4">
                   {(() => {
@@ -1294,7 +1040,6 @@ Return valid JSON only.`,
                       : sourceProblem?.solution_screenshot_url
                         ? [sourceProblem.solution_screenshot_url]
                         : [];
-                    // Also check teaching asset's own solution screenshot
                     const assetSolUrl = (asset as any).solution_screenshot_url;
                     const effectiveSolUrls = sUrls.length > 0 ? sUrls : (assetSolUrl ? [assetSolUrl] : []);
 
@@ -1309,8 +1054,6 @@ Return valid JSON only.`,
                             <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
                           </div>
                         )}
-
-                        {/* Problem Screenshot + Copy Text */}
                         {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Source Problem Screenshot" />}
                         {sourceProblem?.problem_text && (
                           <div className="rounded-lg border border-border bg-background p-3">
@@ -1326,8 +1069,6 @@ Return valid JSON only.`,
                             <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.problem_text}</p>
                           </div>
                         )}
-
-                        {/* Solution Screenshot + Copy Text */}
                         {effectiveSolUrls.length > 0 && <SourceImageGallery urls={effectiveSolUrls} label="Source Solution Screenshot" />}
                         {sourceProblem?.solution_text && (
                           <div className="rounded-lg border border-border bg-background p-3">
@@ -1349,64 +1090,66 @@ Return valid JSON only.`,
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* ── FLAG ISSUE ── */}
-              <div className="border-t border-border pt-3 space-y-2">
-                {!showFlagForm ? (
-                  <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowFlagForm(true)}>
-                    <Flag className="h-3 w-3 mr-1" /> Flag Issue
-                  </Button>
-                ) : (
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Flag Reason</p>
-                    <Textarea
-                      value={flagReason}
-                      onChange={(e) => setFlagReason(e.target.value)}
-                      placeholder="Describe the issue..."
-                      className="min-h-[60px] text-sm"
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="text-xs"
-                        disabled={!flagReason.trim() || flagging}
-                        onClick={async () => {
-                          setFlagging(true);
-                          try {
-                            await supabase.from("asset_flags").insert({
-                              teaching_asset_id: asset.id,
-                              flag_reason: flagReason.trim(),
-                              status: "open",
-                            });
-                            toast.success("Issue flagged");
-                            setShowFlagForm(false);
-                            setFlagReason("");
-                            onAssetUpdated?.();
-                          } catch (e: any) {
-                            toast.error(e.message || "Failed to flag");
-                          } finally {
-                            setFlagging(false);
-                          }
-                        }}
-                      >
-                        {flagging ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Flag className="h-3 w-3 mr-1" />}
-                        Submit Flag
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setShowFlagForm(false); setFlagReason(""); }}>
-                        Cancel
-                      </Button>
+              {/* ── DANGER ZONE ── */}
+              <div className="mt-6 pt-4 border-t-2 border-destructive/20 space-y-3">
+                <p className="text-xs font-bold text-destructive uppercase tracking-wider">Danger Zone</p>
+                <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+                  {/* Flag Issue */}
+                  {!showFlagForm ? (
+                    <Button size="sm" variant="outline" className="text-xs w-full justify-start border-border" onClick={() => setShowFlagForm(true)}>
+                      <Flag className="h-3 w-3 mr-2" /> Flag Issue
+                    </Button>
+                  ) : (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Flag Reason</p>
+                      <Textarea
+                        value={flagReason}
+                        onChange={(e) => setFlagReason(e.target.value)}
+                        placeholder="Describe the issue..."
+                        className="min-h-[60px] text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="text-xs"
+                          disabled={!flagReason.trim() || flagging}
+                          onClick={async () => {
+                            setFlagging(true);
+                            try {
+                              await supabase.from("asset_flags").insert({
+                                teaching_asset_id: asset.id,
+                                flag_reason: flagReason.trim(),
+                                status: "open",
+                              });
+                              toast.success("Issue flagged");
+                              setShowFlagForm(false);
+                              setFlagReason("");
+                              onAssetUpdated?.();
+                            } catch (e: any) {
+                              toast.error(e.message || "Failed to flag");
+                            } finally {
+                              setFlagging(false);
+                            }
+                          }}
+                        >
+                          {flagging ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Flag className="h-3 w-3 mr-1" />}
+                          Submit Flag
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setShowFlagForm(false); setFlagReason(""); }}>
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
 
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" variant="outline" onClick={onRevert}>
-                  <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
-                </Button>
-                <Button size="sm" variant="destructive" onClick={onDelete}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Delete
-                </Button>
+                  <Button size="sm" variant="outline" className="text-xs w-full justify-start border-border" onClick={onRevert}>
+                    <Undo2 className="h-3 w-3 mr-2" /> Revert to Generated
+                  </Button>
+                  <Button size="sm" variant="destructive" className="text-xs w-full justify-start" onClick={onDelete}>
+                    <Trash2 className="h-3 w-3 mr-2" /> Delete Asset
+                  </Button>
+                </div>
               </div>
             </TabsContent>
 
@@ -1484,7 +1227,7 @@ Return valid JSON only.`,
                     <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
                   </a>
                   <a href="https://forms.gle/7Dz2i8eKiRangmNs9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    <AlertTriangle className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground">Mark Sheet Prep Complete</p>
                       <p className="text-[10px] text-muted-foreground">Finished organizing and preparing this sheet</p>
