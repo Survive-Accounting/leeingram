@@ -182,6 +182,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   const [launchingBatch, setLaunchingBatch] = useState(false);
   const [notReadyWarningFlash, setNotReadyWarningFlash] = useState(false);
   const [sourceStatusFilter, setSourceStatusFilter] = useState<string>("ready");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Review queue state
   const [reviewMode, setReviewMode] = useState(false);
@@ -1760,9 +1761,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
 
   const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
 
-  const launchServerBatch = async () => {
+  const launchServerBatch = async (specificIds?: string[]) => {
     if (!problems?.length) return;
-    const eligible = problems.filter(p => p.status === "ready");
+    const eligible = specificIds
+      ? problems.filter(p => specificIds.includes(p.id) && p.status === "ready")
+      : problems.filter(p => p.status === "ready");
     if (eligible.length === 0) { toast.info("No Ready problems to generate."); return; }
     setLaunchingBatch(true);
     try {
@@ -1778,7 +1781,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Batch run created with ${data.total} problems`);
-      // Navigate to batch run detail with smooth transition
+      setSelectedIds(new Set());
       navigate(`/batch-run/${data.batch_run_id}`);
     } catch (e: any) {
       toast.error(e.message);
@@ -1786,6 +1789,38 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       setLaunchingBatch(false);
     }
   };
+
+  const handleMarkNotReady = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from("chapter_problems")
+      .update({ status: "raw" } as any)
+      .in("id", ids);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success(`${ids.length} problem(s) sent back to Import`);
+    setSelectedIds(new Set());
+    qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+    qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const filteredProblems = !problems ? [] : sourceStatusFilter === "all"
+    ? problems
+    : problems.filter(p => p.status === sourceStatusFilter);
+
+  const selectedReadyCount = Array.from(selectedIds).filter(id => problems?.find(p => p.id === id && p.status === "ready")).length;
+  const generateLabel = selectedIds.size > 0
+    ? `Generate (${selectedReadyCount} selected)`
+    : `Generate (${readyCount} ready)`;
+  const generateDisabled = launchingBatch || (selectedIds.size > 0 ? selectedReadyCount === 0 : readyCount === 0);
 
   // ─── Table View ───
   return (
@@ -1795,7 +1830,12 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           Uploaded textbook problems waiting to be transformed into Survive assets.
         </p>
         <div className="flex items-center gap-2">
-          <Select value={sourceStatusFilter} onValueChange={setSourceStatusFilter}>
+          {selectedIds.size > 0 && (
+            <Button size="sm" variant="outline" className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleMarkNotReady}>
+              <ArrowLeft className="h-3 w-3 mr-1" /> Mark Not Ready ({selectedIds.size})
+            </Button>
+          )}
+          <Select value={sourceStatusFilter} onValueChange={(v) => { setSourceStatusFilter(v); setSelectedIds(new Set()); }}>
             <SelectTrigger className="h-8 w-[130px] text-xs">
               <Filter className="h-3 w-3 mr-1" />
               <SelectValue />
@@ -1811,11 +1851,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
             size="sm"
             variant="outline"
             className="text-xs"
-            onClick={launchServerBatch}
-            disabled={launchingBatch || readyCount === 0}
+            onClick={() => launchServerBatch(selectedIds.size > 0 ? Array.from(selectedIds) : undefined)}
+            disabled={generateDisabled}
           >
             {launchingBatch ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-            Generate ({readyCount} ready)
+            {generateLabel}
           </Button>
         </div>
       </div>
@@ -1839,6 +1879,18 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="text-xs w-10 text-foreground/70">
+                <Checkbox
+                  checked={filteredProblems.length > 0 && filteredProblems.every(p => selectedIds.has(p.id))}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedIds(new Set(filteredProblems.map(p => p.id)));
+                    } else {
+                      setSelectedIds(new Set());
+                    }
+                  }}
+                />
+              </TableHead>
               <TableHead className="text-xs w-24 text-foreground/70">Label</TableHead>
               <TableHead className="text-xs text-foreground/70">Title</TableHead>
               <TableHead className="text-xs w-20 text-foreground/70">Type</TableHead>
@@ -1848,17 +1900,16 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8">Loading…</TableCell></TableRow>
             ) : !problems?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No imported sources yet.</TableCell></TableRow>
-            ) : (() => {
-              const filtered = sourceStatusFilter === "all"
-                ? problems
-                : problems.filter(p => p.status === sourceStatusFilter);
-              return filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8">No {sourceStatusFilter} problems found.</TableCell></TableRow>
-              ) : filtered.map((p) => (
-                <TableRow key={p.id} className="bg-background/90 text-foreground hover:bg-accent/50 data-[state=selected]:bg-accent/60">
+              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8">No imported sources yet.</TableCell></TableRow>
+            ) : filteredProblems.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8">No {sourceStatusFilter} problems found.</TableCell></TableRow>
+            ) : filteredProblems.map((p) => (
+                <TableRow key={p.id} className={cn("bg-background/90 text-foreground hover:bg-accent/50", selectedIds.has(p.id) && "bg-accent/30")}>
+                  <TableCell>
+                    <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelected(p.id)} />
+                  </TableCell>
                   <TableCell className="font-mono text-xs font-medium text-foreground">{p.source_label}</TableCell>
                   <TableCell className="text-xs truncate max-w-[200px] text-foreground/90">{p.title || "—"}</TableCell>
                   <TableCell><Badge variant="outline" className="text-[10px] capitalize text-foreground/80 bg-background/80 border-border">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</Badge></TableCell>
@@ -1878,8 +1929,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                     </div>
                   </TableCell>
                 </TableRow>
-              ));
-            })()}
+              ))}
 
           </TableBody>
         </Table>
