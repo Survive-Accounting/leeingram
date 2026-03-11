@@ -1455,6 +1455,49 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                     important_formulas: { type: "string", description: "Formulas/equations needed, one per line" },
                     concept_notes: { type: "string", description: "2-5 bullet points on key concepts tested" },
                     exam_traps: { type: "string", description: "2-4 common student mistakes, specific and actionable" },
+                    ...(usesLearningStructures.t_accounts ? {
+                      t_accounts_json: {
+                        type: "array",
+                        description: "T-account structures matching the variant's entries",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            debits: { type: "array", items: { type: "string" } },
+                            credits: { type: "array", items: { type: "string" } },
+                          },
+                          required: ["account_name", "debits", "credits"],
+                        },
+                      },
+                    } : {}),
+                    ...(usesLearningStructures.tables ? {
+                      tables_json: {
+                        type: "array",
+                        description: "Structured tables in TSV format",
+                        items: {
+                          type: "object",
+                          properties: {
+                            title: { type: "string" },
+                            tsv: { type: "string", description: "Tab-separated content" },
+                          },
+                          required: ["title", "tsv"],
+                        },
+                      },
+                    } : {}),
+                    ...(usesLearningStructures.financial_statements ? {
+                      financial_statements_json: {
+                        type: "array",
+                        description: "Financial statement layouts in TSV format",
+                        items: {
+                          type: "object",
+                          properties: {
+                            title: { type: "string" },
+                            tsv: { type: "string", description: "Tab-separated content" },
+                          },
+                          required: ["title", "tsv"],
+                        },
+                      },
+                    } : {}),
                   },
                   required: [
                     "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",
