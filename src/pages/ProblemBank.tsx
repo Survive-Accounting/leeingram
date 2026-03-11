@@ -245,6 +245,19 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const bulkMarkNotReady = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("chapter_problems").update({ status: "raw", pipeline_status: "raw" } as any).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      setSelectedIds(new Set());
+      toast.success("Marked as Not Ready");
+    },
+    onError: (e: Error) => toast.error(e.message)
+  });
+
   const bulkCombine = useMutation({
     mutationFn: async (ids: string[]) => {
       // Generate a shared group ID so generation can merge their text
