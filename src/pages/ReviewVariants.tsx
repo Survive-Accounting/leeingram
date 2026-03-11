@@ -295,7 +295,70 @@ export default function ReviewVariants() {
     }
   };
 
-  // ─── Empty states ───
+  const [clearingVariants, setClearingVariants] = useState(false);
+
+  const handleClearVariants = async () => {
+    if (!chapterId) return;
+    setClearingVariants(true);
+    try {
+      // Get all generated/approved problems in this chapter
+      const { data: problems } = await supabase
+        .from("chapter_problems")
+        .select("id")
+        .eq("chapter_id", chapterId)
+        .in("status", ["generated", "approved"]);
+      if (!problems || problems.length === 0) {
+        toast.info("No variants to clear.");
+        setClearingVariants(false);
+        return;
+      }
+      const problemIds = problems.map(p => p.id);
+
+      // Delete all non-archived variants for these problems
+      const { error: delErr } = await supabase
+        .from("problem_variants")
+        .delete()
+        .in("base_problem_id", problemIds);
+      if (delErr) throw delErr;
+
+      // Delete any teaching assets that were created from these problems
+      const { error: taDelErr } = await supabase
+        .from("teaching_assets")
+        .delete()
+        .in("base_raw_problem_id", problemIds);
+      if (taDelErr) throw taDelErr;
+
+      // Reset source problems back to imported/ready state
+      const { error: updateErr } = await supabase
+        .from("chapter_problems")
+        .update({ status: "ready", pipeline_status: "imported" } as any)
+        .in("id", problemIds);
+      if (updateErr) throw updateErr;
+
+      await logActivity({
+        actor_type: "user",
+        entity_type: "chapter",
+        entity_id: chapterId,
+        event_type: "variants_cleared",
+        message: `Cleared ${problemIds.length} source problems back to generate stage`,
+        payload_json: { count: problemIds.length },
+      });
+
+      toast.success(`Cleared variants for ${problemIds.length} problems — ready to regenerate`);
+      setReviewStarted(false);
+      setCandidates([]);
+      autoStarted.current = false;
+      qc.invalidateQueries({ queryKey: ["review-generated-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
+    } catch (err: any) {
+      toast.error(`Clear failed: ${err.message}`);
+    } finally {
+      setClearingVariants(false);
+    }
+  };
+
   if (!chapterId || !courseId) {
     return (
       <SurviveSidebarLayout>
