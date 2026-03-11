@@ -24,6 +24,7 @@ import { HighlightedText, HighlightLegend } from "@/components/content-factory/H
 import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
 import ProblemInstructionsEditor from "@/components/content-factory/ProblemInstructionsEditor";
+import LearningStructuresEditor, { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
 
 // ── Types ────────────────────────────────────────────────────────────
 
