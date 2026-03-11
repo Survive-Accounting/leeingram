@@ -735,7 +735,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     // ── Fetch all asset data server-side ──────────────────────────────
-    const { asset, chapter, course, flagCount, variantCount, jeCount, highlights } = await fetchAssetData(
+    const { asset, chapter, course, flagCount, variantCount, jeCount, highlights, problemInstructions } = await fetchAssetData(
       supabaseUrl, serviceRoleKey, asset_id
     );
 
