@@ -421,9 +421,9 @@ export default function ProblemBank() {
             </Button>
           </>
         )}
-        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(ocrHasRun)} disabled={ocrRunning}>
+        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(true)} disabled={ocrRunning}>
           {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
-          {ocrRunning ? "Running OCR…" : ocrHasRun ? "Re-run OCR" : "Run OCR"}
+          {ocrRunning ? "Running OCR…" : "Re-run OCR"}
         </Button>
         {canAdd && !isVa && problems && problems.length > 0 && (
           <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10 ml-auto" onClick={() => setDeleteAllOpen(true)}>
