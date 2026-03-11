@@ -537,6 +537,16 @@ export default function AssetDetailDrawer({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // Parts analysis for collapsible sections (must be before early return for hooks rules)
+  const parts = useMemo(() => asset ? normalizeToParts({
+    survive_problem_text: asset.survive_problem_text,
+    survive_solution_text: asset.survive_solution_text,
+    journal_entry_completed_json: asset.journal_entry_completed_json,
+    parts_json: (asset as any).parts_json,
+  }) : [], [asset]);
+  const textParts = useMemo(() => parts.filter(isTextPart), [parts]);
+  const jeParts = useMemo(() => parts.filter(isJEPart), [parts]);
+
   if (!asset) return null;
 
   // Resolve effective sheet URL: prefer teaching_assets.google_sheet_url, fall back to sheetUrls lookup
