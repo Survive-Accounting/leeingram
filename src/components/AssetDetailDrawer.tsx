@@ -511,7 +511,7 @@ export default function AssetDetailDrawer({
 
   // Reset section states when asset changes
   useEffect(() => {
-    setShowProblemSection(true);
+    setShowProblemSection(false);
     setShowJESection(false);
     setShowWorkedSteps(false);
     setShowFormulasSection(false);
