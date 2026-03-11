@@ -129,6 +129,9 @@ export function NextTaskBanner() {
                 </span>
               )}
             </p>
+            {config.tip && (
+              <p className="text-[11px] text-muted-foreground mt-0.5">{config.tip}</p>
+            )}
           </div>
         </div>
       </div>
