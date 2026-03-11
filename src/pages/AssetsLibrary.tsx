@@ -72,11 +72,12 @@ export default function AssetsLibrary() {
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { workspace } = useActiveWorkspace();
-  const { isVa, primaryRole } = useVaAccount();
+  const { isVa, primaryRole, assignedChapterIds } = useVaAccount();
   const { impersonating } = useImpersonation();
   const effectiveRole = impersonating?.role || primaryRole;
   const isAdmin = !isVa && !impersonating;
   const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+  const isContentCreationVa = effectiveRole === "content_creation_va";
   const deepLinkAssetId = searchParams.get("asset");
   const deepLinkAction = searchParams.get("action");
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
