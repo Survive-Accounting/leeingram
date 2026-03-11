@@ -860,16 +860,35 @@ export default function AssetDetailDrawer({
               </div>
             </TabsContent>
 
-            {/* Future */}
-            <TabsContent value="future" className="px-6 pb-6 space-y-3 mt-4">
-              <p className="text-xs text-muted-foreground mb-2">These modules will be activated as features are built.</p>
-              <FuturePlaceholder icon={Clock} label="Times used in tutoring" />
-              <FuturePlaceholder icon={Video} label="Filmed?" />
-              <FuturePlaceholder icon={BookMarked} label="Deployed to LearnWorlds?" />
-              <FuturePlaceholder icon={Layers} label="Export sets included in" />
-              <FuturePlaceholder icon={Users} label="Sessions associated" />
-              <FuturePlaceholder icon={Users} label="Students associated" />
-              <FuturePlaceholder icon={BarChart3} label="Referral / UTM performance" />
+            {/* Source */}
+            <TabsContent value="source" className="px-6 pb-6 space-y-4 mt-4">
+              {sourceProblem?.title && (
+                <div className="rounded-md border border-border p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
+                </div>
+              )}
+              {(() => {
+                const pUrls = sourceProblem?.problem_screenshot_urls?.length
+                  ? sourceProblem.problem_screenshot_urls
+                  : sourceProblem?.problem_screenshot_url
+                    ? [sourceProblem.problem_screenshot_url]
+                    : [];
+                const sUrls = sourceProblem?.solution_screenshot_urls?.length
+                  ? sourceProblem.solution_screenshot_urls
+                  : sourceProblem?.solution_screenshot_url
+                    ? [sourceProblem.solution_screenshot_url]
+                    : [];
+                if (pUrls.length === 0 && sUrls.length === 0) {
+                  return <p className="text-sm text-muted-foreground text-center py-8">No source images available.</p>;
+                }
+                return (
+                  <div className="space-y-5">
+                    {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Problem Screenshots" />}
+                    {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Solution Screenshots" />}
+                  </div>
+                );
+              })()}
             </TabsContent>
           </ScrollArea>
         </Tabs>
