@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter, RefreshCw } from "lucide-react";
+import { Plus, Sparkles, Eye, Trash2, Loader2, ExternalLink, Check, X, ArrowLeft, ChevronDown, ChevronRight, AlertTriangle, ScanText, Pencil, RotateCw, ShieldAlert, Archive, Filter, RefreshCw, Inbox } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -1860,21 +1860,33 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
         </div>
       </div>
 
-      {/* Warning: no ready problems */}
+      {/* Zero state: no ready problems at all */}
       {problems && problems.length > 0 && readyCount === 0 && (
-        <div className={cn(
-          "flex items-center gap-2 rounded-lg border px-4 py-3 mb-3 text-sm transition-all",
-          notReadyWarningFlash
-            ? "border-destructive bg-destructive/10 text-destructive"
-            : "border-border bg-muted/50 text-muted-foreground"
-        )}>
-          <AlertTriangle className="h-4 w-4 shrink-0" />
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-3">
+          <Inbox className="h-10 w-10 text-muted-foreground/50" />
+          <h3 className="text-sm font-semibold text-foreground">No problems ready to generate</h3>
+          <p className="text-xs text-muted-foreground max-w-sm">
+            All source problems for this chapter need screenshots before they can be generated. Head to Import to continue.
+          </p>
+          <Button size="sm" variant="outline" asChild>
+            <Link to="/problem-bank">Go to Import</Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Low-count info panel when Ready filter is active */}
+      {sourceStatusFilter === "ready" && readyCount > 0 && readyCount < 3 && problems && problems.length > readyCount && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3 mb-3 text-xs text-muted-foreground">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span>
-            <strong>Import textbook problems first.</strong> Each source needs both a solution and textbook problem screenshot before it can be generated.
+            Showing {readyCount} ready problem{readyCount === 1 ? "" : "s"}. Other problems in this chapter still need screenshots added in the Import stage before they can be generated.{" "}
+            <Link to="/problem-bank" className="text-primary hover:underline">Go to Import to add screenshots →</Link>
           </span>
         </div>
       )}
 
+      {/* Table — only show when there are ready problems or non-ready filter */}
+      {(readyCount > 0 || (problems && problems.length === 0) || sourceStatusFilter !== "ready") && (
       <div className="rounded-lg border border-border overflow-hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <Table>
           <TableHeader>
@@ -1934,6 +1946,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Add Source Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
