@@ -76,14 +76,36 @@ export default function AssetsLibrary() {
   const effectiveRole = impersonating?.role || primaryRole;
   const isAdmin = !isVa && !impersonating;
   const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+  const deepLinkAssetId = searchParams.get("asset");
+  const deepLinkAction = searchParams.get("action");
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
+  const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+  const [verifyAssetId, setVerifyAssetId] = useState<string | null>(null);
+  const [verifyPrepMinutes, setVerifyPrepMinutes] = useState("");
+  const [verifyNotes, setVerifyNotes] = useState("");
 
   useEffect(() => {
-    if (workspace?.courseId) setCourseFilter(workspace.courseId);
-    if (workspace?.chapterId) setChapterFilter(workspace.chapterId);
+    if (workspace?.courseId && !deepLinkAssetId) setCourseFilter(workspace.courseId);
+    if (workspace?.chapterId && !deepLinkAssetId) setChapterFilter(workspace.chapterId);
   }, [workspace?.courseId, workspace?.chapterId]);
+
+  // Deep-link: when ?asset=ID is present, fetch that asset directly and set filters
+  useEffect(() => {
+    if (!deepLinkAssetId) return;
+    (async () => {
+      const { data: targetAsset } = await supabase
+        .from("teaching_assets")
+        .select("id, course_id, chapter_id")
+        .eq("id", deepLinkAssetId)
+        .single();
+      if (targetAsset) {
+        setCourseFilter(targetAsset.course_id);
+        setChapterFilter(targetAsset.chapter_id);
+      }
+    })();
+  }, [deepLinkAssetId]);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [revertId, setRevertId] = useState<string | null>(null);
