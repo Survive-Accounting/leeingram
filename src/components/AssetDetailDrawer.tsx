@@ -509,6 +509,9 @@ export default function AssetDetailDrawer({
     setShowProblemSection(true);
     setShowJESection(false);
     setShowWorkedSteps(false);
+    setShowFormulasSection(false);
+    setShowConceptsSection(false);
+    setShowExamTrapsSection(false);
     setShowSourceSection(false);
     setShowHighlights(false);
   }, [asset?.id]);
