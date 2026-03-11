@@ -62,7 +62,7 @@ export type TeachingAssetFull = {
   problem_type?: string | null;
 };
 
-type JEMode = "completed" | "template" | "all_question_marks";
+type JEMode = "completed" | "template" | "accounts_missing" | "all_question_marks";
 
 interface AssetDetailDrawerProps {
   asset: TeachingAssetFull | null;
@@ -92,6 +92,10 @@ function applyMode(row: JERow, mode: JEMode): { account: string; debit: number |
   if (mode === "template") {
     // Keep side info so indentation works, but null out amounts
     return { account, debit: null, credit: null, side };
+  }
+  if (mode === "accounts_missing") {
+    // Show amounts, hide account names
+    return { account: "???", debit: rawDebit, credit: rawCredit, side };
   }
   // all_question_marks — hide both account and amount with ???
   return { account: "???", debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
@@ -553,7 +557,9 @@ export default function AssetDetailDrawer({
   const effectiveSheetUrl = asset.google_sheet_url || sheetUrl;
 
   // Parse JE with robust format handling
-  const activeSource = jeMode === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json);
+  const activeSource = jeMode === "completed" || jeMode === "accounts_missing"
+    ? asset.journal_entry_completed_json
+    : (asset.journal_entry_template_json || asset.journal_entry_completed_json);
   const activeEntries = normalizeJEEntries(activeSource, jeMode);
   const hasJE = !!(normalizeJEEntries(asset.journal_entry_completed_json, "completed") || normalizeJEEntries(asset.journal_entry_template_json, "completed"));
 
@@ -769,9 +775,9 @@ export default function AssetDetailDrawer({
 
               {/* ── PROBLEM & ANSWER ── */}
               <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showProblemSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem & Answer</span>
-                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showProblemSection ? "rotate-180" : ""}`} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="rounded-lg border border-border bg-background p-3">
@@ -810,15 +816,15 @@ export default function AssetDetailDrawer({
 
               {/* ── JOURNAL ENTRIES ── */}
               {hasJE && (
-                <Collapsible open={showJESection} onOpenChange={setShowJESection}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Journal Entries</span>
-                    <div className="flex items-center gap-2">
-                      {jeParts.length > 0 && (
-                        <span className="text-[10px] text-muted-foreground">{jeParts.length} {jeParts.length === 1 ? "part" : "parts"}</span>
-                      )}
-                      <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showJESection ? "rotate-180" : ""}`} />
-                    </div>
+              <Collapsible open={showJESection} onOpenChange={setShowJESection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showJESection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Journal Entries</span>
+                  <div className="flex items-center gap-2 ml-auto">
+                    {jeParts.length > 0 && (
+                      <Badge variant="outline" className="text-[9px] h-4">{jeParts.length} {jeParts.length === 1 ? "part" : "parts"}</Badge>
+                    )}
+                  </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3">
                     {jeParts.length > 0 ? (
@@ -871,10 +877,10 @@ export default function AssetDetailDrawer({
 
               {/* ── WORKED STEPS ── */}
               {asset.survive_solution_text && (
-                <Collapsible open={showWorkedSteps} onOpenChange={setShowWorkedSteps}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Worked Steps</span>
-                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showWorkedSteps ? "rotate-180" : ""}`} />
+              <Collapsible open={showWorkedSteps} onOpenChange={setShowWorkedSteps}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showWorkedSteps ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Worked Steps</span>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3">
                     <div className="rounded-lg border border-border bg-background p-3">
@@ -905,22 +911,54 @@ export default function AssetDetailDrawer({
               ) : (
                 <>
                   <div className="flex gap-1 flex-wrap">
-                    {(["completed", "template", "all_question_marks"] as JEMode[]).map((m) => (
-                      <Button key={m} size="sm" variant={jeMode === m ? "default" : "outline"} onClick={() => setJeMode(m)} className="text-xs h-7">
-                        {m === "completed" ? "Completed" : m === "template" ? "Template" : "All ???"}
+                    {([
+                      { key: "completed", label: "Completed" },
+                      { key: "accounts_missing", label: "Acct Titles Missing" },
+                      { key: "template", label: "Amounts Missing" },
+                      { key: "all_question_marks", label: "Fully Blank" },
+                    ] as { key: JEMode; label: string }[]).map((m) => (
+                      <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
+                        {m.label}
                       </Button>
                     ))}
                   </div>
 
                   {activeEntries && <JETable entries={activeEntries} />}
 
-                  {/* Copy Settings Panel */}
+                  {/* Copy TSV for each mode */}
                   <div className="pt-2 border-t border-border space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Copy TSV for Sheets</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {([
+                        { key: "completed" as JEMode, label: "Completed" },
+                        { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
+                        { key: "template" as JEMode, label: "Amounts Missing" },
+                        { key: "all_question_marks" as JEMode, label: "Fully Blank" },
+                      ]).map((m) => (
+                        <Button
+                          key={m.key}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 justify-start"
+                          onClick={() => {
+                            const modeEntries = normalizeJEEntries(
+                              m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
+                              m.key
+                            );
+                            if (!modeEntries) return;
+                            const tsv = entriesToTSV(modeEntries, copySettings);
+                            navigator.clipboard.writeText(tsv);
+                            toast.success(`${m.label} TSV copied`);
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Additional copy options */}
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
-                          <ClipboardList className="h-3 w-3 mr-1" /> Copy TSV
-                        </Button>
                         <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
                           <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
                         </Button>
