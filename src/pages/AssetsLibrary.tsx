@@ -534,26 +534,33 @@ export default function AssetsLibrary() {
                       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
                       setSelectedIds(new Set());
                     }
-                  } else if (bulkAction === "create-sheets") {
+                  } else if (bulkAction === "create-master-sheet" || bulkAction === "create-practice-sheet" || bulkAction === "create-promo-sheet") {
+                    const sheetTypeMap: Record<string, string> = {
+                      "create-master-sheet": "master",
+                      "create-practice-sheet": "practice",
+                      "create-promo-sheet": "promo",
+                    };
+                    const sheetType = sheetTypeMap[bulkAction];
+                    const sheetLabel = bulkAction === "create-master-sheet" ? "Master" : bulkAction === "create-practice-sheet" ? "Study Pass" : "Promo";
                     setIsCreatingSheets(true);
                     let sheetSuccess = 0;
                     let sheetFail = 0;
                     for (const asset of selected) {
                       try {
                         const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
-                          body: { asset_id: asset.id },
+                          body: { asset_id: asset.id, sheet_types: [sheetType] },
                         });
                         if (error) throw error;
                         if (data?.error) throw new Error(data.error);
                         sheetSuccess++;
                       } catch (e: any) {
                         sheetFail++;
-                        toast.error(`Sheet failed: ${asset.asset_name}`, { description: e.message });
+                        toast.error(`${sheetLabel} sheet failed: ${asset.asset_name}`, { description: e.message });
                       }
                     }
                     setIsCreatingSheets(false);
                     if (sheetSuccess > 0) {
-                      toast.success(`Created sheets for ${sheetSuccess} assets`);
+                      toast.success(`Created ${sheetLabel} sheets for ${sheetSuccess} assets`);
                       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
                       setSelectedIds(new Set());
                     }
