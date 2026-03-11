@@ -557,7 +557,9 @@ export default function AssetDetailDrawer({
   const effectiveSheetUrl = asset.google_sheet_url || sheetUrl;
 
   // Parse JE with robust format handling
-  const activeSource = jeMode === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json);
+  const activeSource = jeMode === "completed" || jeMode === "accounts_missing"
+    ? asset.journal_entry_completed_json
+    : (asset.journal_entry_template_json || asset.journal_entry_completed_json);
   const activeEntries = normalizeJEEntries(activeSource, jeMode);
   const hasJE = !!(normalizeJEEntries(asset.journal_entry_completed_json, "completed") || normalizeJEEntries(asset.journal_entry_template_json, "completed"));
 
