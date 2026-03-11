@@ -369,7 +369,7 @@ export default function AssetsLibrary() {
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
-          {selectedIds.size > 0 && !isSheetPrepVa && (
+          {selectedIds.size > 0 && (
             <>
               <Select value={bulkAction || ""} onValueChange={(v) => setBulkAction(v)}>
                 <SelectTrigger className="h-8 text-xs w-[220px] bg-background/95 border-border">
@@ -396,12 +396,19 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
                     </SelectItem>
                   )}
-                  <SelectItem value="revert">
-                    <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
-                  </SelectItem>
+                  {!isSheetPrepVa && (
+                    <SelectItem value="revert">
+                      <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
+                    </SelectItem>
+                  )}
                   {isAdmin && (
                     <SelectItem value="create-sheets">
                       <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Google Sheets</span>
+                    </SelectItem>
+                  )}
+                  {isSheetPrepVa && (
+                    <SelectItem value="mark-ready">
+                      <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Mark Ready for Review</span>
                     </SelectItem>
                   )}
                 </SelectContent>

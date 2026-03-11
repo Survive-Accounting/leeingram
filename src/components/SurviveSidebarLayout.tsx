@@ -31,7 +31,7 @@ const PHASE_1_ITEMS = [
   { label: "Import", path: "/problem-bank", icon: Inbox },
   { label: "Generate", path: "/content", icon: Factory },
   { label: "Review", path: "/review", icon: FileCheck },
-  { label: "Teaching Assets", path: "/assets-library", icon: Library },
+  { label: "Teaching Assets", altLabel: "Sheet Prep", path: "/assets-library", icon: Library },
 ];
 
 const PHASE_2_ITEMS = [
