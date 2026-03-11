@@ -248,26 +248,16 @@ export function SheetPrepLog() {
                     <div className="flex items-center justify-center gap-1">
                       {e.sheet_master_url ? (
                         <>
-                          <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Master: tutoring / filming">
-                            <a href={e.sheet_master_url} target="_blank" rel="noopener noreferrer">M</a>
-                          </Button>
+                          <a href={e.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming" className="hover:scale-110 transition-transform">📋</a>
                           {e.sheet_practice_url && (
-                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Practice: student practice">
-                              <a href={e.sheet_practice_url} target="_blank" rel="noopener noreferrer">P</a>
-                            </Button>
+                            <a href={e.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice" className="hover:scale-110 transition-transform">✏️</a>
                           )}
                           {e.sheet_promo_url && (
-                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Promo: shareable promo">
-                              <a href={e.sheet_promo_url} target="_blank" rel="noopener noreferrer">Pr</a>
-                            </Button>
+                            <a href={e.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo" className="hover:scale-110 transition-transform">📣</a>
                           )}
                         </>
                       ) : e.google_sheet_url ? (
-                        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium" asChild>
-                          <a href={e.google_sheet_url} target="_blank" rel="noopener noreferrer">
-                            <Sheet className="h-3 w-3" />
-                          </a>
-                        </Button>
+                        <a href={e.google_sheet_url} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
                       ) : (
                         <span className="text-[10px] text-muted-foreground">—</span>
                       )}

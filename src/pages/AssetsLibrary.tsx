@@ -585,26 +585,16 @@ export default function AssetsLibrary() {
                     <div className="flex gap-0.5 justify-end">
                       {a.sheet_master_url ? (
                         <>
-                          <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium text-primary" asChild title="Master: tutoring / filming version">
-                            <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer">M</a>
-                          </Button>
+                          <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
                           {a.sheet_practice_url && (
-                            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium text-primary" asChild title="Practice: student practice version">
-                              <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer">P</a>
-                            </Button>
+                            <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
                           )}
                           {a.sheet_promo_url && (
-                            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium text-primary" asChild title="Promo: shareable promo version">
-                              <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer">Pr</a>
-                            </Button>
+                            <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
                           )}
                         </>
                       ) : sheetUrls?.[a.asset_name] ? (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild title="Open Google Sheet">
-                          <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer">
-                            <Layers className="h-3 w-3" />
-                          </a>
-                        </Button>
+                        <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
                       ) : null}
                     </div>
                   </TableCell>

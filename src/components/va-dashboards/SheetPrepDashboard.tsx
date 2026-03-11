@@ -40,17 +40,23 @@ export function SheetPrepDashboard({ chapterIds }: Props) {
   const pending = assets?.filter(a => a.google_sheet_status === "auto_created") ?? [];
   const verified = assets?.filter(a => a.google_sheet_status === "verified_by_va") ?? [];
 
+  const sheetEmojis: Record<string, { emoji: string; tooltip: string }> = {
+    M: { emoji: "📋", tooltip: "Master: tutoring / filming" },
+    P: { emoji: "✏️", tooltip: "Practice: student practice" },
+    Pr: { emoji: "📣", tooltip: "Promo: shareable promo" },
+  };
+
   const SheetBtn = ({ url, label }: { url: string | null; label: string }) => {
     if (!url) return <span className="text-muted-foreground/50">—</span>;
+    const meta = sheetEmojis[label] || { emoji: "📋", tooltip: label };
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            {label} <ExternalLink className="h-2.5 w-2.5" />
+          <a href={url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform cursor-pointer">
+            {meta.emoji}
           </a>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">Open {label} Sheet</TooltipContent>
+        <TooltipContent side="top" className="text-xs">{meta.tooltip}</TooltipContent>
       </Tooltip>
     );
   };
