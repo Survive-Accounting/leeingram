@@ -161,16 +161,20 @@ export function PipelineProgressStrip() {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="h-8 w-px bg-border shrink-0" />
+        {/* Phase 2 — hidden for content_creation_va */}
+        {effectiveRole !== "content_creation_va" && (
+          <>
+            {/* Divider */}
+            <div className="h-8 w-px bg-border shrink-0" />
 
-        {/* Phase 2 */}
-        <div className="flex-1">
-          <p className="text-[8px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1">Phase 2 · Content Production</p>
-          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${phase2Cols}, minmax(0, 1fr))` }}>
-            {phase2Stages.map((stage, idx) => renderStage(stage, idx, idx + 4))}
-          </div>
-        </div>
+            <div className="flex-1">
+              <p className="text-[8px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1">Phase 2 · Content Production</p>
+              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${phase2Cols}, minmax(0, 1fr))` }}>
+                {phase2Stages.map((stage, idx) => renderStage(stage, idx, idx + 4))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

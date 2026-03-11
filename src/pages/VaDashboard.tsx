@@ -140,84 +140,45 @@ export default function VaDashboard() {
   const activeChapter = chapterDetails?.find(c => c.id === activeChapterId);
   const activeCourse = activeChapter ? getCourse(activeChapter.course_id) : null;
 
-  // Build stage cards for active chapter
+  // Build stage cards for active chapter with sequential done logic
   const stageCounts = useMemo(() => {
     if (!activeChapterId || !perChapterCounts) return null;
     const ch = perChapterCounts[activeChapterId];
     if (!ch) return null;
     const assets = assetCounts?.[activeChapterId] ?? 0;
-    // "remaining" for each stage
+
+    // Import is "done" when ≥80% of source items have progressed past imported
+    const importReadyPct = ch.total > 0 ? Math.round(((ch.total - ch.imported) / ch.total) * 100) : 0;
+    const importDone = ch.total > 0 && importReadyPct >= 80;
+
+    // Raw done states for each stage
+    const generateRawDone = ch.generated === 0;
+    const reviewRawDone = ch.in_review === 0;
+    const assetsRawRemaining = ch.total > 0 ? Math.max(0, ch.total - ch.approved) : (assets > 0 ? 0 : 0);
+    const assetsRawDone = assetsRawRemaining === 0;
+
+    // Sequential done: each stage can only be Done if previous is Done
+    const generateDone = importDone && generateRawDone;
+    const reviewDone = generateDone && reviewRawDone;
+    const assetsDone = reviewDone && assetsRawDone;
+
     return [
-      { ...PIPELINE_STAGES[0], remaining: ch.imported },
-      { ...PIPELINE_STAGES[1], remaining: ch.generated },
-      { ...PIPELINE_STAGES[2], remaining: ch.in_review },
-      { ...PIPELINE_STAGES[3], remaining: ch.total > 0 ? Math.max(0, ch.total - ch.approved) : (assets > 0 ? 0 : 0) },
+      { ...PIPELINE_STAGES[0], remaining: ch.imported, isDone: importDone, pctLabel: `${importReadyPct}% ready` },
+      { ...PIPELINE_STAGES[1], remaining: ch.generated, isDone: generateDone, pctLabel: null },
+      { ...PIPELINE_STAGES[2], remaining: ch.in_review, isDone: reviewDone, pctLabel: null },
+      { ...PIPELINE_STAGES[3], remaining: assetsRawRemaining, isDone: assetsDone, pctLabel: null },
     ];
   }, [activeChapterId, perChapterCounts, assetCounts]);
 
-  // First stage with remaining items
-  const activeStageKey = stageCounts?.find(s => s.remaining > 0)?.key;
-
-  const handleSelectChapter = (ch: NonNullable<typeof chapterDetails>[number]) => {
-    const co = getCourse(ch.course_id);
-    setWorkspace({
-      courseId: ch.course_id,
-      courseName: co?.course_name || co?.code || "",
-      chapterId: ch.id,
-      chapterName: ch.chapter_name,
-      chapterNumber: ch.chapter_number,
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <SurviveSidebarLayout>
-        <div className="flex items-center justify-center py-16 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
-        </div>
-      </SurviveSidebarLayout>
-    );
-  }
-
-  return (
-    <SurviveSidebarLayout>
-      <div className="space-y-6 pb-8">
-        {/* ═══ HEADER ═══ */}
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold text-foreground">
-            {activeVa ? activeVa.full_name : "VA Dashboard"}
-          </h1>
-          <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">
-            {VA_ROLE_LABELS[activeRole] || activeRole}
-          </Badge>
-        </div>
-
-        <Tabs defaultValue="pipeline" className="w-full">
-          <TabsList className="bg-secondary/50">
-            <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
-            <TabsTrigger value="help" className="text-xs">Help / SOP</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pipeline" className="space-y-6 mt-3">
-            {/* ═══ ACTIVE CHAPTER ═══ */}
-            {activeChapter && (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">Active Chapter</span>
-                </div>
-                <h2 className="text-xl font-bold text-foreground">
-                  {activeCourse?.code} — Ch {activeChapter.chapter_number}: {activeChapter.chapter_name}
-                </h2>
-              </div>
-            )}
+  // First stage with remaining items (that isn't marked done)
+  const activeStageKey = stageCounts?.find(s => !s.isDone && s.remaining > 0)?.key;
 
             {/* ═══ PIPELINE STAGE CARDS ═══ */}
             {stageCounts && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {stageCounts.map(stage => {
                   const Icon = stage.icon;
-                  const isDone = stage.remaining === 0;
+                  const isDone = stage.isDone;
                   const isActive = stage.key === activeStageKey;
                   return (
                     <Card
@@ -253,6 +214,9 @@ export default function VaDashboard() {
                         ) : (
                           <>
                             <p className="text-2xl font-bold text-foreground tabular-nums">{stage.remaining}</p>
+                            {stage.pctLabel && (
+                              <p className="text-[10px] text-muted-foreground">{stage.pctLabel}</p>
+                            )}
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="text-[11px] h-7 gap-1 w-full">
                               Go <ArrowRight className="h-3 w-3" />
                             </Button>
@@ -264,7 +228,6 @@ export default function VaDashboard() {
                 })}
               </div>
             )}
-
             {!activeChapter && (
               <div className="text-center py-8 text-sm text-muted-foreground">
                 No chapters assigned yet. Contact your team lead to get started.
