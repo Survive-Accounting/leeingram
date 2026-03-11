@@ -683,6 +683,23 @@ serve(async (req) => {
         source_problem_id: problemId ?? runMeta.source_problem_id,
       };
 
+      // ── Idempotency: check if this source problem already has approved teaching asset ──
+      const { data: existingApproved } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name")
+        .eq("base_raw_problem_id", problemId)
+        .limit(1);
+      if (existingApproved && existingApproved.length > 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          asset: existingApproved[0],
+          duplicate: true,
+          message: `Already approved as ${existingApproved[0].asset_name}`,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       await logGenEvent(sbService, runId, ++eventSeq, "db", "info", "SAVE_VARIANT_START", "Starting variant persistence", {
         mode: "save",
         problem_id: problemId,
