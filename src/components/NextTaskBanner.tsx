@@ -36,6 +36,9 @@ const ROUTE_TASKS: Record<string, { task: string; tip?: string; adminOnly?: bool
   },
   "/assets-library": {
     task: "Verify each asset's Google Sheet is set up correctly for tutoring and filming.",
+    taskByRole: {
+      content_creation_va: "Review and approve generated teaching assets for this chapter. Approve the variants that look correct — Lee will review your approvals before pushing to production.",
+    },
     sopLabel: "Assets SOP",
   },
   "/question-review": {
