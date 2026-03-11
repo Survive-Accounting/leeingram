@@ -1928,9 +1928,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
-              ));
-            })()}
+              ))}
 
           </TableBody>
         </Table>
