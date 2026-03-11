@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Inbox, Loader2, ChevronRight, Check, Zap, Trash2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Inbox, Loader2, ChevronRight, Check, Zap, Trash2, CheckCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 

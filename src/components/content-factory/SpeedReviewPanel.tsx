@@ -440,38 +440,55 @@ export function SpeedReviewPanel({
       </div>
 
       {/* ── Action Bar ── */}
-      <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-md border border-border bg-muted/10">
+      <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-muted/10">
         {onBack && (
           <Button size="sm" variant="ghost" onClick={onBack} className="h-8 text-xs">
             Back
             <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">B</kbd>
           </Button>
         )}
-        <Button size="sm" onClick={onApprove} disabled={isApproving} className="h-8 text-xs font-medium">
+
+        {/* Primary: Approve & Next — largest, full color */}
+        <Button size="lg" onClick={onApprove} disabled={isApproving} className="h-11 px-6 text-sm font-semibold shadow-sm shadow-primary/20">
           {isApproving ? (
             <>
-              <svg className="animate-spin h-3.5 w-3.5 mr-1" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              <svg className="animate-spin h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
               Approving…
             </>
           ) : (
             <>
-              <Check className="h-3.5 w-3.5 mr-1" /> Approve
-              <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">A</kbd>
+              <Check className="h-4 w-4 mr-1.5" /> Approve & Next
+              <Badge variant="outline" className="ml-2 text-[9px] h-5 px-1.5 bg-primary-foreground/15 border-primary-foreground/30 text-primary-foreground">
+                ⌘J
+              </Badge>
             </>
           )}
         </Button>
-        <Button size="sm" variant="outline" onClick={onRegenerate} className="h-8 text-xs">
-          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Regenerate
+
+        {/* Secondary: Approve (stay) — smaller outlined */}
+        <Button size="sm" variant="outline" onClick={onApprove} disabled={isApproving} className="h-8 text-xs">
+          <Check className="h-3.5 w-3.5 mr-1" /> Approve
+          <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">A</kbd>
+        </Button>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {/* Destructive: Reject — small outlined destructive */}
+        <Button size="sm" variant="outline" onClick={onRegenerate} className="h-8 text-xs text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50 hover:bg-destructive/5">
+          <X className="h-3.5 w-3.5 mr-1" /> Reject
           <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">R</kbd>
         </Button>
-        <Button size="sm" variant="outline" onClick={onFlagForDeepReview} className="h-8 text-xs text-amber-500 hover:text-amber-400">
-          <Flag className="h-3.5 w-3.5 mr-1" /> Flag
+
+        {/* Warning: Needs Fix — small outlined amber */}
+        <Button size="sm" variant="outline" onClick={onFlagForDeepReview} className="h-8 text-xs text-amber-500 hover:text-amber-400 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/5">
+          <Flag className="h-3.5 w-3.5 mr-1" /> Needs Fix
           <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">F</kbd>
         </Button>
-        <Button size="sm" variant="ghost" onClick={onNext} className="h-8 text-xs">
-          Skip
-          <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">S</kbd>
-        </Button>
+
+        {/* Skip — plain text link */}
+        <button onClick={onNext} className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors ml-1">
+          Skip <kbd className="ml-1 text-[9px] opacity-60">(S)</kbd>
+        </button>
       </div>
     </div>
   );
