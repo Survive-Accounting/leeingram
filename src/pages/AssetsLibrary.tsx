@@ -484,6 +484,20 @@ export default function AssetsLibrary() {
                       revertMutation.mutate(asset);
                     }
                     setSelectedIds(new Set());
+                  } else if (bulkAction === "mark-ready") {
+                    let count = 0;
+                    for (const asset of selected) {
+                      const { error } = await supabase
+                        .from("teaching_assets")
+                        .update({ google_sheet_status: "ready_for_review" } as any)
+                        .eq("id", asset.id);
+                      if (!error) count++;
+                    }
+                    if (count > 0) {
+                      toast.success(`${count} asset(s) marked ready for review`);
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      setSelectedIds(new Set());
+                    }
                   } else if (bulkAction === "create-sheets") {
                     setIsCreatingSheets(true);
                     let sheetSuccess = 0;
