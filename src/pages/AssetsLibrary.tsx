@@ -451,6 +451,11 @@ export default function AssetsLibrary() {
                       qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
                       setSelectedIds(new Set());
                     }
+                  } else if (bulkAction === "revert") {
+                    for (const asset of selected) {
+                      revertMutation.mutate(asset);
+                    }
+                    setSelectedIds(new Set());
                   }
                   setBulkAction(null);
                 }}
