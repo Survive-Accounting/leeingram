@@ -330,7 +330,7 @@ export function ContentCreationDashboard({ chapterIds, vaAccountId }: Props) {
           </div>
 
           <a
-            href="https://survive-accounting.slack.com/"
+            href="https://app.slack.com/client/T0AKPHWTXLM/C0AKU2X25FU"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 rounded-lg border border-border bg-secondary/20 p-4 hover:bg-secondary/40 transition-colors"
