@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -425,14 +425,14 @@ export default function AssetDetailDrawer({
   const sourceNumber = asset.source_number || parsed.sourceNumber || "—";
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
         {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-3 space-y-3">
+        <DialogHeader className="px-6 pt-6 pb-3 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <SheetTitle className="text-lg font-bold font-mono tracking-tight">{asset.asset_name}</SheetTitle>
+                <DialogTitle className="text-lg font-bold font-mono tracking-tight">{asset.asset_name}</DialogTitle>
                 <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => {
                   navigator.clipboard.writeText(asset.asset_name);
                   toast.success("Asset code copied");
@@ -505,7 +505,7 @@ export default function AssetDetailDrawer({
 
           {/* Data Health */}
           <DataHealthStrip asset={asset} hasJE={hasJE} sheetUrl={effectiveSheetUrl} />
-        </SheetHeader>
+        </DialogHeader>
 
         <Separator />
 
@@ -775,7 +775,7 @@ export default function AssetDetailDrawer({
             </TabsContent>
           </ScrollArea>
         </Tabs>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

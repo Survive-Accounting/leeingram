@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -16,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2 } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
@@ -66,6 +67,7 @@ function escapeCSV(val: string): string {
 
 export default function AssetsLibrary() {
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { workspace } = useActiveWorkspace();
   const { isVa, primaryRole } = useVaAccount();
   const { impersonating } = useImpersonation();
@@ -137,6 +139,22 @@ export default function AssetsLibrary() {
       );
     },
   });
+
+  // Deep-link: open asset detail from ?asset=ID
+  useEffect(() => {
+    const assetId = searchParams.get("asset");
+    if (assetId && assets?.length) {
+      const found = assets.find((a) => a.id === assetId);
+      if (found) {
+        setViewingAsset(found);
+        setDrawerOpen(true);
+        // Clear the param so refreshing doesn't re-open
+        searchParams.delete("asset");
+        searchParams.delete("action");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [assets, searchParams]);
 
   // Build sheet URL map from teaching_assets themselves + fallback to assets table
   const sheetUrls: Record<string, string> = {};
@@ -589,6 +607,7 @@ export default function AssetsLibrary() {
               <TableHead className="text-xs">Sheet Status</TableHead>
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
+              <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -654,6 +673,11 @@ export default function AssetsLibrary() {
                           <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
                         ) : null}
                       </div>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => openDrawer(a)}>
+                        <Eye className="h-3 w-3 mr-1" /> View
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
