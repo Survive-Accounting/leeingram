@@ -304,25 +304,29 @@ export default function ReviewVariants() {
   };
 
   const [clearingVariants, setClearingVariants] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   const handleClearVariants = async () => {
     if (!chapterId) return;
     setClearingVariants(true);
+    toast.info("Clearing variants…");
     try {
       // Get all generated/approved problems in this chapter
-      const { data: problems } = await supabase
+      const { data: problems, error: fetchErr } = await supabase
         .from("chapter_problems")
         .select("id")
         .eq("chapter_id", chapterId)
         .in("status", ["generated", "approved"]);
+      if (fetchErr) throw fetchErr;
       if (!problems || problems.length === 0) {
         toast.info("No variants to clear.");
         setClearingVariants(false);
+        setClearDialogOpen(false);
         return;
       }
       const problemIds = problems.map(p => p.id);
 
-      // Delete all non-archived variants for these problems
+      // Delete all variants for these problems
       const { error: delErr } = await supabase
         .from("problem_variants")
         .delete()
@@ -364,6 +368,7 @@ export default function ReviewVariants() {
       toast.error(`Clear failed: ${err.message}`);
     } finally {
       setClearingVariants(false);
+      setClearDialogOpen(false);
     }
   };
 
@@ -457,7 +462,7 @@ export default function ReviewVariants() {
                 {speedMode ? "Speed" : "Full"}
               </span>
             </div>
-            <AlertDialog>
+            <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
                   <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
@@ -471,11 +476,11 @@ export default function ReviewVariants() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearVariants} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  <AlertDialogCancel disabled={clearingVariants}>Cancel</AlertDialogCancel>
+                  <Button variant="destructive" onClick={handleClearVariants} disabled={clearingVariants}>
                     {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                    Clear All
-                  </AlertDialogAction>
+                    {clearingVariants ? "Clearing…" : "Clear All"}
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
