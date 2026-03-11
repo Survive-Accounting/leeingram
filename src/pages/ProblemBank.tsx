@@ -467,7 +467,7 @@ export default function ProblemBank() {
             )}
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
               <Link to={`/screenshot-capture/${chapterFilter}`}>
-                <Camera className="h-3 w-3 mr-1" /> Upload Textbook
+                <Camera className="h-3 w-3 mr-1" /> Upload Textbook Screenshots
               </Link>
             </Button>
           </>

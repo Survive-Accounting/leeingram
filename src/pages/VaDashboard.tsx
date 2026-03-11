@@ -426,18 +426,6 @@ export default function VaDashboard() {
               </p>
             </div>
             <a
-              href={JOB_DESC_LINKS[activeRole] || JOB_DESC_LINKS.lead_va}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border border-border bg-secondary/20 p-4 hover:bg-secondary/40 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Read Job Description</p>
-                <p className="text-[10px] text-muted-foreground">Full instructions for your role</p>
-              </div>
-            </a>
-            <a
               href="https://app.slack.com/client/T0AKPHWTXLM/C0AKU2X25FU"
               target="_blank"
               rel="noopener noreferrer"

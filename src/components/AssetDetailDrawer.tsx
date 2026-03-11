@@ -1158,7 +1158,12 @@ Return valid JSON only.`,
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showExamTrapsSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Traps</span>
-                  {!asset.exam_traps && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                  {!asset.exam_traps && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
+                  {asset.exam_traps && (
+                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.exam_traps || ""); toast.success("Exam traps copied"); }}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.exam_traps ? (
