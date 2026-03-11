@@ -1819,7 +1819,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
   const selectedReadyCount = Array.from(selectedIds).filter(id => problems?.find(p => p.id === id && p.status === "ready")).length;
   const generateLabel = selectedIds.size > 0
     ? `Generate (${selectedReadyCount} selected)`
-    : `Generate (${readyCount} ready)`;
+    : "Generate";
   const generateDisabled = launchingBatch || (selectedIds.size > 0 ? selectedReadyCount === 0 : readyCount === 0);
 
   // ─── Table View ───
