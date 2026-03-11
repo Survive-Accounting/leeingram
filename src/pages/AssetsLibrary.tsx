@@ -583,6 +583,7 @@ export default function AssetsLibrary() {
               </TableHead>
               <TableHead className="text-xs">Asset Code</TableHead>
               <TableHead className="text-xs">Textbook Ref</TableHead>
+              {isSheetPrepVa && <TableHead className="text-xs">Sheet Status</TableHead>}
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-16 text-right">Quick</TableHead>
             </TableRow>
