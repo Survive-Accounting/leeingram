@@ -72,11 +72,12 @@ export default function AssetsLibrary() {
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { workspace } = useActiveWorkspace();
-  const { isVa, primaryRole } = useVaAccount();
+  const { isVa, primaryRole, assignedChapterIds } = useVaAccount();
   const { impersonating } = useImpersonation();
   const effectiveRole = impersonating?.role || primaryRole;
   const isAdmin = !isVa && !impersonating;
   const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+  const isContentCreationVa = effectiveRole === "content_creation_va";
   const deepLinkAssetId = searchParams.get("asset");
   const deepLinkAction = searchParams.get("action");
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
@@ -128,6 +129,22 @@ export default function AssetsLibrary() {
   const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
+
+  // Total source problems + approved count for chapter complete check
+  const { data: chapterPipelineCounts } = useQuery({
+    queryKey: ["chapter-pipeline-counts", chapterFilter],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("chapter_problems")
+        .select("pipeline_status")
+        .eq("chapter_id", chapterFilter);
+      const total = data?.length ?? 0;
+      const approved = data?.filter(p => p.pipeline_status === "approved").length ?? 0;
+      return { total, approved };
+    },
+    enabled: chapterFilter !== "all",
+  });
+
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -425,13 +442,16 @@ export default function AssetsLibrary() {
         {/* Stage complete banner */}
         {(() => {
           if (!assets || assets.length === 0 || chapterFilter === "all") return null;
-          // Check if all assets have sheets created
-          const withoutSheets = assets.filter(a => !a.google_sheet_url && a.google_sheet_status !== "created");
-          if (withoutSheets.length > 0) return null;
+          if (!chapterPipelineCounts) return null;
+          const { total, approved } = chapterPipelineCounts;
+          // Only show when ALL source problems are approved (100%)
+          if (total === 0 || approved < total) return null;
           return (
             <StageCompletePanel
               stage="assets"
-              statLine={`${assets.length} teaching asset${assets.length === 1 ? "" : "s"} ready for production`}
+              statLine={`${approved} of ${total} teaching assets approved`}
+              role={effectiveRole}
+              assignedChapterIds={assignedChapterIds}
             />
           );
         })()}
@@ -676,22 +696,26 @@ export default function AssetsLibrary() {
                 </span>
               </TableHead>
               <TableHead className="text-xs">Textbook Ref</TableHead>
-              <TableHead className="text-xs">
-                <span className="inline-flex items-center gap-1">
-                  Sheet Status
-                  <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
-                </span>
-              </TableHead>
+              {!isContentCreationVa && (
+                <TableHead className="text-xs">
+                  <span className="inline-flex items-center gap-1">
+                    Sheet Status
+                    <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
+                  </span>
+                </TableHead>
+              )}
               <TableHead className="text-xs">Created</TableHead>
-              <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
+              {!isContentCreationVa && (
+                <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
+              )}
               <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isContentCreationVa ? 4 : 6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isContentCreationVa ? 4 : 6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               assets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
@@ -726,31 +750,35 @@ export default function AssetsLibrary() {
                     <TableCell className="text-xs font-mono text-muted-foreground">
                       {a.source_ref || "—"}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
-                        {statusIcon} {statusLabel}
-                      </Badge>
-                    </TableCell>
+                    {!isContentCreationVa && (
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
+                          {statusIcon} {statusLabel}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell className="text-xs text-muted-foreground">
                       {format(new Date(a.created_at), "MMM d")}
                     </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-0.5 justify-end">
-                        {a.sheet_master_url ? (
-                          <>
-                            <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
-                            {a.sheet_practice_url && (
-                              <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
-                            )}
-                            {a.sheet_promo_url && (
-                              <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
-                            )}
-                          </>
-                        ) : sheetUrls?.[a.asset_name] ? (
-                          <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
-                        ) : null}
-                      </div>
-                    </TableCell>
+                    {!isContentCreationVa && (
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-0.5 justify-end">
+                          {a.sheet_master_url ? (
+                            <>
+                              <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
+                              {a.sheet_practice_url && (
+                                <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
+                              )}
+                              {a.sheet_promo_url && (
+                                <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
+                              )}
+                            </>
+                          ) : sheetUrls?.[a.asset_name] ? (
+                            <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => openDrawer(a)}>
                         <Eye className="h-3 w-3 mr-1" /> View

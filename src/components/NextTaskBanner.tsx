@@ -13,7 +13,7 @@ const JOB_DESC_LINKS: Record<string, string> = {
   lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
 };
 
-const ROUTE_TASKS: Record<string, { task: string; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
+const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, string>; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
     task: "Paste textbook problem screenshots for each source item.",
     tip: "Tip: It's okay to skip problems that won't scan cleanly. Focus on quality.",
@@ -36,6 +36,9 @@ const ROUTE_TASKS: Record<string, { task: string; tip?: string; adminOnly?: bool
   },
   "/assets-library": {
     task: "Verify each asset's Google Sheet is set up correctly for tutoring and filming.",
+    taskByRole: {
+      content_creation_va: "Review and approve generated teaching assets for this chapter. Approve the variants that look correct — Lee will review your approvals before pushing to production.",
+    },
     sopLabel: "Assets SOP",
   },
   "/question-review": {
@@ -122,7 +125,7 @@ export function NextTaskBanner() {
               )}
             </div>
             <p className="text-sm text-white mt-0.5">
-              {config.task}
+              {(config as any).taskByRole?.[activeRole] || config.task}
               {pendingCount !== undefined && pendingCount > 0 && (
                 <span className="ml-2 text-white/60">
                   {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
