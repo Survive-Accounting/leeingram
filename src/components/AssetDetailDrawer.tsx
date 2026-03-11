@@ -912,7 +912,23 @@ Return valid JSON only.`,
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* ── JOURNAL ENTRIES ── */}
+              {/* ── ANSWER TEXT ── */}
+              {asset.survive_solution_text && (
+              <Collapsible open={showAnswerSection} onOpenChange={setShowAnswerSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showAnswerSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Answer Text</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <div className="rounded-lg border border-border bg-background p-3">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                      {asset.survive_solution_text}
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              )}
+
               {hasJE && (
               <Collapsible open={showJESection} onOpenChange={setShowJESection}>
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
