@@ -1312,6 +1312,10 @@ THIS IS A JOURNAL-ENTRY-ONLY PROBLEM. All parts must have type: "je".
 ${partsInstruction}
 ${scenarioInstruction}
 
+INSTRUCTION EXTRACTION (REQUIRED for every candidate):
+- problem_context: The descriptive scenario/background from the problem text. Do NOT include the "Required:" instructions here.
+- instructions: An array of individual instruction strings extracted from the "Required:" section. Up to 5 instructions.
+
 SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
 - important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
 - concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
