@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { useSheetPrepLog, useToggleSheetPrepReviewed } from "@/hooks/useSheetPrepLog";
+import { useVaAccount } from "@/hooks/useVaAccount";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,18 +9,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, ExternalLink, Search, Sheet } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Loader2, Search, Sheet, Archive, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 25;
 
 export function SheetPrepLog() {
   const { data: entries, isLoading } = useSheetPrepLog();
   const toggleMutation = useToggleSheetPrepReviewed();
+  const { isVa } = useVaAccount();
+  const isAdmin = !isVa;
+  const qc = useQueryClient();
+
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [vaFilter, setVaFilter] = useState("all");
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   // Derive filter options
   const courses = useMemo(() => {
@@ -49,6 +61,66 @@ export function SheetPrepLog() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageEntries = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === pageEntries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pageEntries.map(e => e.id)));
+    }
+  };
+
+  const handleMarkReviewed = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      const entry = entries?.find(e => e.id === id);
+      if (entry && !entry.reviewed) {
+        toggleMutation.mutate({ id, reviewed: true });
+      }
+    }
+    setSelectedIds(new Set());
+    toast.success(`Marked ${ids.length} entries as reviewed`);
+  };
+
+  const handleArchive = async () => {
+    const selected = entries?.filter(e => selectedIds.has(e.id)) || [];
+    if (selected.length === 0) return;
+
+    setIsArchiving(true);
+    try {
+      const teachingAssetIds = [...new Set(selected.map(e => e.teaching_asset_id))];
+      const logIds = selected.map(e => e.id);
+
+      const { data, error } = await supabase.functions.invoke("archive-sheets", {
+        body: { teaching_asset_ids: teachingAssetIds, sheet_prep_log_ids: logIds },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`Archived ${data.archived} asset sheets${data.failed ? `, ${data.failed} failed` : ""}`);
+      if (data.errors?.length) {
+        data.errors.forEach((e: string) => toast.error(e, { duration: 5000 }));
+      }
+
+      setSelectedIds(new Set());
+      setArchiveConfirmOpen(false);
+      qc.invalidateQueries({ queryKey: ["sheet-prep-log"] });
+      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+    } catch (e: any) {
+      toast.error(`Archive failed: ${e.message}`);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -60,12 +132,27 @@ export function SheetPrepLog() {
   return (
     <Card className="border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Sheet className="h-4 w-4 text-primary" /> Sheet Prep Log
-          <Badge variant="secondary" className="ml-2 text-[10px]">
-            {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
-          </Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Sheet className="h-4 w-4 text-primary" /> Sheet Prep Log
+            <Badge variant="secondary" className="ml-2 text-[10px]">
+              {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
+            </Badge>
+          </CardTitle>
+
+          {/* Admin bulk actions */}
+          {isAdmin && selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px]">{selectedIds.size} selected</Badge>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleMarkReviewed}>
+                <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Reviewed
+              </Button>
+              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setArchiveConfirmOpen(true)}>
+                <Archive className="h-3 w-3 mr-1" /> Archive Sheets
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Filters */}
@@ -104,31 +191,49 @@ export function SheetPrepLog() {
           <Table>
             <TableHeader>
               <TableRow className="text-[11px]">
+                {isAdmin && (
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={pageEntries.length > 0 && selectedIds.size === pageEntries.length}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="w-[60px] text-center">Reviewed</TableHead>
                 <TableHead>Asset Code</TableHead>
                 <TableHead>Source Code</TableHead>
                 <TableHead>Course</TableHead>
                 <TableHead>VA Account</TableHead>
                 <TableHead>Timestamp</TableHead>
-                <TableHead className="w-[80px] text-center">Actions</TableHead>
+                <TableHead className="w-[100px] text-center">Sheets</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pageEntries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-xs">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8 text-xs">
                     No sheet prep entries found.
                   </TableCell>
                 </TableRow>
               )}
               {pageEntries.map(e => (
                 <TableRow key={e.id} className={e.reviewed ? "opacity-60" : ""}>
+                  {isAdmin && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(e.id)}
+                        onCheckedChange={() => toggleSelect(e.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="text-center">
                     <Checkbox
                       checked={e.reviewed}
-                      disabled={toggleMutation.isPending}
+                      disabled={toggleMutation.isPending || !isAdmin}
                       onCheckedChange={(checked) => {
-                        toggleMutation.mutate({ id: e.id, reviewed: !!checked });
+                        if (isAdmin) {
+                          toggleMutation.mutate({ id: e.id, reviewed: !!checked });
+                        }
                       }}
                     />
                   </TableCell>
@@ -141,34 +246,31 @@ export function SheetPrepLog() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      {(e as any).sheet_master_url ? (
+                      {e.sheet_master_url ? (
                         <>
-                          <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Master Sheet">
-                            <a href={(e as any).sheet_master_url} target="_blank" rel="noopener noreferrer">M</a>
+                          <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Master: tutoring / filming">
+                            <a href={e.sheet_master_url} target="_blank" rel="noopener noreferrer">M</a>
                           </Button>
-                          {(e as any).sheet_practice_url && (
-                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Practice Sheet">
-                              <a href={(e as any).sheet_practice_url} target="_blank" rel="noopener noreferrer">P</a>
+                          {e.sheet_practice_url && (
+                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Practice: student practice">
+                              <a href={e.sheet_practice_url} target="_blank" rel="noopener noreferrer">P</a>
                             </Button>
                           )}
-                          {(e as any).sheet_promo_url && (
-                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Promo Sheet">
-                              <a href={(e as any).sheet_promo_url} target="_blank" rel="noopener noreferrer">Pr</a>
+                          {e.sheet_promo_url && (
+                            <Button variant="ghost" size="sm" className="h-6 px-1 text-[10px] font-medium" asChild title="Promo: shareable promo">
+                              <a href={e.sheet_promo_url} target="_blank" rel="noopener noreferrer">Pr</a>
                             </Button>
                           )}
                         </>
                       ) : e.google_sheet_url ? (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                          <a href={e.google_sheet_url} target="_blank" rel="noopener noreferrer" title="Open Google Sheet">
-                            <Sheet className="h-3.5 w-3.5" />
+                        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] font-medium" asChild>
+                          <a href={e.google_sheet_url} target="_blank" rel="noopener noreferrer">
+                            <Sheet className="h-3 w-3" />
                           </a>
                         </Button>
-                      ) : null}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                        <a href={`/assets`} title="Open Asset Library">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </Button>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -192,6 +294,26 @@ export function SheetPrepLog() {
           </div>
         )}
       </CardContent>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Archive Sheets</DialogTitle>
+            <DialogDescription>
+              This will move {selectedIds.size} selected asset sheets to their respective Archive folders in Google Drive and mark them as archived. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setArchiveConfirmOpen(false)} disabled={isArchiving}>
+              Cancel
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleArchive} disabled={isArchiving}>
+              {isArchiving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Archiving…</> : <><Archive className="h-3 w-3 mr-1" /> Archive</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
