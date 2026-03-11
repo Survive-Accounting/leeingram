@@ -65,12 +65,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  // ── VA: auto-lock workspace to assigned chapter ──────────────────
+  // ── VA: record login ──────────────────────────────────────────────
   useEffect(() => {
-    if (!isVa || !vaAccount?.assigned_course_id || !vaAccount?.assigned_chapter_id) return;
-    // Record login
+    if (!isVa) return;
     if (user?.id) recordVaLogin(user.id);
-  }, [isVa, vaAccount, user?.id]);
+  }, [isVa, user?.id]);
 
   // Fetch courses & chapters for workspace selector
   const { data: courses } = useQuery({
@@ -91,16 +90,44 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     },
   });
 
-  // Auto-set workspace for VA users once data is loaded
-  useEffect(() => {
-    if (!isVa || !vaAccount?.assigned_course_id || !vaAccount?.assigned_chapter_id) return;
-    if (!courses || !allChapters) return;
-    // Already set to correct chapter?
-    if (workspace?.chapterId === vaAccount.assigned_chapter_id) return;
+  // Fetch assigned chapters for VA or impersonated VA
+  const activeVaId = impersonating?.id || (isVa ? vaAccount?.id : null);
+  const { data: vaAssignments } = useQuery({
+    queryKey: ["va-assignments-sidebar", activeVaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("va_assignments")
+        .select("chapter_id, course_id")
+        .eq("va_account_id", activeVaId!);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!activeVaId,
+  });
 
-    const course = courses.find(c => c.id === vaAccount.assigned_course_id);
-    const chapter = allChapters.find(c => c.id === vaAccount.assigned_chapter_id);
-    if (course && chapter) {
+  const isVaOrImpersonating = isVa || !!impersonating;
+
+  // For VA/impersonation: filter chapters to assigned ones only
+  const vaAssignedChapterIds = useMemo(
+    () => vaAssignments?.map(a => a.chapter_id) ?? [],
+    [vaAssignments]
+  );
+
+  const vaFilteredChapters = useMemo(
+    () => (allChapters ?? []).filter(ch => vaAssignedChapterIds.includes(ch.id)),
+    [allChapters, vaAssignedChapterIds]
+  );
+
+  // Auto-set workspace for VA/impersonation to first assigned chapter
+  useEffect(() => {
+    if (!isVaOrImpersonating || !allChapters || !courses || !vaAssignments?.length) return;
+    // If current workspace is in assigned list, keep it
+    if (workspace?.chapterId && vaAssignedChapterIds.includes(workspace.chapterId)) return;
+    // Set to first assigned chapter
+    const firstAssignment = vaAssignments[0];
+    const chapter = allChapters.find(c => c.id === firstAssignment.chapter_id);
+    const course = courses.find(c => c.id === firstAssignment.course_id);
+    if (chapter && course) {
       setWorkspace({
         courseId: course.id,
         courseName: course.course_name,
@@ -109,7 +136,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         chapterNumber: chapter.chapter_number,
       });
     }
-  }, [isVa, vaAccount, courses, allChapters, workspace?.chapterId, setWorkspace]);
+  }, [isVaOrImpersonating, vaAssignments, vaAssignedChapterIds, allChapters, courses, workspace?.chapterId, setWorkspace]);
 
   const filteredChapters = useMemo(
     () => (allChapters ?? []).filter((ch) => ch.course_id === workspace?.courseId),
@@ -237,8 +264,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {isVa ? `${vaAccount?.full_name} — VA Test` : "Survive"}
           </h1>
 
-          {/* Workspace Selectors — hidden for VA users (locked to assigned chapter) */}
-          {!isVa && (
+          {/* Workspace Selectors — admin sees all courses+chapters, VA/impersonation sees only assigned chapters */}
+          {!isVaOrImpersonating ? (
             <div className="hidden sm:flex items-center gap-2 ml-2">
               <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
                 <SelectTrigger className="h-7 text-[11px] w-32 bg-muted/50 border-border text-foreground">
@@ -263,7 +290,22 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 </SelectContent>
               </Select>
             </div>
-          )}
+          ) : vaFilteredChapters.length > 1 ? (
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange}>
+                <SelectTrigger className="h-7 text-[11px] w-52 bg-muted/50 border-border text-foreground">
+                  <SelectValue placeholder="Select chapter…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vaFilteredChapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">
+                      Ch {c.chapter_number} — {c.chapter_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
 
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
