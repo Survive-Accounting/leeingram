@@ -424,8 +424,22 @@ export default function AssetsLibrary() {
                     </SelectItem>
                   )}
                   {isAdmin && (
-                    <SelectItem value="create-sheets">
-                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Google Sheets</span>
+                    <SelectItem value="create-master-sheet">
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Master Google Sheet</span>
+                    </SelectItem>
+                  )}
+                  {isAdmin && (
+                    <SelectItem value="create-practice-sheet" disabled={!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url)}>
+                      <span className={`flex items-center gap-1.5 ${!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url) ? "opacity-50" : ""}`}>
+                        <Sheet className="h-3 w-3" /> Create (Paid) Study Pass Sheet
+                      </span>
+                    </SelectItem>
+                  )}
+                  {isAdmin && (
+                    <SelectItem value="create-promo-sheet" disabled={!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url)}>
+                      <span className={`flex items-center gap-1.5 ${!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url) ? "opacity-50" : ""}`}>
+                        <Sheet className="h-3 w-3" /> Create (Free) Promo Sheet
+                      </span>
                     </SelectItem>
                   )}
                   {isSheetPrepVa && (
