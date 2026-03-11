@@ -140,6 +140,22 @@ export default function AssetsLibrary() {
     },
   });
 
+  // Deep-link: open asset detail from ?asset=ID
+  useEffect(() => {
+    const assetId = searchParams.get("asset");
+    if (assetId && assets?.length) {
+      const found = assets.find((a) => a.id === assetId);
+      if (found) {
+        setViewingAsset(found);
+        setDrawerOpen(true);
+        // Clear the param so refreshing doesn't re-open
+        searchParams.delete("asset");
+        searchParams.delete("action");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [assets, searchParams]);
+
   // Build sheet URL map from teaching_assets themselves + fallback to assets table
   const sheetUrls: Record<string, string> = {};
   if (assets) {
