@@ -197,7 +197,9 @@ async function writeValues(token: string, spreadsheetId: string, range: string, 
 interface MetadataParams {
   asset_code: string;
   course_code: string;
+  course_display_name: string;
   chapter_number: string;
+  chapter_title: string;
   exercise_number: string;
   asset_id: string;
   created_at: string;
@@ -205,6 +207,7 @@ interface MetadataParams {
   sheet_practice_url: string;
   sheet_promo_url: string;
   sheet_path_url: string;
+  lw_practice_sheet_url: string;
   ebook_page_link: string;
   lw_video_link: string;
   lw_quiz_link: string;
@@ -213,11 +216,17 @@ interface MetadataParams {
   mark_verified_url: string;
   contact_lee_url: string;
   asset_type: string;
+  problem_type: string;
   variant_letter: string;
   variant_count: string;
   journal_entry_count: string;
+  instruction_count: string;
+  uses_t_accounts: string;
+  uses_tables: string;
+  uses_financial_statements: string;
   sheet_verified: string;
   sheet_ready_for_review: string;
+  asset_finalized: string;
 }
 
 function makeHyperlink(label: string, url: string): string {
@@ -237,27 +246,36 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
     ["Field", "Value", "", "", "", "VA Action Links"],
     ["asset_code", params.asset_code, "", "", "", vaActionLinks[0]],
     ["course_code", params.course_code, "", "", "", vaActionLinks[1]],
-    ["chapter_number", params.chapter_number, "", "", "", vaActionLinks[2]],
-    ["exercise_number", params.exercise_number, "", "", "", vaActionLinks[3]],
+    ["course_display_name", params.course_display_name, "", "", "", vaActionLinks[2]],
+    ["chapter_number", params.chapter_number, "", "", "", vaActionLinks[3]],
+    ["chapter_title", params.chapter_title, "", "", "", ""],
+    ["exercise_number", params.exercise_number, "", "", "", ""],
     ["asset_id", params.asset_id, "", "", "", ""],
     ["created_at", params.created_at, "", "", "", ""],
-    ["asset_type", params.asset_type, "", "", "", ""],
-    ["variant_letter", params.variant_letter, "", "", "", ""],
-    ["variant_count", params.variant_count, "", "", "", ""],
-    ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
     ["sheet_master_url", params.sheet_master_url, "", "", "", ""],
     ["sheet_practice_url", params.sheet_practice_url, "", "", "", ""],
     ["sheet_promo_url", params.sheet_promo_url, "", "", "", ""],
     ["sheet_path_url", params.sheet_path_url, "", "", "", ""],
+    ["lw_practice_sheet_url", params.lw_practice_sheet_url, "", "", "", ""],
+    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
+    ["lw_video_link", params.lw_video_link, "", "", "", ""],
+    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
     ["internal_asset_page", params.internal_asset_page, "", "", "", ""],
     ["flag_issue_url", params.flag_issue_url, "", "", "", ""],
     ["mark_verified_url", params.mark_verified_url, "", "", "", ""],
     ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
-    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
-    ["lw_video_link", params.lw_video_link, "", "", "", ""],
-    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
+    ["asset_type", params.asset_type, "", "", "", ""],
+    ["problem_type", params.problem_type, "", "", "", ""],
+    ["variant_letter", params.variant_letter, "", "", "", ""],
+    ["variant_count", params.variant_count, "", "", "", ""],
+    ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
+    ["instruction_count", params.instruction_count, "", "", "", ""],
+    ["uses_t_accounts", params.uses_t_accounts, "", "", "", ""],
+    ["uses_tables", params.uses_tables, "", "", "", ""],
+    ["uses_financial_statements", params.uses_financial_statements, "", "", "", ""],
     ["sheet_verified", params.sheet_verified, "", "", "", ""],
     ["sheet_ready_for_review", params.sheet_ready_for_review, "", "", "", ""],
+    ["asset_finalized", params.asset_finalized, "", "", "", ""],
   ];
 
   await ensureTabExists(token, spreadsheetId, "METADATA");
@@ -268,16 +286,57 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
 // ── Hidden_Data writer ───────────────────────────────────────────────
 
 interface HiddenDataParams {
-  problem_text: string;
   problem_context: string;
-  problem_instructions: string;
+  problem_text: string;
   problem_text_highlighted: string;
+  instruction_1: string;
+  instruction_2: string;
+  instruction_3: string;
+  instruction_4: string;
+  instruction_5: string;
+  problem_solution: string;
   answer_summary: string;
   journal_entry_raw: string;
+  t_accounts_raw: string;
+  tables_raw: string;
+  financial_statements_raw: string;
   worked_steps: string;
+  important_formulas: string;
   concept_notes: string;
-  highlight_tags: string;
+  exam_traps: string;
   validation_notes: string;
+  highlight_tags: string;
+}
+
+// Convert t_accounts_json to TSV text
+function tAccountsToTsv(json: any): string {
+  if (!json) return "";
+  try {
+    const data = typeof json === "string" ? JSON.parse(json) : json;
+    if (!Array.isArray(data)) return "";
+    const lines: string[] = ["Account\tDebits\tCredits"];
+    for (const acct of data) {
+      const name = acct.account_name || "";
+      const debits = Array.isArray(acct.debits) ? acct.debits.join(", ") : "";
+      const credits = Array.isArray(acct.credits) ? acct.credits.join(", ") : "";
+      lines.push(`${name}\t${debits}\t${credits}`);
+    }
+    return lines.join("\n");
+  } catch { return ""; }
+}
+
+// Convert tables_json or financial_statements_json to combined TSV text
+function structuredTablesToTsv(json: any): string {
+  if (!json) return "";
+  try {
+    const data = typeof json === "string" ? JSON.parse(json) : json;
+    if (!Array.isArray(data)) return "";
+    return data.map((t: any) => {
+      const title = t.title || "Untitled";
+      const tsv = t.tsv || "";
+      return `--- ${title} ---\n${tsv}`;
+    }).join("\n\n");
+  } catch { return ""; }
 }
 
 async function writeHiddenData(token: string, spreadsheetId: string, params: HiddenDataParams) {
@@ -285,16 +344,26 @@ async function writeHiddenData(token: string, spreadsheetId: string, params: Hid
 
   const fieldRows: string[][] = [
     ["Field", "Value"],
-    ["problem_text", params.problem_text],
     ["problem_context", params.problem_context],
-    ["problem_instructions", params.problem_instructions],
+    ["problem_text", params.problem_text],
     ["problem_text_highlighted", params.problem_text_highlighted],
+    ["instruction_1", params.instruction_1],
+    ["instruction_2", params.instruction_2],
+    ["instruction_3", params.instruction_3],
+    ["instruction_4", params.instruction_4],
+    ["instruction_5", params.instruction_5],
+    ["problem_solution", params.problem_solution],
     ["answer_summary", params.answer_summary],
     ["journal_entry_raw", params.journal_entry_raw],
+    ["t_accounts_raw", params.t_accounts_raw],
+    ["tables_raw", params.tables_raw],
+    ["financial_statements_raw", params.financial_statements_raw],
     ["worked_steps", params.worked_steps],
+    ["important_formulas", params.important_formulas],
     ["concept_notes", params.concept_notes],
-    ["highlight_tags", params.highlight_tags],
+    ["exam_traps", params.exam_traps],
     ["validation_notes", params.validation_notes],
+    ["highlight_tags", params.highlight_tags],
   ];
 
   const range = `Hidden_Data!A1:B${fieldRows.length}`;
@@ -819,7 +888,9 @@ Deno.serve(async (req) => {
       const metadataParams: MetadataParams = {
         asset_code: assetCode,
         course_code: courseCode,
+        course_display_name: course?.course_name || "",
         chapter_number: String(chapterNumber),
+        chapter_title: chapter?.chapter_name || "",
         exercise_number: asset.source_number || "",
         asset_id: asset.id,
         created_at: asset.created_at || "",
@@ -827,6 +898,7 @@ Deno.serve(async (req) => {
         sheet_practice_url: practiceUrl,
         sheet_promo_url: promoUrl,
         sheet_path_url: sheetPathUrl,
+        lw_practice_sheet_url: practiceUrl,
         ebook_page_link: asset.lw_ebook_url || "",
         lw_video_link: asset.lw_video_url || "",
         lw_quiz_link: asset.lw_quiz_url || "",
@@ -834,12 +906,18 @@ Deno.serve(async (req) => {
         flag_issue_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=flag`,
         mark_verified_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=verify`,
         contact_lee_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=contact`,
-        asset_type: asset.problem_type || "",
+        asset_type: asset.asset_type || "",
+        problem_type: asset.problem_type || "",
         variant_letter: extractVariantLetter(assetCode),
         variant_count: String(variantCount),
         journal_entry_count: String(jeCount),
+        instruction_count: String(problemInstructions.length),
+        uses_t_accounts: asset.uses_t_accounts ? "Yes" : "No",
+        uses_tables: asset.uses_tables ? "Yes" : "No",
+        uses_financial_statements: asset.uses_financial_statements ? "Yes" : "No",
         sheet_verified: asset.google_sheet_status === "verified_by_va" ? "Yes" : "No",
         sheet_ready_for_review: resolveReadyForReview(asset.google_sheet_status || "none"),
+        asset_finalized: asset.google_sheet_status === "finalized" ? "Yes" : "No",
       };
 
       // 1. METADATA tab
@@ -851,20 +929,34 @@ Deno.serve(async (req) => {
       const highlightedText = applyHighlightsToText(problemText, highlights);
       const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
 
-      // Build instructions text for sheet
-      const instructionsText = problemInstructions.length > 0
-        ? problemInstructions.map(i => `Instruction ${i.instruction_number}: ${i.instruction_text}`).join("\n")
-        : "";
+      // Build individual instruction slots
+      const instrSlots = ["", "", "", "", ""];
+      for (const instr of problemInstructions) {
+        const idx = instr.instruction_number - 1;
+        if (idx >= 0 && idx < 5) {
+          instrSlots[idx] = instr.instruction_text || "";
+        }
+      }
 
       const hiddenDataParams: HiddenDataParams = {
-        problem_text: problemText,
         problem_context: asset.problem_context || "",
-        problem_instructions: instructionsText,
+        problem_text: problemText,
         problem_text_highlighted: highlightedText,
+        instruction_1: instrSlots[0],
+        instruction_2: instrSlots[1],
+        instruction_3: instrSlots[2],
+        instruction_4: instrSlots[3],
+        instruction_5: instrSlots[4],
+        problem_solution: asset.survive_solution_text || "",
         answer_summary: buildAnswerSummary(asset),
         journal_entry_raw: jeToRawText(jeEntries),
+        t_accounts_raw: tAccountsToTsv(asset.t_accounts_json),
+        tables_raw: structuredTablesToTsv(asset.tables_json),
+        financial_statements_raw: structuredTablesToTsv(asset.financial_statements_json),
         worked_steps: asset.survive_solution_text || "",
-        concept_notes: "",
+        important_formulas: asset.important_formulas || "",
+        concept_notes: asset.concept_notes || "",
+        exam_traps: asset.exam_traps || "",
         highlight_tags: extractHighlightTags(highlights),
         validation_notes: "",
       };
