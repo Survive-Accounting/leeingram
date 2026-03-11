@@ -329,7 +329,13 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
       variant_problem_text: c.survive_problem_text || "",
       variant_solution_text: c.survive_solution_text || "",
       variant_status: "draft",
-      candidate_data: c,
+      candidate_data: {
+        ...c,
+        // Carry learning structures in candidate_data for review UI access
+        t_accounts_json: c.t_accounts_json || null,
+        tables_json: c.tables_json || null,
+        financial_statements_json: c.financial_statements_json || null,
+      },
       journal_entry_completed_json: jeCompletedJson,
       journal_entry_template_json: c.je_template || null,
       je_skeleton_json: jeSkeletonJson,
