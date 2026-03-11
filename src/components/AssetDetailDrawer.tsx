@@ -613,7 +613,7 @@ export default function AssetDetailDrawer({
             <TabsTrigger value="overview" className="text-xs gap-1"><BookOpen className="h-3 w-3" />Overview</TabsTrigger>
             <TabsTrigger value="journal" className="text-xs gap-1"><TableProperties className="h-3 w-3" />Journal Entries</TabsTrigger>
             <TabsTrigger value="links" className="text-xs gap-1"><Link2 className="h-3 w-3" />Links</TabsTrigger>
-            <TabsTrigger value="future" className="text-xs gap-1"><Lightbulb className="h-3 w-3" />Future</TabsTrigger>
+            <TabsTrigger value="source" className="text-xs gap-1"><Image className="h-3 w-3" />Source</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
