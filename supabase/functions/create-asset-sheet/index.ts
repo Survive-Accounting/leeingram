@@ -552,13 +552,9 @@ Deno.serve(async (req) => {
         } catch (e) { console.error("METADATA tab creation failed:", e); }
       }
 
-      try {
-        await googleFetch(
-          `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA:clear`,
-          token,
-          { method: "POST", body: JSON.stringify({}) }
-        );
-      } catch (e) { console.error("Metadata clear failed (non-fatal):", e); }
+      // NOTE: We do NOT clear the METADATA tab — the template contains formatting,
+      // merged cells, and formulas (e.g. MasterWhiteboard pulls from METADATA).
+      // We only overwrite cell values via the values API, preserving all formatting.
 
       await writeMetadata(token, spreadsheetId, metadataParams);
       console.log("Metadata populated on Master sheet");
