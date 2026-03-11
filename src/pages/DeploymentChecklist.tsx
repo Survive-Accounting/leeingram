@@ -1,7 +1,9 @@
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Rocket, CheckSquare, Square } from "lucide-react";
+import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
-const CHECKLIST = [
+const DEFAULT_CHECKLIST = [
   {
     title: "Upload Final Video",
     description:
@@ -46,21 +48,82 @@ const CHECKLIST = [
   },
 ];
 
+const SHEET_PREP_CHECKLIST = [
+  {
+    title: "Verify Master Sheet Formatting",
+    description:
+      "Confirm the tutoring / filming whiteboard sheet is organized and readable.",
+    done: false,
+  },
+  {
+    title: "Prepare Student Practice Sheet",
+    description:
+      "Ensure the practice version is clean and student-ready (no internal notes or answers visible).",
+    done: false,
+  },
+  {
+    title: "Prepare Promo / Free Sheet",
+    description:
+      "Create the promotional version used for marketing or free samples.",
+    done: false,
+  },
+  {
+    title: "Test All Sheet Links",
+    description:
+      "Open Master, Practice, and Promo sheets to confirm access permissions work correctly.",
+    done: false,
+  },
+  {
+    title: "Copy LearnWorlds Embed Link",
+    description:
+      "Generate the embed link or share link for the student Practice sheet.",
+    done: false,
+  },
+  {
+    title: "Attach Google Sheet to LearnWorlds Lesson",
+    description:
+      "Open the correct LearnWorlds lesson and embed the student Practice sheet so students can interact with it.",
+    done: false,
+  },
+  {
+    title: "Save LearnWorlds Activity URL",
+    description:
+      "Copy the LearnWorlds lesson/activity link and paste it back into the pipeline metadata.",
+    done: false,
+  },
+  {
+    title: "Mark Asset Sheet Prep Complete",
+    description:
+      "Confirm the asset is ready for final review and deployment.",
+    done: false,
+  },
+];
+
 export default function DeploymentChecklist() {
+  const { vaAccount } = useVaAccount();
+  const { impersonating } = useImpersonation();
+
+  const effectiveRole = impersonating?.role || vaAccount?.role || null;
+  const isSheetPrep = effectiveRole === "sheet_prep_va";
+
+  const checklist = isSheetPrep ? SHEET_PREP_CHECKLIST : DEFAULT_CHECKLIST;
+  const heading = isSheetPrep ? "Sheet Prep Deployment Checklist" : "Deployment Checklist";
+  const subtitle = isSheetPrep
+    ? "Follow each step to prepare and deploy Google Sheets for this chapter."
+    : "Follow each step in order to deploy this chapter to LearnWorlds.";
+
   return (
     <SurviveSidebarLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Rocket className="h-5 w-5 text-primary" /> Deployment Checklist
+            <Rocket className="h-5 w-5 text-primary" /> {heading}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Follow each step in order to deploy this chapter to LearnWorlds.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-5 space-y-1">
-          {CHECKLIST.map((item, i) => (
+          {checklist.map((item, i) => (
             <div
               key={i}
               className="flex items-start gap-4 rounded-lg px-4 py-4 hover:bg-muted/30 transition-colors"
