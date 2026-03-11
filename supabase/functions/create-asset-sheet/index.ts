@@ -860,15 +860,21 @@ Deno.serve(async (req) => {
 
     // ── Persist sheet info back to DB ─────────────────────────────────
     const dbPayload: Record<string, any> = {
-      google_sheet_url: masterUrl,
-      google_sheet_file_id: results.master?.fileId || asset.google_sheet_file_id || "",
       sheet_last_synced_at: new Date().toISOString(),
-      google_sheet_status: "auto_created",
-      sheet_master_url: masterUrl,
-      sheet_practice_url: practiceUrl,
-      sheet_promo_url: promoUrl,
       sheet_path_url: sheetPathUrl,
     };
+    if (results.master) {
+      dbPayload.google_sheet_url = masterUrl;
+      dbPayload.google_sheet_file_id = results.master.fileId;
+      dbPayload.google_sheet_status = "auto_created";
+      dbPayload.sheet_master_url = masterUrl;
+    }
+    if (results.practice) {
+      dbPayload.sheet_practice_url = practiceUrl;
+    }
+    if (results.promo) {
+      dbPayload.sheet_promo_url = promoUrl;
+    }
 
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
