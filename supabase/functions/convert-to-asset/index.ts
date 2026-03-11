@@ -1120,6 +1120,65 @@ Do NOT invent or use account names outside this list. If an account is needed bu
       }
     }
 
+    // ── Detect optional learning structures from existing teaching assets ──
+    let usesLearningStructures = { t_accounts: false, tables: false, financial_statements: false };
+    if (problemId) {
+      const { data: existingAsset } = await supabase
+        .from("teaching_assets")
+        .select("uses_t_accounts, uses_tables, uses_financial_statements")
+        .eq("base_raw_problem_id", problemId)
+        .limit(1)
+        .maybeSingle();
+      if (existingAsset) {
+        usesLearningStructures = {
+          t_accounts: !!existingAsset.uses_t_accounts,
+          tables: !!existingAsset.uses_tables,
+          financial_statements: !!existingAsset.uses_financial_statements,
+        };
+      }
+    }
+
+    // Also check source problem flags passed from batch runner
+    if (body.uses_t_accounts) usesLearningStructures.t_accounts = true;
+    if (body.uses_tables) usesLearningStructures.tables = true;
+    if (body.uses_financial_statements) usesLearningStructures.financial_statements = true;
+
+    const hasAnyLearningStructure = usesLearningStructures.t_accounts || usesLearningStructures.tables || usesLearningStructures.financial_statements;
+
+    // Build learning structures prompt section
+    let learningStructuresPrompt = "";
+    if (hasAnyLearningStructure) {
+      learningStructuresPrompt = "\nOPTIONAL LEARNING STRUCTURES (generate these ONLY for the structures listed below):\n";
+      if (usesLearningStructures.t_accounts) {
+        learningStructuresPrompt += `
+T ACCOUNTS: Generate T-account structures that reflect the accounting entries for this variant.
+Store in "t_accounts_json" as an array:
+[{ "account_name": "Cash", "debits": ["5000"], "credits": [] }, ...]
+- Account names and amounts MUST match the variant's journal entries/solution.
+- Include all accounts affected by the transaction.
+`;
+      }
+      if (usesLearningStructures.tables) {
+        learningStructuresPrompt += `
+TABLES: Generate structured tables that support the problem (e.g. amortization schedules, depreciation schedules).
+Store in "tables_json" as an array:
+[{ "title": "Bond Amortization Schedule", "tsv": "Period\\tCash Paid\\tInterest Expense\\tAmortization\\n1\\t..." }]
+- Use TAB separators for columns, newlines for rows.
+- Values MUST match the variant's numbers.
+`;
+      }
+      if (usesLearningStructures.financial_statements) {
+        learningStructuresPrompt += `
+FINANCIAL STATEMENTS: Generate simplified financial statement layouts required by the problem.
+Store in "financial_statements_json" as an array:
+[{ "title": "Income Statement", "tsv": "Revenue\\t50000\\nExpenses\\t30000\\nNet Income\\t20000" }]
+- Use TAB separators for columns, newlines for rows.
+- Values MUST match the variant's numbers.
+`;
+      }
+      learningStructuresPrompt += "\nIf you cannot confidently generate a structure, leave the field as null.\n";
+    }
+
     let systemPrompt: string;
     let userPrompt: string;
 
@@ -1143,7 +1202,8 @@ CORE RULES:
 - Do NOT include "Survive Accounting" in student-facing text.
 
 ${difficultySection}
-${constraintsBlock}`;
+${constraintsBlock}
+${learningStructuresPrompt}`;
 
     // ── Parts-based output instructions (universal) ──
     const partsInstruction = `
@@ -1395,6 +1455,49 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                     important_formulas: { type: "string", description: "Formulas/equations needed, one per line" },
                     concept_notes: { type: "string", description: "2-5 bullet points on key concepts tested" },
                     exam_traps: { type: "string", description: "2-4 common student mistakes, specific and actionable" },
+                    ...(usesLearningStructures.t_accounts ? {
+                      t_accounts_json: {
+                        type: "array",
+                        description: "T-account structures matching the variant's entries",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            debits: { type: "array", items: { type: "string" } },
+                            credits: { type: "array", items: { type: "string" } },
+                          },
+                          required: ["account_name", "debits", "credits"],
+                        },
+                      },
+                    } : {}),
+                    ...(usesLearningStructures.tables ? {
+                      tables_json: {
+                        type: "array",
+                        description: "Structured tables in TSV format",
+                        items: {
+                          type: "object",
+                          properties: {
+                            title: { type: "string" },
+                            tsv: { type: "string", description: "Tab-separated content" },
+                          },
+                          required: ["title", "tsv"],
+                        },
+                      },
+                    } : {}),
+                    ...(usesLearningStructures.financial_statements ? {
+                      financial_statements_json: {
+                        type: "array",
+                        description: "Financial statement layouts in TSV format",
+                        items: {
+                          type: "object",
+                          properties: {
+                            title: { type: "string" },
+                            tsv: { type: "string", description: "Tab-separated content" },
+                          },
+                          required: ["title", "tsv"],
+                        },
+                      },
+                    } : {}),
                   },
                   required: [
                     "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",

@@ -190,6 +190,21 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
     }
   }
 
+  // Check if there's an existing teaching asset with learning structure flags
+  let learningStructureFlags: any = {};
+  {
+    const { data: existingAsset } = await sb.from("teaching_assets")
+      .select("uses_t_accounts, uses_tables, uses_financial_statements")
+      .eq("base_raw_problem_id", sourceProblem.id)
+      .limit(1)
+      .maybeSingle();
+    if (existingAsset) {
+      if (existingAsset.uses_t_accounts) learningStructureFlags.uses_t_accounts = true;
+      if (existingAsset.uses_tables) learningStructureFlags.uses_tables = true;
+      if (existingAsset.uses_financial_statements) learningStructureFlags.uses_financial_statements = true;
+    }
+  }
+
   // Call the convert-to-asset function
   try {
     let problemText = sourceProblem.ocr_extracted_problem_text || sourceProblem.problem_text || "";
@@ -241,6 +256,7 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
         source_problem_id: sourceProblem.id,
         course_id: run.course_id,
         chapter_id: run.chapter_id,
+        ...learningStructureFlags,
       }),
     });
 
@@ -313,7 +329,13 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
       variant_problem_text: c.survive_problem_text || "",
       variant_solution_text: c.survive_solution_text || "",
       variant_status: "draft",
-      candidate_data: c,
+      candidate_data: {
+        ...c,
+        // Carry learning structures in candidate_data for review UI access
+        t_accounts_json: c.t_accounts_json || null,
+        tables_json: c.tables_json || null,
+        financial_statements_json: c.financial_statements_json || null,
+      },
       journal_entry_completed_json: jeCompletedJson,
       journal_entry_template_json: c.je_template || null,
       je_skeleton_json: jeSkeletonJson,
