@@ -130,16 +130,6 @@ export function NextTaskBanner() {
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="shrink-0 h-7 text-[11px] px-3"
-          asChild
-        >
-          <a href={jobDescLink} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-3 w-3 mr-1" /> Read Job Description
-          </a>
-        </Button>
       </div>
     </div>
   );

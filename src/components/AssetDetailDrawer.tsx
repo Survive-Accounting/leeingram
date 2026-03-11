@@ -851,6 +851,9 @@ Return valid JSON only.`,
                   {instructions.length > 0 && (
                     <Badge variant="outline" className="text-[9px] h-4 ml-auto">{instructions.length} instr.</Badge>
                   )}
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.survive_problem_text || ""); toast.success("Problem text copied"); }}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="rounded-lg border border-border bg-background p-3">
@@ -918,6 +921,9 @@ Return valid JSON only.`,
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showAnswerSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Answer Text</span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.survive_solution_text || ""); toast.success("Answer text copied"); }}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   <div className="rounded-lg border border-border bg-background p-3">
@@ -1087,6 +1093,9 @@ Return valid JSON only.`,
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showWorkedSteps ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Worked Steps</span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.survive_solution_text || ""); toast.success("Worked steps copied"); }}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3">
                     <div className="rounded-lg border border-border bg-background p-3">
@@ -1103,7 +1112,12 @@ Return valid JSON only.`,
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFormulasSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Important Formulas</span>
-                  {!asset.important_formulas && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                  {!asset.important_formulas && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
+                  {asset.important_formulas && (
+                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.important_formulas || ""); toast.success("Formulas copied"); }}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.important_formulas ? (
@@ -1121,7 +1135,12 @@ Return valid JSON only.`,
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showConceptsSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Concepts</span>
-                  {!asset.concept_notes && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                  {!asset.concept_notes && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
+                  {asset.concept_notes && (
+                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.concept_notes || ""); toast.success("Concepts copied"); }}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.concept_notes ? (
@@ -1139,7 +1158,12 @@ Return valid JSON only.`,
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showExamTrapsSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Traps</span>
-                  {!asset.exam_traps && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                  {!asset.exam_traps && <Badge variant="outline" className="text-[9px] h-4">Not generated</Badge>}
+                  {asset.exam_traps && (
+                    <Button variant="ghost" size="icon" className="h-5 w-5 ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.exam_traps || ""); toast.success("Exam traps copied"); }}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   {asset.exam_traps ? (
