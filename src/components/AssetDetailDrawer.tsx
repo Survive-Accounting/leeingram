@@ -843,11 +843,14 @@ Return valid JSON only.`,
                 )}
               </div>
 
-              {/* ── PROBLEM TEXT ── */}
+              {/* ── PROBLEM TEXT & INSTRUCTIONS ── */}
               <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showProblemSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Text</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Text & Instructions</span>
+                  {instructions.length > 0 && (
+                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{instructions.length} instr.</Badge>
+                  )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="rounded-lg border border-border bg-background p-3">
@@ -860,22 +863,29 @@ Return valid JSON only.`,
                     </div>
                   </div>
 
-                  {/* Problem Context & Instructions Editor */}
-                  <div className="rounded-lg border border-border bg-card p-3">
-                    <ProblemInstructionsEditor
-                      assetId={asset.id}
-                      problemContext={(asset as any).problem_context || ""}
-                      onUpdated={onAssetUpdated}
-                    />
-                  </div>
-
-                  {/* Answer text — only if the asset has solution text */}
-                  {asset.survive_solution_text && (
-                    <div className="rounded-lg border border-border bg-background p-3">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Text</p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                        {asset.survive_solution_text}
-                      </p>
+                  {/* Read-only Instructions with copy buttons */}
+                  {instructions.length > 0 && (
+                    <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Instructions</p>
+                      {instructions.map((inst, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-primary w-5 shrink-0 text-right">
+                            {inst.instruction_number}
+                          </span>
+                          <p className="text-sm text-foreground flex-1">{inst.instruction_text}</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              navigator.clipboard.writeText(inst.instruction_text);
+                              toast.success(`Instruction ${inst.instruction_number} copied`);
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
