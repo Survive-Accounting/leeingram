@@ -375,18 +375,26 @@ export default function AssetsLibrary() {
                   <SelectValue placeholder={`Action for ${selectedIds.size} selected…`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="export-csv">
-                    <span className="flex items-center gap-1.5"><Download className="h-3 w-3" /> Export to CSV</span>
-                  </SelectItem>
-                  <SelectItem value="add-to-set">
-                    <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
-                  </SelectItem>
-                  <SelectItem value="generate-ebook">
-                    <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> Generate eBook</span>
-                  </SelectItem>
-                  <SelectItem value="bank-mc">
-                    <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
-                  </SelectItem>
+                  {isAdmin && (
+                    <SelectItem value="export-csv">
+                      <span className="flex items-center gap-1.5"><Download className="h-3 w-3" /> Export to CSV</span>
+                    </SelectItem>
+                  )}
+                  {isAdmin && (
+                    <SelectItem value="add-to-set">
+                      <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
+                    </SelectItem>
+                  )}
+                  {isAdmin && (
+                    <SelectItem value="generate-ebook">
+                      <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> Generate eBook</span>
+                    </SelectItem>
+                  )}
+                  {isAdmin && (
+                    <SelectItem value="bank-mc">
+                      <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
+                    </SelectItem>
+                  )}
                   <SelectItem value="revert">
                     <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
                   </SelectItem>
