@@ -610,6 +610,22 @@ export default function AssetsLibrary() {
                   <TableCell className="text-xs font-mono text-muted-foreground">
                     {a.source_ref || "—"}
                   </TableCell>
+                  {isSheetPrepVa && (
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[9px] ${
+                        (a as any).google_sheet_status === "ready_for_review"
+                          ? "border-amber-500/40 text-amber-400"
+                          : (a as any).google_sheet_status === "finalized"
+                            ? "border-emerald-500/40 text-emerald-400"
+                            : "border-border text-muted-foreground"
+                      }`}>
+                        {(a as any).google_sheet_status === "ready_for_review" ? "Ready for Review"
+                          : (a as any).google_sheet_status === "finalized" ? "Finalized"
+                          : (a as any).google_sheet_status === "auto_created" ? "Pending"
+                          : (a as any).google_sheet_status || "—"}
+                      </Badge>
+                    </TableCell>
+                  )
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(a.created_at), "MMM d")}
                   </TableCell>
