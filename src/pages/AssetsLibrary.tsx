@@ -91,6 +91,7 @@ export default function AssetsLibrary() {
   const [newSetName, setNewSetName] = useState("");
   const [isGeneratingEbook, setIsGeneratingEbook] = useState(false);
   const [isBanking, setIsBanking] = useState(false);
+  const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const { data: courses } = useQuery({
     queryKey: ["courses"],
