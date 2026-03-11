@@ -1141,7 +1141,7 @@ Return valid JSON only.`,
               )}
 
               {/* ── TABLES ── */}
-              {(asset as any).uses_tables && (asset as any).tables_json && Array.isArray((asset as any).tables_json) && (asset as any).tables_json.length > 0 && (
+              {(asset as any).tables_json && Array.isArray((asset as any).tables_json) && (asset as any).tables_json.length > 0 && (
                 <Collapsible open={showTablesSection} onOpenChange={setShowTablesSection}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                     <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTablesSection ? "rotate-90" : ""}`} />
