@@ -405,6 +405,21 @@ export default function ProblemBank() {
         )}
       </div>
 
+      {/* Mismatch warning banner */}
+      {problems && (() => {
+        const mismatchCount = problems.filter((p) => {
+          const ocr = ((p as any).ocr_detected_label || "").replace(/\s+/g, "").toUpperCase();
+          const src = (p.source_label || "").replace(/\s+/g, "").toUpperCase();
+          return ocr && src && ocr !== src;
+        }).length;
+        return mismatchCount > 0 ? (
+          <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span><strong>{mismatchCount} screenshot mismatch{mismatchCount > 1 ? "es" : ""}</strong> — the pasted screenshot doesn't match the source label. Re-paste the correct textbook screenshot for flagged items.</span>
+          </div>
+        ) : null;
+      })()}
+
       {!canAdd &&
       <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter in the sidebar pipeline to view and add source problems.</p>
       }
@@ -438,17 +453,30 @@ export default function ProblemBank() {
             !problems?.length ?
             <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">No imported sources yet.</TableCell></TableRow> :
 
-            problems.map((p) =>
-            <TableRow key={p.id} className="border-border">
+            problems.map((p) => {
+              const ocrLabel = (p as any).ocr_detected_label || "";
+              const hasMismatch = ocrLabel && p.source_label && ocrLabel.replace(/\s+/g, "").toUpperCase() !== p.source_label.replace(/\s+/g, "").toUpperCase();
+              return (
+              <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
                     <TableCell>
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} />
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-[10px] ${STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground"}`}>
-                        {STATUS_LABELS[p.status] ?? p.status}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className={`text-[10px] ${STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground"}`}>
+                          {STATUS_LABELS[p.status] ?? p.status}
+                        </Badge>
+                        {hasMismatch && (
+                          <span title={`Screenshot shows ${ocrLabel}, expected ${p.source_label}`} className="text-destructive">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-xs font-mono">{p.source_label || "—"}</TableCell>
+                    <TableCell className="text-xs font-mono">
+                      {p.source_label || "—"}
+                      {hasMismatch && <span className="block text-[10px] text-destructive">OCR: {ocrLabel}</span>}
+                    </TableCell>
                     <TableCell className="text-xs">{p.title || "—"}</TableCell>
                     <TableCell className="text-xs capitalize">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</TableCell>
                     <TableCell>
@@ -470,7 +498,8 @@ export default function ProblemBank() {
                       </div>
                     </TableCell>
                   </TableRow>
-            )
+              );
+            })
             }
             </TableBody>
           </Table>
