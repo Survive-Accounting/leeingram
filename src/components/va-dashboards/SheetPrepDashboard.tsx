@@ -18,8 +18,8 @@ export function SheetPrepDashboard({ chapterIds }: Props) {
       const { data, error } = await supabase
         .from("teaching_assets")
         .select("id, asset_name, source_ref, google_sheet_status, sheet_master_url, sheet_practice_url, sheet_promo_url, chapter_id, course_id, problem_type, difficulty")
+        .in("chapter_id", chapterIds)
         .in("google_sheet_status", ["auto_created", "verified_by_va"])
-        .neq("google_sheet_status", "archived")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
