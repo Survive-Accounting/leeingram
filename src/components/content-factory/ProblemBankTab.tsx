@@ -1766,7 +1766,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
 
   const launchServerBatch = async () => {
     if (!problems?.length) return;
-    const eligible = problems.filter(p => p.status === "ready" && (p as any).dependency_type !== "dependent_problem");
+    const eligible = problems.filter(p => p.status === "ready");
     if (eligible.length === 0) { toast.info("No Ready problems to generate."); return; }
     setLaunchingBatch(true);
     try {
