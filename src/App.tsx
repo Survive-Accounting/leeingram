@@ -52,6 +52,7 @@ import VaAdmin from "./pages/VaAdmin";
 import VaDashboard from "./pages/VaDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import ChapterComplete from "./pages/ChapterComplete";
 import TemplateManager from "./pages/TemplateManager";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
