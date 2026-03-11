@@ -62,7 +62,10 @@ export default function ChapterWorkspace() {
   const { saveSession } = useProductionSession();
   const { setWorkspace } = useActiveWorkspace();
   const { activeRun, isRunning } = useBuildRun();
-  const { isVa } = useVaAccount();
+  const { isVa, vaAccount } = useVaAccount();
+  const { impersonating } = useImpersonation();
+  const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
+  const isContentVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test" || effectiveRole === "sheet_prep_va";
   const qc = useQueryClient();
   const initialTab = searchParams.get("tab") || "problems";
   const autoReview = searchParams.get("mode") === "review";
