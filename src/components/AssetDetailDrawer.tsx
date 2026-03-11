@@ -1316,6 +1316,57 @@ Return valid JSON only.`,
                 </CollapsibleContent>
               </Collapsible>
 
+              {/* ── FLAG ISSUE ── */}
+              <div className="border-t border-border pt-3 space-y-2">
+                {!showFlagForm ? (
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowFlagForm(true)}>
+                    <Flag className="h-3 w-3 mr-1" /> Flag Issue
+                  </Button>
+                ) : (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Flag Reason</p>
+                    <Textarea
+                      value={flagReason}
+                      onChange={(e) => setFlagReason(e.target.value)}
+                      placeholder="Describe the issue..."
+                      className="min-h-[60px] text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="text-xs"
+                        disabled={!flagReason.trim() || flagging}
+                        onClick={async () => {
+                          setFlagging(true);
+                          try {
+                            await supabase.from("asset_flags").insert({
+                              teaching_asset_id: asset.id,
+                              flag_reason: flagReason.trim(),
+                              status: "open",
+                            });
+                            toast.success("Issue flagged");
+                            setShowFlagForm(false);
+                            setFlagReason("");
+                            onAssetUpdated?.();
+                          } catch (e: any) {
+                            toast.error(e.message || "Failed to flag");
+                          } finally {
+                            setFlagging(false);
+                          }
+                        }}
+                      >
+                        {flagging ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Flag className="h-3 w-3 mr-1" />}
+                        Submit Flag
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setShowFlagForm(false); setFlagReason(""); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={onRevert}>
                   <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
