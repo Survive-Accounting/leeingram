@@ -547,106 +547,136 @@ Return valid JSON only.`,
   return (
     <SurviveSidebarLayout>
       <div className="space-y-3">
-        {/* ── Nav bar ── */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-[10px] font-mono">
-              {problem?.source_label || problem?.title || `Problem ${reviewIndex + 1}`}
-            </Badge>
-            <span className="text-xs text-foreground/70 font-medium">
-              {reviewIndex + 1} / {generatedProblems.length}
-            </span>
-            <Button size="sm" variant="outline" disabled={reviewIndex === 0} onClick={() => navigateReview("prev")} className="h-7 px-2">
-              <ChevronRight className="h-3 w-3 rotate-180" />
+      {/* ── Review Complete State ── */}
+      {reviewComplete ? (
+        <Card>
+          <CardContent className="py-12 text-center space-y-4">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+            <h2 className="text-lg font-semibold text-foreground">Review Complete!</h2>
+            <p className="text-sm text-muted-foreground">All items in this queue have been actioned.</p>
+            <Button onClick={() => navigate("/assets-library")} className="mt-2">
+              <ArrowRight className="h-4 w-4 mr-2" /> Go to Teaching Assets
             </Button>
-            <Button size="sm" variant="outline" disabled={reviewIndex >= generatedProblems.length - 1} onClick={() => navigateReview("next")} className="h-7 px-2">
-              <ChevronRight className="h-3 w-3" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <Switch checked={speedMode} onCheckedChange={setSpeedMode} className="h-5 w-9" />
-              <span className="text-[10px] text-muted-foreground font-medium">
-                {speedMode ? "Speed" : "Full"}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* ── Progress Bar ── */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-[10px] font-mono">
+                {problem?.source_label || problem?.title || `Problem ${reviewIndex + 1}`}
+              </Badge>
+              <span className="text-sm font-semibold text-foreground tabular-nums">
+                {reviewIndex + 1} / {generatedProblems.length}
               </span>
             </div>
-            <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear all variants?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will delete all generated variants and teaching assets for this chapter's problems, resetting them back to the Generate stage. This cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={clearingVariants}>Cancel</AlertDialogCancel>
-                  <Button variant="destructive" onClick={handleClearVariants} disabled={clearingVariants}>
-                    {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                    {clearingVariants ? "Clearing…" : "Clear All"}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReviewStarted(false); setCandidates([]); }}>
-              <Check className="h-3 w-3 mr-1" /> Done
-            </Button>
+            <Progress value={((reviewIndex + 1) / generatedProblems.length) * 100} className="h-1.5" />
           </div>
-        </div>
 
-        {/* ── Content ── */}
-        {loading ? (
-          <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" /> Loading variants…
-          </div>
-        ) : activeVariants.length === 0 ? (
-          <Card>
-            <CardContent className="py-6 text-center">
-              <p className="text-sm text-muted-foreground">No active variants for this problem.</p>
-              {reviewIndex < generatedProblems.length - 1 && (
-                <Button size="sm" variant="outline" className="mt-3" onClick={() => navigateReview("next")}>
-                  Next Problem <ChevronRight className="h-3 w-3 ml-1" />
+          {/* ── Nav bar ── */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={reviewIndex === 0} onClick={() => navigateReview("prev")} className="h-7 px-2">
+                <ChevronRight className="h-3 w-3 rotate-180" />
+              </Button>
+              <Button size="sm" variant="outline" disabled={reviewIndex >= generatedProblems.length - 1} onClick={() => navigateReview("next")} className="h-7 px-2">
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Switch checked={speedMode} onCheckedChange={setSpeedMode} className="h-5 w-9" />
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {speedMode ? "Speed" : "Full"}
+                </span>
+              </div>
+              <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
+                    <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all variants?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all generated variants and teaching assets for this chapter's problems, resetting them back to the Generate stage. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={clearingVariants}>Cancel</AlertDialogCancel>
+                    <Button variant="destructive" onClick={handleClearVariants} disabled={clearingVariants}>
+                      {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                      {clearingVariants ? "Clearing…" : "Clear All"}
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              {/* Done / Finish Review button */}
+              {reviewIndex >= generatedProblems.length - 1 ? (
+                <Button size="sm" onClick={() => setReviewComplete(true)} className="text-xs bg-green-600 hover:bg-green-700 text-white">
+                  <CheckCircle className="h-3 w-3 mr-1" /> Finish Review
+                </Button>
+              ) : (
+                <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReviewStarted(false); setCandidates([]); }}>
+                  <Check className="h-3 w-3 mr-1" /> Done
                 </Button>
               )}
-            </CardContent>
-          </Card>
-        ) : speedMode && currentVariant ? (
-          <SpeedReviewPanel
-            variant={currentVariant}
-            problem={problem}
-            variantIndex={speedIdx}
-            totalVariants={activeVariants.length}
-            isApproving={approveMutation.isPending}
-            onApprove={handleApprove}
-            onReject={handleRegenerate}
-            onRegenerate={handleRegenerate}
-            onFlagForDeepReview={handleFlag}
-            onNext={() => {
-              if (speedIdx < activeVariants.length - 1) {
-                setSpeedIdx(prev => prev + 1);
-              } else if (reviewIndex < generatedProblems.length - 1) {
-                navigateReview("next");
-              }
-            }}
-            onBack={speedIdx > 0 ? () => setSpeedIdx(prev => prev - 1) : reviewIndex > 0 ? () => navigateReview("prev") : undefined}
-            onOpenFullReview={() => setSpeedMode(false)}
-          />
-        ) : currentVariant ? (
-          <VariantReviewContent
-            variant={currentVariant}
-            problem={problem}
-            chapterId={chapterId}
-            onApproved={handleApprove}
-            onRejected={handleRegenerate}
-            onNeedsFix={handleFlag}
-            onApproveAndNext={handleApprove}
-          />
-        ) : null}
-      </div>
-    </SurviveSidebarLayout>
+            </div>
+          </div>
+
+          {/* ── Content ── */}
+          {loading ? (
+            <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" /> Loading variants…
+            </div>
+          ) : activeVariants.length === 0 ? (
+            <Card>
+              <CardContent className="py-6 text-center">
+                <p className="text-sm text-muted-foreground">No active variants for this problem.</p>
+                {reviewIndex < generatedProblems.length - 1 && (
+                  <Button size="sm" variant="outline" className="mt-3" onClick={() => navigateReview("next")}>
+                    Next Problem <ChevronRight className="h-3 w-3 ml-1" />
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : speedMode && currentVariant ? (
+            <SpeedReviewPanel
+              variant={currentVariant}
+              problem={problem}
+              variantIndex={speedIdx}
+              totalVariants={activeVariants.length}
+              isApproving={approveMutation.isPending}
+              onApprove={handleApprove}
+              onReject={handleRegenerate}
+              onRegenerate={handleRegenerate}
+              onFlagForDeepReview={handleFlag}
+              onNext={() => {
+                if (speedIdx < activeVariants.length - 1) {
+                  setSpeedIdx(prev => prev + 1);
+                } else if (reviewIndex < generatedProblems.length - 1) {
+                  navigateReview("next");
+                }
+              }}
+              onBack={speedIdx > 0 ? () => setSpeedIdx(prev => prev - 1) : reviewIndex > 0 ? () => navigateReview("prev") : undefined}
+              onOpenFullReview={() => setSpeedMode(false)}
+            />
+          ) : currentVariant ? (
+            <VariantReviewContent
+              variant={currentVariant}
+              problem={problem}
+              chapterId={chapterId}
+              onApproved={handleApprove}
+              onRejected={handleRegenerate}
+              onNeedsFix={handleFlag}
+              onApproveAndNext={handleApprove}
+            />
+          ) : null}
+        </>
+      )}
+    </div>
+  </SurviveSidebarLayout>
   );
 }
