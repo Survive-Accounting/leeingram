@@ -1,4 +1,5 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
