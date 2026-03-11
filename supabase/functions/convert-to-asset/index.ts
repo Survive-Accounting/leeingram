@@ -1172,7 +1172,12 @@ STRICT OUTPUT QUALITY RULES (CRITICAL):
 1. NO SELF-CORRECTIONS: Do NOT use "wait", "check", "re-", "however", "actually", "verify", "let's fix". Every step must be decisive and final.
 2. ONE COMPUTATION PATH ONLY: Each text part's worked_steps must have exactly ONE final computation path.
 3. ANSWER CONSISTENCY: answer_only must match the final_answer values from text parts.
-4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.`;
+4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.
+
+SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
+- important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
+- concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
+- exam_traps: 2-4 common mistakes or traps students fall into. Be specific and actionable.`;
 
     if (generationMode === "text_only") {
       systemPrompt = `${preamble}
