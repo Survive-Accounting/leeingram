@@ -704,7 +704,12 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { asset_id } = body;
+    const { asset_id, sheet_types } = body;
+    // sheet_types is an optional array: ["master"], ["practice"], ["promo"], or any combination
+    // If not provided, defaults to all three
+    const typesToCreate: Set<string> = sheet_types && Array.isArray(sheet_types) && sheet_types.length > 0
+      ? new Set(sheet_types.map((t: string) => t.toLowerCase()))
+      : new Set(["master", "practice", "promo"]);
 
     if (!asset_id) {
       return new Response(JSON.stringify({ error: "Missing required field: asset_id" }), {
@@ -744,46 +749,53 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
 
     // Master Sheet
-    try {
-      const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, chapterFolderId);
-      results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
-      console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
-    } catch (e: any) {
-      const msg = `Master sheet creation failed: ${e.message}`;
-      console.error(msg);
-      errors.push(msg);
+    if (typesToCreate.has("master")) {
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, chapterFolderId);
+        results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
+        console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
+      } catch (e: any) {
+        const msg = `Master sheet creation failed: ${e.message}`;
+        console.error(msg);
+        errors.push(msg);
+      }
     }
 
     // Practice Sheet
-    try {
-      const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, chapterFolderId);
-      results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
-      console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
-    } catch (e: any) {
-      const msg = `Practice sheet creation failed: ${e.message}`;
-      console.error(msg);
-      errors.push(msg);
+    if (typesToCreate.has("practice")) {
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, chapterFolderId);
+        results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
+        console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
+      } catch (e: any) {
+        const msg = `Practice sheet creation failed: ${e.message}`;
+        console.error(msg);
+        errors.push(msg);
+      }
     }
 
     // Promo Sheet
-    try {
-      const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, chapterFolderId);
-      results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
-      console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
-    } catch (e: any) {
-      const msg = `Promo sheet creation failed: ${e.message}`;
-      console.error(msg);
-      errors.push(msg);
+    if (typesToCreate.has("promo")) {
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, chapterFolderId);
+        results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
+        console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
+      } catch (e: any) {
+        const msg = `Promo sheet creation failed: ${e.message}`;
+        console.error(msg);
+        errors.push(msg);
+      }
     }
 
     // If no sheets were created at all, fail
-    if (!results.master && !results.practice && !results.promo) {
+    const createdAny = Object.keys(results).length > 0;
+    if (!createdAny) {
       throw new Error(`All sheet creations failed: ${errors.join("; ")}`);
     }
 
-    const masterUrl = results.master?.url || "";
-    const practiceUrl = results.practice?.url || "";
-    const promoUrl = results.promo?.url || "";
+    const masterUrl = results.master?.url || asset.sheet_master_url || "";
+    const practiceUrl = results.practice?.url || asset.sheet_practice_url || "";
+    const promoUrl = results.promo?.url || asset.sheet_promo_url || "";
 
     // ── Populate tabs on Master Sheet ────────────────────────────────
     if (results.master) {
@@ -848,15 +860,21 @@ Deno.serve(async (req) => {
 
     // ── Persist sheet info back to DB ─────────────────────────────────
     const dbPayload: Record<string, any> = {
-      google_sheet_url: masterUrl,
-      google_sheet_file_id: results.master?.fileId || asset.google_sheet_file_id || "",
       sheet_last_synced_at: new Date().toISOString(),
-      google_sheet_status: "auto_created",
-      sheet_master_url: masterUrl,
-      sheet_practice_url: practiceUrl,
-      sheet_promo_url: promoUrl,
       sheet_path_url: sheetPathUrl,
     };
+    if (results.master) {
+      dbPayload.google_sheet_url = masterUrl;
+      dbPayload.google_sheet_file_id = results.master.fileId;
+      dbPayload.google_sheet_status = "auto_created";
+      dbPayload.sheet_master_url = masterUrl;
+    }
+    if (results.practice) {
+      dbPayload.sheet_practice_url = practiceUrl;
+    }
+    if (results.promo) {
+      dbPayload.sheet_promo_url = promoUrl;
+    }
 
     const dbRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${asset_id}`, {
       method: "PATCH",
