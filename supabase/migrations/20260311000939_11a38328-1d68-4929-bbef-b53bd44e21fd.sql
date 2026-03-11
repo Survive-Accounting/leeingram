@@ -1,0 +1,1 @@
+UPDATE chapter_problems SET status = 'raw' WHERE status IN ('approved', 'generated') AND pipeline_status = 'imported';
