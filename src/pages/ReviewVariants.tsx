@@ -184,17 +184,7 @@ export default function ReviewVariants() {
         payload_json: { source_problem_id: problem.id, asset_code: assetCode },
       });
 
-      // Auto-create Google Sheet for the new teaching asset
-      if (taData?.id) {
-        try {
-          const { error: sheetErr } = await supabase.functions.invoke("create-asset-sheet", {
-            body: { asset_id: taData.id },
-          });
-          if (sheetErr) console.error("Sheet creation failed (non-fatal):", sheetErr);
-        } catch (e) {
-          console.error("Sheet creation failed (non-fatal):", e);
-        }
-      }
+      // Google Sheet creation moved to admin-only batch action in Assets Library
     },
     onSuccess: () => {
       toast.success("Variant approved ✓");

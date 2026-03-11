@@ -93,6 +93,8 @@ export default function ProblemBank() {
   const [editLabel, setEditLabel] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editNoJE, setEditNoJE] = useState(false);
+  const [editProblemFiles, setEditProblemFiles] = useState<File[]>([]);
+  const [editSolutionFiles, setEditSolutionFiles] = useState<File[]>([]);
 
   const { data: chapters } = useQuery({
     queryKey: ["chapters", courseFilter],
@@ -207,8 +209,40 @@ export default function ProblemBank() {
       if ((editLabel || editTitle) && editingProblem.status === "raw") {
         updates.status = "tagged";
       }
+
+      // Handle screenshot replacements
+      if (editProblemFiles.length > 0) {
+        const urls: string[] = [];
+        for (const f of editProblemFiles) {
+          urls.push(await uploadFile(f, "intake-problems"));
+        }
+        updates.problem_screenshot_url = urls[0];
+        updates.problem_screenshot_urls = urls;
+        updates.ocr_status = "pending";
+      }
+      if (editSolutionFiles.length > 0) {
+        const urls: string[] = [];
+        for (const f of editSolutionFiles) {
+          urls.push(await uploadFile(f, "intake-solutions"));
+        }
+        updates.solution_screenshot_url = urls[0];
+        updates.solution_screenshot_urls = urls;
+      }
+
       const { error } = await supabase.from("chapter_problems").update(updates).eq("id", editingProblem.id);
       if (error) throw error;
+
+      // Auto-OCR if screenshots were replaced
+      if (editProblemFiles.length > 0 && updates.problem_screenshot_urls) {
+        supabase.functions.invoke("extract-ocr", {
+          body: {
+            problemId: editingProblem.id,
+            problemImageUrls: updates.problem_screenshot_urls,
+            solutionImageUrls: updates.solution_screenshot_urls || editingProblem.solution_screenshot_urls || [],
+          }
+        }).then(() => qc.invalidateQueries({ queryKey: ["chapter-problems"] }))
+          .catch(e => console.error("Auto-OCR failed:", e));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
@@ -372,6 +406,8 @@ export default function ProblemBank() {
     setEditLabel(p.source_label);
     setEditTitle(p.title);
     setEditNoJE(!!(p as any).contains_no_journal_entries);
+    setEditProblemFiles([]);
+    setEditSolutionFiles([]);
     setEditDialogOpen(true);
   };
 
@@ -641,16 +677,57 @@ export default function ProblemBank() {
 
           {editingProblem &&
           <>
-              {(editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) &&
-            <div className="flex gap-2 flex-wrap">
-                  {(editingProblem.problem_screenshot_urls.length > 0 ?
-              editingProblem.problem_screenshot_urls :
-              [editingProblem.problem_screenshot_url].filter(Boolean)).
-              map((url, i) =>
-              <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
-              )}
+              {/* Current screenshots with replace option */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs mb-1 block">Problem Screenshot</Label>
+                  {editProblemFiles.length === 0 && (editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) ? (
+                    <div className="space-y-1">
+                      <div className="flex gap-1 flex-wrap">
+                        {(editingProblem.problem_screenshot_urls.length > 0 ?
+                          editingProblem.problem_screenshot_urls :
+                          [editingProblem.problem_screenshot_url].filter(Boolean)).map((url, i) =>
+                          <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => setEditProblemFiles([])}>
+                        <Camera className="h-3 w-3 mr-1" /> Replace
+                      </Button>
+                    </div>
+                  ) : (
+                    <ImagePasteArea
+                      label="Paste or drop replacement"
+                      files={editProblemFiles}
+                      onAdd={(f) => setEditProblemFiles(f.slice(0, 3))}
+                      onRemove={() => setEditProblemFiles([])}
+                    />
+                  )}
                 </div>
-            }
+                <div>
+                  <Label className="text-xs mb-1 block">Solution Screenshot</Label>
+                  {editSolutionFiles.length === 0 && (editingProblem.solution_screenshot_urls.length > 0 || editingProblem.solution_screenshot_url) ? (
+                    <div className="space-y-1">
+                      <div className="flex gap-1 flex-wrap">
+                        {(editingProblem.solution_screenshot_urls.length > 0 ?
+                          editingProblem.solution_screenshot_urls :
+                          [editingProblem.solution_screenshot_url].filter(Boolean)).map((url, i) =>
+                          <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => setEditSolutionFiles([])}>
+                        <Camera className="h-3 w-3 mr-1" /> Replace
+                      </Button>
+                    </div>
+                  ) : (
+                    <ImagePasteArea
+                      label="Paste or drop replacement"
+                      files={editSolutionFiles}
+                      onAdd={(f) => setEditSolutionFiles(f.slice(0, 3))}
+                      onRemove={() => setEditSolutionFiles([])}
+                    />
+                  )}
+                </div>
+              </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>

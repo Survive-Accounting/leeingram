@@ -79,6 +79,7 @@ const AppRoutes = () => {
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
+      {/* Post-login VA auto-redirect handled in DomainSelect */}
       {/* Legacy redirect */}
       <Route path="/auth" element={<Navigate to="/admin" replace />} />
       <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />

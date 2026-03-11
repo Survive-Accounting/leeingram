@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
@@ -62,6 +63,8 @@ function escapeCSV(val: string): string {
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const { workspace } = useActiveWorkspace();
+  const { isVa } = useVaAccount();
+  const isAdmin = !isVa;
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
@@ -88,6 +91,7 @@ export default function AssetsLibrary() {
   const [newSetName, setNewSetName] = useState("");
   const [isGeneratingEbook, setIsGeneratingEbook] = useState(false);
   const [isBanking, setIsBanking] = useState(false);
+  const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const { data: courses } = useQuery({
     queryKey: ["courses"],
@@ -383,11 +387,16 @@ export default function AssetsLibrary() {
                   <SelectItem value="revert">
                     <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
                   </SelectItem>
+                  {isAdmin && (
+                    <SelectItem value="create-sheets">
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Google Sheets</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <Button
                 size="sm"
-                disabled={!bulkAction || isBanking || isGeneratingEbook || isExporting}
+                disabled={!bulkAction || isBanking || isGeneratingEbook || isExporting || isCreatingSheets}
                 onClick={async () => {
                   if (!assets || !bulkAction) return;
                   const selected = assets.filter((a) => selectedIds.has(a.id));
@@ -456,11 +465,34 @@ export default function AssetsLibrary() {
                       revertMutation.mutate(asset);
                     }
                     setSelectedIds(new Set());
+                  } else if (bulkAction === "create-sheets") {
+                    setIsCreatingSheets(true);
+                    let sheetSuccess = 0;
+                    let sheetFail = 0;
+                    for (const asset of selected) {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
+                          body: { asset_id: asset.id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        sheetSuccess++;
+                      } catch (e: any) {
+                        sheetFail++;
+                        toast.error(`Sheet failed: ${asset.asset_name}`, { description: e.message });
+                      }
+                    }
+                    setIsCreatingSheets(false);
+                    if (sheetSuccess > 0) {
+                      toast.success(`Created sheets for ${sheetSuccess} assets`);
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      setSelectedIds(new Set());
+                    }
                   }
                   setBulkAction(null);
                 }}
               >
-                {(isBanking || isGeneratingEbook || isExporting) ? (
+                {(isBanking || isGeneratingEbook || isExporting || isCreatingSheets) ? (
                   <><Loader2 className="h-3 w-3 animate-spin" /> Running…</>
                 ) : (
                   "Go"
