@@ -620,15 +620,6 @@ export default function AssetDetailDrawer({
     }
   };
 
-  // Parts analysis for collapsible sections
-  const parts = useMemo(() => normalizeToParts({
-    survive_problem_text: asset.survive_problem_text,
-    survive_solution_text: asset.survive_solution_text,
-    journal_entry_completed_json: asset.journal_entry_completed_json,
-    parts_json: (asset as any).parts_json,
-  }), [asset]);
-  const textParts = useMemo(() => parts.filter(isTextPart), [parts]);
-  const jeParts = useMemo(() => parts.filter(isJEPart), [parts]);
 
   const problemLines = (asset.survive_problem_text || "").split("\n");
   const previewLines = problemLines.slice(0, 10);
