@@ -435,10 +435,16 @@ export default function ProblemBank() {
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
               <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Ready ({selectedIds.size})
             </Button>
-            {selectedIds.size >= 2 && (
+            <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => bulkMarkNotReady.mutate(Array.from(selectedIds))} disabled={bulkMarkNotReady.isPending}>
+              Mark Not Ready ({selectedIds.size})
+            </Button>
+            {selectedIds.size >= 2 && selectedIds.size <= 4 && (
               <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => bulkCombine.mutate(Array.from(selectedIds))} disabled={bulkCombine.isPending}>
                 <Merge className="h-3 w-3 mr-1" /> Combine ({selectedIds.size})
               </Button>
+            )}
+            {selectedIds.size > 4 && (
+              <span className="text-[11px] text-muted-foreground italic">Max 4 to combine</span>
             )}
           </>
         )}
