@@ -692,18 +692,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       // Recompute build run progress
       recomputeProgress();
 
-      // Trigger Google Sheets workbook creation (fire-and-forget)
-      if (data.asset?.id) {
-        supabase.functions.invoke("create-asset-sheet", {
-          body: { asset_id: data.asset.id },
-        }).then((res) => {
-          if (res.data?.sheet_master_url || res.data?.sheet_url) {
-            toast.success("Google Sheets created", { description: "Master, Practice & Promo sheets ready in Drive" });
-          } else if (res.error) {
-            console.error("Sheet creation failed:", res.error);
-          }
-        }).catch((err) => console.error("Sheet creation error:", err));
-      }
+      // Google Sheet creation moved to admin-only batch action in Assets Library
     },
     onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
