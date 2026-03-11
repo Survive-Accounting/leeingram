@@ -13,10 +13,10 @@ export function LeadVaDashboard({ chapterIds }: Props) {
       if (!chapterIds.length) return null;
 
       const [assets, problems, sheets, banked] = await Promise.all([
-        supabase.from("teaching_assets").select("id, google_sheet_status, video_production_status, deployment_status", { count: "exact" }).in("chapter_id", chapterIds),
+        supabase.from("teaching_assets").select("id, google_sheet_status, video_production_status, deployment_status", { count: "exact" }).in("chapter_id", chapterIds).neq("google_sheet_status", "archived"),
         supabase.from("chapter_problems").select("id, pipeline_status").in("chapter_id", chapterIds),
-        supabase.from("teaching_assets").select("id", { count: "exact", head: true }).in("chapter_id", chapterIds).not("sheet_master_url", "is", null),
-        supabase.from("teaching_assets").select("id", { count: "exact", head: true }).in("chapter_id", chapterIds).eq("banked_generation_status", "completed"),
+        supabase.from("teaching_assets").select("id", { count: "exact", head: true }).in("chapter_id", chapterIds).neq("google_sheet_status", "archived").not("sheet_master_url", "is", null),
+        supabase.from("teaching_assets").select("id", { count: "exact", head: true }).in("chapter_id", chapterIds).neq("google_sheet_status", "archived").eq("banked_generation_status", "completed"),
       ]);
 
       const assetData = assets.data ?? [];
