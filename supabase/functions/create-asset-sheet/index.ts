@@ -749,36 +749,42 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
 
     // Master Sheet
-    try {
-      const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, chapterFolderId);
-      results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
-      console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
-    } catch (e: any) {
-      const msg = `Master sheet creation failed: ${e.message}`;
-      console.error(msg);
-      errors.push(msg);
+    if (typesToCreate.has("master")) {
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, chapterFolderId);
+        results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
+        console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
+      } catch (e: any) {
+        const msg = `Master sheet creation failed: ${e.message}`;
+        console.error(msg);
+        errors.push(msg);
+      }
     }
 
     // Practice Sheet
-    try {
-      const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, chapterFolderId);
-      results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
-      console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
-    } catch (e: any) {
-      const msg = `Practice sheet creation failed: ${e.message}`;
-      console.error(msg);
-      errors.push(msg);
+    if (typesToCreate.has("practice")) {
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, chapterFolderId);
+        results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
+        console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
+      } catch (e: any) {
+        const msg = `Practice sheet creation failed: ${e.message}`;
+        console.error(msg);
+        errors.push(msg);
+      }
     }
 
     // Promo Sheet
-    try {
-      const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, chapterFolderId);
-      results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
-      console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
-    } catch (e: any) {
-      const msg = `Promo sheet creation failed: ${e.message}`;
-      console.error(msg);
-      errors.push(msg);
+    if (typesToCreate.has("promo")) {
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, chapterFolderId);
+        results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
+        console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
+      } catch (e: any) {
+        const msg = `Promo sheet creation failed: ${e.message}`;
+        console.error(msg);
+        errors.push(msg);
+      }
     }
 
     // If no sheets were created at all, fail
