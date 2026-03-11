@@ -10,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
-  Lightbulb, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
-  BookMarked, Share2, Clock, Users, BarChart3, CheckCircle2, Layers,
+  Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
+  BookMarked, Share2, CheckCircle2, Layers,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
+  ZoomIn, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -318,16 +319,98 @@ function LinkCard({ icon: Icon, label, subtitle, href, onCopy, disabled, comingS
   );
 }
 
-// ── Future placeholder ──────────────────────────────────────────────
+// ── Source Image Gallery ─────────────────────────────────────────────
 
-function FuturePlaceholder({ icon: Icon, label }: { icon: any; label: string }) {
+function SourceImageGallery({ urls, label }: { urls: string[]; label: string }) {
+  const [current, setCurrent] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+
+  if (urls.length === 0) return null;
+
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-border opacity-40">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      <div className="flex-1">
-        <p className="text-sm text-foreground">{label}</p>
-        <p className="text-[10px] text-muted-foreground">Coming soon</p>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</h3>
+        {urls.length > 1 && (
+          <span className="text-[10px] text-muted-foreground">{current + 1} / {urls.length}</span>
+        )}
       </div>
+      <div className="relative group rounded-lg border border-border bg-card overflow-hidden">
+        <img
+          src={urls[current]}
+          alt={`${label} ${current + 1}`}
+          className="w-full object-contain max-h-[50vh] cursor-zoom-in"
+          onClick={() => setZoomed(true)}
+        />
+        <button
+          className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => setZoomed(true)}
+        >
+          <ZoomIn className="h-3.5 w-3.5" />
+        </button>
+        {urls.length > 1 && (
+          <>
+            <button
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+              onClick={() => setCurrent((c) => c - 1)}
+              disabled={current === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+              onClick={() => setCurrent((c) => c + 1)}
+              disabled={current === urls.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+      {urls.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {urls.map((url, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`flex-shrink-0 h-12 w-16 rounded border object-cover overflow-hidden transition-all ${
+                i === current ? "border-primary ring-1 ring-primary/50" : "border-border opacity-60 hover:opacity-100"
+              }`}
+            >
+              <img src={url} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+      {zoomed && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center cursor-zoom-out"
+          onClick={() => setZoomed(false)}
+        >
+          <button className="absolute top-4 right-4 p-2 rounded-md text-white/70 hover:text-white" onClick={() => setZoomed(false)}>
+            <X className="h-5 w-5" />
+          </button>
+          <img src={urls[current]} alt="" className="max-w-[95vw] max-h-[95vh] object-contain" onClick={(e) => e.stopPropagation()} />
+          {urls.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-md bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+                onClick={(e) => { e.stopPropagation(); setCurrent((c) => c - 1); }}
+                disabled={current === 0}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-md bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+                onClick={(e) => { e.stopPropagation(); setCurrent((c) => c + 1); }}
+                disabled={current === urls.length - 1}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -353,6 +436,21 @@ export default function AssetDetailDrawer({
   const [isSyncing, setIsSyncing] = useState(false);
   const [copySettings, setCopySettings] = useState<JECopySettings>(loadCopySettings);
   const [showCopySettings, setShowCopySettings] = useState(false);
+  const [sourceProblem, setSourceProblem] = useState<any>(null);
+
+  // Fetch linked source problem for images + title
+  useEffect(() => {
+    if (!open || !asset?.base_raw_problem_id) {
+      setSourceProblem(null);
+      return;
+    }
+    supabase
+      .from("chapter_problems")
+      .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label")
+      .eq("id", asset.base_raw_problem_id)
+      .single()
+      .then(({ data }) => setSourceProblem(data || null));
+  }, [open, asset?.base_raw_problem_id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
     setCopySettings(prev => {
@@ -515,7 +613,7 @@ export default function AssetDetailDrawer({
             <TabsTrigger value="overview" className="text-xs gap-1"><BookOpen className="h-3 w-3" />Overview</TabsTrigger>
             <TabsTrigger value="journal" className="text-xs gap-1"><TableProperties className="h-3 w-3" />Journal Entries</TabsTrigger>
             <TabsTrigger value="links" className="text-xs gap-1"><Link2 className="h-3 w-3" />Links</TabsTrigger>
-            <TabsTrigger value="future" className="text-xs gap-1"><Lightbulb className="h-3 w-3" />Future</TabsTrigger>
+            <TabsTrigger value="source" className="text-xs gap-1"><Image className="h-3 w-3" />Source</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
@@ -762,16 +860,35 @@ export default function AssetDetailDrawer({
               </div>
             </TabsContent>
 
-            {/* Future */}
-            <TabsContent value="future" className="px-6 pb-6 space-y-3 mt-4">
-              <p className="text-xs text-muted-foreground mb-2">These modules will be activated as features are built.</p>
-              <FuturePlaceholder icon={Clock} label="Times used in tutoring" />
-              <FuturePlaceholder icon={Video} label="Filmed?" />
-              <FuturePlaceholder icon={BookMarked} label="Deployed to LearnWorlds?" />
-              <FuturePlaceholder icon={Layers} label="Export sets included in" />
-              <FuturePlaceholder icon={Users} label="Sessions associated" />
-              <FuturePlaceholder icon={Users} label="Students associated" />
-              <FuturePlaceholder icon={BarChart3} label="Referral / UTM performance" />
+            {/* Source */}
+            <TabsContent value="source" className="px-6 pb-6 space-y-4 mt-4">
+              {sourceProblem?.title && (
+                <div className="rounded-md border border-border p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
+                </div>
+              )}
+              {(() => {
+                const pUrls = sourceProblem?.problem_screenshot_urls?.length
+                  ? sourceProblem.problem_screenshot_urls
+                  : sourceProblem?.problem_screenshot_url
+                    ? [sourceProblem.problem_screenshot_url]
+                    : [];
+                const sUrls = sourceProblem?.solution_screenshot_urls?.length
+                  ? sourceProblem.solution_screenshot_urls
+                  : sourceProblem?.solution_screenshot_url
+                    ? [sourceProblem.solution_screenshot_url]
+                    : [];
+                if (pUrls.length === 0 && sUrls.length === 0) {
+                  return <p className="text-sm text-muted-foreground text-center py-8">No source images available.</p>;
+                }
+                return (
+                  <div className="space-y-5">
+                    {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Problem Screenshots" />}
+                    {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Solution Screenshots" />}
+                  </div>
+                );
+              })()}
             </TabsContent>
           </ScrollArea>
         </Tabs>
