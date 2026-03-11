@@ -1120,7 +1120,8 @@ Do NOT invent or use account names outside this list. If an account is needed bu
       }
     }
 
-    // ── Detect optional learning structures from existing teaching assets ──
+    // ── Detect optional learning structures ──
+    // Check existing assets, source problem flags from batch runner, AND auto-detect from problem text
     let usesLearningStructures = { t_accounts: false, tables: false, financial_statements: false };
     if (problemId) {
       const { data: existingAsset } = await supabase
@@ -1142,6 +1143,21 @@ Do NOT invent or use account names outside this list. If an account is needed bu
     if (body.uses_t_accounts) usesLearningStructures.t_accounts = true;
     if (body.uses_tables) usesLearningStructures.tables = true;
     if (body.uses_financial_statements) usesLearningStructures.financial_statements = true;
+
+    // Auto-detect from problem/solution text content
+    const tAccountPatterns = [/\bt[- ]?account/i, /\bpost(ing)?\s+(to|the)\s+(ledger|accounts)/i, /\bpost\s+to\s+t[- ]?accounts/i];
+    const tablePatterns = [/\bamortization\s+schedule/i, /\bdepreciation\s+schedule/i, /\bprepare\s+(a|the)\s+(schedule|table)/i, /\bschedule\s+of\b/i];
+    const fsPatterns = [/\bincome\s+statement/i, /\bbalance\s+sheet/i, /\bstatement\s+of\s+(cash\s+flows|retained\s+earnings|financial\s+position)/i, /\bprepare\s+(the\s+)?(adjusted\s+)?trial\s+balance/i];
+
+    if (!usesLearningStructures.t_accounts && tAccountPatterns.some(p => p.test(combinedText))) {
+      usesLearningStructures.t_accounts = true;
+    }
+    if (!usesLearningStructures.tables && tablePatterns.some(p => p.test(combinedText))) {
+      usesLearningStructures.tables = true;
+    }
+    if (!usesLearningStructures.financial_statements && fsPatterns.some(p => p.test(combinedText))) {
+      usesLearningStructures.financial_statements = true;
+    }
 
     const hasAnyLearningStructure = usesLearningStructures.t_accounts || usesLearningStructures.tables || usesLearningStructures.financial_statements;
 
