@@ -350,6 +350,7 @@ async function writeHiddenData(token: string, spreadsheetId: string, params: Hid
     ["problem_context", params.problem_context],
     ["problem_text", params.problem_text],
     ["problem_text_highlighted", params.problem_text_highlighted],
+    ["instruction_list", params.instruction_list],
     ["instruction_1", params.instruction_1],
     ["instruction_2", params.instruction_2],
     ["instruction_3", params.instruction_3],
