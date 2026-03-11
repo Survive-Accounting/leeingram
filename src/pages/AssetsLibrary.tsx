@@ -112,7 +112,7 @@ export default function AssetsLibrary() {
   const { data: assets, isLoading } = useQuery({
     queryKey: ["teaching-assets", courseFilter, chapterFilter, search],
     queryFn: async () => {
-      let q = supabase.from("teaching_assets").select("*");
+      let q = supabase.from("teaching_assets").select("*").neq("google_sheet_status", "archived");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
       if (search.trim()) {
