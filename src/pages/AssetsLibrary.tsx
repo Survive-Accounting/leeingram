@@ -796,7 +796,7 @@ export default function AssetsLibrary() {
 
       {/* Sheet Prep Log (Admin only) */}
       {isAdmin && (
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           <Collapsible open={sheetLogOpen} onOpenChange={setSheetLogOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full justify-between h-10 text-sm font-medium border-border">
@@ -809,6 +809,21 @@ export default function AssetsLibrary() {
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3">
               <SheetPrepLog />
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible open={sheetsCreatedLogOpen} onOpenChange={setSheetsCreatedLogOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between h-10 text-sm font-medium border-border">
+                <span className="flex items-center gap-2">
+                  <Sheet className="h-4 w-4 text-primary" />
+                  Sheets Created Log
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${sheetsCreatedLogOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <SheetsCreatedLog />
             </CollapsibleContent>
           </Collapsible>
         </div>
