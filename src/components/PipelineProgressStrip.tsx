@@ -9,15 +9,15 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STAGES = [
-  { key: "imported", label: "Import", path: "/problem-bank" },
-  { key: "generated", label: "Generate", path: "/content" },
-  { key: "reviewed", label: "Review", path: "/review" },
-  { key: "approved", label: "Teaching Assets", path: "/assets-library" },
-  { key: "mc_generated", label: "MC Generator", path: "/question-review" },
-  { key: "quizzes_ready", label: "Quizzes Ready", path: "/quizzes-ready" },
-  { key: "video_pending", label: "Video Pending", path: "/video-pending" },
-  { key: "video_ready", label: "Videos Ready", path: "/videos-ready" },
-  { key: "deployed", label: "Deploy", path: "/deployment" },
+  { key: "imported", label: "Import", path: "/problem-bank", tip: "Paste textbook screenshots and tag source problems for this chapter." },
+  { key: "generated", label: "Generate", path: "/content", tip: "AI generates Survive Teaching Asset variants from imported source problems." },
+  { key: "reviewed", label: "Review", path: "/review", tip: "Review generated variants — approve, reject, or flag for fixes." },
+  { key: "approved", label: "Teaching Assets", path: "/assets-library", tip: "Approved assets ready for sheet prep, quizzes, and video production." },
+  { key: "mc_generated", label: "MC Generator", path: "/question-review", tip: "Review multiple-choice questions generated from teaching assets." },
+  { key: "quizzes_ready", label: "Quizzes Ready", path: "/quizzes-ready", tip: "Quiz CSV files ready for LearnWorlds import." },
+  { key: "video_pending", label: "Video Pending", path: "/video-pending", tip: "Assets waiting for walkthrough video recording." },
+  { key: "video_ready", label: "Videos Ready", path: "/videos-ready", tip: "Assets with completed videos ready for deployment." },
+  { key: "deployed", label: "Deploy", path: "/deployment", tip: "Final deployment of quizzes and videos to LearnWorlds." },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
