@@ -462,6 +462,9 @@ export default function AssetDetailDrawer({
   const [showConceptsSection, setShowConceptsSection] = useState(false);
   const [showExamTrapsSection, setShowExamTrapsSection] = useState(false);
   const [showSourceSection, setShowSourceSection] = useState(false);
+  const [showTAccountsSection, setShowTAccountsSection] = useState(false);
+  const [showTablesSection, setShowTablesSection] = useState(false);
+  const [showFSSection, setShowFSSection] = useState(false);
 
   // Highlights
   const [highlights, setHighlights] = useState<Highlight[]>([]);
