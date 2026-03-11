@@ -109,25 +109,29 @@ export default function ReviewVariants() {
 
   // Start review, skipping problems that have no active variants
   const startReviewSkippingEmpty = async (startIdx: number) => {
-    for (let i = startIdx; i < generatedProblems.length; i++) {
-      const { count } = await supabase
-        .from("problem_variants")
-        .select("id", { count: "exact", head: true })
-        .eq("base_problem_id", generatedProblems[i].id)
-        .neq("variant_status", "archived");
-      if ((count ?? 0) > 0) {
-        setReviewStarted(true);
-        setReviewIndex(i);
-        await loadCandidates(generatedProblems[i].id);
-        return;
+    try {
+      for (let i = startIdx; i < generatedProblems.length; i++) {
+        const { count, error } = await supabase
+          .from("problem_variants")
+          .select("id", { count: "exact", head: true })
+          .eq("base_problem_id", generatedProblems[i].id)
+          .neq("variant_status", "archived");
+        if (error) throw error;
+        if ((count ?? 0) > 0) {
+          setReviewStarted(true);
+          setReviewIndex(i);
+          await loadCandidates(generatedProblems[i].id);
+          return;
+        }
       }
-    }
-    // All reviewed — start at beginning so user can browse
-    if (generatedProblems.length > 0) {
-      setReviewStarted(true);
-      setReviewIndex(0);
-      await loadCandidates(generatedProblems[0].id);
-      toast.info("All variants have been reviewed. Showing all problems for browsing.");
+      // All reviewed — redirect to assets library
+      if (generatedProblems.length > 0) {
+        toast.success("All variants have been reviewed! 🎉");
+        navigate("/assets-library");
+      }
+    } catch (err: any) {
+      console.error("Review queue error:", err);
+      toast.error("Failed to load review queue. Please refresh.");
     }
   };
 
