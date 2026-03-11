@@ -976,6 +976,57 @@ export default function AssetDetailDrawer({
                 </Collapsible>
               )}
 
+              {/* ── SOURCE (from import) ── */}
+              <Collapsible open={showSourceSection} onOpenChange={setShowSourceSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showSourceSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 space-y-4">
+                  {sourceProblem?.title && (
+                    <div className="rounded-md border border-border p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
+                      <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
+                    </div>
+                  )}
+
+                  {sourceProblem?.problem_text && (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text (OCR)</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.problem_text}</p>
+                    </div>
+                  )}
+                  {sourceProblem?.solution_text && (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Solution Text (OCR)</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.solution_text}</p>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const pUrls = sourceProblem?.problem_screenshot_urls?.length
+                      ? sourceProblem.problem_screenshot_urls
+                      : sourceProblem?.problem_screenshot_url
+                        ? [sourceProblem.problem_screenshot_url]
+                        : [];
+                    const sUrls = sourceProblem?.solution_screenshot_urls?.length
+                      ? sourceProblem.solution_screenshot_urls
+                      : sourceProblem?.solution_screenshot_url
+                        ? [sourceProblem.solution_screenshot_url]
+                        : [];
+                    if (pUrls.length === 0 && sUrls.length === 0 && !sourceProblem?.problem_text && !sourceProblem?.solution_text && !sourceProblem?.title) {
+                      return <p className="text-sm text-muted-foreground text-center py-4">No source data available.</p>;
+                    }
+                    return (
+                      <div className="space-y-5">
+                        {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Problem Screenshots" />}
+                        {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Solution Screenshots" />}
+                      </div>
+                    );
+                  })()}
+                </CollapsibleContent>
+              </Collapsible>
+
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={onRevert}>
                   <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
@@ -986,8 +1037,112 @@ export default function AssetDetailDrawer({
               </div>
             </TabsContent>
 
-            {/* Journal Entries */}
-            <TabsContent value="journal" className="px-6 pb-6 space-y-4 mt-4">
+            {/* Links */}
+            <TabsContent value="links" className="px-6 pb-6 space-y-3 mt-4">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Google Sheets</h3>
+                <LinkCard
+                  icon={Layers}
+                  label="Master Sheet"
+                  subtitle={asset.sheet_master_url ? "Open in Drive" : "Not created yet"}
+                  href={asset.sheet_master_url || effectiveSheetUrl || undefined}
+                  onCopy={asset.sheet_master_url || effectiveSheetUrl ? () => { navigator.clipboard.writeText((asset.sheet_master_url || effectiveSheetUrl)!); toast.success("Copied"); } : undefined}
+                  disabled={!asset.sheet_master_url && !effectiveSheetUrl}
+                />
+                <LinkCard
+                  icon={Layers}
+                  label="Practice Sheet"
+                  subtitle={asset.sheet_practice_url ? "Open in Drive" : "Not created yet"}
+                  href={asset.sheet_practice_url || undefined}
+                  onCopy={asset.sheet_practice_url ? () => { navigator.clipboard.writeText(asset.sheet_practice_url!); toast.success("Copied"); } : undefined}
+                  disabled={!asset.sheet_practice_url}
+                />
+                <LinkCard
+                  icon={Layers}
+                  label="Promo Sheet"
+                  subtitle={asset.sheet_promo_url ? "Open in Drive" : "Not created yet"}
+                  href={asset.sheet_promo_url || undefined}
+                  onCopy={asset.sheet_promo_url ? () => { navigator.clipboard.writeText(asset.sheet_promo_url!); toast.success("Copied"); } : undefined}
+                  disabled={!asset.sheet_promo_url}
+                />
+                {asset.sheet_path_url && (
+                  <LinkCard
+                    icon={ExternalLink}
+                    label="Chapter Folder"
+                    subtitle="Open Drive folder"
+                    href={asset.sheet_path_url}
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 px-1">
+                <span className="text-[10px] text-muted-foreground">
+                  {asset.sheet_last_synced_at
+                    ? `Last synced: ${format(new Date(asset.sheet_last_synced_at), "MMM d, yyyy h:mm a")}`
+                    : "Never synced"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7"
+                  disabled={isSyncing}
+                  onClick={handleResyncSheet}
+                >
+                  {isSyncing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                  {asset.google_sheet_file_id ? "Resync Sheet" : "Create Sheet"}
+                </Button>
+              </div>
+
+              <LinkCard icon={Video} label="Walkthrough Video" disabled comingSoon />
+              <LinkCard icon={BookMarked} label="LearnWorlds / eBook" disabled comingSoon />
+              <LinkCard icon={Share2} label="Share Link" disabled comingSoon />
+
+              <Separator className="my-2" />
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Asset Actions</h3>
+                <div className="space-y-1.5">
+                  <a href="https://forms.gle/QnWFjHKc1DxaGVjMA" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">Report Issue</p>
+                      <p className="text-[10px] text-muted-foreground">Something looks incorrect in a sheet or asset</p>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                  </a>
+                  <a href="https://forms.gle/7Dz2i8eKiRangmNs9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">Mark Sheet Prep Complete</p>
+                      <p className="text-[10px] text-muted-foreground">Finished organizing and preparing this sheet</p>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                  </a>
+                  <a href="https://forms.gle/QLCMqsV1YZMbkfSD8" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
+                    <MessageSquare className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">Submit Feedback / Idea</p>
+                      <p className="text-[10px] text-muted-foreground">Suggestions for improving the workflow</p>
+                    </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                  </a>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 px-1">
+                  Asset code: <span className="font-mono font-medium text-foreground">{asset.asset_name}</span>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1 inline-flex" onClick={() => {
+                    navigator.clipboard.writeText(asset.asset_name);
+                    toast.success("Asset code copied");
+                  }}>
+                    <Copy className="h-2.5 w-2.5" />
+                  </Button>
+                </p>
+              </div>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
               {!hasJE ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                   No journal entries for this asset.
