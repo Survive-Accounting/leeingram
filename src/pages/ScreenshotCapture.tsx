@@ -83,13 +83,27 @@ export default function ScreenshotCapture() {
         } as any)
         .eq("id", current.id);
       if (error) throw error;
+
+      // Fire OCR in background and validate label match
+      const sourceLabel = current.source_label;
+      supabase.functions.invoke("extract-ocr", {
+        body: { problemId: current.id, problemImageUrls: urls, solutionImageUrls: [] },
+      }).then(({ data }) => {
+        if (data?.ocr?.detected_label) {
+          const detected = data.ocr.detected_label.replace(/\s+/g, "").toUpperCase();
+          const expected = (sourceLabel || "").replace(/\s+/g, "").toUpperCase();
+          if (detected && expected && detected !== expected) {
+            toast.warning(`Screenshot mismatch: pasted image is ${data.ocr.detected_label}, but this source is ${sourceLabel}. You may have pasted the wrong screenshot.`, { duration: 8000 });
+          }
+        }
+        qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+      });
     },
     onSuccess: () => {
       toast.success("Saved — next");
       setFiles([]);
       setShowSolution(false);
       qc.invalidateQueries({ queryKey: ["screenshot-queue", chapterId] });
-      // Auto-advance handled by queue refetch (current item leaves queue)
     },
     onError: (err: Error) => toast.error(err.message),
   });
