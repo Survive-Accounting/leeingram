@@ -607,6 +607,7 @@ export default function AssetsLibrary() {
               <TableHead className="text-xs">Sheet Status</TableHead>
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
+              <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
