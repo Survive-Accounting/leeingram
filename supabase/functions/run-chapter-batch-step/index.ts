@@ -190,6 +190,21 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
     }
   }
 
+  // Check if there's an existing teaching asset with learning structure flags
+  let learningStructureFlags: any = {};
+  {
+    const { data: existingAsset } = await sb.from("teaching_assets")
+      .select("uses_t_accounts, uses_tables, uses_financial_statements")
+      .eq("base_raw_problem_id", sourceProblem.id)
+      .limit(1)
+      .maybeSingle();
+    if (existingAsset) {
+      if (existingAsset.uses_t_accounts) learningStructureFlags.uses_t_accounts = true;
+      if (existingAsset.uses_tables) learningStructureFlags.uses_tables = true;
+      if (existingAsset.uses_financial_statements) learningStructureFlags.uses_financial_statements = true;
+    }
+  }
+
   // Call the convert-to-asset function
   try {
     let problemText = sourceProblem.ocr_extracted_problem_text || sourceProblem.problem_text || "";
@@ -241,6 +256,7 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
         source_problem_id: sourceProblem.id,
         course_id: run.course_id,
         chapter_id: run.chapter_id,
+        ...learningStructureFlags,
       }),
     });
 
