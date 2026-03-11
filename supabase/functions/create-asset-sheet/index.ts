@@ -197,7 +197,9 @@ async function writeValues(token: string, spreadsheetId: string, range: string, 
 interface MetadataParams {
   asset_code: string;
   course_code: string;
+  course_display_name: string;
   chapter_number: string;
+  chapter_title: string;
   exercise_number: string;
   asset_id: string;
   created_at: string;
@@ -205,6 +207,7 @@ interface MetadataParams {
   sheet_practice_url: string;
   sheet_promo_url: string;
   sheet_path_url: string;
+  lw_practice_sheet_url: string;
   ebook_page_link: string;
   lw_video_link: string;
   lw_quiz_link: string;
@@ -213,11 +216,17 @@ interface MetadataParams {
   mark_verified_url: string;
   contact_lee_url: string;
   asset_type: string;
+  problem_type: string;
   variant_letter: string;
   variant_count: string;
   journal_entry_count: string;
+  instruction_count: string;
+  uses_t_accounts: string;
+  uses_tables: string;
+  uses_financial_statements: string;
   sheet_verified: string;
   sheet_ready_for_review: string;
+  asset_finalized: string;
 }
 
 function makeHyperlink(label: string, url: string): string {
@@ -237,27 +246,36 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
     ["Field", "Value", "", "", "", "VA Action Links"],
     ["asset_code", params.asset_code, "", "", "", vaActionLinks[0]],
     ["course_code", params.course_code, "", "", "", vaActionLinks[1]],
-    ["chapter_number", params.chapter_number, "", "", "", vaActionLinks[2]],
-    ["exercise_number", params.exercise_number, "", "", "", vaActionLinks[3]],
+    ["course_display_name", params.course_display_name, "", "", "", vaActionLinks[2]],
+    ["chapter_number", params.chapter_number, "", "", "", vaActionLinks[3]],
+    ["chapter_title", params.chapter_title, "", "", "", ""],
+    ["exercise_number", params.exercise_number, "", "", "", ""],
     ["asset_id", params.asset_id, "", "", "", ""],
     ["created_at", params.created_at, "", "", "", ""],
-    ["asset_type", params.asset_type, "", "", "", ""],
-    ["variant_letter", params.variant_letter, "", "", "", ""],
-    ["variant_count", params.variant_count, "", "", "", ""],
-    ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
     ["sheet_master_url", params.sheet_master_url, "", "", "", ""],
     ["sheet_practice_url", params.sheet_practice_url, "", "", "", ""],
     ["sheet_promo_url", params.sheet_promo_url, "", "", "", ""],
     ["sheet_path_url", params.sheet_path_url, "", "", "", ""],
+    ["lw_practice_sheet_url", params.lw_practice_sheet_url, "", "", "", ""],
+    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
+    ["lw_video_link", params.lw_video_link, "", "", "", ""],
+    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
     ["internal_asset_page", params.internal_asset_page, "", "", "", ""],
     ["flag_issue_url", params.flag_issue_url, "", "", "", ""],
     ["mark_verified_url", params.mark_verified_url, "", "", "", ""],
     ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
-    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
-    ["lw_video_link", params.lw_video_link, "", "", "", ""],
-    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
+    ["asset_type", params.asset_type, "", "", "", ""],
+    ["problem_type", params.problem_type, "", "", "", ""],
+    ["variant_letter", params.variant_letter, "", "", "", ""],
+    ["variant_count", params.variant_count, "", "", "", ""],
+    ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
+    ["instruction_count", params.instruction_count, "", "", "", ""],
+    ["uses_t_accounts", params.uses_t_accounts, "", "", "", ""],
+    ["uses_tables", params.uses_tables, "", "", "", ""],
+    ["uses_financial_statements", params.uses_financial_statements, "", "", "", ""],
     ["sheet_verified", params.sheet_verified, "", "", "", ""],
     ["sheet_ready_for_review", params.sheet_ready_for_review, "", "", "", ""],
+    ["asset_finalized", params.asset_finalized, "", "", "", ""],
   ];
 
   await ensureTabExists(token, spreadsheetId, "METADATA");
