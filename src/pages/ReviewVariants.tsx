@@ -31,6 +31,7 @@ export default function ReviewVariants() {
   const approveInFlight = useRef(false);
 
   // Query generated problems for this chapter
+  // Fetch both generated AND approved problems so user can still see reviewed items
   const { data: generatedProblems = [], isLoading: problemsLoading } = useQuery({
     queryKey: ["review-generated-problems", chapterId],
     queryFn: async () => {
@@ -38,7 +39,7 @@ export default function ReviewVariants() {
         .from("chapter_problems")
         .select("*")
         .eq("chapter_id", chapterId!)
-        .eq("status", "generated")
+        .in("status", ["generated", "approved"])
         .order("source_label", { ascending: true });
       if (error) throw error;
       return data ?? [];
