@@ -773,9 +773,9 @@ export default function AssetDetailDrawer({
 
               {/* ── PROBLEM & ANSWER ── */}
               <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showProblemSection ? "rotate-90" : ""}`} />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem & Answer</span>
-                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showProblemSection ? "rotate-180" : ""}`} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="rounded-lg border border-border bg-background p-3">
