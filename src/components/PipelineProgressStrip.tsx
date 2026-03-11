@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { resolveEffectiveRole, ROLE_LABELS, type EffectiveRole } from "@/lib/rolePermissions";
 import { cn } from "@/lib/utils";
 
 const STAGES = [
@@ -18,6 +21,14 @@ const STAGES = [
 
 const STAGE_ORDER: Record<string, number> = {
   imported: 0, generated: 1, reviewed: 2, approved: 3, mc_generated: 4, quizzes_ready: 5, video_pending: 6, video_ready: 7, deployed: 8,
+};
+
+/** Which pipeline steps each role owns */
+const ROLE_ACTIVE_STAGES: Record<EffectiveRole, string[]> = {
+  content_creation_va: ["/problem-bank", "/content", "/review", "/assets-library"],
+  sheet_prep_va: ["/assets-library", "/deployment"],
+  lead_va: ["/problem-bank", "/content", "/review", "/assets-library", "/quizzes-ready", "/video-pending", "/videos-ready", "/deployment"],
+  admin: STAGES.map(s => s.path),
 };
 
 function getActiveStageIdx(pathname: string): number {
@@ -44,6 +55,13 @@ export function PipelineProgressStrip() {
   const { workspace } = useActiveWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isVa, vaAccount } = useVaAccount();
+  const { impersonating } = useImpersonation();
+
+  const effectiveRole = resolveEffectiveRole(impersonating?.role, vaAccount?.role, isVa);
+  const isAdmin = effectiveRole === "admin";
+  const roleInfo = ROLE_LABELS[effectiveRole];
+  const activePaths = ROLE_ACTIVE_STAGES[effectiveRole];
 
   const { data: problems } = useQuery({
     queryKey: ["pipeline-strip-problems", workspace?.chapterId],
@@ -69,7 +87,6 @@ export function PipelineProgressStrip() {
   }
 
   const activeStageIdx = getActiveStageIdx(location.pathname);
-  const isPhase1 = activeStageIdx >= 0 && activeStageIdx <= 3;
   const phase1Stages = STAGES.slice(0, 4);
   const phase2Stages = STAGES.slice(4);
   const phase2Cols = phase2Stages.length;
@@ -78,11 +95,47 @@ export function PipelineProgressStrip() {
     ([path]) => location.pathname === path || location.pathname.startsWith(path + "/")
   )?.[1];
 
+  const isStageActive = (path: string) => activePaths.includes(path);
+
+  const renderStage = (stage: typeof STAGES[number], idx: number, globalIdx: number) => {
+    const isFilled = globalIdx <= highestReached;
+    const isActivePage = globalIdx === activeStageIdx;
+    const active = isStageActive(stage.path);
+
+    if (!active) {
+      return (
+        <div key={stage.key} className="text-center opacity-30 cursor-default select-none">
+          <p className="text-[8px] uppercase tracking-wider mb-1 text-muted-foreground/40">{stage.label}</p>
+          <div className="h-1.5 rounded-full bg-muted/30" />
+        </div>
+      );
+    }
+
+    return (
+      <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
+        <p className={cn(
+          "uppercase tracking-wider mb-1 transition-colors",
+          isActivePage ? "text-foreground font-bold text-[10px]" : "text-muted-foreground/60 group-hover:text-muted-foreground text-[9px]"
+        )}>{stage.label}</p>
+        <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
+          <div className="h-full w-full bg-muted">
+            <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="sticky top-0 z-30 bg-background border-b border-border px-6 pt-3 pb-3">
-      {/* Chapter header */}
+      {/* Role label + Chapter header */}
       <div className="flex items-center gap-3 mb-3">
         <div>
+          {!isAdmin && (
+            <p className="text-[9px] text-primary font-bold uppercase tracking-widest mb-0.5">
+              {roleInfo.role} · {roleInfo.phase}
+            </p>
+          )}
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{workspace.courseName}</p>
           <h2 className="text-sm font-bold text-foreground">
             Ch {workspace.chapterNumber} — {workspace.chapterName}
@@ -101,20 +154,7 @@ export function PipelineProgressStrip() {
         <div className="flex-1">
           <p className="text-[8px] uppercase tracking-widest text-primary/60 font-bold mb-1">Phase 1 · Teaching Asset Creation</p>
           <div className="grid grid-cols-4 gap-1">
-            {phase1Stages.map((stage, idx) => {
-              const isFilled = idx <= highestReached;
-              const isActivePage = idx === activeStageIdx;
-              return (
-                <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
-                  <p className={cn("text-[9px] uppercase tracking-wider mb-1 transition-colors", isActivePage ? "text-foreground font-bold" : "text-muted-foreground/50 group-hover:text-muted-foreground")}>{stage.label}</p>
-                  <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
-                    <div className="h-full w-full bg-muted">
-                      <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+            {phase1Stages.map((stage, idx) => renderStage(stage, idx, idx))}
           </div>
         </div>
 
@@ -124,22 +164,8 @@ export function PipelineProgressStrip() {
         {/* Phase 2 */}
         <div className="flex-1">
           <p className="text-[8px] uppercase tracking-widest text-muted-foreground/40 font-bold mb-1">Phase 2 · Content Production</p>
-          <div className={`grid gap-1`} style={{ gridTemplateColumns: `repeat(${phase2Cols}, minmax(0, 1fr))` }}>
-            {phase2Stages.map((stage, idx) => {
-              const globalIdx = idx + 4;
-              const isFilled = globalIdx <= highestReached;
-              const isActivePage = globalIdx === activeStageIdx;
-              return (
-                <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
-                  <p className={cn("text-[9px] uppercase tracking-wider mb-1 transition-colors", isActivePage ? "text-foreground font-bold" : "text-muted-foreground/50 group-hover:text-muted-foreground")}>{stage.label}</p>
-                  <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
-                    <div className="h-full w-full bg-muted">
-                      <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${phase2Cols}, minmax(0, 1fr))` }}>
+            {phase2Stages.map((stage, idx) => renderStage(stage, idx, idx + 4))}
           </div>
         </div>
       </div>
