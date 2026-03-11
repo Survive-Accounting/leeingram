@@ -309,6 +309,7 @@ Return valid JSON only.`,
             await supabase.from("teaching_assets").update(updates as any).eq("id", taData.id);
           }
         }).catch(() => { /* silent - highlights are non-critical */ });
+      }
     },
     onSuccess: () => {
       toast.success("Variant approved ✓");
