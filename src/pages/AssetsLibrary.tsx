@@ -465,6 +465,29 @@ export default function AssetsLibrary() {
                       revertMutation.mutate(asset);
                     }
                     setSelectedIds(new Set());
+                  } else if (bulkAction === "create-sheets") {
+                    setIsCreatingSheets(true);
+                    let sheetSuccess = 0;
+                    let sheetFail = 0;
+                    for (const asset of selected) {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
+                          body: { asset_id: asset.id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        sheetSuccess++;
+                      } catch (e: any) {
+                        sheetFail++;
+                        toast.error(`Sheet failed: ${asset.asset_name}`, { description: e.message });
+                      }
+                    }
+                    setIsCreatingSheets(false);
+                    if (sheetSuccess > 0) {
+                      toast.success(`Created sheets for ${sheetSuccess} assets`);
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      setSelectedIds(new Set());
+                    }
                   }
                   setBulkAction(null);
                 }}
