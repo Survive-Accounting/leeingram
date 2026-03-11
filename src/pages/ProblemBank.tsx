@@ -446,7 +446,7 @@ export default function ProblemBank() {
                     </TableCell>
                     <TableCell className="text-xs font-mono">{p.source_label || "—"}</TableCell>
                     <TableCell className="text-xs">{p.title || "—"}</TableCell>
-                    <TableCell className="text-xs capitalize">{p.problem_type}</TableCell>
+                    <TableCell className="text-xs capitalize">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         {(p.status === "raw" || p.status === "tagged") &&
