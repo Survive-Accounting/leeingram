@@ -872,10 +872,22 @@ Deno.serve(async (req) => {
     // Resolve folder hierarchy
     const { chapterFolderId } = await ensureFolderHierarchy(token, courseCode, chapterNumber, sa.client_email);
 
-    // Create asset subfolder inside chapter folder (e.g. IA2_CH13_P076_A)
-    const assetFolderId = await findOrCreateFolder(token, assetCode, chapterFolderId);
-    const sheetPathUrl = `https://drive.google.com/drive/folders/${assetFolderId}`;
-    console.log(`Asset subfolder: ${assetCode} (${assetFolderId})`);
+    // For test sheets, use a "Test Sheets" subfolder in the chapter folder
+    let targetFolderId: string;
+    let sheetPathUrl: string;
+
+    if (isTestSheet) {
+      const testFolderId = await findOrCreateFolder(token, "Test Sheets", chapterFolderId);
+      targetFolderId = testFolderId;
+      sheetPathUrl = `https://drive.google.com/drive/folders/${testFolderId}`;
+      console.log(`Test Sheets subfolder in chapter (${testFolderId})`);
+    } else {
+      // Create asset subfolder inside chapter folder (e.g. IA2_CH13_P076_A)
+      const assetFolderId = await findOrCreateFolder(token, assetCode, chapterFolderId);
+      targetFolderId = assetFolderId;
+      sheetPathUrl = `https://drive.google.com/drive/folders/${assetFolderId}`;
+      console.log(`Asset subfolder: ${assetCode} (${assetFolderId})`);
+    }
 
     // ── Create sheets inside asset subfolder ─────────────────────────
     const sheetNames = {
