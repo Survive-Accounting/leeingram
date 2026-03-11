@@ -312,51 +312,6 @@ export function ContentCreationDashboard({ chapterIds, vaAccountId }: Props) {
           )}
         </TabsContent>
 
-        {/* ═══ REPORTS ═══ */}
-        <TabsContent value="reports" className="space-y-4 mt-3">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-1">Weekly Report</h3>
-            <p className="text-[10px] text-muted-foreground">
-              Week of {format(weekStart, "MMM d")} — {format(weekEnd, "MMM d, yyyy")}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-lg border border-border bg-secondary/30 p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-400 tabular-nums">{weeklyApproved}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Approved This Week</p>
-            </div>
-            <div className="rounded-lg border border-border bg-secondary/30 p-3 text-center">
-              <p className="text-2xl font-bold text-cyan-400 tabular-nums">{weeklySheetsCreated}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sheets Created</p>
-            </div>
-            <div className="rounded-lg border border-border bg-secondary/30 p-3 text-center">
-              <p className="text-2xl font-bold text-primary tabular-nums flex items-center justify-center">
-                <DollarSign className="h-4 w-4" />{estimatedPayout.toFixed(2)}
-              </p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Est. Payout</p>
-            </div>
-            <div className="rounded-lg border border-border bg-secondary/30 p-3 text-center">
-              <p className={`text-2xl font-bold tabular-nums flex items-center justify-center ${remainingBudget < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                <DollarSign className="h-4 w-4" />{remainingBudget.toFixed(2)}
-              </p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Budget Remaining</p>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-1">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Rate:</span> ${RATE_PER_ASSET.toFixed(2)} per asset (sheets created)
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Weekly Budget Target:</span> ${WEEKLY_BUDGET.toFixed(2)}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-2 italic">
-              This is internal tracking only. Paid status and payout history coming soon.
-            </p>
-          </div>
-        </TabsContent>
-
         {/* ═══ HELP / SOP ═══ */}
         <TabsContent value="help" className="space-y-4 mt-3">
           <div className="rounded-lg border border-border bg-secondary/20 p-4 space-y-3">
@@ -364,14 +319,13 @@ export function ContentCreationDashboard({ chapterIds, vaAccountId }: Props) {
               <HelpCircle className="h-4 w-4 text-primary" /> Your Workflow
             </h3>
             <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-              <li><span className="text-foreground font-medium">Import</span> — Add source problems from textbook screenshots</li>
+              <li><span className="text-foreground font-medium">Import</span> — Add source problems from textbook & solutions screenshots</li>
               <li><span className="text-foreground font-medium">Generate</span> — AI creates variant problems + solutions</li>
               <li><span className="text-foreground font-medium">Review</span> — Check variant quality, fix issues</li>
-              <li><span className="text-foreground font-medium">Approve</span> — Mark asset as ready for production</li>
-              <li><span className="text-foreground font-medium">Create Sheets</span> — Generate Google Sheets (M/P/Pr)</li>
+              <li><span className="text-foreground font-medium">Approve</span> — Mark asset as ready for production (sheets are auto-created)</li>
             </ol>
             <p className="text-[10px] text-muted-foreground italic">
-              Your role ends once sheets are created. Sheet prep and publishing are handled by other team members.
+              Your role ends at Approve. Sheet prep and publishing are handled by other team members.
             </p>
           </div>
 
