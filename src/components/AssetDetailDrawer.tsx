@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,17 +7,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
-  BookMarked, Share2, CheckCircle2, Layers,
+  BookMarked, Share2, CheckCircle2, Layers, Highlighter,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
-  ZoomIn, X, ChevronLeft, ChevronRight,
+  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { HighlightedText, HighlightLegend } from "@/components/content-factory/HighlightedText";
+import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
+import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
 
 // ── Types ────────────────────────────────────────────────────────────
 
