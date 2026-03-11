@@ -197,15 +197,6 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
-  const uploadFile = async (file: File, prefix: string): Promise<string> => {
-    const ext = file.name?.split(".").pop() || "png";
-    const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("problem-assets").upload(path, file, { contentType: file.type });
-    if (error) throw error;
-    const { data: urlData } = supabase.storage.from("problem-assets").getPublicUrl(path);
-    return urlData.publicUrl;
-  };
-
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!editingProblem) return;
