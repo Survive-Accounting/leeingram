@@ -269,6 +269,8 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
 
 interface HiddenDataParams {
   problem_text: string;
+  problem_context: string;
+  problem_instructions: string;
   problem_text_highlighted: string;
   answer_summary: string;
   journal_entry_raw: string;
@@ -284,6 +286,8 @@ async function writeHiddenData(token: string, spreadsheetId: string, params: Hid
   const fieldRows: string[][] = [
     ["Field", "Value"],
     ["problem_text", params.problem_text],
+    ["problem_context", params.problem_context],
+    ["problem_instructions", params.problem_instructions],
     ["problem_text_highlighted", params.problem_text_highlighted],
     ["answer_summary", params.answer_summary],
     ["journal_entry_raw", params.journal_entry_raw],
@@ -647,7 +651,18 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, asset
     }
   }
 
-  return { asset, chapter, course, flagCount, variantCount, jeCount, highlights };
+  // Fetch problem instructions
+  let problemInstructions: { instruction_number: number; instruction_text: string }[] = [];
+  const instrRes = await fetch(
+    `${supabaseUrl}/rest/v1/problem_instructions?teaching_asset_id=eq.${assetId}&select=instruction_number,instruction_text&order=instruction_number`,
+    { headers: authHeaders }
+  );
+  const instrData = await instrRes.json();
+  if (Array.isArray(instrData)) {
+    problemInstructions = instrData;
+  }
+
+  return { asset, chapter, course, flagCount, variantCount, jeCount, highlights, problemInstructions };
 }
 
 // ── Extract variant letter from asset_name ───────────────────────────
@@ -720,7 +735,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     // ── Fetch all asset data server-side ──────────────────────────────
-    const { asset, chapter, course, flagCount, variantCount, jeCount, highlights } = await fetchAssetData(
+    const { asset, chapter, course, flagCount, variantCount, jeCount, highlights, problemInstructions } = await fetchAssetData(
       supabaseUrl, serviceRoleKey, asset_id
     );
 
@@ -836,15 +851,22 @@ Deno.serve(async (req) => {
       const highlightedText = applyHighlightsToText(problemText, highlights);
       const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
 
+      // Build instructions text for sheet
+      const instructionsText = problemInstructions.length > 0
+        ? problemInstructions.map(i => `Instruction ${i.instruction_number}: ${i.instruction_text}`).join("\n")
+        : "";
+
       const hiddenDataParams: HiddenDataParams = {
         problem_text: problemText,
+        problem_context: asset.problem_context || "",
+        problem_instructions: instructionsText,
         problem_text_highlighted: highlightedText,
         answer_summary: buildAnswerSummary(asset),
         journal_entry_raw: jeToRawText(jeEntries),
         worked_steps: asset.survive_solution_text || "",
-        concept_notes: "", // future use
+        concept_notes: "",
         highlight_tags: extractHighlightTags(highlights),
-        validation_notes: "", // future use
+        validation_notes: "",
       };
       await writeHiddenData(token, spreadsheetId, hiddenDataParams);
       console.log("Hidden_Data populated on Master sheet");
