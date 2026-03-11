@@ -129,6 +129,22 @@ export default function AssetsLibrary() {
   const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
+
+  // Total source problems + approved count for chapter complete check
+  const { data: chapterPipelineCounts } = useQuery({
+    queryKey: ["chapter-pipeline-counts", chapterFilter],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("chapter_problems")
+        .select("pipeline_status")
+        .eq("chapter_id", chapterFilter);
+      const total = data?.length ?? 0;
+      const approved = data?.filter(p => p.pipeline_status === "approved").length ?? 0;
+      return { total, approved };
+    },
+    enabled: chapterFilter !== "all",
+  });
+
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
