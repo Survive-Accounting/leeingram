@@ -67,6 +67,7 @@ function escapeCSV(val: string): string {
 
 export default function AssetsLibrary() {
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { workspace } = useActiveWorkspace();
   const { isVa, primaryRole } = useVaAccount();
   const { impersonating } = useImpersonation();
