@@ -119,10 +119,13 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   );
 
   // Auto-set workspace for VA/impersonation to first assigned chapter
+  // Force reset when impersonation changes (so admin's workspace doesn't leak)
+  const impersonatingId = impersonating?.id ?? null;
   useEffect(() => {
     if (!isVaOrImpersonating || !allChapters || !courses || !vaAssignments?.length) return;
-    // If current workspace is in assigned list, keep it
-    if (workspace?.chapterId && vaAssignedChapterIds.includes(workspace.chapterId)) return;
+    // If current workspace is in assigned list, keep it — BUT only if we're not just starting impersonation
+    const currentIsAssigned = workspace?.chapterId && vaAssignedChapterIds.includes(workspace.chapterId);
+    if (currentIsAssigned) return;
     // Set to first assigned chapter
     const firstAssignment = vaAssignments[0];
     const chapter = allChapters.find(c => c.id === firstAssignment.chapter_id);
@@ -136,7 +139,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         chapterNumber: chapter.chapter_number,
       });
     }
-  }, [isVaOrImpersonating, vaAssignments, vaAssignedChapterIds, allChapters, courses, workspace?.chapterId, setWorkspace]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVaOrImpersonating, impersonatingId, vaAssignments, vaAssignedChapterIds, allChapters, courses, setWorkspace]);
 
   const filteredChapters = useMemo(
     () => (allChapters ?? []).filter((ch) => ch.course_id === workspace?.courseId),
