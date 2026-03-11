@@ -65,8 +65,9 @@ function escapeCSV(val: string): string {
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const { workspace } = useActiveWorkspace();
-  const { isVa } = useVaAccount();
+  const { isVa, primaryRole } = useVaAccount();
   const isAdmin = !isVa;
+  const isSheetPrepVa = primaryRole === "sheet_prep_va";
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
@@ -368,7 +369,7 @@ export default function AssetsLibrary() {
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && !isSheetPrepVa && (
             <>
               <Select value={bulkAction || ""} onValueChange={(v) => setBulkAction(v)}>
                 <SelectTrigger className="h-8 text-xs w-[220px] bg-background/95 border-border">
