@@ -425,8 +425,8 @@ export default function AssetDetailDrawer({
   const sourceNumber = asset.source_number || parsed.sourceNumber || "—";
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
         {/* Header */}
         <SheetHeader className="px-6 pt-6 pb-3 space-y-3">
           <div className="flex items-start justify-between gap-4">
