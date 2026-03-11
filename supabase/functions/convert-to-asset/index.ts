@@ -1384,9 +1384,13 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                       journal_entry_block: { type: "string", description: "Text summary of JE for backward compatibility" },
                     } : {}),
                     exam_trap_note: { type: "string", description: "Internal note on what makes this tricky" },
+                    important_formulas: { type: "string", description: "Formulas/equations needed, one per line" },
+                    concept_notes: { type: "string", description: "2-5 bullet points on key concepts tested" },
+                    exam_traps: { type: "string", description: "2-4 common student mistakes, specific and actionable" },
                   },
                   required: [
                     "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",
+                    "important_formulas", "concept_notes", "exam_traps",
                   ],
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,
