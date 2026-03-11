@@ -947,6 +947,7 @@ Deno.serve(async (req) => {
         problem_context: asset.problem_context || "",
         problem_text: problemText,
         problem_text_highlighted: highlightedText,
+        instruction_list: buildInstructionList(problemInstructions),
         instruction_1: instrSlots[0],
         instruction_2: instrSlots[1],
         instruction_3: instrSlots[2],
