@@ -134,8 +134,8 @@ export default function ChapterWorkspace() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Survive Teaching Assets</TabsTrigger>
           <TabsTrigger value="dependent">Dependent</TabsTrigger>
-          {!isVa && <TabsTrigger value="generation">Generation Runs</TabsTrigger>}
-          {!isVa && <TabsTrigger value="activity">Activity Log</TabsTrigger>}
+          {!isContentVa && <TabsTrigger value="generation">Generation Runs</TabsTrigger>}
+          {!isContentVa && <TabsTrigger value="activity">Activity Log</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="problems">
