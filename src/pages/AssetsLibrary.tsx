@@ -739,31 +739,35 @@ export default function AssetsLibrary() {
                     <TableCell className="text-xs font-mono text-muted-foreground">
                       {a.source_ref || "—"}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
-                        {statusIcon} {statusLabel}
-                      </Badge>
-                    </TableCell>
+                    {!isContentCreationVa && (
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
+                          {statusIcon} {statusLabel}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell className="text-xs text-muted-foreground">
                       {format(new Date(a.created_at), "MMM d")}
                     </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-0.5 justify-end">
-                        {a.sheet_master_url ? (
-                          <>
-                            <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
-                            {a.sheet_practice_url && (
-                              <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
-                            )}
-                            {a.sheet_promo_url && (
-                              <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
-                            )}
-                          </>
-                        ) : sheetUrls?.[a.asset_name] ? (
-                          <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
-                        ) : null}
-                      </div>
-                    </TableCell>
+                    {!isContentCreationVa && (
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-0.5 justify-end">
+                          {a.sheet_master_url ? (
+                            <>
+                              <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
+                              {a.sheet_practice_url && (
+                                <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
+                              )}
+                              {a.sheet_promo_url && (
+                                <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
+                              )}
+                            </>
+                          ) : sheetUrls?.[a.asset_name] ? (
+                            <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => openDrawer(a)}>
                         <Eye className="h-3 w-3 mr-1" /> View
