@@ -1168,7 +1168,7 @@ Return valid JSON only.`,
               )}
 
               {/* ── FINANCIAL STATEMENTS ── */}
-              {(asset as any).uses_financial_statements && (asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) && (asset as any).financial_statements_json.length > 0 && (
+              {(asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) && (asset as any).financial_statements_json.length > 0 && (
                 <Collapsible open={showFSSection} onOpenChange={setShowFSSection}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                     <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFSSection ? "rotate-90" : ""}`} />
