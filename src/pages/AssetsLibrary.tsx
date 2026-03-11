@@ -387,6 +387,11 @@ export default function AssetsLibrary() {
                   <SelectItem value="revert">
                     <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
                   </SelectItem>
+                  {isAdmin && (
+                    <SelectItem value="create-sheets">
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Google Sheets</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <Button
