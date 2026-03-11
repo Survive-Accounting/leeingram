@@ -164,21 +164,28 @@ export default function AssetsLibrary() {
     },
   });
 
-  // Deep-link: open asset detail from ?asset=ID
+  // Deep-link: open asset detail from ?asset=ID (after filters have updated and assets loaded)
   useEffect(() => {
-    const assetId = searchParams.get("asset");
-    if (assetId && assets?.length) {
-      const found = assets.find((a) => a.id === assetId);
-      if (found) {
-        setViewingAsset(found);
-        setDrawerOpen(true);
-        // Clear the param so refreshing doesn't re-open
-        searchParams.delete("asset");
-        searchParams.delete("action");
-        setSearchParams(searchParams, { replace: true });
+    if (!deepLinkAssetId || !assets?.length) return;
+    const found = assets.find((a) => a.id === deepLinkAssetId);
+    if (found) {
+      setViewingAsset(found);
+      setDrawerOpen(true);
+
+      // Handle ?action=verify → open confirmation dialog
+      if (deepLinkAction === "verify") {
+        setVerifyAssetId(found.id);
+        setVerifyPrepMinutes("");
+        setVerifyNotes("");
+        setVerifyDialogOpen(true);
       }
+
+      // Clear the params so refreshing doesn't re-open
+      searchParams.delete("asset");
+      searchParams.delete("action");
+      setSearchParams(searchParams, { replace: true });
     }
-  }, [assets, searchParams]);
+  }, [assets, deepLinkAssetId]);
 
   // Build sheet URL map from teaching_assets themselves + fallback to assets table
   const sheetUrls: Record<string, string> = {};
