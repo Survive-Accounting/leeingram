@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
+import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
 import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -129,6 +130,7 @@ export default function AssetsLibrary() {
   const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
+  const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
@@ -794,7 +796,7 @@ export default function AssetsLibrary() {
 
       {/* Sheet Prep Log (Admin only) */}
       {isAdmin && (
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           <Collapsible open={sheetLogOpen} onOpenChange={setSheetLogOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full justify-between h-10 text-sm font-medium border-border">
@@ -807,6 +809,21 @@ export default function AssetsLibrary() {
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3">
               <SheetPrepLog />
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible open={sheetsCreatedLogOpen} onOpenChange={setSheetsCreatedLogOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between h-10 text-sm font-medium border-border">
+                <span className="flex items-center gap-2">
+                  <Sheet className="h-4 w-4 text-primary" />
+                  Sheets Created Log
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${sheetsCreatedLogOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <SheetsCreatedLog />
             </CollapsibleContent>
           </Collapsible>
         </div>
@@ -931,7 +948,7 @@ export default function AssetsLibrary() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Sheet Prep Complete!
+              Mark Sheet Pending for Review
             </DialogTitle>
             <DialogDescription>
               Thanks for prepping this sheet! Lee will review it ASAP to verify it's ready for deployment.

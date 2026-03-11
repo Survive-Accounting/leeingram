@@ -1229,8 +1229,8 @@ export default function AssetDetailDrawer({
                   <a href="https://forms.gle/7Dz2i8eKiRangmNs9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
                     <AlertTriangle className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground">Mark Sheet Prep Complete</p>
-                      <p className="text-[10px] text-muted-foreground">Finished organizing and preparing this sheet</p>
+                      <p className="text-xs font-medium text-foreground">Mark Sheet Pending for Review</p>
+                      <p className="text-[10px] text-muted-foreground">Submit this sheet for Lee to review</p>
                     </div>
                     <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
                   </a>
