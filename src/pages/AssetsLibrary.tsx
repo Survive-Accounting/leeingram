@@ -637,6 +637,27 @@ export default function AssetsLibrary() {
                       qc.invalidateQueries({ queryKey: ["teaching-assets"] });
                       setSelectedIds(new Set());
                     }
+                  } else if (bulkAction === "create-test-sheet") {
+                    // Test sheet: one at a time, open when done
+                    const asset = selected[0];
+                    if (!asset) return;
+                    setIsCreatingSheets(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
+                        body: { asset_id: asset.id, sheet_types: ["test_sheet"] },
+                      });
+                      if (error) throw error;
+                      if (data?.error) throw new Error(data.error);
+                      toast.success(`Test sheet created: ${data.test_sheet_name}`, {
+                        description: "Opening in new tab…",
+                        action: { label: "Open Folder", onClick: () => window.open(data.test_folder_url, "_blank") },
+                      });
+                      window.open(data.test_sheet_url, "_blank");
+                      setSelectedIds(new Set());
+                    } catch (e: any) {
+                      toast.error(`Test sheet failed: ${asset.asset_name}`, { description: e.message });
+                    }
+                    setIsCreatingSheets(false);
                   }
                   setBulkAction(null);
                 }}
