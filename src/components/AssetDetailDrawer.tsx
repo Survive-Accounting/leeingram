@@ -455,7 +455,7 @@ export default function AssetDetailDrawer({
   const [sourceProblem, setSourceProblem] = useState<any>(null);
 
   // Collapsible section states
-  const [showProblemSection, setShowProblemSection] = useState(true);
+  const [showProblemSection, setShowProblemSection] = useState(false);
   const [showJESection, setShowJESection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
   const [showFormulasSection, setShowFormulasSection] = useState(false);
