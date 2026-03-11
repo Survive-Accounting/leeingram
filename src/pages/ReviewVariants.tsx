@@ -239,6 +239,15 @@ export default function ReviewVariants() {
         await supabase.from("problem_instructions").insert(instrRows);
       }
 
+      // Store solution screenshot URL from source problem
+      const solScreenshotUrl = problem.solution_screenshot_url || (problem.solution_screenshot_urls?.length ? problem.solution_screenshot_urls[0] : null);
+      if (solScreenshotUrl && taData?.id) {
+        await supabase
+          .from("teaching_assets")
+          .update({ solution_screenshot_url: solScreenshotUrl } as any)
+          .eq("id", taData.id);
+      }
+
       // Update source problem pipeline status
       const { error: spErr } = await supabase
         .from("chapter_problems")
@@ -255,7 +264,51 @@ export default function ReviewVariants() {
         payload_json: { source_problem_id: problem.id, asset_code: assetCode },
       });
 
-      // Google Sheet creation moved to admin-only batch action in Assets Library
+      // Auto-generate highlights in background (fire-and-forget)
+      if (taData?.id) {
+        supabase.functions.invoke("generate-ai-output", {
+          body: {
+            provider: "lovable",
+            model: "google/gemini-2.5-flash",
+            temperature: 0.15,
+            max_output_tokens: 3000,
+            source_problem_id: problem.id,
+            messages: [
+              {
+                role: "system",
+                content: `You are an expert accounting instructor. Given a problem text and its solution steps, produce a JSON object with these keys:
+1. "highlights" — An array of 6-10 objects marking the most important information. Each object: { "text": "<exact substring from problem>", "type": "key_input"|"rate"|"amount"|"timing"|"rule"|"definition" }.
+2. "important_formulas" — A concise list of formulas needed.
+3. "concept_notes" — Brief concept notes (2-5 bullet points).
+4. "exam_traps" — 2-4 common mistakes.
+Return valid JSON only.`,
+              },
+              {
+                role: "user",
+                content: `Problem Text:\n${candidate.survive_problem_text}\n\nSolution Steps:\n${candidate.survive_solution_text || "(not provided)"}`,
+              },
+            ],
+          },
+        }).then(async ({ data: genData }) => {
+          if (!genData?.parsed) return;
+          const obj = genData.parsed;
+          // Save highlights to variant
+          const hlArr = Array.isArray(obj) ? obj : (obj.highlights || []);
+          if (hlArr.length > 0) {
+            await supabase
+              .from("problem_variants")
+              .update({ highlight_key_json: hlArr as any } as any)
+              .eq("id", candidate._variantId);
+          }
+          // Save formulas/concepts/traps to teaching asset
+          const updates: Record<string, string> = {};
+          if (obj.important_formulas) updates.important_formulas = Array.isArray(obj.important_formulas) ? obj.important_formulas.join("\n") : String(obj.important_formulas);
+          if (obj.concept_notes) updates.concept_notes = Array.isArray(obj.concept_notes) ? obj.concept_notes.join("\n") : String(obj.concept_notes);
+          if (obj.exam_traps) updates.exam_traps = Array.isArray(obj.exam_traps) ? obj.exam_traps.join("\n") : String(obj.exam_traps);
+          if (Object.keys(updates).length > 0) {
+            await supabase.from("teaching_assets").update(updates as any).eq("id", taData.id);
+          }
+        }).catch(() => { /* silent - highlights are non-critical */ });
     },
     onSuccess: () => {
       toast.success("Variant approved ✓");
