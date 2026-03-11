@@ -217,6 +217,7 @@ interface MetadataParams {
   contact_lee_url: string;
   asset_type: string;
   problem_type: string;
+  layout_hint: string;
   variant_letter: string;
   variant_count: string;
   journal_entry_count: string;
