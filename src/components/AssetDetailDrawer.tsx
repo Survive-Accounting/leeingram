@@ -814,15 +814,15 @@ export default function AssetDetailDrawer({
 
               {/* ── JOURNAL ENTRIES ── */}
               {hasJE && (
-                <Collapsible open={showJESection} onOpenChange={setShowJESection}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Journal Entries</span>
-                    <div className="flex items-center gap-2">
-                      {jeParts.length > 0 && (
-                        <span className="text-[10px] text-muted-foreground">{jeParts.length} {jeParts.length === 1 ? "part" : "parts"}</span>
-                      )}
-                      <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showJESection ? "rotate-180" : ""}`} />
-                    </div>
+              <Collapsible open={showJESection} onOpenChange={setShowJESection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showJESection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Journal Entries</span>
+                  <div className="flex items-center gap-2 ml-auto">
+                    {jeParts.length > 0 && (
+                      <Badge variant="outline" className="text-[9px] h-4">{jeParts.length} {jeParts.length === 1 ? "part" : "parts"}</Badge>
+                    )}
+                  </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3">
                     {jeParts.length > 0 ? (
