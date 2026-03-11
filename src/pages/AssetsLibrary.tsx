@@ -95,6 +95,7 @@ export default function AssetsLibrary() {
   const [isBanking, setIsBanking] = useState(false);
   const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
+  const [sheetLogOpen, setSheetLogOpen] = useState(false);
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
