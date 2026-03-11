@@ -1144,115 +1144,104 @@ Return valid JSON only.`,
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* ── T ACCOUNTS ── */}
-              {(asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) && (asset as any).t_accounts_json.length > 0 && (
-                <Collapsible open={showTAccountsSection} onOpenChange={setShowTAccountsSection}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTAccountsSection ? "rotate-90" : ""}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">T Accounts</span>
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{(asset as any).t_accounts_json.length}</Badge>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {((asset as any).t_accounts_json as any[]).map((ta: any, i: number) => (
-                      <div key={i} className="rounded-lg border border-border bg-background p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-foreground">{ta.account_name || `T Account ${i + 1}`}</p>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                            navigator.clipboard.writeText(tAccountToTSV(ta));
-                            toast.success(`T Account "${ta.account_name}" TSV copied`);
-                          }}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy TSV
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <p className="font-semibold text-muted-foreground mb-1">Debits</p>
-                            {(ta.debits || []).filter((d: string) => d).map((d: string, di: number) => (
-                              <p key={di} className="text-foreground font-mono">{d}</p>
-                            ))}
-                            {(!ta.debits || ta.debits.filter((d: string) => d).length === 0) && <p className="text-muted-foreground italic">—</p>}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-muted-foreground mb-1">Credits</p>
-                            {(ta.credits || []).filter((c: string) => c).map((c: string, ci: number) => (
-                              <p key={ci} className="text-foreground font-mono">{c}</p>
-                            ))}
-                            {(!ta.credits || ta.credits.filter((c: string) => c).length === 0) && <p className="text-muted-foreground italic">—</p>}
-                          </div>
-                        </div>
+              {/* ── OPTIONAL LEARNING STRUCTURES (consolidated) ── */}
+              {(() => {
+                const tAccounts = (asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) ? (asset as any).t_accounts_json : [];
+                const tables = (asset as any).tables_json && Array.isArray((asset as any).tables_json) ? (asset as any).tables_json : [];
+                const fs = (asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) ? (asset as any).financial_statements_json : [];
+                const hasAnyStructures = tAccounts.length > 0 || tables.length > 0 || fs.length > 0;
+                if (!hasAnyStructures) return null;
+                return (
+                  <Collapsible open={showStructuresSection} onOpenChange={setShowStructuresSection}>
+                    <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showStructuresSection ? "rotate-90" : ""}`} />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Optional Learning Structures</span>
+                      <div className="flex gap-1 ml-auto">
+                        {tAccounts.length > 0 && <Badge variant="outline" className="text-[9px] h-4">T-Acct: {tAccounts.length}</Badge>}
+                        {tables.length > 0 && <Badge variant="outline" className="text-[9px] h-4">Tables: {tables.length}</Badge>}
+                        {fs.length > 0 && <Badge variant="outline" className="text-[9px] h-4">FS: {fs.length}</Badge>}
                       </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* ── TABLES ── */}
-              {(asset as any).tables_json && Array.isArray((asset as any).tables_json) && (asset as any).tables_json.length > 0 && (
-                <Collapsible open={showTablesSection} onOpenChange={setShowTablesSection}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTablesSection ? "rotate-90" : ""}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tables</span>
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{(asset as any).tables_json.length}</Badge>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {((asset as any).tables_json as any[]).map((t: any, i: number) => (
-                      <div key={i} className="rounded-lg border border-border bg-background p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-foreground">{t.title || `Table ${i + 1}`}</p>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                            navigator.clipboard.writeText(t.tsv || "");
-                            toast.success(`Table "${t.title}" TSV copied`);
-                          }}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy TSV
-                          </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-4">
+                      {/* T Accounts */}
+                      {tAccounts.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">T Accounts</p>
+                          {tAccounts.map((ta: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-foreground">{ta.account_name || `T Account ${i + 1}`}</p>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                  navigator.clipboard.writeText(tAccountToTSV(ta));
+                                  toast.success(`T Account "${ta.account_name}" TSV copied`);
+                                }}>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy TSV
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                  <p className="font-semibold text-muted-foreground mb-1">Debits</p>
+                                  {(ta.debits || []).filter((d: string) => d).map((d: string, di: number) => (
+                                    <p key={di} className="text-foreground font-mono">{d}</p>
+                                  ))}
+                                  {(!ta.debits || ta.debits.filter((d: string) => d).length === 0) && <p className="text-muted-foreground italic">—</p>}
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-muted-foreground mb-1">Credits</p>
+                                  {(ta.credits || []).filter((c: string) => c).map((c: string, ci: number) => (
+                                    <p key={ci} className="text-foreground font-mono">{c}</p>
+                                  ))}
+                                  {(!ta.credits || ta.credits.filter((c: string) => c).length === 0) && <p className="text-muted-foreground italic">—</p>}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{t.tsv || "—"}</pre>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* ── FINANCIAL STATEMENTS ── */}
-              {(asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) && (asset as any).financial_statements_json.length > 0 && (
-                <Collapsible open={showFSSection} onOpenChange={setShowFSSection}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFSSection ? "rotate-90" : ""}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financial Statements</span>
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{(asset as any).financial_statements_json.length}</Badge>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {((asset as any).financial_statements_json as any[]).map((s: any, i: number) => (
-                      <div key={i} className="rounded-lg border border-border bg-background p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-foreground">{s.title || `Statement ${i + 1}`}</p>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                            navigator.clipboard.writeText(s.tsv || "");
-                            toast.success(`Statement "${s.title}" TSV copied`);
-                          }}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy TSV
-                          </Button>
+                      )}
+                      {/* Tables */}
+                      {tables.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tables</p>
+                          {tables.map((t: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-foreground">{t.title || `Table ${i + 1}`}</p>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                  navigator.clipboard.writeText(t.tsv || "");
+                                  toast.success(`Table "${t.title}" TSV copied`);
+                                }}>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy TSV
+                                </Button>
+                              </div>
+                              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{t.tsv || "—"}</pre>
+                            </div>
+                          ))}
                         </div>
-                        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{s.tsv || "—"}</pre>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* ── LEARNING STRUCTURES EDITOR ── */}
-              <div className="rounded-lg border border-border bg-card p-3">
-                <LearningStructuresEditor
-                  assetId={asset.id}
-                  usesT={(asset as any).uses_t_accounts || false}
-                  usesTables={(asset as any).uses_tables || false}
-                  usesFS={(asset as any).uses_financial_statements || false}
-                  tAccountsJson={(asset as any).t_accounts_json}
-                  tablesJson={(asset as any).tables_json}
-                  financialStatementsJson={(asset as any).financial_statements_json}
-                  onUpdated={onAssetUpdated}
-                />
-              </div>
+                      )}
+                      {/* Financial Statements */}
+                      {fs.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Financial Statements</p>
+                          {fs.map((s: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-foreground">{s.title || `Statement ${i + 1}`}</p>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                  navigator.clipboard.writeText(s.tsv || "");
+                                  toast.success(`Statement "${s.title}" TSV copied`);
+                                }}>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy TSV
+                                </Button>
+                              </div>
+                              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{s.tsv || "—"}</pre>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })()}
 
               {/* ── SOURCE (from import) ── */}
               <Collapsible open={showSourceSection} onOpenChange={setShowSourceSection}>
