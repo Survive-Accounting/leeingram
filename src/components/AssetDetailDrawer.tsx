@@ -517,18 +517,31 @@ export default function AssetDetailDrawer({
   }, [open, asset?.base_raw_problem_id, asset?.survive_problem_text]);
 
   // Reset section states when asset changes
+  // Fetch instructions for this asset
+  useEffect(() => {
+    if (!open || !asset?.id) { setInstructions([]); return; }
+    supabase
+      .from("problem_instructions")
+      .select("instruction_number, instruction_text")
+      .eq("teaching_asset_id", asset.id)
+      .order("instruction_number")
+      .then(({ data }) => setInstructions(data || []));
+  }, [open, asset?.id]);
+
+  // Reset section states when asset changes
   useEffect(() => {
     setShowProblemSection(false);
+    setShowAnswerSection(false);
     setShowJESection(false);
     setShowWorkedSteps(false);
     setShowFormulasSection(false);
     setShowConceptsSection(false);
     setShowExamTrapsSection(false);
+    setShowStructuresSection(false);
     setShowSourceSection(false);
     setShowHighlights(false);
-    setShowTAccountsSection(false);
-    setShowTablesSection(false);
-    setShowFSSection(false);
+    setShowFlagForm(false);
+    setFlagReason("");
   }, [asset?.id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
