@@ -244,8 +244,7 @@ export default function ReviewVariants() {
         navigateReview("next");
       } else {
         toast.success("All variants reviewed! 🎉");
-        setReviewStarted(false);
-        setCandidates([]);
+        navigate("/assets");
       }
     } catch {
       // error toast already handled by mutation onError
