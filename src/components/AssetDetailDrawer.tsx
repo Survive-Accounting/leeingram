@@ -456,6 +456,9 @@ export default function AssetDetailDrawer({
   const [showProblemSection, setShowProblemSection] = useState(true);
   const [showJESection, setShowJESection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
+  const [showFormulasSection, setShowFormulasSection] = useState(false);
+  const [showConceptsSection, setShowConceptsSection] = useState(false);
+  const [showExamTrapsSection, setShowExamTrapsSection] = useState(false);
   const [showSourceSection, setShowSourceSection] = useState(false);
 
   // Highlights
