@@ -274,6 +274,24 @@ export default function BatchRunDetail() {
           </div>
         )}
 
+        {/* Batch Complete success panel */}
+        {run.status === "completed" && (
+          <div className="rounded-xl border border-success/30 bg-success/10 p-4 flex items-center gap-4">
+            <CheckCircle2 className="h-6 w-6 text-success shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-foreground">Batch Complete!</h3>
+              <p className="text-xs text-muted-foreground">
+                {run.completed_sources} of {run.total_sources} generated successfully
+                {elapsed > 0 ? ` in ${formatElapsed(elapsed)}` : ""}
+              </p>
+            </div>
+            <Button size="sm" onClick={() => navigate("/review")} className="gap-1.5">
+              <Eye className="h-3.5 w-3.5" />
+              Review Generated ({run.completed_sources})
+            </Button>
+          </div>
+        )}
+
         {/* Progress card */}
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <div className="flex justify-between text-xs text-muted-foreground">
