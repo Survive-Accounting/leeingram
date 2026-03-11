@@ -592,7 +592,7 @@ export default function AssetDetailDrawer({
 
   const handleGenerateHighlights = async () => {
     if (!asset || !variantId) {
-      toast.error("No linked variant found for highlight generation");
+      toast.error("No linked variant found for generation");
       return;
     }
     setGeneratingHighlights(true);
@@ -601,11 +601,24 @@ export default function AssetDetailDrawer({
         body: {
           provider: "lovable",
           model: "google/gemini-2.5-flash",
-          temperature: 0.1,
-          max_output_tokens: 1500,
+          temperature: 0.15,
+          max_output_tokens: 3000,
           source_problem_id: asset.base_raw_problem_id || "unknown",
           messages: [
-            { role: "system", content: HIGHLIGHT_GENERATION_PROMPT },
+            {
+              role: "system",
+              content: `You are an expert accounting instructor. Given a problem text and its solution steps, produce a JSON object with these keys:
+
+1. "highlights" — An array of 6-10 objects marking the most important information a student must notice. Each object: { "text": "<exact substring from problem>", "type": "key_input"|"rate"|"amount"|"timing"|"rule"|"definition" }. Rules: exact case-sensitive substrings only, no narrative filler, focus on inputs used in calculations.
+
+2. "important_formulas" — A concise list of formulas/equations needed to solve this problem. Use one formula per line, e.g. "Interest = Principal × Rate × Time". Only include formulas actually relevant to this specific problem.
+
+3. "concept_notes" — Brief concept notes (2-5 bullet points) explaining the key accounting concepts tested. Write for a student who understands basics but needs reminders.
+
+4. "exam_traps" — 2-4 common mistakes or traps students fall into when solving this type of problem. Be specific and actionable, e.g. "Don't forget to adjust for the partial-year period."
+
+Return valid JSON only.`,
+            },
             {
               role: "user",
               content: `Problem Text:\n${asset.survive_problem_text}\n\nSolution Steps:\n${asset.survive_solution_text || "(not provided)"}`,
@@ -616,31 +629,51 @@ export default function AssetDetailDrawer({
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       const raw = data?.parsed;
-      const arr = Array.isArray(raw) ? raw : raw?.highlights || [];
-      const valid = validateHighlights(arr, asset.survive_problem_text || "");
-      if (valid.length === 0) {
-        toast.warning("AI returned no valid highlights for this problem text.");
-        return;
+      const obj = typeof raw === "object" && raw !== null ? raw : {};
+
+      // Highlights
+      const hlArr = Array.isArray(obj) ? obj : (obj.highlights || []);
+      const valid = validateHighlights(Array.isArray(hlArr) ? hlArr : [], asset.survive_problem_text || "");
+      if (valid.length > 0) {
+        await supabase
+          .from("problem_variants")
+          .update({ highlight_key_json: valid as any } as any)
+          .eq("id", variantId);
+        setHighlights(valid);
+        setShowHighlights(true);
       }
-      // Persist to variant
-      await supabase
-        .from("problem_variants")
-        .update({ highlight_key_json: valid as any } as any)
-        .eq("id", variantId);
-      setHighlights(valid);
-      setShowHighlights(true);
-      toast.success(`${valid.length} highlights generated`);
+
+      // Persist new fields to teaching_assets
+      const updates: Record<string, string> = {};
+      if (obj.important_formulas) updates.important_formulas = typeof obj.important_formulas === "string" ? obj.important_formulas : (Array.isArray(obj.important_formulas) ? obj.important_formulas.join("\n") : String(obj.important_formulas));
+      if (obj.concept_notes) updates.concept_notes = typeof obj.concept_notes === "string" ? obj.concept_notes : (Array.isArray(obj.concept_notes) ? obj.concept_notes.join("\n") : String(obj.concept_notes));
+      if (obj.exam_traps) updates.exam_traps = typeof obj.exam_traps === "string" ? obj.exam_traps : (Array.isArray(obj.exam_traps) ? obj.exam_traps.join("\n") : String(obj.exam_traps));
+
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from("teaching_assets")
+          .update(updates as any)
+          .eq("id", asset.id);
+        // Update local asset state
+        if (updates.important_formulas) (asset as any).important_formulas = updates.important_formulas;
+        if (updates.concept_notes) (asset as any).concept_notes = updates.concept_notes;
+        if (updates.exam_traps) (asset as any).exam_traps = updates.exam_traps;
+      }
+
+      const parts = [
+        valid.length > 0 ? `${valid.length} highlights` : null,
+        updates.important_formulas ? "formulas" : null,
+        updates.concept_notes ? "concepts" : null,
+        updates.exam_traps ? "exam traps" : null,
+      ].filter(Boolean);
+      toast.success(`Generated: ${parts.join(", ") || "content"}`);
+      onAssetUpdated?.();
     } catch (err: any) {
-      toast.error(err?.message || "Highlight generation failed");
+      toast.error(err?.message || "Generation failed");
     } finally {
       setGeneratingHighlights(false);
     }
   };
-
-
-  const problemLines = (asset.survive_problem_text || "").split("\n");
-  const previewLines = problemLines.slice(0, 10);
-  const hasMoreLines = problemLines.length > 10;
 
   // Derive display values
   const sourceType = asset.source_type || parsed.sourceType || "—";
