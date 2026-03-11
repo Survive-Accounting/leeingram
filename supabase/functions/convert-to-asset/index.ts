@@ -809,6 +809,9 @@ serve(async (req) => {
           source_ref: candidate.answer_only || null,
           journal_entry_completed_json: candidate.journal_entry_completed_json || null,
           journal_entry_template_json: candidate.journal_entry_template_json || null,
+          important_formulas: candidate.important_formulas || null,
+          concept_notes: candidate.concept_notes || null,
+          exam_traps: candidate.exam_traps || null,
         })
         .select()
         .single();
