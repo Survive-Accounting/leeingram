@@ -888,7 +888,9 @@ Deno.serve(async (req) => {
       const metadataParams: MetadataParams = {
         asset_code: assetCode,
         course_code: courseCode,
+        course_display_name: course?.course_name || "",
         chapter_number: String(chapterNumber),
+        chapter_title: chapter?.chapter_name || "",
         exercise_number: asset.source_number || "",
         asset_id: asset.id,
         created_at: asset.created_at || "",
@@ -896,6 +898,7 @@ Deno.serve(async (req) => {
         sheet_practice_url: practiceUrl,
         sheet_promo_url: promoUrl,
         sheet_path_url: sheetPathUrl,
+        lw_practice_sheet_url: practiceUrl,
         ebook_page_link: asset.lw_ebook_url || "",
         lw_video_link: asset.lw_video_url || "",
         lw_quiz_link: asset.lw_quiz_url || "",
@@ -903,12 +906,18 @@ Deno.serve(async (req) => {
         flag_issue_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=flag`,
         mark_verified_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=verify`,
         contact_lee_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=contact`,
-        asset_type: asset.problem_type || "",
+        asset_type: asset.asset_type || "",
+        problem_type: asset.problem_type || "",
         variant_letter: extractVariantLetter(assetCode),
         variant_count: String(variantCount),
         journal_entry_count: String(jeCount),
+        instruction_count: String(problemInstructions.length),
+        uses_t_accounts: asset.uses_t_accounts ? "Yes" : "No",
+        uses_tables: asset.uses_tables ? "Yes" : "No",
+        uses_financial_statements: asset.uses_financial_statements ? "Yes" : "No",
         sheet_verified: asset.google_sheet_status === "verified_by_va" ? "Yes" : "No",
         sheet_ready_for_review: resolveReadyForReview(asset.google_sheet_status || "none"),
+        asset_finalized: asset.google_sheet_status === "finalized" ? "Yes" : "No",
       };
 
       // 1. METADATA tab
@@ -920,20 +929,34 @@ Deno.serve(async (req) => {
       const highlightedText = applyHighlightsToText(problemText, highlights);
       const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
 
-      // Build instructions text for sheet
-      const instructionsText = problemInstructions.length > 0
-        ? problemInstructions.map(i => `Instruction ${i.instruction_number}: ${i.instruction_text}`).join("\n")
-        : "";
+      // Build individual instruction slots
+      const instrSlots = ["", "", "", "", ""];
+      for (const instr of problemInstructions) {
+        const idx = instr.instruction_number - 1;
+        if (idx >= 0 && idx < 5) {
+          instrSlots[idx] = instr.instruction_text || "";
+        }
+      }
 
       const hiddenDataParams: HiddenDataParams = {
-        problem_text: problemText,
         problem_context: asset.problem_context || "",
-        problem_instructions: instructionsText,
+        problem_text: problemText,
         problem_text_highlighted: highlightedText,
+        instruction_1: instrSlots[0],
+        instruction_2: instrSlots[1],
+        instruction_3: instrSlots[2],
+        instruction_4: instrSlots[3],
+        instruction_5: instrSlots[4],
+        problem_solution: asset.survive_solution_text || "",
         answer_summary: buildAnswerSummary(asset),
         journal_entry_raw: jeToRawText(jeEntries),
+        t_accounts_raw: tAccountsToTsv(asset.t_accounts_json),
+        tables_raw: structuredTablesToTsv(asset.tables_json),
+        financial_statements_raw: structuredTablesToTsv(asset.financial_statements_json),
         worked_steps: asset.survive_solution_text || "",
-        concept_notes: "",
+        important_formulas: asset.important_formulas || "",
+        concept_notes: asset.concept_notes || "",
+        exam_traps: asset.exam_traps || "",
         highlight_tags: extractHighlightTags(highlights),
         validation_notes: "",
       };
