@@ -217,6 +217,7 @@ interface MetadataParams {
   contact_lee_url: string;
   asset_type: string;
   problem_type: string;
+  layout_hint: string;
   variant_letter: string;
   variant_count: string;
   journal_entry_count: string;
@@ -266,6 +267,7 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
     ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
     ["asset_type", params.asset_type, "", "", "", ""],
     ["problem_type", params.problem_type, "", "", "", ""],
+    ["layout_hint", params.layout_hint, "", "", "", ""],
     ["variant_letter", params.variant_letter, "", "", "", ""],
     ["variant_count", params.variant_count, "", "", "", ""],
     ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
@@ -289,6 +291,7 @@ interface HiddenDataParams {
   problem_context: string;
   problem_text: string;
   problem_text_highlighted: string;
+  instruction_list: string;
   instruction_1: string;
   instruction_2: string;
   instruction_3: string;
@@ -347,6 +350,7 @@ async function writeHiddenData(token: string, spreadsheetId: string, params: Hid
     ["problem_context", params.problem_context],
     ["problem_text", params.problem_text],
     ["problem_text_highlighted", params.problem_text_highlighted],
+    ["instruction_list", params.instruction_list],
     ["instruction_1", params.instruction_1],
     ["instruction_2", params.instruction_2],
     ["instruction_3", params.instruction_3],
@@ -761,6 +765,43 @@ function buildAnswerSummary(asset: any): string {
   return "";
 }
 
+// ── Layout hint builder ──────────────────────────────────────────────
+
+function buildLayoutHint(asset: any): string {
+  const hints: string[] = [];
+
+  // Check for journal entries
+  const jeJson = asset.journal_entry_completed_json;
+  const hasJE = jeJson && (
+    (Array.isArray(jeJson) && jeJson.length > 0) ||
+    (typeof jeJson === "object" && (jeJson.entries?.length || jeJson.journal_entries?.length || jeJson.scenario_sections?.length || jeJson.parts?.length))
+  );
+  if (hasJE) hints.push("JE");
+
+  // Check optional structures
+  if (asset.uses_t_accounts) hints.push("T-Accounts");
+  if (asset.uses_tables) hints.push("Table");
+  if (asset.uses_financial_statements) hints.push("Financial Statement");
+
+  // Check problem type for calculation/multi-part/conceptual
+  const pType = (asset.problem_type || "").toLowerCase();
+  if (pType.includes("calculation") || pType.includes("compute")) hints.push("Calculation");
+  if (pType.includes("multi") || pType.includes("part")) hints.push("Multi-Part");
+  if (pType.includes("concept") || pType.includes("theory")) hints.push("Conceptual");
+
+  return hints.join("|");
+}
+
+// ── Instruction list builder ─────────────────────────────────────────
+
+function buildInstructionList(instructions: { instruction_number: number; instruction_text: string }[]): string {
+  if (!instructions || instructions.length === 0) return "";
+  return instructions
+    .sort((a, b) => a.instruction_number - b.instruction_number)
+    .map(i => `${i.instruction_number}. ${i.instruction_text}`)
+    .join("\n");
+}
+
 // ── Main handler ─────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -908,6 +949,7 @@ Deno.serve(async (req) => {
         contact_lee_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=contact`,
         asset_type: asset.asset_type || "",
         problem_type: asset.problem_type || "",
+        layout_hint: buildLayoutHint(asset),
         variant_letter: extractVariantLetter(assetCode),
         variant_count: String(variantCount),
         journal_entry_count: String(jeCount),
@@ -942,6 +984,7 @@ Deno.serve(async (req) => {
         problem_context: asset.problem_context || "",
         problem_text: problemText,
         problem_text_highlighted: highlightedText,
+        instruction_list: buildInstructionList(problemInstructions),
         instruction_1: instrSlots[0],
         instruction_2: instrSlots[1],
         instruction_3: instrSlots[2],
