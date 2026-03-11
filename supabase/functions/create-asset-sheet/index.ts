@@ -765,6 +765,43 @@ function buildAnswerSummary(asset: any): string {
   return "";
 }
 
+// ── Layout hint builder ──────────────────────────────────────────────
+
+function buildLayoutHint(asset: any): string {
+  const hints: string[] = [];
+
+  // Check for journal entries
+  const jeJson = asset.journal_entry_completed_json;
+  const hasJE = jeJson && (
+    (Array.isArray(jeJson) && jeJson.length > 0) ||
+    (typeof jeJson === "object" && (jeJson.entries?.length || jeJson.journal_entries?.length || jeJson.scenario_sections?.length || jeJson.parts?.length))
+  );
+  if (hasJE) hints.push("JE");
+
+  // Check optional structures
+  if (asset.uses_t_accounts) hints.push("T-Accounts");
+  if (asset.uses_tables) hints.push("Table");
+  if (asset.uses_financial_statements) hints.push("Financial Statement");
+
+  // Check problem type for calculation/multi-part/conceptual
+  const pType = (asset.problem_type || "").toLowerCase();
+  if (pType.includes("calculation") || pType.includes("compute")) hints.push("Calculation");
+  if (pType.includes("multi") || pType.includes("part")) hints.push("Multi-Part");
+  if (pType.includes("concept") || pType.includes("theory")) hints.push("Conceptual");
+
+  return hints.join("|");
+}
+
+// ── Instruction list builder ─────────────────────────────────────────
+
+function buildInstructionList(instructions: { instruction_number: number; instruction_text: string }[]): string {
+  if (!instructions || instructions.length === 0) return "";
+  return instructions
+    .sort((a, b) => a.instruction_number - b.instruction_number)
+    .map(i => `${i.instruction_number}. ${i.instruction_text}`)
+    .join("\n");
+}
+
 // ── Main handler ─────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
