@@ -93,6 +93,8 @@ export default function ProblemBank() {
   const [editLabel, setEditLabel] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editNoJE, setEditNoJE] = useState(false);
+  const [editProblemFiles, setEditProblemFiles] = useState<File[]>([]);
+  const [editSolutionFiles, setEditSolutionFiles] = useState<File[]>([]);
 
   const { data: chapters } = useQuery({
     queryKey: ["chapters", courseFilter],
