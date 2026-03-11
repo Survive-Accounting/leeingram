@@ -286,16 +286,57 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
 // ── Hidden_Data writer ───────────────────────────────────────────────
 
 interface HiddenDataParams {
-  problem_text: string;
   problem_context: string;
-  problem_instructions: string;
+  problem_text: string;
   problem_text_highlighted: string;
+  instruction_1: string;
+  instruction_2: string;
+  instruction_3: string;
+  instruction_4: string;
+  instruction_5: string;
+  problem_solution: string;
   answer_summary: string;
   journal_entry_raw: string;
+  t_accounts_raw: string;
+  tables_raw: string;
+  financial_statements_raw: string;
   worked_steps: string;
+  important_formulas: string;
   concept_notes: string;
-  highlight_tags: string;
+  exam_traps: string;
   validation_notes: string;
+  highlight_tags: string;
+}
+
+// Convert t_accounts_json to TSV text
+function tAccountsToTsv(json: any): string {
+  if (!json) return "";
+  try {
+    const data = typeof json === "string" ? JSON.parse(json) : json;
+    if (!Array.isArray(data)) return "";
+    const lines: string[] = ["Account\tDebits\tCredits"];
+    for (const acct of data) {
+      const name = acct.account_name || "";
+      const debits = Array.isArray(acct.debits) ? acct.debits.join(", ") : "";
+      const credits = Array.isArray(acct.credits) ? acct.credits.join(", ") : "";
+      lines.push(`${name}\t${debits}\t${credits}`);
+    }
+    return lines.join("\n");
+  } catch { return ""; }
+}
+
+// Convert tables_json or financial_statements_json to combined TSV text
+function structuredTablesToTsv(json: any): string {
+  if (!json) return "";
+  try {
+    const data = typeof json === "string" ? JSON.parse(json) : json;
+    if (!Array.isArray(data)) return "";
+    return data.map((t: any) => {
+      const title = t.title || "Untitled";
+      const tsv = t.tsv || "";
+      return `--- ${title} ---\n${tsv}`;
+    }).join("\n\n");
+  } catch { return ""; }
 }
 
 async function writeHiddenData(token: string, spreadsheetId: string, params: HiddenDataParams) {
@@ -303,16 +344,26 @@ async function writeHiddenData(token: string, spreadsheetId: string, params: Hid
 
   const fieldRows: string[][] = [
     ["Field", "Value"],
-    ["problem_text", params.problem_text],
     ["problem_context", params.problem_context],
-    ["problem_instructions", params.problem_instructions],
+    ["problem_text", params.problem_text],
     ["problem_text_highlighted", params.problem_text_highlighted],
+    ["instruction_1", params.instruction_1],
+    ["instruction_2", params.instruction_2],
+    ["instruction_3", params.instruction_3],
+    ["instruction_4", params.instruction_4],
+    ["instruction_5", params.instruction_5],
+    ["problem_solution", params.problem_solution],
     ["answer_summary", params.answer_summary],
     ["journal_entry_raw", params.journal_entry_raw],
+    ["t_accounts_raw", params.t_accounts_raw],
+    ["tables_raw", params.tables_raw],
+    ["financial_statements_raw", params.financial_statements_raw],
     ["worked_steps", params.worked_steps],
+    ["important_formulas", params.important_formulas],
     ["concept_notes", params.concept_notes],
-    ["highlight_tags", params.highlight_tags],
+    ["exam_traps", params.exam_traps],
     ["validation_notes", params.validation_notes],
+    ["highlight_tags", params.highlight_tags],
   ];
 
   const range = `Hidden_Data!A1:B${fieldRows.length}`;
