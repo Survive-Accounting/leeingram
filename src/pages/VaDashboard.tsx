@@ -154,9 +154,9 @@ export default function VaDashboard() {
 
   // Build stage cards
   const stageCards = useMemo(() => {
-    if (!pipelineCounts) return { todo: [], completed: [] };
-    const todo: typeof PIPELINE_STAGES[number] & { count: number }[] = [];
-    const completed: typeof PIPELINE_STAGES[number] & { count: number }[] = [];
+    if (!pipelineCounts) return { todo: [] as Array<(typeof PIPELINE_STAGES)[number] & { count: number }>, completed: [] as Array<(typeof PIPELINE_STAGES)[number] & { count: number }> };
+    const todo: Array<(typeof PIPELINE_STAGES)[number] & { count: number }> = [];
+    const completed: Array<(typeof PIPELINE_STAGES)[number] & { count: number }> = [];
 
     PIPELINE_STAGES.forEach(stage => {
       const count = pipelineCounts[stage.key as keyof typeof pipelineCounts] ?? 0;
