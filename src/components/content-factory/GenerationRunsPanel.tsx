@@ -203,7 +203,6 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
             Batch Generate{sourceProblems?.length ? ` (${sourceProblems.length})` : ""}
           </Button>
           <InfoTip text="Generates Survive Teaching Assets for all selected Ready source problems at once. Each problem is processed sequentially." />
-          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => refetch()}>
             <RefreshCw className="h-3 w-3 mr-1" /> Refresh
           </Button>
