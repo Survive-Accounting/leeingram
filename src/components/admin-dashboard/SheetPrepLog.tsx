@@ -17,6 +17,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 25;
 
+type ViewMode = "active" | "archived";
+
 export function SheetPrepLog() {
   const { data: entries, isLoading } = useSheetPrepLog();
   const toggleMutation = useToggleSheetPrepReviewed();
@@ -27,12 +29,13 @@ export function SheetPrepLog() {
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [vaFilter, setVaFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("active");
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
-  // Derive filter options
+  // Derive filter options from non-archived entries
   const courses = useMemo(() => {
     if (!entries) return [];
     return [...new Set(entries.map(e => e.course_name))].sort();
@@ -43,10 +46,13 @@ export function SheetPrepLog() {
     return [...new Set(entries.map(e => e.va_display_name).filter(Boolean))] as string[];
   }, [entries]);
 
-  // Filter + search
+  // Filter + search + archived
   const filtered = useMemo(() => {
     if (!entries) return [];
     return entries.filter(e => {
+      // archived filter
+      if (viewMode === "active" && e.archived) return false;
+      if (viewMode === "archived" && !e.archived) return false;
       if (courseFilter !== "all" && e.course_name !== courseFilter) return false;
       if (vaFilter !== "all" && e.va_display_name !== vaFilter) return false;
       if (search) {
@@ -56,7 +62,9 @@ export function SheetPrepLog() {
       }
       return true;
     });
-  }, [entries, courseFilter, vaFilter, search]);
+  }, [entries, courseFilter, vaFilter, search, viewMode]);
+
+  const archivedCount = useMemo(() => entries?.filter(e => e.archived).length || 0, [entries]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageEntries = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -141,7 +149,7 @@ export function SheetPrepLog() {
           </CardTitle>
 
           {/* Admin bulk actions */}
-          {isAdmin && selectedIds.size > 0 && (
+          {isAdmin && selectedIds.size > 0 && viewMode === "active" && (
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[10px]">{selectedIds.size} selected</Badge>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleMarkReviewed}>
@@ -184,6 +192,21 @@ export function SheetPrepLog() {
               {vas.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
+          {/* View mode toggle */}
+          <div className="flex rounded-md border border-border overflow-hidden">
+            <button
+              className={`px-3 h-9 text-xs font-medium transition-colors ${viewMode === "active" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+              onClick={() => { setViewMode("active"); setPage(0); setSelectedIds(new Set()); }}
+            >
+              Active
+            </button>
+            <button
+              className={`px-3 h-9 text-xs font-medium transition-colors ${viewMode === "archived" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+              onClick={() => { setViewMode("archived"); setPage(0); setSelectedIds(new Set()); }}
+            >
+              Archived {archivedCount > 0 && `(${archivedCount})`}
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -191,7 +214,7 @@ export function SheetPrepLog() {
           <Table>
             <TableHeader>
               <TableRow className="text-[11px]">
-                {isAdmin && (
+                {isAdmin && viewMode === "active" && (
                   <TableHead className="w-[40px]">
                     <Checkbox
                       checked={pageEntries.length > 0 && selectedIds.size === pageEntries.length}
@@ -211,14 +234,14 @@ export function SheetPrepLog() {
             <TableBody>
               {pageEntries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8 text-xs">
-                    No sheet prep entries found.
+                  <TableCell colSpan={isAdmin && viewMode === "active" ? 8 : 7} className="text-center text-muted-foreground py-8 text-xs">
+                    {viewMode === "archived" ? "No archived entries." : "No sheet prep entries found."}
                   </TableCell>
                 </TableRow>
               )}
               {pageEntries.map(e => (
                 <TableRow key={e.id} className={e.reviewed ? "opacity-60" : ""}>
-                  {isAdmin && (
+                  {isAdmin && viewMode === "active" && (
                     <TableCell>
                       <Checkbox
                         checked={selectedIds.has(e.id)}
@@ -229,7 +252,7 @@ export function SheetPrepLog() {
                   <TableCell className="text-center">
                     <Checkbox
                       checked={e.reviewed}
-                      disabled={toggleMutation.isPending || !isAdmin}
+                      disabled={toggleMutation.isPending || !isAdmin || viewMode === "archived"}
                       onCheckedChange={(checked) => {
                         if (isAdmin) {
                           toggleMutation.mutate({ id: e.id, reviewed: !!checked });
@@ -246,7 +269,9 @@ export function SheetPrepLog() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      {e.sheet_master_url ? (
+                      {viewMode === "archived" ? (
+                        <Badge variant="outline" className="text-[9px] text-muted-foreground">Archived</Badge>
+                      ) : e.sheet_master_url ? (
                         <>
                           <a href={e.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming" className="hover:scale-110 transition-transform">📋</a>
                           {e.sheet_practice_url && (
