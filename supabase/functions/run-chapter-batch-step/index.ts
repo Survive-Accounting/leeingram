@@ -146,7 +146,7 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
     return "failed";
   }
 
-  // For combined groups, only process if this problem is the primary
+  // For combined groups, only skip secondary if the primary is ALSO in this batch
   if (sourceProblem.combined_group_id) {
     const { data: groupMembers } = await sb.from("chapter_problems")
       .select("id, source_label, ocr_detected_label")
@@ -161,20 +161,31 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
       );
       const primaryId = sorted[0].id;
       if (sourceProblem.id !== primaryId) {
-        await sb.from("chapter_batch_run_items").update({
-          status: "success",
-          last_error: "Skipped: secondary combined member (processed via primary)",
-          ended_at: new Date().toISOString(),
-          duration_ms: Date.now() - itemStart,
-          updated_at: new Date().toISOString(),
-        }).eq("id", nextItem.id);
+        // Check if the primary is also in this batch run
+        const { data: primaryInBatch } = await sb.from("chapter_batch_run_items")
+          .select("id")
+          .eq("batch_run_id", run.id)
+          .eq("source_problem_id", primaryId)
+          .maybeSingle();
 
-        await sb.from("chapter_problems").update({
-          status: "generated",
-          pipeline_status: "generated",
-        }).eq("id", sourceProblem.id);
+        if (primaryInBatch) {
+          // Primary is in this batch — skip secondary, it'll be handled via primary
+          await sb.from("chapter_batch_run_items").update({
+            status: "success",
+            last_error: "Skipped: secondary combined member (processed via primary)",
+            ended_at: new Date().toISOString(),
+            duration_ms: Date.now() - itemStart,
+            updated_at: new Date().toISOString(),
+          }).eq("id", nextItem.id);
 
-        return "success";
+          await sb.from("chapter_problems").update({
+            status: "generated",
+            pipeline_status: "generated",
+          }).eq("id", sourceProblem.id);
+
+          return "success";
+        }
+        // Primary is NOT in this batch — process this secondary as if it were standalone
       }
     }
   }
