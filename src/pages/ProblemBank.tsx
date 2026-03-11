@@ -435,9 +435,6 @@ export default function ProblemBank() {
           <Inbox className="h-5 w-5 text-primary" />
           Problem Import
         </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Paste textbook problem screenshots for each item in this chapter.
-        </p>
       </div>
 
       {/* Stage complete banner */}
