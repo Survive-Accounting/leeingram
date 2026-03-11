@@ -109,9 +109,13 @@ export default function ReviewVariants() {
         return;
       }
     }
-    // No problems with variants found
-    toast.success("All variants reviewed! 🎉");
-    navigate("/assets");
+    // All reviewed — start at beginning so user can browse
+    if (generatedProblems.length > 0) {
+      setReviewStarted(true);
+      setReviewIndex(0);
+      await loadCandidates(generatedProblems[0].id);
+      toast.info("All variants have been reviewed. Showing all problems for browsing.");
+    }
   };
 
   const startReview = async (idx: number) => {
