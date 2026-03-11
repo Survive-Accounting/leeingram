@@ -6,6 +6,7 @@ import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { resolveEffectiveRole, ROLE_LABELS, type EffectiveRole } from "@/lib/rolePermissions";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STAGES = [
   { key: "imported", label: "Import", path: "/problem-bank" },
