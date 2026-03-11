@@ -2019,6 +2019,38 @@ export type Database = {
           },
         ]
       }
+      problem_instructions: {
+        Row: {
+          created_at: string
+          id: string
+          instruction_number: number
+          instruction_text: string
+          teaching_asset_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instruction_number: number
+          instruction_text?: string
+          teaching_asset_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instruction_number?: number
+          instruction_text?: string
+          teaching_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_instructions_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       problem_pairs: {
         Row: {
           chapter_id: string
@@ -2463,6 +2495,7 @@ export type Database = {
           lw_imported_at: string | null
           lw_quiz_url: string | null
           lw_video_url: string | null
+          problem_context: string | null
           problem_type: string | null
           sheet_last_synced_at: string | null
           sheet_master_url: string | null
@@ -2514,6 +2547,7 @@ export type Database = {
           lw_imported_at?: string | null
           lw_quiz_url?: string | null
           lw_video_url?: string | null
+          problem_context?: string | null
           problem_type?: string | null
           sheet_last_synced_at?: string | null
           sheet_master_url?: string | null
@@ -2565,6 +2599,7 @@ export type Database = {
           lw_imported_at?: string | null
           lw_quiz_url?: string | null
           lw_video_url?: string | null
+          problem_context?: string | null
           problem_type?: string | null
           sheet_last_synced_at?: string | null
           sheet_master_url?: string | null
