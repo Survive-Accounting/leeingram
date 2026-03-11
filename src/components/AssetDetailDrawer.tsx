@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { HighlightedText, HighlightLegend } from "@/components/content-factory/HighlightedText";
 import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
+import ProblemInstructionsEditor from "@/components/content-factory/ProblemInstructionsEditor";
 
 // ── Types ────────────────────────────────────────────────────────────
 
