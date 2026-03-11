@@ -140,23 +140,36 @@ export default function VaDashboard() {
   const activeChapter = chapterDetails?.find(c => c.id === activeChapterId);
   const activeCourse = activeChapter ? getCourse(activeChapter.course_id) : null;
 
-  // Build stage cards for active chapter
+  // Build stage cards with sequential done logic
   const stageCounts = useMemo(() => {
     if (!activeChapterId || !perChapterCounts) return null;
     const ch = perChapterCounts[activeChapterId];
     if (!ch) return null;
-    const assets = assetCounts?.[activeChapterId] ?? 0;
-    // "remaining" for each stage
+
+    // Import is "done" when ≥80% of items have progressed past "imported"
+    const importReadyPct = ch.total > 0 ? Math.round(((ch.total - ch.imported) / ch.total) * 100) : 0;
+    const importDone = ch.total > 0 && importReadyPct >= 80;
+
+    const generateRawDone = ch.generated === 0;
+    const reviewRawDone = ch.in_review === 0;
+    const assetsRawRemaining = ch.total > 0 ? Math.max(0, ch.total - ch.approved) : 0;
+    const assetsRawDone = assetsRawRemaining === 0;
+
+    // Sequential: each stage needs previous to be Done
+    const generateDone = importDone && generateRawDone;
+    const reviewDone = generateDone && reviewRawDone;
+    const assetsDone = reviewDone && assetsRawDone;
+
     return [
-      { ...PIPELINE_STAGES[0], remaining: ch.imported },
-      { ...PIPELINE_STAGES[1], remaining: ch.generated },
-      { ...PIPELINE_STAGES[2], remaining: ch.in_review },
-      { ...PIPELINE_STAGES[3], remaining: ch.total > 0 ? Math.max(0, ch.total - ch.approved) : (assets > 0 ? 0 : 0) },
+      { ...PIPELINE_STAGES[0], remaining: ch.imported, isDone: importDone, pctLabel: `${importReadyPct}% ready` },
+      { ...PIPELINE_STAGES[1], remaining: ch.generated, isDone: generateDone, pctLabel: null as string | null },
+      { ...PIPELINE_STAGES[2], remaining: ch.in_review, isDone: reviewDone, pctLabel: null as string | null },
+      { ...PIPELINE_STAGES[3], remaining: assetsRawRemaining, isDone: assetsDone, pctLabel: null as string | null },
     ];
   }, [activeChapterId, perChapterCounts, assetCounts]);
 
-  // First stage with remaining items
-  const activeStageKey = stageCounts?.find(s => s.remaining > 0)?.key;
+  // First incomplete stage
+  const activeStageKey = stageCounts?.find(s => !s.isDone && s.remaining > 0)?.key;
 
   const handleSelectChapter = (ch: NonNullable<typeof chapterDetails>[number]) => {
     const co = getCourse(ch.course_id);
@@ -217,7 +230,7 @@ export default function VaDashboard() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {stageCounts.map(stage => {
                   const Icon = stage.icon;
-                  const isDone = stage.remaining === 0;
+                  const isDone = stage.isDone;
                   const isActive = stage.key === activeStageKey;
                   return (
                     <Card
@@ -253,6 +266,9 @@ export default function VaDashboard() {
                         ) : (
                           <>
                             <p className="text-2xl font-bold text-foreground tabular-nums">{stage.remaining}</p>
+                            {stage.pctLabel && (
+                              <p className="text-[10px] text-muted-foreground">{stage.pctLabel}</p>
+                            )}
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="text-[11px] h-7 gap-1 w-full">
                               Go <ArrowRight className="h-3 w-3" />
                             </Button>
