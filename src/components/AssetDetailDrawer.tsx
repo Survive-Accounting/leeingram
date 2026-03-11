@@ -472,7 +472,7 @@ export default function AssetDetailDrawer({
     // Fetch source problem
     supabase
       .from("chapter_problems")
-      .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label")
+      .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label, problem_text, solution_text")
       .eq("id", asset.base_raw_problem_id)
       .single()
       .then(({ data }) => setSourceProblem(data || null));
