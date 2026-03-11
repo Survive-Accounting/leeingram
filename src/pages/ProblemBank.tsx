@@ -695,16 +695,15 @@ export default function ProblemBank() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Source Problem</DialogTitle>
-            <DialogDescription>Update label, title, and type. Saving with label/title auto-tags the item.</DialogDescription>
+            <DialogTitle>Replace Screenshots</DialogTitle>
+            <DialogDescription>Paste or upload a replacement screenshot for this source problem. Title and label are auto-detected from your screenshots.</DialogDescription>
           </DialogHeader>
 
           {editingProblem &&
           <>
-              {/* Current screenshots with replace option */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs mb-1 block">Problem Screenshot</Label>
                   {editProblemFiles.length === 0 && (editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) ? (
@@ -713,7 +712,7 @@ export default function ProblemBank() {
                         {(editingProblem.problem_screenshot_urls.length > 0 ?
                           editingProblem.problem_screenshot_urls :
                           [editingProblem.problem_screenshot_url].filter(Boolean)).map((url, i) =>
-                          <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                          <img key={i} src={url!} alt="" className="h-20 rounded border border-border object-cover" />
                         )}
                       </div>
                       <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => setEditProblemFiles([])}>
@@ -728,6 +727,7 @@ export default function ProblemBank() {
                       onRemove={() => setEditProblemFiles([])}
                     />
                   )}
+                  <p className="text-[10px] text-muted-foreground mt-1">Paste (Ctrl+V) or click to upload</p>
                 </div>
                 <div>
                   <Label className="text-xs mb-1 block">Solution Screenshot</Label>
@@ -737,7 +737,7 @@ export default function ProblemBank() {
                         {(editingProblem.solution_screenshot_urls.length > 0 ?
                           editingProblem.solution_screenshot_urls :
                           [editingProblem.solution_screenshot_url].filter(Boolean)).map((url, i) =>
-                          <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                          <img key={i} src={url!} alt="" className="h-20 rounded border border-border object-cover" />
                         )}
                       </div>
                       <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => setEditSolutionFiles([])}>
@@ -752,35 +752,8 @@ export default function ProblemBank() {
                       onRemove={() => setEditSolutionFiles([])}
                     />
                   )}
+                  <p className="text-[10px] text-muted-foreground mt-1">Paste (Ctrl+V) or click to upload</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-xs">Type</Label>
-                  <Select value={editType} onValueChange={setEditType}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="exercise">Exercise</SelectItem>
-                      <SelectItem value="problem">Problem</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Label</Label>
-                  <Input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="E13-3" className="h-8 text-xs" />
-                </div>
-                <div>
-                  <Label className="text-xs">Title</Label>
-                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Bond premium" className="h-8 text-xs" />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox id="edit-no-je" checked={editNoJE} onCheckedChange={(v) => setEditNoJE(!!v)} />
-                <Label htmlFor="edit-no-je" className="text-xs cursor-pointer">Contains no Journal Entries</Label>
-                <span className="text-[10px] text-muted-foreground">— EPS/ratios/analysis. Skips JE logic.</span>
               </div>
             </>
           }
