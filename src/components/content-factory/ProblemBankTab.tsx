@@ -1762,7 +1762,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
 
   // Detail view removed — generation now uses batch pipeline only
 
-  const readyCount = problems?.filter(p => p.status === "ready" && (p as any).dependency_type !== "dependent_problem").length ?? 0;
+  const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
 
   const launchServerBatch = async () => {
     if (!problems?.length) return;
