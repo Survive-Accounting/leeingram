@@ -77,7 +77,8 @@ export function ContentCreationDashboard({ chapterIds, vaAccountId }: Props) {
       const { data, error } = await supabase
         .from("teaching_assets")
         .select("id, asset_name, source_ref, chapter_id, course_id, google_sheet_status, created_at, asset_approved_at")
-        .in("chapter_id", chapterIds);
+        .in("chapter_id", chapterIds)
+        .neq("google_sheet_status", "archived");
       if (error) throw error;
       return data ?? [];
     },
