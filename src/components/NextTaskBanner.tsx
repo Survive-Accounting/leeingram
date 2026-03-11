@@ -16,6 +16,7 @@ const JOB_DESC_LINKS: Record<string, string> = {
 const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
     task: "Paste textbook problem screenshots for each source item.",
+    tip: "Tip: It's okay to skip problems that won't scan cleanly. Focus on quality.",
     countQuery: "imported",
     sopLabel: "Import SOP",
   },
