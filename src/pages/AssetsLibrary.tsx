@@ -673,6 +673,11 @@ export default function AssetsLibrary() {
                         ) : null}
                       </div>
                     </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => openDrawer(a)}>
+                        <Eye className="h-3 w-3 mr-1" /> View
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 );
               })
