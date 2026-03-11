@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  ChevronDown, Copy, CheckCircle2, XCircle, Clock, Cpu, RefreshCw,
-  AlertTriangle, Info, AlertCircle, Bug, Layers, Loader2,
+  ChevronRight, Copy, CheckCircle2, XCircle, Clock, Cpu, RefreshCw,
+  AlertTriangle, Layers, Loader2, Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -19,32 +19,25 @@ interface Props {
   courseId?: string;
 }
 
-const LEVEL_ICON: Record<string, typeof Info> = {
-  debug: Bug, info: Info, warn: AlertTriangle, error: AlertCircle,
-};
-const LEVEL_CLASS: Record<string, string> = {
-  debug: "text-muted-foreground",
-  info: "text-muted-foreground",
-  warn: "text-amber-400",
-  error: "text-destructive",
-};
 const STATUS_CLASS: Record<string, string> = {
-  started: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  success: "bg-green-500/20 text-green-400 border-green-500/30",
-  failed: "bg-destructive/20 text-destructive border-destructive/30",
+  draft: "bg-muted text-muted-foreground",
+  running: "bg-primary/15 text-primary",
+  paused: "bg-amber-500/15 text-amber-400",
+  completed: "bg-green-500/15 text-green-400",
+  failed: "bg-destructive/15 text-destructive",
+  canceled: "bg-muted text-muted-foreground",
 };
-const SCOPE_CLASS: Record<string, string> = {
-  frontend: "bg-blue-500/10 text-blue-400",
-  backend: "bg-purple-500/10 text-purple-400",
-  db: "bg-emerald-500/10 text-emerald-400",
-  ai: "bg-amber-500/10 text-amber-400",
-  validator: "bg-cyan-500/10 text-cyan-400",
+
+const ITEM_STATUS_CLASS: Record<string, string> = {
+  queued: "text-muted-foreground",
+  generating: "text-primary",
+  success: "text-green-400",
+  failed: "text-destructive",
+  skipped: "text-muted-foreground",
 };
 
 export function GenerationRunsPanel({ chapterId, courseId }: Props) {
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [scopeFilter, setScopeFilter] = useState("all");
-  const [levelFilter, setLevelFilter] = useState("all");
+  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
   const [batchCreating, setBatchCreating] = useState(false);
   const navigate = useNavigate();
 
@@ -61,6 +54,37 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
       return data ?? [];
     },
     enabled: !!chapterId,
+  });
+
+  // Fetch batch runs for this chapter
+  const { data: runs, isLoading: runsLoading, refetch } = useQuery({
+    queryKey: ["chapter-batch-runs", chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_batch_runs")
+        .select("*")
+        .eq("chapter_id", chapterId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch items for expanded run
+  const { data: expandedItems, isLoading: itemsLoading } = useQuery({
+    queryKey: ["batch-run-items-panel", expandedRunId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_batch_run_items")
+        .select("*, chapter_problems(source_label)")
+        .eq("batch_run_id", expandedRunId!)
+        .order("seq");
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!expandedRunId,
   });
 
   const handleBatchGenerate = async () => {
@@ -88,78 +112,77 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
     }
   };
 
-  // Fetch runs for this chapter
-  const { data: runs, isLoading: runsLoading, refetch } = useQuery({
-    queryKey: ["generation-runs", chapterId],
-    queryFn: async () => {
-      // Get source problem IDs for this chapter
-      const { data: problems } = await supabase
-        .from("chapter_problems")
-        .select("id")
-        .eq("chapter_id", chapterId);
-      const problemIds = problems?.map(p => p.id) ?? [];
-
-      if (problemIds.length === 0) return [];
-
-      const { data, error } = await supabase
-        .from("generation_runs" as any)
-        .select("*")
-        .in("source_problem_id", problemIds)
-        .order("created_at", { ascending: false })
-        .limit(25);
-      if (error) throw error;
-      return (data ?? []) as any[];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch events for selected run
-  const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["generation-events", selectedRunId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("generation_events" as any)
-        .select("*")
-        .eq("run_id", selectedRunId!)
-        .order("seq", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as any[];
-    },
-    enabled: !!selectedRunId,
-  });
-
-  const selectedRun = runs?.find((r: any) => r.id === selectedRunId);
-
-  const filteredEvents = events?.filter((e: any) => {
-    if (scopeFilter !== "all" && e.scope !== scopeFilter) return false;
-    if (levelFilter !== "all" && e.level !== levelFilter) return false;
-    return true;
-  });
-
-  const handleCopyBundle = async () => {
-    if (!selectedRun) return;
-    const bundle = selectedRun.debug_bundle_json ?? {
-      run_id: selectedRun.id,
-      status: selectedRun.status,
-      provider: selectedRun.provider,
-      model: selectedRun.model,
-      duration_ms: selectedRun.duration_ms,
-      error_summary: selectedRun.error_summary,
-      timeline: events ?? [],
-    };
+  const copyDebugBundle = useCallback(async (run: any) => {
     try {
+      const { data: items } = await supabase
+        .from("chapter_batch_run_items")
+        .select("*, chapter_problems(source_label)")
+        .eq("batch_run_id", run.id)
+        .order("seq");
+
+      const sourceIds = (items ?? []).map((i: any) => i.source_problem_id);
+
+      // Fetch answer packages created during this run's timeframe
+      let answerPackages: any[] = [];
+      if (sourceIds.length > 0 && run.started_at) {
+        const { data: ap } = await supabase
+          .from("answer_packages")
+          .select("id, source_problem_id, version, status, generator, created_at, answer_payload, validation_results")
+          .in("source_problem_id", sourceIds)
+          .gte("created_at", run.created_at)
+          .order("created_at");
+        answerPackages = ap ?? [];
+      }
+
+      const bundle = {
+        batch_run: run,
+        items: (items ?? []).map((i: any) => ({
+          seq: i.seq,
+          source_label: (i.chapter_problems as any)?.source_label,
+          source_problem_id: i.source_problem_id,
+          status: i.status,
+          attempts: i.attempts,
+          duration_ms: i.duration_ms,
+          last_error: i.last_error,
+          created_variant_ids: i.created_variant_ids,
+        })),
+        answer_packages: answerPackages.map((ap: any) => ({
+          id: ap.id,
+          source_problem_id: ap.source_problem_id,
+          version: ap.version,
+          status: ap.status,
+          generator: ap.generator,
+          created_at: ap.created_at,
+          validation_results: ap.validation_results,
+          answer_payload_preview: JSON.stringify(ap.answer_payload).slice(0, 500),
+        })),
+        summary: {
+          total: run.total_sources,
+          completed: run.completed_sources,
+          failed: run.failed_sources,
+          avg_seconds_per_source: run.avg_seconds_per_source,
+        },
+      };
+
       await navigator.clipboard.writeText(JSON.stringify(bundle, null, 2));
       toast.success("Debug bundle copied to clipboard");
     } catch {
-      // Fallback
-      const ta = document.createElement("textarea");
-      ta.value = JSON.stringify(bundle, null, 2);
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      toast.success("Debug bundle copied to clipboard");
+      toast.error("Failed to copy debug bundle");
     }
+  }, []);
+
+  const formatDuration = (ms: number | null) => {
+    if (!ms) return "—";
+    const s = Math.round(ms / 1000);
+    return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+  };
+
+  const getRunDuration = (run: any) => {
+    if (!run.started_at) return "—";
+    const end = run.ended_at ? new Date(run.ended_at).getTime() : Date.now();
+    const ms = end - new Date(run.started_at).getTime();
+    const s = Math.round(ms / 1000);
+    return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
   };
 
   return (
@@ -185,154 +208,136 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        {/* Runs list (left) */}
-        <div className="w-72 flex-shrink-0 space-y-1 max-h-[600px] overflow-y-auto">
-          {runsLoading ? (
-            <p className="text-xs text-muted-foreground">Loading…</p>
-          ) : !runs?.length ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">No generation runs yet.</p>
-          ) : runs.map((run: any) => (
-            <button
-              key={run.id}
-              onClick={() => setSelectedRunId(run.id)}
-              className={cn(
-                "w-full text-left px-3 py-2 rounded-md border text-xs transition-colors",
-                selectedRunId === run.id
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:bg-muted/50"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className={cn("text-[9px] h-4", STATUS_CLASS[run.status])}>
-                  {run.status}
-                </Badge>
-                <span className="text-muted-foreground">{format(new Date(run.created_at), "MMM d HH:mm:ss")}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {run.provider && (
-                  <Badge variant="secondary" className="text-[9px] h-4">
-                    <Cpu className="h-2.5 w-2.5 mr-0.5" />{run.provider}
-                  </Badge>
-                )}
-                {run.duration_ms != null && (
-                  <Badge variant="outline" className="text-[9px] h-4">
-                    <Clock className="h-2.5 w-2.5 mr-0.5" />{run.duration_ms >= 1000 ? `${(run.duration_ms / 1000).toFixed(1)}s` : `${run.duration_ms}ms`}
-                  </Badge>
-                )}
-              </div>
-              {run.error_summary && (
-                <p className="text-destructive truncate mt-1">{run.error_summary}</p>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Events detail (right) */}
-        <div className="flex-1 min-w-0 space-y-3">
-          {!selectedRunId ? (
-            <p className="text-xs text-muted-foreground py-8 text-center">Select a run to view its events.</p>
-          ) : (
-            <>
-              {/* Run header */}
-              {selectedRun && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className={cn("text-[10px]", STATUS_CLASS[selectedRun.status])}>
-                    {selectedRun.status === "success" ? <CheckCircle2 className="h-3 w-3 mr-1" /> :
-                     selectedRun.status === "failed" ? <XCircle className="h-3 w-3 mr-1" /> : null}
-                    {selectedRun.status}
-                  </Badge>
-                  {selectedRun.provider && (
-                    <Badge variant="secondary" className="text-[9px]">
-                      {selectedRun.provider}{selectedRun.model ? `/${selectedRun.model.split("/").pop()}` : ""}
+      {/* Runs list */}
+      {runsLoading ? (
+        <p className="text-xs text-muted-foreground py-4 text-center">Loading…</p>
+      ) : !runs?.length ? (
+        <p className="text-xs text-muted-foreground py-8 text-center">No generation runs yet.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {runs.map((run) => {
+            const isExpanded = expandedRunId === run.id;
+            return (
+              <Collapsible
+                key={run.id}
+                open={isExpanded}
+                onOpenChange={(open) => setExpandedRunId(open ? run.id : null)}
+              >
+                <div className={cn(
+                  "rounded-lg border transition-colors",
+                  isExpanded ? "border-primary/30 bg-primary/5" : "border-border hover:bg-muted/30"
+                )}>
+                  {/* Run summary row */}
+                  <CollapsibleTrigger className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-xs group">
+                    <ChevronRight className={cn(
+                      "h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-transform",
+                      isExpanded && "rotate-90"
+                    )} />
+                    <Badge variant="outline" className={cn("text-[10px] h-5 border-0", STATUS_CLASS[run.status])}>
+                      {run.status === "completed" && <CheckCircle2 className="h-2.5 w-2.5 mr-1" />}
+                      {run.status === "failed" && <XCircle className="h-2.5 w-2.5 mr-1" />}
+                      {run.status === "running" && <Loader2 className="h-2.5 w-2.5 mr-1 animate-spin" />}
+                      {run.status}
                     </Badge>
-                  )}
-                  {selectedRun.duration_ms != null && (
-                    <Badge variant="outline" className="text-[9px]">
-                      <Clock className="h-2.5 w-2.5 mr-0.5" />{selectedRun.duration_ms}ms
-                    </Badge>
-                  )}
-                  <span className="text-[10px] text-muted-foreground">{events?.length ?? 0} events</span>
-                  <Button variant="outline" size="sm" className="h-7 text-xs ml-auto" onClick={handleCopyBundle}>
-                    <Copy className="h-3 w-3 mr-1" /> Copy Debug Bundle
-                  </Button>
-                </div>
-              )}
+                    <span className="text-muted-foreground">
+                      {format(new Date(run.created_at), "MMM d HH:mm")}
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {run.completed_sources}/{run.total_sources} sources
+                    </span>
+                    {run.failed_sources > 0 && (
+                      <span className="text-destructive">
+                        <AlertTriangle className="h-3 w-3 inline mr-0.5" />{run.failed_sources} failed
+                      </span>
+                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      <Badge variant="outline" className="text-[9px] h-4">
+                        <Cpu className="h-2.5 w-2.5 mr-0.5" />{run.provider}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] h-4">
+                        <Clock className="h-2.5 w-2.5 mr-0.5" />{getRunDuration(run)}
+                      </Badge>
+                      {run.avg_seconds_per_source && (
+                        <span className="text-[10px] text-muted-foreground">
+                          ~{Math.round(Number(run.avg_seconds_per_source))}s/src
+                        </span>
+                      )}
+                    </div>
+                  </CollapsibleTrigger>
 
-              {selectedRun?.error_summary && (
-                <div className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2">
-                  <p className="text-xs text-destructive">{selectedRun.error_summary}</p>
-                </div>
-              )}
+                  {/* Expanded details */}
+                  <CollapsibleContent>
+                    <div className="border-t border-border px-3 pb-3 pt-2 space-y-3">
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] px-2"
+                          onClick={(e) => { e.stopPropagation(); copyDebugBundle(run); }}
+                        >
+                          <Copy className="h-3 w-3 mr-1" /> Copy Debug Bundle
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] px-2"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/batch-run/${run.id}`); }}
+                        >
+                          <Eye className="h-3 w-3 mr-1" /> Open Full View
+                        </Button>
+                        <span className="text-[10px] text-muted-foreground font-mono ml-auto">{run.id.slice(0, 8)}</span>
+                      </div>
 
-              {/* Filters */}
-              <div className="flex gap-2">
-                <Select value={scopeFilter} onValueChange={setScopeFilter}>
-                  <SelectTrigger className="h-7 text-xs w-28"><SelectValue placeholder="Scope" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Scopes</SelectItem>
-                    <SelectItem value="frontend">Frontend</SelectItem>
-                    <SelectItem value="backend">Backend</SelectItem>
-                    <SelectItem value="db">DB</SelectItem>
-                    <SelectItem value="ai">AI</SelectItem>
-                    <SelectItem value="validator">Validator</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={levelFilter} onValueChange={setLevelFilter}>
-                  <SelectTrigger className="h-7 text-xs w-28"><SelectValue placeholder="Level" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Levels</SelectItem>
-                    <SelectItem value="debug">Debug</SelectItem>
-                    <SelectItem value="info">Info</SelectItem>
-                    <SelectItem value="warn">Warn</SelectItem>
-                    <SelectItem value="error">Error</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Event timeline */}
-              {eventsLoading ? (
-                <p className="text-xs text-muted-foreground">Loading events…</p>
-              ) : !filteredEvents?.length ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">No events found.</p>
-              ) : (
-                <div className="space-y-0.5 max-h-[500px] overflow-y-auto">
-                  {filteredEvents.map((evt: any) => {
-                    const Icon = LEVEL_ICON[evt.level] ?? Info;
-                    return (
-                      <Collapsible key={evt.id}>
-                        <CollapsibleTrigger className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 text-left text-xs group">
-                          <span className="text-muted-foreground font-mono flex-shrink-0 w-6 text-right">{evt.seq}</span>
-                          <Icon className={cn("h-3 w-3 flex-shrink-0", LEVEL_CLASS[evt.level])} />
-                          <Badge variant="outline" className={cn("text-[9px] h-4 flex-shrink-0", SCOPE_CLASS[evt.scope])}>
-                            {evt.scope}
-                          </Badge>
-                          <span className="font-mono text-foreground truncate">{evt.event_type}</span>
-                          <span className="text-muted-foreground truncate flex-1">{evt.message}</span>
-                          <span className="text-muted-foreground flex-shrink-0 text-[10px]">
-                            {format(new Date(evt.created_at), "HH:mm:ss.SSS")}
-                          </span>
-                          <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="ml-10 py-1.5">
-                            <p className="text-xs text-foreground/80 px-2 mb-1">{evt.message}</p>
-                            {evt.payload_json && (
-                              <pre className="text-[10px] text-muted-foreground bg-muted/30 rounded p-2 overflow-x-auto max-h-60 whitespace-pre-wrap">
-                                {JSON.stringify(evt.payload_json, null, 2)}
-                              </pre>
-                            )}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  })}
+                      {/* Items table */}
+                      {itemsLoading ? (
+                        <p className="text-[10px] text-muted-foreground">Loading items…</p>
+                      ) : (
+                        <div className="rounded border border-border overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="border-border">
+                                <TableHead className="text-[10px] py-1 w-8">#</TableHead>
+                                <TableHead className="text-[10px] py-1">Source</TableHead>
+                                <TableHead className="text-[10px] py-1">Status</TableHead>
+                                <TableHead className="text-[10px] py-1">Attempts</TableHead>
+                                <TableHead className="text-[10px] py-1">Duration</TableHead>
+                                <TableHead className="text-[10px] py-1">Error</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {(expandedItems ?? []).map((item: any) => (
+                                <TableRow key={item.id} className="border-border">
+                                  <TableCell className="text-[10px] py-1 text-muted-foreground">{item.seq}</TableCell>
+                                  <TableCell className="text-[10px] py-1 font-mono font-medium">
+                                    {(item.chapter_problems as any)?.source_label || item.source_problem_id.slice(0, 8)}
+                                  </TableCell>
+                                  <TableCell className="py-1">
+                                    <span className={cn("text-[10px] font-medium", ITEM_STATUS_CLASS[item.status])}>
+                                      {item.status === "success" && <CheckCircle2 className="h-2.5 w-2.5 inline mr-0.5" />}
+                                      {item.status === "failed" && <XCircle className="h-2.5 w-2.5 inline mr-0.5" />}
+                                      {item.status}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-[10px] py-1">{item.attempts}</TableCell>
+                                  <TableCell className="text-[10px] py-1">{formatDuration(item.duration_ms)}</TableCell>
+                                  <TableCell className="text-[10px] py-1 text-destructive max-w-[200px] truncate">
+                                    {item.last_error || "—"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleContent>
                 </div>
-              )}
-            </>
-          )}
+              </Collapsible>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }
