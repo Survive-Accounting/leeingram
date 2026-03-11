@@ -93,6 +93,7 @@ const AppRoutes = () => {
       <Route path="/ideas" element={<ProtectedRoute><IdeasRoadmap /></ProtectedRoute>} />
       <Route path="/problem-bank" element={<ProtectedRoute><ProblemBank /></ProtectedRoute>} />
       <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
+      <Route path="/assets" element={<Navigate to="/assets-library" replace />} />
       <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
       <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
       <Route path="/review" element={<ProtectedRoute><ReviewVariants /></ProtectedRoute>} />
