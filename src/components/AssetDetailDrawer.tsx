@@ -563,6 +563,63 @@ export default function AssetDetailDrawer({
     }
   };
 
+  const handleGenerateHighlights = async () => {
+    if (!asset || !variantId) {
+      toast.error("No linked variant found for highlight generation");
+      return;
+    }
+    setGeneratingHighlights(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-output", {
+        body: {
+          provider: "lovable",
+          model: "google/gemini-2.5-flash",
+          temperature: 0.1,
+          max_output_tokens: 1500,
+          source_problem_id: asset.base_raw_problem_id || "unknown",
+          messages: [
+            { role: "system", content: HIGHLIGHT_GENERATION_PROMPT },
+            {
+              role: "user",
+              content: `Problem Text:\n${asset.survive_problem_text}\n\nSolution Steps:\n${asset.survive_solution_text || "(not provided)"}`,
+            },
+          ],
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const raw = data?.parsed;
+      const arr = Array.isArray(raw) ? raw : raw?.highlights || [];
+      const valid = validateHighlights(arr, asset.survive_problem_text || "");
+      if (valid.length === 0) {
+        toast.warning("AI returned no valid highlights for this problem text.");
+        return;
+      }
+      // Persist to variant
+      await supabase
+        .from("problem_variants")
+        .update({ highlight_key_json: valid as any } as any)
+        .eq("id", variantId);
+      setHighlights(valid);
+      setShowHighlights(true);
+      toast.success(`${valid.length} highlights generated`);
+    } catch (err: any) {
+      toast.error(err?.message || "Highlight generation failed");
+    } finally {
+      setGeneratingHighlights(false);
+    }
+  };
+
+  // Parts analysis for collapsible sections
+  const parts = useMemo(() => normalizeToParts({
+    survive_problem_text: asset.survive_problem_text,
+    survive_solution_text: asset.survive_solution_text,
+    journal_entry_completed_json: asset.journal_entry_completed_json,
+    parts_json: (asset as any).parts_json,
+  }), [asset]);
+  const textParts = useMemo(() => parts.filter(isTextPart), [parts]);
+  const jeParts = useMemo(() => parts.filter(isJEPart), [parts]);
+
   const problemLines = (asset.survive_problem_text || "").split("\n");
   const previewLines = problemLines.slice(0, 10);
   const hasMoreLines = problemLines.length > 10;
