@@ -445,19 +445,61 @@ export default function AssetDetailDrawer({
   const [showCopySettings, setShowCopySettings] = useState(false);
   const [sourceProblem, setSourceProblem] = useState<any>(null);
 
-  // Fetch linked source problem for images + title
+  // Collapsible section states
+  const [showProblemSection, setShowProblemSection] = useState(true);
+  const [showJESection, setShowJESection] = useState(false);
+  const [showWorkedSteps, setShowWorkedSteps] = useState(false);
+
+  // Highlights
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [showHighlights, setShowHighlights] = useState(false);
+  const [generatingHighlights, setGeneratingHighlights] = useState(false);
+  const [variantId, setVariantId] = useState<string | null>(null);
+
+  // Fetch linked source problem for images + title + variant highlights
   useEffect(() => {
     if (!open || !asset?.base_raw_problem_id) {
       setSourceProblem(null);
+      setHighlights([]);
+      setVariantId(null);
       return;
     }
+    // Fetch source problem
     supabase
       .from("chapter_problems")
       .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label")
       .eq("id", asset.base_raw_problem_id)
       .single()
       .then(({ data }) => setSourceProblem(data || null));
-  }, [open, asset?.base_raw_problem_id]);
+
+    // Fetch approved variant's highlights
+    supabase
+      .from("problem_variants")
+      .select("id, highlight_key_json")
+      .eq("base_problem_id", asset.base_raw_problem_id)
+      .eq("variant_status", "approved")
+      .limit(1)
+      .then(({ data }) => {
+        const v = data?.[0];
+        if (v) {
+          setVariantId(v.id);
+          const raw = v.highlight_key_json as any;
+          if (Array.isArray(raw) && raw.length > 0) {
+            setHighlights(validateHighlights(raw, asset.survive_problem_text || ""));
+          } else {
+            setHighlights([]);
+          }
+        }
+      });
+  }, [open, asset?.base_raw_problem_id, asset?.survive_problem_text]);
+
+  // Reset section states when asset changes
+  useEffect(() => {
+    setShowProblemSection(true);
+    setShowJESection(false);
+    setShowWorkedSteps(false);
+    setShowHighlights(false);
+  }, [asset?.id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
     setCopySettings(prev => {
