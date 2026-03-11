@@ -215,6 +215,13 @@ export default function ReviewVariants() {
         important_formulas: candidate.important_formulas || null,
         concept_notes: candidate.concept_notes || null,
         exam_traps: candidate.exam_traps || null,
+        // Learning structures
+        uses_t_accounts: Array.isArray(candidate.t_accounts_json) && candidate.t_accounts_json.length > 0,
+        uses_tables: Array.isArray(candidate.tables_json) && candidate.tables_json.length > 0,
+        uses_financial_statements: Array.isArray(candidate.financial_statements_json) && candidate.financial_statements_json.length > 0,
+        t_accounts_json: candidate.t_accounts_json || null,
+        tables_json: candidate.tables_json || null,
+        financial_statements_json: candidate.financial_statements_json || null,
       } as any).select("id").single();
       if (taErr) throw taErr;
 
