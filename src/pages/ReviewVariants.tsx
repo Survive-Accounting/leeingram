@@ -102,6 +102,8 @@ export default function ReviewVariants() {
         t_accounts_json: cd.t_accounts_json || null,
         tables_json: cd.tables_json || null,
         financial_statements_json: cd.financial_statements_json || null,
+        problem_context: cd.problem_context || null,
+        instructions: cd.instructions || [],
       };
     }) : [];
     setCandidates(mapped);
