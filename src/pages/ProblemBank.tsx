@@ -4,6 +4,7 @@ import { DependentProblemsQueue } from "@/components/content-factory/DependentPr
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useBuildRun } from "@/hooks/useBuildRun";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { StartBuildRunModal } from "@/components/BuildTimerWidget";
@@ -438,6 +439,19 @@ export default function ProblemBank() {
         </p>
       </div>
 
+      {/* Stage complete banner */}
+      {(() => {
+        if (!problems || problems.length === 0 || chapterFilter === "all") return null;
+        const rawCount = problems.filter(p => p.status === "raw").length;
+        if (rawCount > 0) return null;
+        const readyCount = problems.filter(p => ["ready", "generated", "approved"].includes(p.status)).length;
+        return (
+          <StageCompletePanel
+            stage="import"
+            statLine={`${readyCount} source problem${readyCount === 1 ? "" : "s"} ready to generate`}
+          />
+        );
+      })()}
 
       {/* Action buttons */}
       <div className="flex items-center gap-1.5 mb-3">

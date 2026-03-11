@@ -1,4 +1,5 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,27 @@ export default function ChapterWorkspace() {
     enabled: !!chapterId,
   });
 
+  // Query to check if generation is complete for stage banner
+  const { data: chapterProblems } = useQuery({
+    queryKey: ["chapter-problems-stage-check", chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_problems")
+        .select("status")
+        .eq("chapter_id", chapterId!);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!chapterId,
+  });
+
+  const generationComplete = (() => {
+    if (!chapterProblems || chapterProblems.length === 0) return false;
+    const readyOnly = chapterProblems.filter(p => p.status === "ready");
+    return readyOnly.length === 0 && chapterProblems.some(p => p.status === "generated" || p.status === "approved");
+  })();
+  const generatedCount = chapterProblems?.filter(p => p.status === "generated" || p.status === "approved").length ?? 0;
+
   const course = chapter?.courses as { course_name: string; id: string; code: string } | undefined;
   const chapterNum = chapter?.chapter_number ?? 0;
 
@@ -130,6 +152,12 @@ export default function ChapterWorkspace() {
         <div className="flex items-center gap-2">
         </div>
       </div>
+      {generationComplete && (
+        <StageCompletePanel
+          stage="generate"
+          statLine={`${generatedCount} variant${generatedCount === 1 ? "" : "s"} ready for review`}
+        />
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Survive Teaching Assets</TabsTrigger>

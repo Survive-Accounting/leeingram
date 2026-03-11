@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Button } from "@/components/ui/button";
@@ -390,6 +391,20 @@ export default function AssetsLibrary() {
           </p>
         </div>
 
+        {/* Stage complete banner */}
+        {(() => {
+          if (!assets || assets.length === 0 || chapterFilter === "all") return null;
+          // Check if all assets have sheets created
+          const withoutSheets = assets.filter(a => !a.google_sheet_url && a.google_sheet_status !== "created");
+          if (withoutSheets.length > 0) return null;
+          return (
+            <StageCompletePanel
+              stage="assets"
+              statLine={`${assets.length} teaching asset${assets.length === 1 ? "" : "s"} ready for production`}
+            />
+          );
+        })()}
+        
         <div className="flex gap-2 flex-wrap items-center">
           {selectedIds.size > 0 && (
             <>

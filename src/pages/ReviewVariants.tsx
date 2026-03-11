@@ -5,6 +5,7 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SpeedReviewPanel } from "@/components/content-factory/SpeedReviewPanel";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { VariantReviewContent } from "@/components/content-factory/VariantReviewDrawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -549,16 +550,10 @@ Return valid JSON only.`,
       <div className="space-y-3">
       {/* ── Review Complete State ── */}
       {reviewComplete ? (
-        <Card>
-          <CardContent className="py-12 text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-            <h2 className="text-lg font-semibold text-foreground">Review Complete!</h2>
-            <p className="text-sm text-muted-foreground">All items in this queue have been actioned.</p>
-            <Button onClick={() => navigate("/assets-library")} className="mt-2">
-              <ArrowRight className="h-4 w-4 mr-2" /> Go to Teaching Assets
-            </Button>
-          </CardContent>
-        </Card>
+        <StageCompletePanel
+          stage="review"
+          statLine={`${generatedProblems.length} variant${generatedProblems.length === 1 ? "" : "s"} reviewed and ready`}
+        />
       ) : (
         <>
           {/* ── Progress Bar ── */}
