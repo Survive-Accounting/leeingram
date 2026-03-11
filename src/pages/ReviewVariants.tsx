@@ -447,6 +447,23 @@ export default function ReviewVariants() {
   const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
   const currentVariant = activeVariants[speedIdx] || activeVariants[0];
 
+  // Guard against undefined problem (can happen after rapid approvals + re-fetch)
+  if (!problem) {
+    return (
+      <SurviveSidebarLayout>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Inbox className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm text-foreground font-medium">Review complete — no more problems in queue.</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => navigate("/assets-library")}>
+              Go to Teaching Assets
+            </Button>
+          </CardContent>
+        </Card>
+      </SurviveSidebarLayout>
+    );
+  }
+
   return (
     <SurviveSidebarLayout>
       <div className="space-y-3">
