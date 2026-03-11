@@ -519,6 +519,9 @@ export default function AssetDetailDrawer({
     setShowExamTrapsSection(false);
     setShowSourceSection(false);
     setShowHighlights(false);
+    setShowTAccountsSection(false);
+    setShowTablesSection(false);
+    setShowFSSection(false);
   }, [asset?.id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
