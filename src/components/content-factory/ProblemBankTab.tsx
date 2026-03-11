@@ -1865,7 +1865,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
                 <TableRow key={p.id} className="bg-background/90 text-foreground hover:bg-accent/50 data-[state=selected]:bg-accent/60">
                   <TableCell className="font-mono text-xs font-medium text-foreground">{p.source_label}</TableCell>
                   <TableCell className="text-xs truncate max-w-[200px] text-foreground/90">{p.title || "—"}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-[10px] capitalize text-foreground/80 bg-background/80 border-border">{p.problem_type}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px] capitalize text-foreground/80 bg-background/80 border-border">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</Badge></TableCell>
                   <TableCell>
                     <Badge variant="outline" className={`text-[10px] ${statusStyle(p.status)}`}>
                       {statusLabel(p.status)}
