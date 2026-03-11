@@ -674,6 +674,15 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       qc.invalidateQueries({ queryKey: ["pipeline-strip-problems"] });
       setGeneratedAssetId(data.asset?.id ?? null);
       setSavingIndex(null);
+
+      // Handle duplicate detection from backend
+      if (data.duplicate) {
+        toast.info(`Already approved as ${data.asset?.asset_name}`, { description: "Skipped duplicate" });
+        if (viewingProblem) setViewingProblem({ ...viewingProblem, status: "approved" });
+        recomputeProgress();
+        return;
+      }
+
       if (viewingProblem) {
         setViewingProblem({ ...viewingProblem, status: "approved" });
         await logActivity({
@@ -691,8 +700,6 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       toast.success("Variant approved & saved to Assets Library!");
       // Recompute build run progress
       recomputeProgress();
-
-      // Google Sheet creation moved to admin-only batch action in Assets Library
     },
     onError: (e: Error) => { setSavingIndex(null); toast.error(e.message); },
   });
