@@ -788,13 +788,14 @@ Deno.serve(async (req) => {
     }
 
     // If no sheets were created at all, fail
-    if (!results.master && !results.practice && !results.promo) {
+    const createdAny = Object.keys(results).length > 0;
+    if (!createdAny) {
       throw new Error(`All sheet creations failed: ${errors.join("; ")}`);
     }
 
-    const masterUrl = results.master?.url || "";
-    const practiceUrl = results.practice?.url || "";
-    const promoUrl = results.promo?.url || "";
+    const masterUrl = results.master?.url || asset.sheet_master_url || "";
+    const practiceUrl = results.practice?.url || asset.sheet_practice_url || "";
+    const promoUrl = results.promo?.url || asset.sheet_promo_url || "";
 
     // ── Populate tabs on Master Sheet ────────────────────────────────
     if (results.master) {
