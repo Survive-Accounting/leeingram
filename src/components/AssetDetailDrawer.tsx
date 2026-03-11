@@ -807,7 +807,7 @@ Return valid JSON only.`,
                     ) : (
                       <Sparkles className="h-3 w-3 mr-1" />
                     )}
-                    {highlights.length > 0 ? "Regenerate" : "Generate"}
+                    {highlights.length > 0 ? "Regenerate All" : "Generate All"}
                   </Button>
                 )}
                 {showHighlights && highlights.length > 0 && (
