@@ -197,6 +197,15 @@ export default function ProblemBank() {
     onError: (e: Error) => toast.error(e.message)
   });
 
+  const uploadFile = async (file: File, prefix: string): Promise<string> => {
+    const ext = file.name?.split(".").pop() || "png";
+    const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("problem-assets").upload(path, file, { contentType: file.type });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("problem-assets").getPublicUrl(path);
+    return urlData.publicUrl;
+  };
+
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!editingProblem) return;
@@ -209,8 +218,40 @@ export default function ProblemBank() {
       if ((editLabel || editTitle) && editingProblem.status === "raw") {
         updates.status = "tagged";
       }
+
+      // Handle screenshot replacements
+      if (editProblemFiles.length > 0) {
+        const urls: string[] = [];
+        for (const f of editProblemFiles) {
+          urls.push(await uploadFile(f, "intake-problems"));
+        }
+        updates.problem_screenshot_url = urls[0];
+        updates.problem_screenshot_urls = urls;
+        updates.ocr_status = "pending";
+      }
+      if (editSolutionFiles.length > 0) {
+        const urls: string[] = [];
+        for (const f of editSolutionFiles) {
+          urls.push(await uploadFile(f, "intake-solutions"));
+        }
+        updates.solution_screenshot_url = urls[0];
+        updates.solution_screenshot_urls = urls;
+      }
+
       const { error } = await supabase.from("chapter_problems").update(updates).eq("id", editingProblem.id);
       if (error) throw error;
+
+      // Auto-OCR if screenshots were replaced
+      if (editProblemFiles.length > 0 && updates.problem_screenshot_urls) {
+        supabase.functions.invoke("extract-ocr", {
+          body: {
+            problemId: editingProblem.id,
+            problemImageUrls: updates.problem_screenshot_urls,
+            solutionImageUrls: updates.solution_screenshot_urls || editingProblem.solution_screenshot_urls || [],
+          }
+        }).then(() => qc.invalidateQueries({ queryKey: ["chapter-problems"] }))
+          .catch(e => console.error("Auto-OCR failed:", e));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
