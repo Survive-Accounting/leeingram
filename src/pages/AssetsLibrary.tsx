@@ -130,6 +130,7 @@ export default function AssetsLibrary() {
   const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
+  const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
