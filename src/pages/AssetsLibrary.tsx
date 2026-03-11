@@ -9,6 +9,7 @@ import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,14 +77,36 @@ export default function AssetsLibrary() {
   const effectiveRole = impersonating?.role || primaryRole;
   const isAdmin = !isVa && !impersonating;
   const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+  const deepLinkAssetId = searchParams.get("asset");
+  const deepLinkAction = searchParams.get("action");
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
+  const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+  const [verifyAssetId, setVerifyAssetId] = useState<string | null>(null);
+  const [verifyPrepMinutes, setVerifyPrepMinutes] = useState("");
+  const [verifyNotes, setVerifyNotes] = useState("");
 
   useEffect(() => {
-    if (workspace?.courseId) setCourseFilter(workspace.courseId);
-    if (workspace?.chapterId) setChapterFilter(workspace.chapterId);
+    if (workspace?.courseId && !deepLinkAssetId) setCourseFilter(workspace.courseId);
+    if (workspace?.chapterId && !deepLinkAssetId) setChapterFilter(workspace.chapterId);
   }, [workspace?.courseId, workspace?.chapterId]);
+
+  // Deep-link: when ?asset=ID is present, fetch that asset directly and set filters
+  useEffect(() => {
+    if (!deepLinkAssetId) return;
+    (async () => {
+      const { data: targetAsset } = await supabase
+        .from("teaching_assets")
+        .select("id, course_id, chapter_id")
+        .eq("id", deepLinkAssetId)
+        .single();
+      if (targetAsset) {
+        setCourseFilter(targetAsset.course_id);
+        setChapterFilter(targetAsset.chapter_id);
+      }
+    })();
+  }, [deepLinkAssetId]);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [revertId, setRevertId] = useState<string | null>(null);
@@ -142,21 +165,28 @@ export default function AssetsLibrary() {
     },
   });
 
-  // Deep-link: open asset detail from ?asset=ID
+  // Deep-link: open asset detail from ?asset=ID (after filters have updated and assets loaded)
   useEffect(() => {
-    const assetId = searchParams.get("asset");
-    if (assetId && assets?.length) {
-      const found = assets.find((a) => a.id === assetId);
-      if (found) {
-        setViewingAsset(found);
-        setDrawerOpen(true);
-        // Clear the param so refreshing doesn't re-open
-        searchParams.delete("asset");
-        searchParams.delete("action");
-        setSearchParams(searchParams, { replace: true });
+    if (!deepLinkAssetId || !assets?.length) return;
+    const found = assets.find((a) => a.id === deepLinkAssetId);
+    if (found) {
+      setViewingAsset(found);
+      setDrawerOpen(true);
+
+      // Handle ?action=verify → open confirmation dialog
+      if (deepLinkAction === "verify") {
+        setVerifyAssetId(found.id);
+        setVerifyPrepMinutes("");
+        setVerifyNotes("");
+        setVerifyDialogOpen(true);
       }
+
+      // Clear the params so refreshing doesn't re-open
+      searchParams.delete("asset");
+      searchParams.delete("action");
+      setSearchParams(searchParams, { replace: true });
     }
-  }, [assets, searchParams]);
+  }, [assets, deepLinkAssetId]);
 
   // Build sheet URL map from teaching_assets themselves + fallback to assets table
   const sheetUrls: Record<string, string> = {};
@@ -862,6 +892,76 @@ export default function AssetsLibrary() {
             <Button variant="outline" size="sm" onClick={() => setAddToSetOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleAddToSet} disabled={addToSetMutation.isPending}>
               {addToSetMutation.isPending ? "Adding…" : "Add to Set"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sheet Prep Complete Dialog */}
+      <Dialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Sheet Prep Complete!
+            </DialogTitle>
+            <DialogDescription>
+              Thanks for prepping this sheet! Lee will review it ASAP to verify it's ready for deployment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Estimated prep time (minutes)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={verifyPrepMinutes}
+                onChange={(e) => setVerifyPrepMinutes(e.target.value)}
+                placeholder="e.g. 15"
+                className="h-8 text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Notes (optional)</Label>
+              <Textarea
+                value={verifyNotes}
+                onChange={(e) => setVerifyNotes(e.target.value)}
+                placeholder="Anything Lee should know about this sheet…"
+                className="text-xs min-h-[60px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setVerifyDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={async () => {
+              if (!verifyAssetId) return;
+              try {
+                const { error } = await supabase
+                  .from("teaching_assets")
+                  .update({
+                    google_sheet_status: "verified_by_va",
+                  } as any)
+                  .eq("id", verifyAssetId);
+                if (error) throw error;
+
+                // Log to sheet_prep_log if it exists
+                await supabase.from("sheet_prep_log").insert({
+                  teaching_asset_id: verifyAssetId,
+                  notes: [
+                    verifyPrepMinutes ? `Prep time: ${verifyPrepMinutes} min` : "",
+                    verifyNotes || "",
+                  ].filter(Boolean).join(" — ") || "Marked ready for review",
+                } as any).then(() => {});
+
+                qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                toast.success("Sheet marked as ready for review!");
+                setVerifyDialogOpen(false);
+              } catch (e: any) {
+                toast.error(e.message || "Failed to update status");
+              }
+            }}>
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+              Submit for Review
             </Button>
           </DialogFooter>
         </DialogContent>
