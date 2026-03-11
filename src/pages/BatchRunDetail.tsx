@@ -345,7 +345,7 @@ export default function BatchRunDetail() {
           <div className="flex justify-center pt-2">
             <Button
               size="lg"
-              onClick={() => navigate(`/workspace/${run.chapter_id}`)}
+              onClick={() => navigate("/review")}
               className="gap-2"
             >
               <Eye className="h-4 w-4" />
