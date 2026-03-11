@@ -1232,6 +1232,11 @@ THIS IS A JOURNAL-ENTRY-ONLY PROBLEM. All parts must have type: "je".
 ${partsInstruction}
 ${scenarioInstruction}
 
+SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
+- important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
+- concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
+- exam_traps: 2-4 common mistakes or traps students fall into. Be specific and actionable.
+
 SOLUTION STORAGE — For every variant:
 1. answer_only: Final JE summary (concise)
 2. survive_solution_text: Fully worked steps with solution logic
