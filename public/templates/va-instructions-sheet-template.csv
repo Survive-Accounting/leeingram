@@ -1,0 +1,35 @@
+VA Instructions — Sheet Prep Workflow
+""
+"Follow each step below to prepare this asset's Google Sheets for production."
+""
+STEP 1: Open Asset Library
+"Open the asset page to review the problem, solution, and journal entry."
+"=HYPERLINK(""{{internal_asset_page}}"",""📂 Open Asset Library Page"")"
+""
+STEP 2: Review Problem and Solution
+"Read through the source problem text, solution, and journal entry in the Asset Library."
+Confirm the content is correct and complete before building the whiteboard.
+""
+STEP 3: Build Master Whiteboard
+Open the Master Sheet and build the tutoring/filming whiteboard layout.
+"Follow the formatting guidelines in the template. Add problem text, solution steps, and visuals."
+"=HYPERLINK(""{{sheet_master_url}}"",""📋 Open Master Sheet"")"
+""
+STEP 4: Create Study Pass Version
+Open the Practice Sheet (Study Pass) and create the student-facing version.
+"Remove answers and internal notes. Keep only the problem setup for student practice."
+"=HYPERLINK(""{{sheet_practice_url}}"",""✏️ Open Practice Sheet (Study Pass)"")"
+""
+STEP 5: Create Promo Version
+Open the Promo Sheet and create the shareable/marketing version.
+This version is used for free samples and social media content.
+"=HYPERLINK(""{{sheet_promo_url}}"",""📣 Open Promo Sheet"")"
+""
+STEP 6: Mark Sheet Ready for Review
+"When all three sheets are complete, mark this asset as ready for review."
+"=HYPERLINK(""{{mark_verified_url}}"",""✅ Mark Sheet Ready for Review"")"
+""
+─────────────────────────────────────────
+Other Actions:
+"=HYPERLINK(""{{flag_issue_url}}"",""⚠️ Flag Issue"")"
+"=HYPERLINK(""{{contact_lee_url}}"",""📧 Contact Lee"")"

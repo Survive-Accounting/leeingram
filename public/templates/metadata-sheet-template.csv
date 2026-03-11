@@ -1,0 +1,24 @@
+Field,Value,,,,VA Action Links
+asset_code,{{asset_code}},,,,=HYPERLINK("{{mark_verified_url}}","✅ Mark Sheet Ready for Review")
+course_code,{{course_code}},,,,=HYPERLINK("{{flag_issue_url}}","⚠️ Flag Issue")
+chapter_number,{{chapter_number}},,,,=HYPERLINK("{{internal_asset_page}}","📂 Open Asset Library Page")
+exercise_number,{{exercise_number}},,,,=HYPERLINK("{{contact_lee_url}}","📧 Contact Lee")
+asset_id,{{asset_id}},,,,,
+created_at,{{created_at}},,,,,
+sheet_master_url,{{sheet_master_url}},,,,,
+sheet_practice_url,{{sheet_practice_url}},,,,,
+sheet_promo_url,{{sheet_promo_url}},,,,,
+sheet_path_url,{{sheet_path_url}},,,,,
+ebook_page_link,{{ebook_page_link}},,,,,
+lw_video_link,{{lw_video_link}},,,,,
+lw_quiz_link,{{lw_quiz_link}},,,,,
+internal_asset_page,{{internal_asset_page}},,,,,
+flag_issue_url,{{flag_issue_url}},,,,,
+mark_verified_url,{{mark_verified_url}},,,,,
+contact_lee_url,{{contact_lee_url}},,,,,
+asset_type,{{asset_type}},,,,,
+variant_letter,{{variant_letter}},,,,,
+variant_count,{{variant_count}},,,,,
+journal_entry_count,{{journal_entry_count}},,,,,
+sheet_verified,{{sheet_verified}},,,,,
+sheet_ready_for_review,{{sheet_ready_for_review}},,,,,
