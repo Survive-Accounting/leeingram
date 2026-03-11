@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
+  Undo2, Trash2, Copy, ClipboardList, BookOpen, Link2,
   Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, CheckCircle2, Layers, Highlighter,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
