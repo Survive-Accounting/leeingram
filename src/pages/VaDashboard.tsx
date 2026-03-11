@@ -173,67 +173,7 @@ export default function VaDashboard() {
   // First stage with remaining items (that isn't marked done)
   const activeStageKey = stageCounts?.find(s => !s.isDone && s.remaining > 0)?.key;
 
-            {/* ═══ PIPELINE STAGE CARDS ═══ */}
-            {stageCounts && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {stageCounts.map(stage => {
-                  const Icon = stage.icon;
-                  const isDone = stage.isDone;
-                  const isActive = stage.key === activeStageKey;
-                  return (
-                    <Card
-                      key={stage.key}
-                      className={`transition-all cursor-pointer group ${
-                        isActive
-                          ? "border-2 border-primary shadow-sm shadow-primary/10 bg-primary/5"
-                          : isDone
-                            ? "border-border/50 bg-card/60"
-                            : "border-border hover:border-primary/30"
-                      }`}
-                      onClick={() => navigate(stage.route)}
-                    >
-                      <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                          isDone
-                            ? "bg-green-500/10"
-                            : isActive
-                              ? "bg-primary/15"
-                              : "bg-muted"
-                        }`}>
-                          {isDone ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-400" />
-                          ) : (
-                            <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                          )}
-                        </div>
-                        <p className={`text-sm font-semibold ${isDone ? "text-muted-foreground" : "text-foreground"}`}>
-                          {stage.label}
-                        </p>
-                        {isDone ? (
-                          <span className="text-xs text-green-400 font-medium">Done ✓</span>
-                        ) : (
-                          <>
-                            <p className="text-2xl font-bold text-foreground tabular-nums">{stage.remaining}</p>
-                            {stage.pctLabel && (
-                              <p className="text-[10px] text-muted-foreground">{stage.pctLabel}</p>
-                            )}
-                            <Button size="sm" variant={isActive ? "default" : "outline"} className="text-[11px] h-7 gap-1 w-full">
-                              Go <ArrowRight className="h-3 w-3" />
-                            </Button>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-            {!activeChapter && (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                No chapters assigned yet. Contact your team lead to get started.
-              </div>
-            )}
-
+  const handleSelectChapter = (ch: NonNullable<typeof chapterDetails>[number]) => {
             {/* ═══ ASSIGNED CHAPTERS ═══ */}
             {chapterDetails && chapterDetails.length > 1 && (
               <div className="space-y-3">
