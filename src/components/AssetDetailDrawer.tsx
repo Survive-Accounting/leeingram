@@ -1261,7 +1261,11 @@ Return valid JSON only.`,
                       : sourceProblem?.solution_screenshot_url
                         ? [sourceProblem.solution_screenshot_url]
                         : [];
-                    if (pUrls.length === 0 && sUrls.length === 0 && !sourceProblem?.problem_text && !sourceProblem?.solution_text && !sourceProblem?.title) {
+                    // Also check teaching asset's own solution screenshot
+                    const assetSolUrl = (asset as any).solution_screenshot_url;
+                    const effectiveSolUrls = sUrls.length > 0 ? sUrls : (assetSolUrl ? [assetSolUrl] : []);
+
+                    if (pUrls.length === 0 && effectiveSolUrls.length === 0 && !sourceProblem?.problem_text && !sourceProblem?.solution_text && !sourceProblem?.title) {
                       return <p className="text-sm text-muted-foreground text-center py-4">No source data available.</p>;
                     }
                     return (
@@ -1291,7 +1295,7 @@ Return valid JSON only.`,
                         )}
 
                         {/* Solution Screenshot + Copy Text */}
-                        {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Source Solution Screenshot" />}
+                        {effectiveSolUrls.length > 0 && <SourceImageGallery urls={effectiveSolUrls} label="Source Solution Screenshot" />}
                         {sourceProblem?.solution_text && (
                           <div className="rounded-lg border border-border bg-background p-3">
                             <div className="flex items-center justify-between mb-1">
