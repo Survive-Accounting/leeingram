@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { Check, X, RefreshCw, Flag, Expand, Zap, ChevronRight } from "lucide-react";
+import { Check, X, RefreshCw, Flag, Expand, Zap, ChevronRight, Copy } from "lucide-react";
 import { HighlightedText } from "./HighlightedText";
 import { type Highlight, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
