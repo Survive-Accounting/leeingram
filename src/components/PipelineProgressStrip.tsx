@@ -149,11 +149,6 @@ export function PipelineProgressStrip() {
             Ch {workspace.chapterNumber} — {workspace.chapterName}
           </h2>
         </div>
-        {instruction && (
-          <p className="ml-auto text-xs text-muted-foreground italic hidden sm:block">
-            {instruction}
-          </p>
-        )}
       </div>
 
       {/* Two-phase progress */}
