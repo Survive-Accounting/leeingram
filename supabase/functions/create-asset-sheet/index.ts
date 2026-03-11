@@ -291,6 +291,7 @@ interface HiddenDataParams {
   problem_context: string;
   problem_text: string;
   problem_text_highlighted: string;
+  instruction_list: string;
   instruction_1: string;
   instruction_2: string;
   instruction_3: string;
