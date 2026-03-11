@@ -615,6 +615,26 @@ export default function AssetsLibrary() {
         </Table>
       </div>
 
+      {/* Sheet Prep Log (Admin only) */}
+      {isAdmin && (
+        <div className="mt-6">
+          <Collapsible open={sheetLogOpen} onOpenChange={setSheetLogOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between h-10 text-sm font-medium border-border">
+                <span className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Google Sheets Activity Log
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${sheetLogOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <SheetPrepLog />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      )}
+
       {/* Export Dialog */}
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
         <DialogContent className="max-w-md">
