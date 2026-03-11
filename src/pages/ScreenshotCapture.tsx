@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLogger";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,16 @@ export default function ScreenshotCapture() {
         .eq("id", current.id);
       if (error) throw error;
 
+      // Log the screenshot paste for attribution
+      logActivity({
+        actor_type: "user",
+        entity_type: "source_problem",
+        entity_id: current.id,
+        event_type: "screenshot_pasted",
+        message: `Pasted ${urls.length} screenshot(s) for ${current.source_label}`,
+        payload_json: { source_label: current.source_label, image_count: urls.length },
+      });
+
       // Fire OCR in background and validate label match
       const sourceLabel = current.source_label;
       supabase.functions.invoke("extract-ocr", {
@@ -94,6 +105,15 @@ export default function ScreenshotCapture() {
           const expected = (sourceLabel || "").replace(/\s+/g, "").toUpperCase();
           if (detected && expected && detected !== expected) {
             toast.warning(`Screenshot mismatch: pasted image is ${data.ocr.detected_label}, but this source is ${sourceLabel}. You may have pasted the wrong screenshot.`, { duration: 8000 });
+            logActivity({
+              actor_type: "system",
+              entity_type: "source_problem",
+              entity_id: current.id,
+              event_type: "screenshot_mismatch",
+              message: `Mismatch: screenshot shows ${data.ocr.detected_label}, expected ${sourceLabel}`,
+              severity: "warn",
+              payload_json: { detected_label: data.ocr.detected_label, expected_label: sourceLabel },
+            });
           }
         }
         qc.invalidateQueries({ queryKey: ["chapter-problems"] });

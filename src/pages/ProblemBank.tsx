@@ -15,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle, RotateCcw } from "lucide-react";
+import { logActivity } from "@/lib/activityLogger";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
@@ -327,6 +328,31 @@ export default function ProblemBank() {
     toast.success("Marked as Ready");
   };
 
+  const resetScreenshot = async (p: ChapterProblem) => {
+    const { error } = await supabase.from("chapter_problems").update({
+      import_status: "needs_problem_screenshot",
+      problem_screenshot_url: null,
+      problem_screenshot_urls: [],
+      ocr_status: "pending",
+      ocr_detected_label: "",
+      ocr_detected_title: "",
+      ocr_extracted_problem_text: "",
+      title: "",
+    } as any).eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    logActivity({
+      actor_type: "user",
+      entity_type: "source_problem",
+      entity_id: p.id,
+      event_type: "screenshot_reset",
+      message: `Reset screenshot for ${p.source_label} due to mismatch (was showing ${(p as any).ocr_detected_label})`,
+      severity: "warn",
+    });
+    qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+    qc.invalidateQueries({ queryKey: ["screenshot-queue"] });
+    toast.success(`${p.source_label} returned to screenshot queue`);
+  };
+
   const openEdit = (p: ChapterProblem) => {
     setEditingProblem(p);
     setEditType(p.problem_type);
@@ -481,7 +507,12 @@ export default function ProblemBank() {
                     <TableCell className="text-xs capitalize">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {(p.status === "raw" || p.status === "tagged") &&
+                        {hasMismatch && (
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => resetScreenshot(p)} title="Clear wrong screenshot and re-queue for pasting">
+                            <RotateCcw className="h-3 w-3 mr-1" /> Re-paste
+                          </Button>
+                        )}
+                        {!hasMismatch && (p.status === "raw" || p.status === "tagged") &&
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markReady(p.id)}>
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Ready
                           </Button>
