@@ -625,7 +625,7 @@ export default function AssetsLibrary() {
                           : (a as any).google_sheet_status || "—"}
                       </Badge>
                     </TableCell>
-                  )
+                  )}
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(a.created_at), "MMM d")}
                   </TableCell>
