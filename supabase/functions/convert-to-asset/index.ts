@@ -1531,7 +1531,7 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                   },
                   required: [
                     "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",
-                    "important_formulas", "concept_notes", "exam_traps",
+                    "problem_context", "instructions", "important_formulas", "concept_notes", "exam_traps",
                   ],
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,
