@@ -515,6 +515,11 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Mark Ready for Review</span>
                     </SelectItem>
                   )}
+                  {(isAdmin || isSheetPrepVa) && (
+                    <SelectItem value="create-test-sheet">
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> 🧪 Create Test Sheet</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <Button
