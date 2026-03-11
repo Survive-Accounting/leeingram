@@ -1946,6 +1946,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Add Source Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
