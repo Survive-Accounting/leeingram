@@ -889,6 +889,102 @@ Deno.serve(async (req) => {
       console.log(`Asset subfolder: ${assetCode} (${assetFolderId})`);
     }
 
+    // ── Handle test sheet creation (separate flow) ─────────────────
+    if (isTestSheet) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const testSheetName = `${assetCode}_TEST_${timestamp}`;
+      try {
+        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, testSheetName, targetFolderId);
+        const testSheetUrl = `https://docs.google.com/spreadsheets/d/${fileId}`;
+        console.log(`Created Test sheet: ${testSheetName} (${fileId})`);
+
+        // Populate the test sheet with data (same as Master)
+        const spreadsheetId = fileId;
+        const appBaseUrl = "https://leeingram.lovable.app";
+        const metadataParams: MetadataParams = {
+          asset_code: assetCode,
+          course_code: courseCode,
+          course_display_name: course?.course_name || "",
+          chapter_number: String(chapterNumber),
+          chapter_title: chapter?.chapter_name || "",
+          exercise_number: asset.source_number || "",
+          asset_id: asset.id,
+          created_at: asset.created_at || "",
+          sheet_master_url: testSheetUrl,
+          sheet_practice_url: "",
+          sheet_promo_url: "",
+          sheet_path_url: sheetPathUrl,
+          lw_practice_sheet_url: "",
+          ebook_page_link: asset.lw_ebook_url || "",
+          lw_video_link: asset.lw_video_url || "",
+          lw_quiz_link: asset.lw_quiz_url || "",
+          internal_asset_page: `${appBaseUrl}/assets-library?asset=${asset.id}`,
+          flag_issue_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=flag`,
+          mark_verified_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=verify`,
+          contact_lee_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=contact`,
+          asset_type: asset.asset_type || "",
+          problem_type: asset.problem_type || "",
+          layout_hint: buildLayoutHint(asset),
+          variant_letter: extractVariantLetter(assetCode),
+          variant_count: String(variantCount),
+          journal_entry_count: String(jeCount),
+          instruction_count: String(problemInstructions.length),
+          uses_t_accounts: asset.uses_t_accounts ? "Yes" : "No",
+          uses_tables: asset.uses_tables ? "Yes" : "No",
+          uses_financial_statements: asset.uses_financial_statements ? "Yes" : "No",
+          sheet_verified: "No",
+          sheet_ready_for_review: "No",
+          asset_finalized: "No",
+        };
+
+        await writeMetadata(token, spreadsheetId, metadataParams);
+        
+        const problemText = asset.survive_problem_text || "";
+        const highlightedText = applyHighlightsToText(problemText, highlights);
+        const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
+        const instrSlots = ["", "", "", "", ""];
+        for (const instr of problemInstructions) {
+          const idx = instr.instruction_number - 1;
+          if (idx >= 0 && idx < 5) instrSlots[idx] = instr.instruction_text || "";
+        }
+        const hiddenDataParams: HiddenDataParams = {
+          problem_context: asset.problem_context || "",
+          problem_text: problemText,
+          problem_text_highlighted: highlightedText,
+          instruction_list: buildInstructionList(problemInstructions),
+          instruction_1: instrSlots[0], instruction_2: instrSlots[1],
+          instruction_3: instrSlots[2], instruction_4: instrSlots[3], instruction_5: instrSlots[4],
+          problem_solution: asset.survive_solution_text || "",
+          answer_summary: buildAnswerSummary(asset),
+          journal_entry_raw: jeToRawText(jeEntries),
+          t_accounts_raw: tAccountsToTsv(asset.t_accounts_json),
+          tables_raw: structuredTablesToTsv(asset.tables_json),
+          financial_statements_raw: structuredTablesToTsv(asset.financial_statements_json),
+          worked_steps: asset.survive_solution_text || "",
+          important_formulas: asset.important_formulas || "",
+          concept_notes: asset.concept_notes || "",
+          exam_traps: asset.exam_traps || "",
+          highlight_tags: extractHighlightTags(highlights),
+          validation_notes: "",
+        };
+        await writeHiddenData(token, spreadsheetId, hiddenDataParams);
+        await writeJournalEntries(token, spreadsheetId, asset.journal_entry_completed_json);
+        await writeVaInstructions(token, spreadsheetId, metadataParams);
+
+        return new Response(JSON.stringify({
+          success: true,
+          is_test_sheet: true,
+          test_sheet_url: testSheetUrl,
+          test_sheet_name: testSheetName,
+          test_folder_url: sheetPathUrl,
+        }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        throw new Error(`Test sheet creation failed: ${e.message}`);
+      }
+    }
+
     // ── Create sheets inside asset subfolder ─────────────────────────
     const sheetNames = {
       master: `${assetCode}_Master`,
@@ -902,7 +998,7 @@ Deno.serve(async (req) => {
     // Master Sheet
     if (typesToCreate.has("master")) {
       try {
-        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, assetFolderId);
+        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, targetFolderId);
         results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
       } catch (e: any) {
@@ -915,7 +1011,7 @@ Deno.serve(async (req) => {
     // Practice Sheet
     if (typesToCreate.has("practice")) {
       try {
-        const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, assetFolderId);
+        const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, targetFolderId);
         results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
       } catch (e: any) {
@@ -928,7 +1024,7 @@ Deno.serve(async (req) => {
     // Promo Sheet
     if (typesToCreate.has("promo")) {
       try {
-        const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, assetFolderId);
+        const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, targetFolderId);
         results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
       } catch (e: any) {
