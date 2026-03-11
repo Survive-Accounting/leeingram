@@ -99,6 +99,9 @@ export default function ReviewVariants() {
         parts_json: v.parts_json,
         confidence_score: v.confidence_score,
         difficulty_estimate: v.difficulty_estimate,
+        t_accounts_json: cd.t_accounts_json || null,
+        tables_json: cd.tables_json || null,
+        financial_statements_json: cd.financial_statements_json || null,
       };
     }) : [];
     setCandidates(mapped);
