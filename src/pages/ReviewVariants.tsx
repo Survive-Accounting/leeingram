@@ -52,7 +52,11 @@ export default function ReviewVariants() {
   useEffect(() => {
     if (!autoStarted.current && generatedProblems.length > 0 && !reviewStarted) {
       autoStarted.current = true;
-      startReviewSkippingEmpty(0);
+      startReviewSkippingEmpty(0).catch(() => {
+        // Prevent unhandled promise rejection from crashing the page
+        toast.error("Failed to load review queue. Please refresh.");
+        setReviewStarted(false);
+      });
     }
   }, [generatedProblems.length]);
 
@@ -105,25 +109,29 @@ export default function ReviewVariants() {
 
   // Start review, skipping problems that have no active variants
   const startReviewSkippingEmpty = async (startIdx: number) => {
-    for (let i = startIdx; i < generatedProblems.length; i++) {
-      const { count } = await supabase
-        .from("problem_variants")
-        .select("id", { count: "exact", head: true })
-        .eq("base_problem_id", generatedProblems[i].id)
-        .neq("variant_status", "archived");
-      if ((count ?? 0) > 0) {
-        setReviewStarted(true);
-        setReviewIndex(i);
-        await loadCandidates(generatedProblems[i].id);
-        return;
+    try {
+      for (let i = startIdx; i < generatedProblems.length; i++) {
+        const { count, error } = await supabase
+          .from("problem_variants")
+          .select("id", { count: "exact", head: true })
+          .eq("base_problem_id", generatedProblems[i].id)
+          .neq("variant_status", "archived");
+        if (error) throw error;
+        if ((count ?? 0) > 0) {
+          setReviewStarted(true);
+          setReviewIndex(i);
+          await loadCandidates(generatedProblems[i].id);
+          return;
+        }
       }
-    }
-    // All reviewed — start at beginning so user can browse
-    if (generatedProblems.length > 0) {
-      setReviewStarted(true);
-      setReviewIndex(0);
-      await loadCandidates(generatedProblems[0].id);
-      toast.info("All variants have been reviewed. Showing all problems for browsing.");
+      // All reviewed — redirect to assets library
+      if (generatedProblems.length > 0) {
+        toast.success("All variants have been reviewed! 🎉");
+        navigate("/assets-library");
+      }
+    } catch (err: any) {
+      console.error("Review queue error:", err);
+      toast.error("Failed to load review queue. Please refresh.");
     }
   };
 
@@ -438,6 +446,23 @@ export default function ReviewVariants() {
   const problem = generatedProblems[reviewIndex];
   const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
   const currentVariant = activeVariants[speedIdx] || activeVariants[0];
+
+  // Guard against undefined problem (can happen after rapid approvals + re-fetch)
+  if (!problem) {
+    return (
+      <SurviveSidebarLayout>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Inbox className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm text-foreground font-medium">Review complete — no more problems in queue.</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => navigate("/assets-library")}>
+              Go to Teaching Assets
+            </Button>
+          </CardContent>
+        </Card>
+      </SurviveSidebarLayout>
+    );
+  }
 
   return (
     <SurviveSidebarLayout>
