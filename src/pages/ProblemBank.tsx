@@ -44,7 +44,7 @@ type ChapterProblem = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  raw: "bg-muted text-muted-foreground",
+  raw: "bg-secondary text-secondary-foreground border-border",
   tagged: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   ready: "bg-green-500/20 text-green-400 border-green-500/30",
   imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
