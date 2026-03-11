@@ -102,6 +102,8 @@ export default function ReviewVariants() {
         t_accounts_json: cd.t_accounts_json || null,
         tables_json: cd.tables_json || null,
         financial_statements_json: cd.financial_statements_json || null,
+        problem_context: cd.problem_context || null,
+        instructions: cd.instructions || [],
       };
     }) : [];
     setCandidates(mapped);
@@ -215,6 +217,7 @@ export default function ReviewVariants() {
         important_formulas: candidate.important_formulas || null,
         concept_notes: candidate.concept_notes || null,
         exam_traps: candidate.exam_traps || null,
+        problem_context: candidate.problem_context || null,
         // Learning structures
         uses_t_accounts: Array.isArray(candidate.t_accounts_json) && candidate.t_accounts_json.length > 0,
         uses_tables: Array.isArray(candidate.tables_json) && candidate.tables_json.length > 0,
@@ -224,6 +227,17 @@ export default function ReviewVariants() {
         financial_statements_json: candidate.financial_statements_json || null,
       } as any).select("id").single();
       if (taErr) throw taErr;
+
+      // Persist auto-extracted instructions
+      const candidateInstructions = candidate.instructions || [];
+      if (candidateInstructions.length > 0 && taData?.id) {
+        const instrRows = candidateInstructions.slice(0, 5).map((text: string, idx: number) => ({
+          teaching_asset_id: taData.id,
+          instruction_number: idx + 1,
+          instruction_text: text,
+        }));
+        await supabase.from("problem_instructions").insert(instrRows);
+      }
 
       // Update source problem pipeline status
       const { error: spErr } = await supabase

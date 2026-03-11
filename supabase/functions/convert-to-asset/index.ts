@@ -1120,7 +1120,8 @@ Do NOT invent or use account names outside this list. If an account is needed bu
       }
     }
 
-    // ── Detect optional learning structures from existing teaching assets ──
+    // ── Detect optional learning structures ──
+    // Check existing assets, source problem flags from batch runner, AND auto-detect from problem text
     let usesLearningStructures = { t_accounts: false, tables: false, financial_statements: false };
     if (problemId) {
       const { data: existingAsset } = await supabase
@@ -1142,6 +1143,21 @@ Do NOT invent or use account names outside this list. If an account is needed bu
     if (body.uses_t_accounts) usesLearningStructures.t_accounts = true;
     if (body.uses_tables) usesLearningStructures.tables = true;
     if (body.uses_financial_statements) usesLearningStructures.financial_statements = true;
+
+    // Auto-detect from problem/solution text content
+    const tAccountPatterns = [/\bt[- ]?account/i, /\bpost(ing)?\s+(to|the)\s+(ledger|accounts)/i, /\bpost\s+to\s+t[- ]?accounts/i];
+    const tablePatterns = [/\bamortization\s+schedule/i, /\bdepreciation\s+schedule/i, /\bprepare\s+(a|the)\s+(schedule|table)/i, /\bschedule\s+of\b/i];
+    const fsPatterns = [/\bincome\s+statement/i, /\bbalance\s+sheet/i, /\bstatement\s+of\s+(cash\s+flows|retained\s+earnings|financial\s+position)/i, /\bprepare\s+(the\s+)?(adjusted\s+)?trial\s+balance/i];
+
+    if (!usesLearningStructures.t_accounts && tAccountPatterns.some(p => p.test(combinedText))) {
+      usesLearningStructures.t_accounts = true;
+    }
+    if (!usesLearningStructures.tables && tablePatterns.some(p => p.test(combinedText))) {
+      usesLearningStructures.tables = true;
+    }
+    if (!usesLearningStructures.financial_statements && fsPatterns.some(p => p.test(combinedText))) {
+      usesLearningStructures.financial_statements = true;
+    }
 
     const hasAnyLearningStructure = usesLearningStructures.t_accounts || usesLearningStructures.tables || usesLearningStructures.financial_statements;
 
@@ -1237,6 +1253,10 @@ STRICT OUTPUT QUALITY RULES (CRITICAL):
 3. ANSWER CONSISTENCY: answer_only must match the final_answer values from text parts.
 4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.
 
+INSTRUCTION EXTRACTION (REQUIRED for every candidate):
+- problem_context: The descriptive scenario/background from the problem text (company description, given information). Do NOT include the "Required:" instructions here.
+- instructions: An array of individual instruction strings extracted from the "Required:" section of the problem. Each instruction is a single task (e.g. "Calculate the semiannual interest payment"). Extract up to 5 instructions. If the problem has lettered requirements like (a), (b), (c), strip the letter prefix and just include the instruction text.
+
 SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
 - important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
 - concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
@@ -1291,6 +1311,10 @@ ${accountWhitelistBlock}
 THIS IS A JOURNAL-ENTRY-ONLY PROBLEM. All parts must have type: "je".
 ${partsInstruction}
 ${scenarioInstruction}
+
+INSTRUCTION EXTRACTION (REQUIRED for every candidate):
+- problem_context: The descriptive scenario/background from the problem text. Do NOT include the "Required:" instructions here.
+- instructions: An array of individual instruction strings extracted from the "Required:" section. Up to 5 instructions.
 
 SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
 - important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
@@ -1452,6 +1476,12 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                       journal_entry_block: { type: "string", description: "Text summary of JE for backward compatibility" },
                     } : {}),
                     exam_trap_note: { type: "string", description: "Internal note on what makes this tricky" },
+                    problem_context: { type: "string", description: "The descriptive scenario/background portion of the problem text (no instructions)" },
+                    instructions: {
+                      type: "array",
+                      description: "Individual instruction strings from the Required section, up to 5",
+                      items: { type: "string" },
+                    },
                     important_formulas: { type: "string", description: "Formulas/equations needed, one per line" },
                     concept_notes: { type: "string", description: "2-5 bullet points on key concepts tested" },
                     exam_traps: { type: "string", description: "2-4 common student mistakes, specific and actionable" },
@@ -1501,7 +1531,7 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
                   },
                   required: [
                     "asset_name", "tags", "survive_problem_text", "parts", "answer_only", "survive_solution_text",
-                    "important_formulas", "concept_notes", "exam_traps",
+                    "problem_context", "instructions", "important_formulas", "concept_notes", "exam_traps",
                   ],
                 },
                 description: `Exactly ${variantCount} candidate teaching assets`,

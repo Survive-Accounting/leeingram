@@ -455,7 +455,7 @@ export default function AssetDetailDrawer({
   const [sourceProblem, setSourceProblem] = useState<any>(null);
 
   // Collapsible section states
-  const [showProblemSection, setShowProblemSection] = useState(true);
+  const [showProblemSection, setShowProblemSection] = useState(false);
   const [showJESection, setShowJESection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
   const [showFormulasSection, setShowFormulasSection] = useState(false);
@@ -511,7 +511,7 @@ export default function AssetDetailDrawer({
 
   // Reset section states when asset changes
   useEffect(() => {
-    setShowProblemSection(true);
+    setShowProblemSection(false);
     setShowJESection(false);
     setShowWorkedSteps(false);
     setShowFormulasSection(false);
@@ -1099,7 +1099,7 @@ Return valid JSON only.`,
               </Collapsible>
 
               {/* ── T ACCOUNTS ── */}
-              {(asset as any).uses_t_accounts && (asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) && (asset as any).t_accounts_json.length > 0 && (
+              {(asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) && (asset as any).t_accounts_json.length > 0 && (
                 <Collapsible open={showTAccountsSection} onOpenChange={setShowTAccountsSection}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                     <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTAccountsSection ? "rotate-90" : ""}`} />
@@ -1141,7 +1141,7 @@ Return valid JSON only.`,
               )}
 
               {/* ── TABLES ── */}
-              {(asset as any).uses_tables && (asset as any).tables_json && Array.isArray((asset as any).tables_json) && (asset as any).tables_json.length > 0 && (
+              {(asset as any).tables_json && Array.isArray((asset as any).tables_json) && (asset as any).tables_json.length > 0 && (
                 <Collapsible open={showTablesSection} onOpenChange={setShowTablesSection}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                     <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTablesSection ? "rotate-90" : ""}`} />
@@ -1168,7 +1168,7 @@ Return valid JSON only.`,
               )}
 
               {/* ── FINANCIAL STATEMENTS ── */}
-              {(asset as any).uses_financial_statements && (asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) && (asset as any).financial_statements_json.length > 0 && (
+              {(asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) && (asset as any).financial_statements_json.length > 0 && (
                 <Collapsible open={showFSSection} onOpenChange={setShowFSSection}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                     <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFSSection ? "rotate-90" : ""}`} />
@@ -1215,26 +1215,6 @@ Return valid JSON only.`,
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source</span>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-4">
-                  {sourceProblem?.title && (
-                    <div className="rounded-md border border-border p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
-                      <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
-                    </div>
-                  )}
-
-                  {sourceProblem?.problem_text && (
-                    <div className="rounded-lg border border-border bg-background p-3">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text (OCR)</p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.problem_text}</p>
-                    </div>
-                  )}
-                  {sourceProblem?.solution_text && (
-                    <div className="rounded-lg border border-border bg-background p-3">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Solution Text (OCR)</p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.solution_text}</p>
-                    </div>
-                  )}
-
                   {(() => {
                     const pUrls = sourceProblem?.problem_screenshot_urls?.length
                       ? sourceProblem.problem_screenshot_urls
@@ -1251,8 +1231,46 @@ Return valid JSON only.`,
                     }
                     return (
                       <div className="space-y-5">
-                        {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Problem Screenshots" />}
-                        {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Solution Screenshots" />}
+                        {sourceProblem?.title && (
+                          <div className="rounded-md border border-border p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
+                            <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
+                          </div>
+                        )}
+
+                        {/* Problem Screenshot + Copy Text */}
+                        {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Source Problem Screenshot" />}
+                        {sourceProblem?.problem_text && (
+                          <div className="rounded-lg border border-border bg-background p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Problem Text (OCR)</p>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                navigator.clipboard.writeText(sourceProblem.problem_text);
+                                toast.success("Problem text copied");
+                              }}>
+                                <Copy className="h-3 w-3 mr-1" /> Copy Text
+                              </Button>
+                            </div>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.problem_text}</p>
+                          </div>
+                        )}
+
+                        {/* Solution Screenshot + Copy Text */}
+                        {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Source Solution Screenshot" />}
+                        {sourceProblem?.solution_text && (
+                          <div className="rounded-lg border border-border bg-background p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Solution Text (OCR)</p>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                navigator.clipboard.writeText(sourceProblem.solution_text);
+                                toast.success("Solution text copied");
+                              }}>
+                                <Copy className="h-3 w-3 mr-1" /> Copy Text
+                              </Button>
+                            </div>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.solution_text}</p>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
