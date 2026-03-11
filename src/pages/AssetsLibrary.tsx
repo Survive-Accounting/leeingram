@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2 } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
