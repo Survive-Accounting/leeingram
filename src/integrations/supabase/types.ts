@@ -2284,6 +2284,7 @@ export type Database = {
       }
       sheet_prep_log: {
         Row: {
+          archived: boolean
           id: string
           notes: string | null
           reviewed: boolean
@@ -2293,6 +2294,7 @@ export type Database = {
           va_account_id: string | null
         }
         Insert: {
+          archived?: boolean
           id?: string
           notes?: string | null
           reviewed?: boolean
@@ -2302,6 +2304,7 @@ export type Database = {
           va_account_id?: string | null
         }
         Update: {
+          archived?: boolean
           id?: string
           notes?: string | null
           reviewed?: boolean

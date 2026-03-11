@@ -223,10 +223,10 @@ serve(async (req) => {
       else archivedCount++;
     }
 
-    // Mark sheet prep log entries as reviewed if IDs provided
+    // Mark sheet prep log entries as reviewed + archived
     if (Array.isArray(sheet_prep_log_ids) && sheet_prep_log_ids.length > 0) {
       await sb.from("sheet_prep_log")
-        .update({ reviewed: true, reviewed_at: new Date().toISOString() })
+        .update({ reviewed: true, reviewed_at: new Date().toISOString(), archived: true })
         .in("id", sheet_prep_log_ids);
     }
 

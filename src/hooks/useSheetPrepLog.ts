@@ -8,6 +8,7 @@ export interface SheetPrepEntry {
   submitted_at: string;
   reviewed: boolean;
   reviewed_at: string | null;
+  archived: boolean;
   notes: string;
   // joined
   asset_name: string;
@@ -24,7 +25,6 @@ export function useSheetPrepLog() {
   return useQuery({
     queryKey: ["sheet-prep-log"],
     queryFn: async () => {
-      // Fetch log entries
       const { data: logs, error } = await supabase
         .from("sheet_prep_log")
         .select("*")
@@ -33,24 +33,20 @@ export function useSheetPrepLog() {
 
       if (!logs || logs.length === 0) return [] as SheetPrepEntry[];
 
-      // Get unique asset IDs and VA IDs
       const assetIds = [...new Set(logs.map((l: any) => l.teaching_asset_id))];
       const vaIds = [...new Set(logs.map((l: any) => l.va_account_id).filter(Boolean))];
 
-      // Fetch assets
       const { data: assets } = await supabase
         .from("teaching_assets")
         .select("id, asset_name, source_ref, course_id, google_sheet_url, sheet_master_url, sheet_practice_url, sheet_promo_url")
         .in("id", assetIds);
 
-      // Fetch courses
       const courseIds = [...new Set((assets || []).map(a => a.course_id))];
       const { data: courses } = await supabase
         .from("courses")
         .select("id, course_name")
         .in("id", courseIds.length ? courseIds : ["__none__"]);
 
-      // Fetch VA accounts
       const { data: vas } = vaIds.length
         ? await supabase.from("va_accounts").select("id, full_name, email").in("id", vaIds)
         : { data: [] as any[] };
@@ -70,6 +66,7 @@ export function useSheetPrepLog() {
           submitted_at: l.submitted_at,
           reviewed: l.reviewed,
           reviewed_at: l.reviewed_at,
+          archived: l.archived ?? false,
           notes: l.notes || "",
           asset_name: asset?.asset_name || "—",
           source_ref: asset?.source_ref || null,
@@ -91,7 +88,7 @@ export function useToggleSheetPrepReviewed() {
     mutationFn: async ({ id, reviewed }: { id: string; reviewed: boolean }) => {
       const { error } = await supabase
         .from("sheet_prep_log")
-        .update({ reviewed, reviewed_at: reviewed ? new Date().toISOString() : null })
+        .update({ reviewed, reviewed_at: reviewed ? new Date().toISOString() : null } as any)
         .eq("id", id);
       if (error) throw error;
     },

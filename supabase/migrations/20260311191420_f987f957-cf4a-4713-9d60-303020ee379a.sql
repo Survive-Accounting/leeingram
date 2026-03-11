@@ -1,0 +1,1 @@
+ALTER TABLE public.sheet_prep_log ADD COLUMN archived boolean NOT NULL DEFAULT false;
