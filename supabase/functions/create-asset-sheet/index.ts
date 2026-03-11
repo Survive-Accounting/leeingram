@@ -238,17 +238,15 @@ function makeHyperlink(label: string, url: string): string {
 async function writeMetadata(token: string, spreadsheetId: string, params: MetadataParams) {
   const vaActionLinks = [
     makeHyperlink("✅ Mark Sheet Ready for Review", params.mark_verified_url),
-    makeHyperlink("⚠️ Flag Issue", params.flag_issue_url),
     makeHyperlink("📂 Open Asset Library Page", params.internal_asset_page),
-    makeHyperlink("📧 Contact Lee", params.contact_lee_url),
   ];
 
   const fieldRows: string[][] = [
     ["Field", "Value", "", "", "", "VA Action Links"],
     ["asset_code", params.asset_code, "", "", "", vaActionLinks[0]],
     ["course_code", params.course_code, "", "", "", vaActionLinks[1]],
-    ["course_display_name", params.course_display_name, "", "", "", vaActionLinks[2]],
-    ["chapter_number", params.chapter_number, "", "", "", vaActionLinks[3]],
+    ["course_display_name", params.course_display_name, "", "", "", ""],
+    ["chapter_number", params.chapter_number, "", "", "", ""],
     ["chapter_title", params.chapter_title, "", "", "", ""],
     ["exercise_number", params.exercise_number, "", "", "", ""],
     ["asset_id", params.asset_id, "", "", "", ""],

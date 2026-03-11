@@ -1,8 +1,8 @@
 Field,Value,,,,VA Action Links
 asset_code,{{asset_code}},,,,=HYPERLINK("{{mark_verified_url}}","✅ Mark Sheet Ready for Review")
-course_code,{{course_code}},,,,=HYPERLINK("{{flag_issue_url}}","⚠️ Flag Issue")
-course_display_name,{{course_display_name}},,,,=HYPERLINK("{{internal_asset_page}}","📂 Open Asset Library Page")
-chapter_number,{{chapter_number}},,,,=HYPERLINK("{{contact_lee_url}}","📧 Contact Lee")
+course_code,{{course_code}},,,,=HYPERLINK("{{internal_asset_page}}","📂 Open Asset Library Page")
+course_display_name,{{course_display_name}},,,,,
+chapter_number,{{chapter_number}},,,,,
 chapter_title,{{chapter_title}},,,,,
 exercise_number,{{exercise_number}},,,,,
 asset_id,{{asset_id}},,,,,

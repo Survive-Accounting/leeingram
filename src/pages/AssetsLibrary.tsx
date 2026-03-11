@@ -896,6 +896,76 @@ export default function AssetsLibrary() {
         </DialogContent>
       </Dialog>
 
+      {/* Sheet Prep Complete Dialog */}
+      <Dialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Sheet Prep Complete!
+            </DialogTitle>
+            <DialogDescription>
+              Thanks for prepping this sheet! Lee will review it ASAP to verify it's ready for deployment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Estimated prep time (minutes)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={verifyPrepMinutes}
+                onChange={(e) => setVerifyPrepMinutes(e.target.value)}
+                placeholder="e.g. 15"
+                className="h-8 text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Notes (optional)</Label>
+              <Textarea
+                value={verifyNotes}
+                onChange={(e) => setVerifyNotes(e.target.value)}
+                placeholder="Anything Lee should know about this sheet…"
+                className="text-xs min-h-[60px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setVerifyDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={async () => {
+              if (!verifyAssetId) return;
+              try {
+                const { error } = await supabase
+                  .from("teaching_assets")
+                  .update({
+                    google_sheet_status: "verified_by_va",
+                  } as any)
+                  .eq("id", verifyAssetId);
+                if (error) throw error;
+
+                // Log to sheet_prep_log if it exists
+                await supabase.from("sheet_prep_log").insert({
+                  teaching_asset_id: verifyAssetId,
+                  notes: [
+                    verifyPrepMinutes ? `Prep time: ${verifyPrepMinutes} min` : "",
+                    verifyNotes || "",
+                  ].filter(Boolean).join(" — ") || "Marked ready for review",
+                } as any).then(() => {});
+
+                qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                toast.success("Sheet marked as ready for review!");
+                setVerifyDialogOpen(false);
+              } catch (e: any) {
+                toast.error(e.message || "Failed to update status");
+              }
+            }}>
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+              Submit for Review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Asset Detail Drawer */}
       <AssetDetailDrawer
         asset={viewingAsset as any}
