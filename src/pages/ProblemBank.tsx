@@ -4,6 +4,7 @@ import { DependentProblemsQueue } from "@/components/content-factory/DependentPr
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useBuildRun } from "@/hooks/useBuildRun";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { StartBuildRunModal } from "@/components/BuildTimerWidget";
