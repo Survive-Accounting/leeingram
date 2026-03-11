@@ -590,9 +590,9 @@ export default function AssetsLibrary() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isSheetPrepVa ? 6 : 5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isSheetPrepVa ? 6 : 5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               assets.map((a) => (
                 <TableRow
