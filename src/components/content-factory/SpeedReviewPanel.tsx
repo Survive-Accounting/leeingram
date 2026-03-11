@@ -106,10 +106,18 @@ export function SpeedReviewPanel({
   const [showTables, setShowTables] = useState(false);
   const [showFinStatements, setShowFinStatements] = useState(false);
 
-  // Keyboard shortcuts — A/R/F auto-advance, S=skip, B=back
+  // Keyboard shortcuts — A/R/F auto-advance, S=skip, B=back, Ctrl+J=approve&next
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      // Ctrl+J = Approve & Next (primary action)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        onApprove();
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       switch (e.key.toLowerCase()) {
