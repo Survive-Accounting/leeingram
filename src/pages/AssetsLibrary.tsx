@@ -380,6 +380,9 @@ export default function AssetsLibrary() {
                   <SelectItem value="bank-mc">
                     <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
                   </SelectItem>
+                  <SelectItem value="revert">
+                    <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <Button
