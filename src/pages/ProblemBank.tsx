@@ -499,6 +499,9 @@ export default function ProblemBank() {
         )}
       </div>
 
+      {/* Divider between buttons and table */}
+      <div className="border-t border-border mb-3" />
+
       {/* Mismatch warning banner */}
       {problems && (() => {
         const mismatchCount = problems.filter((p) => {
