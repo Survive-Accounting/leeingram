@@ -961,6 +961,12 @@ Return valid JSON only.`,
                         {jeParts.map((jp, pi) => (
                           <div key={pi} className="rounded border border-border overflow-hidden">
                             {jp.je_structured.map((entry, ei) => {
+                              const modeRows = entry.entries.map((row) => applyMode({
+                                account: row.account,
+                                debit: row.debit,
+                                credit: row.credit,
+                                side: row.credit && row.credit > 0 ? "credit" : "debit",
+                              }, jeMode));
                               const totalDebit = entry.entries.reduce((s, e) => s + (e.debit ?? 0), 0);
                               const totalCredit = entry.entries.reduce((s, e) => s + (e.credit ?? 0), 0);
                               const balanced = Math.abs(totalDebit - totalCredit) < 0.02;
@@ -968,22 +974,24 @@ Return valid JSON only.`,
                                 <div key={ei}>
                                   <div className="flex items-center justify-between px-2 py-1 bg-muted/20 border-b border-border/50">
                                     <span className="text-[10px] font-medium text-foreground">{entry.date}</span>
-                                    <Badge variant="outline" className={`text-[9px] h-3.5 ${balanced ? "text-green-600 dark:text-green-400 border-green-500/30" : "text-red-600 dark:text-red-400 border-red-500/30"}`}>
-                                      {balanced ? "✓" : `Off $${Math.abs(totalDebit - totalCredit).toFixed(0)}`}
-                                    </Badge>
+                                    {jeMode === "completed" && (
+                                      <Badge variant="outline" className={`text-[9px] h-3.5 ${balanced ? "text-green-600 dark:text-green-400 border-green-500/30" : "text-red-600 dark:text-red-400 border-red-500/30"}`}>
+                                        {balanced ? "✓" : `Off $${Math.abs(totalDebit - totalCredit).toFixed(0)}`}
+                                      </Badge>
+                                    )}
                                   </div>
                                   <table className="w-full text-[11px]">
                                     <tbody>
-                                      {entry.entries.map((row, ri) => (
+                                      {modeRows.map((row, ri) => (
                                         <tr key={ri} className="border-b border-border/20 last:border-0">
-                                          <td className={`px-2 py-0.5 text-foreground ${row.credit && row.credit > 0 ? "pl-5" : ""}`}>
+                                          <td className={`px-2 py-0.5 text-foreground ${row.side === "credit" ? "pl-5" : ""}`}>
                                             {row.account}
                                           </td>
                                           <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
-                                            {row.debit && row.debit > 0 ? `$${row.debit.toLocaleString()}` : ""}
+                                            {row.debit != null && row.debit !== "" ? (typeof row.debit === "number" ? `$${row.debit.toLocaleString()}` : row.debit) : ""}
                                           </td>
                                           <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
-                                            {row.credit && row.credit > 0 ? `$${row.credit.toLocaleString()}` : ""}
+                                            {row.credit != null && row.credit !== "" ? (typeof row.credit === "number" ? `$${row.credit.toLocaleString()}` : row.credit) : ""}
                                           </td>
                                         </tr>
                                       ))}
