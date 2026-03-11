@@ -29,6 +29,7 @@ export default function ReviewVariants() {
   const [loading, setLoading] = useState(false);
   const [speedMode, setSpeedMode] = useState(true);
   const [speedIdx, setSpeedIdx] = useState(0);
+  const [reviewComplete, setReviewComplete] = useState(false);
   const autoStarted = useRef(false);
   const approveInFlight = useRef(false);
 
