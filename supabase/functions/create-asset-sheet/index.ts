@@ -839,11 +839,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { asset_id, sheet_types } = body;
-    // sheet_types is an optional array: ["master"], ["practice"], ["promo"], or any combination
-    // If not provided, defaults to all three
+    // sheet_types is an optional array: ["master"], ["practice"], ["promo"], ["test_sheet"], or any combination
+    // If not provided, defaults to all three (excludes test_sheet)
     const typesToCreate: Set<string> = sheet_types && Array.isArray(sheet_types) && sheet_types.length > 0
       ? new Set(sheet_types.map((t: string) => t.toLowerCase()))
       : new Set(["master", "practice", "promo"]);
+    const isTestSheet = typesToCreate.has("test_sheet");
 
     if (!asset_id) {
       return new Response(JSON.stringify({ error: "Missing required field: asset_id" }), {
