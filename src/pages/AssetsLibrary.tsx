@@ -112,7 +112,7 @@ export default function AssetsLibrary() {
   const { data: assets, isLoading } = useQuery({
     queryKey: ["teaching-assets", courseFilter, chapterFilter, search],
     queryFn: async () => {
-      let q = supabase.from("teaching_assets").select("*");
+      let q = supabase.from("teaching_assets").select("*").neq("google_sheet_status", "archived");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
       if (search.trim()) {
@@ -354,9 +354,9 @@ export default function AssetsLibrary() {
           <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
             <Library className="h-5 w-5 text-primary" />
             Assets Library
-          </h1>
+           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {assets?.length ?? 0} approved assets · Source of truth for all teaching content.
+            {assets?.length ?? 0} approved assets
           </p>
         </div>
 

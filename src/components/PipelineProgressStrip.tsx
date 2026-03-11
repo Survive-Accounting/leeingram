@@ -104,9 +104,9 @@ export function PipelineProgressStrip() {
 
     if (!active) {
       return (
-        <div key={stage.key} className="text-center opacity-30 cursor-default select-none">
-          <p className="text-[8px] uppercase tracking-wider mb-1 text-muted-foreground/40">{stage.label}</p>
-          <div className="h-1.5 rounded-full bg-muted/30" />
+        <div key={stage.key} className="text-center opacity-50 cursor-default select-none">
+          <p className="text-[8px] uppercase tracking-wider mb-1 text-muted-foreground/60">{stage.label}</p>
+          <div className="h-1.5 rounded-full bg-muted/40" />
         </div>
       );
     }
