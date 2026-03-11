@@ -2440,6 +2440,7 @@ export type Database = {
           banked_reviewed_at: string | null
           base_raw_problem_id: string | null
           chapter_id: string
+          concept_notes: string | null
           course_id: string
           created_at: string
           csv_export_status: string
@@ -2447,10 +2448,12 @@ export type Database = {
           deployment_completed_at: string | null
           deployment_status: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
+          exam_traps: string | null
           google_sheet_file_id: string | null
           google_sheet_status: string
           google_sheet_url: string | null
           id: string
+          important_formulas: string | null
           journal_entry_block: string | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
@@ -2488,6 +2491,7 @@ export type Database = {
           banked_reviewed_at?: string | null
           base_raw_problem_id?: string | null
           chapter_id: string
+          concept_notes?: string | null
           course_id: string
           created_at?: string
           csv_export_status?: string
@@ -2495,10 +2499,12 @@ export type Database = {
           deployment_completed_at?: string | null
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
+          exam_traps?: string | null
           google_sheet_file_id?: string | null
           google_sheet_status?: string
           google_sheet_url?: string | null
           id?: string
+          important_formulas?: string | null
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
@@ -2536,6 +2542,7 @@ export type Database = {
           banked_reviewed_at?: string | null
           base_raw_problem_id?: string | null
           chapter_id?: string
+          concept_notes?: string | null
           course_id?: string
           created_at?: string
           csv_export_status?: string
@@ -2543,10 +2550,12 @@ export type Database = {
           deployment_completed_at?: string | null
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
+          exam_traps?: string | null
           google_sheet_file_id?: string | null
           google_sheet_status?: string
           google_sheet_url?: string | null
           id?: string
+          important_formulas?: string | null
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
