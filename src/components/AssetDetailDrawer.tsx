@@ -62,7 +62,7 @@ export type TeachingAssetFull = {
   problem_type?: string | null;
 };
 
-type JEMode = "completed" | "template" | "all_question_marks";
+type JEMode = "completed" | "template" | "accounts_missing" | "all_question_marks";
 
 interface AssetDetailDrawerProps {
   asset: TeachingAssetFull | null;
