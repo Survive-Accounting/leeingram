@@ -50,6 +50,7 @@ type TeachingAsset = {
   source_type?: string | null;
   source_number?: string | null;
   problem_type?: string | null;
+  google_sheet_status?: string | null;
 };
 
 type JournalOption = "question" | "feedback" | "none";
