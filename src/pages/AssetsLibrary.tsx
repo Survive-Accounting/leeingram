@@ -492,7 +492,7 @@ export default function AssetsLibrary() {
                   setBulkAction(null);
                 }}
               >
-                {(isBanking || isGeneratingEbook || isExporting) ? (
+                {(isBanking || isGeneratingEbook || isExporting || isCreatingSheets) ? (
                   <><Loader2 className="h-3 w-3 animate-spin" /> Running…</>
                 ) : (
                   "Go"
