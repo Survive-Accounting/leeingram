@@ -93,6 +93,10 @@ function applyMode(row: JERow, mode: JEMode): { account: string; debit: number |
     // Keep side info so indentation works, but null out amounts
     return { account, debit: null, credit: null, side };
   }
+  if (mode === "accounts_missing") {
+    // Show amounts, hide account names
+    return { account: "???", debit: rawDebit, credit: rawCredit, side };
+  }
   // all_question_marks — hide both account and amount with ???
   return { account: "???", debit: side === "debit" ? "???" : null, credit: side === "credit" ? "???" : null, side };
 }
