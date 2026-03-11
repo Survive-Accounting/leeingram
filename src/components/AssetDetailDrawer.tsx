@@ -428,7 +428,7 @@ export default function AssetDetailDrawer({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
         {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-3 space-y-3">
+        <DialogHeader className="px-6 pt-6 pb-3 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
