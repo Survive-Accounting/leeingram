@@ -824,7 +824,22 @@ export default function AssetDetailDrawer({
                     )}
                   </div>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
+                  <CollapsibleContent className="pt-3 space-y-3">
+                    {/* Mode selector */}
+                    <div className="flex gap-1 flex-wrap">
+                      {([
+                        { key: "completed", label: "Completed" },
+                        { key: "accounts_missing", label: "Acct Titles Missing" },
+                        { key: "template", label: "Amounts Missing" },
+                        { key: "all_question_marks", label: "Fully Blank" },
+                      ] as { key: JEMode; label: string }[]).map((m) => (
+                        <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
+                          {m.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* JE Table */}
                     {jeParts.length > 0 ? (
                       <div className="space-y-2">
                         {jeParts.map((jp, pi) => (
@@ -869,6 +884,75 @@ export default function AssetDetailDrawer({
                     ) : (
                       <p className="text-sm text-muted-foreground py-4 text-center">No structured JE data available.</p>
                     )}
+
+                    {/* Copy TSV for each mode */}
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Copy TSV for Sheets</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {([
+                          { key: "completed" as JEMode, label: "Completed" },
+                          { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
+                          { key: "template" as JEMode, label: "Amounts Missing" },
+                          { key: "all_question_marks" as JEMode, label: "Fully Blank" },
+                        ]).map((m) => (
+                          <Button
+                            key={m.key}
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 justify-start"
+                            onClick={() => {
+                              const modeEntries = normalizeJEEntries(
+                                m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
+                                m.key
+                              );
+                              if (!modeEntries) return;
+                              const tsv = entriesToTSV(modeEntries, copySettings);
+                              navigator.clipboard.writeText(tsv);
+                              toast.success(`${m.label} TSV copied`);
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* Copy Settings */}
+                      <div className="flex items-center justify-end">
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
+                          <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
+                        </Button>
+                      </div>
+
+                      {showCopySettings && (
+                        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="include-date"
+                              checked={copySettings.includeDate}
+                              onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
+                            />
+                            <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-foreground">Spacer Columns:</label>
+                            <Select
+                              value={String(copySettings.spacerColumns)}
+                              onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
+                            >
+                              <SelectTrigger className="h-7 w-16 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">0</SelectItem>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
+                        </div>
+                      )}
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               )}
