@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
+  Undo2, Trash2, Copy, ClipboardList, BookOpen, Link2,
   Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, CheckCircle2, Layers, Highlighter,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
@@ -453,6 +453,7 @@ export default function AssetDetailDrawer({
   const [showProblemSection, setShowProblemSection] = useState(true);
   const [showJESection, setShowJESection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
+  const [showSourceSection, setShowSourceSection] = useState(false);
 
   // Highlights
   const [highlights, setHighlights] = useState<Highlight[]>([]);
@@ -471,7 +472,7 @@ export default function AssetDetailDrawer({
     // Fetch source problem
     supabase
       .from("chapter_problems")
-      .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label")
+      .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label, problem_text, solution_text")
       .eq("id", asset.base_raw_problem_id)
       .single()
       .then(({ data }) => setSourceProblem(data || null));
@@ -502,6 +503,7 @@ export default function AssetDetailDrawer({
     setShowProblemSection(true);
     setShowJESection(false);
     setShowWorkedSteps(false);
+    setShowSourceSection(false);
     setShowHighlights(false);
   }, [asset?.id]);
 
@@ -724,9 +726,7 @@ export default function AssetDetailDrawer({
         <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-6 mt-3 mb-0 w-fit">
             <TabsTrigger value="overview" className="text-xs gap-1"><BookOpen className="h-3 w-3" />Overview</TabsTrigger>
-            <TabsTrigger value="journal" className="text-xs gap-1"><TableProperties className="h-3 w-3" />Journal Entries</TabsTrigger>
             <TabsTrigger value="links" className="text-xs gap-1"><Link2 className="h-3 w-3" />Links</TabsTrigger>
-            <TabsTrigger value="source" className="text-xs gap-1"><Image className="h-3 w-3" />Source</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
@@ -826,7 +826,22 @@ export default function AssetDetailDrawer({
                     )}
                   </div>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
+                  <CollapsibleContent className="pt-3 space-y-3">
+                    {/* Mode selector */}
+                    <div className="flex gap-1 flex-wrap">
+                      {([
+                        { key: "completed", label: "Completed" },
+                        { key: "accounts_missing", label: "Acct Titles Missing" },
+                        { key: "template", label: "Amounts Missing" },
+                        { key: "all_question_marks", label: "Fully Blank" },
+                      ] as { key: JEMode; label: string }[]).map((m) => (
+                        <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
+                          {m.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* JE Table */}
                     {jeParts.length > 0 ? (
                       <div className="space-y-2">
                         {jeParts.map((jp, pi) => (
@@ -871,6 +886,75 @@ export default function AssetDetailDrawer({
                     ) : (
                       <p className="text-sm text-muted-foreground py-4 text-center">No structured JE data available.</p>
                     )}
+
+                    {/* Copy TSV for each mode */}
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Copy TSV for Sheets</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {([
+                          { key: "completed" as JEMode, label: "Completed" },
+                          { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
+                          { key: "template" as JEMode, label: "Amounts Missing" },
+                          { key: "all_question_marks" as JEMode, label: "Fully Blank" },
+                        ]).map((m) => (
+                          <Button
+                            key={m.key}
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 justify-start"
+                            onClick={() => {
+                              const modeEntries = normalizeJEEntries(
+                                m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
+                                m.key
+                              );
+                              if (!modeEntries) return;
+                              const tsv = entriesToTSV(modeEntries, copySettings);
+                              navigator.clipboard.writeText(tsv);
+                              toast.success(`${m.label} TSV copied`);
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* Copy Settings */}
+                      <div className="flex items-center justify-end">
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
+                          <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
+                        </Button>
+                      </div>
+
+                      {showCopySettings && (
+                        <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="include-date"
+                              checked={copySettings.includeDate}
+                              onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
+                            />
+                            <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-foreground">Spacer Columns:</label>
+                            <Select
+                              value={String(copySettings.spacerColumns)}
+                              onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
+                            >
+                              <SelectTrigger className="h-7 w-16 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">0</SelectItem>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
+                        </div>
+                      )}
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               )}
@@ -892,6 +976,57 @@ export default function AssetDetailDrawer({
                 </Collapsible>
               )}
 
+              {/* ── SOURCE (from import) ── */}
+              <Collapsible open={showSourceSection} onOpenChange={setShowSourceSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showSourceSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 space-y-4">
+                  {sourceProblem?.title && (
+                    <div className="rounded-md border border-border p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
+                      <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
+                    </div>
+                  )}
+
+                  {sourceProblem?.problem_text && (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text (OCR)</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.problem_text}</p>
+                    </div>
+                  )}
+                  {sourceProblem?.solution_text && (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Solution Text (OCR)</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{sourceProblem.solution_text}</p>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const pUrls = sourceProblem?.problem_screenshot_urls?.length
+                      ? sourceProblem.problem_screenshot_urls
+                      : sourceProblem?.problem_screenshot_url
+                        ? [sourceProblem.problem_screenshot_url]
+                        : [];
+                    const sUrls = sourceProblem?.solution_screenshot_urls?.length
+                      ? sourceProblem.solution_screenshot_urls
+                      : sourceProblem?.solution_screenshot_url
+                        ? [sourceProblem.solution_screenshot_url]
+                        : [];
+                    if (pUrls.length === 0 && sUrls.length === 0 && !sourceProblem?.problem_text && !sourceProblem?.solution_text && !sourceProblem?.title) {
+                      return <p className="text-sm text-muted-foreground text-center py-4">No source data available.</p>;
+                    }
+                    return (
+                      <div className="space-y-5">
+                        {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Problem Screenshots" />}
+                        {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Solution Screenshots" />}
+                      </div>
+                    );
+                  })()}
+                </CollapsibleContent>
+              </Collapsible>
+
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={onRevert}>
                   <Undo2 className="h-3 w-3 mr-1" /> Revert to Generated
@@ -902,121 +1037,8 @@ export default function AssetDetailDrawer({
               </div>
             </TabsContent>
 
-            {/* Journal Entries */}
-            <TabsContent value="journal" className="px-6 pb-6 space-y-4 mt-4">
-              {!hasJE ? (
-                <div className="text-center py-12 text-muted-foreground text-sm">
-                  No journal entries for this asset.
-                </div>
-              ) : (
-                <>
-                  <div className="flex gap-1 flex-wrap">
-                    {([
-                      { key: "completed", label: "Completed" },
-                      { key: "accounts_missing", label: "Acct Titles Missing" },
-                      { key: "template", label: "Amounts Missing" },
-                      { key: "all_question_marks", label: "Fully Blank" },
-                    ] as { key: JEMode; label: string }[]).map((m) => (
-                      <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
-                        {m.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  {activeEntries && <JETable entries={activeEntries} />}
-
-                  {/* Copy TSV for each mode */}
-                  <div className="pt-2 border-t border-border space-y-2">
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Copy TSV for Sheets</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {([
-                        { key: "completed" as JEMode, label: "Completed" },
-                        { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
-                        { key: "template" as JEMode, label: "Amounts Missing" },
-                        { key: "all_question_marks" as JEMode, label: "Fully Blank" },
-                      ]).map((m) => (
-                        <Button
-                          key={m.key}
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-7 justify-start"
-                          onClick={() => {
-                            const modeEntries = normalizeJEEntries(
-                              m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
-                              m.key
-                            );
-                            if (!modeEntries) return;
-                            const tsv = entriesToTSV(modeEntries, copySettings);
-                            navigator.clipboard.writeText(tsv);
-                            toast.success(`${m.label} TSV copied`);
-                          }}
-                        >
-                          <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
-                        </Button>
-                      ))}
-                    </div>
-
-                    {/* Additional copy options */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
-                          <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("json")}>
-                          <FileJson className="h-3 w-3 mr-1" /> Copy JSON
-                        </Button>
-                      </div>
-                      <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => setShowCopySettings(!showCopySettings)}>
-                        <Settings2 className="h-3 w-3 mr-1" /> Copy Settings
-                      </Button>
-                    </div>
-
-                    {showCopySettings && (
-                      <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="include-date"
-                            checked={copySettings.includeDate}
-                            onCheckedChange={(checked) => updateCopySettings({ includeDate: !!checked })}
-                          />
-                          <label htmlFor="include-date" className="text-xs text-foreground cursor-pointer">Include Date Row</label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-foreground">Spacer Columns:</label>
-                          <Select
-                            value={String(copySettings.spacerColumns)}
-                            onValueChange={(v) => updateCopySettings({ spacerColumns: Number(v) })}
-                          >
-                            <SelectTrigger className="h-7 w-16 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0">0</SelectItem>
-                              <SelectItem value="1">1</SelectItem>
-                              <SelectItem value="2">2</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">TSV dates use M/d/yy format. Spacers add blank columns between account and amount.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" className="text-xs h-7 opacity-50" disabled>
-                        <Copy className="h-3 w-3 mr-1" /> Insert JE Template into Whiteboard Helper Area
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Coming soon — will auto-write into the non-visible helper block in the asset sheet.</TooltipContent>
-                  </Tooltip>
-                </>
-              )}
-            </TabsContent>
-
             {/* Links */}
             <TabsContent value="links" className="px-6 pb-6 space-y-3 mt-4">
-              {/* 3-Sheet Links */}
               <div className="space-y-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Google Sheets</h3>
                 <LinkCard
@@ -1053,7 +1075,6 @@ export default function AssetDetailDrawer({
                 )}
               </div>
 
-              {/* Last synced + Resync */}
               <div className="flex items-center justify-between gap-2 px-1">
                 <span className="text-[10px] text-muted-foreground">
                   {asset.sheet_last_synced_at
@@ -1076,17 +1097,11 @@ export default function AssetDetailDrawer({
               <LinkCard icon={BookMarked} label="LearnWorlds / eBook" disabled comingSoon />
               <LinkCard icon={Share2} label="Share Link" disabled comingSoon />
 
-              {/* Asset Actions — VA quick-access forms */}
               <Separator className="my-2" />
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Asset Actions</h3>
                 <div className="space-y-1.5">
-                  <a
-                    href={`https://forms.gle/QnWFjHKc1DxaGVjMA`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors"
-                  >
+                  <a href="https://forms.gle/QnWFjHKc1DxaGVjMA" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
                     <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground">Report Issue</p>
@@ -1094,12 +1109,7 @@ export default function AssetDetailDrawer({
                     </div>
                     <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
                   </a>
-                  <a
-                    href={`https://forms.gle/7Dz2i8eKiRangmNs9`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors"
-                  >
+                  <a href="https://forms.gle/7Dz2i8eKiRangmNs9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground">Mark Sheet Prep Complete</p>
@@ -1107,12 +1117,7 @@ export default function AssetDetailDrawer({
                     </div>
                     <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
                   </a>
-                  <a
-                    href={`https://forms.gle/QLCMqsV1YZMbkfSD8`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors"
-                  >
+                  <a href="https://forms.gle/QLCMqsV1YZMbkfSD8" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
                     <MessageSquare className="h-3.5 w-3.5 text-blue-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground">Submit Feedback / Idea</p>
@@ -1131,37 +1136,6 @@ export default function AssetDetailDrawer({
                   </Button>
                 </p>
               </div>
-            </TabsContent>
-
-            {/* Source */}
-            <TabsContent value="source" className="px-6 pb-6 space-y-4 mt-4">
-              {sourceProblem?.title && (
-                <div className="rounded-md border border-border p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source Title</p>
-                  <p className="text-sm font-medium text-foreground mt-0.5">{sourceProblem.title}</p>
-                </div>
-              )}
-              {(() => {
-                const pUrls = sourceProblem?.problem_screenshot_urls?.length
-                  ? sourceProblem.problem_screenshot_urls
-                  : sourceProblem?.problem_screenshot_url
-                    ? [sourceProblem.problem_screenshot_url]
-                    : [];
-                const sUrls = sourceProblem?.solution_screenshot_urls?.length
-                  ? sourceProblem.solution_screenshot_urls
-                  : sourceProblem?.solution_screenshot_url
-                    ? [sourceProblem.solution_screenshot_url]
-                    : [];
-                if (pUrls.length === 0 && sUrls.length === 0) {
-                  return <p className="text-sm text-muted-foreground text-center py-8">No source images available.</p>;
-                }
-                return (
-                  <div className="space-y-5">
-                    {pUrls.length > 0 && <SourceImageGallery urls={pUrls} label="Problem Screenshots" />}
-                    {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Solution Screenshots" />}
-                  </div>
-                );
-              })()}
             </TabsContent>
           </ScrollArea>
         </Tabs>
