@@ -406,6 +406,8 @@ export default function ProblemBank() {
     setEditLabel(p.source_label);
     setEditTitle(p.title);
     setEditNoJE(!!(p as any).contains_no_journal_entries);
+    setEditProblemFiles([]);
+    setEditSolutionFiles([]);
     setEditDialogOpen(true);
   };
 
