@@ -147,10 +147,8 @@ async function ensureFolderHierarchy(
 async function copyTemplateWithArchive(
   token: string, templateFileId: string, name: string, parentFolderId: string
 ): Promise<{ fileId: string; isUpdate: boolean }> {
-  // Check for existing sheets with this name
   const existing = await findSheetsByNameInFolder(token, name, parentFolderId);
   if (existing.length > 0) {
-    // Archive all existing copies
     await archiveDuplicateSheets(token, existing, parentFolderId);
   }
   
@@ -164,23 +162,19 @@ async function copyTemplateWithArchive(
   return { fileId: copyRes.id, isUpdate: existing.length > 0 };
 }
 
-// ── Metadata writer (3-column: Field, Value, VA Actions) ─────────────
+// ── Metadata writer (Column A=Field, Column B=Value, Column F=VA Actions) ───
 
 interface MetadataParams {
   asset_code: string;
   course_code: string;
   chapter_number: string;
   exercise_number: string;
-  difficulty_estimate: string;
   asset_id: string;
   created_at: string;
-  sheet_url: string;
   sheet_master_url: string;
   sheet_practice_url: string;
   sheet_promo_url: string;
   sheet_path_url: string;
-  source_problem_link: string;
-  source_solution_link: string;
   ebook_page_link: string;
   lw_video_link: string;
   lw_quiz_link: string;
@@ -190,15 +184,10 @@ interface MetadataParams {
   contact_lee_url: string;
   asset_type: string;
   variant_letter: string;
-  va_creator: string;
-  sheet_instance_id: string;
   variant_count: string;
   journal_entry_count: string;
-  flag_status: string;
   sheet_verified: string;
-  student_id_placeholder: string;
-  session_audio_link: string;
-  session_transcript_link: string;
+  sheet_ready_for_review: string;
 }
 
 function makeHyperlink(label: string, url: string): string {
@@ -207,59 +196,122 @@ function makeHyperlink(label: string, url: string): string {
 }
 
 async function writeMetadata(token: string, spreadsheetId: string, params: MetadataParams) {
-  // Build VA action links
-  const vaActions: Record<string, string> = {
-    mark_verified_url: makeHyperlink("Mark Sheet Ready", params.mark_verified_url),
-    flag_issue_url: makeHyperlink("Flag Issue", params.flag_issue_url),
-    internal_asset_page: makeHyperlink("Open Internal Asset Page", params.internal_asset_page),
-    lw_video_link: makeHyperlink("Open LearnWorlds Video", params.lw_video_link),
-    ebook_page_link: makeHyperlink("Open eBook Page", params.ebook_page_link),
-    contact_lee_url: makeHyperlink("Contact Lee", params.contact_lee_url),
-  };
-
-  const fieldRows: [string, string, string][] = [
-    ["Field", "Value", "VA Actions"],
-    ["asset_code", params.asset_code, vaActions.mark_verified_url],
-    ["course_code", params.course_code, vaActions.flag_issue_url],
-    ["chapter_number", params.chapter_number, vaActions.internal_asset_page],
-    ["exercise_number", params.exercise_number, vaActions.lw_video_link],
-    ["difficulty_estimate", params.difficulty_estimate, vaActions.ebook_page_link],
-    ["asset_id", params.asset_id, vaActions.contact_lee_url],
-    ["created_at", params.created_at, ""],
-    ["sheet_url", params.sheet_url, ""],
-    ["sheet_master_url", params.sheet_master_url, ""],
-    ["sheet_practice_url", params.sheet_practice_url, ""],
-    ["sheet_promo_url", params.sheet_promo_url, ""],
-    ["sheet_path_url", params.sheet_path_url, ""],
-    ["", "", ""],
-    ["source_problem_link", params.source_problem_link, ""],
-    ["source_solution_link", params.source_solution_link, ""],
-    ["ebook_page_link", params.ebook_page_link, ""],
-    ["lw_video_link", params.lw_video_link, ""],
-    ["lw_quiz_link", params.lw_quiz_link, ""],
-    ["internal_asset_page", params.internal_asset_page, ""],
-    ["flag_issue_url", params.flag_issue_url, ""],
-    ["mark_verified_url", params.mark_verified_url, ""],
-    ["contact_lee_url", params.contact_lee_url, ""],
-    ["", "", ""],
-    ["asset_type", params.asset_type, ""],
-    ["variant_letter", params.variant_letter, ""],
-    ["va_creator", params.va_creator, ""],
-    ["sheet_instance_id", params.sheet_instance_id, ""],
-    ["variant_count", params.variant_count, ""],
-    ["journal_entry_count", params.journal_entry_count, ""],
-    ["flag_status", params.flag_status, ""],
-    ["sheet_verified", params.sheet_verified, ""],
-    ["student_id_placeholder", params.student_id_placeholder, ""],
-    ["session_audio_link", params.session_audio_link, ""],
-    ["session_transcript_link", params.session_transcript_link, ""],
+  // Build rows: Column A = Field, Column B = Value, Columns C-E empty, Column F = VA Actions
+  // VA action links in Column F (rows 2-5)
+  const vaActionLinks = [
+    makeHyperlink("✅ Mark Sheet Ready for Review", params.mark_verified_url),
+    makeHyperlink("⚠️ Flag Issue", params.flag_issue_url),
+    makeHyperlink("📂 Open Asset Library Page", params.internal_asset_page),
+    makeHyperlink("📧 Contact Lee", params.contact_lee_url),
   ];
 
-  const range = `METADATA!A1:C${fieldRows.length}`;
+  const fieldRows: string[][] = [
+    ["Field", "Value", "", "", "", "VA Action Links"],
+    ["asset_code", params.asset_code, "", "", "", vaActionLinks[0]],
+    ["course_code", params.course_code, "", "", "", vaActionLinks[1]],
+    ["chapter_number", params.chapter_number, "", "", "", vaActionLinks[2]],
+    ["exercise_number", params.exercise_number, "", "", "", vaActionLinks[3]],
+    ["asset_id", params.asset_id, "", "", "", ""],
+    ["created_at", params.created_at, "", "", "", ""],
+    ["sheet_master_url", params.sheet_master_url, "", "", "", ""],
+    ["sheet_practice_url", params.sheet_practice_url, "", "", "", ""],
+    ["sheet_promo_url", params.sheet_promo_url, "", "", "", ""],
+    ["sheet_path_url", params.sheet_path_url, "", "", "", ""],
+    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
+    ["lw_video_link", params.lw_video_link, "", "", "", ""],
+    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
+    ["internal_asset_page", params.internal_asset_page, "", "", "", ""],
+    ["flag_issue_url", params.flag_issue_url, "", "", "", ""],
+    ["mark_verified_url", params.mark_verified_url, "", "", "", ""],
+    ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
+    ["asset_type", params.asset_type, "", "", "", ""],
+    ["variant_letter", params.variant_letter, "", "", "", ""],
+    ["variant_count", params.variant_count, "", "", "", ""],
+    ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
+    ["sheet_verified", params.sheet_verified, "", "", "", ""],
+    ["sheet_ready_for_review", params.sheet_ready_for_review, "", "", "", ""],
+  ];
+
+  const range = `METADATA!A1:F${fieldRows.length}`;
   await googleFetch(
     `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
     token,
     { method: "PUT", body: JSON.stringify({ range, majorDimension: "ROWS", values: fieldRows }) }
+  );
+}
+
+// ── VA Instructions sheet writer ─────────────────────────────────────
+
+async function writeVaInstructions(token: string, spreadsheetId: string, params: MetadataParams) {
+  // Ensure VA Instructions tab exists
+  try {
+    await googleFetch(
+      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/'VA Instructions'!A1?majorDimension=ROWS`,
+      token
+    );
+  } catch {
+    try {
+      await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+        method: "POST",
+        body: JSON.stringify({
+          requests: [{ addSheet: { properties: { title: "VA Instructions" } } }],
+        }),
+      });
+    } catch (e) { console.error("VA Instructions tab creation failed:", e); }
+  }
+
+  // Clear existing content
+  try {
+    await googleFetch(
+      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/'VA Instructions':clear`,
+      token,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  } catch (e) { console.error("VA Instructions clear failed (non-fatal):", e); }
+
+  const rows: string[][] = [
+    ["VA Instructions — Sheet Prep Workflow"],
+    [""],
+    ["Follow each step below to prepare this asset's Google Sheets for production."],
+    [""],
+    ["STEP 1: Open Asset Library"],
+    [`Open the asset page to review the problem, solution, and journal entry.`],
+    [makeHyperlink("📂 Open Asset Library Page", params.internal_asset_page)],
+    [""],
+    ["STEP 2: Review Problem and Solution"],
+    ["Read through the source problem text, solution, and journal entry in the Asset Library."],
+    ["Confirm the content is correct and complete before building the whiteboard."],
+    [""],
+    ["STEP 3: Build Master Whiteboard"],
+    ["Open the Master Sheet and build the tutoring/filming whiteboard layout."],
+    ["Follow the formatting guidelines in the template. Add problem text, solution steps, and visuals."],
+    [makeHyperlink("📋 Open Master Sheet", params.sheet_master_url)],
+    [""],
+    ["STEP 4: Create Study Pass Version"],
+    ["Open the Practice Sheet (Study Pass) and create the student-facing version."],
+    ["Remove answers and internal notes. Keep only the problem setup for student practice."],
+    [makeHyperlink("✏️ Open Practice Sheet (Study Pass)", params.sheet_practice_url)],
+    [""],
+    ["STEP 5: Create Promo Version"],
+    ["Open the Promo Sheet and create the shareable/marketing version."],
+    ["This version is used for free samples and social media content."],
+    [makeHyperlink("📣 Open Promo Sheet", params.sheet_promo_url)],
+    [""],
+    ["STEP 6: Mark Sheet Ready for Review"],
+    ["When all three sheets are complete, mark this asset as ready for review."],
+    [makeHyperlink("✅ Mark Sheet Ready for Review", params.mark_verified_url)],
+    [""],
+    ["─────────────────────────────────────────"],
+    ["Other Actions:"],
+    [makeHyperlink("⚠️ Flag Issue", params.flag_issue_url)],
+    [makeHyperlink("📧 Contact Lee", params.contact_lee_url)],
+  ];
+
+  const range = `'VA Instructions'!A1:A${rows.length}`;
+  await googleFetch(
+    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
+    token,
+    { method: "PUT", body: JSON.stringify({ range, majorDimension: "ROWS", values: rows }) }
   );
 }
 
@@ -330,6 +382,14 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, asset
 function extractVariantLetter(assetName: string): string {
   const match = assetName.match(/_P\d+([A-Z])(?:_V\d+)?$/i);
   return match ? match[1].toUpperCase() : "A";
+}
+
+// ── Resolve sheet_ready_for_review status ────────────────────────────
+
+function resolveReadyForReview(status: string): string {
+  if (status === "ready_for_review") return "Needs Review";
+  if (status === "finalized") return "Finalized";
+  return "No";
 }
 
 // ── Main handler ─────────────────────────────────────────────────────
@@ -440,7 +500,7 @@ Deno.serve(async (req) => {
     const practiceUrl = results.practice?.url || "";
     const promoUrl = results.promo?.url || "";
 
-    // ── Populate Metadata tab on Master Sheet (if created) ───────────
+    // ── Populate Metadata + VA Instructions on Master Sheet ─────────
     if (results.master) {
       const spreadsheetId = results.master.fileId;
       const appBaseUrl = "https://leeingram.lovable.app";
@@ -449,16 +509,12 @@ Deno.serve(async (req) => {
         course_code: courseCode,
         chapter_number: String(chapterNumber),
         exercise_number: asset.source_number || "",
-        difficulty_estimate: asset.difficulty || "",
         asset_id: asset.id,
         created_at: asset.created_at || "",
-        sheet_url: masterUrl,
         sheet_master_url: masterUrl,
         sheet_practice_url: practiceUrl,
         sheet_promo_url: promoUrl,
         sheet_path_url: sheetPathUrl,
-        source_problem_link: "",
-        source_solution_link: "",
         ebook_page_link: asset.lw_ebook_url || "",
         lw_video_link: asset.lw_video_url || "",
         lw_quiz_link: asset.lw_quiz_url || "",
@@ -468,15 +524,10 @@ Deno.serve(async (req) => {
         contact_lee_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=contact`,
         asset_type: asset.problem_type || "",
         variant_letter: extractVariantLetter(assetCode),
-        va_creator: "",
-        sheet_instance_id: spreadsheetId,
         variant_count: String(variantCount),
         journal_entry_count: String(jeCount),
-        flag_status: flagCount > 0 ? `${flagCount} open` : "clear",
-        sheet_verified: asset.google_sheet_status === "verified" ? "Yes" : "No",
-        student_id_placeholder: "",
-        session_audio_link: "",
-        session_transcript_link: "",
+        sheet_verified: asset.google_sheet_status === "verified_by_va" ? "Yes" : "No",
+        sheet_ready_for_review: resolveReadyForReview(asset.google_sheet_status || "none"),
       };
 
       // Ensure METADATA tab exists
@@ -506,6 +557,10 @@ Deno.serve(async (req) => {
 
       await writeMetadata(token, spreadsheetId, metadataParams);
       console.log("Metadata populated on Master sheet");
+
+      // Write VA Instructions sheet
+      await writeVaInstructions(token, spreadsheetId, metadataParams);
+      console.log("VA Instructions sheet populated on Master sheet");
     }
 
     // ── Persist sheet info back to DB ─────────────────────────────────

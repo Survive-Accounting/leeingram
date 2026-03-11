@@ -583,71 +583,78 @@ export default function AssetsLibrary() {
               </TableHead>
               <TableHead className="text-xs">Asset Code</TableHead>
               <TableHead className="text-xs">Textbook Ref</TableHead>
-              {isSheetPrepVa && <TableHead className="text-xs">Sheet Status</TableHead>}
+              <TableHead className="text-xs">Sheet Status</TableHead>
               <TableHead className="text-xs">Created</TableHead>
-              <TableHead className="text-xs w-16 text-right">Quick</TableHead>
+              <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={isSheetPrepVa ? 6 : 5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={isSheetPrepVa ? 6 : 5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
-              assets.map((a) => (
-                <TableRow
-                  key={a.id}
-                  className="border-border cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => openDrawer(a)}
-                >
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedIds.has(a.id)}
-                      onCheckedChange={() => toggleSelect(a.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>
-                  <TableCell className="text-xs font-mono text-muted-foreground">
-                    {a.source_ref || "—"}
-                  </TableCell>
-                  {isSheetPrepVa && (
+              assets.map((a) => {
+                const sheetStatus = (a as any).google_sheet_status || "none";
+                const statusIcon = sheetStatus === "finalized" ? "✓"
+                  : sheetStatus === "ready_for_review" ? "⚠"
+                  : sheetStatus === "auto_created" ? "✓"
+                  : "—";
+                const statusLabel = sheetStatus === "finalized" ? "Finalized"
+                  : sheetStatus === "ready_for_review" ? "Needs Review"
+                  : sheetStatus === "auto_created" ? "Created"
+                  : sheetStatus === "verified_by_va" ? "Verified"
+                  : "None";
+                const statusColor = sheetStatus === "finalized" ? "text-emerald-400 border-emerald-500/40"
+                  : sheetStatus === "ready_for_review" ? "text-amber-400 border-amber-500/40"
+                  : sheetStatus === "auto_created" ? "text-sky-400 border-sky-500/40"
+                  : sheetStatus === "verified_by_va" ? "text-emerald-400 border-emerald-500/40"
+                  : "text-muted-foreground border-border";
+
+                return (
+                  <TableRow
+                    key={a.id}
+                    className="border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => openDrawer(a)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(a.id)}
+                        onCheckedChange={() => toggleSelect(a.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>
+                    <TableCell className="text-xs font-mono text-muted-foreground">
+                      {a.source_ref || "—"}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`text-[9px] ${
-                        (a as any).google_sheet_status === "ready_for_review"
-                          ? "border-amber-500/40 text-amber-400"
-                          : (a as any).google_sheet_status === "finalized"
-                            ? "border-emerald-500/40 text-emerald-400"
-                            : "border-border text-muted-foreground"
-                      }`}>
-                        {(a as any).google_sheet_status === "ready_for_review" ? "Ready for Review"
-                          : (a as any).google_sheet_status === "finalized" ? "Finalized"
-                          : (a as any).google_sheet_status === "auto_created" ? "Pending"
-                          : (a as any).google_sheet_status || "—"}
+                      <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
+                        {statusIcon} {statusLabel}
                       </Badge>
                     </TableCell>
-                  )}
-                  <TableCell className="text-xs text-muted-foreground">
-                    {format(new Date(a.created_at), "MMM d")}
-                  </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex gap-0.5 justify-end">
-                      {a.sheet_master_url ? (
-                        <>
-                          <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
-                          {a.sheet_practice_url && (
-                            <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
-                          )}
-                          {a.sheet_promo_url && (
-                            <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
-                          )}
-                        </>
-                      ) : sheetUrls?.[a.asset_name] ? (
-                        <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                    <TableCell className="text-xs text-muted-foreground">
+                      {format(new Date(a.created_at), "MMM d")}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-0.5 justify-end">
+                        {a.sheet_master_url ? (
+                          <>
+                            <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
+                            {a.sheet_practice_url && (
+                              <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
+                            )}
+                            {a.sheet_promo_url && (
+                              <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
+                            )}
+                          </>
+                        ) : sheetUrls?.[a.asset_name] ? (
+                          <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
