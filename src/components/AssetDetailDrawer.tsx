@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,17 +7,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Undo2, Trash2, Copy, FileJson, FileText, ClipboardList, BookOpen, Link2,
   Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
-  BookMarked, Share2, CheckCircle2, Layers,
+  BookMarked, Share2, CheckCircle2, Layers, Highlighter,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
-  ZoomIn, X, ChevronLeft, ChevronRight,
+  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { HighlightedText, HighlightLegend } from "@/components/content-factory/HighlightedText";
+import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
+import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -440,19 +445,61 @@ export default function AssetDetailDrawer({
   const [showCopySettings, setShowCopySettings] = useState(false);
   const [sourceProblem, setSourceProblem] = useState<any>(null);
 
-  // Fetch linked source problem for images + title
+  // Collapsible section states
+  const [showProblemSection, setShowProblemSection] = useState(true);
+  const [showJESection, setShowJESection] = useState(false);
+  const [showWorkedSteps, setShowWorkedSteps] = useState(false);
+
+  // Highlights
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [showHighlights, setShowHighlights] = useState(false);
+  const [generatingHighlights, setGeneratingHighlights] = useState(false);
+  const [variantId, setVariantId] = useState<string | null>(null);
+
+  // Fetch linked source problem for images + title + variant highlights
   useEffect(() => {
     if (!open || !asset?.base_raw_problem_id) {
       setSourceProblem(null);
+      setHighlights([]);
+      setVariantId(null);
       return;
     }
+    // Fetch source problem
     supabase
       .from("chapter_problems")
       .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label")
       .eq("id", asset.base_raw_problem_id)
       .single()
       .then(({ data }) => setSourceProblem(data || null));
-  }, [open, asset?.base_raw_problem_id]);
+
+    // Fetch approved variant's highlights
+    supabase
+      .from("problem_variants")
+      .select("id, highlight_key_json")
+      .eq("base_problem_id", asset.base_raw_problem_id)
+      .eq("variant_status", "approved")
+      .limit(1)
+      .then(({ data }) => {
+        const v = data?.[0];
+        if (v) {
+          setVariantId(v.id);
+          const raw = v.highlight_key_json as any;
+          if (Array.isArray(raw) && raw.length > 0) {
+            setHighlights(validateHighlights(raw, asset.survive_problem_text || ""));
+          } else {
+            setHighlights([]);
+          }
+        }
+      });
+  }, [open, asset?.base_raw_problem_id, asset?.survive_problem_text]);
+
+  // Reset section states when asset changes
+  useEffect(() => {
+    setShowProblemSection(true);
+    setShowJESection(false);
+    setShowWorkedSteps(false);
+    setShowHighlights(false);
+  }, [asset?.id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
     setCopySettings(prev => {
@@ -490,6 +537,16 @@ export default function AssetDetailDrawer({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // Parts analysis for collapsible sections (must be before early return for hooks rules)
+  const parts = useMemo(() => asset ? normalizeToParts({
+    survive_problem_text: asset.survive_problem_text,
+    survive_solution_text: asset.survive_solution_text,
+    journal_entry_completed_json: asset.journal_entry_completed_json,
+    parts_json: (asset as any).parts_json,
+  }) : [], [asset]);
+  const textParts = useMemo(() => parts.filter(isTextPart), [parts]);
+  const jeParts = useMemo(() => parts.filter(isJEPart), [parts]);
+
   if (!asset) return null;
 
   // Resolve effective sheet URL: prefer teaching_assets.google_sheet_url, fall back to sheetUrls lookup
@@ -515,6 +572,54 @@ export default function AssetDetailDrawer({
       toast.success(`Copied as ${fmt.toUpperCase()}`);
     }
   };
+
+  const handleGenerateHighlights = async () => {
+    if (!asset || !variantId) {
+      toast.error("No linked variant found for highlight generation");
+      return;
+    }
+    setGeneratingHighlights(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-output", {
+        body: {
+          provider: "lovable",
+          model: "google/gemini-2.5-flash",
+          temperature: 0.1,
+          max_output_tokens: 1500,
+          source_problem_id: asset.base_raw_problem_id || "unknown",
+          messages: [
+            { role: "system", content: HIGHLIGHT_GENERATION_PROMPT },
+            {
+              role: "user",
+              content: `Problem Text:\n${asset.survive_problem_text}\n\nSolution Steps:\n${asset.survive_solution_text || "(not provided)"}`,
+            },
+          ],
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const raw = data?.parsed;
+      const arr = Array.isArray(raw) ? raw : raw?.highlights || [];
+      const valid = validateHighlights(arr, asset.survive_problem_text || "");
+      if (valid.length === 0) {
+        toast.warning("AI returned no valid highlights for this problem text.");
+        return;
+      }
+      // Persist to variant
+      await supabase
+        .from("problem_variants")
+        .update({ highlight_key_json: valid as any } as any)
+        .eq("id", variantId);
+      setHighlights(valid);
+      setShowHighlights(true);
+      toast.success(`${valid.length} highlights generated`);
+    } catch (err: any) {
+      toast.error(err?.message || "Highlight generation failed");
+    } finally {
+      setGeneratingHighlights(false);
+    }
+  };
+
 
   const problemLines = (asset.survive_problem_text || "").split("\n");
   const previewLines = problemLines.slice(0, 10);
@@ -620,7 +725,8 @@ export default function AssetDetailDrawer({
 
           <ScrollArea className="flex-1 min-h-0">
             {/* Overview */}
-            <TabsContent value="overview" className="px-6 pb-6 space-y-4 mt-4">
+            <TabsContent value="overview" className="px-6 pb-6 space-y-3 mt-4">
+              {/* Metadata grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <MetaItem label="Course" value={parsed.course || courseLabel} />
                 <MetaItem label="Chapter" value={parsed.chapter ? `Ch ${parsed.chapter}` : chapterLabel} />
@@ -628,29 +734,156 @@ export default function AssetDetailDrawer({
                 <MetaItem label="Source #" value={sourceNumber} />
                 <MetaItem label="Difficulty" value={asset.difficulty ?? "—"} />
                 <MetaItem label="Problem Type" value={asset.problem_type || "—"} />
-                <MetaItem label="Template Ver." value={asset.sheet_template_version || "—"} />
               </div>
 
-              <div className="rounded-lg border border-border p-4">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Problem Text</h2>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
-                  {problemExpanded ? asset.survive_problem_text : previewLines.join("\n")}
-                </p>
-                {hasMoreLines && (
-                  <Button variant="ghost" size="sm" className="text-xs h-6 mt-1 text-muted-foreground" onClick={() => setProblemExpanded(!problemExpanded)}>
-                    {problemExpanded ? <><ChevronUp className="h-3 w-3 mr-1" /> Collapse</> : <><ChevronDown className="h-3 w-3 mr-1" /> Show all ({problemLines.length} lines)</>}
+              {/* Highlights toggle */}
+              <div className="flex items-center gap-2 flex-wrap px-1">
+                <Highlighter className="h-3 w-3 text-yellow-500" />
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Highlights</span>
+                <Switch
+                  checked={showHighlights}
+                  onCheckedChange={setShowHighlights}
+                  className="h-4 w-8 [&>span]:h-3 [&>span]:w-3"
+                />
+                <span className="text-[10px] text-muted-foreground">{showHighlights ? "On" : "Off"}</span>
+                {variantId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={handleGenerateHighlights}
+                    disabled={generatingHighlights}
+                  >
+                    {generatingHighlights ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 mr-1" />
+                    )}
+                    {highlights.length > 0 ? "Regenerate" : "Generate"}
                   </Button>
+                )}
+                {showHighlights && highlights.length > 0 && (
+                  <HighlightLegend highlights={highlights} />
                 )}
               </div>
 
-              {(asset.journal_entry_block || asset.survive_solution_text) && (
-                <div className="rounded-lg border border-border p-4">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Solution / JE Preview</h2>
-                  {asset.journal_entry_block && (
-                    <pre className="text-xs text-foreground whitespace-pre-wrap font-mono mb-2">{asset.journal_entry_block}</pre>
+              {/* ── PROBLEM & ANSWER ── */}
+              <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem & Answer</span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showProblemSection ? "rotate-180" : ""}`} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3 space-y-3">
+                  <div className="rounded-lg border border-border bg-background p-3">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
+                    <div className="max-h-72 overflow-y-auto text-sm text-foreground leading-relaxed">
+                      <HighlightedText
+                        text={asset.survive_problem_text || "—"}
+                        highlights={highlights}
+                        showHighlights={showHighlights && highlights.length > 0}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Final Answer from parts */}
+                  {textParts.length > 0 && (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Final Answer</p>
+                      <div className="space-y-1.5">
+                        {textParts.map((tp, i) => (
+                          <div key={i} className="flex items-baseline gap-2">
+                            <span className="text-xs font-bold text-primary">{formatPartLabel(tp.label)}</span>
+                            <span className="text-sm font-medium text-foreground">{tp.final_answer}</span>
+                            {tp.final_value != null && (
+                              <span className="text-xs font-mono text-muted-foreground">
+                                = {typeof tp.final_value === "number" ? tp.final_value.toLocaleString() : tp.final_value}
+                                {tp.units ? ` ${tp.units}` : ""}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-6">{asset.survive_solution_text || "—"}</p>
-                </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* ── JOURNAL ENTRIES ── */}
+              {hasJE && (
+                <Collapsible open={showJESection} onOpenChange={setShowJESection}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Journal Entries</span>
+                    <div className="flex items-center gap-2">
+                      {jeParts.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground">{jeParts.length} {jeParts.length === 1 ? "part" : "parts"}</span>
+                      )}
+                      <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showJESection ? "rotate-180" : ""}`} />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3">
+                    {jeParts.length > 0 ? (
+                      <div className="space-y-2">
+                        {jeParts.map((jp, pi) => (
+                          <div key={pi} className="rounded border border-border overflow-hidden">
+                            {jp.je_structured.map((entry, ei) => {
+                              const totalDebit = entry.entries.reduce((s, e) => s + (e.debit ?? 0), 0);
+                              const totalCredit = entry.entries.reduce((s, e) => s + (e.credit ?? 0), 0);
+                              const balanced = Math.abs(totalDebit - totalCredit) < 0.02;
+                              return (
+                                <div key={ei}>
+                                  <div className="flex items-center justify-between px-2 py-1 bg-muted/20 border-b border-border/50">
+                                    <span className="text-[10px] font-medium text-foreground">{entry.date}</span>
+                                    <Badge variant="outline" className={`text-[9px] h-3.5 ${balanced ? "text-green-600 dark:text-green-400 border-green-500/30" : "text-red-600 dark:text-red-400 border-red-500/30"}`}>
+                                      {balanced ? "✓" : `Off $${Math.abs(totalDebit - totalCredit).toFixed(0)}`}
+                                    </Badge>
+                                  </div>
+                                  <table className="w-full text-[11px]">
+                                    <tbody>
+                                      {entry.entries.map((row, ri) => (
+                                        <tr key={ri} className="border-b border-border/20 last:border-0">
+                                          <td className={`px-2 py-0.5 text-foreground ${row.credit && row.credit > 0 ? "pl-5" : ""}`}>
+                                            {row.account}
+                                          </td>
+                                          <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
+                                            {row.debit && row.debit > 0 ? `$${row.debit.toLocaleString()}` : ""}
+                                          </td>
+                                          <td className="text-right px-2 py-0.5 font-mono text-foreground w-16">
+                                            {row.credit && row.credit > 0 ? `$${row.credit.toLocaleString()}` : ""}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    ) : activeEntries ? (
+                      <JETable entries={activeEntries} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-4 text-center">No structured JE data available.</p>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* ── WORKED STEPS ── */}
+              {asset.survive_solution_text && (
+                <Collapsible open={showWorkedSteps} onOpenChange={setShowWorkedSteps}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Worked Steps</span>
+                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showWorkedSteps ? "rotate-180" : ""}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3">
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                        {asset.survive_solution_text}
+                      </p>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
               <div className="flex gap-2 pt-2">
