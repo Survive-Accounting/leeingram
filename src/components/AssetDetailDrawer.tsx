@@ -436,6 +436,21 @@ export default function AssetDetailDrawer({
   const [isSyncing, setIsSyncing] = useState(false);
   const [copySettings, setCopySettings] = useState<JECopySettings>(loadCopySettings);
   const [showCopySettings, setShowCopySettings] = useState(false);
+  const [sourceProblem, setSourceProblem] = useState<any>(null);
+
+  // Fetch linked source problem for images + title
+  useEffect(() => {
+    if (!open || !asset?.base_raw_problem_id) {
+      setSourceProblem(null);
+      return;
+    }
+    supabase
+      .from("chapter_problems")
+      .select("title, problem_screenshot_urls, solution_screenshot_urls, problem_screenshot_url, solution_screenshot_url, source_label")
+      .eq("id", asset.base_raw_problem_id)
+      .single()
+      .then(({ data }) => setSourceProblem(data || null));
+  }, [open, asset?.base_raw_problem_id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
     setCopySettings(prev => {
