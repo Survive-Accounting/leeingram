@@ -912,6 +912,7 @@ Deno.serve(async (req) => {
         contact_lee_url: `${appBaseUrl}/assets-library?asset=${asset.id}&action=contact`,
         asset_type: asset.asset_type || "",
         problem_type: asset.problem_type || "",
+        layout_hint: buildLayoutHint(asset),
         variant_letter: extractVariantLetter(assetCode),
         variant_count: String(variantCount),
         journal_entry_count: String(jeCount),
