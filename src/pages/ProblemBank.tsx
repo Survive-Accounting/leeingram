@@ -485,6 +485,7 @@ export default function ProblemBank() {
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
               <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Ready ({selectedIds.size})
             </Button>
+            <InfoTip text="Marks this source problem as ready to be generated into a Survive Teaching Asset. Only Ready problems appear in the Generate queue." />
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => bulkMarkNotReady.mutate(Array.from(selectedIds))} disabled={bulkMarkNotReady.isPending}>
               Mark Not Ready ({selectedIds.size})
             </Button>

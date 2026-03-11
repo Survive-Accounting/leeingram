@@ -17,6 +17,7 @@ import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Timer } from "lucide-react";
 import { toast } from "sonner";
+import { InfoTip } from "@/components/InfoTip";
 
 function formatElapsed(seconds: number): string {
   const h = Math.floor(seconds / 3600);

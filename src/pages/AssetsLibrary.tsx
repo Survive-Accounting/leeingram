@@ -638,9 +638,19 @@ export default function AssetsLibrary() {
                   onCheckedChange={toggleAll}
                 />
               </TableHead>
-              <TableHead className="text-xs">Asset Code</TableHead>
+              <TableHead className="text-xs">
+                <span className="inline-flex items-center gap-1">
+                  Asset Code
+                  <InfoTip text="A unique code for each teaching asset. Format: [Course]_[Chapter]_[Seq]_[Variant]. Used to identify assets across all systems." />
+                </span>
+              </TableHead>
               <TableHead className="text-xs">Textbook Ref</TableHead>
-              <TableHead className="text-xs">Sheet Status</TableHead>
+              <TableHead className="text-xs">
+                <span className="inline-flex items-center gap-1">
+                  Sheet Status
+                  <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
+                </span>
+              </TableHead>
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
