@@ -10,12 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Undo2, Trash2, Copy, ClipboardList, BookOpen, Link2,
   Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, CheckCircle2, Layers, Highlighter,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
-  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles,
+  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles, Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -23,8 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { HighlightedText, HighlightLegend } from "@/components/content-factory/HighlightedText";
 import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
-import ProblemInstructionsEditor from "@/components/content-factory/ProblemInstructionsEditor";
-import LearningStructuresEditor, { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
+import { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
 
 // ── Types ────────────────────────────────────────────────────────────
 
