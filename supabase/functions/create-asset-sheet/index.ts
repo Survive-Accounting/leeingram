@@ -267,6 +267,7 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
     ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
     ["asset_type", params.asset_type, "", "", "", ""],
     ["problem_type", params.problem_type, "", "", "", ""],
+    ["layout_hint", params.layout_hint, "", "", "", ""],
     ["variant_letter", params.variant_letter, "", "", "", ""],
     ["variant_count", params.variant_count, "", "", "", ""],
     ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
