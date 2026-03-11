@@ -931,7 +931,7 @@ export default function AssetsLibrary() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Sheet Prep Complete!
+              Mark Sheet Pending for Review
             </DialogTitle>
             <DialogDescription>
               Thanks for prepping this sheet! Lee will review it ASAP to verify it's ready for deployment.
