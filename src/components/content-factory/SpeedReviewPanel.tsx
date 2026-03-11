@@ -87,6 +87,14 @@ export function SpeedReviewPanel({
 
   const hasJE = jeParts.length > 0 || !!variant.journal_entry_completed_json;
 
+  // Learning structures from candidate_data
+  const tAccountsJson = variant.t_accounts_json || variant.candidate_data?.t_accounts_json || null;
+  const tablesJson = variant.tables_json || variant.candidate_data?.tables_json || null;
+  const financialStatementsJson = variant.financial_statements_json || variant.candidate_data?.financial_statements_json || null;
+  const hasTAccounts = Array.isArray(tAccountsJson) && tAccountsJson.length > 0;
+  const hasTables = Array.isArray(tablesJson) && tablesJson.length > 0;
+  const hasFinancialStatements = Array.isArray(financialStatementsJson) && financialStatementsJson.length > 0;
+
   // Collapsible state — matches asset detail modal order
   const [showProblem, setShowProblem] = useState(true);
   const [showJE, setShowJE] = useState(false);
@@ -94,6 +102,9 @@ export function SpeedReviewPanel({
   const [showFormulas, setShowFormulas] = useState(false);
   const [showConcepts, setShowConcepts] = useState(false);
   const [showExamTraps, setShowExamTraps] = useState(false);
+  const [showTAccounts, setShowTAccounts] = useState(false);
+  const [showTables, setShowTables] = useState(false);
+  const [showFinStatements, setShowFinStatements] = useState(false);
 
   // Keyboard shortcuts — A/R/F auto-advance, S=skip, B=back
   useEffect(() => {
