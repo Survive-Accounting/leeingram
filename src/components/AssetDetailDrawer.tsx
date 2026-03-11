@@ -833,6 +833,15 @@ Return valid JSON only.`,
                     </div>
                   </div>
 
+                  {/* Problem Context & Instructions Editor */}
+                  <div className="rounded-lg border border-border bg-card p-3">
+                    <ProblemInstructionsEditor
+                      assetId={asset.id}
+                      problemContext={(asset as any).problem_context || ""}
+                      onUpdated={onAssetUpdated}
+                    />
+                  </div>
+
                   {/* Answer text — only if the asset has solution text */}
                   {asset.survive_solution_text && (
                     <div className="rounded-lg border border-border bg-background p-3">
