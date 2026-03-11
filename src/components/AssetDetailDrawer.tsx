@@ -815,16 +815,15 @@ Return valid JSON only.`,
                 )}
               </div>
 
-              {/* ── PROBLEM & ANSWER ── */}
+              {/* ── PROBLEM TEXT ── */}
               <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showProblemSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem & Answer</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Text</span>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="rounded-lg border border-border bg-background p-3">
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Problem Text</p>
-                    <div className="max-h-72 overflow-y-auto text-sm text-foreground leading-relaxed">
+                    <div className="text-sm text-foreground leading-relaxed">
                       <HighlightedText
                         text={asset.survive_problem_text || "—"}
                         highlights={highlights}
@@ -833,7 +832,17 @@ Return valid JSON only.`,
                     </div>
                   </div>
 
-                  {/* Final Answer from parts */}
+                  {/* Answer text — only if the asset has solution text */}
+                  {asset.survive_solution_text && (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Text</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                        {asset.survive_solution_text}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Final Answer values from parts */}
                   {textParts.length > 0 && (
                     <div className="rounded-lg border border-border bg-background p-3">
                       <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Final Answer</p>
@@ -1017,6 +1026,60 @@ Return valid JSON only.`,
                   </CollapsibleContent>
                 </Collapsible>
               )}
+
+              {/* ── IMPORTANT FORMULAS ── */}
+              <Collapsible open={showFormulasSection} onOpenChange={setShowFormulasSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFormulasSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Important Formulas</span>
+                  {!asset.important_formulas && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  {asset.important_formulas ? (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{asset.important_formulas}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4 text-center">Click Generate above to create important formulas.</p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* ── CONCEPTS ── */}
+              <Collapsible open={showConceptsSection} onOpenChange={setShowConceptsSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showConceptsSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Concepts</span>
+                  {!asset.concept_notes && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  {asset.concept_notes ? (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{asset.concept_notes}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4 text-center">Click Generate above to create concept notes.</p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* ── EXAM TRAPS ── */}
+              <Collapsible open={showExamTrapsSection} onOpenChange={setShowExamTrapsSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showExamTrapsSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Traps</span>
+                  {!asset.exam_traps && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  {asset.exam_traps ? (
+                    <div className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{asset.exam_traps}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4 text-center">Click Generate above to create exam traps.</p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
 
               {/* ── SOURCE (from import) ── */}
               <Collapsible open={showSourceSection} onOpenChange={setShowSourceSection}>
