@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount, VA_ROLE_LABELS } from "@/hooks/useVaAccount";
@@ -8,38 +8,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Loader2, ArrowRight, CheckCircle2, ChevronDown, ChevronRight,
-  Upload, Sparkles, Eye, ThumbsUp, FileSpreadsheet, HelpCircle,
-  MessageSquare, ExternalLink, BookOpen,
+  Loader2, ArrowRight, CheckCircle2,
+  Upload, Sparkles, Eye, BookOpen,
+  HelpCircle, MessageSquare, ExternalLink, Library,
 } from "lucide-react";
 
-// Pipeline stages with routes and icons
 const PIPELINE_STAGES = [
-  { key: "imported", label: "Import", route: "/problem-bank", icon: Upload, description: "Paste textbook problem screenshots" },
-  { key: "generated", label: "Generate", route: "/content", icon: Sparkles, description: "Generate variant problems" },
-  { key: "in_review", label: "Review", route: "/review", icon: Eye, description: "Review generated variants" },
-  { key: "approved", label: "Approve", route: "/review", icon: ThumbsUp, description: "Approve teaching assets" },
-  { key: "sheets_created", label: "Sheets", route: "/assets-library", icon: FileSpreadsheet, description: "Google Sheets created" },
+  { key: "import", label: "Import", route: "/problem-bank", icon: Upload },
+  { key: "generate", label: "Generate", route: "/content", icon: Sparkles },
+  { key: "review", label: "Review", route: "/review", icon: Eye },
+  { key: "assets", label: "Teaching Assets", route: "/assets-library", icon: Library },
 ] as const;
-
-const JOB_DESC_LINKS: Record<string, string> = {
-  content_creation_va: "https://docs.google.com/document/d/1NFVw0i96s3USCwbbN0Xqr60P4RrbTQoV7p7kH52A0FY/edit?usp=sharing",
-  sheet_prep_va: "https://docs.google.com/document/d/1Y_zjOWtl0u28vA9kKZIYsEfSA98YJjXHIgiqIi1RMUI/edit?usp=sharing",
-  lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
-};
 
 export default function VaDashboard() {
   const navigate = useNavigate();
   const { vaAccount, isVa, primaryRole, assignedChapterIds, isLoading } = useVaAccount();
   const { impersonating } = useImpersonation();
   const { workspace, setWorkspace } = useActiveWorkspace();
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [showFullQueue, setShowFullQueue] = useState(false);
 
   const activeVa = impersonating || vaAccount;
   const activeIsVa = !!impersonating || isVa;
@@ -100,31 +89,7 @@ export default function VaDashboard() {
     },
   });
 
-  // Fetch pipeline counts for effective chapters
-  const { data: pipelineCounts } = useQuery({
-    queryKey: ["va-pipeline-counts", effectiveChapterIds],
-    queryFn: async () => {
-      if (!effectiveChapterIds.length) return { imported: 0, generated: 0, in_review: 0, approved: 0, sheets_created: 0 };
-      const [importedR, generatedR, approvedR] = await Promise.all([
-        supabase.from("chapter_problems").select("id", { count: "exact", head: true }).in("chapter_id", effectiveChapterIds).eq("pipeline_status", "imported"),
-        supabase.from("chapter_problems").select("id", { count: "exact", head: true }).in("chapter_id", effectiveChapterIds).eq("pipeline_status", "generated"),
-        supabase.from("chapter_problems").select("id", { count: "exact", head: true }).in("chapter_id", effectiveChapterIds).eq("pipeline_status", "approved"),
-      ]);
-      const [sheetsR] = await Promise.all([
-        supabase.from("teaching_assets").select("id", { count: "exact", head: true }).in("chapter_id", effectiveChapterIds).neq("google_sheet_status", "none").neq("google_sheet_status", "archived"),
-      ]);
-      return {
-        imported: importedR.count ?? 0,
-        generated: generatedR.count ?? 0,
-        in_review: 0, // in_review tracked via generated needing review
-        approved: approvedR.count ?? 0,
-        sheets_created: sheetsR.count ?? 0,
-      };
-    },
-    enabled: effectiveChapterIds.length > 0,
-  });
-
-  // Per-chapter pipeline counts for chapter cards
+  // Per-chapter pipeline counts
   const { data: perChapterCounts } = useQuery({
     queryKey: ["va-per-chapter-counts", effectiveChapterIds],
     queryFn: async () => {
@@ -133,12 +98,36 @@ export default function VaDashboard() {
         .from("chapter_problems")
         .select("chapter_id, pipeline_status")
         .in("chapter_id", effectiveChapterIds);
-      const counts: Record<string, { total: number; completed: number }> = {};
-      effectiveChapterIds.forEach(id => { counts[id] = { total: 0, completed: 0 }; });
+      const counts: Record<string, { total: number; imported: number; generated: number; in_review: number; approved: number }> = {};
+      effectiveChapterIds.forEach(id => {
+        counts[id] = { total: 0, imported: 0, generated: 0, in_review: 0, approved: 0 };
+      });
       data?.forEach(p => {
-        if (!counts[p.chapter_id]) counts[p.chapter_id] = { total: 0, completed: 0 };
+        if (!counts[p.chapter_id]) counts[p.chapter_id] = { total: 0, imported: 0, generated: 0, in_review: 0, approved: 0 };
         counts[p.chapter_id].total++;
-        if (p.pipeline_status === "approved") counts[p.chapter_id].completed++;
+        const status = p.pipeline_status as string;
+        if (status === "imported") counts[p.chapter_id].imported++;
+        else if (status === "generated") counts[p.chapter_id].generated++;
+        else if (status === "in_review") counts[p.chapter_id].in_review++;
+        else if (status === "approved") counts[p.chapter_id].approved++;
+      });
+      return counts;
+    },
+    enabled: effectiveChapterIds.length > 0,
+  });
+
+  // Teaching assets count per chapter
+  const { data: assetCounts } = useQuery({
+    queryKey: ["va-asset-counts", effectiveChapterIds],
+    queryFn: async () => {
+      if (!effectiveChapterIds.length) return {};
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("chapter_id")
+        .in("chapter_id", effectiveChapterIds);
+      const counts: Record<string, number> = {};
+      data?.forEach(a => {
+        counts[a.chapter_id] = (counts[a.chapter_id] || 0) + 1;
       });
       return counts;
     },
@@ -147,35 +136,27 @@ export default function VaDashboard() {
 
   const getCourse = (id: string) => courseDetails?.find(c => c.id === id);
 
-  // Determine active chapter from workspace or first assigned
   const activeChapterId = workspace?.chapterId || (chapterDetails?.[0]?.id);
   const activeChapter = chapterDetails?.find(c => c.id === activeChapterId);
   const activeCourse = activeChapter ? getCourse(activeChapter.course_id) : null;
 
-  // Build stage cards
-  const stageCards = useMemo(() => {
-    if (!pipelineCounts) return { todo: [] as Array<(typeof PIPELINE_STAGES)[number] & { count: number }>, completed: [] as Array<(typeof PIPELINE_STAGES)[number] & { count: number }> };
-    const todo: Array<(typeof PIPELINE_STAGES)[number] & { count: number }> = [];
-    const completed: Array<(typeof PIPELINE_STAGES)[number] & { count: number }> = [];
+  // Build stage cards for active chapter
+  const stageCounts = useMemo(() => {
+    if (!activeChapterId || !perChapterCounts) return null;
+    const ch = perChapterCounts[activeChapterId];
+    if (!ch) return null;
+    const assets = assetCounts?.[activeChapterId] ?? 0;
+    // "remaining" for each stage
+    return [
+      { ...PIPELINE_STAGES[0], remaining: ch.imported },
+      { ...PIPELINE_STAGES[1], remaining: ch.generated },
+      { ...PIPELINE_STAGES[2], remaining: ch.in_review },
+      { ...PIPELINE_STAGES[3], remaining: ch.total > 0 ? Math.max(0, ch.total - ch.approved) : (assets > 0 ? 0 : 0) },
+    ];
+  }, [activeChapterId, perChapterCounts, assetCounts]);
 
-    PIPELINE_STAGES.forEach(stage => {
-      const count = pipelineCounts[stage.key as keyof typeof pipelineCounts] ?? 0;
-      if (count > 0) {
-        todo.push({ ...stage, count });
-      } else {
-        completed.push({ ...stage, count: 0 });
-      }
-    });
-
-    return { todo, completed };
-  }, [pipelineCounts]);
-
-  // Active task = first To Do stage
-  const activeStage = stageCards.todo[0] || null;
-
-  const handleNavigateToStage = (route: string) => {
-    navigate(route);
-  };
+  // First stage with remaining items
+  const activeStageKey = stageCounts?.find(s => s.remaining > 0)?.key;
 
   const handleSelectChapter = (ch: NonNullable<typeof chapterDetails>[number]) => {
     const co = getCourse(ch.course_id);
@@ -186,10 +167,6 @@ export default function VaDashboard() {
       chapterName: ch.chapter_name,
       chapterNumber: ch.chapter_number,
     });
-    // Navigate to the first incomplete stage if possible
-    if (activeStage) {
-      navigate(activeStage.route);
-    }
   };
 
   if (isLoading) {
@@ -204,7 +181,7 @@ export default function VaDashboard() {
 
   return (
     <SurviveSidebarLayout>
-      <div className="space-y-5 pb-8">
+      <div className="space-y-6 pb-8">
         {/* ═══ HEADER ═══ */}
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-bold text-foreground">
@@ -215,144 +192,104 @@ export default function VaDashboard() {
           </Badge>
         </div>
 
-        {/* ═══ ACTIVE TASK BANNER ═══ */}
-        {activeChapter && (
-          <div className="rounded-xl border-2 border-primary/40 bg-primary/5 p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold text-primary uppercase tracking-widest">Active Chapter</span>
-            </div>
-            <h2 className="text-xl font-bold text-foreground mb-0.5">
-              {activeCourse?.code} — Ch {activeChapter.chapter_number}: {activeChapter.chapter_name}
-            </h2>
-
-            {activeStage ? (
-              <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-3">
-                  {(() => {
-                    const Icon = activeStage.icon;
-                    return <div className="h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>;
-                  })()}
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Your Current Task</p>
-                    <p className="text-base font-semibold text-foreground">
-                      {activeStage.label}
-                      <span className="ml-2 text-muted-foreground font-normal">
-                        — {activeStage.count} {activeStage.count === 1 ? "item" : "items"} remaining
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => handleNavigateToStage(activeStage.route)}
-                  className="gap-2"
-                >
-                  Go to {activeStage.label}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="mt-4 flex items-center gap-2 text-emerald-400">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="text-sm font-medium">All stages complete for this chapter!</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ═══ TABS: To Do / Help ═══ */}
-        <Tabs defaultValue="tasks" className="w-full">
+        <Tabs defaultValue="pipeline" className="w-full">
           <TabsList className="bg-secondary/50">
-            <TabsTrigger value="tasks" className="text-xs">Tasks</TabsTrigger>
+            <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
             <TabsTrigger value="help" className="text-xs">Help / SOP</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tasks" className="space-y-5 mt-3">
-            {/* ─── TO DO ─── */}
-            {stageCards.todo.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">To Do</h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {stageCards.todo.map(stage => {
-                    const Icon = stage.icon;
-                    return (
-                      <Card
-                        key={stage.key}
-                        className="border-border hover:border-primary/40 transition-colors cursor-pointer group"
-                        onClick={() => handleNavigateToStage(stage.route)}
-                      >
-                        <CardContent className="p-4 flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <Icon className="h-4.5 w-4.5 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-foreground">{stage.label}</p>
-                            <p className="text-xs text-muted-foreground">{stage.description}</p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-lg font-bold text-foreground tabular-nums">{stage.count}</p>
-                            <p className="text-[9px] text-muted-foreground">remaining</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+          <TabsContent value="pipeline" className="space-y-6 mt-3">
+            {/* ═══ ACTIVE CHAPTER ═══ */}
+            {activeChapter && (
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">Active Chapter</span>
                 </div>
+                <h2 className="text-xl font-bold text-foreground">
+                  {activeCourse?.code} — Ch {activeChapter.chapter_number}: {activeChapter.chapter_name}
+                </h2>
               </div>
             )}
 
-            {/* ─── COMPLETED ─── */}
-            {stageCards.completed.length > 0 && (
-              <Collapsible open={showCompleted} onOpenChange={setShowCompleted}>
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
-                    {showCompleted ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                    <span className="font-medium">Show Completed ({stageCards.completed.length})</span>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2">
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {stageCards.completed.map(stage => {
-                      const Icon = stage.icon;
-                      return (
-                        <Card key={stage.key} className="border-border/50 bg-card/50 opacity-70">
-                          <CardContent className="p-4 flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                              <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-muted-foreground">{stage.label}</p>
-                              <p className="text-xs text-muted-foreground/70">{stage.description}</p>
-                            </div>
-                            <span className="text-[10px] text-emerald-400 font-medium">Done ✓</span>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+            {/* ═══ PIPELINE STAGE CARDS ═══ */}
+            {stageCounts && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {stageCounts.map(stage => {
+                  const Icon = stage.icon;
+                  const isDone = stage.remaining === 0;
+                  const isActive = stage.key === activeStageKey;
+                  return (
+                    <Card
+                      key={stage.key}
+                      className={`transition-all cursor-pointer group ${
+                        isActive
+                          ? "border-2 border-primary shadow-sm shadow-primary/10 bg-primary/5"
+                          : isDone
+                            ? "border-border/50 bg-card/60"
+                            : "border-border hover:border-primary/30"
+                      }`}
+                      onClick={() => navigate(stage.route)}
+                    >
+                      <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                          isDone
+                            ? "bg-green-500/10"
+                            : isActive
+                              ? "bg-primary/15"
+                              : "bg-muted"
+                        }`}>
+                          {isDone ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-400" />
+                          ) : (
+                            <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                          )}
+                        </div>
+                        <p className={`text-sm font-semibold ${isDone ? "text-muted-foreground" : "text-foreground"}`}>
+                          {stage.label}
+                        </p>
+                        {isDone ? (
+                          <span className="text-xs text-green-400 font-medium">Done ✓</span>
+                        ) : (
+                          <>
+                            <p className="text-2xl font-bold text-foreground tabular-nums">{stage.remaining}</p>
+                            <Button size="sm" variant={isActive ? "default" : "outline"} className="text-[11px] h-7 gap-1 w-full">
+                              Go <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
 
-            {/* ─── ASSIGNED CHAPTERS ─── */}
-            {chapterDetails && chapterDetails.length > 0 && (
-              <div className="space-y-2 pt-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Assigned Chapters</h3>
+            {!activeChapter && (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                No chapters assigned yet. Contact your team lead to get started.
+              </div>
+            )}
+
+            {/* ═══ ASSIGNED CHAPTERS ═══ */}
+            {chapterDetails && chapterDetails.length > 1 && (
+              <div className="space-y-3">
+                <div className="border-t border-border pt-4">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Your Chapters</h3>
+                </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {chapterDetails
                     .sort((a, b) => a.chapter_number - b.chapter_number)
                     .map(ch => {
                       const co = getCourse(ch.course_id);
-                      const isActive = ch.id === activeChapterId;
+                      const isActiveChapter = ch.id === activeChapterId;
                       const counts = perChapterCounts?.[ch.id];
-                      const pct = counts && counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0;
+                      const pct = counts && counts.total > 0 ? Math.round((counts.approved / counts.total) * 100) : 0;
                       return (
                         <Card
                           key={ch.id}
                           className={`cursor-pointer transition-all ${
-                            isActive
+                            isActiveChapter
                               ? "border-2 border-primary/60 bg-primary/5 shadow-sm shadow-primary/10"
                               : "border-border hover:border-primary/30"
                           }`}
@@ -361,12 +298,12 @@ export default function VaDashboard() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between mb-2">
                               <div>
-                                <p className={`text-sm font-semibold ${isActive ? "text-foreground" : "text-foreground/80"}`}>
+                                <p className={`text-sm font-semibold ${isActiveChapter ? "text-foreground" : "text-foreground/80"}`}>
                                   Ch {ch.chapter_number}: {ch.chapter_name}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">{co?.code}</p>
+                                <p className="text-[10px] text-muted-foreground">{co?.code} — {co?.course_name}</p>
                               </div>
-                              {isActive && (
+                              {isActiveChapter && (
                                 <Badge className="text-[8px] bg-primary/15 text-primary border-0">Active</Badge>
                               )}
                             </div>
@@ -376,7 +313,7 @@ export default function VaDashboard() {
                             </div>
                             {counts && (
                               <p className="text-[9px] text-muted-foreground mt-1">
-                                {counts.completed} of {counts.total} approved
+                                {counts.approved} of {counts.total} approved
                               </p>
                             )}
                           </CardContent>
@@ -386,27 +323,6 @@ export default function VaDashboard() {
                 </div>
               </div>
             )}
-
-            {/* ─── FULL WORK QUEUE (collapsible) ─── */}
-            <Collapsible open={showFullQueue} onOpenChange={setShowFullQueue}>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 mt-2">
-                  {showFullQueue ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                  <span className="font-medium">Full Work Queue</span>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                {activeRole === "content_creation_va" && (
-                  <ContentCreationQueueInline chapterIds={effectiveChapterIds} vaAccountId={activeVa?.id} />
-                )}
-                {activeRole === "sheet_prep_va" && (
-                  <SheetPrepQueueInline chapterIds={effectiveChapterIds} />
-                )}
-                {(activeRole === "lead_va" || activeRole === "admin") && (
-                  <LeadVaQueueInline chapterIds={effectiveChapterIds} />
-                )}
-              </CollapsibleContent>
-            </Collapsible>
           </TabsContent>
 
           {/* ═══ HELP / SOP ═══ */}
@@ -443,22 +359,4 @@ export default function VaDashboard() {
       </div>
     </SurviveSidebarLayout>
   );
-}
-
-// ─── Inline role-specific queue components (thin wrappers importing the originals) ───
-
-import { ContentCreationDashboard } from "@/components/va-dashboards/ContentCreationDashboard";
-import { SheetPrepDashboard } from "@/components/va-dashboards/SheetPrepDashboard";
-import { LeadVaDashboard } from "@/components/va-dashboards/LeadVaDashboard";
-
-function ContentCreationQueueInline({ chapterIds, vaAccountId }: { chapterIds: string[]; vaAccountId?: string }) {
-  return <ContentCreationDashboard chapterIds={chapterIds} vaAccountId={vaAccountId} />;
-}
-
-function SheetPrepQueueInline({ chapterIds }: { chapterIds: string[] }) {
-  return <SheetPrepDashboard chapterIds={chapterIds} />;
-}
-
-function LeadVaQueueInline({ chapterIds }: { chapterIds: string[] }) {
-  return <LeadVaDashboard chapterIds={chapterIds} />;
 }
