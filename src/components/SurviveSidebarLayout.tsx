@@ -264,8 +264,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {isVa ? `${vaAccount?.full_name} — VA Test` : "Survive"}
           </h1>
 
-          {/* Workspace Selectors — hidden for VA users (locked to assigned chapter) */}
-          {!isVa && (
+          {/* Workspace Selectors — admin sees all courses+chapters, VA/impersonation sees only assigned chapters */}
+          {!isVaOrImpersonating ? (
             <div className="hidden sm:flex items-center gap-2 ml-2">
               <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
                 <SelectTrigger className="h-7 text-[11px] w-32 bg-muted/50 border-border text-foreground">
@@ -290,7 +290,22 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 </SelectContent>
               </Select>
             </div>
-          )}
+          ) : vaFilteredChapters.length > 1 ? (
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange}>
+                <SelectTrigger className="h-7 text-[11px] w-52 bg-muted/50 border-border text-foreground">
+                  <SelectValue placeholder="Select chapter…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vaFilteredChapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">
+                      Ch {c.chapter_number} — {c.chapter_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
 
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
