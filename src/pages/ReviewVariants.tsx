@@ -10,7 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Inbox, Loader2, ChevronRight, Check, Zap } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Inbox, Loader2, ChevronRight, Check, Zap, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 
@@ -294,7 +295,70 @@ export default function ReviewVariants() {
     }
   };
 
-  // ─── Empty states ───
+  const [clearingVariants, setClearingVariants] = useState(false);
+
+  const handleClearVariants = async () => {
+    if (!chapterId) return;
+    setClearingVariants(true);
+    try {
+      // Get all generated/approved problems in this chapter
+      const { data: problems } = await supabase
+        .from("chapter_problems")
+        .select("id")
+        .eq("chapter_id", chapterId)
+        .in("status", ["generated", "approved"]);
+      if (!problems || problems.length === 0) {
+        toast.info("No variants to clear.");
+        setClearingVariants(false);
+        return;
+      }
+      const problemIds = problems.map(p => p.id);
+
+      // Delete all non-archived variants for these problems
+      const { error: delErr } = await supabase
+        .from("problem_variants")
+        .delete()
+        .in("base_problem_id", problemIds);
+      if (delErr) throw delErr;
+
+      // Delete any teaching assets that were created from these problems
+      const { error: taDelErr } = await supabase
+        .from("teaching_assets")
+        .delete()
+        .in("base_raw_problem_id", problemIds);
+      if (taDelErr) throw taDelErr;
+
+      // Reset source problems back to imported/ready state
+      const { error: updateErr } = await supabase
+        .from("chapter_problems")
+        .update({ status: "ready", pipeline_status: "imported" } as any)
+        .in("id", problemIds);
+      if (updateErr) throw updateErr;
+
+      await logActivity({
+        actor_type: "user",
+        entity_type: "chapter",
+        entity_id: chapterId,
+        event_type: "variants_cleared",
+        message: `Cleared ${problemIds.length} source problems back to generate stage`,
+        payload_json: { count: problemIds.length },
+      });
+
+      toast.success(`Cleared variants for ${problemIds.length} problems — ready to regenerate`);
+      setReviewStarted(false);
+      setCandidates([]);
+      autoStarted.current = false;
+      qc.invalidateQueries({ queryKey: ["review-generated-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+      qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
+    } catch (err: any) {
+      toast.error(`Clear failed: ${err.message}`);
+    } finally {
+      setClearingVariants(false);
+    }
+  };
+
   if (!chapterId || !courseId) {
     return (
       <SurviveSidebarLayout>
@@ -385,6 +449,28 @@ export default function ReviewVariants() {
                 {speedMode ? "Speed" : "Full"}
               </span>
             </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
+                  <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all variants?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will delete all generated variants and teaching assets for this chapter's problems, resetting them back to the Generate stage. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearVariants} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Clear All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReviewStarted(false); setCandidates([]); }}>
               <Check className="h-3 w-3 mr-1" /> Done
             </Button>
