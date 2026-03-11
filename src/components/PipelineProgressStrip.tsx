@@ -113,17 +113,24 @@ export function PipelineProgressStrip() {
     }
 
     return (
-      <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
-        <p className={cn(
-          "uppercase tracking-wider mb-1 transition-colors",
-          isActivePage ? "text-foreground font-bold text-[10px]" : "text-muted-foreground/60 group-hover:text-muted-foreground text-[9px]"
-        )}>{stage.label}</p>
-        <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
-          <div className="h-full w-full bg-muted">
-            <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
-          </div>
-        </div>
-      </button>
+      <Tooltip key={stage.key}>
+        <TooltipTrigger asChild>
+          <button onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
+            <p className={cn(
+              "uppercase tracking-wider mb-1 transition-colors",
+              isActivePage ? "text-foreground font-bold text-[10px]" : "text-muted-foreground/60 group-hover:text-muted-foreground text-[9px]"
+            )}>{stage.label}</p>
+            <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
+              <div className="h-full w-full bg-muted">
+                <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
+              </div>
+            </div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs text-xs">
+          {stage.tip}
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
