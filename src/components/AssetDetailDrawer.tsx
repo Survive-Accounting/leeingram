@@ -1143,10 +1143,6 @@ export default function AssetDetailDrawer({
     </Dialog>
   );
 }
-              {!hasJE ? (
-                <div className="text-center py-12 text-muted-foreground text-sm">
-                  No journal entries for this asset.
-                </div>
               ) : (
                 <>
                   <div className="flex gap-1 flex-wrap">
