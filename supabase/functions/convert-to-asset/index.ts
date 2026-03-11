@@ -776,13 +776,17 @@ serve(async (req) => {
 
       let seqNum: number;
       if ((existingVariants || 0) === 0) {
-        const { data: distinctSources } = await supabase
+        // Count the highest existing P-number in this chapter to get next sequential
+        const { data: chapterAssets } = await supabase
           .from("teaching_assets")
-          .select("base_raw_problem_id")
-          .eq("chapter_id", chapterId)
-          .not("base_raw_problem_id", "is", null);
-        const uniqueSources = new Set((distinctSources || []).map((d: any) => d.base_raw_problem_id));
-        seqNum = uniqueSources.size + 1;
+          .select("asset_name")
+          .eq("chapter_id", chapterId);
+        let maxP = 0;
+        for (const a of (chapterAssets || [])) {
+          const m = a.asset_name?.match(/_P(\d+)/);
+          if (m) maxP = Math.max(maxP, parseInt(m[1], 10));
+        }
+        seqNum = maxP + 1;
       } else {
         const { data: siblings } = await supabase
           .from("teaching_assets")
