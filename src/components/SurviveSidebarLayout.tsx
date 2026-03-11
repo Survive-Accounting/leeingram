@@ -40,7 +40,6 @@ const PHASE_2_ITEMS = [
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
   { label: "Videos Ready", path: "/videos-ready", icon: Video },
   { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
-  { label: "Dashboard", path: "/dashboard", icon: BarChart3 },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
@@ -406,6 +405,22 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
             return (
               <>
+                {/* Admin: My Dashboard at top */}
+                {isLeadVaOrAdmin && !isVa && !impersonating && !sidebarCollapsed && (
+                  <Link
+                    to="/dashboard"
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-md px-3 py-2.5 mb-3 transition-colors",
+                      isActive("/dashboard")
+                        ? "bg-primary/20 text-white font-medium border border-primary/30"
+                        : "text-white/90 hover:text-white hover:bg-muted/30"
+                    )}
+                  >
+                    <BarChart3 className="h-4 w-4 shrink-0" />
+                    <span className="text-sm">My Dashboard</span>
+                  </Link>
+                )}
+
                 {!sidebarCollapsed && (
                   <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
                     Phase 1 · Teaching Asset Creation
@@ -492,32 +507,19 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               </div>
             )}
 
-            {/* Admin: VA Admin + VA Dashboard links — hide during impersonation */}
+            {/* Admin: VA Admin link — hide during impersonation */}
             {!isVa && !impersonating && !sidebarCollapsed && (
-              <>
-                <Link
-                  to="/va-dashboard"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/va-dashboard")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <LayoutDashboard className="h-3.5 w-3.5" /> VA Dashboard
-                </Link>
-                <Link
-                  to="/va-admin"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/va-admin")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <Users className="h-3.5 w-3.5" /> VA Admin
-                </Link>
-              </>
+              <Link
+                to="/va-admin"
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                  isActive("/va-admin")
+                    ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                    : "text-white/70 hover:text-white hover:bg-muted/30"
+                )}
+              >
+                <Users className="h-3.5 w-3.5" /> VA Admin
+              </Link>
             )}
           </div>
         </nav>

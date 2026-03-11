@@ -9,7 +9,7 @@ import aorakiBg from "@/assets/aoraki-bg.jpg";
 
 
 const WORK_DOMAINS = [
-  { key: "survive", label: "Survive Accounting", route: "/survive" },
+  { key: "survive", label: "Survive Accounting", route: "/dashboard" },
   { key: "prof_ingram", label: "Prof Ingram", route: "/prof-ingram" },
   { key: "leeingram", label: "Leeingram.co", route: "/leeingram" },
 ];
