@@ -17,6 +17,7 @@ import { logActivity } from "@/lib/activityLogger";
 export default function ReviewVariants() {
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const chapterId = workspace?.chapterId;
   const courseId = workspace?.courseId;
 
