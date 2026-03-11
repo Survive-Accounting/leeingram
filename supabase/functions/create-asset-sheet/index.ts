@@ -162,7 +162,37 @@ async function copyTemplateWithArchive(
   return { fileId: copyRes.id, isUpdate: existing.length > 0 };
 }
 
-// ── Metadata writer (Column A=Field, Column B=Value, Column F=VA Actions) ───
+// ── Ensure a tab exists ──────────────────────────────────────────────
+
+async function ensureTabExists(token: string, spreadsheetId: string, tabName: string) {
+  try {
+    await googleFetch(
+      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/'${tabName}'!A1?majorDimension=ROWS`,
+      token
+    );
+  } catch {
+    try {
+      await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+        method: "POST",
+        body: JSON.stringify({
+          requests: [{ addSheet: { properties: { title: tabName } } }],
+        }),
+      });
+    } catch (e) { console.error(`${tabName} tab creation failed:`, e); }
+  }
+}
+
+// ── Write values to a range (preserves formatting) ───────────────────
+
+async function writeValues(token: string, spreadsheetId: string, range: string, values: string[][]) {
+  await googleFetch(
+    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
+    token,
+    { method: "PUT", body: JSON.stringify({ range, majorDimension: "ROWS", values }) }
+  );
+}
+
+// ── Metadata writer ──────────────────────────────────────────────────
 
 interface MetadataParams {
   asset_code: string;
@@ -196,8 +226,6 @@ function makeHyperlink(label: string, url: string): string {
 }
 
 async function writeMetadata(token: string, spreadsheetId: string, params: MetadataParams) {
-  // Build rows: Column A = Field, Column B = Value, Columns C-E empty, Column F = VA Actions
-  // VA action links in Column F (rows 2-5)
   const vaActionLinks = [
     makeHyperlink("✅ Mark Sheet Ready for Review", params.mark_verified_url),
     makeHyperlink("⚠️ Flag Issue", params.flag_issue_url),
@@ -213,52 +241,283 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
     ["exercise_number", params.exercise_number, "", "", "", vaActionLinks[3]],
     ["asset_id", params.asset_id, "", "", "", ""],
     ["created_at", params.created_at, "", "", "", ""],
-    ["sheet_master_url", params.sheet_master_url, "", "", "", ""],
-    ["sheet_practice_url", params.sheet_practice_url, "", "", "", ""],
-    ["sheet_promo_url", params.sheet_promo_url, "", "", "", ""],
-    ["sheet_path_url", params.sheet_path_url, "", "", "", ""],
-    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
-    ["lw_video_link", params.lw_video_link, "", "", "", ""],
-    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
-    ["internal_asset_page", params.internal_asset_page, "", "", "", ""],
-    ["flag_issue_url", params.flag_issue_url, "", "", "", ""],
-    ["mark_verified_url", params.mark_verified_url, "", "", "", ""],
-    ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
     ["asset_type", params.asset_type, "", "", "", ""],
     ["variant_letter", params.variant_letter, "", "", "", ""],
     ["variant_count", params.variant_count, "", "", "", ""],
     ["journal_entry_count", params.journal_entry_count, "", "", "", ""],
+    ["sheet_master_url", params.sheet_master_url, "", "", "", ""],
+    ["sheet_practice_url", params.sheet_practice_url, "", "", "", ""],
+    ["sheet_promo_url", params.sheet_promo_url, "", "", "", ""],
+    ["sheet_path_url", params.sheet_path_url, "", "", "", ""],
+    ["internal_asset_page", params.internal_asset_page, "", "", "", ""],
+    ["flag_issue_url", params.flag_issue_url, "", "", "", ""],
+    ["mark_verified_url", params.mark_verified_url, "", "", "", ""],
+    ["contact_lee_url", params.contact_lee_url, "", "", "", ""],
+    ["ebook_page_link", params.ebook_page_link, "", "", "", ""],
+    ["lw_video_link", params.lw_video_link, "", "", "", ""],
+    ["lw_quiz_link", params.lw_quiz_link, "", "", "", ""],
     ["sheet_verified", params.sheet_verified, "", "", "", ""],
     ["sheet_ready_for_review", params.sheet_ready_for_review, "", "", "", ""],
   ];
 
+  await ensureTabExists(token, spreadsheetId, "METADATA");
   const range = `METADATA!A1:F${fieldRows.length}`;
-  await googleFetch(
-    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
-    token,
-    { method: "PUT", body: JSON.stringify({ range, majorDimension: "ROWS", values: fieldRows }) }
-  );
+  await writeValues(token, spreadsheetId, range, fieldRows);
 }
 
-// ── VA Instructions sheet writer ─────────────────────────────────────
+// ── Hidden_Data writer ───────────────────────────────────────────────
+
+interface HiddenDataParams {
+  problem_text: string;
+  problem_text_highlighted: string;
+  answer_summary: string;
+  journal_entry_raw: string;
+  worked_steps: string;
+  concept_notes: string;
+  highlight_tags: string;
+  validation_notes: string;
+}
+
+async function writeHiddenData(token: string, spreadsheetId: string, params: HiddenDataParams) {
+  await ensureTabExists(token, spreadsheetId, "Hidden_Data");
+
+  const fieldRows: string[][] = [
+    ["Field", "Value"],
+    ["problem_text", params.problem_text],
+    ["problem_text_highlighted", params.problem_text_highlighted],
+    ["answer_summary", params.answer_summary],
+    ["journal_entry_raw", params.journal_entry_raw],
+    ["worked_steps", params.worked_steps],
+    ["concept_notes", params.concept_notes],
+    ["highlight_tags", params.highlight_tags],
+    ["validation_notes", params.validation_notes],
+  ];
+
+  const range = `Hidden_Data!A1:B${fieldRows.length}`;
+  await writeValues(token, spreadsheetId, range, fieldRows);
+}
+
+// ── Highlight application ────────────────────────────────────────────
+
+function applyHighlightsToText(text: string, highlights: any[]): string {
+  if (!Array.isArray(highlights) || highlights.length === 0 || !text) return text;
+
+  // Sort by position, apply non-overlapping highlights
+  const matches: Array<{ start: number; end: number; text: string }> = [];
+  for (const h of highlights) {
+    if (!h?.text || typeof h.text !== "string") continue;
+    const idx = text.indexOf(h.text);
+    if (idx !== -1) {
+      matches.push({ start: idx, end: idx + h.text.length, text: h.text });
+    }
+  }
+  matches.sort((a, b) => a.start - b.start);
+
+  // Remove overlaps
+  const clean: typeof matches = [];
+  for (const m of matches) {
+    if (clean.length === 0 || m.start >= clean[clean.length - 1].end) {
+      clean.push(m);
+    }
+  }
+
+  // Build result with < > markers
+  let result = "";
+  let pos = 0;
+  for (const m of clean) {
+    result += text.slice(pos, m.start);
+    result += `<${m.text}>`;
+    pos = m.end;
+  }
+  result += text.slice(pos);
+  return result;
+}
+
+function extractHighlightTags(highlights: any[]): string {
+  if (!Array.isArray(highlights) || highlights.length === 0) return "";
+  return highlights
+    .filter(h => h?.text && h?.type)
+    .map(h => `${h.type}: ${h.text}`)
+    .join("\n");
+}
+
+// ── JournalEntries writer ────────────────────────────────────────────
+
+interface JERow {
+  account_name?: string;
+  account?: string;
+  debit?: number | null;
+  credit?: number | null;
+  side?: string;
+}
+
+interface JEDateEntry {
+  date?: string;
+  entry_date?: string;
+  requirement?: string;
+  rows?: JERow[];
+  accounts?: JERow[];
+}
+
+function normalizeJEFromJson(json: any): JEDateEntry[] {
+  if (!json) return [];
+  try {
+    const data = typeof json === "string" ? JSON.parse(json) : json;
+
+    // Format: scenario_sections
+    if (data.scenario_sections && Array.isArray(data.scenario_sections)) {
+      const entries: JEDateEntry[] = [];
+      for (const section of data.scenario_sections) {
+        const dateEntries = section.entries_by_date || section.journal_entries || [];
+        for (const entry of dateEntries) {
+          entries.push({
+            date: entry.date || entry.entry_date || entry.requirement || section.label || "",
+            rows: entry.rows || entry.accounts || [],
+          });
+        }
+      }
+      return entries;
+    }
+
+    // Format: flat array
+    if (Array.isArray(data)) {
+      return data.map((entry: any) => ({
+        date: entry.date || entry.entry_date || entry.requirement || "",
+        rows: entry.accounts || entry.rows || [],
+      }));
+    }
+
+    // Format: { parts: [...] }
+    if (data.parts && Array.isArray(data.parts)) {
+      const entries: JEDateEntry[] = [];
+      for (const part of data.parts) {
+        for (const entry of (part.journal_entries || part.entries || [])) {
+          entries.push({
+            date: entry.date || entry.requirement || "",
+            rows: entry.accounts || entry.rows || [],
+          });
+        }
+      }
+      return entries;
+    }
+
+    // Format: { journal_entries: [...] }
+    const arr = data.journal_entries || data.entries;
+    if (Array.isArray(arr)) {
+      return arr.map((entry: any) => ({
+        date: entry.date || entry.entry_date || entry.requirement || "",
+        rows: entry.accounts || entry.rows || [],
+      }));
+    }
+
+    return [];
+  } catch { return []; }
+}
+
+function jeToRawText(entries: JEDateEntry[]): string {
+  if (entries.length === 0) return "";
+  const lines: string[] = [];
+  for (const entry of entries) {
+    if (entry.date) lines.push(entry.date);
+    for (const row of (entry.rows || [])) {
+      const acct = row.account_name || row.account || "";
+      const isCredit = row.side === "credit" || (row.credit != null && row.credit !== 0 && (row.debit == null || row.debit === 0));
+      const indent = isCredit ? "    " : "";
+      const amt = isCredit
+        ? (row.credit != null ? `  ${Number(row.credit).toLocaleString()}` : "")
+        : (row.debit != null ? `  ${Number(row.debit).toLocaleString()}` : "");
+      lines.push(`${indent}${acct}${amt}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n").trim();
+}
+
+type JETemplateMode = "completed" | "accounts_only" | "amounts_only" | "blank";
+
+function buildJETemplateRows(entries: JEDateEntry[], mode: JETemplateMode): string[][] {
+  const rows: string[][] = [];
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (i > 0) rows.push(["", "", "", ""]); // blank separator
+
+    // Date row
+    const dateLabel = (entry.date || "").replace(/\s*\(.*?\)\s*$/, "").trim();
+    rows.push([dateLabel, "", "", ""]);
+
+    for (const row of (entry.rows || [])) {
+      const acct = row.account_name || row.account || "";
+      const isCredit = row.side === "credit" || (row.credit != null && row.credit !== 0 && (row.debit == null || row.debit === 0));
+      const debitVal = row.debit != null && row.debit !== 0 ? String(row.debit) : "";
+      const creditVal = row.credit != null && row.credit !== 0 ? String(row.credit) : "";
+
+      switch (mode) {
+        case "completed":
+          rows.push([isCredit ? `    ${acct}` : acct, "", debitVal, creditVal]);
+          break;
+        case "accounts_only":
+          // Show accounts, hide amounts
+          rows.push([isCredit ? `    ${acct}` : acct, "", "", ""]);
+          break;
+        case "amounts_only":
+          // Hide accounts, show amounts
+          rows.push([isCredit ? "    ???" : "???", "", debitVal, creditVal]);
+          break;
+        case "blank":
+          // All blanked out
+          rows.push([isCredit ? "    ???" : "???", "", "", ""]);
+          break;
+      }
+    }
+  }
+  return rows;
+}
+
+async function writeJournalEntries(token: string, spreadsheetId: string, jeJson: any) {
+  await ensureTabExists(token, spreadsheetId, "JournalEntries");
+
+  const entries = normalizeJEFromJson(jeJson);
+  if (entries.length === 0) {
+    await writeValues(token, spreadsheetId, "JournalEntries!A1:D1", [
+      ["No journal entries for this asset."]
+    ]);
+    return;
+  }
+
+  const allRows: string[][] = [];
+
+  // Header
+  allRows.push(["COMPLETED JOURNAL ENTRIES"]);
+  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(...buildJETemplateRows(entries, "completed"));
+  allRows.push([""]); allRows.push([""]);
+
+  // Accounts only template
+  allRows.push(["TEMPLATE — ACCOUNT TITLES MISSING"]);
+  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(...buildJETemplateRows(entries, "amounts_only"));
+  allRows.push([""]); allRows.push([""]);
+
+  // Amounts only template
+  allRows.push(["TEMPLATE — AMOUNTS MISSING"]);
+  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(...buildJETemplateRows(entries, "accounts_only"));
+  allRows.push([""]); allRows.push([""]);
+
+  // Fully blank template
+  allRows.push(["TEMPLATE — FULLY BLANK"]);
+  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(...buildJETemplateRows(entries, "blank"));
+
+  const range = `JournalEntries!A1:D${allRows.length}`;
+  await writeValues(token, spreadsheetId, range, allRows);
+}
+
+// ── VA Instructions writer ───────────────────────────────────────────
 
 async function writeVaInstructions(token: string, spreadsheetId: string, params: MetadataParams) {
-  // Ensure VA Instructions tab exists
-  try {
-    await googleFetch(
-      `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/'VA Instructions'!A1?majorDimension=ROWS`,
-      token
-    );
-  } catch {
-    try {
-      await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-        method: "POST",
-        body: JSON.stringify({
-          requests: [{ addSheet: { properties: { title: "VA Instructions" } } }],
-        }),
-      });
-    } catch (e) { console.error("VA Instructions tab creation failed:", e); }
-  }
+  await ensureTabExists(token, spreadsheetId, "VA Instructions");
 
   // Clear existing content
   try {
@@ -313,11 +572,7 @@ async function writeVaInstructions(token: string, spreadsheetId: string, params:
   ];
 
   const range = `'VA Instructions'!A1:A${rows.length}`;
-  await googleFetch(
-    `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
-    token,
-    { method: "PUT", body: JSON.stringify({ range, majorDimension: "ROWS", values: rows }) }
-  );
+  await writeValues(token, spreadsheetId, range, rows);
 }
 
 // ── DB fetch helper ──────────────────────────────────────────────────
@@ -379,7 +634,20 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, asset
     }
   }
 
-  return { asset, chapter, course, flagCount, variantCount, jeCount };
+  // Fetch variant highlights if base_raw_problem_id exists
+  let highlights: any[] = [];
+  if (asset.base_raw_problem_id) {
+    const hlRes = await fetch(
+      `${supabaseUrl}/rest/v1/problem_variants?base_problem_id=eq.${asset.base_raw_problem_id}&variant_status=eq.approved&select=highlight_key_json&limit=1`,
+      { headers: authHeaders }
+    );
+    const hlData = await hlRes.json();
+    if (hlData?.[0]?.highlight_key_json && Array.isArray(hlData[0].highlight_key_json)) {
+      highlights = hlData[0].highlight_key_json;
+    }
+  }
+
+  return { asset, chapter, course, flagCount, variantCount, jeCount, highlights };
 }
 
 // ── Extract variant letter from asset_name ───────────────────────────
@@ -395,6 +663,18 @@ function resolveReadyForReview(status: string): string {
   if (status === "ready_for_review") return "Needs Review";
   if (status === "finalized") return "Finalized";
   return "No";
+}
+
+// ── Build answer summary from parts or solution text ─────────────────
+
+function buildAnswerSummary(asset: any): string {
+  const solutionText = asset.survive_solution_text || "";
+  // If there's structured parts data, summarize it
+  if (solutionText) {
+    // Truncate very long solutions for the sheet
+    return solutionText.length > 5000 ? solutionText.slice(0, 5000) + "…" : solutionText;
+  }
+  return "";
 }
 
 // ── Main handler ─────────────────────────────────────────────────────
@@ -435,7 +715,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     // ── Fetch all asset data server-side ──────────────────────────────
-    const { asset, chapter, course, flagCount, variantCount, jeCount } = await fetchAssetData(
+    const { asset, chapter, course, flagCount, variantCount, jeCount, highlights } = await fetchAssetData(
       supabaseUrl, serviceRoleKey, asset_id
     );
 
@@ -505,7 +785,7 @@ Deno.serve(async (req) => {
     const practiceUrl = results.practice?.url || "";
     const promoUrl = results.promo?.url || "";
 
-    // ── Populate Metadata + VA Instructions on Master Sheet ─────────
+    // ── Populate tabs on Master Sheet ────────────────────────────────
     if (results.master) {
       const spreadsheetId = results.master.fileId;
       const appBaseUrl = "https://leeingram.lovable.app";
@@ -535,33 +815,35 @@ Deno.serve(async (req) => {
         sheet_ready_for_review: resolveReadyForReview(asset.google_sheet_status || "none"),
       };
 
-      // Ensure METADATA tab exists
-      try {
-        await googleFetch(
-          `${GOOGLE_SHEETS_API}/${spreadsheetId}/values/METADATA!A1?majorDimension=ROWS`,
-          token
-        );
-      } catch {
-        try {
-          await googleFetch(`${GOOGLE_SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
-            method: "POST",
-            body: JSON.stringify({
-              requests: [{ addSheet: { properties: { title: "METADATA" } } }],
-            }),
-          });
-        } catch (e) { console.error("METADATA tab creation failed:", e); }
-      }
-
-      // NOTE: We do NOT clear the METADATA tab — the template contains formatting,
-      // merged cells, and formulas (e.g. MasterWhiteboard pulls from METADATA).
-      // We only overwrite cell values via the values API, preserving all formatting.
-
+      // 1. METADATA tab
       await writeMetadata(token, spreadsheetId, metadataParams);
       console.log("Metadata populated on Master sheet");
 
-      // Write VA Instructions sheet
+      // 2. Hidden_Data tab
+      const problemText = asset.survive_problem_text || "";
+      const highlightedText = applyHighlightsToText(problemText, highlights);
+      const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
+
+      const hiddenDataParams: HiddenDataParams = {
+        problem_text: problemText,
+        problem_text_highlighted: highlightedText,
+        answer_summary: buildAnswerSummary(asset),
+        journal_entry_raw: jeToRawText(jeEntries),
+        worked_steps: asset.survive_solution_text || "",
+        concept_notes: "", // future use
+        highlight_tags: extractHighlightTags(highlights),
+        validation_notes: "", // future use
+      };
+      await writeHiddenData(token, spreadsheetId, hiddenDataParams);
+      console.log("Hidden_Data populated on Master sheet");
+
+      // 3. JournalEntries tab
+      await writeJournalEntries(token, spreadsheetId, asset.journal_entry_completed_json);
+      console.log("JournalEntries populated on Master sheet");
+
+      // 4. VA Instructions tab
       await writeVaInstructions(token, spreadsheetId, metadataParams);
-      console.log("VA Instructions sheet populated on Master sheet");
+      console.log("VA Instructions populated on Master sheet");
     }
 
     // ── Persist sheet info back to DB ─────────────────────────────────
