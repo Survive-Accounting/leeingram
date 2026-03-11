@@ -1253,6 +1253,10 @@ STRICT OUTPUT QUALITY RULES (CRITICAL):
 3. ANSWER CONSISTENCY: answer_only must match the final_answer values from text parts.
 4. CLEAN STEPS FORMAT: Compact calculations, no narrative filler.
 
+INSTRUCTION EXTRACTION (REQUIRED for every candidate):
+- problem_context: The descriptive scenario/background from the problem text (company description, given information). Do NOT include the "Required:" instructions here.
+- instructions: An array of individual instruction strings extracted from the "Required:" section of the problem. Each instruction is a single task (e.g. "Calculate the semiannual interest payment"). Extract up to 5 instructions. If the problem has lettered requirements like (a), (b), (c), strip the letter prefix and just include the instruction text.
+
 SUPPLEMENTAL CONTENT (REQUIRED for every candidate):
 - important_formulas: List of formulas/equations needed to solve this problem, one per line. Only include formulas actually relevant.
 - concept_notes: 2-5 bullet points explaining key accounting concepts tested. Write for a student who understands basics.
