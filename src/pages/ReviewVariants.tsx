@@ -50,7 +50,7 @@ export default function ReviewVariants() {
   useEffect(() => {
     if (!autoStarted.current && generatedProblems.length > 0 && !reviewStarted) {
       autoStarted.current = true;
-      startReview(0);
+      startReviewSkippingEmpty(0);
     }
   }, [generatedProblems.length]);
 
