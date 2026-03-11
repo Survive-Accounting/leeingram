@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle, RotateCcw } from "lucide-react";
 import { logActivity } from "@/lib/activityLogger";
 import { toast } from "sonner";
+import { InfoTip } from "@/components/InfoTip";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
@@ -485,6 +486,7 @@ export default function ProblemBank() {
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => bulkMarkReady.mutate(Array.from(selectedIds))} disabled={bulkMarkReady.isPending}>
               <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Ready ({selectedIds.size})
             </Button>
+            <InfoTip text="Marks this source problem as ready to be generated into a Survive Teaching Asset. Only Ready problems appear in the Generate queue." />
             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => bulkMarkNotReady.mutate(Array.from(selectedIds))} disabled={bulkMarkNotReady.isPending}>
               Mark Not Ready ({selectedIds.size})
             </Button>

@@ -17,6 +17,7 @@ import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Timer } from "lucide-react";
 import { toast } from "sonner";
+import { InfoTip } from "@/components/InfoTip";
 
 function formatElapsed(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -161,7 +162,10 @@ export default function ChapterWorkspace() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="problems">Survive Teaching Assets</TabsTrigger>
-          <TabsTrigger value="dependent">Dependent</TabsTrigger>
+          <TabsTrigger value="dependent" className="inline-flex items-center gap-1">
+            Dependent
+            <InfoTip text="Some textbook problems reference another problem's data. You can combine up to 4 related source problems so they are generated together as one teaching asset." />
+          </TabsTrigger>
           {!isContentVa && <TabsTrigger value="generation">Generation Runs</TabsTrigger>}
           {!isContentVa && <TabsTrigger value="activity">Activity Log</TabsTrigger>}
         </TabsList>

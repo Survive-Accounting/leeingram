@@ -6,17 +6,18 @@ import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { resolveEffectiveRole, ROLE_LABELS, type EffectiveRole } from "@/lib/rolePermissions";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STAGES = [
-  { key: "imported", label: "Import", path: "/problem-bank" },
-  { key: "generated", label: "Generate", path: "/content" },
-  { key: "reviewed", label: "Review", path: "/review" },
-  { key: "approved", label: "Teaching Assets", path: "/assets-library" },
-  { key: "mc_generated", label: "MC Generator", path: "/question-review" },
-  { key: "quizzes_ready", label: "Quizzes Ready", path: "/quizzes-ready" },
-  { key: "video_pending", label: "Video Pending", path: "/video-pending" },
-  { key: "video_ready", label: "Videos Ready", path: "/videos-ready" },
-  { key: "deployed", label: "Deploy", path: "/deployment" },
+  { key: "imported", label: "Import", path: "/problem-bank", tip: "Paste textbook screenshots and tag source problems for this chapter." },
+  { key: "generated", label: "Generate", path: "/content", tip: "AI generates Survive Teaching Asset variants from imported source problems." },
+  { key: "reviewed", label: "Review", path: "/review", tip: "Review generated variants — approve, reject, or flag for fixes." },
+  { key: "approved", label: "Teaching Assets", path: "/assets-library", tip: "Approved assets ready for sheet prep, quizzes, and video production." },
+  { key: "mc_generated", label: "MC Generator", path: "/question-review", tip: "Review multiple-choice questions generated from teaching assets." },
+  { key: "quizzes_ready", label: "Quizzes Ready", path: "/quizzes-ready", tip: "Quiz CSV files ready for LearnWorlds import." },
+  { key: "video_pending", label: "Video Pending", path: "/video-pending", tip: "Assets waiting for walkthrough video recording." },
+  { key: "video_ready", label: "Videos Ready", path: "/videos-ready", tip: "Assets with completed videos ready for deployment." },
+  { key: "deployed", label: "Deploy", path: "/deployment", tip: "Final deployment of quizzes and videos to LearnWorlds." },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
@@ -112,17 +113,24 @@ export function PipelineProgressStrip() {
     }
 
     return (
-      <button key={stage.key} onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
-        <p className={cn(
-          "uppercase tracking-wider mb-1 transition-colors",
-          isActivePage ? "text-foreground font-bold text-[10px]" : "text-muted-foreground/60 group-hover:text-muted-foreground text-[9px]"
-        )}>{stage.label}</p>
-        <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
-          <div className="h-full w-full bg-muted">
-            <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
-          </div>
-        </div>
-      </button>
+      <Tooltip key={stage.key}>
+        <TooltipTrigger asChild>
+          <button onClick={() => navigate(stage.path)} className="text-center group cursor-pointer">
+            <p className={cn(
+              "uppercase tracking-wider mb-1 transition-colors",
+              isActivePage ? "text-foreground font-bold text-[10px]" : "text-muted-foreground/60 group-hover:text-muted-foreground text-[9px]"
+            )}>{stage.label}</p>
+            <div className={cn("h-2 rounded-full overflow-hidden transition-all", isActivePage ? "ring-1 ring-primary/50" : "")}>
+              <div className="h-full w-full bg-muted">
+                <div className={cn("h-full rounded-full transition-all duration-500", isFilled ? (isActivePage ? "bg-primary" : "bg-primary/40") : "bg-transparent")} style={{ width: isFilled ? "100%" : "0%" }} />
+              </div>
+            </div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs text-xs">
+          {stage.tip}
+        </TooltipContent>
+      </Tooltip>
     );
   };
 

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { InfoTip } from "@/components/InfoTip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -202,6 +203,7 @@ export function GenerationRunsPanel({ chapterId, courseId }: Props) {
             {batchCreating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Layers className="h-3 w-3 mr-1" />}
             Batch Generate{sourceProblems?.length ? ` (${sourceProblems.length})` : ""}
           </Button>
+          <InfoTip text="Generates Survive Teaching Assets for all selected Ready source problems at once. Each problem is processed sequentially." />
           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => refetch()}>
             <RefreshCw className="h-3 w-3 mr-1" /> Refresh
           </Button>
