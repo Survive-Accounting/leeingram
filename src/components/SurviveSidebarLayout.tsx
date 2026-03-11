@@ -369,8 +369,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
-          {/* VA My Dashboard link */}
-          {(isVa || impersonating) && !sidebarCollapsed && (
+          {/* VA My Dashboard link — hidden for sheet_prep_va */}
+          {(isVa || impersonating) && !sidebarCollapsed && effectiveRole !== "sheet_prep_va" && (
             <Link
               to="/va-dashboard"
               className={cn(
