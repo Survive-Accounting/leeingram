@@ -20,6 +20,7 @@ import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 
 import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";

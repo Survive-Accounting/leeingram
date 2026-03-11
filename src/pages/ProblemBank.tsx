@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle, RotateCcw } from "lucide-react";
 import { logActivity } from "@/lib/activityLogger";
 import { toast } from "sonner";
+import { InfoTip } from "@/components/InfoTip";
 import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
