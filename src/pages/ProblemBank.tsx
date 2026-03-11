@@ -405,6 +405,21 @@ export default function ProblemBank() {
         )}
       </div>
 
+      {/* Mismatch warning banner */}
+      {problems && (() => {
+        const mismatchCount = problems.filter((p) => {
+          const ocr = ((p as any).ocr_detected_label || "").replace(/\s+/g, "").toUpperCase();
+          const src = (p.source_label || "").replace(/\s+/g, "").toUpperCase();
+          return ocr && src && ocr !== src;
+        }).length;
+        return mismatchCount > 0 ? (
+          <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span><strong>{mismatchCount} screenshot mismatch{mismatchCount > 1 ? "es" : ""}</strong> — the pasted screenshot doesn't match the source label. Re-paste the correct textbook screenshot for flagged items.</span>
+          </div>
+        ) : null;
+      })()}
+
       {!canAdd &&
       <p className="text-xs text-muted-foreground text-center py-4">Select a course and chapter in the sidebar pipeline to view and add source problems.</p>
       }
