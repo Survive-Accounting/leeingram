@@ -396,7 +396,7 @@ export default function AssetsLibrary() {
               </Select>
               <Button
                 size="sm"
-                disabled={!bulkAction || isBanking || isGeneratingEbook || isExporting}
+                disabled={!bulkAction || isBanking || isGeneratingEbook || isExporting || isCreatingSheets}
                 onClick={async () => {
                   if (!assets || !bulkAction) return;
                   const selected = assets.filter((a) => selectedIds.has(a.id));
