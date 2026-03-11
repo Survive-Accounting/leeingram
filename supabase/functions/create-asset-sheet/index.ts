@@ -851,15 +851,22 @@ Deno.serve(async (req) => {
       const highlightedText = applyHighlightsToText(problemText, highlights);
       const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
 
+      // Build instructions text for sheet
+      const instructionsText = problemInstructions.length > 0
+        ? problemInstructions.map(i => `Instruction ${i.instruction_number}: ${i.instruction_text}`).join("\n")
+        : "";
+
       const hiddenDataParams: HiddenDataParams = {
         problem_text: problemText,
+        problem_context: asset.problem_context || "",
+        problem_instructions: instructionsText,
         problem_text_highlighted: highlightedText,
         answer_summary: buildAnswerSummary(asset),
         journal_entry_raw: jeToRawText(jeEntries),
         worked_steps: asset.survive_solution_text || "",
-        concept_notes: "", // future use
+        concept_notes: "",
         highlight_tags: extractHighlightTags(highlights),
-        validation_notes: "", // future use
+        validation_notes: "",
       };
       await writeHiddenData(token, spreadsheetId, hiddenDataParams);
       console.log("Hidden_Data populated on Master sheet");
