@@ -63,6 +63,8 @@ function escapeCSV(val: string): string {
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const { workspace } = useActiveWorkspace();
+  const { isVa } = useVaAccount();
+  const isAdmin = !isVa;
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
