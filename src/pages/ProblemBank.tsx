@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle, RotateCcw } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle } from "lucide-react";
 import { logActivity } from "@/lib/activityLogger";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
