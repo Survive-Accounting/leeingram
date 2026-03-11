@@ -292,10 +292,14 @@ export function SpeedReviewPanel({
           <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 border-b border-border cursor-pointer hover:bg-accent/30 transition-colors">
             <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFormulas ? "rotate-90" : ""}`} />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Important Formulas</span>
-            <Badge variant="outline" className="text-[9px] h-4 ml-auto">Preview</Badge>
+            {!variant.important_formulas && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
           </CollapsibleTrigger>
           <CollapsibleContent className="px-3 pt-3 pb-3">
-            <p className="text-sm text-muted-foreground text-center py-4">Generated after approval in Asset Library.</p>
+            {variant.important_formulas ? (
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{variant.important_formulas}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">Will be generated with variant.</p>
+            )}
           </CollapsibleContent>
         </Collapsible>
 
@@ -304,10 +308,14 @@ export function SpeedReviewPanel({
           <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 border-b border-border cursor-pointer hover:bg-accent/30 transition-colors">
             <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showConcepts ? "rotate-90" : ""}`} />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Concepts</span>
-            <Badge variant="outline" className="text-[9px] h-4 ml-auto">Preview</Badge>
+            {!variant.concept_notes && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
           </CollapsibleTrigger>
           <CollapsibleContent className="px-3 pt-3 pb-3">
-            <p className="text-sm text-muted-foreground text-center py-4">Generated after approval in Asset Library.</p>
+            {variant.concept_notes ? (
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{variant.concept_notes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">Will be generated with variant.</p>
+            )}
           </CollapsibleContent>
         </Collapsible>
 
@@ -316,10 +324,14 @@ export function SpeedReviewPanel({
           <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 cursor-pointer hover:bg-accent/30 transition-colors">
             <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showExamTraps ? "rotate-90" : ""}`} />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Exam Traps</span>
-            <Badge variant="outline" className="text-[9px] h-4 ml-auto">Preview</Badge>
+            {!variant.exam_traps && <Badge variant="outline" className="text-[9px] h-4 ml-auto">Not generated</Badge>}
           </CollapsibleTrigger>
           <CollapsibleContent className="px-3 pt-3 pb-3">
-            <p className="text-sm text-muted-foreground text-center py-4">Generated after approval in Asset Library.</p>
+            {variant.exam_traps ? (
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{variant.exam_traps}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">Will be generated with variant.</p>
+            )}
           </CollapsibleContent>
         </Collapsible>
       </div>
