@@ -24,6 +24,11 @@ const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuer
     countQuery: "generated",
     sopLabel: "Generate SOP",
   },
+  "/workspace": {
+    task: "Generate Survive Teaching Assets from ready source problems.",
+    countQuery: "generated",
+    sopLabel: "Generate SOP",
+  },
   "/review": {
     task: "Review generated variants — approve good ones, send back the rest.",
     sopLabel: "Review SOP",
