@@ -86,6 +86,27 @@ export default function ChapterWorkspace() {
     enabled: !!chapterId,
   });
 
+  // Query to check if generation is complete for stage banner
+  const { data: chapterProblems } = useQuery({
+    queryKey: ["chapter-problems-stage-check", chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_problems")
+        .select("status")
+        .eq("chapter_id", chapterId!);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!chapterId,
+  });
+
+  const generationComplete = (() => {
+    if (!chapterProblems || chapterProblems.length === 0) return false;
+    const readyOnly = chapterProblems.filter(p => p.status === "ready");
+    return readyOnly.length === 0 && chapterProblems.some(p => p.status === "generated" || p.status === "approved");
+  })();
+  const generatedCount = chapterProblems?.filter(p => p.status === "generated" || p.status === "approved").length ?? 0;
+
   const course = chapter?.courses as { course_name: string; id: string; code: string } | undefined;
   const chapterNum = chapter?.chapter_number ?? 0;
 
