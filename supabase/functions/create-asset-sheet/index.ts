@@ -510,16 +510,27 @@ function jeToRawText(entries: JEDateEntry[]): string {
 
 type JETemplateMode = "completed" | "accounts_only" | "amounts_only" | "blank";
 
+function formatDateShort(raw: string): string {
+  if (!raw) return "";
+  const cleaned = raw.replace(/\s*\(.*?\)\s*$/, "").trim();
+  // Try parsing as a date and format as M/D/YYYY
+  const d = new Date(cleaned);
+  if (!isNaN(d.getTime()) && /\d{4}/.test(cleaned)) {
+    return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+  }
+  return cleaned;
+}
+
 function buildJETemplateRows(entries: JEDateEntry[], mode: JETemplateMode): string[][] {
   const rows: string[][] = [];
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-    if (i > 0) rows.push(["", "", "", ""]); // blank separator
+    if (i > 0) rows.push(["", "", "", "", ""]); // blank separator
 
     // Date row
-    const dateLabel = (entry.date || "").replace(/\s*\(.*?\)\s*$/, "").trim();
-    rows.push([dateLabel, "", "", ""]);
+    const dateLabel = formatDateShort(entry.date || "");
+    rows.push([dateLabel, "", "", "", ""]);
 
     for (const row of (entry.rows || [])) {
       const acct = row.account_name || row.account || "";

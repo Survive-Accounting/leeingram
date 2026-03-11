@@ -197,9 +197,9 @@ type JECopySettings = { includeDate: boolean; spacerColumns: number };
 function loadCopySettings(): JECopySettings {
   try {
     const raw = localStorage.getItem("je_copy_settings");
-    if (raw) return { includeDate: true, spacerColumns: 1, ...JSON.parse(raw) };
+    if (raw) return { includeDate: true, spacerColumns: 2, ...JSON.parse(raw) };
   } catch {}
-  return { includeDate: true, spacerColumns: 1 };
+  return { includeDate: true, spacerColumns: 2 };
 }
 
 function saveCopySettings(s: JECopySettings) {
