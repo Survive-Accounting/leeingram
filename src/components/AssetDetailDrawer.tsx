@@ -446,7 +446,7 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 // ── Main Drawer ──────────────────────────────────────────────────────
 
 export default function AssetDetailDrawer({
-  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated,
+  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated, isAdmin,
 }: AssetDetailDrawerProps) {
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
