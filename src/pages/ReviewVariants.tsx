@@ -71,26 +71,46 @@ export default function ReviewVariants() {
       .eq("base_problem_id", problemId)
       .neq("variant_status", "archived")
       .order("created_at", { ascending: true });
-    if (!error && data) {
-      setCandidates(data.map((v: any) => {
-        const cd = v.candidate_data || {};
-        return {
-          ...cd,
-          _variantId: v.id,
-          _variantStatus: v.variant_status || "draft",
-          survive_problem_text: cd.survive_problem_text || v.variant_problem_text,
-          survive_solution_text: cd.survive_solution_text || v.variant_solution_text,
-          journal_entry_completed_json: v.journal_entry_completed_json || cd.je_structured || cd.journal_entry_completed_json || null,
-          journal_entry_template_json: v.journal_entry_template_json || cd.journal_entry_template_json || null,
-          highlight_key_json: v.highlight_key_json,
-          parts_json: v.parts_json,
-          confidence_score: v.confidence_score,
-          difficulty_estimate: v.difficulty_estimate,
-        };
-      }));
-      setSpeedIdx(0);
-    }
+    const mapped = (!error && data) ? data.map((v: any) => {
+      const cd = v.candidate_data || {};
+      return {
+        ...cd,
+        _variantId: v.id,
+        _variantStatus: v.variant_status || "draft",
+        survive_problem_text: cd.survive_problem_text || v.variant_problem_text,
+        survive_solution_text: cd.survive_solution_text || v.variant_solution_text,
+        journal_entry_completed_json: v.journal_entry_completed_json || cd.je_structured || cd.journal_entry_completed_json || null,
+        journal_entry_template_json: v.journal_entry_template_json || cd.journal_entry_template_json || null,
+        highlight_key_json: v.highlight_key_json,
+        parts_json: v.parts_json,
+        confidence_score: v.confidence_score,
+        difficulty_estimate: v.difficulty_estimate,
+      };
+    }) : [];
+    setCandidates(mapped);
+    setSpeedIdx(0);
     setLoading(false);
+    return mapped;
+  };
+
+  // Start review, skipping problems that have no active variants
+  const startReviewSkippingEmpty = async (startIdx: number) => {
+    for (let i = startIdx; i < generatedProblems.length; i++) {
+      const { count } = await supabase
+        .from("problem_variants")
+        .select("id", { count: "exact", head: true })
+        .eq("base_problem_id", generatedProblems[i].id)
+        .neq("variant_status", "archived");
+      if ((count ?? 0) > 0) {
+        setReviewStarted(true);
+        setReviewIndex(i);
+        await loadCandidates(generatedProblems[i].id);
+        return;
+      }
+    }
+    // No problems with variants found
+    toast.success("All variants reviewed! 🎉");
+    navigate("/assets");
   };
 
   const startReview = async (idx: number) => {
