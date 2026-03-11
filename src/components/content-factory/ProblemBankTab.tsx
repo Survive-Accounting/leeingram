@@ -1761,9 +1761,11 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
 
   const readyCount = problems?.filter(p => p.status === "ready").length ?? 0;
 
-  const launchServerBatch = async () => {
+  const launchServerBatch = async (specificIds?: string[]) => {
     if (!problems?.length) return;
-    const eligible = problems.filter(p => p.status === "ready");
+    const eligible = specificIds
+      ? problems.filter(p => specificIds.includes(p.id) && p.status === "ready")
+      : problems.filter(p => p.status === "ready");
     if (eligible.length === 0) { toast.info("No Ready problems to generate."); return; }
     setLaunchingBatch(true);
     try {
@@ -1779,7 +1781,7 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Batch run created with ${data.total} problems`);
-      // Navigate to batch run detail with smooth transition
+      setSelectedIds(new Set());
       navigate(`/batch-run/${data.batch_run_id}`);
     } catch (e: any) {
       toast.error(e.message);
@@ -1787,6 +1789,38 @@ export function ProblemBankTab({ chapterId, chapterNumber, courseId, autoReview 
       setLaunchingBatch(false);
     }
   };
+
+  const handleMarkNotReady = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from("chapter_problems")
+      .update({ status: "raw" } as any)
+      .in("id", ids);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success(`${ids.length} problem(s) sent back to Import`);
+    setSelectedIds(new Set());
+    qc.invalidateQueries({ queryKey: ["chapter-problems", chapterId] });
+    qc.invalidateQueries({ queryKey: ["pipeline-counts"] });
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const filteredProblems = !problems ? [] : sourceStatusFilter === "all"
+    ? problems
+    : problems.filter(p => p.status === sourceStatusFilter);
+
+  const selectedReadyCount = Array.from(selectedIds).filter(id => problems?.find(p => p.id === id && p.status === "ready")).length;
+  const generateLabel = selectedIds.size > 0
+    ? `Generate (${selectedReadyCount} selected)`
+    : `Generate (${readyCount} ready)`;
+  const generateDisabled = launchingBatch || (selectedIds.size > 0 ? selectedReadyCount === 0 : readyCount === 0);
 
   // ─── Table View ───
   return (
