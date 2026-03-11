@@ -179,7 +179,8 @@ function JETable({ entries }: { entries: NormalizedEntry[] }) {
             </thead>
             <tbody>
               {entry.rows.map((row, rIdx) => {
-                const isCredit = row.credit != null && row.credit !== "";
+                // Use the side property for indentation (works even when amounts are null in template mode)
+                const isCredit = row.side === "credit" || (row.credit != null && row.credit !== "");
                 return (
                   <tr key={rIdx} className="border-b border-border/50 last:border-0">
                     <td className={`px-3 py-1 text-foreground ${isCredit ? "pl-8" : ""}`}>{row.account}</td>

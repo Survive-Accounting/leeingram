@@ -249,7 +249,7 @@ export default function ReviewVariants() {
         navigateReview("next");
       } else {
         toast.success("All variants reviewed! 🎉");
-        navigate("/assets");
+        navigate("/assets-library");
       }
     } catch {
       // error toast already handled by mutation onError
