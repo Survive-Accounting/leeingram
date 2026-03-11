@@ -79,6 +79,7 @@ interface AssetDetailDrawerProps {
   onRevert: () => void;
   onDelete: () => void;
   onAssetUpdated?: () => void;
+  isAdmin?: boolean;
 }
 
 // ── Normalize JE data from various formats ──────────────────────────
@@ -445,7 +446,7 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 // ── Main Drawer ──────────────────────────────────────────────────────
 
 export default function AssetDetailDrawer({
-  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated,
+  asset, open, onClose, chapterLabel, courseLabel, sheetUrl, onRevert, onDelete, onAssetUpdated, isAdmin,
 }: AssetDetailDrawerProps) {
   const [jeMode, setJeMode] = useState<JEMode>("completed");
   const [problemExpanded, setProblemExpanded] = useState(false);
@@ -1457,8 +1458,9 @@ Return valid JSON only.`,
                   size="sm"
                   variant="outline"
                   className="text-xs h-7"
-                  disabled={isSyncing}
+                  disabled={isSyncing || !isAdmin}
                   onClick={handleResyncSheet}
+                  title={!isAdmin ? "Only admin can create/sync sheets" : undefined}
                 >
                   {isSyncing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
                   {asset.google_sheet_file_id ? "Resync Sheet" : "Create Sheet"}
