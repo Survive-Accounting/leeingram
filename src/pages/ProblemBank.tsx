@@ -247,7 +247,7 @@ export default function ProblemBank() {
 
   const bulkMarkNotReady = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from("chapter_problems").update({ status: "raw", pipeline_status: "raw" } as any).in("id", ids);
+      const { error } = await supabase.from("chapter_problems").update({ status: "raw" } as any).in("id", ids);
       if (error) throw error;
     },
     onSuccess: () => {
