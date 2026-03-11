@@ -145,6 +145,7 @@ const App = () => (
             <SprintProvider>
               <ImpersonationBanner />
               <SprintTimerBar />
+              <RoleRouteGuard />
               <AppRoutes />
             </SprintProvider>
           </ImpersonationProvider>
