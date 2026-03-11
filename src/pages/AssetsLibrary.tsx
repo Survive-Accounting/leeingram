@@ -878,6 +878,7 @@ export default function AssetsLibrary() {
         onRevert={() => { if (viewingAsset) { setRevertId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
         onDelete={() => { if (viewingAsset) { setDeleteId(viewingAsset.id); setDrawerOpen(false); setViewingAsset(null); } }}
         onAssetUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })}
+        isAdmin={isAdmin}
       />
     </SurviveSidebarLayout>
   );
