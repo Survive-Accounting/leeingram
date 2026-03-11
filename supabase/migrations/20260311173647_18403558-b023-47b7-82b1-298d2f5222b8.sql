@@ -1,0 +1,1 @@
+ALTER TABLE public.teaching_assets ADD COLUMN IF NOT EXISTS solution_screenshot_url text;

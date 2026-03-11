@@ -10,12 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Undo2, Trash2, Copy, ClipboardList, BookOpen, Link2,
   Image, TableProperties, ExternalLink, ChevronDown, ChevronUp, Video,
   BookMarked, Share2, CheckCircle2, Layers, Highlighter,
   AlertTriangle, Check, RefreshCw, Loader2, Settings2, MessageSquare,
-  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles,
+  ZoomIn, X, ChevronLeft, ChevronRight, Sparkles, Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -23,8 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { HighlightedText, HighlightLegend } from "@/components/content-factory/HighlightedText";
 import { type Highlight, HIGHLIGHT_GENERATION_PROMPT, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
-import ProblemInstructionsEditor from "@/components/content-factory/ProblemInstructionsEditor";
-import LearningStructuresEditor, { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
+import { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -456,15 +456,22 @@ export default function AssetDetailDrawer({
 
   // Collapsible section states
   const [showProblemSection, setShowProblemSection] = useState(false);
+  const [showAnswerSection, setShowAnswerSection] = useState(false);
   const [showJESection, setShowJESection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
   const [showFormulasSection, setShowFormulasSection] = useState(false);
   const [showConceptsSection, setShowConceptsSection] = useState(false);
   const [showExamTrapsSection, setShowExamTrapsSection] = useState(false);
+  const [showStructuresSection, setShowStructuresSection] = useState(false);
   const [showSourceSection, setShowSourceSection] = useState(false);
-  const [showTAccountsSection, setShowTAccountsSection] = useState(false);
-  const [showTablesSection, setShowTablesSection] = useState(false);
-  const [showFSSection, setShowFSSection] = useState(false);
+
+  // Flag issue
+  const [showFlagForm, setShowFlagForm] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagging, setFlagging] = useState(false);
+
+  // Instructions (read-only fetch)
+  const [instructions, setInstructions] = useState<{ instruction_number: number; instruction_text: string }[]>([]);
 
   // Highlights
   const [highlights, setHighlights] = useState<Highlight[]>([]);
@@ -510,18 +517,31 @@ export default function AssetDetailDrawer({
   }, [open, asset?.base_raw_problem_id, asset?.survive_problem_text]);
 
   // Reset section states when asset changes
+  // Fetch instructions for this asset
+  useEffect(() => {
+    if (!open || !asset?.id) { setInstructions([]); return; }
+    supabase
+      .from("problem_instructions")
+      .select("instruction_number, instruction_text")
+      .eq("teaching_asset_id", asset.id)
+      .order("instruction_number")
+      .then(({ data }) => setInstructions(data || []));
+  }, [open, asset?.id]);
+
+  // Reset section states when asset changes
   useEffect(() => {
     setShowProblemSection(false);
+    setShowAnswerSection(false);
     setShowJESection(false);
     setShowWorkedSteps(false);
     setShowFormulasSection(false);
     setShowConceptsSection(false);
     setShowExamTrapsSection(false);
+    setShowStructuresSection(false);
     setShowSourceSection(false);
     setShowHighlights(false);
-    setShowTAccountsSection(false);
-    setShowTablesSection(false);
-    setShowFSSection(false);
+    setShowFlagForm(false);
+    setFlagReason("");
   }, [asset?.id]);
 
   const updateCopySettings = (patch: Partial<JECopySettings>) => {
@@ -823,11 +843,14 @@ Return valid JSON only.`,
                 )}
               </div>
 
-              {/* ── PROBLEM TEXT ── */}
+              {/* ── PROBLEM TEXT & INSTRUCTIONS ── */}
               <Collapsible open={showProblemSection} onOpenChange={setShowProblemSection}>
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showProblemSection ? "rotate-90" : ""}`} />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Text</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Problem Text & Instructions</span>
+                  {instructions.length > 0 && (
+                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{instructions.length} instr.</Badge>
+                  )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
                   <div className="rounded-lg border border-border bg-background p-3">
@@ -840,22 +863,29 @@ Return valid JSON only.`,
                     </div>
                   </div>
 
-                  {/* Problem Context & Instructions Editor */}
-                  <div className="rounded-lg border border-border bg-card p-3">
-                    <ProblemInstructionsEditor
-                      assetId={asset.id}
-                      problemContext={(asset as any).problem_context || ""}
-                      onUpdated={onAssetUpdated}
-                    />
-                  </div>
-
-                  {/* Answer text — only if the asset has solution text */}
-                  {asset.survive_solution_text && (
-                    <div className="rounded-lg border border-border bg-background p-3">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">Answer Text</p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                        {asset.survive_solution_text}
-                      </p>
+                  {/* Read-only Instructions with copy buttons */}
+                  {instructions.length > 0 && (
+                    <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Instructions</p>
+                      {instructions.map((inst, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-primary w-5 shrink-0 text-right">
+                            {inst.instruction_number}
+                          </span>
+                          <p className="text-sm text-foreground flex-1">{inst.instruction_text}</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              navigator.clipboard.writeText(inst.instruction_text);
+                              toast.success(`Instruction ${inst.instruction_number} copied`);
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -882,7 +912,23 @@ Return valid JSON only.`,
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* ── JOURNAL ENTRIES ── */}
+              {/* ── ANSWER TEXT ── */}
+              {asset.survive_solution_text && (
+              <Collapsible open={showAnswerSection} onOpenChange={setShowAnswerSection}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showAnswerSection ? "rotate-90" : ""}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Answer Text</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <div className="rounded-lg border border-border bg-background p-3">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                      {asset.survive_solution_text}
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              )}
+
               {hasJE && (
               <Collapsible open={showJESection} onOpenChange={setShowJESection}>
                 <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
@@ -1098,115 +1144,104 @@ Return valid JSON only.`,
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* ── T ACCOUNTS ── */}
-              {(asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) && (asset as any).t_accounts_json.length > 0 && (
-                <Collapsible open={showTAccountsSection} onOpenChange={setShowTAccountsSection}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTAccountsSection ? "rotate-90" : ""}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">T Accounts</span>
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{(asset as any).t_accounts_json.length}</Badge>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {((asset as any).t_accounts_json as any[]).map((ta: any, i: number) => (
-                      <div key={i} className="rounded-lg border border-border bg-background p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-foreground">{ta.account_name || `T Account ${i + 1}`}</p>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                            navigator.clipboard.writeText(tAccountToTSV(ta));
-                            toast.success(`T Account "${ta.account_name}" TSV copied`);
-                          }}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy TSV
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <p className="font-semibold text-muted-foreground mb-1">Debits</p>
-                            {(ta.debits || []).filter((d: string) => d).map((d: string, di: number) => (
-                              <p key={di} className="text-foreground font-mono">{d}</p>
-                            ))}
-                            {(!ta.debits || ta.debits.filter((d: string) => d).length === 0) && <p className="text-muted-foreground italic">—</p>}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-muted-foreground mb-1">Credits</p>
-                            {(ta.credits || []).filter((c: string) => c).map((c: string, ci: number) => (
-                              <p key={ci} className="text-foreground font-mono">{c}</p>
-                            ))}
-                            {(!ta.credits || ta.credits.filter((c: string) => c).length === 0) && <p className="text-muted-foreground italic">—</p>}
-                          </div>
-                        </div>
+              {/* ── OPTIONAL LEARNING STRUCTURES (consolidated) ── */}
+              {(() => {
+                const tAccounts = (asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) ? (asset as any).t_accounts_json : [];
+                const tables = (asset as any).tables_json && Array.isArray((asset as any).tables_json) ? (asset as any).tables_json : [];
+                const fs = (asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) ? (asset as any).financial_statements_json : [];
+                const hasAnyStructures = tAccounts.length > 0 || tables.length > 0 || fs.length > 0;
+                if (!hasAnyStructures) return null;
+                return (
+                  <Collapsible open={showStructuresSection} onOpenChange={setShowStructuresSection}>
+                    <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
+                      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showStructuresSection ? "rotate-90" : ""}`} />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Optional Learning Structures</span>
+                      <div className="flex gap-1 ml-auto">
+                        {tAccounts.length > 0 && <Badge variant="outline" className="text-[9px] h-4">T-Acct: {tAccounts.length}</Badge>}
+                        {tables.length > 0 && <Badge variant="outline" className="text-[9px] h-4">Tables: {tables.length}</Badge>}
+                        {fs.length > 0 && <Badge variant="outline" className="text-[9px] h-4">FS: {fs.length}</Badge>}
                       </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* ── TABLES ── */}
-              {(asset as any).tables_json && Array.isArray((asset as any).tables_json) && (asset as any).tables_json.length > 0 && (
-                <Collapsible open={showTablesSection} onOpenChange={setShowTablesSection}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTablesSection ? "rotate-90" : ""}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tables</span>
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{(asset as any).tables_json.length}</Badge>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {((asset as any).tables_json as any[]).map((t: any, i: number) => (
-                      <div key={i} className="rounded-lg border border-border bg-background p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-foreground">{t.title || `Table ${i + 1}`}</p>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                            navigator.clipboard.writeText(t.tsv || "");
-                            toast.success(`Table "${t.title}" TSV copied`);
-                          }}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy TSV
-                          </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-4">
+                      {/* T Accounts */}
+                      {tAccounts.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">T Accounts</p>
+                          {tAccounts.map((ta: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-foreground">{ta.account_name || `T Account ${i + 1}`}</p>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                  navigator.clipboard.writeText(tAccountToTSV(ta));
+                                  toast.success(`T Account "${ta.account_name}" TSV copied`);
+                                }}>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy TSV
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                  <p className="font-semibold text-muted-foreground mb-1">Debits</p>
+                                  {(ta.debits || []).filter((d: string) => d).map((d: string, di: number) => (
+                                    <p key={di} className="text-foreground font-mono">{d}</p>
+                                  ))}
+                                  {(!ta.debits || ta.debits.filter((d: string) => d).length === 0) && <p className="text-muted-foreground italic">—</p>}
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-muted-foreground mb-1">Credits</p>
+                                  {(ta.credits || []).filter((c: string) => c).map((c: string, ci: number) => (
+                                    <p key={ci} className="text-foreground font-mono">{c}</p>
+                                  ))}
+                                  {(!ta.credits || ta.credits.filter((c: string) => c).length === 0) && <p className="text-muted-foreground italic">—</p>}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{t.tsv || "—"}</pre>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* ── FINANCIAL STATEMENTS ── */}
-              {(asset as any).financial_statements_json && Array.isArray((asset as any).financial_statements_json) && (asset as any).financial_statements_json.length > 0 && (
-                <Collapsible open={showFSSection} onOpenChange={setShowFSSection}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFSSection ? "rotate-90" : ""}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financial Statements</span>
-                    <Badge variant="outline" className="text-[9px] h-4 ml-auto">{(asset as any).financial_statements_json.length}</Badge>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
-                    {((asset as any).financial_statements_json as any[]).map((s: any, i: number) => (
-                      <div key={i} className="rounded-lg border border-border bg-background p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-foreground">{s.title || `Statement ${i + 1}`}</p>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
-                            navigator.clipboard.writeText(s.tsv || "");
-                            toast.success(`Statement "${s.title}" TSV copied`);
-                          }}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy TSV
-                          </Button>
+                      )}
+                      {/* Tables */}
+                      {tables.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tables</p>
+                          {tables.map((t: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-foreground">{t.title || `Table ${i + 1}`}</p>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                  navigator.clipboard.writeText(t.tsv || "");
+                                  toast.success(`Table "${t.title}" TSV copied`);
+                                }}>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy TSV
+                                </Button>
+                              </div>
+                              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{t.tsv || "—"}</pre>
+                            </div>
+                          ))}
                         </div>
-                        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{s.tsv || "—"}</pre>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* ── LEARNING STRUCTURES EDITOR ── */}
-              <div className="rounded-lg border border-border bg-card p-3">
-                <LearningStructuresEditor
-                  assetId={asset.id}
-                  usesT={(asset as any).uses_t_accounts || false}
-                  usesTables={(asset as any).uses_tables || false}
-                  usesFS={(asset as any).uses_financial_statements || false}
-                  tAccountsJson={(asset as any).t_accounts_json}
-                  tablesJson={(asset as any).tables_json}
-                  financialStatementsJson={(asset as any).financial_statements_json}
-                  onUpdated={onAssetUpdated}
-                />
-              </div>
+                      )}
+                      {/* Financial Statements */}
+                      {fs.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Financial Statements</p>
+                          {fs.map((s: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-foreground">{s.title || `Statement ${i + 1}`}</p>
+                                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+                                  navigator.clipboard.writeText(s.tsv || "");
+                                  toast.success(`Statement "${s.title}" TSV copied`);
+                                }}>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy TSV
+                                </Button>
+                              </div>
+                              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap bg-muted rounded p-2">{s.tsv || "—"}</pre>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })()}
 
               {/* ── SOURCE (from import) ── */}
               <Collapsible open={showSourceSection} onOpenChange={setShowSourceSection}>
@@ -1226,7 +1261,11 @@ Return valid JSON only.`,
                       : sourceProblem?.solution_screenshot_url
                         ? [sourceProblem.solution_screenshot_url]
                         : [];
-                    if (pUrls.length === 0 && sUrls.length === 0 && !sourceProblem?.problem_text && !sourceProblem?.solution_text && !sourceProblem?.title) {
+                    // Also check teaching asset's own solution screenshot
+                    const assetSolUrl = (asset as any).solution_screenshot_url;
+                    const effectiveSolUrls = sUrls.length > 0 ? sUrls : (assetSolUrl ? [assetSolUrl] : []);
+
+                    if (pUrls.length === 0 && effectiveSolUrls.length === 0 && !sourceProblem?.problem_text && !sourceProblem?.solution_text && !sourceProblem?.title) {
                       return <p className="text-sm text-muted-foreground text-center py-4">No source data available.</p>;
                     }
                     return (
@@ -1256,7 +1295,7 @@ Return valid JSON only.`,
                         )}
 
                         {/* Solution Screenshot + Copy Text */}
-                        {sUrls.length > 0 && <SourceImageGallery urls={sUrls} label="Source Solution Screenshot" />}
+                        {effectiveSolUrls.length > 0 && <SourceImageGallery urls={effectiveSolUrls} label="Source Solution Screenshot" />}
                         {sourceProblem?.solution_text && (
                           <div className="rounded-lg border border-border bg-background p-3">
                             <div className="flex items-center justify-between mb-1">
@@ -1276,6 +1315,57 @@ Return valid JSON only.`,
                   })()}
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* ── FLAG ISSUE ── */}
+              <div className="border-t border-border pt-3 space-y-2">
+                {!showFlagForm ? (
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowFlagForm(true)}>
+                    <Flag className="h-3 w-3 mr-1" /> Flag Issue
+                  </Button>
+                ) : (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Flag Reason</p>
+                    <Textarea
+                      value={flagReason}
+                      onChange={(e) => setFlagReason(e.target.value)}
+                      placeholder="Describe the issue..."
+                      className="min-h-[60px] text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="text-xs"
+                        disabled={!flagReason.trim() || flagging}
+                        onClick={async () => {
+                          setFlagging(true);
+                          try {
+                            await supabase.from("asset_flags").insert({
+                              teaching_asset_id: asset.id,
+                              flag_reason: flagReason.trim(),
+                              status: "open",
+                            });
+                            toast.success("Issue flagged");
+                            setShowFlagForm(false);
+                            setFlagReason("");
+                            onAssetUpdated?.();
+                          } catch (e: any) {
+                            toast.error(e.message || "Failed to flag");
+                          } finally {
+                            setFlagging(false);
+                          }
+                        }}
+                      >
+                        {flagging ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Flag className="h-3 w-3 mr-1" />}
+                        Submit Flag
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setShowFlagForm(false); setFlagReason(""); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={onRevert}>
