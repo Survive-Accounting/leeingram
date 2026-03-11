@@ -1099,7 +1099,7 @@ Return valid JSON only.`,
               </Collapsible>
 
               {/* ── T ACCOUNTS ── */}
-              {(asset as any).uses_t_accounts && (asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) && (asset as any).t_accounts_json.length > 0 && (
+              {(asset as any).t_accounts_json && Array.isArray((asset as any).t_accounts_json) && (asset as any).t_accounts_json.length > 0 && (
                 <Collapsible open={showTAccountsSection} onOpenChange={setShowTAccountsSection}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 border-b border-border cursor-pointer">
                     <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTAccountsSection ? "rotate-90" : ""}`} />
