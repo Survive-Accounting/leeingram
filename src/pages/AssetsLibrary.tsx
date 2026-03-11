@@ -369,7 +369,7 @@ export default function AssetsLibrary() {
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && !isSheetPrepVa && (
             <>
               <Select value={bulkAction || ""} onValueChange={(v) => setBulkAction(v)}>
                 <SelectTrigger className="h-8 text-xs w-[220px] bg-background/95 border-border">
