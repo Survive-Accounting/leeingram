@@ -345,6 +345,90 @@ export function SpeedReviewPanel({
             )}
           </CollapsibleContent>
         </Collapsible>
+
+        {/* ── T ACCOUNTS ── */}
+        {hasTAccounts && (
+          <Collapsible open={showTAccounts} onOpenChange={setShowTAccounts}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 border-b border-border cursor-pointer hover:bg-accent/30 transition-colors">
+              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTAccounts ? "rotate-90" : ""}`} />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">T Accounts</span>
+              <Badge variant="outline" className="text-[9px] h-4 ml-auto">{tAccountsJson.length}</Badge>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-3 pt-3 pb-3 space-y-2">
+              {tAccountsJson.map((ta: any, i: number) => {
+                const tsv = `${ta.account_name}\nDebit\tCredit\n${Math.max(ta.debits?.length || 0, ta.credits?.length || 0) > 0 ? Array.from({ length: Math.max(ta.debits?.length || 0, ta.credits?.length || 0) }, (_, ri) => `${ta.debits?.[ri] || ""}\t${ta.credits?.[ri] || ""}`).join("\n") : ""}`;
+                return (
+                  <div key={i} className="rounded border border-border p-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-foreground">{ta.account_name}</span>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5" onClick={() => { navigator.clipboard.writeText(tsv); toast.success("TSV copied"); }}>
+                        <Copy className="h-3 w-3 mr-0.5" /> TSV
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-[11px]">
+                      <div>
+                        <p className="font-medium text-muted-foreground">Debit</p>
+                        {(ta.debits || []).map((d: string, di: number) => <p key={di} className="font-mono text-foreground">{d}</p>)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-muted-foreground">Credit</p>
+                        {(ta.credits || []).map((c: string, ci: number) => <p key={ci} className="font-mono text-foreground">{c}</p>)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* ── TABLES ── */}
+        {hasTables && (
+          <Collapsible open={showTables} onOpenChange={setShowTables}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 border-b border-border cursor-pointer hover:bg-accent/30 transition-colors">
+              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showTables ? "rotate-90" : ""}`} />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tables</span>
+              <Badge variant="outline" className="text-[9px] h-4 ml-auto">{tablesJson.length}</Badge>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-3 pt-3 pb-3 space-y-2">
+              {tablesJson.map((t: any, i: number) => (
+                <div key={i} className="rounded border border-border p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-foreground">{t.title}</span>
+                    <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5" onClick={() => { navigator.clipboard.writeText(t.tsv || ""); toast.success("TSV copied"); }}>
+                      <Copy className="h-3 w-3 mr-0.5" /> TSV
+                    </Button>
+                  </div>
+                  <pre className="text-[10px] font-mono text-foreground whitespace-pre overflow-x-auto bg-muted/20 rounded p-1.5">{t.tsv}</pre>
+                </div>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* ── FINANCIAL STATEMENTS ── */}
+        {hasFinancialStatements && (
+          <Collapsible open={showFinStatements} onOpenChange={setShowFinStatements}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 cursor-pointer hover:bg-accent/30 transition-colors">
+              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${showFinStatements ? "rotate-90" : ""}`} />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financial Statements</span>
+              <Badge variant="outline" className="text-[9px] h-4 ml-auto">{financialStatementsJson.length}</Badge>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-3 pt-3 pb-3 space-y-2">
+              {financialStatementsJson.map((fs: any, i: number) => (
+                <div key={i} className="rounded border border-border p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-foreground">{fs.title}</span>
+                    <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5" onClick={() => { navigator.clipboard.writeText(fs.tsv || ""); toast.success("TSV copied"); }}>
+                      <Copy className="h-3 w-3 mr-0.5" /> TSV
+                    </Button>
+                  </div>
+                  <pre className="text-[10px] font-mono text-foreground whitespace-pre overflow-x-auto bg-muted/20 rounded p-1.5">{fs.tsv}</pre>
+                </div>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </div>
 
       {/* ── Action Bar ── */}
