@@ -269,6 +269,8 @@ async function writeMetadata(token: string, spreadsheetId: string, params: Metad
 
 interface HiddenDataParams {
   problem_text: string;
+  problem_context: string;
+  problem_instructions: string;
   problem_text_highlighted: string;
   answer_summary: string;
   journal_entry_raw: string;
@@ -284,6 +286,8 @@ async function writeHiddenData(token: string, spreadsheetId: string, params: Hid
   const fieldRows: string[][] = [
     ["Field", "Value"],
     ["problem_text", params.problem_text],
+    ["problem_context", params.problem_context],
+    ["problem_instructions", params.problem_instructions],
     ["problem_text_highlighted", params.problem_text_highlighted],
     ["answer_summary", params.answer_summary],
     ["journal_entry_raw", params.journal_entry_raw],
