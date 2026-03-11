@@ -859,9 +859,13 @@ Deno.serve(async (req) => {
 
     // Resolve folder hierarchy
     const { chapterFolderId } = await ensureFolderHierarchy(token, courseCode, chapterNumber, sa.client_email);
-    const sheetPathUrl = `https://drive.google.com/drive/folders/${chapterFolderId}`;
 
-    // ── Create 3 sheets ──────────────────────────────────────────────
+    // Create asset subfolder inside chapter folder (e.g. IA2_CH13_P076_A)
+    const assetFolderId = await findOrCreateFolder(token, assetCode, chapterFolderId);
+    const sheetPathUrl = `https://drive.google.com/drive/folders/${assetFolderId}`;
+    console.log(`Asset subfolder: ${assetCode} (${assetFolderId})`);
+
+    // ── Create sheets inside asset subfolder ─────────────────────────
     const sheetNames = {
       master: `${assetCode}_Master`,
       practice: `${assetCode}_Practice`,
@@ -874,7 +878,7 @@ Deno.serve(async (req) => {
     // Master Sheet
     if (typesToCreate.has("master")) {
       try {
-        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, chapterFolderId);
+        const { fileId } = await copyTemplateWithArchive(token, MASTER_TEMPLATE_ID, sheetNames.master, assetFolderId);
         results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
       } catch (e: any) {
@@ -887,7 +891,7 @@ Deno.serve(async (req) => {
     // Practice Sheet
     if (typesToCreate.has("practice")) {
       try {
-        const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, chapterFolderId);
+        const { fileId } = await copyTemplateWithArchive(token, PRACTICE_TEMPLATE_ID, sheetNames.practice, assetFolderId);
         results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
       } catch (e: any) {
@@ -900,7 +904,7 @@ Deno.serve(async (req) => {
     // Promo Sheet
     if (typesToCreate.has("promo")) {
       try {
-        const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, chapterFolderId);
+        const { fileId } = await copyTemplateWithArchive(token, PROMO_TEMPLATE_ID, sheetNames.promo, assetFolderId);
         results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
       } catch (e: any) {
