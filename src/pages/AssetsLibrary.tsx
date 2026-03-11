@@ -354,9 +354,9 @@ export default function AssetsLibrary() {
           <h1 className="text-xl font-bold flex items-center gap-2 text-primary-foreground">
             <Library className="h-5 w-5 text-primary" />
             Assets Library
-          </h1>
+           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {assets?.length ?? 0} approved assets · Source of truth for all teaching content.
+            {assets?.length ?? 0} approved assets
           </p>
         </div>
 
