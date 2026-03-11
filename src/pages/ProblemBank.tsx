@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle, RotateCcw } from "lucide-react";
+import { Pencil, Trash2, Loader2, CheckCircle2, Eye, Inbox, FileUp, Merge, ScanText, Camera, AlertTriangle } from "lucide-react";
 import { logActivity } from "@/lib/activityLogger";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
@@ -44,7 +44,7 @@ type ChapterProblem = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  raw: "bg-muted text-muted-foreground",
+  raw: "bg-secondary text-secondary-foreground border-border",
   tagged: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   ready: "bg-green-500/20 text-green-400 border-green-500/30",
   imported: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -435,9 +435,6 @@ export default function ProblemBank() {
           <Inbox className="h-5 w-5 text-primary" />
           Problem Import
         </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Paste textbook problem screenshots for each item in this chapter.
-        </p>
       </div>
 
       {/* Stage complete banner */}
@@ -502,6 +499,9 @@ export default function ProblemBank() {
         )}
       </div>
 
+      {/* Divider between buttons and table */}
+      <div className="border-t border-border mb-3" />
+
       {/* Mismatch warning banner */}
       {problems && (() => {
         const mismatchCount = problems.filter((p) => {
@@ -526,7 +526,7 @@ export default function ProblemBank() {
       <>
         <div className="rounded-lg overflow-hidden border border-border bg-background/95">
           <Table>
-            <TableHeader>
+             <TableHeader>
               <TableRow className="border-border">
                 <TableHead className="w-10">
                   <Checkbox
@@ -541,18 +541,20 @@ export default function ProblemBank() {
                 <TableHead className="text-xs">Label</TableHead>
                 <TableHead className="text-xs">Title</TableHead>
                 <TableHead className="text-xs">Type</TableHead>
-                <TableHead className="text-xs w-36">Actions</TableHead>
+                <TableHead className="text-xs">Screenshot</TableHead>
+                <TableHead className="text-xs w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ?
-            <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={7} className="text-center text-foreground/80 text-xs">Loading…</TableCell></TableRow> :
             !problems?.length ?
-            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs">No imported sources yet.</TableCell></TableRow> :
+            <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground text-xs">No imported sources yet.</TableCell></TableRow> :
 
             problems.map((p) => {
               const ocrLabel = (p as any).ocr_detected_label || "";
               const hasMismatch = ocrLabel && p.source_label && ocrLabel.replace(/\s+/g, "").toUpperCase() !== p.source_label.replace(/\s+/g, "").toUpperCase();
+              const hasScreenshot = !!(p.problem_screenshot_url || p.problem_screenshot_urls.length > 0);
               return (
               <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
                     <TableCell>
@@ -577,27 +579,31 @@ export default function ProblemBank() {
                     <TableCell className="text-xs">{p.title || "—"}</TableCell>
                     <TableCell className="text-xs capitalize">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</TableCell>
                     <TableCell>
+                      <div className="flex items-center gap-1">
+                        {hasMismatch ? (
+                          <button className="text-[11px] text-destructive hover:underline" onClick={() => resetScreenshot(p)} title="Clear wrong screenshot and re-queue for pasting">
+                            Re-paste
+                          </button>
+                        ) : !hasScreenshot ? (
+                          <button className="text-[11px] text-primary hover:underline" onClick={() => openEdit(p)} title="Add screenshot via edit dialog">
+                            Add
+                          </button>
+                        ) : (p.status === "raw" || p.status === "tagged") ? (
+                          <div className="flex items-center gap-2">
+                            <button className="text-[11px] text-muted-foreground hover:underline" onClick={() => resetScreenshot(p)} title="Clear current screenshot and re-paste">
+                              Replace
+                            </button>
+                            <button className="text-[11px] text-primary hover:underline" onClick={() => markReady(p.id)}>
+                              Ready
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">✓</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-1">
-                        {hasMismatch && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => resetScreenshot(p)} title="Clear wrong screenshot and re-queue for pasting">
-                            <RotateCcw className="h-3 w-3 mr-1" /> Re-paste
-                          </Button>
-                        )}
-                        {!hasMismatch && !p.problem_screenshot_url && p.problem_screenshot_urls.length === 0 && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => openEdit(p)} title="Add screenshot via edit dialog">
-                            <Camera className="h-3 w-3 mr-1" /> Add Screenshot
-                          </Button>
-                        )}
-                        {!hasMismatch && (p.problem_screenshot_url || p.problem_screenshot_urls.length > 0) && (p.status === "raw" || p.status === "tagged") && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => resetScreenshot(p)} title="Clear current screenshot and re-paste">
-                            <RotateCcw className="h-3 w-3 mr-1" /> Replace
-                          </Button>
-                        )}
-                        {!hasMismatch && (p.status === "raw" || p.status === "tagged") &&
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markReady(p.id)}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Ready
-                          </Button>
-                  }
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)}>
                           <Eye className="h-3 w-3" />
                         </Button>

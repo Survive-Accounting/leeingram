@@ -13,9 +13,10 @@ const JOB_DESC_LINKS: Record<string, string> = {
   lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
 };
 
-const ROUTE_TASKS: Record<string, { task: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
+const ROUTE_TASKS: Record<string, { task: string; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
   "/problem-bank": {
     task: "Paste textbook problem screenshots for each source item.",
+    tip: "Tip: It's okay to skip problems that won't scan cleanly. Focus on quality.",
     countQuery: "imported",
     sopLabel: "Import SOP",
   },
@@ -128,6 +129,9 @@ export function NextTaskBanner() {
                 </span>
               )}
             </p>
+            {config.tip && (
+              <p className="text-[11px] text-muted-foreground mt-0.5">{config.tip}</p>
+            )}
           </div>
         </div>
       </div>
