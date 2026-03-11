@@ -197,9 +197,9 @@ type JECopySettings = { includeDate: boolean; spacerColumns: number };
 function loadCopySettings(): JECopySettings {
   try {
     const raw = localStorage.getItem("je_copy_settings");
-    if (raw) return { includeDate: true, spacerColumns: 1, ...JSON.parse(raw) };
+    if (raw) return { includeDate: true, spacerColumns: 2, ...JSON.parse(raw) };
   } catch {}
-  return { includeDate: true, spacerColumns: 1 };
+  return { includeDate: true, spacerColumns: 2 };
 }
 
 function saveCopySettings(s: JECopySettings) {
@@ -209,7 +209,7 @@ function saveCopySettings(s: JECopySettings) {
 function toShortDate(label: string): string {
   try {
     const d = new Date(label);
-    if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+    if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
   } catch {}
   return label;
 }

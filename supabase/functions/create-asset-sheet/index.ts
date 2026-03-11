@@ -510,16 +510,27 @@ function jeToRawText(entries: JEDateEntry[]): string {
 
 type JETemplateMode = "completed" | "accounts_only" | "amounts_only" | "blank";
 
+function formatDateShort(raw: string): string {
+  if (!raw) return "";
+  const cleaned = raw.replace(/\s*\(.*?\)\s*$/, "").trim();
+  // Try parsing as a date and format as M/D/YYYY
+  const d = new Date(cleaned);
+  if (!isNaN(d.getTime()) && /\d{4}/.test(cleaned)) {
+    return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+  }
+  return cleaned;
+}
+
 function buildJETemplateRows(entries: JEDateEntry[], mode: JETemplateMode): string[][] {
   const rows: string[][] = [];
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-    if (i > 0) rows.push(["", "", "", ""]); // blank separator
+    if (i > 0) rows.push(["", "", "", "", ""]); // blank separator
 
     // Date row
-    const dateLabel = (entry.date || "").replace(/\s*\(.*?\)\s*$/, "").trim();
-    rows.push([dateLabel, "", "", ""]);
+    const dateLabel = formatDateShort(entry.date || "");
+    rows.push([dateLabel, "", "", "", ""]);
 
     for (const row of (entry.rows || [])) {
       const acct = row.account_name || row.account || "";
@@ -529,19 +540,19 @@ function buildJETemplateRows(entries: JEDateEntry[], mode: JETemplateMode): stri
 
       switch (mode) {
         case "completed":
-          rows.push([isCredit ? `    ${acct}` : acct, "", debitVal, creditVal]);
+          rows.push([isCredit ? `    ${acct}` : acct, "", "", debitVal, creditVal]);
           break;
         case "accounts_only":
           // Show accounts, hide amounts
-          rows.push([isCredit ? `    ${acct}` : acct, "", "", ""]);
+          rows.push([isCredit ? `    ${acct}` : acct, "", "", "", ""]);
           break;
         case "amounts_only":
           // Hide accounts, show amounts
-          rows.push([isCredit ? "    ???" : "???", "", debitVal, creditVal]);
+          rows.push([isCredit ? "    ???" : "???", "", "", debitVal, creditVal]);
           break;
         case "blank":
           // All blanked out
-          rows.push([isCredit ? "    ???" : "???", "", "", ""]);
+          rows.push([isCredit ? "    ???" : "???", "", "", "", ""]);
           break;
       }
     }
@@ -554,7 +565,7 @@ async function writeJournalEntries(token: string, spreadsheetId: string, jeJson:
 
   const entries = normalizeJEFromJson(jeJson);
   if (entries.length === 0) {
-    await writeValues(token, spreadsheetId, "JournalEntries!A1:D1", [
+    await writeValues(token, spreadsheetId, "JournalEntries!A1:E1", [
       ["No journal entries for this asset."]
     ]);
     return;
@@ -564,28 +575,28 @@ async function writeJournalEntries(token: string, spreadsheetId: string, jeJson:
 
   // Header
   allRows.push(["COMPLETED JOURNAL ENTRIES"]);
-  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(["Account", "", "", "Debit", "Credit"]);
   allRows.push(...buildJETemplateRows(entries, "completed"));
   allRows.push([""]); allRows.push([""]);
 
   // Accounts only template
   allRows.push(["TEMPLATE — ACCOUNT TITLES MISSING"]);
-  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(["Account", "", "", "Debit", "Credit"]);
   allRows.push(...buildJETemplateRows(entries, "amounts_only"));
   allRows.push([""]); allRows.push([""]);
 
   // Amounts only template
   allRows.push(["TEMPLATE — AMOUNTS MISSING"]);
-  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(["Account", "", "", "Debit", "Credit"]);
   allRows.push(...buildJETemplateRows(entries, "accounts_only"));
   allRows.push([""]); allRows.push([""]);
 
   // Fully blank template
   allRows.push(["TEMPLATE — FULLY BLANK"]);
-  allRows.push(["Account", "", "Debit", "Credit"]);
+  allRows.push(["Account", "", "", "Debit", "Credit"]);
   allRows.push(...buildJETemplateRows(entries, "blank"));
 
-  const range = `JournalEntries!A1:D${allRows.length}`;
+  const range = `JournalEntries!A1:E${allRows.length}`;
   await writeValues(token, spreadsheetId, range, allRows);
 }
 
