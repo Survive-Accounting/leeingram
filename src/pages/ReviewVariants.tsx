@@ -462,7 +462,7 @@ export default function ReviewVariants() {
                 {speedMode ? "Speed" : "Full"}
               </span>
             </div>
-            <AlertDialog>
+            <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
                   <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
@@ -476,11 +476,11 @@ export default function ReviewVariants() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearVariants} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  <AlertDialogCancel disabled={clearingVariants}>Cancel</AlertDialogCancel>
+                  <Button variant="destructive" onClick={handleClearVariants} disabled={clearingVariants}>
                     {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                    Clear All
-                  </AlertDialogAction>
+                    {clearingVariants ? "Clearing…" : "Clear All"}
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
