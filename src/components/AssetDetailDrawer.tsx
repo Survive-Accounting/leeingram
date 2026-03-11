@@ -319,16 +319,98 @@ function LinkCard({ icon: Icon, label, subtitle, href, onCopy, disabled, comingS
   );
 }
 
-// ── Future placeholder ──────────────────────────────────────────────
+// ── Source Image Gallery ─────────────────────────────────────────────
 
-function FuturePlaceholder({ icon: Icon, label }: { icon: any; label: string }) {
+function SourceImageGallery({ urls, label }: { urls: string[]; label: string }) {
+  const [current, setCurrent] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+
+  if (urls.length === 0) return null;
+
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-border opacity-40">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      <div className="flex-1">
-        <p className="text-sm text-foreground">{label}</p>
-        <p className="text-[10px] text-muted-foreground">Coming soon</p>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</h3>
+        {urls.length > 1 && (
+          <span className="text-[10px] text-muted-foreground">{current + 1} / {urls.length}</span>
+        )}
       </div>
+      <div className="relative group rounded-lg border border-border bg-card overflow-hidden">
+        <img
+          src={urls[current]}
+          alt={`${label} ${current + 1}`}
+          className="w-full object-contain max-h-[50vh] cursor-zoom-in"
+          onClick={() => setZoomed(true)}
+        />
+        <button
+          className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => setZoomed(true)}
+        >
+          <ZoomIn className="h-3.5 w-3.5" />
+        </button>
+        {urls.length > 1 && (
+          <>
+            <button
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+              onClick={() => setCurrent((c) => c - 1)}
+              disabled={current === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+              onClick={() => setCurrent((c) => c + 1)}
+              disabled={current === urls.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+      {urls.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {urls.map((url, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`flex-shrink-0 h-12 w-16 rounded border object-cover overflow-hidden transition-all ${
+                i === current ? "border-primary ring-1 ring-primary/50" : "border-border opacity-60 hover:opacity-100"
+              }`}
+            >
+              <img src={url} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+      {zoomed && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center cursor-zoom-out"
+          onClick={() => setZoomed(false)}
+        >
+          <button className="absolute top-4 right-4 p-2 rounded-md text-white/70 hover:text-white" onClick={() => setZoomed(false)}>
+            <X className="h-5 w-5" />
+          </button>
+          <img src={urls[current]} alt="" className="max-w-[95vw] max-h-[95vh] object-contain" onClick={(e) => e.stopPropagation()} />
+          {urls.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-md bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+                onClick={(e) => { e.stopPropagation(); setCurrent((c) => c - 1); }}
+                disabled={current === 0}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-md bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+                onClick={(e) => { e.stopPropagation(); setCurrent((c) => c + 1); }}
+                disabled={current === urls.length - 1}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
