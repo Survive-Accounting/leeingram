@@ -31,7 +31,7 @@ const PHASE_1_ITEMS = [
   { label: "Import", path: "/problem-bank", icon: Inbox },
   { label: "Generate", path: "/content", icon: Factory },
   { label: "Review", path: "/review", icon: FileCheck },
-  { label: "Teaching Assets", path: "/assets-library", icon: Library },
+  { label: "Teaching Assets", altLabel: "Sheet Prep", path: "/assets-library", icon: Library },
 ];
 
 const PHASE_2_ITEMS = [
@@ -215,11 +215,15 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   });
 
   // ── Render nav ──────────────────────────────────────────────────
+  const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
+  const isSheetPrepRole = effectiveRole === "sheet_prep_va";
+
   const renderNavItems = (items: typeof PHASE_1_ITEMS, dimmed = false) =>
     items.map((item) => {
       const Icon = item.icon;
       const active = isActive(item.path);
       const badge = getBadge(item.path);
+      const displayLabel = isSheetPrepRole && (item as any).altLabel ? (item as any).altLabel : item.label;
       return (
         <Link
           key={item.path}
@@ -234,7 +238,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
-          {!sidebarCollapsed && <span className="text-sm">{item.label}</span>}
+          {!sidebarCollapsed && <span className="text-sm">{displayLabel}</span>}
         </Link>
       );
     });

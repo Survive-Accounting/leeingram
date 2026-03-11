@@ -52,49 +52,49 @@ const SHEET_PREP_CHECKLIST = [
   {
     title: "Verify Master Sheet Formatting",
     description:
-      "Confirm the tutoring / filming whiteboard sheet is organized and readable.",
+      "Find tasks in the VA Instructions tab in the sheet.",
     done: false,
   },
   {
     title: "Prepare Student Practice Sheet",
     description:
-      "Ensure the practice version is clean and student-ready (no internal notes or answers visible).",
+      "Find tasks in the VA Instructions tab in the sheet.",
     done: false,
   },
   {
     title: "Prepare Promo / Free Sheet",
     description:
-      "Create the promotional version used for marketing or free samples.",
+      "Find tasks in the VA Instructions tab in the sheet.",
     done: false,
   },
   {
     title: "Test All Sheet Links",
     description:
-      "Open Master, Practice, and Promo sheets to confirm access permissions work correctly.",
+      "Find tasks in the VA Instructions tab in the sheet.",
     done: false,
   },
   {
     title: "Copy LearnWorlds Embed Link",
     description:
-      "Generate the embed link or share link for the student Practice sheet.",
+      "Coming soon.",
     done: false,
   },
   {
     title: "Attach Google Sheet to LearnWorlds Lesson",
     description:
-      "Open the correct LearnWorlds lesson and embed the student Practice sheet so students can interact with it.",
+      "Coming soon.",
     done: false,
   },
   {
     title: "Save LearnWorlds Activity URL",
     description:
-      "Copy the LearnWorlds lesson/activity link and paste it back into the pipeline metadata.",
+      "Coming soon.",
     done: false,
   },
   {
     title: "Mark Asset Sheet Prep Complete",
     description:
-      "Confirm the asset is ready for final review and deployment.",
+      "Coming soon.",
     done: false,
   },
 ];

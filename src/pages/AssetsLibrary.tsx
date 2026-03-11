@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
@@ -50,6 +50,7 @@ type TeachingAsset = {
   source_type?: string | null;
   source_number?: string | null;
   problem_type?: string | null;
+  google_sheet_status?: string | null;
 };
 
 type JournalOption = "question" | "feedback" | "none";
@@ -369,7 +370,7 @@ export default function AssetsLibrary() {
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
-          {selectedIds.size > 0 && !isSheetPrepVa && (
+          {selectedIds.size > 0 && (
             <>
               <Select value={bulkAction || ""} onValueChange={(v) => setBulkAction(v)}>
                 <SelectTrigger className="h-8 text-xs w-[220px] bg-background/95 border-border">
@@ -396,12 +397,19 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
                     </SelectItem>
                   )}
-                  <SelectItem value="revert">
-                    <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
-                  </SelectItem>
+                  {!isSheetPrepVa && (
+                    <SelectItem value="revert">
+                      <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
+                    </SelectItem>
+                  )}
                   {isAdmin && (
                     <SelectItem value="create-sheets">
                       <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Google Sheets</span>
+                    </SelectItem>
+                  )}
+                  {isSheetPrepVa && (
+                    <SelectItem value="mark-ready">
+                      <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Mark Ready for Review</span>
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -477,6 +485,20 @@ export default function AssetsLibrary() {
                       revertMutation.mutate(asset);
                     }
                     setSelectedIds(new Set());
+                  } else if (bulkAction === "mark-ready") {
+                    let count = 0;
+                    for (const asset of selected) {
+                      const { error } = await supabase
+                        .from("teaching_assets")
+                        .update({ google_sheet_status: "ready_for_review" } as any)
+                        .eq("id", asset.id);
+                      if (!error) count++;
+                    }
+                    if (count > 0) {
+                      toast.success(`${count} asset(s) marked ready for review`);
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      setSelectedIds(new Set());
+                    }
                   } else if (bulkAction === "create-sheets") {
                     setIsCreatingSheets(true);
                     let sheetSuccess = 0;
@@ -561,15 +583,16 @@ export default function AssetsLibrary() {
               </TableHead>
               <TableHead className="text-xs">Asset Code</TableHead>
               <TableHead className="text-xs">Textbook Ref</TableHead>
+              {isSheetPrepVa && <TableHead className="text-xs">Sheet Status</TableHead>}
               <TableHead className="text-xs">Created</TableHead>
               <TableHead className="text-xs w-16 text-right">Quick</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isSheetPrepVa ? 6 : 5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isSheetPrepVa ? 6 : 5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               assets.map((a) => (
                 <TableRow
@@ -587,6 +610,22 @@ export default function AssetsLibrary() {
                   <TableCell className="text-xs font-mono text-muted-foreground">
                     {a.source_ref || "—"}
                   </TableCell>
+                  {isSheetPrepVa && (
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[9px] ${
+                        (a as any).google_sheet_status === "ready_for_review"
+                          ? "border-amber-500/40 text-amber-400"
+                          : (a as any).google_sheet_status === "finalized"
+                            ? "border-emerald-500/40 text-emerald-400"
+                            : "border-border text-muted-foreground"
+                      }`}>
+                        {(a as any).google_sheet_status === "ready_for_review" ? "Ready for Review"
+                          : (a as any).google_sheet_status === "finalized" ? "Finalized"
+                          : (a as any).google_sheet_status === "auto_created" ? "Pending"
+                          : (a as any).google_sheet_status || "—"}
+                      </Badge>
+                    </TableCell>
+                  )}
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(a.created_at), "MMM d")}
                   </TableCell>
