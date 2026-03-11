@@ -909,22 +909,54 @@ export default function AssetDetailDrawer({
               ) : (
                 <>
                   <div className="flex gap-1 flex-wrap">
-                    {(["completed", "template", "all_question_marks"] as JEMode[]).map((m) => (
-                      <Button key={m} size="sm" variant={jeMode === m ? "default" : "outline"} onClick={() => setJeMode(m)} className="text-xs h-7">
-                        {m === "completed" ? "Completed" : m === "template" ? "Template" : "All ???"}
+                    {([
+                      { key: "completed", label: "Completed" },
+                      { key: "accounts_missing", label: "Acct Titles Missing" },
+                      { key: "template", label: "Amounts Missing" },
+                      { key: "all_question_marks", label: "Fully Blank" },
+                    ] as { key: JEMode; label: string }[]).map((m) => (
+                      <Button key={m.key} size="sm" variant={jeMode === m.key ? "default" : "outline"} onClick={() => setJeMode(m.key)} className="text-xs h-7">
+                        {m.label}
                       </Button>
                     ))}
                   </div>
 
                   {activeEntries && <JETable entries={activeEntries} />}
 
-                  {/* Copy Settings Panel */}
+                  {/* Copy TSV for each mode */}
                   <div className="pt-2 border-t border-border space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Copy TSV for Sheets</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {([
+                        { key: "completed" as JEMode, label: "Completed" },
+                        { key: "accounts_missing" as JEMode, label: "Acct Titles Missing" },
+                        { key: "template" as JEMode, label: "Amounts Missing" },
+                        { key: "all_question_marks" as JEMode, label: "Fully Blank" },
+                      ]).map((m) => (
+                        <Button
+                          key={m.key}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 justify-start"
+                          onClick={() => {
+                            const modeEntries = normalizeJEEntries(
+                              m.key === "completed" ? asset.journal_entry_completed_json : (asset.journal_entry_template_json || asset.journal_entry_completed_json),
+                              m.key
+                            );
+                            if (!modeEntries) return;
+                            const tsv = entriesToTSV(modeEntries, copySettings);
+                            navigator.clipboard.writeText(tsv);
+                            toast.success(`${m.label} TSV copied`);
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-1.5 shrink-0" /> {m.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Additional copy options */}
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("tsv")}>
-                          <ClipboardList className="h-3 w-3 mr-1" /> Copy TSV
-                        </Button>
                         <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCopy("text")}>
                           <FileText className="h-3 w-3 mr-1" /> Copy Plain Text
                         </Button>
