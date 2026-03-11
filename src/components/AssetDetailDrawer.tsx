@@ -79,6 +79,7 @@ interface AssetDetailDrawerProps {
   onRevert: () => void;
   onDelete: () => void;
   onAssetUpdated?: () => void;
+  isAdmin?: boolean;
 }
 
 // ── Normalize JE data from various formats ──────────────────────────
