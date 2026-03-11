@@ -505,7 +505,7 @@ export default function AssetDetailDrawer({
 
           {/* Data Health */}
           <DataHealthStrip asset={asset} hasJE={hasJE} sheetUrl={effectiveSheetUrl} />
-        </SheetHeader>
+        </DialogHeader>
 
         <Separator />
 
