@@ -12,8 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
@@ -93,6 +95,7 @@ export default function AssetsLibrary() {
   const [isBanking, setIsBanking] = useState(false);
   const [isCreatingSheets, setIsCreatingSheets] = useState(false);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
+  const [sheetLogOpen, setSheetLogOpen] = useState(false);
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
@@ -611,6 +614,26 @@ export default function AssetsLibrary() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Sheet Prep Log (Admin only) */}
+      {isAdmin && (
+        <div className="mt-6">
+          <Collapsible open={sheetLogOpen} onOpenChange={setSheetLogOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between h-10 text-sm font-medium border-border">
+                <span className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Google Sheets Activity Log
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${sheetLogOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <SheetPrepLog />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      )}
 
       {/* Export Dialog */}
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
