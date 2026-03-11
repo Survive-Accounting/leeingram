@@ -328,6 +328,31 @@ export default function ProblemBank() {
     toast.success("Marked as Ready");
   };
 
+  const resetScreenshot = async (p: ChapterProblem) => {
+    const { error } = await supabase.from("chapter_problems").update({
+      import_status: "needs_problem_screenshot",
+      problem_screenshot_url: null,
+      problem_screenshot_urls: [],
+      ocr_status: "pending",
+      ocr_detected_label: "",
+      ocr_detected_title: "",
+      ocr_extracted_problem_text: "",
+      title: "",
+    } as any).eq("id", p.id);
+    if (error) { toast.error(error.message); return; }
+    logActivity({
+      actor_type: "user",
+      entity_type: "source_problem",
+      entity_id: p.id,
+      event_type: "screenshot_reset",
+      message: `Reset screenshot for ${p.source_label} due to mismatch (was showing ${(p as any).ocr_detected_label})`,
+      severity: "warn",
+    });
+    qc.invalidateQueries({ queryKey: ["chapter-problems"] });
+    qc.invalidateQueries({ queryKey: ["screenshot-queue"] });
+    toast.success(`${p.source_label} returned to screenshot queue`);
+  };
+
   const openEdit = (p: ChapterProblem) => {
     setEditingProblem(p);
     setEditType(p.problem_type);
