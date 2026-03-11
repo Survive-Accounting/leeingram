@@ -2481,6 +2481,7 @@ export type Database = {
           deployment_status: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
           exam_traps: string | null
+          financial_statements_json: Json | null
           google_sheet_file_id: string | null
           google_sheet_status: string
           google_sheet_url: string | null
@@ -2508,9 +2509,14 @@ export type Database = {
           source_type: string | null
           survive_problem_text: string
           survive_solution_text: string
+          t_accounts_json: Json | null
+          tables_json: Json | null
           tags: string[]
           times_used: number
           updated_at: string
+          uses_financial_statements: boolean
+          uses_t_accounts: boolean
+          uses_tables: boolean
           video_production_status: string
           video_ready_at: string | null
         }
@@ -2533,6 +2539,7 @@ export type Database = {
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           exam_traps?: string | null
+          financial_statements_json?: Json | null
           google_sheet_file_id?: string | null
           google_sheet_status?: string
           google_sheet_url?: string | null
@@ -2560,9 +2567,14 @@ export type Database = {
           source_type?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
+          t_accounts_json?: Json | null
+          tables_json?: Json | null
           tags?: string[]
           times_used?: number
           updated_at?: string
+          uses_financial_statements?: boolean
+          uses_t_accounts?: boolean
+          uses_tables?: boolean
           video_production_status?: string
           video_ready_at?: string | null
         }
@@ -2585,6 +2597,7 @@ export type Database = {
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
           exam_traps?: string | null
+          financial_statements_json?: Json | null
           google_sheet_file_id?: string | null
           google_sheet_status?: string
           google_sheet_url?: string | null
@@ -2612,9 +2625,14 @@ export type Database = {
           source_type?: string | null
           survive_problem_text?: string
           survive_solution_text?: string
+          t_accounts_json?: Json | null
+          tables_json?: Json | null
           tags?: string[]
           times_used?: number
           updated_at?: string
+          uses_financial_statements?: boolean
+          uses_t_accounts?: boolean
+          uses_tables?: boolean
           video_production_status?: string
           video_ready_at?: string | null
         }
