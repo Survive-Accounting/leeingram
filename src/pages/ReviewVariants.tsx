@@ -56,6 +56,14 @@ export default function ReviewVariants() {
     }
   }, [generatedProblems.length]);
 
+  // Reset on mount (navigating to /review)
+  useEffect(() => {
+    autoStarted.current = false;
+    setReviewStarted(false);
+    setCandidates([]);
+    setReviewIndex(0);
+  }, []);
+
   // Reset autoStarted when chapter changes
   useEffect(() => {
     autoStarted.current = false;
