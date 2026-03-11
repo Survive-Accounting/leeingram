@@ -675,16 +675,57 @@ export default function ProblemBank() {
 
           {editingProblem &&
           <>
-              {(editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) &&
-            <div className="flex gap-2 flex-wrap">
-                  {(editingProblem.problem_screenshot_urls.length > 0 ?
-              editingProblem.problem_screenshot_urls :
-              [editingProblem.problem_screenshot_url].filter(Boolean)).
-              map((url, i) =>
-              <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
-              )}
+              {/* Current screenshots with replace option */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs mb-1 block">Problem Screenshot</Label>
+                  {editProblemFiles.length === 0 && (editingProblem.problem_screenshot_urls.length > 0 || editingProblem.problem_screenshot_url) ? (
+                    <div className="space-y-1">
+                      <div className="flex gap-1 flex-wrap">
+                        {(editingProblem.problem_screenshot_urls.length > 0 ?
+                          editingProblem.problem_screenshot_urls :
+                          [editingProblem.problem_screenshot_url].filter(Boolean)).map((url, i) =>
+                          <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => setEditProblemFiles([])}>
+                        <Camera className="h-3 w-3 mr-1" /> Replace
+                      </Button>
+                    </div>
+                  ) : (
+                    <ImagePasteArea
+                      label="Paste or drop replacement"
+                      files={editProblemFiles}
+                      onAdd={(f) => setEditProblemFiles(f.slice(0, 3))}
+                      onRemove={() => setEditProblemFiles([])}
+                    />
+                  )}
                 </div>
-            }
+                <div>
+                  <Label className="text-xs mb-1 block">Solution Screenshot</Label>
+                  {editSolutionFiles.length === 0 && (editingProblem.solution_screenshot_urls.length > 0 || editingProblem.solution_screenshot_url) ? (
+                    <div className="space-y-1">
+                      <div className="flex gap-1 flex-wrap">
+                        {(editingProblem.solution_screenshot_urls.length > 0 ?
+                          editingProblem.solution_screenshot_urls :
+                          [editingProblem.solution_screenshot_url].filter(Boolean)).map((url, i) =>
+                          <img key={i} src={url!} alt="" className="h-16 rounded border border-border object-cover" />
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => setEditSolutionFiles([])}>
+                        <Camera className="h-3 w-3 mr-1" /> Replace
+                      </Button>
+                    </div>
+                  ) : (
+                    <ImagePasteArea
+                      label="Paste or drop replacement"
+                      files={editSolutionFiles}
+                      onAdd={(f) => setEditSolutionFiles(f.slice(0, 3))}
+                      onRemove={() => setEditSolutionFiles([])}
+                    />
+                  )}
+                </div>
+              </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
