@@ -651,7 +651,18 @@ async function fetchAssetData(supabaseUrl: string, serviceRoleKey: string, asset
     }
   }
 
-  return { asset, chapter, course, flagCount, variantCount, jeCount, highlights };
+  // Fetch problem instructions
+  let problemInstructions: { instruction_number: number; instruction_text: string }[] = [];
+  const instrRes = await fetch(
+    `${supabaseUrl}/rest/v1/problem_instructions?teaching_asset_id=eq.${assetId}&select=instruction_number,instruction_text&order=instruction_number`,
+    { headers: authHeaders }
+  );
+  const instrData = await instrRes.json();
+  if (Array.isArray(instrData)) {
+    problemInstructions = instrData;
+  }
+
+  return { asset, chapter, course, flagCount, variantCount, jeCount, highlights, problemInstructions };
 }
 
 // ── Extract variant letter from asset_name ───────────────────────────
