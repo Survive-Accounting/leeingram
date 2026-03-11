@@ -285,9 +285,13 @@ export default function ProblemBank() {
   const runBulkOcr = useCallback(async (forceAll = false) => {
     if (!problems) return;
     const pending = problems.filter(
-      (p) =>
-        (forceAll || (p as any).ocr_status === "pending" || !(p as any).ocr_status) &&
-        (p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url)
+      (p) => {
+        const hasImages = p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url;
+        if (!hasImages) return false;
+        const ocrStatus = (p as any).ocr_status;
+        if (forceAll) return true;
+        return !ocrStatus || ocrStatus === "pending" || ocrStatus === "no_images";
+      }
     );
     if (pending.length === 0) {
       toast.info("No problems need OCR — all already processed.");

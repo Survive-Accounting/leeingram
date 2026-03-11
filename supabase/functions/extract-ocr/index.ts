@@ -213,6 +213,11 @@ Return results using the provided tool.`,
         const titleToApply = isBriefExercise ? suggestedTitle : effectiveTitle;
         if (!existing.title && titleToApply) updateData.title = titleToApply;
         if (existing.status === "raw") updateData.status = "tagged";
+        // Auto-classify problem_type from label
+        const label = (ocrResult.detected_label || existing.source_label || "").toUpperCase();
+        if (label.startsWith("BE")) updateData.problem_type = "brief_exercise";
+        else if (label.startsWith("P")) updateData.problem_type = "problem";
+        else if (label.startsWith("E")) updateData.problem_type = "exercise";
       }
       await supabase.from("chapter_problems").update(updateData).eq("id", problemId);
     }
