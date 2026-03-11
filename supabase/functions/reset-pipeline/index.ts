@@ -214,10 +214,10 @@ Deno.serve(async (req) => {
       .neq("id", "00000000-0000-0000-0000-000000000000");
     if (e2) errors.push(`Archive teaching assets: ${e2.message}`);
 
-    // 3. Reset chapter_problems pipeline_status back to 'imported'
+    // 3. Reset chapter_problems pipeline_status back to 'imported' and status back to 'raw'
     const { error: e3 } = await sb
       .from("chapter_problems")
-      .update({ pipeline_status: "imported" })
+      .update({ pipeline_status: "imported", status: "raw" })
       .neq("pipeline_status", "imported");
     if (e3) errors.push(`Reset pipeline status: ${e3.message}`);
 
