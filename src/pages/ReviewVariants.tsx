@@ -52,7 +52,11 @@ export default function ReviewVariants() {
   useEffect(() => {
     if (!autoStarted.current && generatedProblems.length > 0 && !reviewStarted) {
       autoStarted.current = true;
-      startReviewSkippingEmpty(0);
+      startReviewSkippingEmpty(0).catch(() => {
+        // Prevent unhandled promise rejection from crashing the page
+        toast.error("Failed to load review queue. Please refresh.");
+        setReviewStarted(false);
+      });
     }
   }, [generatedProblems.length]);
 
