@@ -2504,6 +2504,7 @@ export type Database = {
           sheet_practice_url: string | null
           sheet_promo_url: string | null
           sheet_template_version: string | null
+          solution_screenshot_url: string | null
           source_number: string | null
           source_ref: string | null
           source_type: string | null
@@ -2562,6 +2563,7 @@ export type Database = {
           sheet_practice_url?: string | null
           sheet_promo_url?: string | null
           sheet_template_version?: string | null
+          solution_screenshot_url?: string | null
           source_number?: string | null
           source_ref?: string | null
           source_type?: string | null
@@ -2620,6 +2622,7 @@ export type Database = {
           sheet_practice_url?: string | null
           sheet_promo_url?: string | null
           sheet_template_version?: string | null
+          solution_screenshot_url?: string | null
           source_number?: string | null
           source_ref?: string | null
           source_type?: string | null
