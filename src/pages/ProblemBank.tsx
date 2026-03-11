@@ -507,7 +507,12 @@ export default function ProblemBank() {
                     <TableCell className="text-xs capitalize">{p.source_label?.match(/^BE/i) ? "Brief Exercise" : p.problem_type}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {(p.status === "raw" || p.status === "tagged") &&
+                        {hasMismatch && (
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => resetScreenshot(p)} title="Clear wrong screenshot and re-queue for pasting">
+                            <RotateCcw className="h-3 w-3 mr-1" /> Re-paste
+                          </Button>
+                        )}
+                        {!hasMismatch && (p.status === "raw" || p.status === "tagged") &&
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markReady(p.id)}>
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Ready
                           </Button>
