@@ -442,19 +442,14 @@ export default function AssetsLibrary() {
         {/* Stage complete banner */}
         {(() => {
           if (!assets || assets.length === 0 || chapterFilter === "all") return null;
-          // Fetch total chapter_problems count for this chapter to check 100% approval
-          const totalAssets = assets.length;
-          // All assets in the filtered view must exist — chapter complete when all are present
-          // We compare against the chapter's total source problems that reached "approved"
-          // For simplicity: chapter complete = all assets have been created (assets.length matches total approved)
-          // The StageCompletePanel for "assets" should only show when all items are approved
-          // Since every teaching asset IS an approved item, we need to verify nothing is left unapproved
-          // We'll use the perChapterCounts approach - but we already have the data inline
-          // Simple check: all assets exist = chapter complete (this page only shows approved assets)
+          if (!chapterPipelineCounts) return null;
+          const { total, approved } = chapterPipelineCounts;
+          // Only show when ALL source problems are approved (100%)
+          if (total === 0 || approved < total) return null;
           return (
             <StageCompletePanel
               stage="assets"
-              statLine={`${totalAssets} of ${totalAssets} teaching assets approved`}
+              statLine={`${approved} of ${total} teaching assets approved`}
               role={effectiveRole}
               assignedChapterIds={assignedChapterIds}
             />
