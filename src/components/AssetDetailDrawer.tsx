@@ -456,15 +456,22 @@ export default function AssetDetailDrawer({
 
   // Collapsible section states
   const [showProblemSection, setShowProblemSection] = useState(false);
+  const [showAnswerSection, setShowAnswerSection] = useState(false);
   const [showJESection, setShowJESection] = useState(false);
   const [showWorkedSteps, setShowWorkedSteps] = useState(false);
   const [showFormulasSection, setShowFormulasSection] = useState(false);
   const [showConceptsSection, setShowConceptsSection] = useState(false);
   const [showExamTrapsSection, setShowExamTrapsSection] = useState(false);
+  const [showStructuresSection, setShowStructuresSection] = useState(false);
   const [showSourceSection, setShowSourceSection] = useState(false);
-  const [showTAccountsSection, setShowTAccountsSection] = useState(false);
-  const [showTablesSection, setShowTablesSection] = useState(false);
-  const [showFSSection, setShowFSSection] = useState(false);
+
+  // Flag issue
+  const [showFlagForm, setShowFlagForm] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagging, setFlagging] = useState(false);
+
+  // Instructions (read-only fetch)
+  const [instructions, setInstructions] = useState<{ instruction_number: number; instruction_text: string }[]>([]);
 
   // Highlights
   const [highlights, setHighlights] = useState<Highlight[]>([]);
