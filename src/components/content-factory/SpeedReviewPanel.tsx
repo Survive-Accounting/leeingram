@@ -134,7 +134,8 @@ export function SpeedReviewPanel({
           break;
         case "f":
           e.preventDefault();
-          onFlagForDeepReview();
+          setFlagExpanded(prev => !prev);
+          setFlagReason("");
           break;
         case "s":
           e.preventDefault();
