@@ -105,6 +105,9 @@ export function SpeedReviewPanel({
   const [showTAccounts, setShowTAccounts] = useState(false);
   const [showTables, setShowTables] = useState(false);
   const [showFinStatements, setShowFinStatements] = useState(false);
+  const [flagExpanded, setFlagExpanded] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
 
   // Keyboard shortcuts — A/R/F auto-advance, S=skip, B=back, Ctrl+J=approve&next
   useEffect(() => {
