@@ -52,7 +52,7 @@ interface SpeedReviewPanelProps {
   onApprove: () => void;
   onReject: () => void;
   onRegenerate: () => void;
-  onFlagForDeepReview: () => void;
+  onFlagForDeepReview: (reason?: string) => void;
   onNext: () => void;
   onBack?: () => void;
   onOpenFullReview: () => void;
@@ -105,6 +105,9 @@ export function SpeedReviewPanel({
   const [showTAccounts, setShowTAccounts] = useState(false);
   const [showTables, setShowTables] = useState(false);
   const [showFinStatements, setShowFinStatements] = useState(false);
+  const [flagExpanded, setFlagExpanded] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
 
   // Keyboard shortcuts — A/R/F auto-advance, S=skip, B=back, Ctrl+J=approve&next
   useEffect(() => {
@@ -131,7 +134,8 @@ export function SpeedReviewPanel({
           break;
         case "f":
           e.preventDefault();
-          onFlagForDeepReview();
+          setFlagExpanded(prev => !prev);
+          setFlagReason("");
           break;
         case "s":
           e.preventDefault();
@@ -479,9 +483,17 @@ export function SpeedReviewPanel({
           <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">R</kbd>
         </Button>
 
-        {/* Warning: Needs Fix — small outlined amber */}
-        <Button size="sm" variant="outline" onClick={onFlagForDeepReview} className="h-8 text-xs text-amber-500 hover:text-amber-400 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/5">
-          <Flag className="h-3.5 w-3.5 mr-1" /> Needs Fix
+        {/* Warning: Flag — expands inline input */}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => { setFlagExpanded(prev => !prev); setFlagReason(""); }}
+          className={cn(
+            "h-8 text-xs text-amber-500 hover:text-amber-400 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/5",
+            flagExpanded && "border-amber-500/60 bg-amber-500/10"
+          )}
+        >
+          <Flag className="h-3.5 w-3.5 mr-1" /> Flag
           <kbd className="ml-1.5 text-[9px] opacity-60 bg-background/50 px-1 rounded">F</kbd>
         </Button>
 
@@ -489,6 +501,38 @@ export function SpeedReviewPanel({
         <button onClick={onNext} className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors ml-1">
           Skip <kbd className="ml-1 text-[9px] opacity-60">(S)</kbd>
         </button>
+      </div>
+
+      {/* ── Flag Details Inline Panel ── */}
+      <div
+        className={cn(
+          "overflow-hidden transition-all duration-200 ease-in-out",
+          flagExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+          <textarea
+            autoFocus={flagExpanded}
+            placeholder="What needs fixing? (required)"
+            value={flagReason}
+            onChange={e => setFlagReason(e.target.value)}
+            className="flex-1 min-h-[56px] rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          />
+          <Button
+            size="sm"
+            disabled={flagReason.trim().length === 0 || flagSubmitting}
+            onClick={async () => {
+              setFlagSubmitting(true);
+              await onFlagForDeepReview(flagReason.trim());
+              setFlagExpanded(false);
+              setFlagReason("");
+              setFlagSubmitting(false);
+            }}
+            className="h-9 px-4 text-xs font-semibold"
+          >
+            {flagSubmitting ? "Flagging…" : "Confirm Flag"}
+          </Button>
+        </div>
       </div>
     </div>
   );
