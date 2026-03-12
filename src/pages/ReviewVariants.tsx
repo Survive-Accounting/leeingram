@@ -572,9 +572,40 @@ Return valid JSON only.`,
           {/* ── Progress Bar ── */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-[10px] font-mono">
-                {problem?.source_label || problem?.title || `Problem ${reviewIndex + 1}`}
-              </Badge>
+              {/* Jump-to-Label Combobox */}
+              <Popover open={jumpOpen} onOpenChange={setJumpOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 gap-1 font-mono text-[11px] px-2">
+                    {problem?.source_label || problem?.title || `Problem ${reviewIndex + 1}`}
+                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Jump to label…" className="h-8 text-xs" />
+                    <CommandList>
+                      <CommandEmpty>No match.</CommandEmpty>
+                      {labelList.map((item) => (
+                        <CommandItem
+                          key={item.index}
+                          value={item.label}
+                          onSelect={() => {
+                            setJumpOpen(false);
+                            if (item.index !== reviewIndex) {
+                              startReview(item.index);
+                            }
+                          }}
+                          className="text-xs font-mono"
+                        >
+                          <span className="flex-1">{item.label}</span>
+                          {item.status === "approved" && <Check className="h-3 w-3 text-green-500 ml-1" />}
+                          {item.index === reviewIndex && <span className="text-[9px] text-muted-foreground ml-1">current</span>}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <span className="text-sm font-semibold text-foreground tabular-nums">
                 {reviewIndex + 1} / {generatedProblems.length}
               </span>
