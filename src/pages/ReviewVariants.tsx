@@ -35,6 +35,17 @@ export default function ReviewVariants() {
   const [reviewComplete, setReviewComplete] = useState(false);
   const autoStarted = useRef(false);
   const approveInFlight = useRef(false);
+  const [jumpOpen, setJumpOpen] = useState(false);
+
+  // Memoized label list for Jump-to dropdown (no extra fetch needed)
+  const labelList = useMemo(() =>
+    generatedProblems.map((p: any, i: number) => ({
+      index: i,
+      label: p.source_label || p.title || `Problem ${i + 1}`,
+      status: p.status,
+    })),
+    [generatedProblems]
+  );
 
   // Query generated problems for this chapter
   // Fetch both generated AND approved problems so user can still see reviewed items
