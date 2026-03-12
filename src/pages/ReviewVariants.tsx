@@ -390,13 +390,13 @@ Return valid JSON only.`,
     }
   };
 
-  const handleFlag = async () => {
+  const handleFlag = async (reason?: string) => {
     const activeVariants = candidates.filter(c => c._variantStatus !== "archived");
     const current = activeVariants[speedIdx];
     if (!current) return;
     const { error } = await supabase
       .from("problem_variants")
-      .update({ variant_status: "needs_fix" } as any)
+      .update({ variant_status: "needs_fix", flag_notes: reason || "" } as any)
       .eq("id", current._variantId);
     if (error) { toast.error("Failed to flag"); return; }
     toast.success("Flagged for deep review");

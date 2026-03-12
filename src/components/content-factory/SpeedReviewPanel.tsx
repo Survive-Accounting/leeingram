@@ -52,7 +52,7 @@ interface SpeedReviewPanelProps {
   onApprove: () => void;
   onReject: () => void;
   onRegenerate: () => void;
-  onFlagForDeepReview: () => void;
+  onFlagForDeepReview: (reason?: string) => void;
   onNext: () => void;
   onBack?: () => void;
   onOpenFullReview: () => void;
