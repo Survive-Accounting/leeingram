@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
@@ -13,7 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
-import { Inbox, Loader2, ChevronRight, Check, Zap, Trash2, CheckCircle, ArrowRight } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
+import { Inbox, Loader2, ChevronRight, Check, Zap, Trash2, CheckCircle, ArrowRight, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 
@@ -33,6 +35,7 @@ export default function ReviewVariants() {
   const [reviewComplete, setReviewComplete] = useState(false);
   const autoStarted = useRef(false);
   const approveInFlight = useRef(false);
+  const [jumpOpen, setJumpOpen] = useState(false);
 
   // Query generated problems for this chapter
   // Fetch both generated AND approved problems so user can still see reviewed items
@@ -50,6 +53,16 @@ export default function ReviewVariants() {
     },
     enabled: !!chapterId,
   });
+
+  // Memoized label list for Jump-to dropdown (no extra fetch needed)
+  const labelList = useMemo(() =>
+    generatedProblems.map((p: any, i: number) => ({
+      index: i,
+      label: p.source_label || p.title || `Problem ${i + 1}`,
+      status: p.status,
+    })),
+    [generatedProblems]
+  );
 
   // Auto-start review when generated problems are available
   useEffect(() => {
@@ -559,9 +572,40 @@ Return valid JSON only.`,
           {/* ── Progress Bar ── */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-[10px] font-mono">
-                {problem?.source_label || problem?.title || `Problem ${reviewIndex + 1}`}
-              </Badge>
+              {/* Jump-to-Label Combobox */}
+              <Popover open={jumpOpen} onOpenChange={setJumpOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 gap-1 font-mono text-[11px] px-2">
+                    {problem?.source_label || problem?.title || `Problem ${reviewIndex + 1}`}
+                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Jump to label…" className="h-8 text-xs" />
+                    <CommandList>
+                      <CommandEmpty>No match.</CommandEmpty>
+                      {labelList.map((item) => (
+                        <CommandItem
+                          key={item.index}
+                          value={item.label}
+                          onSelect={() => {
+                            setJumpOpen(false);
+                            if (item.index !== reviewIndex) {
+                              startReview(item.index);
+                            }
+                          }}
+                          className="text-xs font-mono"
+                        >
+                          <span className="flex-1">{item.label}</span>
+                          {item.status === "approved" && <Check className="h-3 w-3 text-green-500 ml-1" />}
+                          {item.index === reviewIndex && <span className="text-[9px] text-muted-foreground ml-1">current</span>}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <span className="text-sm font-semibold text-foreground tabular-nums">
                 {reviewIndex + 1} / {generatedProblems.length}
               </span>
