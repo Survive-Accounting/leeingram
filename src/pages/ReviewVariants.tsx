@@ -738,7 +738,7 @@ Return valid JSON only.`,
               onOpenFullReview={() => setSpeedMode(false)}
             />
           ) : currentVariant ? (
-            <ReviewErrorBoundary onReset={() => setSpeedMode(true)}>
+            <ReviewErrorBoundary key={`full-${currentVariant._variantId}`} onReset={() => setSpeedMode(true)}>
               <VariantReviewContent
                 variant={currentVariant}
                 problem={problem}

@@ -72,10 +72,16 @@ export function SpeedReviewPanel({
   onBack,
   onOpenFullReview,
 }: SpeedReviewPanelProps) {
-  const parts = useMemo(() => normalizeToParts(variant), [variant]);
+  const parts = useMemo(() => {
+    try { return normalizeToParts(variant); }
+    catch { return []; }
+  }, [variant]);
   const textParts = useMemo(() => parts.filter(isTextPart), [parts]);
   const jeParts = useMemo(() => parts.filter(isJEPart), [parts]);
-  const problemType = useMemo(() => detectProblemType(variant), [variant]);
+  const problemType = useMemo(() => {
+    try { return detectProblemType(variant); }
+    catch { return "MIXED" as ProblemType; }
+  }, [variant]);
 
   const problemText = variant.survive_problem_text || variant.variant_problem_text || "";
   const solutionText = variant.survive_solution_text || variant.variant_solution_text || "";
