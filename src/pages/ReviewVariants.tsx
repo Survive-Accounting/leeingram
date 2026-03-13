@@ -737,15 +737,17 @@ Return valid JSON only.`,
               onOpenFullReview={() => setSpeedMode(false)}
             />
           ) : currentVariant ? (
-            <VariantReviewContent
-              variant={currentVariant}
-              problem={problem}
-              chapterId={chapterId}
-              onApproved={handleApprove}
-              onRejected={handleRegenerate}
-              onNeedsFix={handleFlag}
-              onApproveAndNext={handleApprove}
-            />
+            <ReviewErrorBoundary onReset={() => setSpeedMode(true)}>
+              <VariantReviewContent
+                variant={currentVariant}
+                problem={problem}
+                chapterId={chapterId}
+                onApproved={handleApprove}
+                onRejected={handleRegenerate}
+                onNeedsFix={handleFlag}
+                onApproveAndNext={handleApprove}
+              />
+            </ReviewErrorBoundary>
           ) : null}
         </>
       )}
