@@ -224,60 +224,68 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
   useEffect(() => {
     if (!variant) return;
     
-    const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
-    const needsJE = detectRequiresJE(problemText);
-    setRequiresJE(needsJE);
+    try {
+      const problemText = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+      const needsJE = detectRequiresJE(problemText);
+      setRequiresJE(needsJE);
 
-    const dbSkeleton = variant.je_skeleton_json as SkeletonData | null;
-    const dbEntries = (variant.je_entries_json || {}) as EntriesMap;
-    const dbStatuses = (variant.je_entry_status_json || {}) as StatusMap;
+      const dbSkeleton = variant.je_skeleton_json as SkeletonData | null;
+      const dbEntries = (variant.je_entries_json || {}) as EntriesMap;
+      const dbStatuses = (variant.je_entry_status_json || {}) as StatusMap;
 
-    if (dbSkeleton && dbSkeleton.scenario_sections?.length > 0) {
-      setSkeleton(dbSkeleton);
-      setEntries(dbEntries);
-      // Auto-validate: set all entries with rows to "validated" by default
-      const autoStatuses: StatusMap = {};
-      for (const sc of dbSkeleton.scenario_sections) {
-        for (const d of sc.entry_dates) {
-          const key = dateKey(sc.scenario_label, d);
-          const existingStatus = dbStatuses[key];
-          const hasRows = dbEntries[key]?.rows?.length > 0;
-          // Default to validated if has rows, preserve existing status if already set
-          autoStatuses[key] = existingStatus || (hasRows ? "validated" : "empty");
+      if (dbSkeleton && dbSkeleton.scenario_sections?.length > 0) {
+        setSkeleton(dbSkeleton);
+        setEntries(dbEntries);
+        // Auto-validate: set all entries with rows to "validated" by default
+        const autoStatuses: StatusMap = {};
+        for (const sc of dbSkeleton.scenario_sections) {
+          for (const d of sc.entry_dates) {
+            const key = dateKey(sc.scenario_label, d);
+            const existingStatus = dbStatuses[key];
+            const hasRows = dbEntries[key]?.rows?.length > 0;
+            // Default to validated if has rows, preserve existing status if already set
+            autoStatuses[key] = existingStatus || (hasRows ? "validated" : "empty");
+          }
         }
-      }
-      setStatuses(autoStatuses);
-    } else {
-      const candidateSkeleton = extractSkeletonFromCandidate(
-        variant.candidate_data || variant.journal_entry_completed_json
-      );
-      const candidateEntries = extractEntriesFromCandidate(
-        variant.candidate_data || variant.journal_entry_completed_json
-      );
-
-      if (candidateSkeleton) {
-        setSkeleton(candidateSkeleton);
-        setEntries(candidateEntries);
-        // Auto-validate all candidate entries
-        const initStatuses: StatusMap = {};
-        for (const key of Object.keys(candidateEntries)) {
-          initStatuses[key] = "validated";
-        }
-        setStatuses(initStatuses);
+        setStatuses(autoStatuses);
       } else {
-        setSkeleton(null);
-        setEntries({});
-        setStatuses({});
-      }
-    }
+        const candidateSkeleton = extractSkeletonFromCandidate(
+          variant.candidate_data || variant.journal_entry_completed_json
+        );
+        const candidateEntries = extractEntriesFromCandidate(
+          variant.candidate_data || variant.journal_entry_completed_json
+        );
 
-    // Init highlights
-    const rawHighlights = variant.highlight_key_json;
-    const problemTextForHighlights = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
-    if (Array.isArray(rawHighlights) && rawHighlights.length > 0) {
-      setHighlights(validateHighlights(rawHighlights, problemTextForHighlights));
-      setShowHighlights(true);
-    } else {
+        if (candidateSkeleton) {
+          setSkeleton(candidateSkeleton);
+          setEntries(candidateEntries);
+          // Auto-validate all candidate entries
+          const initStatuses: StatusMap = {};
+          for (const key of Object.keys(candidateEntries)) {
+            initStatuses[key] = "validated";
+          }
+          setStatuses(initStatuses);
+        } else {
+          setSkeleton(null);
+          setEntries({});
+          setStatuses({});
+        }
+      }
+
+      // Init highlights
+      const rawHighlights = variant.highlight_key_json;
+      const problemTextForHighlights = variant.survive_problem_text || variant.variant_problem_text || problem?.problem_text || "";
+      if (Array.isArray(rawHighlights) && rawHighlights.length > 0) {
+        setHighlights(validateHighlights(rawHighlights, problemTextForHighlights));
+        setShowHighlights(true);
+      } else {
+        setHighlights([]);
+      }
+    } catch (err) {
+      console.error("[VariantReviewContent] Init error:", err);
+      setSkeleton(null);
+      setEntries({});
+      setStatuses({});
       setHighlights([]);
     }
 
