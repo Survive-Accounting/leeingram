@@ -269,6 +269,9 @@ export default function VaDashboard() {
                             {stage.pctLabel && (
                               <p className="text-[10px] text-muted-foreground">{stage.pctLabel}</p>
                             )}
+                            {'isAssetCount' in stage && (stage as any).isAssetCount && (
+                              <p className="text-[10px] text-muted-foreground">approved</p>
+                            )}
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="text-[11px] h-7 gap-1 w-full">
                               Go <ArrowRight className="h-3 w-3" />
                             </Button>
