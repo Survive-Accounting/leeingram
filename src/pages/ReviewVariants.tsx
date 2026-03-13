@@ -19,6 +19,40 @@ import { Inbox, Loader2, ChevronRight, Check, Zap, Trash2, CheckCircle, ArrowRig
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLogger";
 
+// Error boundary to catch crashes during view toggle
+class ReviewErrorBoundary extends Component<
+  { children: ReactNode; onReset: () => void },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode; onReset: () => void }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[ReviewErrorBoundary] Caught:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center space-y-3">
+          <p className="text-sm font-medium text-foreground">Something went wrong while rendering the review panel.</p>
+          <p className="text-xs text-muted-foreground">{this.state.error?.message}</p>
+          <button
+            onClick={() => { this.setState({ hasError: false, error: null }); this.props.onReset(); }}
+            className="text-xs text-primary underline hover:no-underline"
+          >
+            Switch to Speed Review
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function ReviewVariants() {
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
