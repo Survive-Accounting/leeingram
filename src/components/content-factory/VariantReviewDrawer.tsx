@@ -302,11 +302,16 @@ export function VariantReviewContent({ variant, problem, chapterId, onApproved, 
 
   const loadRecentFixes = async () => {
     if (!chapterId) return;
-    const { data } = await supabase
-      .from("correction_events").select("*")
-      .eq("chapter_id", chapterId)
-      .order("created_at", { ascending: false }).limit(5);
-    setRecentFixes(data || []);
+    try {
+      const { data } = await supabase
+        .from("correction_events").select("*")
+        .eq("chapter_id", chapterId)
+        .order("created_at", { ascending: false }).limit(5);
+      setRecentFixes(data || []);
+    } catch (err) {
+      console.error("[VariantReviewContent] Failed to load recent fixes:", err);
+      setRecentFixes([]);
+    }
   };
 
   const handleViewPayload = async () => {
