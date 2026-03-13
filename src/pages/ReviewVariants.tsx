@@ -717,6 +717,7 @@ Return valid JSON only.`,
             </Card>
           ) : speedMode && currentVariant ? (
             <SpeedReviewPanel
+              key={`speed-${currentVariant._variantId}`}
               variant={currentVariant}
               problem={problem}
               variantIndex={speedIdx}
