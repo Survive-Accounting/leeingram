@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 
 const PIPELINE_STAGES = [
-  { key: "import", label: "Import", route: "/problem-bank", icon: Upload },
-  { key: "generate", label: "Generate", route: "/content", icon: Sparkles },
-  { key: "review", label: "Review", route: "/review", icon: Eye },
+  { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
+  { key: "generate", label: "Generate Variants", route: "/content", icon: Sparkles },
+  { key: "review", label: "Review Variants", route: "/review", icon: Eye },
   { key: "assets", label: "Teaching Assets", route: "/assets-library", icon: Library },
 ] as const;
 
