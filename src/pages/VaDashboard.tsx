@@ -158,13 +158,13 @@ export default function VaDashboard() {
     // Sequential: each stage needs previous to be Done
     const generateDone = importDone && generateRawDone;
     const reviewDone = generateDone && reviewRawDone;
-    const assetsDone = reviewDone && assetsRawDone;
+    const assetsDone = reviewDone && assetsDoneRaw;
 
     return [
       { ...PIPELINE_STAGES[0], remaining: ch.imported, isDone: importDone, pctLabel: `${importReadyPct}% ready` },
       { ...PIPELINE_STAGES[1], remaining: ch.generated, isDone: generateDone, pctLabel: null as string | null },
       { ...PIPELINE_STAGES[2], remaining: ch.in_review, isDone: reviewDone, pctLabel: null as string | null },
-      { ...PIPELINE_STAGES[3], remaining: assetsRawRemaining, isDone: assetsDone, pctLabel: null as string | null },
+      { ...PIPELINE_STAGES[3], remaining: assetsCount, isDone: assetsDone, pctLabel: null as string | null, isAssetCount: true },
     ];
   }, [activeChapterId, perChapterCounts, assetCounts]);
 
