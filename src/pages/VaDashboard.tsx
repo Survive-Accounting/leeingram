@@ -152,19 +152,19 @@ export default function VaDashboard() {
 
     const generateRawDone = ch.generated === 0;
     const reviewRawDone = ch.in_review === 0;
-    const assetsRawRemaining = ch.total > 0 ? Math.max(0, ch.total - ch.approved) : 0;
-    const assetsRawDone = assetsRawRemaining === 0;
+    const assetsCount = ch.approved;
+    const assetsDoneRaw = ch.total > 0 && ch.approved === ch.total;
 
     // Sequential: each stage needs previous to be Done
     const generateDone = importDone && generateRawDone;
     const reviewDone = generateDone && reviewRawDone;
-    const assetsDone = reviewDone && assetsRawDone;
+    const assetsDone = reviewDone && assetsDoneRaw;
 
     return [
       { ...PIPELINE_STAGES[0], remaining: ch.imported, isDone: importDone, pctLabel: `${importReadyPct}% ready` },
       { ...PIPELINE_STAGES[1], remaining: ch.generated, isDone: generateDone, pctLabel: null as string | null },
       { ...PIPELINE_STAGES[2], remaining: ch.in_review, isDone: reviewDone, pctLabel: null as string | null },
-      { ...PIPELINE_STAGES[3], remaining: assetsRawRemaining, isDone: assetsDone, pctLabel: null as string | null },
+      { ...PIPELINE_STAGES[3], remaining: assetsCount, isDone: assetsDone, pctLabel: null as string | null, isAssetCount: true },
     ];
   }, [activeChapterId, perChapterCounts, assetCounts]);
 
@@ -268,6 +268,9 @@ export default function VaDashboard() {
                             <p className="text-2xl font-bold text-foreground tabular-nums">{stage.remaining}</p>
                             {stage.pctLabel && (
                               <p className="text-[10px] text-muted-foreground">{stage.pctLabel}</p>
+                            )}
+                            {'isAssetCount' in stage && (stage as any).isAssetCount && (
+                              <p className="text-[10px] text-muted-foreground">approved</p>
                             )}
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="text-[11px] h-7 gap-1 w-full">
                               Go <ArrowRight className="h-3 w-3" />
