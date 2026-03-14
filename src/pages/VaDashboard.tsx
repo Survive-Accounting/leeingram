@@ -14,8 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
-  HelpCircle, MessageSquare, ExternalLink, Library,
+  HelpCircle, MessageSquare, ExternalLink, Library, FileUp,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const PIPELINE_STAGES = [
   { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
@@ -222,6 +223,11 @@ export default function VaDashboard() {
                 <h2 className="text-xl font-bold text-foreground">
                   {activeCourse?.code} — Ch {activeChapter.chapter_number}: {activeChapter.chapter_name}
                 </h2>
+                <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 mt-2" asChild>
+                  <Link to={`/solutions-upload/${workspace?.chapterId}`}>
+                    <FileUp className="h-3 w-3 mr-1" /> Upload Solutions PDF
+                  </Link>
+                </Button>
               </div>
             )}
 
