@@ -14,8 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
-  HelpCircle, MessageSquare, ExternalLink, Library,
+  HelpCircle, MessageSquare, ExternalLink, Library, FileUp,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const PIPELINE_STAGES = [
   { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
