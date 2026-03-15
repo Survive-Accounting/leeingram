@@ -438,8 +438,9 @@ export default function AssetsLibrary() {
             <Library className="h-5 w-5 text-primary" />
             Assets Library
            </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
             {assets?.length ?? 0} approved assets
+            <InfoTip text="MC generation and eBook exports are now managed in Phase 2 → Core Assets tab." />
           </p>
         </div>
 
