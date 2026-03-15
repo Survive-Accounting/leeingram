@@ -402,9 +402,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
             // Sheet Prep VA: only Teaching Assets + Deploy Checklist
             const showPhase2 = isLeadVaOrAdmin || isSheetPrepVa;
-            const phase2Items = isSheetPrepVa
+             const phase2Items = isSheetPrepVa
               ? PHASE_2_ITEMS.filter(i => i.path === "/deployment")
-              : PHASE_2_ITEMS;
+              : isLeadVaOrAdmin
+                ? PHASE_2_ITEMS
+                : PHASE_2_ITEMS.filter(i => !(i as any).adminOnly);
 
             return (
               <>
