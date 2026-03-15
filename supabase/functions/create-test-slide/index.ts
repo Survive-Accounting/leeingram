@@ -325,20 +325,31 @@ Deno.serve(async (req) => {
 
     console.log(`Test Slides folder: ${testSlidesFolderId} inside asset ${assetCode}`);
 
-    // ── Step 2: Create blank Google Slides presentation ──────────────
+    // ── Step 2: Create Google Slides presentation via Drive API ──────
     const presentationTitle = assetCode;
 
-    const createRes = await googleFetch(GOOGLE_SLIDES_API, token, {
+    const driveCreateRes = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
       method: "POST",
-      body: JSON.stringify({ title: presentationTitle }),
+      body: JSON.stringify({
+        name: presentationTitle,
+        mimeType: "application/vnd.google-apps.presentation",
+      }),
     });
 
-    const presentationId = createRes.presentationId;
+    const presentationId = driveCreateRes.id;
     const slideUrl = `https://docs.google.com/presentation/d/${presentationId}/edit`;
-    console.log(`Created presentation: ${presentationId}`);
+    console.log(`Created presentation via Drive API: ${presentationId}`);
 
-    // Get the default slide ID
-    const defaultSlideId = createRes.slides?.[0]?.objectId;
+    // Try to fetch presentation details and add content via Slides API
+    let defaultSlideId: string | undefined;
+    let slidesApiAvailable = true;
+    try {
+      const presData = await googleFetch(`${GOOGLE_SLIDES_API}/${presentationId}`, token);
+      defaultSlideId = presData.slides?.[0]?.objectId;
+    } catch (e: any) {
+      console.warn("Slides API not available, presentation created but content not populated:", e.message);
+      slidesApiAvailable = false;
+    }
 
     // ── Step 3: Build text content for the slide ─────────────────────
     const fields = buildFieldList(asset, course, chapter, problemInstructions);
