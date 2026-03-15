@@ -80,6 +80,7 @@ export default function Phase2Review() {
   const [noteText, setNoteText] = useState("");
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
   const [jumpQuery, setJumpQuery] = useState("");
+  const [debugBannerDismissed, setDebugBannerDismissed] = useState(false);
 
   const [viewMode, setViewMode] = useState<"review" | "all">(() => {
     try { return (localStorage.getItem("phase2-view-mode") as "review" | "all") || "review"; } catch { return "review"; }

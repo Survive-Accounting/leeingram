@@ -55,6 +55,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ChapterComplete from "./pages/ChapterComplete";
 import TemplateManager from "./pages/TemplateManager";
+import DebugSession from "./pages/DebugSession";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
