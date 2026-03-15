@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Star, Pause,
-  Bug, SkipForward, StickyNote, Loader2, LayoutList, CreditCard, Undo2, Search,
+  Bug, SkipForward, StickyNote, Loader2, LayoutList, CreditCard, Undo2, Search, FileWarning,
 } from "lucide-react";
 import { toast } from "sonner";
 
