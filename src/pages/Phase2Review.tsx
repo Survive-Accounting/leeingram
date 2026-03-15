@@ -288,11 +288,21 @@ export default function Phase2Review() {
               >
                 <LayoutList className="h-3.5 w-3.5 mr-1" /> All
               </Button>
+              <Button
+                variant={viewMode === "debug" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-7 text-xs px-2"
+                onClick={() => setViewMode("debug")}
+              >
+                <FileWarning className="h-3.5 w-3.5 mr-1" /> Debug Notes
+              </Button>
             </div>
           </div>
         </div>
 
-        {viewMode === "all" ? (
+        {viewMode === "debug" ? (
+          <Phase2DebugNotesTab chapterId={chapterId} courseName={workspace?.courseName} chapterName={`Ch ${workspace?.chapterNumber}`} />
+        ) : viewMode === "all" ? (
           <Phase2AllView chapterId={chapterId} />
         ) : total === 0 ? (
           /* Completion state */
