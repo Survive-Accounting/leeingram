@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -26,6 +27,7 @@ import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";
+import { CoreAssetsTab } from "@/components/CoreAssetsTab";
 
 type TeachingAsset = {
   id: string;
@@ -673,6 +675,14 @@ export default function AssetsLibrary() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="mb-4 bg-muted/50 border border-border">
+          <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
+          {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="all">
       {/* Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
         <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
@@ -854,6 +864,15 @@ export default function AssetsLibrary() {
           </Collapsible>
         </div>
       )}
+
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="core">
+            <CoreAssetsTab />
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Export Dialog */}
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
