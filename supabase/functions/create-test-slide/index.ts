@@ -333,6 +333,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         name: presentationTitle,
         mimeType: "application/vnd.google-apps.presentation",
+        parents: [testSlidesFolderId],
       }),
     });
 
