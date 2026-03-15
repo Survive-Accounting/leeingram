@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
+import { DualClock } from "@/components/DualClock";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { NextTaskBanner } from "@/components/NextTaskBanner";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
@@ -349,7 +350,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             </div>
           )}
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
+            <DualClock />
             <Button variant="ghost" size="sm" onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
               {sidebarCollapsed ? <PanelLeft className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
             </Button>
