@@ -59,6 +59,8 @@ type TeachingAsset = {
   source_number?: string | null;
   problem_type?: string | null;
   google_sheet_status?: string | null;
+  test_slide_id?: string | null;
+  test_slide_url?: string | null;
 };
 
 type JournalOption = "question" | "feedback" | "none";
