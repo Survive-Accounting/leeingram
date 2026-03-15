@@ -48,6 +48,7 @@ import BatchRunDetail from "./pages/BatchRunDetail";
 import BankedQuestionReview from "./pages/BankedQuestionReview";
 import PipelineOverview from "./pages/PipelineOverview";
 import DeploymentChecklist from "./pages/DeploymentChecklist";
+import Phase2Review from "./pages/Phase2Review";
 import VaAdmin from "./pages/VaAdmin";
 import VaDashboard from "./pages/VaDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
