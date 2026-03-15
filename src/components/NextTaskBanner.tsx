@@ -42,7 +42,7 @@ const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, st
     sopLabel: "Assets SOP",
   },
   "/question-review": {
-    task: "Review auto-generated MC questions — approve or reject each one.",
+    task: "Generate and review multiple choice questions for each Core Asset in this chapter.",
     adminOnly: true,
     countQuery: "review",
     sopLabel: "MC Review SOP",
