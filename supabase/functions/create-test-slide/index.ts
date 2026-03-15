@@ -333,6 +333,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         name: presentationTitle,
         mimeType: "application/vnd.google-apps.presentation",
+        parents: [testSlidesFolderId],
       }),
     });
 
@@ -429,15 +430,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Step 5: Move presentation to Test Slides folder ──────────────
-    // Get current parents
-    const fileInfo = await googleFetch(
-      `${GOOGLE_DRIVE_API}/${presentationId}?fields=parents&supportsAllDrives=true`,
-      token
-    );
-    const currentParents = fileInfo.parents || [];
-    await moveFileToFolder(token, presentationId, testSlidesFolderId, currentParents);
-    console.log(`Moved presentation to Test Slides folder`);
+    // File already created in Test Slides folder (via parents param)
+    console.log(`Presentation created directly in Test Slides folder`);
 
     // ── Step 6: Update Supabase ──────────────────────────────────────
     await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
