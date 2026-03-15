@@ -83,8 +83,8 @@ export default function Phase2Review() {
   const [jumpQuery, setJumpQuery] = useState("");
   const [debugBannerDismissed, setDebugBannerDismissed] = useState(false);
 
-  const [viewMode, setViewMode] = useState<"review" | "all">(() => {
-    try { return (localStorage.getItem("phase2-view-mode") as "review" | "all") || "review"; } catch { return "review"; }
+  const [viewMode, setViewMode] = useState<"review" | "all" | "debug">(() => {
+    try { return (localStorage.getItem("phase2-view-mode") as "review" | "all" | "debug") || "review"; } catch { return "review"; }
   });
   useEffect(() => { localStorage.setItem("phase2-view-mode", viewMode); }, [viewMode]);
 
