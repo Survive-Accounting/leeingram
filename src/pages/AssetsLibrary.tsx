@@ -469,11 +469,6 @@ export default function AssetsLibrary() {
                 </SelectTrigger>
                 <SelectContent>
                   {isAdmin && (
-                    <SelectItem value="export-csv">
-                      <span className="flex items-center gap-1.5"><Download className="h-3 w-3" /> Export to CSV</span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
                     <SelectItem value="add-to-set">
                       <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
                     </SelectItem>
