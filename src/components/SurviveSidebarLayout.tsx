@@ -36,6 +36,7 @@ const PHASE_1_ITEMS = [
 ];
 
 const PHASE_2_ITEMS = [
+  { label: "Phase 2 Review", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
   { label: "MC Generator", path: "/question-review", icon: Package },
   { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
@@ -401,9 +402,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
             // Sheet Prep VA: only Teaching Assets + Deploy Checklist
             const showPhase2 = isLeadVaOrAdmin || isSheetPrepVa;
-            const phase2Items = isSheetPrepVa
+             const phase2Items = isSheetPrepVa
               ? PHASE_2_ITEMS.filter(i => i.path === "/deployment")
-              : PHASE_2_ITEMS;
+              : isLeadVaOrAdmin
+                ? PHASE_2_ITEMS
+                : PHASE_2_ITEMS.filter(i => !(i as any).adminOnly);
 
             return (
               <>
