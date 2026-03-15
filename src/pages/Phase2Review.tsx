@@ -257,6 +257,7 @@ export default function Phase2Review() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h1 className="text-lg font-bold text-foreground">Phase 2 Review</h1>
           <div className="flex items-center gap-2">
+            <InfoTip text="WB = Whiteboard · Vid = Video · MC = Multiple Choice · EB = Ebook · QA = Quality Assurance · Dep = Deployment" side="bottom" />
             {viewMode === "review" && total > 0 && (
               <div className="flex items-center gap-1">
                 <Input
