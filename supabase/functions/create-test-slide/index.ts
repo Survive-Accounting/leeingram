@@ -325,109 +325,109 @@ Deno.serve(async (req) => {
 
     console.log(`Test Slides folder: ${testSlidesFolderId} inside asset ${assetCode}`);
 
-    // ── Step 2: Create blank Google Slides presentation ──────────────
+    // ── Step 2: Create Google Slides presentation via Drive API ──────
     const presentationTitle = assetCode;
 
-    const createRes = await googleFetch(GOOGLE_SLIDES_API, token, {
+    const driveCreateRes = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
       method: "POST",
-      body: JSON.stringify({ title: presentationTitle }),
+      body: JSON.stringify({
+        name: presentationTitle,
+        mimeType: "application/vnd.google-apps.presentation",
+      }),
     });
 
-    const presentationId = createRes.presentationId;
+    const presentationId = driveCreateRes.id;
     const slideUrl = `https://docs.google.com/presentation/d/${presentationId}/edit`;
-    console.log(`Created presentation: ${presentationId}`);
+    console.log(`Created presentation via Drive API: ${presentationId}`);
 
-    // Get the default slide ID
-    const defaultSlideId = createRes.slides?.[0]?.objectId;
-
-    // ── Step 3: Build text content for the slide ─────────────────────
-    const fields = buildFieldList(asset, course, chapter, problemInstructions);
-
-    // Build combined text block
-    const textLines: string[] = [];
-    for (const field of fields) {
-      textLines.push(`${field.label}:`);
-      textLines.push(truncate(field.value));
-      textLines.push(""); // blank separator
+    // Try to fetch presentation details and add content via Slides API
+    let defaultSlideId: string | undefined;
+    let slidesApiAvailable = true;
+    try {
+      const presData = await googleFetch(`${GOOGLE_SLIDES_API}/${presentationId}`, token);
+      defaultSlideId = presData.slides?.[0]?.objectId;
+    } catch (e: any) {
+      console.warn("Slides API not available, presentation created but content not populated:", e.message);
+      slidesApiAvailable = false;
     }
-    const fullText = textLines.join("\n");
 
-    // ── Step 4: Add a single large text box to the default slide ─────
-    // Standard 16:9 slide is 10" x 5.625" (in EMU: 1 inch = 914400 EMU)
-    const slideRequests: any[] = [];
+    if (slidesApiAvailable && defaultSlideId) {
+      // ── Step 3: Build text content for the slide ─────────────────────
+      const fields = buildFieldList(asset, course, chapter, problemInstructions);
 
-    if (defaultSlideId) {
-      // Delete the default empty text elements on the blank slide
-      for (const element of (createRes.slides?.[0]?.pageElements || [])) {
-        slideRequests.push({ deleteObject: { objectId: element.objectId } });
+      // Build combined text block
+      const textLines: string[] = [];
+      for (const field of fields) {
+        textLines.push(`${field.label}:`);
+        textLines.push(truncate(field.value));
+        textLines.push(""); // blank separator
       }
-    }
+      const fullText = textLines.join("\n");
 
-    const textBoxId = "dataTextBox";
-    slideRequests.push({
-      createShape: {
-        objectId: textBoxId,
-        shapeType: "TEXT_BOX",
-        elementProperties: {
-          pageObjectId: defaultSlideId,
-          size: {
-            width: { magnitude: 8800000, unit: "EMU" }, // ~9.6 inches
-            height: { magnitude: 4800000, unit: "EMU" }, // ~5.25 inches
-          },
-          transform: {
-            scaleX: 1, scaleY: 1, translateX: 200000, translateY: 200000,
-            unit: "EMU",
+      // ── Step 4: Add a single large text box to the default slide ─────
+      const slideRequests: any[] = [];
+
+      const textBoxId = "dataTextBox";
+      slideRequests.push({
+        createShape: {
+          objectId: textBoxId,
+          shapeType: "TEXT_BOX",
+          elementProperties: {
+            pageObjectId: defaultSlideId,
+            size: {
+              width: { magnitude: 8800000, unit: "EMU" },
+              height: { magnitude: 4800000, unit: "EMU" },
+            },
+            transform: {
+              scaleX: 1, scaleY: 1, translateX: 200000, translateY: 200000,
+              unit: "EMU",
+            },
           },
         },
-      },
-    });
+      });
 
-    slideRequests.push({
-      insertText: {
-        objectId: textBoxId,
-        text: fullText,
-        insertionIndex: 0,
-      },
-    });
-
-    // Style the entire text box: Arial 10pt
-    slideRequests.push({
-      updateTextStyle: {
-        objectId: textBoxId,
-        style: {
-          fontFamily: "Arial",
-          fontSize: { magnitude: 10, unit: "PT" },
+      slideRequests.push({
+        insertText: {
+          objectId: textBoxId,
+          text: fullText,
+          insertionIndex: 0,
         },
-        textRange: { type: "ALL" },
-        fields: "fontFamily,fontSize",
-      },
-    });
+      });
 
-    // Bold the field labels
-    let charIdx = 0;
-    for (const field of fields) {
-      const labelEnd = charIdx + field.label.length + 1; // +1 for ":"
       slideRequests.push({
         updateTextStyle: {
           objectId: textBoxId,
-          style: {
-            bold: true,
-            fontSize: { magnitude: 11, unit: "PT" },
-          },
-          textRange: { type: "FIXED_RANGE", startIndex: charIdx, endIndex: labelEnd },
-          fields: "bold,fontSize",
+          style: { fontFamily: "Arial", fontSize: { magnitude: 10, unit: "PT" } },
+          textRange: { type: "ALL" },
+          fields: "fontFamily,fontSize",
         },
       });
-      // Move past: "LABEL:\nvalue\n\n"
-      const valueText = truncate(field.value);
-      charIdx = labelEnd + 1 + valueText.length + 1 + 1; // \n after label, value text, \n after value, \n blank
-    }
 
-    // Execute all slide modifications
-    await googleFetch(`${GOOGLE_SLIDES_API}/${presentationId}:batchUpdate`, token, {
-      method: "POST",
-      body: JSON.stringify({ requests: slideRequests }),
-    });
+      let charIdx = 0;
+      for (const field of fields) {
+        const labelEnd = charIdx + field.label.length + 1;
+        slideRequests.push({
+          updateTextStyle: {
+            objectId: textBoxId,
+            style: { bold: true, fontSize: { magnitude: 11, unit: "PT" } },
+            textRange: { type: "FIXED_RANGE", startIndex: charIdx, endIndex: labelEnd },
+            fields: "bold,fontSize",
+          },
+        });
+        const valueText = truncate(field.value);
+        charIdx = labelEnd + 1 + valueText.length + 1 + 1;
+      }
+
+      try {
+        await googleFetch(`${GOOGLE_SLIDES_API}/${presentationId}:batchUpdate`, token, {
+          method: "POST",
+          body: JSON.stringify({ requests: slideRequests }),
+        });
+        console.log("Slide content populated successfully");
+      } catch (e: any) {
+        console.warn("Could not populate slide content (Slides API may not be enabled):", e.message);
+      }
+    }
 
     // ── Step 5: Move presentation to Test Slides folder ──────────────
     // Get current parents
