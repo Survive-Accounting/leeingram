@@ -865,6 +865,15 @@ export default function AssetsLibrary() {
         </div>
       )}
 
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="core">
+            <CoreAssetsTab />
+          </TabsContent>
+        )}
+      </Tabs>
+
       {/* Export Dialog */}
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
         <DialogContent className="max-w-md">
