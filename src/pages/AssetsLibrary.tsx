@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
@@ -59,6 +59,8 @@ type TeachingAsset = {
   source_number?: string | null;
   problem_type?: string | null;
   google_sheet_status?: string | null;
+  test_slide_id?: string | null;
+  test_slide_url?: string | null;
 };
 
 type JournalOption = "question" | "feedback" | "none";
@@ -508,6 +510,11 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> 🧪 Create Test Sheet</span>
                     </SelectItem>
                   )}
+                  {isAdmin && (
+                    <SelectItem value="create-test-slide">
+                      <span className="flex items-center gap-1.5"><Presentation className="h-3 w-3" /> 🎞️ Create Test Slide</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <Button
@@ -644,6 +651,29 @@ export default function AssetsLibrary() {
                       setSelectedIds(new Set());
                     } catch (e: any) {
                       toast.error(`Test sheet failed: ${asset.asset_name}`, { description: e.message });
+                    }
+                    setIsCreatingSheets(false);
+                  } else if (bulkAction === "create-test-slide") {
+                    const asset = selected[0];
+                    if (!asset) return;
+                    setIsCreatingSheets(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("create-test-slide", {
+                        body: { teaching_asset_id: asset.id },
+                      });
+                      if (error) {
+                        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
+                        throw new Error(errMsg);
+                      }
+                      if (data?.error) throw new Error(data.error);
+                      toast.success("Test Slide created — opening now", {
+                        action: { label: "Open Folder", onClick: () => window.open(data.test_slides_folder_url, "_blank") },
+                      });
+                      window.open(data.test_slide_url, "_blank");
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      setSelectedIds(new Set());
+                    } catch (e: any) {
+                      toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
                     }
                     setIsCreatingSheets(false);
                   }
@@ -786,7 +816,7 @@ export default function AssetsLibrary() {
                     </TableCell>
                     {!isContentCreationVa && (
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-0.5 justify-end">
+                        <div className="flex gap-0.5 justify-end items-center">
                           {a.sheet_master_url ? (
                             <>
                               <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
@@ -800,6 +830,9 @@ export default function AssetsLibrary() {
                           ) : sheetUrls?.[a.asset_name] ? (
                             <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
                           ) : null}
+                          {a.test_slide_url && (
+                            <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" title="Open Test Slide" className="hover:scale-110 transition-transform">🎞️</a>
+                          )}
                         </div>
                       </TableCell>
                     )}

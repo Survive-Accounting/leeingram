@@ -1,0 +1,1 @@
+ALTER TABLE public.teaching_assets ADD COLUMN IF NOT EXISTS test_slide_id text, ADD COLUMN IF NOT EXISTS test_slide_url text;

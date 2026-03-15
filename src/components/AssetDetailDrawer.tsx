@@ -56,6 +56,8 @@ export type TeachingAssetFull = {
   sheet_practice_url?: string | null;
   sheet_promo_url?: string | null;
   sheet_path_url?: string | null;
+  test_slide_id?: string | null;
+  test_slide_url?: string | null;
   times_used?: number;
   sheet_template_version?: string | null;
   source_type?: string | null;
@@ -1187,6 +1189,15 @@ export default function AssetDetailDrawer({
                     label="Chapter Folder"
                     subtitle="Open Drive folder"
                     href={asset.sheet_path_url}
+                  />
+                )}
+                {asset.test_slide_url && (
+                  <LinkCard
+                    icon={Share2}
+                    label="Test Slide"
+                    subtitle="Open in Google Slides"
+                    href={asset.test_slide_url}
+                    onCopy={() => { navigator.clipboard.writeText(asset.test_slide_url!); toast.success("Copied"); }}
                   />
                 )}
               </div>

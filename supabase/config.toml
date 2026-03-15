@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.create-va-user]
 verify_jwt = false
+
+[functions.create-test-slide]
+verify_jwt = false

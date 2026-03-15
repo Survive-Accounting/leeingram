@@ -2606,6 +2606,8 @@ export type Database = {
           t_accounts_json: Json | null
           tables_json: Json | null
           tags: string[]
+          test_slide_id: string | null
+          test_slide_url: string | null
           times_used: number
           updated_at: string
           uses_financial_statements: boolean
@@ -2675,6 +2677,8 @@ export type Database = {
           t_accounts_json?: Json | null
           tables_json?: Json | null
           tags?: string[]
+          test_slide_id?: string | null
+          test_slide_url?: string | null
           times_used?: number
           updated_at?: string
           uses_financial_statements?: boolean
@@ -2744,6 +2748,8 @@ export type Database = {
           t_accounts_json?: Json | null
           tables_json?: Json | null
           tags?: string[]
+          test_slide_id?: string | null
+          test_slide_url?: string | null
           times_used?: number
           updated_at?: string
           uses_financial_statements?: boolean
