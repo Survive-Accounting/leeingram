@@ -1380,6 +1380,87 @@ export type Database = {
           },
         ]
       }
+      generation_debug_notes: {
+        Row: {
+          activity_log_run_id: string | null
+          activity_log_snapshot: Json | null
+          admin_note: string
+          ai_output_raw: string | null
+          annotated_by: string | null
+          chapter_id: string
+          correct_answer: string | null
+          course_id: string
+          created_at: string | null
+          debug_session_id: string | null
+          error_field: string
+          error_type: string
+          generation_prompt: string | null
+          id: string
+          resolution_note: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          teaching_asset_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          activity_log_run_id?: string | null
+          activity_log_snapshot?: Json | null
+          admin_note: string
+          ai_output_raw?: string | null
+          annotated_by?: string | null
+          chapter_id: string
+          correct_answer?: string | null
+          course_id: string
+          created_at?: string | null
+          debug_session_id?: string | null
+          error_field: string
+          error_type: string
+          generation_prompt?: string | null
+          id?: string
+          resolution_note?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          teaching_asset_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          activity_log_run_id?: string | null
+          activity_log_snapshot?: Json | null
+          admin_note?: string
+          ai_output_raw?: string | null
+          annotated_by?: string | null
+          chapter_id?: string
+          correct_answer?: string | null
+          course_id?: string
+          created_at?: string | null
+          debug_session_id?: string | null
+          error_field?: string
+          error_type?: string
+          generation_prompt?: string | null
+          id?: string
+          resolution_note?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          teaching_asset_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_debug_notes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generation_debug_notes_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generation_events: {
         Row: {
           created_at: string
@@ -2482,6 +2563,8 @@ export type Database = {
           created_at: string
           csv_export_status: string
           csv_exported_at: string | null
+          debug_annotated_at: string | null
+          debug_session_id: string | null
           deployment_completed_at: string | null
           deployment_status: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
@@ -2549,6 +2632,8 @@ export type Database = {
           created_at?: string
           csv_export_status?: string
           csv_exported_at?: string | null
+          debug_annotated_at?: string | null
+          debug_session_id?: string | null
           deployment_completed_at?: string | null
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
@@ -2616,6 +2701,8 @@ export type Database = {
           created_at?: string
           csv_export_status?: string
           csv_exported_at?: string | null
+          debug_annotated_at?: string | null
+          debug_session_id?: string | null
           deployment_completed_at?: string | null
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
