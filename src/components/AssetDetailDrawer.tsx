@@ -1191,6 +1191,15 @@ export default function AssetDetailDrawer({
                     href={asset.sheet_path_url}
                   />
                 )}
+                {asset.test_slide_url && (
+                  <LinkCard
+                    icon={Share2}
+                    label="Test Slide"
+                    subtitle="Open in Google Slides"
+                    href={asset.test_slide_url}
+                    onCopy={() => { navigator.clipboard.writeText(asset.test_slide_url!); toast.success("Copied"); }}
+                  />
+                )}
               </div>
 
               <div className="flex items-center justify-between gap-2 px-1">
