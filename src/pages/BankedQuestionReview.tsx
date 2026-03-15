@@ -214,9 +214,90 @@ export default function BankedQuestionReview() {
 
   const TypeIcon = current ? (TYPE_ICON[current.question_type] || HelpCircle) : HelpCircle;
 
+  // ── Fetch Core Assets ready for MC generation ───────────────
+  const { data: readyForMC = [], isLoading: mcLoading } = useQuery({
+    queryKey: ["mc-ready-assets", workspace?.chapterId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, core_rank")
+        .eq("chapter_id", workspace!.chapterId)
+        .eq("phase2_status", "core_asset")
+        .eq("mc_status", "not_started")
+        .order("core_rank", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!workspace?.chapterId,
+  });
+
+  const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const [generatingAll, setGeneratingAll] = useState(false);
+
+  const generateMC = async (asset: any) => {
+    setGeneratingIds(prev => new Set(prev).add(asset.id));
+    try {
+      const { data, error } = await supabase.functions.invoke("bank-teaching-asset", {
+        body: {
+          teaching_asset_id: asset.id,
+          asset_name: asset.asset_name,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      // Mark mc_status as in_progress
+      await supabase.from("teaching_assets").update({ mc_status: "in_progress" } as any).eq("id", asset.id);
+      toast.success(`Generated MC for ${asset.asset_name}`, { description: `${data.questions_generated || 0} questions` });
+      qc.invalidateQueries({ queryKey: ["mc-ready-assets"] });
+      qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
+      qc.invalidateQueries({ queryKey: ["core-assets"] });
+    } catch (e: any) {
+      toast.error(`MC generation failed: ${asset.asset_name}`, { description: e.message });
+    } finally {
+      setGeneratingIds(prev => { const s = new Set(prev); s.delete(asset.id); return s; });
+    }
+  };
+
+  const generateAllMC = async () => {
+    setGeneratingAll(true);
+    for (const asset of readyForMC) {
+      await generateMC(asset);
+    }
+    setGeneratingAll(false);
+  };
+
   return (
     <SurviveSidebarLayout>
       <div className="space-y-4">
+        {/* ── MC Generator Queue ── */}
+        {readyForMC.length > 0 && (
+          <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">Ready to Generate</p>
+                <p className="text-xs text-muted-foreground">{readyForMC.length} core asset{readyForMC.length !== 1 ? "s" : ""} awaiting MC generation</p>
+              </div>
+              <Button size="sm" onClick={generateAllMC} disabled={generatingAll}>
+                {generatingAll ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Generating…</> : <><Zap className="h-3 w-3 mr-1" /> Generate All</>}
+              </Button>
+            </div>
+            <div className="space-y-1.5">
+              {readyForMC.map((a: any) => (
+                <div key={a.id} className="flex items-center gap-3 rounded-md border border-border bg-background/80 px-3 py-2">
+                  <Badge variant="outline" className={cn("text-[10px] font-bold", a.core_rank === 1 ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : a.core_rank === 2 ? "bg-zinc-400/20 text-zinc-300 border-zinc-400/40" : "bg-zinc-600/20 text-zinc-500 border-zinc-600/40")}>
+                    R{a.core_rank ?? 3}
+                  </Badge>
+                  <span className="text-xs font-mono font-medium text-foreground">{a.asset_name}</span>
+                  <span className="text-xs text-muted-foreground">{a.source_ref || ""}</span>
+                  <Button size="sm" variant="outline" className="ml-auto h-7 text-[11px]" disabled={generatingIds.has(a.id)} onClick={() => generateMC(a)}>
+                    {generatingIds.has(a.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : "Generate MC"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Next Action Banner ── */}
         <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-wider text-primary">Next Task</p>

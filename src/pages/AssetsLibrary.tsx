@@ -478,16 +478,6 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
                     </SelectItem>
                   )}
-                  {isAdmin && (
-                    <SelectItem value="generate-ebook">
-                      <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> Generate eBook</span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
-                    <SelectItem value="bank-mc">
-                      <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
-                    </SelectItem>
-                  )}
                   {!isSheetPrepVa && (
                     <SelectItem value="revert">
                       <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
