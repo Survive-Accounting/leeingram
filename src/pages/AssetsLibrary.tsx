@@ -27,6 +27,7 @@ import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";
+import { CoreAssetsTab } from "@/components/CoreAssetsTab";
 
 type TeachingAsset = {
   id: string;
