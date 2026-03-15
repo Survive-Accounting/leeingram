@@ -438,8 +438,9 @@ export default function AssetsLibrary() {
             <Library className="h-5 w-5 text-primary" />
             Assets Library
            </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
             {assets?.length ?? 0} approved assets
+            <InfoTip text="MC generation and eBook exports are now managed in Phase 2 → Core Assets tab." />
           </p>
         </div>
 
@@ -469,23 +470,8 @@ export default function AssetsLibrary() {
                 </SelectTrigger>
                 <SelectContent>
                   {isAdmin && (
-                    <SelectItem value="export-csv">
-                      <span className="flex items-center gap-1.5"><Download className="h-3 w-3" /> Export to CSV</span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
                     <SelectItem value="add-to-set">
                       <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
-                    <SelectItem value="generate-ebook">
-                      <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> Generate eBook</span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
-                    <SelectItem value="bank-mc">
-                      <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> Bank (Generate MC Questions)</span>
                     </SelectItem>
                   )}
                   {!isSheetPrepVa && (
