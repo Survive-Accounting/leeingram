@@ -510,7 +510,7 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> 🧪 Create Test Sheet</span>
                     </SelectItem>
                   )}
-                  {isAdmin && (
+                  {(isAdmin || isSheetPrepVa) && (
                     <SelectItem value="create-test-slide">
                       <span className="flex items-center gap-1.5"><Presentation className="h-3 w-3" /> 🎞️ Create Test Slide</span>
                     </SelectItem>
