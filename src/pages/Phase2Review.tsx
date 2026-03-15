@@ -80,6 +80,7 @@ export default function Phase2Review() {
   const [noteText, setNoteText] = useState("");
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
   const [jumpQuery, setJumpQuery] = useState("");
+  const [debugBannerDismissed, setDebugBannerDismissed] = useState(false);
 
   const [viewMode, setViewMode] = useState<"review" | "all">(() => {
     try { return (localStorage.getItem("phase2-view-mode") as "review" | "all") || "review"; } catch { return "review"; }
@@ -112,6 +113,21 @@ export default function Phase2Review() {
         .select("id", { count: "exact", head: true })
         .eq("chapter_id", chapterId!)
         .eq("phase2_status", "core_asset");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!chapterId,
+  });
+
+  // ── Count of needs_debugging assets for debug session banner ──
+  const { data: debugCount = 0 } = useQuery({
+    queryKey: ["phase2-debug-count", chapterId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("chapter_id", chapterId!)
+        .eq("phase2_status", "needs_debugging");
       if (error) throw error;
       return count ?? 0;
     },
@@ -286,6 +302,31 @@ export default function Phase2Review() {
               <strong className="text-foreground">{coreCount}</strong> assets selected as Core Assets
             </p>
             <Button onClick={() => navigate("/assets-library")} className="mt-2">View Core Assets →</Button>
+
+            {/* Debug session banner */}
+            {debugCount > 0 && !debugBannerDismissed && (
+              <div className="w-full max-w-md mt-6 rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-left space-y-3">
+                <div className="flex items-start gap-2">
+                  <Bug className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">
+                      {debugCount} asset{debugCount !== 1 ? "s" : ""} need debugging
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Run the debug session before finishing this chapter
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => navigate(`/debug-session/${chapterId}`)}>
+                    Start Debug Session →
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setDebugBannerDismissed(true)}>
+                    Skip for now
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>
