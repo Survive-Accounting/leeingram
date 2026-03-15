@@ -7,6 +7,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { Phase2AllView } from "@/components/phase2/Phase2AllView";
+import { Phase2DebugNotesTab } from "@/components/phase2/Phase2DebugNotesTab";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Star, Pause,
-  Bug, SkipForward, StickyNote, Loader2, LayoutList, CreditCard, Undo2, Search,
+  Bug, SkipForward, StickyNote, Loader2, LayoutList, CreditCard, Undo2, Search, FileWarning,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,8 +83,8 @@ export default function Phase2Review() {
   const [jumpQuery, setJumpQuery] = useState("");
   const [debugBannerDismissed, setDebugBannerDismissed] = useState(false);
 
-  const [viewMode, setViewMode] = useState<"review" | "all">(() => {
-    try { return (localStorage.getItem("phase2-view-mode") as "review" | "all") || "review"; } catch { return "review"; }
+  const [viewMode, setViewMode] = useState<"review" | "all" | "debug">(() => {
+    try { return (localStorage.getItem("phase2-view-mode") as "review" | "all" | "debug") || "review"; } catch { return "review"; }
   });
   useEffect(() => { localStorage.setItem("phase2-view-mode", viewMode); }, [viewMode]);
 
@@ -287,11 +288,21 @@ export default function Phase2Review() {
               >
                 <LayoutList className="h-3.5 w-3.5 mr-1" /> All
               </Button>
+              <Button
+                variant={viewMode === "debug" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-7 text-xs px-2"
+                onClick={() => setViewMode("debug")}
+              >
+                <FileWarning className="h-3.5 w-3.5 mr-1" /> Debug Notes
+              </Button>
             </div>
           </div>
         </div>
 
-        {viewMode === "all" ? (
+        {viewMode === "debug" ? (
+          <Phase2DebugNotesTab chapterId={chapterId} courseName={workspace?.courseName} chapterName={`Ch ${workspace?.chapterNumber}`} />
+        ) : viewMode === "all" ? (
           <Phase2AllView chapterId={chapterId} />
         ) : total === 0 ? (
           /* Completion state */
