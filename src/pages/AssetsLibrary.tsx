@@ -653,6 +653,29 @@ export default function AssetsLibrary() {
                       toast.error(`Test sheet failed: ${asset.asset_name}`, { description: e.message });
                     }
                     setIsCreatingSheets(false);
+                  } else if (bulkAction === "create-test-slide") {
+                    const asset = selected[0];
+                    if (!asset) return;
+                    setIsCreatingSheets(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("create-test-slide", {
+                        body: { teaching_asset_id: asset.id },
+                      });
+                      if (error) {
+                        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
+                        throw new Error(errMsg);
+                      }
+                      if (data?.error) throw new Error(data.error);
+                      toast.success("Test Slide created — opening now", {
+                        action: { label: "Open Folder", onClick: () => window.open(data.test_slides_folder_url, "_blank") },
+                      });
+                      window.open(data.test_slide_url, "_blank");
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      setSelectedIds(new Set());
+                    } catch (e: any) {
+                      toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
+                    }
+                    setIsCreatingSheets(false);
                   }
                   setBulkAction(null);
                 }}
