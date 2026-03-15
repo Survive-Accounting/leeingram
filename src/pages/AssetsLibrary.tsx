@@ -816,7 +816,7 @@ export default function AssetsLibrary() {
                     </TableCell>
                     {!isContentCreationVa && (
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-0.5 justify-end">
+                        <div className="flex gap-0.5 justify-end items-center">
                           {a.sheet_master_url ? (
                             <>
                               <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
@@ -830,6 +830,9 @@ export default function AssetsLibrary() {
                           ) : sheetUrls?.[a.asset_name] ? (
                             <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
                           ) : null}
+                          {a.test_slide_url && (
+                            <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" title="Open Test Slide" className="hover:scale-110 transition-transform">🎞️</a>
+                          )}
                         </div>
                       </TableCell>
                     )}
