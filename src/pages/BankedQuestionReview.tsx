@@ -241,9 +241,17 @@ export default function BankedQuestionReview() {
         body: {
           teaching_asset_id: asset.id,
           asset_name: asset.asset_name,
+          problem_text: asset.survive_problem_text,
+          solution_text: asset.survive_solution_text,
+          journal_entry_block: asset.journal_entry_block,
+          difficulty: asset.difficulty,
         },
       });
-      if (error) throw error;
+      if (error) {
+        // Extract the actual error message from the edge function response
+        const msg = data?.error || error.message || "Unknown error";
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
       // Mark mc_status as in_progress
       await supabase.from("teaching_assets").update({ mc_status: "in_progress" } as any).eq("id", asset.id);
