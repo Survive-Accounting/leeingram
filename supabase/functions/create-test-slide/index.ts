@@ -428,7 +428,6 @@ Deno.serve(async (req) => {
         console.warn("Could not populate slide content (Slides API may not be enabled):", e.message);
       }
     }
-    });
 
     // ── Step 5: Move presentation to Test Slides folder ──────────────
     // Get current parents
