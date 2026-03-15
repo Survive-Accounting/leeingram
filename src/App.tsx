@@ -129,6 +129,7 @@ const AppRoutes = () => {
       <Route path="/question-review" element={<ProtectedRoute><BankedQuestionReview /></ProtectedRoute>} />
       <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
       <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
+      <Route path="/phase2-review" element={<ProtectedRoute><Phase2Review /></ProtectedRoute>} />
       <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
       <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
       <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
