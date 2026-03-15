@@ -119,6 +119,21 @@ export default function Phase2Review() {
     enabled: !!chapterId,
   });
 
+  // ── Count of needs_debugging assets for debug session banner ──
+  const { data: debugCount = 0 } = useQuery({
+    queryKey: ["phase2-debug-count", chapterId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("chapter_id", chapterId!)
+        .eq("phase2_status", "needs_debugging");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!chapterId,
+  });
+
   const current = queue[currentIndex] ?? null;
   const total = queue.length;
   const progressPct = total > 0 ? ((currentIndex + 1) / total) * 100 : 0;
