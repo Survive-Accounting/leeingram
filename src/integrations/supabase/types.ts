@@ -2466,6 +2466,7 @@ export type Database = {
       }
       teaching_assets: {
         Row: {
+          admin_notes: Json
           asset_approved_at: string | null
           asset_name: string
           asset_type: Database["public"]["Enums"]["asset_type"]
@@ -2476,6 +2477,7 @@ export type Database = {
           base_raw_problem_id: string | null
           chapter_id: string
           concept_notes: string | null
+          core_rank: number | null
           course_id: string
           created_at: string
           csv_export_status: string
@@ -2483,6 +2485,7 @@ export type Database = {
           deployment_completed_at: string | null
           deployment_status: string
           difficulty: Database["public"]["Enums"]["asset_difficulty"] | null
+          ebook_status: string
           exam_traps: string | null
           financial_statements_json: Json | null
           google_sheet_file_id: string | null
@@ -2499,8 +2502,12 @@ export type Database = {
           lw_imported_at: string | null
           lw_quiz_url: string | null
           lw_video_url: string | null
+          mc_status: string
+          phase2_entered_at: string | null
+          phase2_status: string | null
           problem_context: string | null
           problem_type: string | null
+          qa_status: string
           sheet_last_synced_at: string | null
           sheet_master_url: string | null
           sheet_path_url: string | null
@@ -2523,8 +2530,10 @@ export type Database = {
           uses_tables: boolean
           video_production_status: string
           video_ready_at: string | null
+          whiteboard_status: string
         }
         Insert: {
+          admin_notes?: Json
           asset_approved_at?: string | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["asset_type"]
@@ -2535,6 +2544,7 @@ export type Database = {
           base_raw_problem_id?: string | null
           chapter_id: string
           concept_notes?: string | null
+          core_rank?: number | null
           course_id: string
           created_at?: string
           csv_export_status?: string
@@ -2542,6 +2552,7 @@ export type Database = {
           deployment_completed_at?: string | null
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
+          ebook_status?: string
           exam_traps?: string | null
           financial_statements_json?: Json | null
           google_sheet_file_id?: string | null
@@ -2558,8 +2569,12 @@ export type Database = {
           lw_imported_at?: string | null
           lw_quiz_url?: string | null
           lw_video_url?: string | null
+          mc_status?: string
+          phase2_entered_at?: string | null
+          phase2_status?: string | null
           problem_context?: string | null
           problem_type?: string | null
+          qa_status?: string
           sheet_last_synced_at?: string | null
           sheet_master_url?: string | null
           sheet_path_url?: string | null
@@ -2582,8 +2597,10 @@ export type Database = {
           uses_tables?: boolean
           video_production_status?: string
           video_ready_at?: string | null
+          whiteboard_status?: string
         }
         Update: {
+          admin_notes?: Json
           asset_approved_at?: string | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["asset_type"]
@@ -2594,6 +2611,7 @@ export type Database = {
           base_raw_problem_id?: string | null
           chapter_id?: string
           concept_notes?: string | null
+          core_rank?: number | null
           course_id?: string
           created_at?: string
           csv_export_status?: string
@@ -2601,6 +2619,7 @@ export type Database = {
           deployment_completed_at?: string | null
           deployment_status?: string
           difficulty?: Database["public"]["Enums"]["asset_difficulty"] | null
+          ebook_status?: string
           exam_traps?: string | null
           financial_statements_json?: Json | null
           google_sheet_file_id?: string | null
@@ -2617,8 +2636,12 @@ export type Database = {
           lw_imported_at?: string | null
           lw_quiz_url?: string | null
           lw_video_url?: string | null
+          mc_status?: string
+          phase2_entered_at?: string | null
+          phase2_status?: string | null
           problem_context?: string | null
           problem_type?: string | null
+          qa_status?: string
           sheet_last_synced_at?: string | null
           sheet_master_url?: string | null
           sheet_path_url?: string | null
@@ -2641,6 +2664,7 @@ export type Database = {
           uses_tables?: boolean
           video_production_status?: string
           video_ready_at?: string | null
+          whiteboard_status?: string
         }
         Relationships: [
           {
