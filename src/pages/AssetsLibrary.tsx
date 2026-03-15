@@ -675,6 +675,14 @@ export default function AssetsLibrary() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="mb-4 bg-muted/50 border border-border">
+          <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
+          {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="all">
       {/* Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
         <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
