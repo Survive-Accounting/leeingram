@@ -1804,9 +1804,8 @@ Use Survive Company A ([role]) and Survive Company B ([role]) naming when two pa
       // Replace in problem text
       if (c.survive_problem_text && typeof c.survive_problem_text === "string") {
         const original = c.survive_problem_text;
-        // The AI should already use Survive Company, but if it didn't, we can't regex-guess arbitrary names.
-        // Instead, log a warning if neither Survive Company nor Survive Counterparty appear.
-        if (!original.includes(SURVIVE_COMPANY) && !original.includes(SURVIVE_COUNTERPARTY)) {
+        // The AI should already use Survive Company / Survive Company A / B, but if it didn't, log a warning.
+        if (!original.includes(SURVIVE_COMPANY) && !original.includes(SURVIVE_COMPANY_A) && !original.includes(SURVIVE_COMPANY_B)) {
           companyNameReplacements.push({ candidate_index: ci, field: "survive_problem_text", original: original.slice(0, 200) });
         }
       }

@@ -76,5 +76,7 @@ export function buildJEUserPrompt(opts: {
     parts.push(`Approved Chart of Accounts:\n${opts.chartOfAccounts.join(", ")}`);
   }
 
+  parts.push("Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.");
+
   return parts.join("\n\n");
 }

@@ -83,5 +83,6 @@ export function buildSingleDateUserPrompt(opts: {
     parts.push(`Previously generated entries for context (do NOT regenerate these):\n${JSON.stringify(opts.priorEntries, null, 2)}`);
   }
 
+  parts.push("Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.");
   return parts.join("\n\n");
 }
