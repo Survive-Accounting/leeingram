@@ -12,6 +12,7 @@ const SCOPES = [
 ];
 
 const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
+const TEMPLATE_SLIDE_ID = "1pRp7_VkBqp_3NTttlNzPLSAZq-0WwWWJXwuN8APbMa4";
 
 // ── Google Auth helpers ──────────────────────────────────────────────
 
@@ -325,23 +326,26 @@ Deno.serve(async (req) => {
 
     console.log(`Test Slides folder: ${testSlidesFolderId} inside asset ${assetCode}`);
 
-    // ── Step 2: Create Google Slides presentation via Drive API ──────
+    // ── Step 2: Copy template presentation into Test Slides folder ──
     const presentationTitle = assetCode;
 
-    const driveCreateRes = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
-      method: "POST",
-      body: JSON.stringify({
-        name: presentationTitle,
-        mimeType: "application/vnd.google-apps.presentation",
-        parents: [testSlidesFolderId],
-      }),
-    });
+    const driveCreateRes = await googleFetch(
+      `${GOOGLE_DRIVE_API}/${TEMPLATE_SLIDE_ID}/copy?supportsAllDrives=true`,
+      token,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: presentationTitle,
+          parents: [testSlidesFolderId],
+        }),
+      }
+    );
 
     const presentationId = driveCreateRes.id;
     const slideUrl = `https://docs.google.com/presentation/d/${presentationId}/edit`;
-    console.log(`Created presentation via Drive API: ${presentationId}`);
+    console.log(`Copied template to presentation: ${presentationId}`);
 
-    // Try to fetch presentation details and add content via Slides API
+    // Fetch the copied presentation to get slide details
     let defaultSlideId: string | undefined;
     let slidesApiAvailable = true;
     try {
