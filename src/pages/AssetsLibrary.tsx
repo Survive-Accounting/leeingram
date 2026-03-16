@@ -1042,33 +1042,34 @@ export default function AssetsLibrary() {
                                   <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📣</a>
                                 </Tip>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-6 text-[10px] px-1.5 ml-1"
-                                disabled={syncingAssetId === a.id}
-                                title="Sync Hidden_Data tab"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  setSyncingAssetId(a.id);
-                                  try {
-                                    const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
-                                      body: { teaching_asset_id: a.id },
-                                    });
-                                    if (error) throw error;
-                                    if (data?.error) throw new Error(data.error);
-                                    toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
-                                      description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
-                                    });
-                                  } catch (err: any) {
-                                    toast.error(err.message || "Sync failed");
-                                  } finally {
-                                    setSyncingAssetId(null);
-                                  }
-                                }}
-                              >
-                                {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                              </Button>
+                              <Tip label="Sync Hidden_Data tab">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-[10px] px-1.5 ml-1"
+                                  disabled={syncingAssetId === a.id}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setSyncingAssetId(a.id);
+                                    try {
+                                      const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
+                                        body: { teaching_asset_id: a.id },
+                                      });
+                                      if (error) throw error;
+                                      if (data?.error) throw new Error(data.error);
+                                      toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
+                                        description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
+                                      });
+                                    } catch (err: any) {
+                                      toast.error(err.message || "Sync failed");
+                                    } finally {
+                                      setSyncingAssetId(null);
+                                    }
+                                  }}
+                                >
+                                  {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                </Button>
+                              </Tip>
                               <AddMCButton assetId={a.id} hasSheet={true} />
                               <SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                             </>
