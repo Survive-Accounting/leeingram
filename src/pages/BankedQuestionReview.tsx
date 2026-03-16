@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   CheckCircle2, XCircle, Loader2, Zap, ChevronDown, ChevronUp,
-  Flag, Check, ArrowRight,
+  Flag, Check, ArrowRight, Download,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
