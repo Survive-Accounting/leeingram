@@ -2593,6 +2593,8 @@ export type Database = {
           mc_status: string
           phase2_entered_at: string | null
           phase2_status: string | null
+          prep_doc_id: string | null
+          prep_doc_url: string | null
           problem_context: string | null
           problem_context_backup: string | null
           problem_text_backup: string | null
@@ -2673,6 +2675,8 @@ export type Database = {
           mc_status?: string
           phase2_entered_at?: string | null
           phase2_status?: string | null
+          prep_doc_id?: string | null
+          prep_doc_url?: string | null
           problem_context?: string | null
           problem_context_backup?: string | null
           problem_text_backup?: string | null
@@ -2753,6 +2757,8 @@ export type Database = {
           mc_status?: string
           phase2_entered_at?: string | null
           phase2_status?: string | null
+          prep_doc_id?: string | null
+          prep_doc_url?: string | null
           problem_context?: string | null
           problem_context_backup?: string | null
           problem_text_backup?: string | null
