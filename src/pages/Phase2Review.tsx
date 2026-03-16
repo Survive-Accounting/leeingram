@@ -28,46 +28,6 @@ type UndoEntry = {
   newRank: number | null;
 };
 
-const OUTPUT_FIELDS = [
-  { key: "whiteboard_status", label: "Whiteboard" },
-  { key: "video_production_status", label: "Video" },
-  { key: "mc_status", label: "MC" },
-  { key: "ebook_status", label: "Ebook" },
-  { key: "qa_status", label: "QA" },
-  { key: "deployment_status", label: "Deploy" },
-] as const;
-
-function OutputPill({ status, label }: { status: string; label: string }) {
-  const cfg: Record<string, { dot: string; text: string }> = {
-    not_started: { dot: "bg-muted-foreground/40", text: "text-muted-foreground" },
-    in_progress: { dot: "bg-blue-400", text: "text-blue-400" },
-    complete: { dot: "bg-emerald-400", text: "text-emerald-400" },
-  };
-  const c = cfg[status] || cfg.not_started;
-  return (
-    <span className={`inline-flex items-center gap-1 text-[10px] ${c.text}`}>
-      {status === "complete" ? <CheckCircle2 className="h-2.5 w-2.5" /> : <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />}
-      {label}
-    </span>
-  );
-}
-
-function Phase2Badge({ status, rank }: { status: string | null; rank: number | null }) {
-  if (!status) return <Badge variant="outline" className="text-[10px] border-dashed border-muted-foreground/40 text-muted-foreground">Not Reviewed</Badge>;
-  if (status === "core_asset") {
-    const colors: Record<number, string> = {
-      1: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-      2: "bg-muted text-muted-foreground border-border",
-      3: "bg-muted/50 text-muted-foreground/60 border-border/50",
-    };
-    return <Badge variant="outline" className={`text-[10px] ${colors[rank ?? 1] || ""}`}>Core R{rank}</Badge>;
-  }
-  if (status === "hold") return <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400">Hold</Badge>;
-  if (status === "needs_debugging") return <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">Needs Debugging</Badge>;
-  if (status === "skip") return <Badge variant="outline" className="text-[10px] text-muted-foreground">Skipped</Badge>;
-  return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
-}
-
 export default function Phase2Review() {
   const { workspace } = useActiveWorkspace();
   const { user } = useAuth();
