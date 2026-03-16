@@ -222,7 +222,7 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Filming Slides">
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
             <Film className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
