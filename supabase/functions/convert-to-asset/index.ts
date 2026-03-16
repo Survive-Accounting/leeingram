@@ -1419,7 +1419,7 @@ ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.
-Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
+REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
