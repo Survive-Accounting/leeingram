@@ -214,9 +214,12 @@ function rb(): RequestBuilder {
 }
 
 function insertText(b: RequestBuilder, text: string): { start: number; end: number } {
+  // Strip carriage returns — Google Docs ignores \r but JS counts it in length,
+  // which would cause b.idx to drift ahead of the actual document index.
+  const clean = text.replace(/\r/g, "");
   const start = b.idx;
-  b.requests.push({ insertText: { location: { index: b.idx }, text } });
-  b.idx += text.length;
+  b.requests.push({ insertText: { location: { index: b.idx }, text: clean } });
+  b.idx += clean.length;
   return { start, end: b.idx };
 }
 
