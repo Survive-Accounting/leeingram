@@ -266,7 +266,13 @@ export default function Phase2Review() {
         {viewMode === "debug" ? (
           <Phase2DebugNotesTab chapterId={chapterId} courseName={workspace?.courseName} chapterName={`Ch ${workspace?.chapterNumber}`} />
         ) : viewMode === "all" ? (
-          <Phase2AllView chapterId={chapterId} />
+          <Phase2AllView
+            chapterId={chapterId}
+            onAssetClick={async (assetId) => {
+              const { data } = await supabase.from("teaching_assets").select("*").eq("id", assetId).single();
+              if (data) { setDrawerAsset(data); setDrawerOpen(true); }
+            }}
+          />
         ) : total === 0 ? (
           /* Completion state */
           <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
