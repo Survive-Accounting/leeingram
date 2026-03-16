@@ -323,9 +323,9 @@ function buildDocRequests(
   const chName = chapter?.chapter_name || "";
   const sourceRef = asset.source_ref || "";
 
-  // Build the app link URL for the asset heading
+  // Build the app link URL for the asset heading (deep-link by asset_name)
   const appDomain = Deno.env.get("SITE_URL") || Deno.env.get("APP_URL") || "https://leeingram.lovable.app";
-  const assetLink = `${appDomain}/assets-library?search=${encodeURIComponent(assetName)}`;
+  const assetLink = `${appDomain}/assets-library?asset=${encodeURIComponent(assetName)}`;
 
   // ─── 1. HEADER ───
   insertStyledText(b, assetName + "\n", {
