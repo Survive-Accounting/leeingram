@@ -255,13 +255,48 @@ function parseAssetCode(code: string) {
   return { course: match[1], chapter: parseInt(match[2], 10).toString(), sourceType: match[3], sourceNumber: match[4] };
 }
 
+// ── Phase 2 Status Pill ─────────────────────────────────────────────
+
+function Phase2Pill({ label, status }: { label: string; status: string }) {
+  const dot = status === "complete"
+    ? "bg-emerald-400"
+    : status === "in_progress"
+    ? "bg-blue-400"
+    : "bg-muted-foreground/40";
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+      {status === "complete" ? (
+        <svg className="h-2 w-2 text-emerald-400" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      ) : (
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
+      )}
+      {label}
+    </span>
+  );
+}
+
+function RankPill({ rank }: { rank: number | null }) {
+  const colors: Record<number, string> = {
+    1: "text-amber-300 border-amber-500/40",
+    2: "text-muted-foreground border-border",
+    3: "text-muted-foreground/60 border-border/50",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border bg-muted/50 px-2 py-0.5 text-[10px] font-medium ${rank ? colors[rank] || "" : "text-muted-foreground border-border"}`}>
+      {rank ? `R${rank}` : "—"}
+    </span>
+  );
+}
+
 // ── Pipeline Status Banner ──────────────────────────────────────────
 
 function PipelineStatusBanner({ asset }: { asset: TeachingAssetFull }) {
   const status = (asset as any).google_sheet_status || "none";
+  const isApproved = !!(asset as any).asset_approved_at;
 
   const config: Record<string, { label: string; bg: string; text: string }> = {
-    none: { label: "Approved — Waiting for Sheet Creation", bg: "bg-blue-500/15", text: "text-blue-700 dark:text-blue-300" },
+    none: { label: isApproved ? "Approved — Ready for Phase 2" : "Approved — Waiting for Sheet Creation", bg: "bg-blue-500/15", text: "text-blue-700 dark:text-blue-300" },
     created: { label: "Master Sheet Created — Awaiting Sheet Prep", bg: "bg-orange-500/15", text: "text-orange-700 dark:text-orange-300" },
     verified_by_va: { label: "Master Sheet Ready for Review", bg: "bg-purple-500/15", text: "text-purple-700 dark:text-purple-300" },
     finalized: { label: "Master Sheet Finalized — Ready for Deployment", bg: "bg-green-500/15", text: "text-green-700 dark:text-green-300" },
@@ -272,7 +307,18 @@ function PipelineStatusBanner({ asset }: { asset: TeachingAssetFull }) {
   return (
     <div className={`rounded-lg px-4 py-3 ${c.bg}`}>
       <p className={`text-sm font-semibold ${c.text}`}>{c.label}</p>
-      <p className="text-xs text-muted-foreground mt-0.5">
+      {isApproved && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <RankPill rank={(asset as any).core_rank ?? null} />
+          <Phase2Pill label="WB" status={(asset as any).whiteboard_status || "not_started"} />
+          <Phase2Pill label="Vid" status={(asset as any).video_production_status || "not_started"} />
+          <Phase2Pill label="MC" status={(asset as any).mc_status || "not_started"} />
+          <Phase2Pill label="EB" status={(asset as any).ebook_status || "not_started"} />
+          <Phase2Pill label="QA" status={(asset as any).qa_status || "not_started"} />
+          <Phase2Pill label="Dep" status={(asset as any).deployment_status || "not_started"} />
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground mt-1.5">
         Updated {format(new Date(asset.updated_at), "MMM d, yyyy")}
       </p>
     </div>

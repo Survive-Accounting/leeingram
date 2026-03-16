@@ -1,10 +1,10 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { ArrowRight, Lock, ExternalLink } from "lucide-react";
+import { ArrowRight, Lock, ExternalLink, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const JOB_DESC_LINKS: Record<string, string> = {
@@ -13,7 +13,7 @@ const JOB_DESC_LINKS: Record<string, string> = {
   lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
 };
 
-const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, string>; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
+const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, string>; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string; isPhase1Complete?: boolean }> = {
   "/problem-bank": {
     task: "Paste textbook problem screenshots for each source item.",
     tip: "Tip: It's okay to skip problems that won't scan cleanly. Focus on quality.",
@@ -35,11 +35,12 @@ const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, st
     sopLabel: "Review SOP",
   },
   "/assets-library": {
-    task: "Verify each asset's Google Sheet is set up correctly for tutoring and filming.",
+    task: "Teaching assets have completed Phase 1. Review approved assets below, then head to Phase 2 Review to select Core Assets for student-facing production.",
     taskByRole: {
       content_creation_va: "Review and approve generated teaching assets for this chapter. Approve the variants that look correct — Lee will review your approvals before pushing to production.",
     },
     sopLabel: "Assets SOP",
+    isPhase1Complete: true,
   },
   "/question-review": {
     task: "Generate and review multiple choice questions for each Core Asset in this chapter.",
@@ -111,27 +112,38 @@ export function NextTaskBanner() {
   const jobDescLink = JOB_DESC_LINKS[activeRole] || JOB_DESC_LINKS.lead_va;
 
   return (
-    <div className="mx-4 sm:mx-6 mt-4 rounded-lg border border-primary/30 bg-slate-900 px-5 py-3.5">
+    <div className={`mx-4 sm:mx-6 mt-4 rounded-lg border ${config.isPhase1Complete ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-primary/30 bg-slate-900'} px-5 py-3.5`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+          {config.isPhase1Complete ? (
+            <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+          ) : (
+            <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+          )}
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">This Task</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                {config.isPhase1Complete ? "Phase 1 Complete" : "This Task"}
+              </p>
               {config.adminOnly && isVa && (
                 <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Lock className="h-2.5 w-2.5" /> Instructor only
                 </span>
               )}
             </div>
-            <p className="text-sm text-white mt-0.5">
+            <p className="text-sm text-foreground mt-0.5">
               {(config as any).taskByRole?.[activeRole] || config.task}
               {pendingCount !== undefined && pendingCount > 0 && (
-                <span className="ml-2 text-white/60">
+                <span className="ml-2 text-muted-foreground">
                   {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
                 </span>
               )}
             </p>
+            {config.isPhase1Complete && !((config as any).taskByRole?.[activeRole]) && (
+              <Link to="/phase2-review" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
+                Go to Phase 2 Review <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
             {config.tip && (
               <p className="text-[11px] text-muted-foreground mt-0.5">{config.tip}</p>
             )}
