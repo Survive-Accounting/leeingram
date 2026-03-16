@@ -687,19 +687,19 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Mark Ready for Review</span>
                     </SelectItem>
                   )}
+                  {isAdmin && (
+                    <SelectItem value="generate-prep-doc">
+                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Prep Doc</span>
+                    </SelectItem>
+                  )}
                   {(isAdmin || isSheetPrepVa) && (
                     <SelectItem value="create-test-sheet">
-                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> 🧪 Create Test Sheet</span>
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Test Sheet</span>
                     </SelectItem>
                   )}
                   {(isAdmin || isSheetPrepVa) && (
                     <SelectItem value="create-test-slide">
-                      <span className="flex items-center gap-1.5"><Presentation className="h-3 w-3" /> 🎞️ Create Test Slide</span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
-                    <SelectItem value="generate-prep-doc">
-                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Prep Doc</span>
+                      <span className="flex items-center gap-1.5"><Presentation className="h-3 w-3" /> Create Test Slide</span>
                     </SelectItem>
                   )}
                 </SelectContent>
