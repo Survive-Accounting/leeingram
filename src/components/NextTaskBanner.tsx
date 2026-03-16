@@ -13,7 +13,7 @@ const JOB_DESC_LINKS: Record<string, string> = {
   lead_va: "https://docs.google.com/document/d/16NnmFOqK0L2ig2fun2Z27SrU8g162kNoiu8WLb3TDUk/edit?usp=sharing",
 };
 
-const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, string>; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string }> = {
+const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, string>; tip?: string; adminOnly?: boolean; countQuery?: string; sopLabel?: string; isPhase1Complete?: boolean }> = {
   "/problem-bank": {
     task: "Paste textbook problem screenshots for each source item.",
     tip: "Tip: It's okay to skip problems that won't scan cleanly. Focus on quality.",
