@@ -253,27 +253,32 @@ export default function BulkFixTool() {
         setTotalMatched(new Set(rows.map(r => r.id)).size);
         setPreviewRows(rows);
         setIsAiPreview(false);
-      } else if (operation === "custom_ai") {
+      } else if (operation === "custom_ai" || operation === "fix_entity_perspective") {
         // AI preview: sample 3
         const { data: assets, error } = await buildScopeQuery().limit(3);
         if (error) throw error;
         setTotalMatched(estimatedCount ?? 0);
 
+        const aiInstruction = operation === "fix_entity_perspective" 
+          ? ENTITY_PERSPECTIVE_INSTRUCTION 
+          : customInstruction;
+        const targetFields = operation === "fix_entity_perspective"
+          ? FIXABLE_FIELDS.filter(f => ["problem_context", "survive_problem_text"].includes(f.key))
+          : FIXABLE_FIELDS.filter(f => selectedFields.includes(f.key));
+
         const rows: PreviewRow[] = [];
         for (const asset of assets ?? []) {
-          for (const f of FIXABLE_FIELDS) {
-            if (!selectedFields.includes(f.key)) continue;
+          for (const f of targetFields) {
             const original = (asset as any)[f.key] || "";
             if (!original.trim()) continue;
 
-            // Call AI for rewrite
             const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
               body: {
                 provider: "lovable",
                 model: "google/gemini-2.5-flash",
                 messages: [
                   { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
-                  { role: "user", content: `Instruction: ${customInstruction}\n\nText to modify:\n${original}` },
+                  { role: "user", content: `Instruction: ${aiInstruction}\n\nText to modify:\n${original}` },
                 ],
                 temperature: 0.1,
                 max_output_tokens: 2000,
@@ -282,7 +287,14 @@ export default function BulkFixTool() {
             if (aiError) throw aiError;
             const after = aiResult?.content || original;
             if (after !== original) {
-              rows.push({ id: asset.id, asset_name: asset.asset_name, field: f.label, before: original.slice(0, 200), after: after.slice(0, 200) });
+              rows.push({
+                id: asset.id,
+                asset_name: asset.asset_name,
+                field: f.label,
+                before: original.slice(0, 300),
+                after: after.slice(0, 300),
+                numericWarning: hasNumericDiff(original, after),
+              });
             }
           }
         }
