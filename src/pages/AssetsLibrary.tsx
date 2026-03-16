@@ -1029,12 +1029,18 @@ export default function AssetsLibrary() {
                         <div className="flex gap-0.5 justify-end items-center">
                           {a.sheet_master_url ? (
                             <>
-                              <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
+                              <Tip label="Master: tutoring / filming version">
+                                <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
+                              </Tip>
                               {a.sheet_practice_url && (
-                                <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
+                                <Tip label="Practice: student practice version">
+                                  <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">✏️</a>
+                                </Tip>
                               )}
                               {a.sheet_promo_url && (
-                                <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
+                                <Tip label="Promo: shareable promo version">
+                                  <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📣</a>
+                                </Tip>
                               )}
                               <Button
                                 variant="outline"
