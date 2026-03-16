@@ -644,9 +644,14 @@ export default function BankedQuestionReview() {
                     </table>
                   </div>
                   {hasCompleteAsset && (
-                    <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => navigate("/quizzes-ready")}>
-                      Go to Quizzes Ready <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate("/quizzes-ready")}>
+                        <Download className="h-3 w-3 mr-1" /> Export to CSV
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => navigate("/quizzes-ready")}>
+                        Go to Quizzes Ready <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
                   )}
                 </CollapsibleContent>
               </Collapsible>
