@@ -226,26 +226,28 @@ serve(async (req) => {
     );
 
     // ── Legacy activity_log: ai_generate_completed ──
-    const rawSnippet = typeof aiResponse === "string" ? aiResponse.slice(0, 2000) : JSON.stringify(aiResponse).slice(0, 2000);
-    await sb.from("activity_log").insert({
-      actor_type: "ai",
-      entity_type: "source_problem",
-      entity_id: source_problem_id,
-      event_type: "ai_generate_completed",
-      severity: parseError ? "warn" : "info",
-      payload_json: {
-        provider,
-        model: selectedModel,
-        token_usage: tokenUsage,
-        generation_time_ms: latencyMs,
-        parse_error: parseError,
-        schema_valid: schemaValid,
-        schema_errors: schemaErrors.length > 0 ? schemaErrors : undefined,
-        raw_output_snippet: rawSnippet,
-        parsed_json_snippet: parsed ? JSON.stringify(parsed).slice(0, 2000) : null,
-        run_id,
-      },
-    });
+    if (source_problem_id) {
+      const rawSnippet = typeof aiResponse === "string" ? aiResponse.slice(0, 2000) : JSON.stringify(aiResponse).slice(0, 2000);
+      await sb.from("activity_log").insert({
+        actor_type: "ai",
+        entity_type: "source_problem",
+        entity_id: source_problem_id,
+        event_type: "ai_generate_completed",
+        severity: parseError ? "warn" : "info",
+        payload_json: {
+          provider,
+          model: selectedModel,
+          token_usage: tokenUsage,
+          generation_time_ms: latencyMs,
+          parse_error: parseError,
+          schema_valid: schemaValid,
+          schema_errors: schemaErrors.length > 0 ? schemaErrors : undefined,
+          raw_output_snippet: rawSnippet,
+          parsed_json_snippet: parsed ? JSON.stringify(parsed).slice(0, 2000) : null,
+          run_id,
+        },
+      });
+    }
 
     return new Response(JSON.stringify({
       parsed,
