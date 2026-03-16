@@ -315,6 +315,9 @@ export default function AssetsLibrary() {
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
   const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
+  const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
+  const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
+  const [bulkPrepDocProgress, setBulkPrepDocProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
