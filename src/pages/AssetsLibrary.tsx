@@ -885,6 +885,21 @@ export default function AssetsLibrary() {
               <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
             </Button>
           )}
+          {isAdmin && chapterFilter !== "all" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              disabled={!!bulkPrepDocProgress}
+              onClick={() => setBulkPrepDocOpen(true)}
+            >
+              {bulkPrepDocProgress ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating {bulkPrepDocProgress.current} of {bulkPrepDocProgress.total}…</>
+              ) : (
+                <><BookOpen className="h-3.5 w-3.5" /> Generate All Prep Docs</>
+              )}
+            </Button>
+          )}
         </div>
 
         <TabsContent value="all">
