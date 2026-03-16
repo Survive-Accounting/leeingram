@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.sync-mc-to-sheet]
 verify_jwt = false
+
+[functions.create-prep-doc]
+verify_jwt = false

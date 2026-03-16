@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, StickyNote, Loader2, RefreshCw, ListPlus, Film } from "lucide-react";
+import { MoreHorizontal, StickyNote, Loader2, RefreshCw, ListPlus, Film, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tip } from "@/components/Tip";
@@ -226,6 +226,7 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
 
 export function CoreAssetsTab() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
+  const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
   const chapterId = workspace?.chapterId;
@@ -235,7 +236,7 @@ export function CoreAssetsTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, core_rank, whiteboard_status, mc_status, video_production_status, ebook_status, qa_status, deployment_status, admin_notes, sheet_master_url, test_slide_url")
+        .select("id, asset_name, source_ref, core_rank, whiteboard_status, mc_status, video_production_status, ebook_status, qa_status, deployment_status, admin_notes, sheet_master_url, test_slide_url, prep_doc_url")
         .eq("chapter_id", chapterId!)
         .eq("phase2_status", "core_asset")
         .order("core_rank", { ascending: true });
@@ -384,6 +385,39 @@ export function CoreAssetsTab() {
                       <AddMCButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} />
                       {/* Slides button */}
                       <SlidesButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} slidesUrl={(a as any).test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["core-assets", chapterId] })} />
+                      {/* Prep Doc button */}
+                      {(a as any).prep_doc_url ? (
+                        <Tip label="Open Prep Doc">
+                          <a href={(a as any).prep_doc_url} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline" size="sm" className="h-6 w-6 p-0">
+                              <BookOpen className="h-3 w-3" />
+                            </Button>
+                          </a>
+                        </Tip>
+                      ) : (
+                        <Tip label="Generate Prep Doc">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            disabled={generatingPrepDocId === a.id}
+                            onClick={async () => {
+                              setGeneratingPrepDocId(a.id);
+                              try {
+                                const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: a.id } });
+                                if (error) throw error;
+                                if (data?.error) throw new Error(data.error);
+                                toast.success("Prep doc created — opening now.", { description: "Add to offline in Google Drive for flight." });
+                                window.open(data.doc_url, "_blank");
+                                qc.invalidateQueries({ queryKey: ["core-assets", chapterId] });
+                              } catch (err: any) { toast.error(err.message || "Prep doc failed"); }
+                              finally { setGeneratingPrepDocId(null); }
+                            }}
+                          >
+                            {generatingPrepDocId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                          </Button>
+                        </Tip>
+                      )}
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>

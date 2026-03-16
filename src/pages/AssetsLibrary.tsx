@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { Tip } from "@/components/Tip";
@@ -64,8 +64,10 @@ type TeachingAsset = {
   google_sheet_status?: string | null;
   test_slide_id?: string | null;
   test_slide_url?: string | null;
+  prep_doc_id?: string | null;
+  prep_doc_url?: string | null;
+  asset_approved_at?: string | null;
 };
-
 type JournalOption = "question" | "feedback" | "none";
 
 function escapeCSV(val: string): string {
@@ -313,6 +315,9 @@ export default function AssetsLibrary() {
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
   const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
+  const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
+  const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
+  const [bulkPrepDocProgress, setBulkPrepDocProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
@@ -880,6 +885,21 @@ export default function AssetsLibrary() {
               <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
             </Button>
           )}
+          {isAdmin && chapterFilter !== "all" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              disabled={!!bulkPrepDocProgress}
+              onClick={() => setBulkPrepDocOpen(true)}
+            >
+              {bulkPrepDocProgress ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating {bulkPrepDocProgress.current} of {bulkPrepDocProgress.total}…</>
+              ) : (
+                <><BookOpen className="h-3.5 w-3.5" /> Generate All Prep Docs</>
+              )}
+            </Button>
+          )}
         </div>
 
         <TabsContent value="all">
@@ -1052,6 +1072,61 @@ export default function AssetsLibrary() {
                               {a.test_slide_url && (
                                 <Tip label="Go to Filming Slides (Google Slides)">
                                   <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">🎞️</a>
+                                </Tip>
+                              )}
+                              {(a as any).prep_doc_url ? (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
+                                      <BookOpen className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={() => window.open((a as any).prep_doc_url, "_blank")}>
+                                      Open Prep Doc
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={generatingPrepDocId === a.id}
+                                      onClick={async () => {
+                                        setGeneratingPrepDocId(a.id);
+                                        try {
+                                          const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: a.id } });
+                                          if (error) throw error;
+                                          if (data?.error) throw new Error(data.error);
+                                          toast.success("Prep doc regenerated — opening now", { description: "Add to offline in Google Drive for flight." });
+                                          window.open(data.doc_url, "_blank");
+                                          qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                                        } catch (err: any) { toast.error(err.message || "Prep doc failed"); }
+                                        finally { setGeneratingPrepDocId(null); }
+                                      }}
+                                    >
+                                      {generatingPrepDocId === a.id ? "Generating…" : "Regenerate"}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              ) : (
+                                <Tip label="Generate Prep Doc">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-[10px] px-1.5"
+                                    disabled={generatingPrepDocId === a.id}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setGeneratingPrepDocId(a.id);
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: a.id } });
+                                        if (error) throw error;
+                                        if (data?.error) throw new Error(data.error);
+                                        toast.success("Prep doc created — opening now.", { description: "Add to offline in Google Drive for flight." });
+                                        window.open(data.doc_url, "_blank");
+                                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                                      } catch (err: any) { toast.error(err.message || "Prep doc failed"); }
+                                      finally { setGeneratingPrepDocId(null); }
+                                    }}
+                                  >
+                                    {generatingPrepDocId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                                  </Button>
                                 </Tip>
                               )}
                             </>
@@ -1300,6 +1375,44 @@ export default function AssetsLibrary() {
             }}>
               <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
               Submit for Review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Generate Prep Docs Dialog */}
+      <Dialog open={bulkPrepDocOpen} onOpenChange={setBulkPrepDocOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Generate All Prep Docs</DialogTitle>
+            <DialogDescription>
+              Generate prep docs for all {assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at).length ?? 0} approved assets in this chapter that don't have one yet? This may take a few minutes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setBulkPrepDocOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={async () => {
+              setBulkPrepDocOpen(false);
+              const eligible = assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
+              if (!eligible.length) { toast.info("All assets already have prep docs"); return; }
+              let created = 0;
+              setBulkPrepDocProgress({ current: 0, total: eligible.length });
+              for (let i = 0; i < eligible.length; i++) {
+                setBulkPrepDocProgress({ current: i + 1, total: eligible.length });
+                try {
+                  const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: eligible[i].id } });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  created++;
+                } catch (err: any) {
+                  console.error(`Prep doc failed for ${eligible[i].asset_name}:`, err.message);
+                }
+              }
+              setBulkPrepDocProgress(null);
+              toast.success(`Done — ${created} prep docs created`);
+              qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+            }}>
+              Generate
             </Button>
           </DialogFooter>
         </DialogContent>
