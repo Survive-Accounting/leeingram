@@ -345,6 +345,17 @@ export default function Phase2Review() {
           </>
         )}
       </div>
+
+      <AssetDetailDrawer
+        asset={drawerAsset}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setDrawerAsset(null); }}
+        chapterLabel={`Ch ${workspace?.chapterNumber}`}
+        courseLabel={workspace?.courseName || ""}
+        onRevert={() => {}}
+        onDelete={() => {}}
+        isAdmin={true}
+      />
     </SurviveSidebarLayout>
   );
 }
