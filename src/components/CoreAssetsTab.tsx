@@ -228,7 +228,7 @@ export function CoreAssetsTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, core_rank, whiteboard_status, mc_status, video_production_status, ebook_status, qa_status, deployment_status, admin_notes, sheet_master_url")
+        .select("id, asset_name, source_ref, core_rank, whiteboard_status, mc_status, video_production_status, ebook_status, qa_status, deployment_status, admin_notes, sheet_master_url, test_slide_url")
         .eq("chapter_id", chapterId!)
         .eq("phase2_status", "core_asset")
         .order("core_rank", { ascending: true });
