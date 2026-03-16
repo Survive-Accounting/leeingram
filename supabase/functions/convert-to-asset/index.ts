@@ -1347,7 +1347,7 @@ ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants. Focus on calculations, ratios, and analysis.
 REMINDER: No self-corrections. One clean computation path per part.
-Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
+REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.`;
 
     } else if (generationMode === "je_only") {
       systemPrompt = `${preamble}
