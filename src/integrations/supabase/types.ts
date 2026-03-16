@@ -2583,7 +2583,9 @@ export type Database = {
           last_bulk_fix_at: string | null
           last_bulk_fix_label: string | null
           last_tutored_at: string | null
+          lw_csv_exported_at: string | null
           lw_ebook_url: string | null
+          lw_html_added: boolean | null
           lw_import_status: string
           lw_imported_at: string | null
           lw_quiz_url: string | null
@@ -2661,7 +2663,9 @@ export type Database = {
           last_bulk_fix_at?: string | null
           last_bulk_fix_label?: string | null
           last_tutored_at?: string | null
+          lw_csv_exported_at?: string | null
           lw_ebook_url?: string | null
+          lw_html_added?: boolean | null
           lw_import_status?: string
           lw_imported_at?: string | null
           lw_quiz_url?: string | null
@@ -2739,7 +2743,9 @@ export type Database = {
           last_bulk_fix_at?: string | null
           last_bulk_fix_label?: string | null
           last_tutored_at?: string | null
+          lw_csv_exported_at?: string | null
           lw_ebook_url?: string | null
+          lw_html_added?: boolean | null
           lw_import_status?: string
           lw_imported_at?: string | null
           lw_quiz_url?: string | null
