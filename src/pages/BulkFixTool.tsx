@@ -504,6 +504,7 @@ export default function BulkFixTool() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="fix_entity_naming">Fix Entity Naming (Counterparty → Company A/B)</SelectItem>
+                <SelectItem value="fix_entity_perspective">Fix Entity Naming + Perspective (Full Correction)</SelectItem>
                 <SelectItem value="find_replace_simple">Simple Find &amp; Replace</SelectItem>
                 <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
               </SelectContent>
