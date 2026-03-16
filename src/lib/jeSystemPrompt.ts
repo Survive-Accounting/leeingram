@@ -44,6 +44,8 @@ Rules:
 5. If an account is not found in the list, mark: "needs_review": true
 6. Each entry_by_date block must balance (total debits = total credits).
 7. Also include final_answers with specific numeric/text answers the problem asks for.
+8. When two parties exist, use "Survive Company A ([role])" and "Survive Company B ([role])" naming. Never use "Counterparty" or vague terms like "the other company".
+9. Always explicitly state which entity's books the journal entry is recorded on.
 
 Return only JSON.`;
 
