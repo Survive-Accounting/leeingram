@@ -375,6 +375,8 @@ export function CoreAssetsTab() {
                       </Button>
                       {/* Add MC to Hidden_Data button */}
                       <AddMCButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} />
+                      {/* Slides button */}
+                      <SlidesButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} slidesUrl={(a as any).test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["core-assets", chapterId] })} />
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>
