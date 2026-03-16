@@ -385,6 +385,39 @@ export function CoreAssetsTab() {
                       <AddMCButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} />
                       {/* Slides button */}
                       <SlidesButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} slidesUrl={(a as any).test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["core-assets", chapterId] })} />
+                      {/* Prep Doc button */}
+                      {(a as any).prep_doc_url ? (
+                        <Tip label="Open Prep Doc">
+                          <a href={(a as any).prep_doc_url} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline" size="sm" className="h-6 w-6 p-0">
+                              <BookOpen className="h-3 w-3" />
+                            </Button>
+                          </a>
+                        </Tip>
+                      ) : (
+                        <Tip label="Generate Prep Doc">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            disabled={generatingPrepDocId === a.id}
+                            onClick={async () => {
+                              setGeneratingPrepDocId(a.id);
+                              try {
+                                const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: a.id } });
+                                if (error) throw error;
+                                if (data?.error) throw new Error(data.error);
+                                toast.success("Prep doc created — opening now.", { description: "Add to offline in Google Drive for flight." });
+                                window.open(data.doc_url, "_blank");
+                                qc.invalidateQueries({ queryKey: ["core-assets", chapterId] });
+                              } catch (err: any) { toast.error(err.message || "Prep doc failed"); }
+                              finally { setGeneratingPrepDocId(null); }
+                            }}
+                          >
+                            {generatingPrepDocId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                          </Button>
+                        </Tip>
+                      )}
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>
