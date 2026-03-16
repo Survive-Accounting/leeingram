@@ -313,6 +313,8 @@ export function CoreAssetsTab() {
                       >
                         {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                       </Button>
+                      {/* Add MC to Hidden_Data button */}
+                      <AddMCButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} />
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>
