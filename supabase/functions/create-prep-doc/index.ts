@@ -323,9 +323,9 @@ function buildDocRequests(
   const chName = chapter?.chapter_name || "";
   const sourceRef = asset.source_ref || "";
 
-  // Build the app link URL for the asset heading
+  // Build the app link URL for the asset heading (deep-link by asset_name)
   const appDomain = Deno.env.get("SITE_URL") || Deno.env.get("APP_URL") || "https://leeingram.lovable.app";
-  const assetLink = `${appDomain}/assets-library?search=${encodeURIComponent(assetName)}`;
+  const assetLink = `${appDomain}/assets-library?asset=${encodeURIComponent(assetName)}`;
 
   // ─── 1. HEADER ───
   insertStyledText(b, assetName + "\n", {
@@ -340,7 +340,7 @@ function buildDocRequests(
   if (asset.problem_context?.trim()) {
     insertStyledText(b, "PROBLEM\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
     insertStyledText(b, "Context\n", { bold: true, fontSize: 11, fgColor: hexToRgb("#333333") });
-    insertStyledText(b, asset.problem_context + "\n", { fontSize: 11, indent: 14 });
+    insertStyledText(b, asset.problem_context + "\n", { fontSize: 11 });
     insertText(b, "\n");
   }
 
@@ -363,28 +363,29 @@ function buildDocRequests(
   }
 
   // ─── 4. JOURNAL ENTRIES (moved before Answer Summary) ───
-  if (jeEntries.length > 0) {
+  // Prefer raw text from the DB field for JE rendering
+  const rawJeText = asset.journal_entry_raw || "";
+  const hasRawText = rawJeText.trim().length > 0;
+  const hasStructuredEntries = jeEntries.length > 0;
+
+  if (hasRawText || hasStructuredEntries) {
     insertStyledText(b, "JOURNAL ENTRIES\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
 
-    // Try structured table approach
     try {
-      buildJETable(b, jeEntries);
+      if (hasRawText) {
+        buildJETableFromRaw(b, rawJeText);
+      } else {
+        buildJETable(b, jeEntries);
+      }
     } catch (e) {
       console.warn("JE table build failed, falling back to monospace:", e);
-      // Fallback: monospace text
-      if (jeRawText.trim()) {
-        insertStyledText(b, jeRawText + "\n", {
-          fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5"),
+      const fallbackText = hasRawText ? rawJeText : jeRawText;
+      if (fallbackText.trim()) {
+        insertStyledText(b, fallbackText + "\n", {
+          fontSize: 10, fontFamily: "Courier New",
         });
       }
     }
-    insertText(b, "\n");
-  } else if (jeRawText.trim()) {
-    // No structured entries but raw text exists
-    insertStyledText(b, "JOURNAL ENTRIES\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
-    insertStyledText(b, jeRawText + "\n", {
-      fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5"),
-    });
     insertText(b, "\n");
   }
 
@@ -414,7 +415,7 @@ function buildDocRequests(
     const sentences = asset.concept_notes.split(". ").filter((s: string) => s.trim());
     for (const sentence of sentences) {
       const text = sentence.endsWith(".") ? sentence : sentence + ".";
-      const { start, end } = insertStyledText(b, text + "\n", { fontSize: 11, indent: 14 });
+      const { start, end } = insertStyledText(b, text + "\n", { fontSize: 11 });
       // Apply bullet list
       b.requests.push({
         createParagraphBullets: {
@@ -433,7 +434,7 @@ function buildDocRequests(
     for (const sentence of sentences) {
       const text = sentence.endsWith(".") ? sentence : sentence + ".";
       const { start, end } = insertStyledText(b, text + "\n", {
-        fontSize: 11, fgColor: RED, bgColor: hexToRgb("#FFEBEE"), indent: 14,
+        fontSize: 11, fgColor: RED, bgColor: hexToRgb("#FFEBEE"),
       });
       b.requests.push({
         createParagraphBullets: {
@@ -454,48 +455,350 @@ function buildDocRequests(
   return b.requests;
 }
 
-// ── JE Table builder ─────────────────────────────────────────────────
-// Google Docs table approach: we insert text-based JE with date headers
-// since table insertion via API is complex with index tracking.
-// We use a simplified approach: for each date group, insert a bold date,
-// then for each row insert account/debit/credit with tab alignment.
+// ── JE Table builder (parse raw text into proper Google Docs table) ───
 
-function buildJETable(b: RequestBuilder, entries: any[]) {
-  for (let ei = 0; ei < entries.length; ei++) {
-    const entry = entries[ei];
+interface JELine {
+  type: "date" | "debit" | "credit" | "separator";
+  text: string;
+  amount: string;
+}
 
-    // Separator between date groups
-    if (ei > 0) {
-      insertStyledText(b, "─────────────────────────────────────────\n", {
-        fontSize: 6, fgColor: hexToRgb("#E0E0E0"),
-      });
+function parseJERawLines(rawText: string): JELine[][] {
+  const lines = rawText.split("\n");
+  const groups: JELine[][] = [];
+  let current: JELine[] = [];
+
+  const amountRe = /[\d,]+(?:\.\d+)?/;
+  const dateRe = /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}\/\d{1,2})/i;
+
+  for (const raw of lines) {
+    if (!raw.trim()) {
+      if (current.length > 0) {
+        groups.push(current);
+        current = [];
+      }
+      continue;
     }
 
-    // Date header with background
-    if (entry.date) {
-      insertStyledText(b, entry.date + "\n", {
-        bold: true, fontSize: 11, fgColor: NAVY, bgColor: hexToRgb("#F0F4FF"),
-      });
-    }
+    const hasAmount = amountRe.test(raw);
+    const isDate = dateRe.test(raw) && !hasAmount;
 
-    // Column header
-    insertStyledText(b, "Account\tDebit\tCredit\n", {
-      bold: true, fontSize: 9, fgColor: WHITE, bgColor: NAVY,
-    });
-
-    // Entry rows
-    for (const row of (entry.rows || [])) {
-      const acct = row.account_name || row.account || "";
-      const isCredit = row.side === "credit" || (row.credit != null && row.credit !== 0 && (row.debit == null || row.debit === 0));
-      const indent = isCredit ? "    " : "";
-      const debitAmt = !isCredit ? formatAmount(row.debit) : "";
-      const creditAmt = isCredit ? formatAmount(row.credit) : "";
-
-      insertStyledText(b, `${indent}${acct}\t${debitAmt}\t${creditAmt}\n`, {
-        fontSize: 10, fontFamily: "Courier New",
+    if (isDate) {
+      // If we already have entries in current, start a new group
+      if (current.length > 0) {
+        groups.push(current);
+        current = [];
+      }
+      current.push({ type: "date", text: raw.trim(), amount: "" });
+    } else {
+      const isCredit = raw.startsWith("\t") || raw.startsWith("    ") || raw.startsWith("  ");
+      const amountMatch = raw.match(/([\d,]+(?:\.\d+)?)\s*$/);
+      const amount = amountMatch ? amountMatch[1] : "";
+      const accountName = raw.replace(/([\d,]+(?:\.\d+)?)\s*$/, "").trim();
+      current.push({
+        type: isCredit ? "credit" : "debit",
+        text: accountName,
+        amount: amount ? Number(amount.replace(/,/g, "")).toLocaleString("en-US") : "",
       });
     }
   }
+  if (current.length > 0) groups.push(current);
+  return groups;
+}
+
+function buildJETable(b: RequestBuilder, entries: any[]) {
+  // Convert structured entries to raw text, then parse
+  const rawText = jeToRawText(entries);
+  if (!rawText.trim()) return;
+
+  buildJETableFromRaw(b, rawText);
+}
+
+function buildJETableFromRaw(b: RequestBuilder, rawText: string) {
+  const groups = parseJERawLines(rawText);
+  if (groups.length === 0) {
+    // Fallback: just insert raw monospace
+    insertStyledText(b, rawText + "\n", { fontSize: 10, fontFamily: "Courier New" });
+    return;
+  }
+
+  // Count total rows needed
+  let totalRows = 0;
+  for (let gi = 0; gi < groups.length; gi++) {
+    totalRows += groups[gi].length; // date row + entry rows
+    if (gi < groups.length - 1) totalRows += 1; // blank separator
+  }
+  totalRows += 1; // closing rule row
+
+  const cols = 3;
+  const tableStartIdx = b.idx;
+
+  // Insert the table
+  b.requests.push({
+    insertTable: {
+      location: { index: b.idx },
+      rows: totalRows,
+      columns: cols,
+    },
+  });
+
+  // Advance index past table structure
+  b.idx = tableStartIdx + 1 + totalRows + 3 * totalRows * cols;
+
+  // Now we need to style the table itself (column widths, borders)
+  // We'll collect all cell styling requests and apply them via batch
+
+  // Page width ~468pt (letter 8.5" - 1" margins each side = 6.5" = 468pt)
+  const pageWidth = 468;
+  const col1Width = pageWidth * 0.65;
+  const col2Width = pageWidth * 0.175;
+  const col3Width = pageWidth * 0.175;
+
+  // Set column widths
+  b.requests.push({
+    updateTableColumnProperties: {
+      tableStartLocation: { index: tableStartIdx + 1 },
+      columnIndices: [0],
+      tableColumnProperties: { widthType: "FIXED_WIDTH", width: { magnitude: col1Width, unit: "PT" } },
+      fields: "widthType,width",
+    },
+  });
+  b.requests.push({
+    updateTableColumnProperties: {
+      tableStartLocation: { index: tableStartIdx + 1 },
+      columnIndices: [1],
+      tableColumnProperties: { widthType: "FIXED_WIDTH", width: { magnitude: col2Width, unit: "PT" } },
+      fields: "widthType,width",
+    },
+  });
+  b.requests.push({
+    updateTableColumnProperties: {
+      tableStartLocation: { index: tableStartIdx + 1 },
+      columnIndices: [2],
+      tableColumnProperties: { widthType: "FIXED_WIDTH", width: { magnitude: col3Width, unit: "PT" } },
+      fields: "widthType,width",
+    },
+  });
+
+  // Helper: compute the index of a cell's paragraph in a Google Docs table
+  // Table structure: tableStart(1), then for each row: rowStart(1), then for each cell: cellStart(1), paragraphStart(1), newline(1)
+  // Cell(r,c) paragraph index = tableStartIdx + 1 + 1 + r*(1 + cols*3) + 1 + c*3 + 1
+  // = tableStartIdx + 2 + r*(1 + 3*cols) + 1 + 3*c + 1
+  // Simplified: tableStartIdx + 2 + r*(1+3*cols) + 3*c + 2
+  // Hmm, let me be more careful:
+  // After table element at tableStartIdx:
+  // tableStartIdx + 1 = table body start
+  // Row 0 start: tableStartIdx + 1 + 1 = tableStartIdx + 2
+  // Row 0, Cell 0 start: tableStartIdx + 2 + 1 = tableStartIdx + 3
+  // Row 0, Cell 0 paragraph: tableStartIdx + 3 + 1 = tableStartIdx + 4 (this is where \n is)
+  // Wait, structure is: tableStart, [row [cell [paragraph \n] cell [paragraph \n] cell [paragraph \n]] row ...]
+  // Indices: tableStart = ts+0, row0 = ts+1, cell0_0 = ts+2, para0_0 = ts+3, \n = ts+3 (the newline char is AT index ts+3)
+  // cell0_1 = ts+3+1 = ts+4... no wait, \n takes 1 char, so after \n: ts+4
+  // cell0_1_start = ts+4+1 = ts+5? No...
+  // 
+  // Let me use the known formula: cell(r,c) text index = tableStartIdx + 1 + r*(1 + cols*3) + c*3 + 2
+  // For r=0, c=0: ts + 1 + 0 + 0 + 2 = ts + 3 ✓
+  // For r=0, c=1: ts + 1 + 0 + 3 + 2 = ts + 6
+  // For r=0, c=2: ts + 1 + 0 + 6 + 2 = ts + 9
+  // For r=1, c=0: ts + 1 + (1+9) + 0 + 2 = ts + 13
+  // This means each row takes 1 + 3*cols = 10 elements (for 3 cols)
+
+  const cellTextIndex = (row: number, col: number): number => {
+    return tableStartIdx + 1 + row * (1 + cols * 3) + col * 3 + 2;
+  };
+
+  const noBorder = { color: { color: { rgbColor: WHITE } }, width: { magnitude: 0, unit: "PT" }, dashStyle: "SOLID" };
+  const navyBorder = { color: { color: { rgbColor: NAVY } }, width: { magnitude: 1, unit: "PT" }, dashStyle: "SOLID" };
+
+  let rowIdx = 0;
+
+  for (let gi = 0; gi < groups.length; gi++) {
+    const group = groups[gi];
+
+    for (let li = 0; li < group.length; li++) {
+      const line = group[li];
+      const textIdx = cellTextIndex(rowIdx, 0);
+
+      if (line.type === "date") {
+        // Date header row: merge all 3 columns
+        b.requests.push({
+          mergeTableCells: {
+            tableRange: {
+              tableCellLocation: { tableStartLocation: { index: tableStartIdx + 1 }, rowIndex: rowIdx, columnIndex: 0 },
+              rowSpan: 1,
+              columnSpan: 3,
+            },
+          },
+        });
+
+        // Insert date text (replace the default \n)
+        b.requests.push({
+          insertText: { location: { index: textIdx }, text: line.text },
+        });
+
+        // Style the date text
+        b.requests.push({
+          updateTextStyle: {
+            range: { startIndex: textIdx, endIndex: textIdx + line.text.length },
+            textStyle: { bold: true, fontSize: { magnitude: 11, unit: "PT" } },
+            fields: "bold,fontSize",
+          },
+        });
+
+        // Background + borders for date row
+        b.requests.push({
+          updateTableCellStyle: {
+            tableRange: {
+              tableCellLocation: { tableStartLocation: { index: tableStartIdx + 1 }, rowIndex: rowIdx, columnIndex: 0 },
+              rowSpan: 1,
+              columnSpan: 3,
+            },
+            tableCellStyle: {
+              backgroundColor: { color: { rgbColor: hexToRgb("#EEF2FF") } },
+              borderTop: navyBorder,
+              borderBottom: noBorder,
+              borderLeft: noBorder,
+              borderRight: noBorder,
+              paddingTop: { magnitude: 4, unit: "PT" },
+              paddingBottom: { magnitude: 4, unit: "PT" },
+            },
+            fields: "backgroundColor,borderTop,borderBottom,borderLeft,borderRight,paddingTop,paddingBottom",
+          },
+        });
+      } else {
+        // Debit or Credit entry row
+        const isCredit = line.type === "credit";
+        const accountText = isCredit ? "    " + line.text : line.text;
+
+        // Column 1: account name
+        b.requests.push({
+          insertText: { location: { index: textIdx }, text: accountText },
+        });
+        b.requests.push({
+          updateTextStyle: {
+            range: { startIndex: textIdx, endIndex: textIdx + accountText.length },
+            textStyle: { fontSize: { magnitude: 10, unit: "PT" }, weightedFontFamily: { fontFamily: "Courier New" } },
+            fields: "fontSize,weightedFontFamily",
+          },
+        });
+
+        // Column 2 or 3: amount
+        const amountCol = isCredit ? 2 : 1;
+        const amountIdx = cellTextIndex(rowIdx, amountCol);
+        if (line.amount) {
+          b.requests.push({
+            insertText: { location: { index: amountIdx }, text: line.amount },
+          });
+          b.requests.push({
+            updateTextStyle: {
+              range: { startIndex: amountIdx, endIndex: amountIdx + line.amount.length },
+              textStyle: { fontSize: { magnitude: 10, unit: "PT" }, weightedFontFamily: { fontFamily: "Courier New" } },
+              fields: "fontSize,weightedFontFamily",
+            },
+          });
+          // Right-align the amount cell
+          b.requests.push({
+            updateParagraphStyle: {
+              range: { startIndex: amountIdx, endIndex: amountIdx + line.amount.length + 1 },
+              paragraphStyle: { alignment: "END" },
+              fields: "alignment",
+            },
+          });
+        }
+
+        // Cell styling: background + no borders
+        const bgColor = isCredit ? hexToRgb("#FAFAFA") : WHITE;
+        for (let c = 0; c < cols; c++) {
+          b.requests.push({
+            updateTableCellStyle: {
+              tableRange: {
+                tableCellLocation: { tableStartLocation: { index: tableStartIdx + 1 }, rowIndex: rowIdx, columnIndex: c },
+                rowSpan: 1,
+                columnSpan: 1,
+              },
+              tableCellStyle: {
+                backgroundColor: { color: { rgbColor: bgColor } },
+                borderTop: noBorder,
+                borderBottom: noBorder,
+                borderLeft: noBorder,
+                borderRight: noBorder,
+              },
+              fields: "backgroundColor,borderTop,borderBottom,borderLeft,borderRight",
+            },
+          });
+        }
+      }
+
+      rowIdx++;
+    }
+
+    // Blank separator between groups (except after last)
+    if (gi < groups.length - 1) {
+      for (let c = 0; c < cols; c++) {
+        b.requests.push({
+          updateTableCellStyle: {
+            tableRange: {
+              tableCellLocation: { tableStartLocation: { index: tableStartIdx + 1 }, rowIndex: rowIdx, columnIndex: c },
+              rowSpan: 1,
+              columnSpan: 1,
+            },
+            tableCellStyle: {
+              backgroundColor: { color: { rgbColor: WHITE } },
+              borderTop: noBorder,
+              borderBottom: noBorder,
+              borderLeft: noBorder,
+              borderRight: noBorder,
+            },
+            fields: "backgroundColor,borderTop,borderBottom,borderLeft,borderRight",
+          },
+        });
+      }
+      // Make separator row small
+      b.requests.push({
+        updateTextStyle: {
+          range: { startIndex: cellTextIndex(rowIdx, 0), endIndex: cellTextIndex(rowIdx, 0) + 1 },
+          textStyle: { fontSize: { magnitude: 2, unit: "PT" } },
+          fields: "fontSize",
+        },
+      });
+      rowIdx++;
+    }
+  }
+
+  // Closing rule row: merge and navy background
+  b.requests.push({
+    mergeTableCells: {
+      tableRange: {
+        tableCellLocation: { tableStartLocation: { index: tableStartIdx + 1 }, rowIndex: rowIdx, columnIndex: 0 },
+        rowSpan: 1,
+        columnSpan: 3,
+      },
+    },
+  });
+  b.requests.push({
+    updateTableCellStyle: {
+      tableRange: {
+        tableCellLocation: { tableStartLocation: { index: tableStartIdx + 1 }, rowIndex: rowIdx, columnIndex: 0 },
+        rowSpan: 1,
+        columnSpan: 3,
+      },
+      tableCellStyle: {
+        backgroundColor: { color: { rgbColor: NAVY } },
+        borderTop: noBorder,
+        borderBottom: noBorder,
+        borderLeft: noBorder,
+        borderRight: noBorder,
+      },
+      fields: "backgroundColor,borderTop,borderBottom,borderLeft,borderRight",
+    },
+  });
+  b.requests.push({
+    updateTextStyle: {
+      range: { startIndex: cellTextIndex(rowIdx, 0), endIndex: cellTextIndex(rowIdx, 0) + 1 },
+      textStyle: { fontSize: { magnitude: 2, unit: "PT" } },
+      fields: "fontSize",
+    },
+  });
 }
 
 // ── Main handler ─────────────────────────────────────────────────────
