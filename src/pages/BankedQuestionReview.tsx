@@ -298,7 +298,11 @@ export default function BankedQuestionReview() {
     for (const q of toReject) {
       await supabase.from("banked_questions").update({ review_status: "rejected" }).eq("id", q.id);
     }
+    const assetIds = new Set(toReject.map(q => q.teaching_asset_id).filter(Boolean));
     qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
+    for (const aid of assetIds) {
+      await checkAssetComplete(aid as string);
+    }
     setSelectedIds(new Set());
     toast.success(`Rejected ${toReject.length} questions`);
   };
