@@ -151,6 +151,7 @@ export default function BulkFixTool() {
 
   const operationLabel = useMemo(() => {
     if (operation === "fix_entity_naming") return "Fix Entity Naming (Counterparty → Company A/B)";
+    if (operation === "fix_entity_perspective") return "Fix Entity Naming + Perspective (Full Correction)";
     if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
     if (operation === "custom_ai") return "Custom AI Rewrite";
     return "";
