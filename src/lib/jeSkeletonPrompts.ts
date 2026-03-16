@@ -24,7 +24,8 @@ Rules:
 2. List every date that requires a journal entry in YYYY-MM-DD format.
 3. Include dates for initial transactions, adjusting entries, interest payments, amortization, etc.
 4. Do NOT generate any journal entry rows — only dates.
-5. Return only JSON.`;
+5. When two parties exist, use "Survive Company A ([role])" and "Survive Company B ([role])" naming.
+6. Return only JSON.`;
 
 export function buildSkeletonUserPrompt(opts: {
   problemText: string;
