@@ -697,6 +697,11 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><Presentation className="h-3 w-3" /> 🎞️ Create Test Slide</span>
                     </SelectItem>
                   )}
+                  {isAdmin && (
+                    <SelectItem value="generate-prep-doc">
+                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Prep Doc</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <Button
