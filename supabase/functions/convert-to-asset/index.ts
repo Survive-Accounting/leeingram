@@ -1221,27 +1221,45 @@ CORE RULES:
 - Do NOT use any other fictional company names.
 - Never use the word "Counterparty" in any variant.
 - Never use vague terms like "the other company" or "the second party".
+- Never use X/Y naming.
 - All scenarios must feel realistic and finance/accounting related.
 - Do NOT include "Survive Accounting" in student-facing text.
 
-ENTITY NAMING IN VARIANTS:
-When a problem involves two parties to a transaction (e.g. a bond issuer and investor, a borrower and lender, a lessor and lessee, a buyer and seller), always name both parties clearly using this format:
-  "Survive Company A ([role])" and "Survive Company B ([role])"
-Where [role] is a short plain-English descriptor of that entity's role in the transaction.
+ENTITY NAMING:
+The primary entity in the problem — the one whose transactions are being described and whose books the student will primarily work from — is always named:
+  "Survive Company A ([role])"
+Where [role] describes their role in the specific transaction. Examples:
+  Survive Company A (the issuer)
+  Survive Company A (the borrower)
+  Survive Company A (the lessor)
+  Survive Company A (the seller)
 
-Examples by transaction type:
-  Bond/Note issuance: Survive Company A (the issuer) and Survive Company B (the investor)
-  Note payable/receivable: Survive Company A (the borrower) and Survive Company B (the lender)
-  Lease: Survive Company A (the lessor) and Survive Company B (the lessee)
-  Sale of goods/assets: Survive Company A (the seller) and Survive Company B (the buyer)
-  Sale-leaseback: Survive Company A (the seller-lessee) and Survive Company B (the buyer-lessor)
-  Service transaction: Survive Company A (the service provider) and Survive Company B (the client)
+If a second entity is involved in the transaction, name them:
+  "Survive Company B ([role])"
+Where [role] describes their role. Examples:
+  Survive Company B (the investor)
+  Survive Company B (the lender)
+  Survive Company B (the lessee)
+  Survive Company B (the buyer)
 
-IMPORTANT: When the problem asks the student to record a journal entry, always explicitly state which entity's books the entry is being recorded in. Use this phrasing:
-  "Prepare the journal entry on the books of Survive Company A (the issuer)..."
-  or "Prepare the journal entry from the perspective of Survive Company B (the investor)..."
-Never leave it ambiguous which entity the student is recording for.
-Always use the A/B naming with the role hint in parentheses.
+Never use "Survive Company" without the A or B suffix and role hint.
+Never use "Counterparty" or "the other party".
+Never use X/Y naming.
+
+PERSPECTIVE CLARITY IN INSTRUCTIONS:
+Every instruction that asks the student to prepare a journal entry, calculate an amount, or answer from a specific entity's perspective must explicitly name that entity inline.
+
+CORRECT format for each instruction line:
+  "(a) Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+  "(b) Prepare the journal entry on the books of Survive Company A (the borrower) to record the interest payment on July 1."
+  "(c) Prepare the journal entry on the books of Survive Company B (the investor) to record the purchase of the bonds."
+
+RULES for determining perspective:
+- Analyze the full problem context to determine which entity each instruction is asking about.
+- If all instructions are from the same entity's perspective, every instruction line still includes "on the books of Survive Company A ([role])".
+- If instructions switch perspective between Company A and Company B, each instruction line must clearly state which entity.
+- Never write an instruction like "(a) Prepare the journal entry to record..." without specifying whose books.
+- Never write a generic header like "From Company A's perspective:" and then list instructions without repeating the entity name — each instruction line must be self-contained and unambiguous.
 
 ${difficultySection}
 ${constraintsBlock}
@@ -1329,7 +1347,7 @@ ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants. Focus on calculations, ratios, and analysis.
 REMINDER: No self-corrections. One clean computation path per part.
-Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
+REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.`;
 
     } else if (generationMode === "je_only") {
       systemPrompt = `${preamble}
@@ -1368,7 +1386,7 @@ ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants with structured journal entries.
-Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
+REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.`;
 
     } else {
       // hybrid
@@ -1401,7 +1419,7 @@ ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.
-Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
+REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {

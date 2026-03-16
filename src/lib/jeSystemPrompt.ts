@@ -44,8 +44,18 @@ Rules:
 5. If an account is not found in the list, mark: "needs_review": true
 6. Each entry_by_date block must balance (total debits = total credits).
 7. Also include final_answers with specific numeric/text answers the problem asks for.
-8. When two parties exist, use "Survive Company A ([role])" and "Survive Company B ([role])" naming. Never use "Counterparty" or vague terms like "the other company".
-9. Always explicitly state which entity's books the journal entry is recorded on.
+
+ENTITY NAMING:
+The primary entity — the one whose transactions are being described and whose books the student will primarily work from — is always named "Survive Company A ([role])" where [role] describes their role (e.g. the issuer, the borrower, the lessor, the seller).
+If a second entity is involved, name them "Survive Company B ([role])" (e.g. the investor, the lender, the lessee, the buyer).
+Never use "Survive Company" without the A or B suffix and role hint.
+Never use "Counterparty", "the other party", or X/Y naming.
+
+PERSPECTIVE CLARITY:
+Every instruction that asks the student to prepare a journal entry must explicitly name the entity inline.
+CORRECT: "Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+WRONG: "Prepare the journal entry to record the issuance..." (missing whose books).
+Each instruction line must be self-contained and unambiguous — never rely on a generic header for perspective.
 
 Return only JSON.`;
 
@@ -76,7 +86,7 @@ export function buildJEUserPrompt(opts: {
     parts.push(`Approved Chart of Accounts:\n${opts.chartOfAccounts.join(", ")}`);
   }
 
-  parts.push("Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.");
+  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.");
 
   return parts.join("\n\n");
 }
