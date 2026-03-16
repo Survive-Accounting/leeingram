@@ -188,6 +188,33 @@ export function CoreAssetsTab() {
                   ))}
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      {/* Sync Hidden_Data button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        disabled={!(a as any).sheet_master_url || syncingAssetId === a.id}
+                        title={(a as any).sheet_master_url ? "Sync Hidden_Data" : "Create a sheet first"}
+                        onClick={async () => {
+                          setSyncingAssetId(a.id);
+                          try {
+                            const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
+                              body: { teaching_asset_id: a.id },
+                            });
+                            if (error) throw error;
+                            if (data?.error) throw new Error(data.error);
+                            toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
+                              description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
+                            });
+                          } catch (err: any) {
+                            toast.error(err.message || "Sync failed");
+                          } finally {
+                            setSyncingAssetId(null);
+                          }
+                        }}
+                      >
+                        {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                      </Button>
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>
