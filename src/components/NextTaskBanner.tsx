@@ -145,7 +145,7 @@ export function NextTaskBanner() {
               </Link>
             )}
             {config.tip && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">{config.tip}</p>
+              <p className="text-[11px] text-foreground/60 mt-0.5">{config.tip}</p>
             )}
           </div>
         </div>
