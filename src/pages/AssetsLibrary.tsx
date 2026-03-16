@@ -1015,14 +1015,11 @@ export default function AssetsLibrary() {
                         <div className="flex gap-0.5 justify-end items-center">
                           {a.sheet_master_url ? (
                             <>
-                              <Tip label="Whiteboard: tutoring / filming version">
-                                <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
-                              </Tip>
                               <Tip label="Push asset data to Hidden_Data tab on the Google Sheet">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-6 text-[10px] px-1.5 ml-1"
+                                  className="h-6 text-[10px] px-1.5"
                                   disabled={syncingAssetId === a.id}
                                   onClick={async (e) => {
                                     e.stopPropagation();
@@ -1049,9 +1046,14 @@ export default function AssetsLibrary() {
                               <Tip label="Add MC questions to Hidden_Data tab">
                                 <span><AddMCButton assetId={a.id} hasSheet={true} /></span>
                               </Tip>
-                              <Tip label="Filming slides (Google Slides)">
-                                <span><SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} /></span>
+                              <Tip label="Go to Whiteboard (Google Sheets)">
+                                <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
                               </Tip>
+                              {a.test_slide_url && (
+                                <Tip label="Go to Filming Slides (Google Slides)">
+                                  <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">🎞️</a>
+                                </Tip>
+                              )}
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <Tip label="Open Google Sheet">
