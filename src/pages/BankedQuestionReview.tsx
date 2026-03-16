@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   CheckCircle2, XCircle, Loader2, Zap, ChevronDown, ChevronUp,
-  Flag, Check, ArrowRight,
+  Flag, Check, ArrowRight, Download,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
@@ -225,20 +225,23 @@ export default function BankedQuestionReview() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // After approving, check if all questions for that asset are approved → set mc_status = 'complete'
+  // After approving/rejecting, auto-update mc_status
   const checkAssetComplete = useCallback(async (teachingAssetId: string | null) => {
     if (!teachingAssetId) return;
+    // Ensure mc_status is at least 'in_progress' when any question is approved
+    await supabase.from("teaching_assets").update({ mc_status: "in_progress" } as any).eq("id", teachingAssetId).eq("mc_status", "not_started");
+    
     const { data } = await supabase
       .from("banked_questions")
       .select("id, review_status")
       .eq("teaching_asset_id", teachingAssetId);
     if (!data || data.length === 0) return;
-    const allApproved = data.every(q => q.review_status === "approved");
-    if (allApproved) {
+    const nonePending = data.every(q => q.review_status === "approved" || q.review_status === "rejected");
+    if (nonePending) {
       await supabase.from("teaching_assets").update({ mc_status: "complete" } as any).eq("id", teachingAssetId);
       qc.invalidateQueries({ queryKey: ["all-core-assets-mc"] });
       qc.invalidateQueries({ queryKey: ["core-assets"] });
-      toast.success("All questions approved — MC status set to complete");
+      toast.success("All questions reviewed — MC status set to complete");
     }
   }, [qc]);
 
@@ -249,8 +252,10 @@ export default function BankedQuestionReview() {
   }, [updateQuestion, checkAssetComplete]);
 
   const rejectQuestion = useCallback((q: BankedQuestion) => {
-    updateQuestion.mutate({ id: q.id, updates: { review_status: "rejected" } });
-  }, [updateQuestion]);
+    updateQuestion.mutate({ id: q.id, updates: { review_status: "rejected" } }, {
+      onSuccess: () => checkAssetComplete(q.teaching_asset_id),
+    });
+  }, [updateQuestion, checkAssetComplete]);
 
   const flagQuestion = useCallback((q: BankedQuestion) => {
     updateQuestion.mutate({ id: q.id, updates: { review_status: "pending", rejection_notes: "Flagged for later review" } });
@@ -295,7 +300,11 @@ export default function BankedQuestionReview() {
     for (const q of toReject) {
       await supabase.from("banked_questions").update({ review_status: "rejected" }).eq("id", q.id);
     }
+    const assetIds = new Set(toReject.map(q => q.teaching_asset_id).filter(Boolean));
     qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
+    for (const aid of assetIds) {
+      await checkAssetComplete(aid as string);
+    }
     setSelectedIds(new Set());
     toast.success(`Rejected ${toReject.length} questions`);
   };
@@ -635,9 +644,14 @@ export default function BankedQuestionReview() {
                     </table>
                   </div>
                   {hasCompleteAsset && (
-                    <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => navigate("/quizzes-ready")}>
-                      Go to Quizzes Ready <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate("/quizzes-ready")}>
+                        <Download className="h-3 w-3 mr-1" /> Export to CSV
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => navigate("/quizzes-ready")}>
+                        Go to Quizzes Ready <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
                   )}
                 </CollapsibleContent>
               </Collapsible>
