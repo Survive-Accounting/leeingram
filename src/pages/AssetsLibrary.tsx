@@ -144,9 +144,11 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
 
   if (!hasSheet) {
     return (
-      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
-        <ListPlus className="h-3 w-3" />
-      </Button>
+      <Tip label="Create a sheet first">
+        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
+          <ListPlus className="h-3 w-3" />
+        </Button>
+      </Tip>
     );
   }
 
