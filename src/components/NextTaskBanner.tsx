@@ -126,7 +126,7 @@ export function NextTaskBanner() {
                 {config.isPhase1Complete ? "Phase 1 Complete" : "This Task"}
               </p>
               {config.adminOnly && isVa && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1 text-[10px] text-foreground/60">
                   <Lock className="h-2.5 w-2.5" /> Instructor only
                 </span>
               )}
@@ -134,7 +134,7 @@ export function NextTaskBanner() {
             <p className="text-sm text-foreground mt-0.5">
               {(config as any).taskByRole?.[activeRole] || config.task}
               {pendingCount !== undefined && pendingCount > 0 && (
-                <span className="ml-2 text-muted-foreground">
+                <span className="ml-2 text-foreground/70">
                   {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
                 </span>
               )}
@@ -145,7 +145,7 @@ export function NextTaskBanner() {
               </Link>
             )}
             {config.tip && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">{config.tip}</p>
+              <p className="text-[11px] text-foreground/60 mt-0.5">{config.tip}</p>
             )}
           </div>
         </div>
