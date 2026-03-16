@@ -1008,7 +1008,7 @@ export default function AssetsLibrary() {
                 </button>
               </TableHead>
               {!isContentCreationVa && (
-                <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
+                <TableHead className="text-xs w-16 text-right">Tools</TableHead>
               )}
               <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
