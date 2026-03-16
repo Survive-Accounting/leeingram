@@ -239,9 +239,11 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
   }
 
   return (
-    <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Create Filming Slides" onClick={createSlides} disabled={creating}>
-      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
-    </Button>
+    <Tip label="Create Filming Slides">
+      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" onClick={createSlides} disabled={creating}>
+        {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+      </Button>
+    </Tip>
   );
 }
 
