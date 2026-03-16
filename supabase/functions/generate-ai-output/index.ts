@@ -51,8 +51,8 @@ serve(async (req) => {
       run_id,
     } = await req.json();
 
-    if (!provider || !messages || !source_problem_id) {
-      throw new Error("Missing required fields: provider, messages, source_problem_id");
+    if (!provider || !messages) {
+      throw new Error("Missing required fields: provider, messages");
     }
 
     const selectedModel = model || (provider === "openai" ? "gpt-4.1" : "google/gemini-2.5-flash");
@@ -82,14 +82,16 @@ serve(async (req) => {
     });
 
     // ── Legacy activity_log ──
-    await sb.from("activity_log").insert({
-      actor_type: "ai",
-      entity_type: "source_problem",
-      entity_id: source_problem_id,
-      event_type: "ai_generate_started",
-      severity: "info",
-      payload_json: { provider, model: selectedModel, run_id },
-    });
+    if (source_problem_id) {
+      await sb.from("activity_log").insert({
+        actor_type: "ai",
+        entity_type: "source_problem",
+        entity_id: source_problem_id,
+        event_type: "ai_generate_started",
+        severity: "info",
+        payload_json: { provider, model: selectedModel, run_id },
+      });
+    }
 
     // ── Log: AI_REQUEST ──
     await logEvent(run_id, "ai", "info", "AI_REQUEST", `Calling ${provider}/${selectedModel}`, {
@@ -224,26 +226,28 @@ serve(async (req) => {
     );
 
     // ── Legacy activity_log: ai_generate_completed ──
-    const rawSnippet = typeof aiResponse === "string" ? aiResponse.slice(0, 2000) : JSON.stringify(aiResponse).slice(0, 2000);
-    await sb.from("activity_log").insert({
-      actor_type: "ai",
-      entity_type: "source_problem",
-      entity_id: source_problem_id,
-      event_type: "ai_generate_completed",
-      severity: parseError ? "warn" : "info",
-      payload_json: {
-        provider,
-        model: selectedModel,
-        token_usage: tokenUsage,
-        generation_time_ms: latencyMs,
-        parse_error: parseError,
-        schema_valid: schemaValid,
-        schema_errors: schemaErrors.length > 0 ? schemaErrors : undefined,
-        raw_output_snippet: rawSnippet,
-        parsed_json_snippet: parsed ? JSON.stringify(parsed).slice(0, 2000) : null,
-        run_id,
-      },
-    });
+    if (source_problem_id) {
+      const rawSnippet = typeof aiResponse === "string" ? aiResponse.slice(0, 2000) : JSON.stringify(aiResponse).slice(0, 2000);
+      await sb.from("activity_log").insert({
+        actor_type: "ai",
+        entity_type: "source_problem",
+        entity_id: source_problem_id,
+        event_type: "ai_generate_completed",
+        severity: parseError ? "warn" : "info",
+        payload_json: {
+          provider,
+          model: selectedModel,
+          token_usage: tokenUsage,
+          generation_time_ms: latencyMs,
+          parse_error: parseError,
+          schema_valid: schemaValid,
+          schema_errors: schemaErrors.length > 0 ? schemaErrors : undefined,
+          raw_output_snippet: rawSnippet,
+          parsed_json_snippet: parsed ? JSON.stringify(parsed).slice(0, 2000) : null,
+          run_id,
+        },
+      });
+    }
 
     return new Response(JSON.stringify({
       parsed,
