@@ -26,6 +26,7 @@ import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog"
 import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
+import { Tip } from "@/components/Tip";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";
@@ -143,16 +144,18 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
 
   if (!hasSheet) {
     return (
-      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
-        <ListPlus className="h-3 w-3" />
-      </Button>
+      <Tip label="Create a sheet first">
+        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
+          <ListPlus className="h-3 w-3" />
+        </Button>
+      </Tip>
     );
   }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Add MC to Hidden_Data">
+        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
           {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
         </Button>
       </PopoverTrigger>
@@ -207,9 +210,11 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
 
   if (!hasSheet) {
     return (
-      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Sync to Sheet first">
-        <Film className="h-3 w-3" />
-      </Button>
+      <Tip label="Sync to Sheet first">
+        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
+          <Film className="h-3 w-3" />
+        </Button>
+      </Tip>
     );
   }
 
@@ -217,7 +222,7 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Filming Slides">
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
             <Film className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
@@ -234,9 +239,11 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
   }
 
   return (
-    <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Create Filming Slides" onClick={createSlides} disabled={creating}>
-      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
-    </Button>
+    <Tip label="Create Filming Slides">
+      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" onClick={createSlides} disabled={creating}>
+        {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+      </Button>
+    </Tip>
   );
 }
 
@@ -1022,49 +1029,60 @@ export default function AssetsLibrary() {
                         <div className="flex gap-0.5 justify-end items-center">
                           {a.sheet_master_url ? (
                             <>
-                              <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" title="Master: tutoring / filming version" className="hover:scale-110 transition-transform">📋</a>
+                              <Tip label="Master: tutoring / filming version">
+                                <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
+                              </Tip>
                               {a.sheet_practice_url && (
-                                <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" title="Practice: student practice version" className="hover:scale-110 transition-transform">✏️</a>
+                                <Tip label="Practice: student practice version">
+                                  <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">✏️</a>
+                                </Tip>
                               )}
                               {a.sheet_promo_url && (
-                                <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
+                                <Tip label="Promo: shareable promo version">
+                                  <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📣</a>
+                                </Tip>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-6 text-[10px] px-1.5 ml-1"
-                                disabled={syncingAssetId === a.id}
-                                title="Sync Hidden_Data tab"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  setSyncingAssetId(a.id);
-                                  try {
-                                    const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
-                                      body: { teaching_asset_id: a.id },
-                                    });
-                                    if (error) throw error;
-                                    if (data?.error) throw new Error(data.error);
-                                    toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
-                                      description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
-                                    });
-                                  } catch (err: any) {
-                                    toast.error(err.message || "Sync failed");
-                                  } finally {
-                                    setSyncingAssetId(null);
-                                  }
-                                }}
-                              >
-                                {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                              </Button>
+                              <Tip label="Sync Hidden_Data tab">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-[10px] px-1.5 ml-1"
+                                  disabled={syncingAssetId === a.id}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setSyncingAssetId(a.id);
+                                    try {
+                                      const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
+                                        body: { teaching_asset_id: a.id },
+                                      });
+                                      if (error) throw error;
+                                      if (data?.error) throw new Error(data.error);
+                                      toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
+                                        description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
+                                      });
+                                    } catch (err: any) {
+                                      toast.error(err.message || "Sync failed");
+                                    } finally {
+                                      setSyncingAssetId(null);
+                                    }
+                                  }}
+                                >
+                                  {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                </Button>
+                              </Tip>
                               <AddMCButton assetId={a.id} hasSheet={true} />
                               <SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
-                            <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
+                            <Tip label="Open Google Sheet">
+                              <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
+                            </Tip>
                           ) : (
-                            <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
-                              <RefreshCw className="h-3 w-3" />
-                            </Button>
+                            <Tip label="Create a sheet first">
+                              <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
+                                <RefreshCw className="h-3 w-3" />
+                              </Button>
+                            </Tip>
                           )}
                         </div>
                       </TableCell>

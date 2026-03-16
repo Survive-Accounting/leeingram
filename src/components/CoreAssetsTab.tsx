@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MoreHorizontal, StickyNote, Loader2, RefreshCw, ListPlus, Film } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Tip } from "@/components/Tip";
 
 const STATUS_CYCLE = ["not_started", "in_progress", "complete"] as const;
 type OutputStatus = (typeof STATUS_CYCLE)[number];
@@ -120,16 +121,18 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
 
   if (!hasSheet) {
     return (
-      <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
-        <ListPlus className="h-3 w-3" />
-      </Button>
+      <Tip label="Create a sheet first">
+        <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled>
+          <ListPlus className="h-3 w-3" />
+        </Button>
+      </Tip>
     );
   }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Add MC to Hidden_Data">
+        <Button variant="outline" size="sm" className="h-6 w-6 p-0">
           {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
         </Button>
       </PopoverTrigger>
@@ -184,9 +187,11 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
 
   if (!hasSheet) {
     return (
-      <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled title="Sync to Sheet first">
-        <Film className="h-3 w-3" />
-      </Button>
+      <Tip label="Sync to Sheet first">
+        <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled>
+          <Film className="h-3 w-3" />
+        </Button>
+      </Tip>
     );
   }
 
@@ -194,7 +199,7 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Filming Slides">
+          <Button variant="outline" size="sm" className="h-6 w-6 p-0">
             <Film className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
@@ -211,9 +216,11 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
   }
 
   return (
-    <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Create Filming Slides" onClick={createSlides} disabled={creating}>
-      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
-    </Button>
+    <Tip label="Create Filming Slides">
+      <Button variant="outline" size="sm" className="h-6 w-6 p-0" onClick={createSlides} disabled={creating}>
+        {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+      </Button>
+    </Tip>
   );
 }
 
@@ -346,33 +353,33 @@ export function CoreAssetsTab() {
                   ))}
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {/* Sync Hidden_Data button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        disabled={!(a as any).sheet_master_url || syncingAssetId === a.id}
-                        title={(a as any).sheet_master_url ? "Sync Hidden_Data" : "Create a sheet first"}
-                        onClick={async () => {
-                          setSyncingAssetId(a.id);
-                          try {
-                            const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
-                              body: { teaching_asset_id: a.id },
-                            });
-                            if (error) throw error;
-                            if (data?.error) throw new Error(data.error);
-                            toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
-                              description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
-                            });
-                          } catch (err: any) {
-                            toast.error(err.message || "Sync failed");
-                          } finally {
-                            setSyncingAssetId(null);
-                          }
-                        }}
-                      >
-                        {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                      </Button>
+                      <Tip label={(a as any).sheet_master_url ? "Sync Hidden_Data" : "Create a sheet first"}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          disabled={!(a as any).sheet_master_url || syncingAssetId === a.id}
+                          onClick={async () => {
+                            setSyncingAssetId(a.id);
+                            try {
+                              const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
+                                body: { teaching_asset_id: a.id },
+                              });
+                              if (error) throw error;
+                              if (data?.error) throw new Error(data.error);
+                              toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
+                                description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
+                              });
+                            } catch (err: any) {
+                              toast.error(err.message || "Sync failed");
+                            } finally {
+                              setSyncingAssetId(null);
+                            }
+                          }}
+                        >
+                          {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        </Button>
+                      </Tip>
                       {/* Add MC to Hidden_Data button */}
                       <AddMCButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} />
                       {/* Slides button */}
