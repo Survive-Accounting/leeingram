@@ -680,11 +680,20 @@ export default function BulkFixTool() {
                           </TableHeader>
                           <TableBody>
                             {previewRows.map((row, i) => (
-                              <TableRow key={`${row.id}-${row.field}-${i}`}>
+                              <TableRow key={`${row.id}-${row.field}-${i}`} className={row.numericWarning ? "bg-destructive/10" : ""}>
                                 <TableCell className="text-xs font-mono">{row.asset_name.slice(0, 25)}</TableCell>
                                 <TableCell className="text-xs">{row.field}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground max-w-48 truncate">{row.before}</TableCell>
-                                <TableCell className="text-xs text-emerald-400 max-w-48 truncate">{row.after}</TableCell>
+                                <TableCell className="text-xs max-w-48">
+                                  <span className={row.numericWarning ? "text-destructive" : "text-emerald-400"}>
+                                    {row.after}
+                                  </span>
+                                  {row.numericWarning && (
+                                    <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3 inline" /> ⚠ Numeric value may have changed — review carefully before running
+                                    </p>
+                                  )}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
