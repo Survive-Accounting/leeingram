@@ -759,21 +759,33 @@ export default function AssetsLibrary() {
                 />
               </TableHead>
               <TableHead className="text-xs">
-                <span className="inline-flex items-center gap-1">
+                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "asset_name") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("asset_name"); setSortDir("asc"); } }}>
                   Asset Code
+                  {sortField === "asset_name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                   <InfoTip text="A unique code for each teaching asset. Format: [Course]_[Chapter]_[Seq]_[Variant]. Used to identify assets across all systems." />
-                </span>
+                </button>
               </TableHead>
-              <TableHead className="text-xs">Textbook Ref</TableHead>
+              <TableHead className="text-xs">
+                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "source_ref") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("source_ref"); setSortDir("asc"); } }}>
+                  Textbook Ref
+                  {sortField === "source_ref" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                </button>
+              </TableHead>
               {!isContentCreationVa && (
                 <TableHead className="text-xs">
-                  <span className="inline-flex items-center gap-1">
+                  <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "google_sheet_status") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("google_sheet_status"); setSortDir("asc"); } }}>
                     Sheet Status
+                    {sortField === "google_sheet_status" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
-                  </span>
+                  </button>
                 </TableHead>
               )}
-              <TableHead className="text-xs">Created</TableHead>
+              <TableHead className="text-xs">
+                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
+                  Created
+                  {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                </button>
+              </TableHead>
               {!isContentCreationVa && (
                 <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
               )}
