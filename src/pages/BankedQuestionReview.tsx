@@ -252,8 +252,10 @@ export default function BankedQuestionReview() {
   }, [updateQuestion, checkAssetComplete]);
 
   const rejectQuestion = useCallback((q: BankedQuestion) => {
-    updateQuestion.mutate({ id: q.id, updates: { review_status: "rejected" } });
-  }, [updateQuestion]);
+    updateQuestion.mutate({ id: q.id, updates: { review_status: "rejected" } }, {
+      onSuccess: () => checkAssetComplete(q.teaching_asset_id),
+    });
+  }, [updateQuestion, checkAssetComplete]);
 
   const flagQuestion = useCallback((q: BankedQuestion) => {
     updateQuestion.mutate({ id: q.id, updates: { review_status: "pending", rejection_notes: "Flagged for later review" } });
