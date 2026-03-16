@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MoreHorizontal, StickyNote, Loader2, RefreshCw, ListPlus, Film } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Tip } from "@/components/Tip";
 
 const STATUS_CYCLE = ["not_started", "in_progress", "complete"] as const;
 type OutputStatus = (typeof STATUS_CYCLE)[number];
