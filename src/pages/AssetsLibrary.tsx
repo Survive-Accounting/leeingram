@@ -1059,6 +1059,61 @@ export default function AssetsLibrary() {
                                   <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">🎞️</a>
                                 </Tip>
                               )}
+                              {(a as any).prep_doc_url ? (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
+                                      <BookOpen className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={() => window.open((a as any).prep_doc_url, "_blank")}>
+                                      Open Prep Doc
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={generatingPrepDocId === a.id}
+                                      onClick={async () => {
+                                        setGeneratingPrepDocId(a.id);
+                                        try {
+                                          const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: a.id } });
+                                          if (error) throw error;
+                                          if (data?.error) throw new Error(data.error);
+                                          toast.success("Prep doc regenerated — opening now", { description: "Add to offline in Google Drive for flight." });
+                                          window.open(data.doc_url, "_blank");
+                                          qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                                        } catch (err: any) { toast.error(err.message || "Prep doc failed"); }
+                                        finally { setGeneratingPrepDocId(null); }
+                                      }}
+                                    >
+                                      {generatingPrepDocId === a.id ? "Generating…" : "Regenerate"}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              ) : (
+                                <Tip label="Generate Prep Doc">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-[10px] px-1.5"
+                                    disabled={generatingPrepDocId === a.id}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setGeneratingPrepDocId(a.id);
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: a.id } });
+                                        if (error) throw error;
+                                        if (data?.error) throw new Error(data.error);
+                                        toast.success("Prep doc created — opening now.", { description: "Add to offline in Google Drive for flight." });
+                                        window.open(data.doc_url, "_blank");
+                                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                                      } catch (err: any) { toast.error(err.message || "Prep doc failed"); }
+                                      finally { setGeneratingPrepDocId(null); }
+                                    }}
+                                  >
+                                    {generatingPrepDocId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                                  </Button>
+                                </Tip>
+                              )}
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <Tip label="Open Google Sheet">
