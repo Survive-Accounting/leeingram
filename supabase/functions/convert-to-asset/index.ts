@@ -1328,7 +1328,8 @@ ${solutionText || "Not provided"}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants. Focus on calculations, ratios, and analysis.
-REMINDER: No self-corrections. One clean computation path per part.`;
+REMINDER: No self-corrections. One clean computation path per part.
+Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
 
     } else if (generationMode === "je_only") {
       systemPrompt = `${preamble}
