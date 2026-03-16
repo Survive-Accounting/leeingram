@@ -471,8 +471,10 @@ function parseJERawLines(rawText: string): JELine[][] {
   const groups: JELine[][] = [];
   let current: JELine[] = [];
 
-  const amountRe = /[\d,]+(?:\.\d+)?/;
-  const dateRe = /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}\/\d{1,2})/i;
+  // Date pattern: must contain a month name (full or abbreviated)
+  const dateRe = /(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+  // Amount at end of line: dollar sign or comma-separated number that looks like currency (not a year)
+  const trailingAmountRe = /\$[\d,]+(?:\.\d+)?|\b[\d]{1,3}(?:,\d{3})+(?:\.\d+)?\s*$/;
 
   for (const raw of lines) {
     if (!raw.trim()) {
@@ -480,8 +482,10 @@ function parseJERawLines(rawText: string): JELine[][] {
       continue;
     }
 
-    const hasAmount = amountRe.test(raw);
-    const isDate = dateRe.test(raw) && !hasAmount;
+    // A date line: contains a month name/date pattern AND does NOT end with a dollar amount
+    const looksLikeDate = dateRe.test(raw);
+    const hasTrailingAmount = trailingAmountRe.test(raw);
+    const isDate = looksLikeDate && !hasTrailingAmount;
 
     if (isDate) {
       if (current.length > 0) { groups.push(current); current = []; }
