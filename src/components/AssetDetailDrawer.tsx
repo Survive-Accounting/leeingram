@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Tip } from "@/components/Tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -310,12 +311,12 @@ function PipelineStatusBanner({ asset }: { asset: TeachingAssetFull }) {
       {isApproved && (
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
           <RankPill rank={(asset as any).core_rank ?? null} />
-          <Phase2Pill label="WB" status={(asset as any).whiteboard_status || "not_started"} />
-          <Phase2Pill label="Vid" status={(asset as any).video_production_status || "not_started"} />
-          <Phase2Pill label="MC" status={(asset as any).mc_status || "not_started"} />
-          <Phase2Pill label="EB" status={(asset as any).ebook_status || "not_started"} />
-          <Phase2Pill label="QA" status={(asset as any).qa_status || "not_started"} />
-          <Phase2Pill label="Dep" status={(asset as any).deployment_status || "not_started"} />
+          <Tip label="Whiteboard"><Phase2Pill label="WB" status={(asset as any).whiteboard_status || "not_started"} /></Tip>
+          <Tip label="Video"><Phase2Pill label="Vid" status={(asset as any).video_production_status || "not_started"} /></Tip>
+          <Tip label="Multiple Choice"><Phase2Pill label="MC" status={(asset as any).mc_status || "not_started"} /></Tip>
+          <Tip label="Ebook"><Phase2Pill label="EB" status={(asset as any).ebook_status || "not_started"} /></Tip>
+          <Tip label="Quality Assurance"><Phase2Pill label="QA" status={(asset as any).qa_status || "not_started"} /></Tip>
+          <Tip label="Deployment"><Phase2Pill label="Dep" status={(asset as any).deployment_status || "not_started"} /></Tip>
         </div>
       )}
       <p className="text-xs text-muted-foreground mt-1.5">
