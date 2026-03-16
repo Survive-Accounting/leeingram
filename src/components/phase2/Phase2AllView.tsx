@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 interface Phase2AllViewProps {
   chapterId: string;
+  onAssetClick?: (assetId: string) => void;
 }
 
 type Asset = {
