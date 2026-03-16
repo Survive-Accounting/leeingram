@@ -1810,7 +1810,7 @@ Use Survive Company A ([role]) and Survive Company B ([role]) naming when two pa
         }
       }
       if (c.survive_solution_text && typeof c.survive_solution_text === "string") {
-        if (!c.survive_solution_text.includes(SURVIVE_COMPANY) && !c.survive_solution_text.includes(SURVIVE_COUNTERPARTY)) {
+        if (!c.survive_solution_text.includes(SURVIVE_COMPANY) && !c.survive_solution_text.includes(SURVIVE_COMPANY_A) && !c.survive_solution_text.includes(SURVIVE_COMPANY_B)) {
           companyNameReplacements.push({ candidate_index: ci, field: "survive_solution_text", original: c.survive_solution_text.slice(0, 200) });
         }
       }
