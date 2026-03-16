@@ -28,8 +28,16 @@ For each asset, return:
   - Contain common student mistakes (wrong accounts, reversed debits/credits, wrong amounts)
   - Be clearly different from each other
 
+ENTITY NAMING IN QUESTION STEMS:
+The teaching assets use this naming convention:
+  Survive Company A ([role]) — the primary entity
+  Survive Company B ([role]) — the secondary entity
+When writing distractor text that references a company name, always use the full name with role hint exactly as it appears in the source asset text. Do not shorten "Survive Company A (the issuer)" to "Survive Company" or "the issuer". If a question asks about a specific entity's perspective, name that entity explicitly.
+
 Return a JSON array with one object per asset, in the same order as input.
 Each object: { "correct_answer": "...", "distractor_1": "...", "distractor_2": "...", "distractor_3": "..." }
+
+REMINDER: Use the exact company names from the problem text including role hints in parentheses, e.g. 'Survive Company A (the issuer)'. Do not shorten or omit the role hint.
 
 Assets:
 ${assets.map((a: any, i: number) => `

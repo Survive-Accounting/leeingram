@@ -94,6 +94,8 @@ ${solution_text || "(no solution provided)"}
 JOURNAL ENTRY:
 ${journal_entry_block || "(no journal entry)"}
 
+REMINDER: Use the exact company names from the problem text including role hints in parentheses, e.g. 'Survive Company A (the issuer)'. Do not shorten or omit the role hint in question stems.
+
 Generate 8-12 multiple-choice questions for this asset.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
