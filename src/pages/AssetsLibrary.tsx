@@ -184,9 +184,22 @@ export default function AssetsLibrary() {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return (data as TeachingAsset[]).sort((a, b) =>
-        (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" })
-      );
+      const sorted = (data as TeachingAsset[]).sort((a, b) => {
+        const dir = sortDir === "asc" ? 1 : -1;
+        switch (sortField) {
+          case "asset_name":
+            return dir * (a.asset_name || "").localeCompare(b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
+          case "source_ref":
+            return dir * (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
+          case "google_sheet_status":
+            return dir * (a.google_sheet_status || "").localeCompare(b.google_sheet_status || "");
+          case "created_at":
+            return dir * (a.created_at || "").localeCompare(b.created_at || "");
+          default:
+            return 0;
+        }
+      });
+      return sorted;
     },
   });
 
