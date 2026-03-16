@@ -1060,11 +1060,7 @@ export default function AssetsLibrary() {
                               <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
                             </Tip>
                           ) : (
-                            <Tip label="Create a Whiteboard first">
-                              <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
-                                <RefreshCw className="h-3 w-3" />
-                              </Button>
-                            </Tip>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </div>
                       </TableCell>
