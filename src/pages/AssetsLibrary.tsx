@@ -1074,11 +1074,15 @@ export default function AssetsLibrary() {
                               <SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
-                            <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
+                            <Tip label="Open Google Sheet">
+                              <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
+                            </Tip>
                           ) : (
-                            <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
-                              <RefreshCw className="h-3 w-3" />
-                            </Button>
+                            <Tip label="Create a sheet first">
+                              <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
+                                <RefreshCw className="h-3 w-3" />
+                              </Button>
+                            </Tip>
                           )}
                         </div>
                       </TableCell>
