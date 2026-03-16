@@ -60,6 +60,103 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
+/* ── Add MC to Hidden_Data popover button ── */
+function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [selectedSet, setSelectedSet] = useState<string>("");
+  const [syncing, setSyncing] = useState(false);
+
+  const { data: availableSets = [] } = useQuery({
+    queryKey: ["mc-export-sets-for-asset", assetId],
+    queryFn: async () => {
+      const { data: approvedQs } = await supabase
+        .from("banked_questions")
+        .select("id")
+        .eq("teaching_asset_id", assetId)
+        .eq("review_status", "approved");
+      if (!approvedQs?.length) return [];
+      const qIds = approvedQs.map(q => q.id);
+      const { data: esqs } = await supabase
+        .from("export_set_questions")
+        .select("export_set_id, banked_question_id")
+        .in("banked_question_id", qIds);
+      if (!esqs?.length) return [];
+      const setCountMap = new Map<string, number>();
+      for (const row of esqs) {
+        setCountMap.set(row.export_set_id, (setCountMap.get(row.export_set_id) || 0) + 1);
+      }
+      const setIds = [...setCountMap.keys()];
+      const { data: sets } = await supabase
+        .from("export_sets")
+        .select("id, name")
+        .in("id", setIds);
+      if (!sets) return [];
+      return sets.map(s => ({
+        id: s.id,
+        name: s.name,
+        questionCount: setCountMap.get(s.id) || 0,
+      }));
+    },
+    enabled: open && hasSheet,
+  });
+
+  const handleSync = async () => {
+    if (!selectedSet) { toast.error("Select an export set"); return; }
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-mc-to-sheet", {
+        body: { teaching_asset_id: assetId, export_set_id: selectedSet },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Added ${data.questions_added} MC questions from '${data.export_set_name}' to Hidden_Data`);
+      setOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Sync MC failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (!hasSheet) {
+    return (
+      <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
+        <ListPlus className="h-3 w-3" />
+      </Button>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Add MC to Hidden_Data">
+          {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="end">
+        <p className="text-xs font-bold text-foreground mb-2">Add MC to Hidden_Data</p>
+        <Select value={selectedSet} onValueChange={setSelectedSet}>
+          <SelectTrigger className="h-7 text-xs mb-2"><SelectValue placeholder="Choose Export Set" /></SelectTrigger>
+          <SelectContent>
+            {availableSets.map(s => (
+              <SelectItem key={s.id} value={s.id}>{s.name} ({s.questionCount} questions)</SelectItem>
+            ))}
+            {availableSets.length === 0 && (
+              <SelectItem value="__none__" disabled>No export sets with approved questions</SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center justify-between">
+          <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)}>Cancel</button>
+          <Button size="sm" className="h-7 text-xs" onClick={handleSync} disabled={syncing || !selectedSet}>
+            {syncing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Adding…</> : "Add to Sheet"}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function CoreAssetsTab() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const { workspace } = useActiveWorkspace();
