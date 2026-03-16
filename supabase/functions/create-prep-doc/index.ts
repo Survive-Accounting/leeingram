@@ -9,6 +9,7 @@ const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SCOPES = [
   "https://www.googleapis.com/auth/documents",
   "https://www.googleapis.com/auth/drive",
+  "https://www.googleapis.com/auth/drive.file",
 ];
 
 const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
