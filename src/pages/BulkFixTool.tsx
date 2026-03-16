@@ -48,6 +48,7 @@ interface PreviewRow {
   field: string;
   before: string;
   after: string;
+  numericWarning?: boolean;
 }
 
 function getHistory(): HistoryEntry[] {
