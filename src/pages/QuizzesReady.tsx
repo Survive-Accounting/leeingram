@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
 import {
   Download, Loader2, CheckCircle2, ClipboardCopy, Check,
+  FileSpreadsheet, Film,
 } from "lucide-react";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
@@ -43,6 +46,8 @@ type AssetInfo = {
   problem_context: string | null;
   lw_html_added: boolean;
   lw_csv_exported_at: string | null;
+  sheet_master_url: string | null;
+  test_slide_url: string | null;
 };
 
 /* ── CSV helpers ── */
@@ -57,11 +62,8 @@ function escapeCSV(val: string): string {
 function letterToNumber(letter: string): string {
   const map: Record<string, string> = { A: "1", B: "2", C: "3", D: "4", E: "5" };
   const upper = (letter || "").trim().toUpperCase();
-  // Handle "A", "B", etc.
   if (map[upper]) return map[upper];
-  // Handle "1", "2", etc.
   if (/^\d+$/.test(upper)) return upper;
-  // Try to extract letter from strings like "Answer A"
   for (const [k, v] of Object.entries(map)) {
     if (upper.includes(k)) return v;
   }
@@ -116,11 +118,161 @@ function RankBadge({ rank }: { rank: number | null }) {
   );
 }
 
+/* ── Add MC to Whiteboard button ── */
+function AddToWhiteboardButton({
+  assetId,
+  assetName,
+  sheetMasterUrl,
+  approvedCount,
+  chapterId,
+  onSynced,
+}: {
+  assetId: string;
+  assetName: string;
+  sheetMasterUrl: string | null;
+  approvedCount: number;
+  chapterId: string;
+  onSynced: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selectedSet, setSelectedSet] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  const { data: exportSets = [] } = useQuery({
+    queryKey: ["quiz-wb-export-sets", assetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("export_set_questions")
+        .select("export_set_id, banked_questions!inner ( teaching_asset_id, review_status )")
+        .eq("banked_questions.teaching_asset_id", assetId)
+        .eq("banked_questions.review_status", "approved");
+      if (!data) return [];
+      const setIds = [...new Set(data.map((d: any) => d.export_set_id))];
+      if (setIds.length === 0) return [];
+      const { data: sets } = await supabase
+        .from("export_sets")
+        .select("id, name")
+        .in("id", setIds);
+      return (sets || []).map((s: any) => ({
+        ...s,
+        count: data.filter((d: any) => d.export_set_id === s.id).length,
+      }));
+    },
+    enabled: open && !!assetId,
+  });
+
+  const handleSync = async () => {
+    if (!selectedSet) return;
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-mc-to-sheet", {
+        body: { teaching_asset_id: assetId, export_set_id: selectedSet },
+      });
+      if (error) throw error;
+      const setName = exportSets.find((s: any) => s.id === selectedSet)?.name || "";
+      toast.success(`Added ${data?.questions_added || 0} MC questions from '${setName}' to Hidden_Data`);
+      setOpen(false);
+      onSynced();
+    } catch (e: any) {
+      toast.error(e.message || "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (!sheetMasterUrl || approvedCount === 0) {
+    return (
+      <Button size="sm" variant="outline" className="h-7 text-[10px]" disabled title={!sheetMasterUrl ? "Create sheet first" : "No approved questions"}>
+        <FileSpreadsheet className="h-3 w-3 mr-1" /> Whiteboard
+      </Button>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="outline" className="h-7 text-[10px]">
+          <FileSpreadsheet className="h-3 w-3 mr-1" /> Whiteboard
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3 space-y-3">
+        <p className="text-xs font-medium text-foreground">Add MC to Hidden_Data</p>
+        <Select value={selectedSet} onValueChange={setSelectedSet}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Choose Export Set" />
+          </SelectTrigger>
+          <SelectContent>
+            {exportSets.map((s: any) => (
+              <SelectItem key={s.id} value={s.id} className="text-xs">
+                {s.name} ({s.count} Qs)
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-2">
+          <Button size="sm" className="h-7 text-xs flex-1" onClick={handleSync} disabled={!selectedSet || syncing}>
+            {syncing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+            Add to Sheet
+          </Button>
+          <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)}>Cancel</button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ── Add MC to Slides button ── */
+function AddToSlidesButton({
+  assetId,
+  whiteboardDone,
+  onCreated,
+}: {
+  assetId: string;
+  whiteboardDone: boolean;
+  onCreated: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-test-slide", {
+        body: { teaching_asset_id: assetId },
+      });
+      if (error) throw error;
+      if (data?.test_slide_url) {
+        window.open(data.test_slide_url, "_blank");
+      }
+      toast.success("Filming slides created");
+      onCreated();
+    } catch (e: any) {
+      toast.error(e.message || "Slides creation failed");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 text-[10px]"
+      disabled={!whiteboardDone || creating}
+      title={!whiteboardDone ? "Add MC to Whiteboard first" : "Create filming slides"}
+      onClick={handleCreate}
+    >
+      {creating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Film className="h-3 w-3 mr-1" />}
+      Slides
+    </Button>
+  );
+}
+
 /* ══════════════════════════════════════════ */
 export default function QuizzesReady() {
   const qc = useQueryClient();
   const { workspace } = useActiveWorkspace();
   const [activeTab, setActiveTab] = useState("csv-export");
+  const [whiteboardSynced, setWhiteboardSynced] = useState<Set<string>>(new Set());
 
   /* ── Fetch chapter + course info ── */
   const { data: chapterInfo } = useQuery({
@@ -146,7 +298,7 @@ export default function QuizzesReady() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, core_rank, mc_status, course_id, survive_problem_text, problem_context, lw_html_added, lw_csv_exported_at")
+        .select("id, asset_name, source_ref, core_rank, mc_status, course_id, survive_problem_text, problem_context, lw_html_added, lw_csv_exported_at, sheet_master_url, test_slide_url")
         .eq("chapter_id", workspace!.chapterId)
         .eq("phase2_status", "core_asset")
         .in("mc_status", ["in_progress", "complete"])
@@ -291,6 +443,11 @@ export default function QuizzesReady() {
     toast.success(`Marked ${ids.length} assets as HTML complete`);
   }, [assetRows, qc]);
 
+  /* ── Whiteboard sync tracker ── */
+  const markWhiteboardSynced = useCallback((assetId: string) => {
+    setWhiteboardSynced(prev => new Set(prev).add(assetId));
+  }, []);
+
   /* ── HTML checklist progress ── */
   const htmlAddedCount = assetRows.filter(a => a.lw_html_added && a.approvedCount > 0).length;
   const htmlTotalCount = assetRows.filter(a => a.approvedCount > 0).length;
@@ -360,6 +517,8 @@ export default function QuizzesReady() {
                         <th className="px-3 py-2 text-center font-medium">Pending</th>
                         <th className="px-3 py-2 text-center font-medium">Rejected</th>
                         <th className="px-3 py-2 text-center font-medium">CSV</th>
+                        <th className="px-3 py-2 text-center font-medium">Whiteboard</th>
+                        <th className="px-3 py-2 text-center font-medium">Slides</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -375,6 +534,23 @@ export default function QuizzesReady() {
                             <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => exportAssetCSV(a.id)} disabled={a.approvedCount === 0} title="Download CSV">
                               <Download className="h-3.5 w-3.5" />
                             </Button>
+                          </td>
+                          <td className="px-3 py-2.5 text-center">
+                            <AddToWhiteboardButton
+                              assetId={a.id}
+                              assetName={a.asset_name}
+                              sheetMasterUrl={a.sheet_master_url}
+                              approvedCount={a.approvedCount}
+                              chapterId={workspace?.chapterId || ""}
+                              onSynced={() => markWhiteboardSynced(a.id)}
+                            />
+                          </td>
+                          <td className="px-3 py-2.5 text-center">
+                            <AddToSlidesButton
+                              assetId={a.id}
+                              whiteboardDone={whiteboardSynced.has(a.id)}
+                              onCreated={() => qc.invalidateQueries({ queryKey: ["quiz-ready-assets"] })}
+                            />
                           </td>
                         </tr>
                       ))}
