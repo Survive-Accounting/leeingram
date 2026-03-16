@@ -1,19 +1,17 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { JournalEntryTable } from "@/components/JournalEntryTable";
 import { Phase2AllView } from "@/components/phase2/Phase2AllView";
 import { Phase2DebugNotesTab } from "@/components/phase2/Phase2DebugNotesTab";
+import { Phase2SpeedReviewPanel } from "@/components/phase2/Phase2SpeedReviewPanel";
 import { InfoTip } from "@/components/InfoTip";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Star, Pause,
@@ -29,46 +27,6 @@ type UndoEntry = {
   newStatus: string;
   newRank: number | null;
 };
-
-const OUTPUT_FIELDS = [
-  { key: "whiteboard_status", label: "Whiteboard" },
-  { key: "video_production_status", label: "Video" },
-  { key: "mc_status", label: "MC" },
-  { key: "ebook_status", label: "Ebook" },
-  { key: "qa_status", label: "QA" },
-  { key: "deployment_status", label: "Deploy" },
-] as const;
-
-function OutputPill({ status, label }: { status: string; label: string }) {
-  const cfg: Record<string, { dot: string; text: string }> = {
-    not_started: { dot: "bg-muted-foreground/40", text: "text-muted-foreground" },
-    in_progress: { dot: "bg-blue-400", text: "text-blue-400" },
-    complete: { dot: "bg-emerald-400", text: "text-emerald-400" },
-  };
-  const c = cfg[status] || cfg.not_started;
-  return (
-    <span className={`inline-flex items-center gap-1 text-[10px] ${c.text}`}>
-      {status === "complete" ? <CheckCircle2 className="h-2.5 w-2.5" /> : <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />}
-      {label}
-    </span>
-  );
-}
-
-function Phase2Badge({ status, rank }: { status: string | null; rank: number | null }) {
-  if (!status) return <Badge variant="outline" className="text-[10px] border-dashed border-muted-foreground/40 text-muted-foreground">Not Reviewed</Badge>;
-  if (status === "core_asset") {
-    const colors: Record<number, string> = {
-      1: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-      2: "bg-muted text-muted-foreground border-border",
-      3: "bg-muted/50 text-muted-foreground/60 border-border/50",
-    };
-    return <Badge variant="outline" className={`text-[10px] ${colors[rank ?? 1] || ""}`}>Core R{rank}</Badge>;
-  }
-  if (status === "hold") return <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400">Hold</Badge>;
-  if (status === "needs_debugging") return <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">Needs Debugging</Badge>;
-  if (status === "skip") return <Badge variant="outline" className="text-[10px] text-muted-foreground">Skipped</Badge>;
-  return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
-}
 
 export default function Phase2Review() {
   const { workspace } = useActiveWorkspace();
@@ -354,141 +312,27 @@ export default function Phase2Review() {
               <Progress value={progressPct} className="h-1.5" />
             </div>
 
-            {/* Asset card */}
             {current && (
-              <Card className="bg-card border-border">
-                <CardContent className="p-5 space-y-3">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-base font-bold text-foreground font-mono">{current.asset_name}</span>
-                    {current.source_ref && <Badge variant="secondary" className="text-[10px]">{current.source_ref}</Badge>}
-                    {current.problem_type && <Badge variant="outline" className="text-[10px]">{current.problem_type}</Badge>}
-                    {current.difficulty && <Badge variant="outline" className="text-[10px] capitalize">{current.difficulty}</Badge>}
-                  </div>
-
-                  {/* Status panel */}
-                  <div className="flex flex-col gap-1 p-2 rounded-md bg-muted/30 border border-border/50">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Status</span>
-                      <Phase2Badge status={current.phase2_status} rank={current.core_rank} />
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {OUTPUT_FIELDS.map(f => (
-                        <OutputPill key={f.key} status={(current as any)[f.key] || "not_started"} label={f.label} />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Problem context */}
-                  {current.problem_context && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Context</p>
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap">{current.problem_context}</p>
-                    </div>
-                  )}
-
-                  {/* Problem text */}
-                  {current.survive_problem_text && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Problem Text</p>
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{current.survive_problem_text}</p>
-                    </div>
-                  )}
-
-                  {/* Journal entries */}
-                  {current.journal_entry_completed_json && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Journal Entries</p>
-                      <JournalEntryTable completedJson={current.journal_entry_completed_json as any} />
-                    </div>
-                  )}
-
-                  {/* Answer / solution */}
-                  {current.survive_solution_text && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Answer Summary</p>
-                      <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{current.survive_solution_text}</p>
-                    </div>
-                  )}
-
-                  {/* Existing admin notes */}
-                  {Array.isArray(current.admin_notes) && current.admin_notes.length > 0 && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Notes</p>
-                      <div className="space-y-1">
-                        {(current.admin_notes as any[]).map((n: any) => (
-                          <p key={n.id} className="text-xs text-foreground/70">
-                            <span className="text-muted-foreground">{new Date(n.date).toLocaleDateString()}</span> — {n.text}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <Phase2SpeedReviewPanel
+                asset={current}
+                assetIndex={currentIndex}
+                totalAssets={total}
+                isPending={statusMutation.isPending}
+                undoCount={undoStack.length}
+                noteOpen={noteOpen}
+                noteText={noteText}
+                onNoteOpenChange={setNoteOpen}
+                onNoteTextChange={setNoteText}
+                onNoteSave={() => noteMutation.mutate({ assetId: current.id, note: noteText.trim() })}
+                noteSaving={noteMutation.isPending}
+                onAction={(status, rank) => handleAction(status, rank ?? null)}
+                onUndo={handleUndo}
+                onPrev={() => setCurrentIndex(i => Math.max(0, i - 1))}
+                onNext={() => setCurrentIndex(i => Math.min(total - 1, i + 1))}
+                canPrev={currentIndex > 0}
+                canNext={currentIndex < total - 1}
+              />
             )}
-
-            {/* Action buttons */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Button size="lg" className="flex-1 text-sm font-bold" disabled={statusMutation.isPending} onClick={() => handleAction("core_asset", 1)}>
-                  <Star className="h-4 w-4 mr-1.5" /> Core Rank 1
-                </Button>
-                <Button size="default" className="flex-1 text-sm" disabled={statusMutation.isPending} onClick={() => handleAction("core_asset", 2)}>Core Rank 2</Button>
-                <Button size="default" className="flex-1 text-sm" disabled={statusMutation.isPending} onClick={() => handleAction("core_asset", 3)}>Core Rank 3</Button>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 text-xs border-amber-500/40 text-amber-400 hover:bg-amber-500/10" disabled={statusMutation.isPending} onClick={() => handleAction("hold")}>
-                  <Pause className="h-3.5 w-3.5 mr-1" /> Hold
-                </Button>
-                <Button variant="outline" className="flex-1 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" disabled={statusMutation.isPending} onClick={() => handleAction("needs_debugging")}>
-                  <Bug className="h-3.5 w-3.5 mr-1" /> Needs Debugging
-                </Button>
-                <Button variant="ghost" className="flex-1 text-xs text-muted-foreground" disabled={statusMutation.isPending} onClick={() => handleAction("skip")}>
-                  <SkipForward className="h-3.5 w-3.5 mr-1" /> Skip
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" disabled={currentIndex <= 0} onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}>
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                </Button>
-                <Button variant="ghost" size="sm" disabled={currentIndex >= total - 1} onClick={() => setCurrentIndex(i => Math.min(total - 1, i + 1))}>
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs" disabled={undoStack.length === 0 || statusMutation.isPending} onClick={handleUndo}>
-                  <Undo2 className="h-3.5 w-3.5 mr-1" /> Undo
-                </Button>
-                <div className="ml-auto">
-                  <Button variant="outline" size="sm" className="text-xs" onClick={() => setNoteOpen(!noteOpen)}>
-                    <StickyNote className="h-3.5 w-3.5 mr-1" /> Add Note
-                  </Button>
-                </div>
-              </div>
-
-              {/* Inline note textarea */}
-              {noteOpen && current && (
-                <div className="flex gap-2">
-                  <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add an admin note…" className="text-sm min-h-[60px]" />
-                  <Button size="sm" disabled={!noteText.trim() || noteMutation.isPending} onClick={() => noteMutation.mutate({ assetId: current.id, note: noteText.trim() })}>Save</Button>
-                </div>
-              )}
-
-              {/* Keyboard shortcut hints */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                {[
-                  { key: "1", label: "Rank 1" }, { key: "2", label: "Rank 2" }, { key: "3", label: "Rank 3" },
-                  { key: "H", label: "Hold" }, { key: "D", label: "Debug" }, { key: "S", label: "Skip" },
-                  { key: "Z", label: "Undo" }, { key: "←", label: "" }, { key: "→", label: "" },
-                ].map(s => (
-                  <span key={s.key} className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
-                    <kbd className="px-1 py-0.5 rounded border border-border/50 bg-muted/30 font-mono text-[9px] leading-none">{s.key}</kbd>
-                    {s.label && <span>{s.label}</span>}
-                  </span>
-                ))}
-              </div>
-            </div>
           </>
         )}
       </div>
