@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
@@ -75,6 +75,7 @@ function escapeCSV(val: string): string {
 
 export default function AssetsLibrary() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { workspace } = useActiveWorkspace();
   const { isVa, primaryRole, assignedChapterIds } = useVaAccount();
@@ -708,10 +709,17 @@ export default function AssetsLibrary() {
 
       {/* Tabs */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4 bg-muted/50 border border-border">
-          <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
-          {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
-        </TabsList>
+        <div className="flex items-center gap-3 mb-4">
+          <TabsList className="bg-muted/50 border border-border">
+            <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
+            {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
+          </TabsList>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => navigate("/bulk-fix-tool")}>
+              <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
+            </Button>
+          )}
+        </div>
 
         <TabsContent value="all">
       {/* Filters */}
