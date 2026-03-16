@@ -157,6 +157,66 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
   );
 }
 
+/* ── Slides button ── */
+function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: string; hasSheet: boolean; slidesUrl: string | null | undefined; onCreated: () => void }) {
+  const [creating, setCreating] = useState(false);
+
+  const createSlides = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-test-slide", {
+        body: { teaching_asset_id: assetId },
+      });
+      if (error) {
+        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
+        throw new Error(errMsg);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success("Filming slides created");
+      window.open(data.test_slide_url, "_blank");
+      onCreated();
+    } catch (err: any) {
+      toast.error(err.message || "Slides creation failed");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (!hasSheet) {
+    return (
+      <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled title="Sync to Sheet first">
+        <Film className="h-3 w-3" />
+      </Button>
+    );
+  }
+
+  if (slidesUrl) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Filming Slides">
+            <Film className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => window.open(slidesUrl, "_blank")}>
+            Open Slides
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={createSlides} disabled={creating}>
+            {creating ? "Creating…" : "Recreate Slides"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Create Filming Slides" onClick={createSlides} disabled={creating}>
+      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+    </Button>
+  );
+}
+
 export function CoreAssetsTab() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const { workspace } = useActiveWorkspace();
