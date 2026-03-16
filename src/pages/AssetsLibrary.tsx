@@ -265,7 +265,7 @@ export default function AssetsLibrary() {
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("source_ref");
+  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("asset_name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [verifyAssetId, setVerifyAssetId] = useState<string | null>(null);
@@ -697,6 +697,11 @@ export default function AssetsLibrary() {
                       <span className="flex items-center gap-1.5"><Presentation className="h-3 w-3" /> 🎞️ Create Test Slide</span>
                     </SelectItem>
                   )}
+                  {isAdmin && (
+                    <SelectItem value="generate-prep-doc">
+                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Prep Doc</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <Button
@@ -857,6 +862,33 @@ export default function AssetsLibrary() {
                     } catch (e: any) {
                       toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
                     }
+                    setIsCreatingSheets(false);
+                  } else if (bulkAction === "generate-prep-doc") {
+                    setIsCreatingSheets(true);
+                    let prepSuccess = 0;
+                    for (const asset of selected) {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-prep-doc", {
+                          body: { teaching_asset_id: asset.id },
+                        });
+                        if (error) {
+                          const errMsg = data?.error || error.message || "Edge Function error";
+                          throw new Error(errMsg);
+                        }
+                        if (data?.error) throw new Error(data.error);
+                        prepSuccess++;
+                        if (selected.length === 1 && data?.doc_url) {
+                          window.open(data.doc_url, "_blank");
+                        }
+                      } catch (e: any) {
+                        toast.error(`Prep doc failed: ${asset.asset_name}`, { description: e.message });
+                      }
+                    }
+                    if (prepSuccess > 0) {
+                      toast.success(`${prepSuccess} prep doc${prepSuccess > 1 ? "s" : ""} created`);
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                    }
+                    setSelectedIds(new Set());
                     setIsCreatingSheets(false);
                   }
                   setBulkAction(null);
