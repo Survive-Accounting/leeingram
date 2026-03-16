@@ -225,20 +225,23 @@ export default function BankedQuestionReview() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // After approving, check if all questions for that asset are approved → set mc_status = 'complete'
+  // After approving/rejecting, auto-update mc_status
   const checkAssetComplete = useCallback(async (teachingAssetId: string | null) => {
     if (!teachingAssetId) return;
+    // Ensure mc_status is at least 'in_progress' when any question is approved
+    await supabase.from("teaching_assets").update({ mc_status: "in_progress" } as any).eq("id", teachingAssetId).eq("mc_status", "not_started");
+    
     const { data } = await supabase
       .from("banked_questions")
       .select("id, review_status")
       .eq("teaching_asset_id", teachingAssetId);
     if (!data || data.length === 0) return;
-    const allApproved = data.every(q => q.review_status === "approved");
-    if (allApproved) {
+    const nonePending = data.every(q => q.review_status === "approved" || q.review_status === "rejected");
+    if (nonePending) {
       await supabase.from("teaching_assets").update({ mc_status: "complete" } as any).eq("id", teachingAssetId);
       qc.invalidateQueries({ queryKey: ["all-core-assets-mc"] });
       qc.invalidateQueries({ queryKey: ["core-assets"] });
-      toast.success("All questions approved — MC status set to complete");
+      toast.success("All questions reviewed — MC status set to complete");
     }
   }, [qc]);
 
