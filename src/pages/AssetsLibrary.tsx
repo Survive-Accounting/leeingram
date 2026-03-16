@@ -662,11 +662,6 @@ export default function AssetsLibrary() {
                   <SelectValue placeholder={`Action for ${selectedIds.size} selected…`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {isAdmin && (
-                    <SelectItem value="add-to-set">
-                      <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
-                    </SelectItem>
-                  )}
                   {!isSheetPrepVa && (
                     <SelectItem value="revert">
                       <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
@@ -674,21 +669,12 @@ export default function AssetsLibrary() {
                   )}
                   {isAdmin && (
                     <SelectItem value="create-master-sheet">
-                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Master Google Sheet</span>
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Whiteboard</span>
                     </SelectItem>
                   )}
                   {isAdmin && (
-                    <SelectItem value="create-practice-sheet" disabled={!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url)}>
-                      <span className={`flex items-center gap-1.5 ${!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url) ? "opacity-50" : ""}`}>
-                        <Sheet className="h-3 w-3" /> Create (Paid) Study Pass Sheet
-                      </span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
-                    <SelectItem value="create-promo-sheet" disabled={!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url)}>
-                      <span className={`flex items-center gap-1.5 ${!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url) ? "opacity-50" : ""}`}>
-                        <Sheet className="h-3 w-3" /> Create (Free) Promo Sheet
-                      </span>
+                    <SelectItem value="create-test-slide">
+                      <span className="flex items-center gap-1.5"><Film className="h-3 w-3" /> Create Filming Slides</span>
                     </SelectItem>
                   )}
                   {isSheetPrepVa && (
@@ -1029,20 +1015,10 @@ export default function AssetsLibrary() {
                         <div className="flex gap-0.5 justify-end items-center">
                           {a.sheet_master_url ? (
                             <>
-                              <Tip label="Master: tutoring / filming version">
+                              <Tip label="Whiteboard: tutoring / filming version">
                                 <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
                               </Tip>
-                              {a.sheet_practice_url && (
-                                <Tip label="Practice: student practice version">
-                                  <a href={a.sheet_practice_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">✏️</a>
-                                </Tip>
-                              )}
-                              {a.sheet_promo_url && (
-                                <Tip label="Promo: shareable promo version">
-                                  <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📣</a>
-                                </Tip>
-                              )}
-                              <Tip label="Sync Hidden_Data tab">
+                              <Tip label="Push asset data to Hidden_Data tab on the Google Sheet">
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1070,15 +1046,19 @@ export default function AssetsLibrary() {
                                   {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                                 </Button>
                               </Tip>
-                              <AddMCButton assetId={a.id} hasSheet={true} />
-                              <SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
+                              <Tip label="Add MC questions to Hidden_Data tab">
+                                <span><AddMCButton assetId={a.id} hasSheet={true} /></span>
+                              </Tip>
+                              <Tip label="Filming slides (Google Slides)">
+                                <span><SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} /></span>
+                              </Tip>
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <Tip label="Open Google Sheet">
                               <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
                             </Tip>
                           ) : (
-                            <Tip label="Create a sheet first">
+                            <Tip label="Create a Whiteboard first">
                               <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
                                 <RefreshCw className="h-3 w-3" />
                               </Button>
