@@ -522,25 +522,20 @@ Deno.serve(async (req) => {
     const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
     const jeRawText = jeToRawText(jeEntries);
 
-    // Create a blank Google Doc
+    // Create a blank Google Doc via Drive API (more reliable permissions)
     const docTitle = `${assetCode} — Tutoring Prep`;
-    const docCreateRes = await googleFetch(GOOGLE_DOCS_API, token, {
+    console.log(`Creating doc "${docTitle}" in folder ${assetFolderId}...`);
+    const docCreateRes = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
       method: "POST",
-      body: JSON.stringify({ title: docTitle }),
+      body: JSON.stringify({
+        name: docTitle,
+        mimeType: "application/vnd.google-apps.document",
+        parents: [assetFolderId],
+      }),
     });
-    const docId = docCreateRes.documentId;
+    const docId = docCreateRes.id;
     const docUrl = `https://docs.google.com/document/d/${docId}/edit`;
     console.log(`Created doc: ${docId}`);
-
-    // Move doc to asset folder
-    // Get current parents first
-    const fileInfo = await googleFetch(`${GOOGLE_DRIVE_API}/${docId}?fields=parents&supportsAllDrives=true`, token);
-    const currentParents = (fileInfo.parents || []).join(",");
-    await googleFetch(
-      `${GOOGLE_DRIVE_API}/${docId}?addParents=${assetFolderId}&removeParents=${currentParents}&supportsAllDrives=true`,
-      token,
-      { method: "PATCH", body: JSON.stringify({}) }
-    );
 
     // Build and apply document content
     const docSections = buildDocSections(asset, course, chapter, problemInstructions, jeRawText);
