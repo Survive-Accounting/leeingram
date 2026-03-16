@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
@@ -88,6 +88,8 @@ export default function AssetsLibrary() {
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("source_ref");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [verifyAssetId, setVerifyAssetId] = useState<string | null>(null);
   const [verifyPrepMinutes, setVerifyPrepMinutes] = useState("");
@@ -172,7 +174,7 @@ export default function AssetsLibrary() {
   });
 
   const { data: assets, isLoading } = useQuery({
-    queryKey: ["teaching-assets", courseFilter, chapterFilter, search],
+    queryKey: ["teaching-assets", courseFilter, chapterFilter, search, sortField, sortDir],
     queryFn: async () => {
       let q = supabase.from("teaching_assets").select("*").neq("google_sheet_status", "archived");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
@@ -182,9 +184,22 @@ export default function AssetsLibrary() {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return (data as TeachingAsset[]).sort((a, b) =>
-        (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" })
-      );
+      const sorted = (data as TeachingAsset[]).sort((a, b) => {
+        const dir = sortDir === "asc" ? 1 : -1;
+        switch (sortField) {
+          case "asset_name":
+            return dir * (a.asset_name || "").localeCompare(b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
+          case "source_ref":
+            return dir * (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
+          case "google_sheet_status":
+            return dir * (a.google_sheet_status || "").localeCompare(b.google_sheet_status || "");
+          case "created_at":
+            return dir * (a.created_at || "").localeCompare(b.created_at || "");
+          default:
+            return 0;
+        }
+      });
+      return sorted;
     },
   });
 
@@ -744,21 +759,33 @@ export default function AssetsLibrary() {
                 />
               </TableHead>
               <TableHead className="text-xs">
-                <span className="inline-flex items-center gap-1">
+                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "asset_name") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("asset_name"); setSortDir("asc"); } }}>
                   Asset Code
+                  {sortField === "asset_name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                   <InfoTip text="A unique code for each teaching asset. Format: [Course]_[Chapter]_[Seq]_[Variant]. Used to identify assets across all systems." />
-                </span>
+                </button>
               </TableHead>
-              <TableHead className="text-xs">Textbook Ref</TableHead>
+              <TableHead className="text-xs">
+                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "source_ref") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("source_ref"); setSortDir("asc"); } }}>
+                  Textbook Ref
+                  {sortField === "source_ref" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                </button>
+              </TableHead>
               {!isContentCreationVa && (
                 <TableHead className="text-xs">
-                  <span className="inline-flex items-center gap-1">
+                  <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "google_sheet_status") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("google_sheet_status"); setSortDir("asc"); } }}>
                     Sheet Status
+                    {sortField === "google_sheet_status" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                     <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
-                  </span>
+                  </button>
                 </TableHead>
               )}
-              <TableHead className="text-xs">Created</TableHead>
+              <TableHead className="text-xs">
+                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
+                  Created
+                  {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                </button>
+              </TableHead>
               {!isContentCreationVa && (
                 <TableHead className="text-xs w-16 text-right">Sheets</TableHead>
               )}
