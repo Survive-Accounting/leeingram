@@ -697,11 +697,24 @@ Deno.serve(async (req) => {
     const batchRequests = buildDocRequests(asset, course, chapter, problemInstructions, jeEntries, jeRawText);
 
     if (batchRequests.length > 0) {
-      await googleFetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, token, {
-        method: "POST",
-        body: JSON.stringify({ requests: batchRequests }),
-      });
-      console.log("Doc content populated successfully");
+      console.log(`Sending ${batchRequests.length} requests to Google Docs API...`);
+      try {
+        await googleFetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, token, {
+          method: "POST",
+          body: JSON.stringify({ requests: batchRequests }),
+        });
+        console.log("Doc content populated successfully");
+      } catch (batchErr: any) {
+        // Log the failing request details for debugging
+        const match = batchErr?.message?.match(/requests\[(\d+)\]/);
+        if (match) {
+          const failIdx = parseInt(match[1], 10);
+          const failReq = batchRequests[failIdx];
+          console.error(`Failed at request[${failIdx}]:`, JSON.stringify(failReq).slice(0, 500));
+          if (failIdx > 0) console.error(`Previous request[${failIdx - 1}]:`, JSON.stringify(batchRequests[failIdx - 1]).slice(0, 500));
+        }
+        throw batchErr;
+      }
     }
 
     // Make doc viewable by anyone with link
