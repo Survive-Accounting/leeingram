@@ -9,10 +9,11 @@ import { Phase2AllView } from "@/components/phase2/Phase2AllView";
 import { Phase2DebugNotesTab } from "@/components/phase2/Phase2DebugNotesTab";
 import { Phase2SpeedReviewPanel } from "@/components/phase2/Phase2SpeedReviewPanel";
 import { InfoTip } from "@/components/InfoTip";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
