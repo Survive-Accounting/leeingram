@@ -1367,7 +1367,8 @@ ${solutionText || "Not provided"}
 ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants with structured journal entries.`;
+Generate ${variantCount} exam-style practice variants with structured journal entries.
+Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
 
     } else {
       // hybrid
