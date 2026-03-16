@@ -415,7 +415,7 @@ function buildDocRequests(
     const sentences = asset.concept_notes.split(". ").filter((s: string) => s.trim());
     for (const sentence of sentences) {
       const text = sentence.endsWith(".") ? sentence : sentence + ".";
-      const { start, end } = insertStyledText(b, text + "\n", { fontSize: 11, indent: 14 });
+      const { start, end } = insertStyledText(b, text + "\n", { fontSize: 11 });
       // Apply bullet list
       b.requests.push({
         createParagraphBullets: {
