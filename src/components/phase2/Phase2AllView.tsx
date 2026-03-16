@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 interface Phase2AllViewProps {
   chapterId: string;
+  onAssetClick?: (assetId: string) => void;
 }
 
 type Asset = {
@@ -62,7 +63,7 @@ function RankBadge({ rank }: { rank: number | null }) {
   return <Badge variant="outline" className={`text-[10px] ${colors[rank] || ""}`}>R{rank}</Badge>;
 }
 
-export function Phase2AllView({ chapterId }: Phase2AllViewProps) {
+export function Phase2AllView({ chapterId, onAssetClick }: Phase2AllViewProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [unreviewedOpen, setUnreviewedOpen] = useState(false);
@@ -125,7 +126,16 @@ export function Phase2AllView({ chapterId }: Phase2AllViewProps) {
 
   const renderRow = (asset: Asset) => (
     <TableRow key={asset.id}>
-      <TableCell className="font-mono text-xs font-bold">{asset.asset_name}</TableCell>
+      <TableCell className="font-mono text-xs font-bold">
+        {onAssetClick ? (
+          <button
+            className="text-primary hover:underline cursor-pointer bg-transparent border-none p-0 font-mono text-xs font-bold"
+            onClick={() => onAssetClick(asset.id)}
+          >
+            {asset.asset_name}
+          </button>
+        ) : asset.asset_name}
+      </TableCell>
       <TableCell className="text-xs text-muted-foreground">{asset.source_ref || "—"}</TableCell>
       <TableCell><RankBadge rank={asset.core_rank} /></TableCell>
       <TableCell><StatusDot status={asset.whiteboard_status} /></TableCell>

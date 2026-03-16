@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Phase2AllView } from "@/components/phase2/Phase2AllView";
 import { Phase2DebugNotesTab } from "@/components/phase2/Phase2DebugNotesTab";
 import { Phase2SpeedReviewPanel } from "@/components/phase2/Phase2SpeedReviewPanel";
+import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 import { InfoTip } from "@/components/InfoTip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,8 @@ export default function Phase2Review() {
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
   const [jumpQuery, setJumpQuery] = useState("");
   const [debugBannerDismissed, setDebugBannerDismissed] = useState(false);
+  const [drawerAsset, setDrawerAsset] = useState<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [viewMode, setViewMode] = useState<"review" | "all" | "debug">(() => {
     try { return (localStorage.getItem("phase2-view-mode") as "review" | "all" | "debug") || "review"; } catch { return "review"; }
@@ -263,7 +266,13 @@ export default function Phase2Review() {
         {viewMode === "debug" ? (
           <Phase2DebugNotesTab chapterId={chapterId} courseName={workspace?.courseName} chapterName={`Ch ${workspace?.chapterNumber}`} />
         ) : viewMode === "all" ? (
-          <Phase2AllView chapterId={chapterId} />
+          <Phase2AllView
+            chapterId={chapterId}
+            onAssetClick={async (assetId) => {
+              const { data } = await supabase.from("teaching_assets").select("*").eq("id", assetId).single();
+              if (data) { setDrawerAsset(data); setDrawerOpen(true); }
+            }}
+          />
         ) : total === 0 ? (
           /* Completion state */
           <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
@@ -336,6 +345,17 @@ export default function Phase2Review() {
           </>
         )}
       </div>
+
+      <AssetDetailDrawer
+        asset={drawerAsset}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setDrawerAsset(null); }}
+        chapterLabel={`Ch ${workspace?.chapterNumber}`}
+        courseLabel={workspace?.courseName || ""}
+        onRevert={() => {}}
+        onDelete={() => {}}
+        isAdmin={true}
+      />
     </SurviveSidebarLayout>
   );
 }
