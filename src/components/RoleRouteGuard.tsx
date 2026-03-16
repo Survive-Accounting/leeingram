@@ -11,7 +11,7 @@ const ALWAYS_ALLOWED = [
   "/landing", "/focus", "/marketing", "/writing", "/leeingram", "/prof-ingram",
   "/travel", "/chart-of-accounts", "/style-guide", "/ideas", "/pipeline",
   "/template-manager", "/export-sets", "/tutoring", "/filming",
-  "/solutions-upload", "/screenshot-capture", "/batch-run",
+  "/solutions-upload", "/screenshot-capture", "/batch-run", "/bulk-fix-tool",
 ];
 
 export function RoleRouteGuard() {
