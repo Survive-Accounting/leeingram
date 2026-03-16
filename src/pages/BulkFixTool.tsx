@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective";
 
 interface HistoryEntry {
   label: string;
@@ -32,6 +32,41 @@ interface HistoryEntry {
 }
 
 const BATCH_SIZE = 10;
+
+const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
+
+WHAT YOU MUST CHANGE:
+1. If the text says "Survive Company" without an A/B suffix, rename it to "Survive Company A ([role])" where [role] is inferred from context (e.g. the issuer, the borrower, the lessor, the seller, the lessee, the investor, etc.)
+2. If "Survive Company B" appears without a role hint in parentheses, add the appropriate role hint based on context. Example: "Survive Company B" → "Survive Company B (the investor)"
+3. If "Survive Counterparty" still appears anywhere, replace it with "Survive Company B ([role])" where role is inferred from context.
+4. For every instruction line that asks the student to prepare a journal entry or calculate something, rewrite it to include "on the books of Survive Company A/B ([role])" inline within that instruction.
+   Determine which entity each instruction refers to by reading the full problem context.
+   Example transformation:
+   BEFORE: "(a) Prepare the journal entry to record the issuance of the bonds on January 1."
+   AFTER: "(a) Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+
+WHAT YOU MUST NOT CHANGE:
+- All dollar amounts, percentages, and numeric values must remain exactly as-is
+- All dates must remain exactly as-is
+- The overall sentence structure and wording of the problem scenario must remain the same
+- Do not add new sentences or paragraphs
+- Do not remove any existing content
+- Do not change any accounting terminology
+- Do not reorder the instructions
+
+Return only the corrected text with no explanation or commentary. The output must be a drop-in replacement for the original field value.`;
+
+/** Extract all numbers from text for comparison */
+function extractNumbers(text: string): string[] {
+  return (text.match(/[\d,]+\.?\d*/g) || []).sort();
+}
+
+function hasNumericDiff(before: string, after: string): boolean {
+  const numsBefore = extractNumbers(before);
+  const numsAfter = extractNumbers(after);
+  if (numsBefore.length !== numsAfter.length) return true;
+  return numsBefore.some((n, i) => n !== numsAfter[i]);
+}
 
 // Fields that can be targeted by bulk fix
 const FIXABLE_FIELDS = [
@@ -48,6 +83,7 @@ interface PreviewRow {
   field: string;
   before: string;
   after: string;
+  numericWarning?: boolean;
 }
 
 function getHistory(): HistoryEntry[] {
@@ -150,6 +186,7 @@ export default function BulkFixTool() {
 
   const operationLabel = useMemo(() => {
     if (operation === "fix_entity_naming") return "Fix Entity Naming (Counterparty → Company A/B)";
+    if (operation === "fix_entity_perspective") return "Fix Entity Naming + Perspective (Full Correction)";
     if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
     if (operation === "custom_ai") return "Custom AI Rewrite";
     return "";
@@ -216,27 +253,32 @@ export default function BulkFixTool() {
         setTotalMatched(new Set(rows.map(r => r.id)).size);
         setPreviewRows(rows);
         setIsAiPreview(false);
-      } else if (operation === "custom_ai") {
+      } else if (operation === "custom_ai" || operation === "fix_entity_perspective") {
         // AI preview: sample 3
         const { data: assets, error } = await buildScopeQuery().limit(3);
         if (error) throw error;
         setTotalMatched(estimatedCount ?? 0);
 
+        const aiInstruction = operation === "fix_entity_perspective" 
+          ? ENTITY_PERSPECTIVE_INSTRUCTION 
+          : customInstruction;
+        const targetFields = operation === "fix_entity_perspective"
+          ? FIXABLE_FIELDS.filter(f => ["problem_context", "survive_problem_text"].includes(f.key))
+          : FIXABLE_FIELDS.filter(f => selectedFields.includes(f.key));
+
         const rows: PreviewRow[] = [];
         for (const asset of assets ?? []) {
-          for (const f of FIXABLE_FIELDS) {
-            if (!selectedFields.includes(f.key)) continue;
+          for (const f of targetFields) {
             const original = (asset as any)[f.key] || "";
             if (!original.trim()) continue;
 
-            // Call AI for rewrite
             const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
               body: {
                 provider: "lovable",
                 model: "google/gemini-2.5-flash",
                 messages: [
                   { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
-                  { role: "user", content: `Instruction: ${customInstruction}\n\nText to modify:\n${original}` },
+                  { role: "user", content: `Instruction: ${aiInstruction}\n\nText to modify:\n${original}` },
                 ],
                 temperature: 0.1,
                 max_output_tokens: 2000,
@@ -245,7 +287,14 @@ export default function BulkFixTool() {
             if (aiError) throw aiError;
             const after = aiResult?.content || original;
             if (after !== original) {
-              rows.push({ id: asset.id, asset_name: asset.asset_name, field: f.label, before: original.slice(0, 200), after: after.slice(0, 200) });
+              rows.push({
+                id: asset.id,
+                asset_name: asset.asset_name,
+                field: f.label,
+                before: original.slice(0, 300),
+                after: after.slice(0, 300),
+                numericWarning: hasNumericDiff(original, after),
+              });
             }
           }
         }
@@ -319,9 +368,14 @@ export default function BulkFixTool() {
                 const replaced = entityNamingReplace(original);
                 if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
               }
-            } else if (operation === "custom_ai") {
-              for (const f of FIXABLE_FIELDS) {
-                if (!selectedFields.includes(f.key)) continue;
+            } else if (operation === "custom_ai" || operation === "fix_entity_perspective") {
+              const aiInstruction = operation === "fix_entity_perspective"
+                ? ENTITY_PERSPECTIVE_INSTRUCTION
+                : customInstruction;
+              const targetFields = operation === "fix_entity_perspective"
+                ? FIXABLE_FIELDS.filter(f => ["problem_context", "survive_problem_text"].includes(f.key))
+                : FIXABLE_FIELDS.filter(f => selectedFields.includes(f.key));
+              for (const f of targetFields) {
                 const original = (asset as any)[f.key] || "";
                 if (!original.trim()) continue;
                 const { data: aiResult } = await supabase.functions.invoke("generate-ai-output", {
@@ -330,7 +384,7 @@ export default function BulkFixTool() {
                     model: "google/gemini-2.5-flash",
                     messages: [
                       { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
-                      { role: "user", content: `Instruction: ${customInstruction}\n\nText to modify:\n${original}` },
+                      { role: "user", content: `Instruction: ${aiInstruction}\n\nText to modify:\n${original}` },
                     ],
                     temperature: 0.1,
                     max_output_tokens: 2000,
@@ -467,6 +521,7 @@ export default function BulkFixTool() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="fix_entity_naming">Fix Entity Naming (Counterparty → Company A/B)</SelectItem>
+                <SelectItem value="fix_entity_perspective">Fix Entity Naming + Perspective (Full Correction)</SelectItem>
                 <SelectItem value="find_replace_simple">Simple Find &amp; Replace</SelectItem>
                 <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
               </SelectContent>
@@ -475,6 +530,12 @@ export default function BulkFixTool() {
             {operation === "fix_entity_naming" && (
               <p className="text-xs text-muted-foreground">
                 Replaces "Survive Counterparty" with "Survive Company B" and removes vague terms like "the other company" or "the second party". Applies to all text fields.
+              </p>
+            )}
+
+            {operation === "fix_entity_perspective" && (
+              <p className="text-xs text-muted-foreground">
+                Renames "Survive Company" to "Survive Company A ([role])" where missing, ensures Survive Company B has role hint, and rewrites each instruction line to include "on the books of Survive Company A/B ([role])" inline. Numbers and dates are not changed.
               </p>
             )}
 
@@ -619,11 +680,20 @@ export default function BulkFixTool() {
                           </TableHeader>
                           <TableBody>
                             {previewRows.map((row, i) => (
-                              <TableRow key={`${row.id}-${row.field}-${i}`}>
+                              <TableRow key={`${row.id}-${row.field}-${i}`} className={row.numericWarning ? "bg-destructive/10" : ""}>
                                 <TableCell className="text-xs font-mono">{row.asset_name.slice(0, 25)}</TableCell>
                                 <TableCell className="text-xs">{row.field}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground max-w-48 truncate">{row.before}</TableCell>
-                                <TableCell className="text-xs text-emerald-400 max-w-48 truncate">{row.after}</TableCell>
+                                <TableCell className="text-xs max-w-48">
+                                  <span className={row.numericWarning ? "text-destructive" : "text-emerald-400"}>
+                                    {row.after}
+                                  </span>
+                                  {row.numericWarning && (
+                                    <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3 inline" /> ⚠ Numeric value may have changed — review carefully before running
+                                    </p>
+                                  )}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
