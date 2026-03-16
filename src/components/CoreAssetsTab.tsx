@@ -60,6 +60,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 export function CoreAssetsTab() {
+  const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
   const chapterId = workspace?.chapterId;
