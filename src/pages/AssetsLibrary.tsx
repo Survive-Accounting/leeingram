@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
@@ -138,6 +138,7 @@ export default function AssetsLibrary() {
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [sheetLogOpen, setSheetLogOpen] = useState(false);
   const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
+  const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
@@ -861,10 +862,41 @@ export default function AssetsLibrary() {
                               {a.sheet_promo_url && (
                                 <a href={a.sheet_promo_url} target="_blank" rel="noopener noreferrer" title="Promo: shareable promo version" className="hover:scale-110 transition-transform">📣</a>
                               )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-[10px] px-1.5 ml-1"
+                                disabled={syncingAssetId === a.id}
+                                title="Sync Hidden_Data tab"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  setSyncingAssetId(a.id);
+                                  try {
+                                    const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
+                                      body: { teaching_asset_id: a.id },
+                                    });
+                                    if (error) throw error;
+                                    if (data?.error) throw new Error(data.error);
+                                    toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
+                                      description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
+                                    });
+                                  } catch (err: any) {
+                                    toast.error(err.message || "Sync failed");
+                                  } finally {
+                                    setSyncingAssetId(null);
+                                  }
+                                }}
+                              >
+                                {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                              </Button>
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
-                          ) : null}
+                          ) : (
+                            <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
+                              <RefreshCw className="h-3 w-3" />
+                            </Button>
+                          )}
                           {a.test_slide_url && (
                             <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" title="Open Test Slide" className="hover:scale-110 transition-transform">🎞️</a>
                           )}
