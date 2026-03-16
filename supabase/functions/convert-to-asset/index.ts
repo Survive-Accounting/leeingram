@@ -1400,7 +1400,8 @@ ${solutionText || "Not provided"}
 ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.`;
+Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.
+Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
