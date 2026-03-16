@@ -214,9 +214,12 @@ function rb(): RequestBuilder {
 }
 
 function insertText(b: RequestBuilder, text: string): { start: number; end: number } {
+  // Strip carriage returns — Google Docs ignores \r but JS counts it in length,
+  // which would cause b.idx to drift ahead of the actual document index.
+  const clean = text.replace(/\r/g, "");
   const start = b.idx;
-  b.requests.push({ insertText: { location: { index: b.idx }, text } });
-  b.idx += text.length;
+  b.requests.push({ insertText: { location: { index: b.idx }, text: clean } });
+  b.idx += clean.length;
   return { start, end: b.idx };
 }
 
@@ -468,8 +471,10 @@ function parseJERawLines(rawText: string): JELine[][] {
   const groups: JELine[][] = [];
   let current: JELine[] = [];
 
-  const amountRe = /[\d,]+(?:\.\d+)?/;
-  const dateRe = /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}\/\d{1,2})/i;
+  // Date pattern: must contain a month name (full or abbreviated)
+  const dateRe = /(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|\d{1,2}\/\d{1,2}\/\d{2,4})/i;
+  // Amount at end of line: dollar sign or comma-separated number that looks like currency (not a year)
+  const trailingAmountRe = /\$[\d,]+(?:\.\d+)?|\b[\d]{1,3}(?:,\d{3})+(?:\.\d+)?\s*$/;
 
   for (const raw of lines) {
     if (!raw.trim()) {
@@ -477,8 +482,10 @@ function parseJERawLines(rawText: string): JELine[][] {
       continue;
     }
 
-    const hasAmount = amountRe.test(raw);
-    const isDate = dateRe.test(raw) && !hasAmount;
+    // A date line: contains a month name/date pattern AND does NOT end with a dollar amount
+    const looksLikeDate = dateRe.test(raw);
+    const hasTrailingAmount = trailingAmountRe.test(raw);
+    const isDate = looksLikeDate && !hasTrailingAmount;
 
     if (isDate) {
       if (current.length > 0) { groups.push(current); current = []; }
@@ -690,11 +697,24 @@ Deno.serve(async (req) => {
     const batchRequests = buildDocRequests(asset, course, chapter, problemInstructions, jeEntries, jeRawText);
 
     if (batchRequests.length > 0) {
-      await googleFetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, token, {
-        method: "POST",
-        body: JSON.stringify({ requests: batchRequests }),
-      });
-      console.log("Doc content populated successfully");
+      console.log(`Sending ${batchRequests.length} requests to Google Docs API...`);
+      try {
+        await googleFetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, token, {
+          method: "POST",
+          body: JSON.stringify({ requests: batchRequests }),
+        });
+        console.log("Doc content populated successfully");
+      } catch (batchErr: any) {
+        // Log the failing request details for debugging
+        const match = batchErr?.message?.match(/requests\[(\d+)\]/);
+        if (match) {
+          const failIdx = parseInt(match[1], 10);
+          const failReq = batchRequests[failIdx];
+          console.error(`Failed at request[${failIdx}]:`, JSON.stringify(failReq).slice(0, 500));
+          if (failIdx > 0) console.error(`Previous request[${failIdx - 1}]:`, JSON.stringify(batchRequests[failIdx - 1]).slice(0, 500));
+        }
+        throw batchErr;
+      }
     }
 
     // Make doc viewable by anyone with link
