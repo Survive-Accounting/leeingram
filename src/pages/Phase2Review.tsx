@@ -12,10 +12,6 @@ import { InfoTip } from "@/components/InfoTip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Star, Pause,
   Bug, SkipForward, StickyNote, Loader2, LayoutList, CreditCard, Undo2, Search, FileWarning,
