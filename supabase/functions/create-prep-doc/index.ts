@@ -434,7 +434,7 @@ function buildDocRequests(
     for (const sentence of sentences) {
       const text = sentence.endsWith(".") ? sentence : sentence + ".";
       const { start, end } = insertStyledText(b, text + "\n", {
-        fontSize: 11, fgColor: RED, bgColor: hexToRgb("#FFEBEE"), indent: 14,
+        fontSize: 11, fgColor: RED, bgColor: hexToRgb("#FFEBEE"),
       });
       b.requests.push({
         createParagraphBullets: {
