@@ -1007,9 +1007,10 @@ serve(async (req) => {
       "All generated problems must be exam-style", "No bolded numbers",
       "Round all calculations to whole dollars", "Use short, concise sentences",
     ];
-    // Standardized company names — no rotating list
+    // Standardized company names — A/B naming with role hints
     const SURVIVE_COMPANY = "Survive Company";
-    const SURVIVE_COUNTERPARTY = "Survive Counterparty";
+    const SURVIVE_COMPANY_A = "Survive Company A";
+    const SURVIVE_COMPANY_B = "Survive Company B";
 
     // Fetch recent correction events for lightweight learning
     let constraintsBlock = "";
