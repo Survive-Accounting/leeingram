@@ -94,7 +94,7 @@ function buildLWCSV(questions: BankedQ[], assetNameMap: Map<string, string>): st
       q.answer_e || "",
       "", "", "", "", "",
       q.short_explanation || "",
-      "",
+      (q as any).incorrect_explanation || "Not quite! Review the problem scenario and try again. Each answer choice reflects a common approach — make sure you're recording the correct accounts, amounts, and debits/credits.",
     ].map(escapeCSV).join(",");
   });
 
