@@ -26,6 +26,7 @@ import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog"
 import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
+import { Tip } from "@/components/Tip";
 import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";
