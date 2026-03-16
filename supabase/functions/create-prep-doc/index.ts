@@ -183,20 +183,12 @@ function jeToRawText(entries: any[]): string {
   return lines.join("\n").trim();
 }
 
-// ── Doc builder helpers ──────────────────────────────────────────────
-
-interface DocSection {
-  heading?: string;
-  headingLevel?: "HEADING_1" | "HEADING_2";
-  headingColor?: { red: number; green: number; blue: number };
-  subSections?: Array<{
-    label?: string;
-    text: string;
-    bgColor?: { red: number; green: number; blue: number };
-    fontFamily?: string;
-    fontSize?: number;
-  }>;
+function formatAmount(val: any): string {
+  if (val == null || val === 0 || val === "") return "";
+  return Number(val).toLocaleString("en-US");
 }
+
+// ── Color helpers ────────────────────────────────────────────────────
 
 function hexToRgb(hex: string): { red: number; green: number; blue: number } {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -206,15 +198,124 @@ function hexToRgb(hex: string): { red: number; green: number; blue: number } {
 }
 
 const NAVY = hexToRgb("#131E35");
-const GRAY = hexToRgb("#666666");
-const DARK_GRAY = hexToRgb("#333333");
-const RED = hexToRgb("#C0392B");
+const WHITE = { red: 1, green: 1, blue: 1 };
 const LIGHT_GRAY = hexToRgb("#AAAAAA");
+const RED = hexToRgb("#C0392B");
 
-function buildDocSections(
-  asset: any, course: any, chapter: any, problemInstructions: any[], jeRawText: string
-): DocSection[] {
-  const sections: DocSection[] = [];
+// ── New batch-update builder using index tracking ────────────────────
+
+interface RequestBuilder {
+  requests: any[];
+  idx: number;
+}
+
+function rb(): RequestBuilder {
+  return { requests: [], idx: 1 };
+}
+
+function insertText(b: RequestBuilder, text: string): { start: number; end: number } {
+  const start = b.idx;
+  b.requests.push({ insertText: { location: { index: b.idx }, text } });
+  b.idx += text.length;
+  return { start, end: b.idx };
+}
+
+function styleText(b: RequestBuilder, start: number, end: number, textStyle: any, fields: string) {
+  b.requests.push({
+    updateTextStyle: {
+      range: { startIndex: start, endIndex: end },
+      textStyle,
+      fields,
+    },
+  });
+}
+
+function styleParagraph(b: RequestBuilder, start: number, end: number, paragraphStyle: any, fields: string) {
+  b.requests.push({
+    updateParagraphStyle: {
+      range: { startIndex: start, endIndex: end },
+      paragraphStyle,
+      fields,
+    },
+  });
+}
+
+function insertStyledText(
+  b: RequestBuilder,
+  text: string,
+  opts: {
+    bold?: boolean;
+    fontSize?: number;
+    fontFamily?: string;
+    fgColor?: { red: number; green: number; blue: number };
+    bgColor?: { red: number; green: number; blue: number };
+    namedStyle?: string;
+    indent?: number;
+    link?: string;
+    spaceBelow?: number;
+  } = {}
+): { start: number; end: number } {
+  const { start, end } = insertText(b, text);
+  if (text.trim().length === 0) return { start, end };
+
+  // Paragraph style
+  const pFields: string[] = [];
+  const pStyle: any = {};
+  if (opts.namedStyle) { pStyle.namedStyleType = opts.namedStyle; pFields.push("namedStyleType"); }
+  if (opts.indent) { pStyle.indentStart = { magnitude: opts.indent, unit: "PT" }; pFields.push("indentStart"); }
+  if (opts.spaceBelow != null) { pStyle.spaceBelow = { magnitude: opts.spaceBelow, unit: "PT" }; pFields.push("spaceBelow"); }
+  if (pFields.length) styleParagraph(b, start, end, pStyle, pFields.join(","));
+
+  // Text style
+  const tFields: string[] = [];
+  const tStyle: any = {};
+  if (opts.bold != null) { tStyle.bold = opts.bold; tFields.push("bold"); }
+  if (opts.fontSize) { tStyle.fontSize = { magnitude: opts.fontSize, unit: "PT" }; tFields.push("fontSize"); }
+  if (opts.fontFamily) { tStyle.weightedFontFamily = { fontFamily: opts.fontFamily }; tFields.push("weightedFontFamily"); }
+  if (opts.fgColor) { tStyle.foregroundColor = { color: { rgbColor: opts.fgColor } }; tFields.push("foregroundColor"); }
+  if (opts.bgColor) { tStyle.backgroundColor = { color: { rgbColor: opts.bgColor } }; tFields.push("backgroundColor"); }
+  if (opts.link) { tStyle.link = { url: opts.link }; tFields.push("link"); }
+  if (tFields.length) styleText(b, start, end, tStyle, tFields.join(","));
+
+  return { start, end };
+}
+
+// ── Table builder helpers ────────────────────────────────────────────
+
+function insertTable(b: RequestBuilder, rows: number, cols: number): number {
+  const tableStart = b.idx;
+  b.requests.push({
+    insertTable: {
+      location: { index: b.idx },
+      rows,
+      columns: cols,
+    },
+  });
+  // After inserting table, index advances: table element + (rows * (cols cells + row end + cell paragraphs))
+  // Google Docs table structure: tableStart, then for each row: rowStart, then for each cell: cellStart, paragraph(\n), cellEnd, rowEnd, tableEnd
+  // Each cell contains a paragraph with a newline = 1 char
+  // Total characters added = rows * cols (one \n per cell)
+  // But we also have structural elements. The index after table = tableStart + 1 + rows*(1 + cols*(2 + 1)) + 1
+  // Actually, let's just compute: table=1, each row=0, each cell=2 (cell start, paragraph), paragraph newline=1, row=0, table end=0
+  // Structural elements per table: 1 (table) + rows * (1 (row) + cols * (1 (cell) + 1 (paragraph))) + ... 
+  // It's easier to track: total index advance = 1 + rows * (1 + cols * 3)
+  // Wait - each cell has: cell(1) + paragraph(1) + newline_char(1) = 3, row(1), table(1)
+  // total = 1 + rows * (1 + cols * 3)
+  // Actually the standard formula: table adds (4 * rows * cols + 2 * rows + 1) to the index... let me use the known formula
+  // After an insertTable with R rows and C cols, the index advances by: R*C + R*(C+1) + ... 
+  // Known: new index = old index + 4*R*C + 2*R + 2  ... let me just use the safe formula
+  // The safest approach: 1 (table) + for each row: 1 (row start) + for each cell: 1 (cell start) + 1 (paragraph start) + 1 (\n char) = 3 per cell
+  // So: 1 + R * (1 + C*3) = 1 + R + 3RC
+  b.idx = tableStart + 1 + rows + 3 * rows * cols;
+  return tableStart;
+}
+
+// ── Main doc content builder ─────────────────────────────────────────
+
+function buildDocRequests(
+  asset: any, course: any, chapter: any, problemInstructions: any[], jeEntries: any[], jeRawText: string
+): any[] {
+  const b = rb();
   const assetName = asset.asset_name || "";
   const courseCode = course?.code || "";
   const courseName = course?.course_name || "";
@@ -222,245 +323,179 @@ function buildDocSections(
   const chName = chapter?.chapter_name || "";
   const sourceRef = asset.source_ref || "";
 
-  // HEADER
-  sections.push({
-    heading: assetName,
-    headingLevel: "HEADING_1",
-    headingColor: NAVY,
-    subSections: [{
-      text: `${courseName} · Ch ${chNum} — ${chName} · Source: ${sourceRef}`,
-      fontSize: 10,
-      bgColor: undefined,
-    }],
+  // Build the app link URL for the asset heading
+  const appDomain = Deno.env.get("SITE_URL") || Deno.env.get("APP_URL") || "https://leeingram.lovable.app";
+  const assetLink = `${appDomain}/assets-library?search=${encodeURIComponent(assetName)}`;
+
+  // ─── 1. HEADER ───
+  insertStyledText(b, assetName + "\n", {
+    bold: true, fontSize: 18, fgColor: NAVY, namedStyle: "HEADING_1", link: assetLink,
   });
+  insertStyledText(b, `${courseName} · Ch ${chNum} — ${chName} · Source: ${sourceRef}\n`, {
+    fontSize: 10,
+  });
+  insertText(b, "\n");
 
-  // PROBLEM
-  const problemSubs: DocSection["subSections"] = [];
+  // ─── 2. PROBLEM (context only, no duplicate problem_text) ───
   if (asset.problem_context?.trim()) {
-    problemSubs.push({ label: "Context", text: asset.problem_context, fontSize: 11 });
-  }
-  if (asset.survive_problem_text?.trim()) {
-    problemSubs.push({ label: "Problem", text: asset.survive_problem_text, fontSize: 11 });
-  }
-  if (problemSubs.length > 0) {
-    sections.push({ heading: "PROBLEM", headingLevel: "HEADING_2", headingColor: NAVY, subSections: problemSubs });
+    insertStyledText(b, "PROBLEM\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+    insertStyledText(b, "Context\n", { bold: true, fontSize: 11, fgColor: hexToRgb("#333333") });
+    insertStyledText(b, asset.problem_context + "\n", { fontSize: 11, indent: 14 });
+    insertText(b, "\n");
   }
 
-  // INSTRUCTIONS
+  // ─── 3. REQUIRED (instructions with blank lines between) ───
   const sortedInstr = [...problemInstructions].sort((a, b) => a.instruction_number - b.instruction_number);
   const instrTexts = sortedInstr.filter(i => i.instruction_text?.trim()).map((i, idx) => {
-    const letter = String.fromCharCode(97 + idx); // a, b, c...
+    const letter = String.fromCharCode(97 + idx);
     return `(${letter}) ${i.instruction_text}`;
   });
   if (instrTexts.length > 0) {
-    sections.push({
-      heading: "REQUIRED",
-      headingLevel: "HEADING_2",
-      headingColor: NAVY,
-      subSections: [{ text: instrTexts.join("\n"), fontSize: 11 }],
-    });
-  }
-
-  // ANSWER SUMMARY
-  const answerSummary = asset.survive_solution_text || "";
-  if (answerSummary.trim()) {
-    sections.push({
-      heading: "ANSWER SUMMARY",
-      headingLevel: "HEADING_2",
-      headingColor: NAVY,
-      subSections: [{ text: answerSummary, fontSize: 11, bgColor: hexToRgb("#E8F5E9") }],
-    });
-  }
-
-  // JOURNAL ENTRIES
-  if (jeRawText.trim()) {
-    sections.push({
-      heading: "JOURNAL ENTRIES",
-      headingLevel: "HEADING_2",
-      headingColor: NAVY,
-      subSections: [{ text: jeRawText, fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5") }],
-    });
-  }
-
-  // WORKED STEPS
-  const workedSteps = asset.survive_solution_text || "";
-  // Only include if different from answer_summary or if there's dedicated worked_steps
-  // Note: the spec says worked_steps field but asset uses survive_solution_text
-  // We'll check if there's explicit worked_steps-like content via important_formulas etc.
-
-  // IMPORTANT FORMULAS
-  if (asset.important_formulas?.trim()) {
-    sections.push({
-      heading: "IMPORTANT FORMULAS",
-      headingLevel: "HEADING_2",
-      headingColor: NAVY,
-      subSections: [{ text: asset.important_formulas, fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#FFF8E1") }],
-    });
-  }
-
-  // CONCEPT NOTES
-  if (asset.concept_notes?.trim()) {
-    sections.push({
-      heading: "CONCEPTS",
-      headingLevel: "HEADING_2",
-      headingColor: NAVY,
-      subSections: [{ text: asset.concept_notes, fontSize: 11 }],
-    });
-  }
-
-  // EXAM TRAPS
-  if (asset.exam_traps?.trim()) {
-    sections.push({
-      heading: "⚠ EXAM TRAPS",
-      headingLevel: "HEADING_2",
-      headingColor: RED,
-      subSections: [{ text: asset.exam_traps, fontSize: 11, bgColor: hexToRgb("#FFEBEE") }],
-    });
-  }
-
-  return sections;
-}
-
-function buildBatchUpdateRequests(sections: DocSection[], assetName: string): any[] {
-  // Build text content first, then create requests
-  // Google Docs API inserts text at index, and we need to build from end to start
-  // OR build content sequentially and track index.
-  // Easier approach: build full text, then apply styles.
-
-  const textParts: Array<{
-    text: string;
-    style: {
-      bold?: boolean;
-      fontSize?: number;
-      fontFamily?: string;
-      foregroundColor?: { red: number; green: number; blue: number };
-      backgroundColor?: { red: number; green: number; blue: number };
-      namedStyleType?: string;
-      indentStart?: number;
-    };
-  }> = [];
-
-  for (let si = 0; si < sections.length; si++) {
-    const section = sections[si];
-
-    // Heading
-    if (section.heading) {
-      textParts.push({
-        text: section.heading + "\n",
-        style: {
-          bold: true,
-          fontSize: section.headingLevel === "HEADING_1" ? 18 : 13,
-          foregroundColor: section.headingColor,
-          namedStyleType: section.headingLevel,
-        },
-      });
+    insertStyledText(b, "REQUIRED\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+    for (let i = 0; i < instrTexts.length; i++) {
+      insertStyledText(b, instrTexts[i] + "\n", { fontSize: 11 });
+      // Blank line between instructions (paragraph break)
+      if (i < instrTexts.length - 1) {
+        insertText(b, "\n");
+      }
     }
+    insertText(b, "\n");
+  }
 
-    // Sub-sections
-    if (section.subSections) {
-      for (const sub of section.subSections) {
-        if (sub.label) {
-          textParts.push({
-            text: sub.label + "\n",
-            style: { bold: true, fontSize: 11, foregroundColor: DARK_GRAY },
-          });
-        }
-        textParts.push({
-          text: sub.text + "\n",
-          style: {
-            fontSize: sub.fontSize || 11,
-            fontFamily: sub.fontFamily,
-            backgroundColor: sub.bgColor,
-            indentStart: 14,
-          },
+  // ─── 4. JOURNAL ENTRIES (moved before Answer Summary) ───
+  if (jeEntries.length > 0) {
+    insertStyledText(b, "JOURNAL ENTRIES\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+
+    // Try structured table approach
+    try {
+      buildJETable(b, jeEntries);
+    } catch (e) {
+      console.warn("JE table build failed, falling back to monospace:", e);
+      // Fallback: monospace text
+      if (jeRawText.trim()) {
+        insertStyledText(b, jeRawText + "\n", {
+          fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5"),
         });
       }
     }
-
-    // Add blank line between sections
-    textParts.push({ text: "\n", style: { fontSize: 10 } });
+    insertText(b, "\n");
+  } else if (jeRawText.trim()) {
+    // No structured entries but raw text exists
+    insertStyledText(b, "JOURNAL ENTRIES\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+    insertStyledText(b, jeRawText + "\n", {
+      fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5"),
+    });
+    insertText(b, "\n");
   }
 
-  // Footer
+  // ─── 5. ANSWER SUMMARY (moved after JE) ───
+  const answerSummary = asset.survive_solution_text || "";
+  if (answerSummary.trim()) {
+    insertStyledText(b, "ANSWER SUMMARY\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+    insertStyledText(b, answerSummary + "\n", { fontSize: 11, bgColor: hexToRgb("#E8F5E9") });
+    insertText(b, "\n");
+  }
+
+  // ─── 6. IMPORTANT FORMULAS (line breaks between formulas) ───
+  if (asset.important_formulas?.trim()) {
+    insertStyledText(b, "IMPORTANT FORMULAS\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+    const formulaLines = asset.important_formulas.split("\n").filter((l: string) => l.trim());
+    for (const line of formulaLines) {
+      insertStyledText(b, line + "\n", {
+        fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#FFF8E1"), spaceBelow: 6,
+      });
+    }
+    insertText(b, "\n");
+  }
+
+  // ─── 7. CONCEPTS (bulleted list) ───
+  if (asset.concept_notes?.trim()) {
+    insertStyledText(b, "CONCEPTS\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
+    const sentences = asset.concept_notes.split(". ").filter((s: string) => s.trim());
+    for (const sentence of sentences) {
+      const text = sentence.endsWith(".") ? sentence : sentence + ".";
+      const { start, end } = insertStyledText(b, text + "\n", { fontSize: 11, indent: 14 });
+      // Apply bullet list
+      b.requests.push({
+        createParagraphBullets: {
+          range: { startIndex: start, endIndex: end },
+          bulletPreset: "BULLET_DISC_CIRCLE_SQUARE",
+        },
+      });
+    }
+    insertText(b, "\n");
+  }
+
+  // ─── 8. EXAM TRAPS (bulleted list, red) ───
+  if (asset.exam_traps?.trim()) {
+    insertStyledText(b, "⚠ EXAM TRAPS\n", { bold: true, fontSize: 13, fgColor: RED, namedStyle: "HEADING_2" });
+    const sentences = asset.exam_traps.split(". ").filter((s: string) => s.trim());
+    for (const sentence of sentences) {
+      const text = sentence.endsWith(".") ? sentence : sentence + ".";
+      const { start, end } = insertStyledText(b, text + "\n", {
+        fontSize: 11, fgColor: RED, bgColor: hexToRgb("#FFEBEE"), indent: 14,
+      });
+      b.requests.push({
+        createParagraphBullets: {
+          range: { startIndex: start, endIndex: end },
+          bulletPreset: "BULLET_DISC_CIRCLE_SQUARE",
+        },
+      });
+    }
+    insertText(b, "\n");
+  }
+
+  // ─── Footer ───
   const today = new Date().toISOString().split("T")[0];
-  textParts.push({
-    text: `Generated by Survive Accounting · ${assetName} · ${today}\n`,
-    style: { fontSize: 8, foregroundColor: LIGHT_GRAY },
+  insertStyledText(b, `Generated by Survive Accounting · ${assetName} · ${today}\n`, {
+    fontSize: 8, fgColor: LIGHT_GRAY,
   });
 
-  // Now build the requests: insert all text first, then style
-  const fullText = textParts.map(p => p.text).join("");
-  const requests: any[] = [];
+  return b.requests;
+}
 
-  // Insert all text at index 1 (after the initial newline that docs start with)
-  requests.push({
-    insertText: { location: { index: 1 }, text: fullText },
-  });
+// ── JE Table builder ─────────────────────────────────────────────────
+// Google Docs table approach: we insert text-based JE with date headers
+// since table insertion via API is complex with index tracking.
+// We use a simplified approach: for each date group, insert a bold date,
+// then for each row insert account/debit/credit with tab alignment.
 
-  // Apply styles
-  let idx = 1;
-  for (const part of textParts) {
-    const endIdx = idx + part.text.length;
-    if (part.text.trim().length === 0) { idx = endIdx; continue; }
+function buildJETable(b: RequestBuilder, entries: any[]) {
+  for (let ei = 0; ei < entries.length; ei++) {
+    const entry = entries[ei];
 
-    // Paragraph style (heading)
-    if (part.style.namedStyleType) {
-      requests.push({
-        updateParagraphStyle: {
-          range: { startIndex: idx, endIndex: endIdx },
-          paragraphStyle: { namedStyleType: part.style.namedStyleType },
-          fields: "namedStyleType",
-        },
+    // Separator between date groups
+    if (ei > 0) {
+      insertStyledText(b, "─────────────────────────────────────────\n", {
+        fontSize: 6, fgColor: hexToRgb("#E0E0E0"),
       });
     }
 
-    // Indent
-    if (part.style.indentStart) {
-      requests.push({
-        updateParagraphStyle: {
-          range: { startIndex: idx, endIndex: endIdx },
-          paragraphStyle: { indentStart: { magnitude: part.style.indentStart, unit: "PT" } },
-          fields: "indentStart",
-        },
+    // Date header with background
+    if (entry.date) {
+      insertStyledText(b, entry.date + "\n", {
+        bold: true, fontSize: 11, fgColor: NAVY, bgColor: hexToRgb("#F0F4FF"),
       });
     }
 
-    // Text style
-    const textStyle: any = {};
-    const fields: string[] = [];
+    // Column header
+    insertStyledText(b, "Account\tDebit\tCredit\n", {
+      bold: true, fontSize: 9, fgColor: WHITE, bgColor: NAVY,
+    });
 
-    if (part.style.bold !== undefined) { textStyle.bold = part.style.bold; fields.push("bold"); }
-    if (part.style.fontSize) {
-      textStyle.fontSize = { magnitude: part.style.fontSize, unit: "PT" };
-      fields.push("fontSize");
-    }
-    if (part.style.fontFamily) {
-      textStyle.weightedFontFamily = { fontFamily: part.style.fontFamily };
-      fields.push("weightedFontFamily");
-    }
-    if (part.style.foregroundColor) {
-      textStyle.foregroundColor = { color: { rgbColor: part.style.foregroundColor } };
-      fields.push("foregroundColor");
-    }
-    if (part.style.backgroundColor) {
-      textStyle.backgroundColor = { color: { rgbColor: part.style.backgroundColor } };
-      fields.push("backgroundColor");
-    }
+    // Entry rows
+    for (const row of (entry.rows || [])) {
+      const acct = row.account_name || row.account || "";
+      const isCredit = row.side === "credit" || (row.credit != null && row.credit !== 0 && (row.debit == null || row.debit === 0));
+      const indent = isCredit ? "    " : "";
+      const debitAmt = !isCredit ? formatAmount(row.debit) : "";
+      const creditAmt = isCredit ? formatAmount(row.credit) : "";
 
-    if (fields.length > 0) {
-      requests.push({
-        updateTextStyle: {
-          range: { startIndex: idx, endIndex: endIdx },
-          textStyle,
-          fields: fields.join(","),
-        },
+      insertStyledText(b, `${indent}${acct}\t${debitAmt}\t${creditAmt}\n`, {
+        fontSize: 10, fontFamily: "Courier New",
       });
     }
-
-    idx = endIdx;
   }
-
-  return requests;
 }
 
 // ── Main handler ─────────────────────────────────────────────────────
@@ -518,11 +553,11 @@ Deno.serve(async (req) => {
 
     console.log(`Asset folder: ${assetFolderId} for ${assetCode}`);
 
-    // Build JE text
+    // Build JE data
     const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
     const jeRawText = jeToRawText(jeEntries);
 
-    // Create a blank Google Doc via Drive API (more reliable permissions)
+    // Create a blank Google Doc via Drive API
     const docTitle = `${assetCode} — Tutoring Prep`;
     console.log(`Creating doc "${docTitle}" in folder ${assetFolderId}...`);
     const docCreateRes = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
@@ -538,8 +573,7 @@ Deno.serve(async (req) => {
     console.log(`Created doc: ${docId}`);
 
     // Build and apply document content
-    const docSections = buildDocSections(asset, course, chapter, problemInstructions, jeRawText);
-    const batchRequests = buildBatchUpdateRequests(docSections, assetCode);
+    const batchRequests = buildDocRequests(asset, course, chapter, problemInstructions, jeEntries, jeRawText);
 
     if (batchRequests.length > 0) {
       await googleFetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, token, {
