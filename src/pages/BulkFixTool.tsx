@@ -33,6 +33,41 @@ interface HistoryEntry {
 
 const BATCH_SIZE = 10;
 
+const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
+
+WHAT YOU MUST CHANGE:
+1. If the text says "Survive Company" without an A/B suffix, rename it to "Survive Company A ([role])" where [role] is inferred from context (e.g. the issuer, the borrower, the lessor, the seller, the lessee, the investor, etc.)
+2. If "Survive Company B" appears without a role hint in parentheses, add the appropriate role hint based on context. Example: "Survive Company B" → "Survive Company B (the investor)"
+3. If "Survive Counterparty" still appears anywhere, replace it with "Survive Company B ([role])" where role is inferred from context.
+4. For every instruction line that asks the student to prepare a journal entry or calculate something, rewrite it to include "on the books of Survive Company A/B ([role])" inline within that instruction.
+   Determine which entity each instruction refers to by reading the full problem context.
+   Example transformation:
+   BEFORE: "(a) Prepare the journal entry to record the issuance of the bonds on January 1."
+   AFTER: "(a) Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+
+WHAT YOU MUST NOT CHANGE:
+- All dollar amounts, percentages, and numeric values must remain exactly as-is
+- All dates must remain exactly as-is
+- The overall sentence structure and wording of the problem scenario must remain the same
+- Do not add new sentences or paragraphs
+- Do not remove any existing content
+- Do not change any accounting terminology
+- Do not reorder the instructions
+
+Return only the corrected text with no explanation or commentary. The output must be a drop-in replacement for the original field value.`;
+
+/** Extract all numbers from text for comparison */
+function extractNumbers(text: string): string[] {
+  return (text.match(/[\d,]+\.?\d*/g) || []).sort();
+}
+
+function hasNumericDiff(before: string, after: string): boolean {
+  const numsBefore = extractNumbers(before);
+  const numsAfter = extractNumbers(after);
+  if (numsBefore.length !== numsAfter.length) return true;
+  return numsBefore.some((n, i) => n !== numsAfter[i]);
+}
+
 // Fields that can be targeted by bulk fix
 const FIXABLE_FIELDS = [
   { key: "problem_context", label: "Problem Context" },
