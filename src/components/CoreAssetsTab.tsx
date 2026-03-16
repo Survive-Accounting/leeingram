@@ -132,7 +132,7 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Add MC to Hidden_Data">
+        <Button variant="outline" size="sm" className="h-6 w-6 p-0">
           {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
         </Button>
       </PopoverTrigger>
