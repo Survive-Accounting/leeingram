@@ -277,16 +277,36 @@ export default function AssetsLibrary() {
     if (workspace?.chapterId && !deepLinkAssetId) setChapterFilter(workspace.chapterId);
   }, [workspace?.courseId, workspace?.chapterId]);
 
-  // Deep-link: when ?asset=ID is present, fetch that asset directly and set filters
+  // Deep-link: when ?asset=ID_OR_NAME is present, fetch that asset directly and set filters
+  const [resolvedDeepLinkId, setResolvedDeepLinkId] = useState<string | null>(null);
   useEffect(() => {
     if (!deepLinkAssetId) return;
     (async () => {
-      const { data: targetAsset } = await supabase
-        .from("teaching_assets")
-        .select("id, course_id, chapter_id")
-        .eq("id", deepLinkAssetId)
-        .single();
+      // Try by ID first (UUID format)
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deepLinkAssetId);
+      let targetAsset: any = null;
+
+      if (isUuid) {
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, course_id, chapter_id")
+          .eq("id", deepLinkAssetId)
+          .single();
+        targetAsset = data;
+      }
+
+      // Fall back to asset_name match
+      if (!targetAsset) {
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, course_id, chapter_id")
+          .eq("asset_name", deepLinkAssetId)
+          .single();
+        targetAsset = data;
+      }
+
       if (targetAsset) {
+        setResolvedDeepLinkId(targetAsset.id);
         setCourseFilter(targetAsset.course_id);
         setChapterFilter(targetAsset.chapter_id);
       }
