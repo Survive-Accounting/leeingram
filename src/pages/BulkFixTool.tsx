@@ -285,7 +285,7 @@ export default function BulkFixTool() {
               },
             });
             if (aiError) throw aiError;
-            const after = aiResult?.content || original;
+            const after = aiResult?.raw || aiResult?.content || original;
             if (after !== original) {
               rows.push({
                 id: asset.id,
