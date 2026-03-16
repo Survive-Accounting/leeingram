@@ -18,10 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
@@ -71,6 +72,111 @@ function escapeCSV(val: string): string {
     return '"' + val.replace(/"/g, '""') + '"';
   }
   return val;
+}
+
+/* ── Add MC to Hidden_Data popover button ── */
+function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [selectedSet, setSelectedSet] = useState<string>("");
+  const [syncing, setSyncing] = useState(false);
+
+  const { data: availableSets = [] } = useQuery({
+    queryKey: ["mc-export-sets-for-asset", assetId],
+    queryFn: async () => {
+      // Get approved banked_question IDs for this asset
+      const { data: approvedQs } = await supabase
+        .from("banked_questions")
+        .select("id")
+        .eq("teaching_asset_id", assetId)
+        .eq("review_status", "approved");
+      if (!approvedQs?.length) return [];
+      const qIds = approvedQs.map(q => q.id);
+
+      // Get export_set_questions that reference these questions
+      const { data: esqs } = await supabase
+        .from("export_set_questions")
+        .select("export_set_id, banked_question_id")
+        .in("banked_question_id", qIds);
+      if (!esqs?.length) return [];
+
+      // Group by export_set_id and count
+      const setCountMap = new Map<string, number>();
+      for (const row of esqs) {
+        setCountMap.set(row.export_set_id, (setCountMap.get(row.export_set_id) || 0) + 1);
+      }
+
+      // Fetch export set names
+      const setIds = [...setCountMap.keys()];
+      const { data: sets } = await supabase
+        .from("export_sets")
+        .select("id, name")
+        .in("id", setIds);
+      if (!sets) return [];
+
+      return sets.map(s => ({
+        id: s.id,
+        name: s.name,
+        questionCount: setCountMap.get(s.id) || 0,
+      }));
+    },
+    enabled: open && hasSheet,
+  });
+
+  const handleSync = async () => {
+    if (!selectedSet) { toast.error("Select an export set"); return; }
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-mc-to-sheet", {
+        body: { teaching_asset_id: assetId, export_set_id: selectedSet },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Added ${data.questions_added} MC questions from '${data.export_set_name}' to Hidden_Data`);
+      setOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Sync MC failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (!hasSheet) {
+    return (
+      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
+        <ListPlus className="h-3 w-3" />
+      </Button>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Add MC to Hidden_Data">
+          {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="end">
+        <p className="text-xs font-bold text-foreground mb-2">Add MC to Hidden_Data</p>
+        <Select value={selectedSet} onValueChange={setSelectedSet}>
+          <SelectTrigger className="h-7 text-xs mb-2"><SelectValue placeholder="Choose Export Set" /></SelectTrigger>
+          <SelectContent>
+            {availableSets.map(s => (
+              <SelectItem key={s.id} value={s.id}>{s.name} ({s.questionCount} questions)</SelectItem>
+            ))}
+            {availableSets.length === 0 && (
+              <SelectItem value="__none__" disabled>No export sets with approved questions</SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center justify-between">
+          <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)}>Cancel</button>
+          <Button size="sm" className="h-7 text-xs" onClick={handleSync} disabled={syncing || !selectedSet}>
+            {syncing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Adding…</> : "Add to Sheet"}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function AssetsLibrary() {
@@ -889,6 +995,7 @@ export default function AssetsLibrary() {
                               >
                                 {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                               </Button>
+                              <AddMCButton assetId={a.id} hasSheet={true} />
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>

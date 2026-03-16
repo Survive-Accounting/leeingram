@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.sync-hidden-data]
 verify_jwt = false
+
+[functions.sync-mc-to-sheet]
+verify_jwt = false
