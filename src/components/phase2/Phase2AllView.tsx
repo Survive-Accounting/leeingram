@@ -63,7 +63,7 @@ function RankBadge({ rank }: { rank: number | null }) {
   return <Badge variant="outline" className={`text-[10px] ${colors[rank] || ""}`}>R{rank}</Badge>;
 }
 
-export function Phase2AllView({ chapterId }: Phase2AllViewProps) {
+export function Phase2AllView({ chapterId, onAssetClick }: Phase2AllViewProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [unreviewedOpen, setUnreviewedOpen] = useState(false);
