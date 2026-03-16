@@ -363,28 +363,29 @@ function buildDocRequests(
   }
 
   // ─── 4. JOURNAL ENTRIES (moved before Answer Summary) ───
-  if (jeEntries.length > 0) {
+  // Prefer raw text from the DB field for JE rendering
+  const rawJeText = asset.journal_entry_raw || "";
+  const hasRawText = rawJeText.trim().length > 0;
+  const hasStructuredEntries = jeEntries.length > 0;
+
+  if (hasRawText || hasStructuredEntries) {
     insertStyledText(b, "JOURNAL ENTRIES\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
 
-    // Try structured table approach
     try {
-      buildJETable(b, jeEntries);
+      if (hasRawText) {
+        buildJETableFromRaw(b, rawJeText);
+      } else {
+        buildJETable(b, jeEntries);
+      }
     } catch (e) {
       console.warn("JE table build failed, falling back to monospace:", e);
-      // Fallback: monospace text
-      if (jeRawText.trim()) {
-        insertStyledText(b, jeRawText + "\n", {
-          fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5"),
+      const fallbackText = hasRawText ? rawJeText : jeRawText;
+      if (fallbackText.trim()) {
+        insertStyledText(b, fallbackText + "\n", {
+          fontSize: 10, fontFamily: "Courier New",
         });
       }
     }
-    insertText(b, "\n");
-  } else if (jeRawText.trim()) {
-    // No structured entries but raw text exists
-    insertStyledText(b, "JOURNAL ENTRIES\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
-    insertStyledText(b, jeRawText + "\n", {
-      fontSize: 10, fontFamily: "Courier New", bgColor: hexToRgb("#F5F5F5"),
-    });
     insertText(b, "\n");
   }
 
