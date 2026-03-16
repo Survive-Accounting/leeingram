@@ -51,8 +51,8 @@ serve(async (req) => {
       run_id,
     } = await req.json();
 
-    if (!provider || !messages || !source_problem_id) {
-      throw new Error("Missing required fields: provider, messages, source_problem_id");
+    if (!provider || !messages) {
+      throw new Error("Missing required fields: provider, messages");
     }
 
     const selectedModel = model || (provider === "openai" ? "gpt-4.1" : "google/gemini-2.5-flash");
