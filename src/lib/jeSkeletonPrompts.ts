@@ -57,7 +57,8 @@ Rules:
 3. Total debits must equal total credits.
 4. Use accounts from the approved list when provided.
 5. If an account is not in the approved list, add "needs_review": true to that row.
-6. Return only JSON.`;
+6. When two parties exist, use "Survive Company A ([role])" and "Survive Company B ([role])" naming. Always state which entity's books the entry is recorded on.
+7. Return only JSON.`;
 
 export function buildSingleDateUserPrompt(opts: {
   problemText: string;
