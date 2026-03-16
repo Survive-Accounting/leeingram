@@ -83,6 +83,6 @@ export function buildSingleDateUserPrompt(opts: {
     parts.push(`Previously generated entries for context (do NOT regenerate these):\n${JSON.stringify(opts.priorEntries, null, 2)}`);
   }
 
-  parts.push("Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.");
+  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.");
   return parts.join("\n\n");
 }
