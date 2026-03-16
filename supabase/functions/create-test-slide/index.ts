@@ -12,6 +12,7 @@ const SCOPES = [
 ];
 
 const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
+const TEMPLATE_SLIDE_ID = "1pRp7_VkBqp_3NTttlNzPLSAZq-0WwWWJXwuN8APbMa4";
 
 // ── Google Auth helpers ──────────────────────────────────────────────
 
