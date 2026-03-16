@@ -35,11 +35,12 @@ const ROUTE_TASKS: Record<string, { task: string; taskByRole?: Record<string, st
     sopLabel: "Review SOP",
   },
   "/assets-library": {
-    task: "Verify each asset's Google Sheet is set up correctly for tutoring and filming.",
+    task: "Teaching assets have completed Phase 1. Review approved assets below, then head to Phase 2 Review to select Core Assets for student-facing production.",
     taskByRole: {
       content_creation_va: "Review and approve generated teaching assets for this chapter. Approve the variants that look correct — Lee will review your approvals before pushing to production.",
     },
     sopLabel: "Assets SOP",
+    isPhase1Complete: true,
   },
   "/question-review": {
     task: "Generate and review multiple choice questions for each Core Asset in this chapter.",
