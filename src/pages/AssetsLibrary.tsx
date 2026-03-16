@@ -404,10 +404,11 @@ export default function AssetsLibrary() {
     },
   });
 
-  // Deep-link: open asset detail from ?asset=ID (after filters have updated and assets loaded)
+  // Deep-link: open asset detail from ?asset=ID_OR_NAME (after filters have updated and assets loaded)
   useEffect(() => {
-    if (!deepLinkAssetId || !assets?.length) return;
-    const found = assets.find((a) => a.id === deepLinkAssetId);
+    const targetId = resolvedDeepLinkId || deepLinkAssetId;
+    if (!targetId || !assets?.length) return;
+    const found = assets.find((a) => a.id === targetId || a.asset_name === targetId);
     if (found) {
       setViewingAsset(found);
       setDrawerOpen(true);
@@ -425,7 +426,7 @@ export default function AssetsLibrary() {
       searchParams.delete("action");
       setSearchParams(searchParams, { replace: true });
     }
-  }, [assets, deepLinkAssetId]);
+  }, [assets, resolvedDeepLinkId, deepLinkAssetId]);
 
   // Build sheet URL map from teaching_assets themselves + fallback to assets table
   const sheetUrls: Record<string, string> = {};
