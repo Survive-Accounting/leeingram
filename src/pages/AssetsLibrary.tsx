@@ -1380,6 +1380,44 @@ export default function AssetsLibrary() {
         </DialogContent>
       </Dialog>
 
+      {/* Bulk Generate Prep Docs Dialog */}
+      <Dialog open={bulkPrepDocOpen} onOpenChange={setBulkPrepDocOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Generate All Prep Docs</DialogTitle>
+            <DialogDescription>
+              Generate prep docs for all {assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at).length ?? 0} approved assets in this chapter that don't have one yet? This may take a few minutes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setBulkPrepDocOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={async () => {
+              setBulkPrepDocOpen(false);
+              const eligible = assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
+              if (!eligible.length) { toast.info("All assets already have prep docs"); return; }
+              let created = 0;
+              setBulkPrepDocProgress({ current: 0, total: eligible.length });
+              for (let i = 0; i < eligible.length; i++) {
+                setBulkPrepDocProgress({ current: i + 1, total: eligible.length });
+                try {
+                  const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: eligible[i].id } });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  created++;
+                } catch (err: any) {
+                  console.error(`Prep doc failed for ${eligible[i].asset_name}:`, err.message);
+                }
+              }
+              setBulkPrepDocProgress(null);
+              toast.success(`Done — ${created} prep docs created`);
+              qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+            }}>
+              Generate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Asset Detail Drawer */}
       <AssetDetailDrawer
         asset={viewingAsset as any}
