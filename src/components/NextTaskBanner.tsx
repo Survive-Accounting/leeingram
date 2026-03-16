@@ -134,7 +134,7 @@ export function NextTaskBanner() {
             <p className="text-sm text-foreground mt-0.5">
               {(config as any).taskByRole?.[activeRole] || config.task}
               {pendingCount !== undefined && pendingCount > 0 && (
-                <span className="ml-2 text-muted-foreground">
+                <span className="ml-2 text-foreground/70">
                   {pendingCount} {pendingCount === 1 ? "item" : "items"} remaining.
                 </span>
               )}
