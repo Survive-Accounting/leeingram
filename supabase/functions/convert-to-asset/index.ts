@@ -1797,7 +1797,7 @@ Use Survive Company A ([role]) and Survive Company B ([role]) naming when two pa
       );
     }
 
-    // Post-processing: replace any non-standard company names with Survive Company / Survive Counterparty
+     // Post-processing: check for standard company naming (Survive Company / Survive Company A / Survive Company B)
     const companyNameReplacements: Array<{ candidate_index: number; field: string; original: string }> = [];
     for (let ci = 0; ci < candidates.length; ci++) {
       const c = candidates[ci];
