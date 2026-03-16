@@ -1,10 +1,10 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { ArrowRight, Lock, ExternalLink } from "lucide-react";
+import { ArrowRight, Lock, ExternalLink, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const JOB_DESC_LINKS: Record<string, string> = {
