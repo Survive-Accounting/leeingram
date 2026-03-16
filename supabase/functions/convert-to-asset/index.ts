@@ -1216,11 +1216,32 @@ CORE RULES:
 - Generate exactly ${variantCount} exam-style practice problem variants from the source.
 - Each variant must teach the SAME core accounting concept as the source.
 - Use DIFFERENT numerical values across all ${variantCount} variants.
-- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity.
-- If a second entity is needed (counterparty, investor, lender, etc.), use "${SURVIVE_COUNTERPARTY}".
+- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity when only one party exists.
+- When TWO parties are involved, use "${SURVIVE_COMPANY_A} ([role])" and "${SURVIVE_COMPANY_B} ([role])" naming.
 - Do NOT use any other fictional company names.
+- Never use the word "Counterparty" in any variant.
+- Never use vague terms like "the other company" or "the second party".
 - All scenarios must feel realistic and finance/accounting related.
 - Do NOT include "Survive Accounting" in student-facing text.
+
+ENTITY NAMING IN VARIANTS:
+When a problem involves two parties to a transaction (e.g. a bond issuer and investor, a borrower and lender, a lessor and lessee, a buyer and seller), always name both parties clearly using this format:
+  "Survive Company A ([role])" and "Survive Company B ([role])"
+Where [role] is a short plain-English descriptor of that entity's role in the transaction.
+
+Examples by transaction type:
+  Bond/Note issuance: Survive Company A (the issuer) and Survive Company B (the investor)
+  Note payable/receivable: Survive Company A (the borrower) and Survive Company B (the lender)
+  Lease: Survive Company A (the lessor) and Survive Company B (the lessee)
+  Sale of goods/assets: Survive Company A (the seller) and Survive Company B (the buyer)
+  Sale-leaseback: Survive Company A (the seller-lessee) and Survive Company B (the buyer-lessor)
+  Service transaction: Survive Company A (the service provider) and Survive Company B (the client)
+
+IMPORTANT: When the problem asks the student to record a journal entry, always explicitly state which entity's books the entry is being recorded in. Use this phrasing:
+  "Prepare the journal entry on the books of Survive Company A (the issuer)..."
+  or "Prepare the journal entry from the perspective of Survive Company B (the investor)..."
+Never leave it ambiguous which entity the student is recording for.
+Always use the A/B naming with the role hint in parentheses.
 
 ${difficultySection}
 ${constraintsBlock}
