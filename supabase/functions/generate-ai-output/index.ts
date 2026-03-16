@@ -82,14 +82,16 @@ serve(async (req) => {
     });
 
     // ── Legacy activity_log ──
-    await sb.from("activity_log").insert({
-      actor_type: "ai",
-      entity_type: "source_problem",
-      entity_id: source_problem_id,
-      event_type: "ai_generate_started",
-      severity: "info",
-      payload_json: { provider, model: selectedModel, run_id },
-    });
+    if (source_problem_id) {
+      await sb.from("activity_log").insert({
+        actor_type: "ai",
+        entity_type: "source_problem",
+        entity_id: source_problem_id,
+        event_type: "ai_generate_started",
+        severity: "info",
+        payload_json: { provider, model: selectedModel, run_id },
+      });
+    }
 
     // ── Log: AI_REQUEST ──
     await logEvent(run_id, "ai", "info", "AI_REQUEST", `Calling ${provider}/${selectedModel}`, {
