@@ -863,6 +863,33 @@ export default function AssetsLibrary() {
                       toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
                     }
                     setIsCreatingSheets(false);
+                  } else if (bulkAction === "generate-prep-doc") {
+                    setIsCreatingSheets(true);
+                    let prepSuccess = 0;
+                    for (const asset of selected) {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-prep-doc", {
+                          body: { teaching_asset_id: asset.id },
+                        });
+                        if (error) {
+                          const errMsg = data?.error || error.message || "Edge Function error";
+                          throw new Error(errMsg);
+                        }
+                        if (data?.error) throw new Error(data.error);
+                        prepSuccess++;
+                        if (selected.length === 1 && data?.doc_url) {
+                          window.open(data.doc_url, "_blank");
+                        }
+                      } catch (e: any) {
+                        toast.error(`Prep doc failed: ${asset.asset_name}`, { description: e.message });
+                      }
+                    }
+                    if (prepSuccess > 0) {
+                      toast.success(`${prepSuccess} prep doc${prepSuccess > 1 ? "s" : ""} created`);
+                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                    }
+                    setSelectedIds(new Set());
+                    setIsCreatingSheets(false);
                   }
                   setBulkAction(null);
                 }}
