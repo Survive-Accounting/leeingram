@@ -1007,9 +1007,10 @@ serve(async (req) => {
       "All generated problems must be exam-style", "No bolded numbers",
       "Round all calculations to whole dollars", "Use short, concise sentences",
     ];
-    // Standardized company names — no rotating list
+    // Standardized company names — A/B naming with role hints
     const SURVIVE_COMPANY = "Survive Company";
-    const SURVIVE_COUNTERPARTY = "Survive Counterparty";
+    const SURVIVE_COMPANY_A = "Survive Company A";
+    const SURVIVE_COMPANY_B = "Survive Company B";
 
     // Fetch recent correction events for lightweight learning
     let constraintsBlock = "";
@@ -1215,11 +1216,32 @@ CORE RULES:
 - Generate exactly ${variantCount} exam-style practice problem variants from the source.
 - Each variant must teach the SAME core accounting concept as the source.
 - Use DIFFERENT numerical values across all ${variantCount} variants.
-- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity.
-- If a second entity is needed (counterparty, investor, lender, etc.), use "${SURVIVE_COUNTERPARTY}".
+- All variants MUST use the company name "${SURVIVE_COMPANY}" as the primary entity when only one party exists.
+- When TWO parties are involved, use "${SURVIVE_COMPANY_A} ([role])" and "${SURVIVE_COMPANY_B} ([role])" naming.
 - Do NOT use any other fictional company names.
+- Never use the word "Counterparty" in any variant.
+- Never use vague terms like "the other company" or "the second party".
 - All scenarios must feel realistic and finance/accounting related.
 - Do NOT include "Survive Accounting" in student-facing text.
+
+ENTITY NAMING IN VARIANTS:
+When a problem involves two parties to a transaction (e.g. a bond issuer and investor, a borrower and lender, a lessor and lessee, a buyer and seller), always name both parties clearly using this format:
+  "Survive Company A ([role])" and "Survive Company B ([role])"
+Where [role] is a short plain-English descriptor of that entity's role in the transaction.
+
+Examples by transaction type:
+  Bond/Note issuance: Survive Company A (the issuer) and Survive Company B (the investor)
+  Note payable/receivable: Survive Company A (the borrower) and Survive Company B (the lender)
+  Lease: Survive Company A (the lessor) and Survive Company B (the lessee)
+  Sale of goods/assets: Survive Company A (the seller) and Survive Company B (the buyer)
+  Sale-leaseback: Survive Company A (the seller-lessee) and Survive Company B (the buyer-lessor)
+  Service transaction: Survive Company A (the service provider) and Survive Company B (the client)
+
+IMPORTANT: When the problem asks the student to record a journal entry, always explicitly state which entity's books the entry is being recorded in. Use this phrasing:
+  "Prepare the journal entry on the books of Survive Company A (the issuer)..."
+  or "Prepare the journal entry from the perspective of Survive Company B (the investor)..."
+Never leave it ambiguous which entity the student is recording for.
+Always use the A/B naming with the role hint in parentheses.
 
 ${difficultySection}
 ${constraintsBlock}
@@ -1306,7 +1328,8 @@ ${solutionText || "Not provided"}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
 Generate ${variantCount} exam-style practice variants. Focus on calculations, ratios, and analysis.
-REMINDER: No self-corrections. One clean computation path per part.`;
+REMINDER: No self-corrections. One clean computation path per part.
+Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
 
     } else if (generationMode === "je_only") {
       systemPrompt = `${preamble}
@@ -1344,7 +1367,8 @@ ${solutionText || "Not provided"}
 ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants with structured journal entries.`;
+Generate ${variantCount} exam-style practice variants with structured journal entries.
+Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
 
     } else {
       // hybrid
@@ -1376,7 +1400,8 @@ ${solutionText || "Not provided"}
 ${journalEntryText ? `Original Journal Entry:\n${journalEntryText}` : ""}
 ${notes ? `Instructor Notes:\n${notes}` : ""}
 
-Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.`;
+Generate ${variantCount} exam-style practice variants. This problem requires BOTH text/numeric answers AND journal entries — use the parts[] format with mixed types.
+Use Survive Company A ([role]) and Survive Company B ([role]) naming when two parties exist. Always state which entity's books the journal entry is recorded on.`;
     }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "BUILD_PROMPT", "Prompt built", {
@@ -1772,16 +1797,15 @@ Generate ${variantCount} exam-style practice variants. This problem requires BOT
       );
     }
 
-    // Post-processing: replace any non-standard company names with Survive Company / Survive Counterparty
+     // Post-processing: check for standard company naming (Survive Company / Survive Company A / Survive Company B)
     const companyNameReplacements: Array<{ candidate_index: number; field: string; original: string }> = [];
     for (let ci = 0; ci < candidates.length; ci++) {
       const c = candidates[ci];
       // Replace in problem text
       if (c.survive_problem_text && typeof c.survive_problem_text === "string") {
         const original = c.survive_problem_text;
-        // The AI should already use Survive Company, but if it didn't, we can't regex-guess arbitrary names.
-        // Instead, log a warning if neither Survive Company nor Survive Counterparty appear.
-        if (!original.includes(SURVIVE_COMPANY) && !original.includes(SURVIVE_COUNTERPARTY)) {
+        // The AI should already use Survive Company / Survive Company A / B, but if it didn't, log a warning.
+        if (!original.includes(SURVIVE_COMPANY) && !original.includes(SURVIVE_COMPANY_A) && !original.includes(SURVIVE_COMPANY_B)) {
           companyNameReplacements.push({ candidate_index: ci, field: "survive_problem_text", original: original.slice(0, 200) });
         }
       }

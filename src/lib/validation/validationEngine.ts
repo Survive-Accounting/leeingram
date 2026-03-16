@@ -86,7 +86,7 @@ export const formattingSanity: Validator = (pkg) => {
 
 export const companyNameStandard: Validator = (pkg) => {
   const text = JSON.stringify(pkg.answer_payload);
-  const hasSurvive = text.includes("Survive Company") || text.includes("Survive Counterparty");
+  const hasSurvive = text.includes("Survive Company") || text.includes("Survive Company A") || text.includes("Survive Company B");
   if (!hasSurvive && text.length > 50) {
     return { validator: "company_name_standard", status: "warn", message: "No 'Survive Company' found in answer payload — may use non-standard company name" };
   }
