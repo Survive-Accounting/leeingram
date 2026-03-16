@@ -26,7 +26,30 @@ Guidelines:
 - Make distractors plausible but clearly wrong
 - Questions should be standalone (don't reference "the problem above")
 - Use professional accounting language
-- Round numbers to whole dollars unless precision matters`;
+- Round numbers to whole dollars unless precision matters
+
+ENTITY NAMING IN QUESTION STEMS:
+The teaching asset you are generating questions from uses this naming convention:
+  Survive Company A ([role]) — the primary entity
+  Survive Company B ([role]) — the secondary entity
+
+When writing question stems that reference a company name, always use the full name with role hint exactly as it appears in the source asset text.
+
+CORRECT:
+  "What amount did Survive Company A (the issuer) record as interest expense on July 1?"
+  "How much cash did Survive Company A (the borrower) receive at the time the note was issued?"
+
+WRONG (do not do this):
+  "What amount did Survive Company record..."
+  "What amount did the company record..."
+  "What amount did the issuer record..."
+
+If the source asset text uses "Survive Company A (the issuer)", your question stem must use that exact same label.
+
+If a question specifically tests whether the student knows which entity performs an action, you may write the question without naming the entity — but only when that ambiguity is intentional and the question is testing that knowledge specifically.
+
+PERSPECTIVE CLARITY:
+If a question asks the student to determine what a specific entity records, always name that entity explicitly in the question stem so the student knows whose perspective to take. Never leave it ambiguous.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -70,6 +93,8 @@ ${solution_text || "(no solution provided)"}
 
 JOURNAL ENTRY:
 ${journal_entry_block || "(no journal entry)"}
+
+REMINDER: Use the exact company names from the problem text including role hints in parentheses, e.g. 'Survive Company A (the issuer)'. Do not shorten or omit the role hint in question stems.
 
 Generate 8-12 multiple-choice questions for this asset.`;
 
