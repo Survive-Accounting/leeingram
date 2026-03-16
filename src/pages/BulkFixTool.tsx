@@ -516,6 +516,12 @@ export default function BulkFixTool() {
               </p>
             )}
 
+            {operation === "fix_entity_perspective" && (
+              <p className="text-xs text-muted-foreground">
+                Renames "Survive Company" to "Survive Company A ([role])" where missing, ensures Survive Company B has role hint, and rewrites each instruction line to include "on the books of Survive Company A/B ([role])" inline. Numbers and dates are not changed.
+              </p>
+            )}
+
             {operation === "find_replace_simple" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
