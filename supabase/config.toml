@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.create-test-slide]
 verify_jwt = false
+
+[functions.sync-hidden-data]
+verify_jwt = false
