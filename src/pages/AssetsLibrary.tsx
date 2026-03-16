@@ -265,7 +265,7 @@ export default function AssetsLibrary() {
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("source_ref");
+  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("asset_name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [verifyAssetId, setVerifyAssetId] = useState<string | null>(null);
