@@ -210,9 +210,11 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
 
   if (!hasSheet) {
     return (
-      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Sync to Sheet first">
-        <Film className="h-3 w-3" />
-      </Button>
+      <Tip label="Sync to Sheet first">
+        <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled>
+          <Film className="h-3 w-3" />
+        </Button>
+      </Tip>
     );
   }
 
