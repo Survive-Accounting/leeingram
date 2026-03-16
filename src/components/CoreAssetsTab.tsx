@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MoreHorizontal, StickyNote, Loader2, RefreshCw, ListPlus } from "lucide-react";
+import { MoreHorizontal, StickyNote, Loader2, RefreshCw, ListPlus, Film } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -157,6 +157,66 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
   );
 }
 
+/* ── Slides button ── */
+function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: string; hasSheet: boolean; slidesUrl: string | null | undefined; onCreated: () => void }) {
+  const [creating, setCreating] = useState(false);
+
+  const createSlides = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-test-slide", {
+        body: { teaching_asset_id: assetId },
+      });
+      if (error) {
+        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
+        throw new Error(errMsg);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success("Filming slides created");
+      window.open(data.test_slide_url, "_blank");
+      onCreated();
+    } catch (err: any) {
+      toast.error(err.message || "Slides creation failed");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (!hasSheet) {
+    return (
+      <Button variant="outline" size="sm" className="h-6 w-6 p-0 opacity-50 cursor-not-allowed" disabled title="Sync to Sheet first">
+        <Film className="h-3 w-3" />
+      </Button>
+    );
+  }
+
+  if (slidesUrl) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Filming Slides">
+            <Film className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => window.open(slidesUrl, "_blank")}>
+            Open Slides
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={createSlides} disabled={creating}>
+            {creating ? "Creating…" : "Recreate Slides"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Create Filming Slides" onClick={createSlides} disabled={creating}>
+      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+    </Button>
+  );
+}
+
 export function CoreAssetsTab() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const { workspace } = useActiveWorkspace();
@@ -168,7 +228,7 @@ export function CoreAssetsTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, core_rank, whiteboard_status, mc_status, video_production_status, ebook_status, qa_status, deployment_status, admin_notes, sheet_master_url")
+        .select("id, asset_name, source_ref, core_rank, whiteboard_status, mc_status, video_production_status, ebook_status, qa_status, deployment_status, admin_notes, sheet_master_url, test_slide_url")
         .eq("chapter_id", chapterId!)
         .eq("phase2_status", "core_asset")
         .order("core_rank", { ascending: true });
@@ -315,6 +375,8 @@ export function CoreAssetsTab() {
                       </Button>
                       {/* Add MC to Hidden_Data button */}
                       <AddMCButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} />
+                      {/* Slides button */}
+                      <SlidesButton assetId={a.id} hasSheet={!!(a as any).sheet_master_url} slidesUrl={(a as any).test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["core-assets", chapterId] })} />
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>

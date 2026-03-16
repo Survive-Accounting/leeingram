@@ -17,12 +17,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
@@ -176,6 +177,66 @@ function AddMCButton({ assetId, hasSheet }: { assetId: string; hasSheet: boolean
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/* ── Slides button ── */
+function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: string; hasSheet: boolean; slidesUrl: string | null | undefined; onCreated: () => void }) {
+  const [creating, setCreating] = useState(false);
+
+  const createSlides = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-test-slide", {
+        body: { teaching_asset_id: assetId },
+      });
+      if (error) {
+        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
+        throw new Error(errMsg);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success("Filming slides created");
+      window.open(data.test_slide_url, "_blank");
+      onCreated();
+    } catch (err: any) {
+      toast.error(err.message || "Slides creation failed");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (!hasSheet) {
+    return (
+      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Sync to Sheet first">
+        <Film className="h-3 w-3" />
+      </Button>
+    );
+  }
+
+  if (slidesUrl) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Filming Slides">
+            <Film className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => window.open(slidesUrl, "_blank")}>
+            Open Slides
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={createSlides} disabled={creating}>
+            {creating ? "Creating…" : "Recreate Slides"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" title="Create Filming Slides" onClick={createSlides} disabled={creating}>
+      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+    </Button>
   );
 }
 
@@ -996,6 +1057,7 @@ export default function AssetsLibrary() {
                                 {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                               </Button>
                               <AddMCButton assetId={a.id} hasSheet={true} />
+                              <SlidesButton assetId={a.id} hasSheet={true} slidesUrl={a.test_slide_url} onCreated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" title="Open Google Sheet" className="hover:scale-110 transition-transform">📋</a>
@@ -1003,9 +1065,6 @@ export default function AssetsLibrary() {
                             <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 opacity-50 cursor-not-allowed" disabled title="Create a sheet first">
                               <RefreshCw className="h-3 w-3" />
                             </Button>
-                          )}
-                          {a.test_slide_url && (
-                            <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" title="Open Test Slide" className="hover:scale-110 transition-transform">🎞️</a>
                           )}
                         </div>
                       </TableCell>
