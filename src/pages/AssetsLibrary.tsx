@@ -1066,9 +1066,6 @@ export default function AssetsLibrary() {
                               <RefreshCw className="h-3 w-3" />
                             </Button>
                           )}
-                          {a.test_slide_url && (
-                            <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" title="Open Test Slide" className="hover:scale-110 transition-transform">🎞️</a>
-                          )}
                         </div>
                       </TableCell>
                     )}
