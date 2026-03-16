@@ -56,6 +56,7 @@ import NotFound from "./pages/NotFound";
 import ChapterComplete from "./pages/ChapterComplete";
 import TemplateManager from "./pages/TemplateManager";
 import DebugSession from "./pages/DebugSession";
+import BulkFixTool from "./pages/BulkFixTool";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
