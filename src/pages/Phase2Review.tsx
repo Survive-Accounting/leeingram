@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Phase2AllView } from "@/components/phase2/Phase2AllView";
 import { Phase2DebugNotesTab } from "@/components/phase2/Phase2DebugNotesTab";
 import { Phase2SpeedReviewPanel } from "@/components/phase2/Phase2SpeedReviewPanel";
+import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 import { InfoTip } from "@/components/InfoTip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
