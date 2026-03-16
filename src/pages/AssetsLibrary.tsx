@@ -662,11 +662,6 @@ export default function AssetsLibrary() {
                   <SelectValue placeholder={`Action for ${selectedIds.size} selected…`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {isAdmin && (
-                    <SelectItem value="add-to-set">
-                      <span className="flex items-center gap-1.5"><FolderPlus className="h-3 w-3" /> Add to Export Set</span>
-                    </SelectItem>
-                  )}
                   {!isSheetPrepVa && (
                     <SelectItem value="revert">
                       <span className="flex items-center gap-1.5"><Undo2 className="h-3 w-3" /> Revert to Generated</span>
@@ -674,21 +669,12 @@ export default function AssetsLibrary() {
                   )}
                   {isAdmin && (
                     <SelectItem value="create-master-sheet">
-                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Master Google Sheet</span>
+                      <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Whiteboard</span>
                     </SelectItem>
                   )}
                   {isAdmin && (
-                    <SelectItem value="create-practice-sheet" disabled={!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url)}>
-                      <span className={`flex items-center gap-1.5 ${!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url) ? "opacity-50" : ""}`}>
-                        <Sheet className="h-3 w-3" /> Create (Paid) Study Pass Sheet
-                      </span>
-                    </SelectItem>
-                  )}
-                  {isAdmin && (
-                    <SelectItem value="create-promo-sheet" disabled={!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url)}>
-                      <span className={`flex items-center gap-1.5 ${!assets?.filter(a => selectedIds.has(a.id)).every(a => a.sheet_master_url) ? "opacity-50" : ""}`}>
-                        <Sheet className="h-3 w-3" /> Create (Free) Promo Sheet
-                      </span>
+                    <SelectItem value="create-test-slide">
+                      <span className="flex items-center gap-1.5"><Film className="h-3 w-3" /> Create Filming Slides</span>
                     </SelectItem>
                   )}
                   {isSheetPrepVa && (
