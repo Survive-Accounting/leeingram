@@ -64,8 +64,10 @@ type TeachingAsset = {
   google_sheet_status?: string | null;
   test_slide_id?: string | null;
   test_slide_url?: string | null;
+  prep_doc_id?: string | null;
+  prep_doc_url?: string | null;
+  asset_approved_at?: string | null;
 };
-
 type JournalOption = "question" | "feedback" | "none";
 
 function escapeCSV(val: string): string {
