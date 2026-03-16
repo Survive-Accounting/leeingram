@@ -708,10 +708,17 @@ export default function AssetsLibrary() {
 
       {/* Tabs */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4 bg-muted/50 border border-border">
-          <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
-          {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
-        </TabsList>
+        <div className="flex items-center gap-3 mb-4">
+          <TabsList className="bg-muted/50 border border-border">
+            <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
+            {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
+          </TabsList>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => navigate("/bulk-fix-tool")}>
+              <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
+            </Button>
+          )}
+        </div>
 
         <TabsContent value="all">
       {/* Filters */}
