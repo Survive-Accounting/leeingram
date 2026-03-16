@@ -390,7 +390,7 @@ export default function BulkFixTool() {
                     max_output_tokens: 2000,
                   },
                 });
-                const after = aiResult?.content || original;
+                const after = aiResult?.raw || aiResult?.content || original;
                 if (after !== original) { newValues[f.key] = after; changed = true; }
               }
             }
