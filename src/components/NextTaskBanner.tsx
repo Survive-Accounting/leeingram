@@ -126,7 +126,7 @@ export function NextTaskBanner() {
                 {config.isPhase1Complete ? "Phase 1 Complete" : "This Task"}
               </p>
               {config.adminOnly && isVa && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1 text-[10px] text-foreground/60">
                   <Lock className="h-2.5 w-2.5" /> Instructor only
                 </span>
               )}
