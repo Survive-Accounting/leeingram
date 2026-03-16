@@ -661,6 +661,12 @@ Deno.serve(async (req) => {
 
     console.log(`Asset folder: ${assetFolderId} for ${assetCode}`);
 
+    // Archive previous prep doc if one exists
+    if (asset.prep_doc_id) {
+      console.log(`Archiving previous prep doc: ${asset.prep_doc_id}`);
+      await archivePreviousPrepDoc(token, assetFolderId, asset.prep_doc_id, assetCode);
+    }
+
     // Build JE data
     const jeEntries = normalizeJEFromJson(asset.journal_entry_completed_json);
     const jeRawText = jeToRawText(jeEntries);
