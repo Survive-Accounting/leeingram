@@ -4,7 +4,7 @@ import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
-  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard,
+  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -514,17 +514,30 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
             {/* Admin: VA Admin link — hide during impersonation */}
             {!isVa && !impersonating && !sidebarCollapsed && (
-              <Link
-                to="/va-admin"
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                  isActive("/va-admin")
-                    ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                    : "text-white/70 hover:text-white hover:bg-muted/30"
-                )}
-              >
-                <Users className="h-3.5 w-3.5" /> VA Admin
-              </Link>
+              <>
+                <Link
+                  to="/va-admin"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/va-admin")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <Users className="h-3.5 w-3.5" /> VA Admin
+                </Link>
+                <Link
+                  to="/bulk-fix-tool"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/bulk-fix-tool")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
+                </Link>
+              </>
             )}
           </div>
         </nav>

@@ -1,0 +1,740 @@
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { resolveEffectiveRole } from "@/lib/rolePermissions";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai";
+
+interface HistoryEntry {
+  label: string;
+  date: string;
+  count: number;
+  scope: string;
+  reverted: boolean;
+}
+
+const BATCH_SIZE = 10;
+
+// Fields that can be targeted by bulk fix
+const FIXABLE_FIELDS = [
+  { key: "problem_context", label: "Problem Context" },
+  { key: "survive_problem_text", label: "Problem Text" },
+  { key: "survive_solution_text", label: "Solution Text" },
+] as const;
+
+type FixableField = typeof FIXABLE_FIELDS[number]["key"];
+
+interface PreviewRow {
+  id: string;
+  asset_name: string;
+  field: string;
+  before: string;
+  after: string;
+}
+
+function getHistory(): HistoryEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem("bulk-fix-history") || "[]");
+  } catch { return []; }
+}
+
+function addHistory(entry: HistoryEntry) {
+  const h = getHistory();
+  h.unshift(entry);
+  localStorage.setItem("bulk-fix-history", JSON.stringify(h.slice(0, 50)));
+}
+
+export default function BulkFixTool() {
+  const navigate = useNavigate();
+  const { isVa, vaAccount } = useVaAccount();
+  const { impersonating } = useImpersonation();
+  const effectiveRole = resolveEffectiveRole(impersonating?.role, vaAccount?.role, isVa);
+
+  // Admin gate
+  useEffect(() => {
+    if (effectiveRole !== "admin") navigate("/dashboard", { replace: true });
+  }, [effectiveRole, navigate]);
+
+  // State
+  const [operation, setOperation] = useState<OperationType | "">("");
+  const [findText, setFindText] = useState("");
+  const [replaceText, setReplaceText] = useState("");
+  const [customInstruction, setCustomInstruction] = useState("");
+  const [selectedFields, setSelectedFields] = useState<FixableField[]>(["problem_context", "survive_problem_text"]);
+  const [courseFilter, setCourseFilter] = useState("all");
+  const [chapterFilter, setChapterFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("approved");
+
+  const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [totalMatched, setTotalMatched] = useState(0);
+  const [isAiPreview, setIsAiPreview] = useState(false);
+
+  const [running, setRunning] = useState(false);
+  const [runProgress, setRunProgress] = useState({ current: 0, total: 0 });
+  const [runComplete, setRunComplete] = useState<{ updated: number; skipped: number } | null>(null);
+
+  const [reverting, setReverting] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Queries
+  const { data: courses } = useQuery({
+    queryKey: ["courses-bulk"],
+    queryFn: async () => {
+      const { data } = await supabase.from("courses").select("id, course_name").order("created_at");
+      return data ?? [];
+    },
+  });
+
+  const { data: chapters } = useQuery({
+    queryKey: ["chapters-bulk", courseFilter],
+    queryFn: async () => {
+      let q = supabase.from("chapters").select("id, chapter_number, chapter_name, course_id").order("chapter_number");
+      if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
+      const { data } = await q;
+      return data ?? [];
+    },
+  });
+
+  // Count affected assets
+  const { data: estimatedCount } = useQuery({
+    queryKey: ["bulk-fix-count", courseFilter, chapterFilter, statusFilter],
+    queryFn: async () => {
+      let q = supabase.from("teaching_assets").select("id", { count: "exact", head: true });
+      if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
+      if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
+      if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
+      if (statusFilter === "core") q = q.not("core_rank", "is", null);
+      const { count } = await q;
+      return count ?? 0;
+    },
+  });
+
+  // Last operation info
+  const { data: lastOp, refetch: refetchLastOp } = useQuery({
+    queryKey: ["bulk-fix-last-op"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("id, last_bulk_fix_at, last_bulk_fix_label")
+        .not("last_bulk_fix_at", "is", null)
+        .order("last_bulk_fix_at", { ascending: false })
+        .limit(1);
+      if (!data?.length) return null;
+      const { count } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("last_bulk_fix_label", data[0].last_bulk_fix_label as string)
+        .not("last_bulk_fix_at", "is", null);
+      return { label: data[0].last_bulk_fix_label, date: data[0].last_bulk_fix_at, count: count ?? 0 };
+    },
+  });
+
+  const operationLabel = useMemo(() => {
+    if (operation === "fix_entity_naming") return "Fix Entity Naming (Counterparty → Company A/B)";
+    if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
+    if (operation === "custom_ai") return "Custom AI Rewrite";
+    return "";
+  }, [operation, findText, replaceText]);
+
+  // Build the scope query
+  function buildScopeQuery() {
+    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text");
+    if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
+    if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
+    if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
+    if (statusFilter === "core") q = q.not("core_rank", "is", null);
+    return q;
+  }
+
+  function simpleReplace(text: string): string {
+    if (!findText) return text;
+    return text.split(findText).join(replaceText);
+  }
+
+  function entityNamingReplace(text: string): string {
+    // Replace "Survive Counterparty" with "Survive Company B"
+    let result = text.replace(/Survive\s+Counterparty/gi, "Survive Company B");
+    // Replace standalone "Counterparty" (not already preceded by "Survive")
+    result = result.replace(/(?<!Survive\s+)Counterparty/gi, "Survive Company B");
+    // Replace "the other company" / "the second party" 
+    result = result.replace(/the other company/gi, "Survive Company B");
+    result = result.replace(/the second party/gi, "Survive Company B");
+    return result;
+  }
+
+  // Preview
+  async function runPreview() {
+    if (!operation) return;
+    setPreviewLoading(true);
+    setPreviewRows(null);
+    setRunComplete(null);
+
+    try {
+      if (operation === "find_replace_simple" || operation === "fix_entity_naming") {
+        const { data: assets, error } = await buildScopeQuery();
+        if (error) throw error;
+
+        const rows: PreviewRow[] = [];
+        const replaceFn = operation === "fix_entity_naming" ? entityNamingReplace : simpleReplace;
+
+        for (const asset of assets ?? []) {
+          for (const f of FIXABLE_FIELDS) {
+            if (operation === "find_replace_simple" && !selectedFields.includes(f.key)) continue;
+            const original = (asset as any)[f.key] || "";
+            const replaced = replaceFn(original);
+            if (replaced !== original) {
+              rows.push({
+                id: asset.id,
+                asset_name: asset.asset_name,
+                field: f.label,
+                before: original.slice(0, 200),
+                after: replaced.slice(0, 200),
+              });
+            }
+          }
+        }
+
+        setTotalMatched(new Set(rows.map(r => r.id)).size);
+        setPreviewRows(rows);
+        setIsAiPreview(false);
+      } else if (operation === "custom_ai") {
+        // AI preview: sample 3
+        const { data: assets, error } = await buildScopeQuery().limit(3);
+        if (error) throw error;
+        setTotalMatched(estimatedCount ?? 0);
+
+        const rows: PreviewRow[] = [];
+        for (const asset of assets ?? []) {
+          for (const f of FIXABLE_FIELDS) {
+            if (!selectedFields.includes(f.key)) continue;
+            const original = (asset as any)[f.key] || "";
+            if (!original.trim()) continue;
+
+            // Call AI for rewrite
+            const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
+              body: {
+                provider: "lovable",
+                model: "google/gemini-2.5-flash",
+                messages: [
+                  { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+                  { role: "user", content: `Instruction: ${customInstruction}\n\nText to modify:\n${original}` },
+                ],
+                temperature: 0.1,
+                max_output_tokens: 2000,
+              },
+            });
+            if (aiError) throw aiError;
+            const after = aiResult?.content || original;
+            if (after !== original) {
+              rows.push({ id: asset.id, asset_name: asset.asset_name, field: f.label, before: original.slice(0, 200), after: after.slice(0, 200) });
+            }
+          }
+        }
+
+        setPreviewRows(rows);
+        setIsAiPreview(true);
+      }
+    } catch (e: any) {
+      toast.error("Preview failed: " + e.message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  // Run the actual operation
+  async function runOperation() {
+    if (!operation) return;
+
+    // Check if there's an existing backup — warn
+    if (lastOp) {
+      const confirmed = window.confirm(
+        "Running this will overwrite your existing backup. Make sure you don't need to revert the previous operation first. Continue?"
+      );
+      if (!confirmed) return;
+    }
+
+    setRunning(true);
+    setRunComplete(null);
+
+    try {
+      // Fetch all assets in scope
+      const { data: assets, error } = await buildScopeQuery();
+      if (error) throw error;
+      if (!assets?.length) { toast.info("No assets in scope."); setRunning(false); return; }
+
+      const total = assets.length;
+      setRunProgress({ current: 0, total });
+      let updated = 0;
+      let skipped = 0;
+
+      // Process in batches
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        const batch = assets.slice(i, i + BATCH_SIZE);
+        const updates: Promise<void>[] = [];
+
+        for (const asset of batch) {
+          updates.push((async () => {
+            // 1. Backup current values
+            const backupUpdate: Record<string, any> = {
+              problem_context_backup: (asset as any).problem_context || "",
+              problem_text_backup: (asset as any).survive_problem_text || "",
+              // problem_text_ht_backup and others go here if fields exist
+              last_bulk_fix_at: new Date().toISOString(),
+              last_bulk_fix_label: operationLabel,
+            };
+
+            // 2. Compute new values
+            const newValues: Record<string, any> = {};
+            let changed = false;
+
+            if (operation === "find_replace_simple") {
+              for (const f of FIXABLE_FIELDS) {
+                if (!selectedFields.includes(f.key)) continue;
+                const original = (asset as any)[f.key] || "";
+                const replaced = simpleReplace(original);
+                if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
+              }
+            } else if (operation === "fix_entity_naming") {
+              for (const f of FIXABLE_FIELDS) {
+                const original = (asset as any)[f.key] || "";
+                const replaced = entityNamingReplace(original);
+                if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
+              }
+            } else if (operation === "custom_ai") {
+              for (const f of FIXABLE_FIELDS) {
+                if (!selectedFields.includes(f.key)) continue;
+                const original = (asset as any)[f.key] || "";
+                if (!original.trim()) continue;
+                const { data: aiResult } = await supabase.functions.invoke("generate-ai-output", {
+                  body: {
+                    provider: "lovable",
+                    model: "google/gemini-2.5-flash",
+                    messages: [
+                      { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+                      { role: "user", content: `Instruction: ${customInstruction}\n\nText to modify:\n${original}` },
+                    ],
+                    temperature: 0.1,
+                    max_output_tokens: 2000,
+                  },
+                });
+                const after = aiResult?.content || original;
+                if (after !== original) { newValues[f.key] = after; changed = true; }
+              }
+            }
+
+            if (changed) {
+              await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
+              updated++;
+            } else {
+              skipped++;
+            }
+          })());
+        }
+
+        await Promise.all(updates);
+        setRunProgress({ current: Math.min(i + BATCH_SIZE, total), total });
+      }
+
+      setRunComplete({ updated, skipped });
+      addHistory({
+        label: operationLabel,
+        date: new Date().toISOString(),
+        count: updated,
+        scope: `${courseFilter === "all" ? "All courses" : "Filtered course"} / ${chapterFilter === "all" ? "All chapters" : "Filtered chapter"}`,
+        reverted: false,
+      });
+      refetchLastOp();
+      toast.success(`Bulk fix complete: ${updated} updated, ${skipped} skipped.`);
+    } catch (e: any) {
+      toast.error("Bulk fix failed: " + e.message);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  // Revert
+  async function runRevert() {
+    if (!lastOp) return;
+    const confirmed = window.confirm(
+      "Revert is a one-time option. After reverting, the backup will be cleared. Continue?"
+    );
+    if (!confirmed) return;
+
+    setReverting(true);
+    try {
+      // Find all assets with this label
+      const { data: assets, error } = await supabase
+        .from("teaching_assets")
+        .select("id, problem_context_backup, problem_text_backup")
+        .eq("last_bulk_fix_label", lastOp.label as string)
+        .not("last_bulk_fix_at", "is", null);
+      if (error) throw error;
+
+      let reverted = 0;
+      for (let i = 0; i < (assets?.length ?? 0); i += BATCH_SIZE) {
+        const batch = assets!.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(async (asset) => {
+          const revertUpdate: Record<string, any> = {
+            last_bulk_fix_at: null,
+            last_bulk_fix_label: null,
+            problem_context_backup: null,
+            problem_text_backup: null,
+            problem_text_ht_backup: null,
+            answer_summary_backup: null,
+            worked_steps_backup: null,
+          };
+          if ((asset as any).problem_context_backup != null) revertUpdate.problem_context = (asset as any).problem_context_backup;
+          if ((asset as any).problem_text_backup != null) revertUpdate.survive_problem_text = (asset as any).problem_text_backup;
+          await supabase.from("teaching_assets").update(revertUpdate).eq("id", asset.id);
+          reverted++;
+        }));
+      }
+
+      // Update history
+      const h = getHistory();
+      const entry = h.find(e => e.label === lastOp.label && !e.reverted);
+      if (entry) entry.reverted = true;
+      localStorage.setItem("bulk-fix-history", JSON.stringify(h));
+
+      refetchLastOp();
+      toast.success(`Reverted ${reverted} assets to previous text.`);
+    } catch (e: any) {
+      toast.error("Revert failed: " + e.message);
+    } finally {
+      setReverting(false);
+    }
+  }
+
+  function toggleField(field: FixableField) {
+    setSelectedFields(prev =>
+      prev.includes(field) ? prev.filter(f => f !== field) : [...prev, field]
+    );
+  }
+
+  const history = getHistory();
+
+  if (effectiveRole !== "admin") return null;
+
+  return (
+    <SurviveSidebarLayout>
+      <div className="space-y-6 max-w-5xl">
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Wrench className="h-5 w-5" /> Bulk Fix Tool
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Make targeted text fixes across teaching assets with preview and full revert.
+          </p>
+        </div>
+
+        {/* Warning */}
+        <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+          <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-200">
+            This tool modifies teaching asset content directly. Always preview before running. Every operation is fully reversible.
+          </p>
+        </div>
+
+        {/* Section 1: Operation Selector */}
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Select Fix Operation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select value={operation} onValueChange={(v) => { setOperation(v as OperationType); setPreviewRows(null); setRunComplete(null); }}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose an operation…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fix_entity_naming">Fix Entity Naming (Counterparty → Company A/B)</SelectItem>
+                <SelectItem value="find_replace_simple">Simple Find &amp; Replace</SelectItem>
+                <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {operation === "fix_entity_naming" && (
+              <p className="text-xs text-muted-foreground">
+                Replaces "Survive Counterparty" with "Survive Company B" and removes vague terms like "the other company" or "the second party". Applies to all text fields.
+              </p>
+            )}
+
+            {operation === "find_replace_simple" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Find</Label>
+                  <Input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Text to find…" />
+                </div>
+                <div>
+                  <Label className="text-xs">Replace With</Label>
+                  <Input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replacement text…" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs mb-2 block">Target Fields</Label>
+                  <div className="flex gap-4">
+                    {FIXABLE_FIELDS.map(f => (
+                      <label key={f.key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
+                        {f.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {operation === "custom_ai" && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">AI Instruction</Label>
+                  <Textarea
+                    value={customInstruction}
+                    onChange={e => setCustomInstruction(e.target.value)}
+                    placeholder="e.g. Add role hints in parentheses after each company name…"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs mb-2 block">Target Fields</Label>
+                  <div className="flex gap-4">
+                    {FIXABLE_FIELDS.map(f => (
+                      <label key={f.key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
+                        {f.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Section 2: Scope */}
+        {operation && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Scope</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Course</Label>
+                  <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Courses</SelectItem>
+                      {courses?.map(c => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Chapter</Label>
+                  <Select value={chapterFilter} onValueChange={setChapterFilter}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Chapters</SelectItem>
+                      {chapters?.map(c => <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Status Filter</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="approved">Approved Assets</SelectItem>
+                      <SelectItem value="core">Core Assets Only</SelectItem>
+                      <SelectItem value="all">All Assets</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="mt-3">
+                <Badge variant="secondary" className="text-xs">
+                  Estimated: {estimatedCount ?? "…"} assets in scope
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Section 3: Preview */}
+        {operation && (
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              onClick={runPreview}
+              disabled={previewLoading || running || (operation === "find_replace_simple" && !findText)}
+            >
+              {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+              Preview Changes
+            </Button>
+
+            {previewRows !== null && (
+              <Card className="bg-card border-border">
+                <CardContent className="pt-4">
+                  {previewRows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No matching assets found. Nothing would change.</p>
+                  ) : (
+                    <>
+                      {isAiPreview && (
+                        <p className="text-xs text-amber-300 mb-3">
+                          Showing {previewRows.length} field changes from 3 sample assets of {totalMatched} total. Review carefully before running on all assets.
+                        </p>
+                      )}
+                      {!isAiPreview && (
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {totalMatched} assets would be affected
+                        </p>
+                      )}
+                      <div className="max-h-96 overflow-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-xs w-36">Asset</TableHead>
+                              <TableHead className="text-xs w-28">Field</TableHead>
+                              <TableHead className="text-xs">Before</TableHead>
+                              <TableHead className="text-xs">After</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {previewRows.map((row, i) => (
+                              <TableRow key={`${row.id}-${row.field}-${i}`}>
+                                <TableCell className="text-xs font-mono">{row.asset_name.slice(0, 25)}</TableCell>
+                                <TableCell className="text-xs">{row.field}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground max-w-48 truncate">{row.before}</TableCell>
+                                <TableCell className="text-xs text-emerald-400 max-w-48 truncate">{row.after}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      <div className="flex gap-2 mt-4">
+                        <Button onClick={runOperation} disabled={running}>
+                          <Play className="h-4 w-4 mr-2" />
+                          Looks good — run on all {isAiPreview ? totalMatched : totalMatched} assets
+                        </Button>
+                        <Button variant="outline" onClick={() => setPreviewRows(null)}>Cancel</Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Section 4: Progress */}
+        {running && (
+          <Card className="bg-card border-border">
+            <CardContent className="pt-4 space-y-2">
+              <p className="text-sm text-foreground">
+                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                Fixing asset {runProgress.current} of {runProgress.total}…
+              </p>
+              <Progress value={(runProgress.current / Math.max(runProgress.total, 1)) * 100} className="h-2" />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Section 4: Completion */}
+        {runComplete && (
+          <Card className="bg-card border-border border-emerald-500/30">
+            <CardContent className="pt-4">
+              <p className="text-sm text-emerald-400">
+                Fix complete. {runComplete.updated} assets updated, {runComplete.skipped} skipped (no match found).
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Section 5: Revert */}
+        {lastOp && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Undo2 className="h-4 w-4" /> Revert Last Operation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Last operation: <span className="text-foreground font-medium">{lastOp.label}</span> — ran{" "}
+                {lastOp.date ? format(new Date(lastOp.date as string), "MMM d, yyyy h:mm a") : "unknown"} on {lastOp.count} assets
+              </p>
+              <p className="text-xs text-amber-300">
+                Revert is a one-time option. After reverting, the backup will be cleared.
+              </p>
+              <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10" onClick={runRevert} disabled={reverting}>
+                {reverting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Undo2 className="h-4 w-4 mr-2" />}
+                Revert This Operation
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Section 6: History */}
+        <Collapsible open={historyOpen} onOpenChange={setHistoryOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+              <History className="h-4 w-4" /> History
+              <ChevronDown className={`h-3 w-3 transition-transform ${historyOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            {history.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No operations run yet.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Operation</TableHead>
+                    <TableHead className="text-xs">Date</TableHead>
+                    <TableHead className="text-xs">Assets</TableHead>
+                    <TableHead className="text-xs">Scope</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((h, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-xs">{h.label}</TableCell>
+                      <TableCell className="text-xs">{format(new Date(h.date), "MMM d, h:mm a")}</TableCell>
+                      <TableCell className="text-xs">{h.count}</TableCell>
+                      <TableCell className="text-xs">{h.scope}</TableCell>
+                      <TableCell>
+                        <Badge variant={h.reverted ? "outline" : "secondary"} className="text-[10px]">
+                          {h.reverted ? "Reverted" : "Applied"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+    </SurviveSidebarLayout>
+  );
+}

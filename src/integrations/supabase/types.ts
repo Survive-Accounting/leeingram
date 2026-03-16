@@ -2548,6 +2548,7 @@ export type Database = {
       teaching_assets: {
         Row: {
           admin_notes: Json
+          answer_summary_backup: string | null
           asset_approved_at: string | null
           asset_name: string
           asset_type: Database["public"]["Enums"]["asset_type"]
@@ -2579,6 +2580,8 @@ export type Database = {
           journal_entry_block: string | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
+          last_bulk_fix_at: string | null
+          last_bulk_fix_label: string | null
           last_tutored_at: string | null
           lw_ebook_url: string | null
           lw_import_status: string
@@ -2589,6 +2592,9 @@ export type Database = {
           phase2_entered_at: string | null
           phase2_status: string | null
           problem_context: string | null
+          problem_context_backup: string | null
+          problem_text_backup: string | null
+          problem_text_ht_backup: string | null
           problem_type: string | null
           qa_status: string
           sheet_last_synced_at: string | null
@@ -2616,9 +2622,11 @@ export type Database = {
           video_production_status: string
           video_ready_at: string | null
           whiteboard_status: string
+          worked_steps_backup: string | null
         }
         Insert: {
           admin_notes?: Json
+          answer_summary_backup?: string | null
           asset_approved_at?: string | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["asset_type"]
@@ -2650,6 +2658,8 @@ export type Database = {
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
+          last_bulk_fix_at?: string | null
+          last_bulk_fix_label?: string | null
           last_tutored_at?: string | null
           lw_ebook_url?: string | null
           lw_import_status?: string
@@ -2660,6 +2670,9 @@ export type Database = {
           phase2_entered_at?: string | null
           phase2_status?: string | null
           problem_context?: string | null
+          problem_context_backup?: string | null
+          problem_text_backup?: string | null
+          problem_text_ht_backup?: string | null
           problem_type?: string | null
           qa_status?: string
           sheet_last_synced_at?: string | null
@@ -2687,9 +2700,11 @@ export type Database = {
           video_production_status?: string
           video_ready_at?: string | null
           whiteboard_status?: string
+          worked_steps_backup?: string | null
         }
         Update: {
           admin_notes?: Json
+          answer_summary_backup?: string | null
           asset_approved_at?: string | null
           asset_name?: string
           asset_type?: Database["public"]["Enums"]["asset_type"]
@@ -2721,6 +2736,8 @@ export type Database = {
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
+          last_bulk_fix_at?: string | null
+          last_bulk_fix_label?: string | null
           last_tutored_at?: string | null
           lw_ebook_url?: string | null
           lw_import_status?: string
@@ -2731,6 +2748,9 @@ export type Database = {
           phase2_entered_at?: string | null
           phase2_status?: string | null
           problem_context?: string | null
+          problem_context_backup?: string | null
+          problem_text_backup?: string | null
+          problem_text_ht_backup?: string | null
           problem_type?: string | null
           qa_status?: string
           sheet_last_synced_at?: string | null
@@ -2758,6 +2778,7 @@ export type Database = {
           video_production_status?: string
           video_ready_at?: string | null
           whiteboard_status?: string
+          worked_steps_backup?: string | null
         }
         Relationships: [
           {
