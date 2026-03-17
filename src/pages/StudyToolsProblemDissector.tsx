@@ -40,7 +40,7 @@ export default function StudyToolsProblemDissector() {
         .select("id, asset_code, asset_name, rank")
         .eq("chapter_id", chapterId!)
         .eq("status", "approved")
-        .order("asset_code");
+        .order("asset_code") as any;
       if (aErr) throw aErr;
 
       if (!assets || assets.length === 0) return [];
