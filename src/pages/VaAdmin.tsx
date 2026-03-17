@@ -347,28 +347,17 @@ export default function VaAdmin() {
         </DialogContent>
       </Dialog>
 
-      {/* Assign Chapter Dialog */}
+      {/* Assign Chapters Dialog */}
       <Dialog open={!!assignOpen} onOpenChange={(o) => !o && setAssignOpen(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Assign Chapter</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Assign Chapters</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs">Course</Label>
-              <Select value={assignCourseId} onValueChange={(v) => { setAssignCourseId(v); setAssignChapterId(""); }}>
+              <Select value={assignCourseId} onValueChange={(v) => { setAssignCourseId(v); setAssignChapterIds([]); }}>
                 <SelectTrigger className="text-sm"><SelectValue placeholder="Select course…" /></SelectTrigger>
                 <SelectContent>
                   {courses?.map((c) => <SelectItem key={c.id} value={c.id}>{c.course_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Chapter</Label>
-              <Select value={assignChapterId} onValueChange={setAssignChapterId} disabled={!assignCourseId}>
-                <SelectTrigger className="text-sm"><SelectValue placeholder="Select chapter…" /></SelectTrigger>
-                <SelectContent>
-                  {filteredChapters.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</SelectItem>
-                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -383,12 +372,66 @@ export default function VaAdmin() {
                 </SelectContent>
               </Select>
             </div>
+            {assignCourseId && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Chapters</Label>
+                  {(() => {
+                    const available = filteredChapters.filter(c => !alreadyAssignedIds.has(c.id));
+                    const allSelected = available.length > 0 && available.every(c => assignChapterIds.includes(c.id));
+                    return (
+                      <button
+                        type="button"
+                        className="text-[10px] text-primary hover:text-primary/80"
+                        onClick={() => setAssignChapterIds(allSelected ? [] : available.map(c => c.id))}
+                      >
+                        {allSelected ? "Deselect All" : "Select All"}
+                      </button>
+                    );
+                  })()}
+                </div>
+                <div className="border border-border rounded-md max-h-48 overflow-y-auto">
+                  {filteredChapters.map((c) => {
+                    const already = alreadyAssignedIds.has(c.id);
+                    const checked = assignChapterIds.includes(c.id);
+                    return (
+                      <label
+                        key={c.id}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-secondary/50",
+                          already && "opacity-40 cursor-not-allowed"
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked || already}
+                          disabled={already}
+                          onCheckedChange={(v) => {
+                            setAssignChapterIds(prev =>
+                              v ? [...prev, c.id] : prev.filter(id => id !== c.id)
+                            );
+                          }}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span>Ch {c.chapter_number} — {c.chapter_name}</span>
+                        {already && <span className="text-muted-foreground ml-auto">(assigned)</span>}
+                      </label>
+                    );
+                  })}
+                  {filteredChapters.length === 0 && (
+                    <p className="text-xs text-muted-foreground p-3">No chapters in this course.</p>
+                  )}
+                </div>
+                {assignChapterIds.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">{assignChapterIds.length} selected</p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignOpen(null)}>Cancel</Button>
-            <Button onClick={() => addAssignment.mutate()} disabled={!assignCourseId || !assignChapterId || addAssignment.isPending}>
+            <Button onClick={() => addAssignment.mutate()} disabled={!assignCourseId || assignChapterIds.length === 0 || addAssignment.isPending}>
               {addAssignment.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-              Assign
+              Assign {assignChapterIds.length > 0 ? `(${assignChapterIds.length})` : ""}
             </Button>
           </DialogFooter>
         </DialogContent>
