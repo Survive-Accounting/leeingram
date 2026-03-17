@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.create-prep-doc]
 verify_jwt = false
+
+[functions.process-prep-doc-queue]
+verify_jwt = false
