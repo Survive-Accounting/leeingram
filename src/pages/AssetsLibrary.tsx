@@ -337,7 +337,7 @@ export default function AssetsLibrary() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
-  const [bulkPrepDocProgress, setBulkPrepDocProgress] = useState<{ current: number; total: number } | null>(null);
+  const [bulkPrepDocProgress, setBulkPrepDocProgress] = useState<{ current: number; total: number; batchId?: string } | null>(null);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
@@ -1391,7 +1391,7 @@ export default function AssetsLibrary() {
           <DialogHeader>
             <DialogTitle>Generate All Prep Docs</DialogTitle>
             <DialogDescription>
-              Generate prep docs for all {assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at).length ?? 0} approved assets in this chapter that don't have one yet? This may take a few minutes.
+              Generate prep docs for all {assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at).length ?? 0} approved assets in this chapter that don't have one yet? This runs server-side — you can close your phone and it'll keep going.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1400,24 +1400,44 @@ export default function AssetsLibrary() {
               setBulkPrepDocOpen(false);
               const eligible = assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
               if (!eligible.length) { toast.info("All assets already have prep docs"); return; }
-              let created = 0;
-              setBulkPrepDocProgress({ current: 0, total: eligible.length });
-              for (let i = 0; i < eligible.length; i++) {
-                setBulkPrepDocProgress({ current: i + 1, total: eligible.length });
-                try {
-                  const { data, error } = await supabase.functions.invoke("create-prep-doc", { body: { teaching_asset_id: eligible[i].id } });
-                  if (error) throw error;
-                  if (data?.error) throw new Error(data.error);
-                  created++;
-                } catch (err: any) {
-                  console.error(`Prep doc failed for ${eligible[i].asset_name}:`, err.message);
+
+              // Generate a shared batch_id
+              const batchId = crypto.randomUUID();
+              const rows = eligible.map(a => ({
+                batch_id: batchId,
+                teaching_asset_id: a.id,
+                status: "queued",
+              }));
+
+              const { error: insertErr } = await supabase.from("prep_doc_queue" as any).insert(rows);
+              if (insertErr) { toast.error("Failed to enqueue: " + insertErr.message); return; }
+
+              toast.success(`Queued ${eligible.length} prep docs — processing server-side`);
+              setBulkPrepDocProgress({ current: 0, total: eligible.length, batchId });
+
+              // Start the first processing invocation
+              supabase.functions.invoke("process-prep-doc-queue").catch(() => {});
+
+              // Poll for progress
+              const pollInterval = setInterval(async () => {
+                const { data: queueItems } = await supabase
+                  .from("prep_doc_queue" as any)
+                  .select("status")
+                  .eq("batch_id", batchId);
+                if (!queueItems) return;
+                const done = queueItems.filter((i: any) => i.status === "done" || i.status === "failed").length;
+                setBulkPrepDocProgress(prev => prev ? { ...prev, current: done } : null);
+                if (done >= eligible.length) {
+                  clearInterval(pollInterval);
+                  const failed = queueItems.filter((i: any) => i.status === "failed").length;
+                  const succeeded = done - failed;
+                  setBulkPrepDocProgress(null);
+                  toast.success(`Done — ${succeeded} prep docs created${failed > 0 ? `, ${failed} failed` : ""}`);
+                  qc.invalidateQueries({ queryKey: ["teaching-assets"] });
                 }
-              }
-              setBulkPrepDocProgress(null);
-              toast.success(`Done — ${created} prep docs created`);
-              qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+              }, 5000);
             }}>
-              Generate
+              Generate (Server-Side)
             </Button>
           </DialogFooter>
         </DialogContent>

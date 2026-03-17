@@ -2062,6 +2062,39 @@ export type Database = {
           },
         ]
       }
+      prep_doc_queue: {
+        Row: {
+          batch_id: string
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          started_at: string | null
+          status: string
+          teaching_asset_id: string
+        }
+        Insert: {
+          batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          teaching_asset_id: string
+        }
+        Update: {
+          batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          teaching_asset_id?: string
+        }
+        Relationships: []
+      }
       problem_assets: {
         Row: {
           asset_type: string
