@@ -110,12 +110,38 @@ serve(async (req) => {
 
 async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nextItem: any, run: any): Promise<string> {
   const itemStart = Date.now();
+  const isRetry = nextItem.attempts > 0;
+
+  // ── Soft-reset on retry: clear orphan variants and stale source problem state ──
+  if (isRetry) {
+    // Delete any orphan variants from the previous failed attempt
+    const { data: orphanVariants } = await sb.from("problem_variants")
+      .select("id")
+      .eq("base_problem_id", nextItem.source_problem_id)
+      .eq("variant_status", "draft");
+
+    if (orphanVariants && orphanVariants.length > 0) {
+      const orphanIds = orphanVariants.map((v: any) => v.id);
+      await sb.from("problem_variants").delete().in("id", orphanIds);
+      console.log(`[soft-reset] Cleared ${orphanIds.length} orphan variant(s) for source ${nextItem.source_problem_id}`);
+    }
+
+    // Reset source problem back to 'ready' if it was left in 'generated' by a partial failure
+    await sb.from("chapter_problems").update({
+      status: "ready",
+      pipeline_status: "imported",
+    }).eq("id", nextItem.source_problem_id)
+      .in("status", ["generated"]);
+
+    console.log(`[soft-reset] Reset source problem ${nextItem.source_problem_id} state for retry attempt ${nextItem.attempts + 1}`);
+  }
 
   // Mark item as generating
   await sb.from("chapter_batch_run_items").update({
     status: "generating",
     started_at: new Date().toISOString(),
     attempts: nextItem.attempts + 1,
+    last_error: null,  // Clear previous error on new attempt
     updated_at: new Date().toISOString(),
   }).eq("id", nextItem.id);
 
