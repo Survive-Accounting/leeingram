@@ -937,9 +937,7 @@ export default function AssetDetailDrawer({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   <div className="rounded-lg border border-border bg-background p-4">
-                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                      {asset.survive_solution_text}
-                    </p>
+                    <SmartTextRenderer text={asset.survive_solution_text} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
