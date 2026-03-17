@@ -317,7 +317,152 @@ function insertTable(b: RequestBuilder, rows: number, cols: number): number {
   return tableStart;
 }
 
-// ── Main doc content builder ─────────────────────────────────────────
+// ── Pipe-delimited table detection & rendering ───────────────────────
+
+interface PipeSegment {
+  type: "text" | "table";
+  content: string;
+  rows?: string[][];
+}
+
+function parsePipeSegments(text: string): PipeSegment[] {
+  const lines = text.split("\n");
+  const segments: PipeSegment[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    if (i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|")) {
+      const start = i;
+      while (i < lines.length && lines[i].includes("|")) i++;
+      const block = lines.slice(start, i).join("\n");
+      const rows = block.split("\n").filter((l: string) => l.trim()).map((line: string) => {
+        const cells = line.split("|").map((c: string) => c.trim());
+        // Remove empty leading/trailing from outer pipes
+        if (cells.length > 0 && cells[0] === "") cells.shift();
+        if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
+        return cells;
+      });
+      // Filter separator rows
+      const dataRows = rows.filter((row: string[]) => !row.every((c: string) => /^[-:]+$/.test(c)));
+      if (dataRows.length >= 2) {
+        segments.push({ type: "table", content: block, rows: dataRows });
+      } else {
+        segments.push({ type: "text", content: block });
+      }
+    } else {
+      const start = i;
+      while (i < lines.length && !(i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|"))) i++;
+      const block = lines.slice(start, i).join("\n");
+      if (block.trim()) segments.push({ type: "text", content: block });
+    }
+  }
+  return segments;
+}
+
+function isNumericCell(cell: string): boolean {
+  return /^\$?[\d,]+(\.\d+)?%?$/.test(cell.trim());
+}
+
+function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
+  const [header, ...body] = rows;
+  const numRows = rows.length;
+  const numCols = header.length;
+
+  const tableStartIdx = insertTable(b, numRows, numCols);
+
+  // Now fill cells. After insertTable, the index is at the end.
+  // We need to go back and fill cells. The cells are at known positions.
+  // Cell[r][c] paragraph starts at: tableStart + 1 + r*(1 + numCols*3) + 1 + c*3 + 1
+  // = tableStart + 2 + r*(1 + 3*numCols) + 3*c + 1
+  // Actually: tableStart + 1 (table element), then each row: +1 (row element), each cell: +1 (cell) +1 (paragraph) +1 (newline char)
+  // Cell[r][c] newline char is at: tableStart + 1 + r*(1 + 3*numCols) + 1 + 3*c + 2
+  // We insert text BEFORE the newline at: tableStart + 1 + r*(1 + 3*numCols) + 1 + 3*c + 1
+
+  // We'll build insert requests in reverse order (bottom-right to top-left) to avoid index shifting
+  const cellRequests: any[] = [];
+
+  for (let r = numRows - 1; r >= 0; r--) {
+    const row = rows[r];
+    for (let c = Math.min(row.length, numCols) - 1; c >= 0; c--) {
+      const cellText = row[c] || "";
+      if (!cellText) continue;
+      const cellParaIdx = tableStartIdx + 1 + r * (1 + 3 * numCols) + 1 + 3 * c + 1;
+
+      // Insert text at cell paragraph index
+      cellRequests.push({ insertText: { location: { index: cellParaIdx }, text: cellText } });
+
+      // Style text
+      const isHeader = r === 0;
+      const tStyle: any = {
+        fontSize: { magnitude: 11, unit: "PT" },
+        bold: isHeader,
+      };
+      const tFields = ["fontSize", "bold"];
+      if (isHeader) {
+        tStyle.foregroundColor = { color: { rgbColor: WHITE } };
+        tFields.push("foregroundColor");
+      }
+      cellRequests.push({
+        updateTextStyle: {
+          range: { startIndex: cellParaIdx, endIndex: cellParaIdx + cellText.length },
+          textStyle: tStyle,
+          fields: tFields.join(","),
+        },
+      });
+
+      // Right-align numeric cells
+      if (!isHeader && isNumericCell(cellText)) {
+        cellRequests.push({
+          updateParagraphStyle: {
+            range: { startIndex: cellParaIdx, endIndex: cellParaIdx + cellText.length + 1 },
+            paragraphStyle: { alignment: "END" },
+            fields: "alignment",
+          },
+        });
+      }
+    }
+  }
+
+  // Add all cell content requests
+  b.requests.push(...cellRequests);
+
+  // Style header row background
+  b.requests.push({
+    updateTableCellStyle: {
+      tableStartLocation: { index: tableStartIdx },
+      tableRange: { tableCellLocation: { tableStartLocation: { index: tableStartIdx }, rowIndex: 0, columnIndex: 0 }, rowSpan: 1, columnSpan: numCols },
+      tableCellStyle: { backgroundColor: { color: { rgbColor: NAVY } } },
+      fields: "backgroundColor",
+    },
+  });
+
+  // Style alternating body rows
+  for (let r = 1; r < numRows; r++) {
+    if (r % 2 === 0) {
+      b.requests.push({
+        updateTableCellStyle: {
+          tableStartLocation: { index: tableStartIdx },
+          tableRange: { tableCellLocation: { tableStartLocation: { index: tableStartIdx }, rowIndex: r, columnIndex: 0 }, rowSpan: 1, columnSpan: numCols },
+          tableCellStyle: { backgroundColor: { color: { rgbColor: ALT_ROW } } },
+          fields: "backgroundColor",
+        },
+      });
+    }
+  }
+
+  insertText(b, "\n");
+}
+
+function insertTextWithPipeTables(b: RequestBuilder, text: string, textOpts: any = {}) {
+  const segments = parsePipeSegments(text);
+  for (const seg of segments) {
+    if (seg.type === "table" && seg.rows && seg.rows.length >= 2) {
+      buildPipeTableInDoc(b, seg.rows);
+    } else {
+      insertStyledText(b, seg.content + "\n", textOpts);
+    }
+  }
+}
 
 function buildDocRequests(
   asset: any, course: any, chapter: any, problemInstructions: any[], jeEntries: any[], jeRawText: string
