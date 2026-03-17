@@ -346,10 +346,20 @@ export default function AssetsLibrary() {
     queryFn: async () => {
       const { data } = await supabase
         .from("chapter_problems")
-        .select("pipeline_status")
+        .select("pipeline_status, combined_group_id")
         .eq("chapter_id", chapterFilter);
       const total = data?.length ?? 0;
-      const approved = data?.filter(p => p.pipeline_status === "approved").length ?? 0;
+      // Build set of approved combined groups so secondaries inherit approval
+      const approvedGroupIds = new Set<string>();
+      data?.forEach(p => {
+        if (p.combined_group_id && p.pipeline_status === "approved") {
+          approvedGroupIds.add(p.combined_group_id as string);
+        }
+      });
+      const approved = data?.filter(p =>
+        p.pipeline_status === "approved" ||
+        (p.combined_group_id && approvedGroupIds.has(p.combined_group_id as string))
+      ).length ?? 0;
       return { total, approved };
     },
     enabled: chapterFilter !== "all",
