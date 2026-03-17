@@ -122,7 +122,7 @@ export default function Phase2Review() {
     // Push undo entry
     setUndoStack(prev => [...prev.slice(-9), {
       assetId: current.id,
-      assetName: current.asset_name,
+      assetName: current.asset_name ?? "Untitled asset",
       previousStatus: current.phase2_status ?? null,
       previousRank: current.core_rank ?? null,
       newStatus: phase2_status,

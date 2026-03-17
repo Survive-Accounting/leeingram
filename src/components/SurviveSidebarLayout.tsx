@@ -17,6 +17,7 @@ import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { DualClock } from "@/components/DualClock";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { NextTaskBanner } from "@/components/NextTaskBanner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
