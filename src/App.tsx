@@ -84,6 +84,7 @@ const AppRoutes = () => {
       <Route path="/survive" element={<Navigate to="/" replace />} />
       {/* Public tools */}
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
+      <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
