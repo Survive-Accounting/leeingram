@@ -298,10 +298,10 @@ function insertTable(b: RequestBuilder, rows: number, cols: number): number {
       columns: cols,
     },
   });
-  // Google Docs table index advance:
-  // Per row: row_start(1) + cells(cell_start(1) + newline(1) each) + row_end(1) = 2 + 2*cols
-  // Total = rows * (2 + 2*cols) = 2*rows*(1 + cols)
-  b.idx = tableStart + 2 * rows * (1 + cols);
+  // Keep b.idx at the last valid insertion point inside the document body,
+  // not at the segment end index. Google Docs requires insertText indexes
+  // to be strictly less than the segment end.
+  b.idx = tableStart + 2 * rows * (1 + cols) - 1;
   return tableStart;
 }
 
