@@ -298,22 +298,10 @@ function insertTable(b: RequestBuilder, rows: number, cols: number): number {
       columns: cols,
     },
   });
-  // After inserting table, index advances: table element + (rows * (cols cells + row end + cell paragraphs))
-  // Google Docs table structure: tableStart, then for each row: rowStart, then for each cell: cellStart, paragraph(\n), cellEnd, rowEnd, tableEnd
-  // Each cell contains a paragraph with a newline = 1 char
-  // Total characters added = rows * cols (one \n per cell)
-  // But we also have structural elements. The index after table = tableStart + 1 + rows*(1 + cols*(2 + 1)) + 1
-  // Actually, let's just compute: table=1, each row=0, each cell=2 (cell start, paragraph), paragraph newline=1, row=0, table end=0
-  // Structural elements per table: 1 (table) + rows * (1 (row) + cols * (1 (cell) + 1 (paragraph))) + ... 
-  // It's easier to track: total index advance = 1 + rows * (1 + cols * 3)
-  // Wait - each cell has: cell(1) + paragraph(1) + newline_char(1) = 3, row(1), table(1)
-  // total = 1 + rows * (1 + cols * 3)
-  // Actually the standard formula: table adds (4 * rows * cols + 2 * rows + 1) to the index... let me use the known formula
-  // After an insertTable with R rows and C cols, the index advances by: R*C + R*(C+1) + ... 
-  // Known: new index = old index + 4*R*C + 2*R + 2  ... let me just use the safe formula
-  // The safest approach: 1 (table) + for each row: 1 (row start) + for each cell: 1 (cell start) + 1 (paragraph start) + 1 (\n char) = 3 per cell
-  // So: 1 + R * (1 + C*3) = 1 + R + 3RC
-  b.idx = tableStart + 1 + rows + 3 * rows * cols;
+  // Google Docs table index advance:
+  // Per row: row_start(1) + cells(cell_start(1) + newline(1) each) + row_end(1) = 2 + 2*cols
+  // Total = rows * (2 + 2*cols) = 2*rows*(1 + cols)
+  b.idx = tableStart + 2 * rows * (1 + cols);
   return tableStart;
 }
 
