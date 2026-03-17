@@ -492,7 +492,7 @@ function buildDocRequests(
   if (asset.problem_context?.trim()) {
     insertStyledText(b, "PROBLEM\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
     insertStyledText(b, "Context\n", { bold: true, fontSize: 11, fgColor: hexToRgb("#333333") });
-    insertStyledText(b, asset.problem_context + "\n", { fontSize: 11 });
+    insertTextWithPipeTables(b, asset.problem_context, { fontSize: 11 });
     insertText(b, "\n");
   }
 
