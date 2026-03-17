@@ -374,7 +374,7 @@ function validateCandidates(candidates: any[], expectedCount: number): string[] 
     return ["candidates must be an array"];
   }
 
-  if (candidates.length !== expectedCount) {
+  if (candidates.length < expectedCount) {
     errors.push(`expected ${expectedCount} candidates, got ${candidates.length}`);
   }
 
@@ -1759,7 +1759,16 @@ REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary ent
       parse_source: parseSource,
     });
 
-    const candidates = parsed.candidates || [];
+    // Truncate to expected count if AI returned more candidates than requested
+    let candidates = parsed.candidates || [];
+    if (candidates.length > variantCount) {
+      await logGenEvent(sbService, runId, ++eventSeq, "backend", "warn", "CANDIDATES_TRUNCATED",
+        `AI returned ${candidates.length} candidates but expected ${variantCount} — using first ${variantCount}`, {
+        returned_count: candidates.length,
+        expected_count: variantCount,
+      });
+      candidates = candidates.slice(0, variantCount);
+    }
 
     await logGenEvent(sbService, runId, ++eventSeq, "backend", "info", "PARSE_JSON_END", `Parsed ${candidates.length} candidates`, {
       parse_success: true,
