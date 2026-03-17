@@ -200,6 +200,8 @@ function hexToRgb(hex: string): { red: number; green: number; blue: number } {
 }
 
 const NAVY = hexToRgb("#131E35");
+const ALT_ROW = hexToRgb("#F8F9FA");
+const TABLE_BORDER = hexToRgb("#E0E0E0");
 const WHITE = { red: 1, green: 1, blue: 1 };
 const LIGHT_GRAY = hexToRgb("#AAAAAA");
 const RED = hexToRgb("#C0392B");
