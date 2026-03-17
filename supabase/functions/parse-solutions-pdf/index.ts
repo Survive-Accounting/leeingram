@@ -9,10 +9,10 @@ const corsHeaders = {
 // Regex patterns for accounting solution block boundaries
 // Use word-boundary or start-of-line anchors to avoid matching time estimates like "e 25–35 minutes"
 const BLOCK_PATTERNS = [
-  { type: "BE", regex: /(?:^|\n)\s*(?:Brief\s+Exercise)\s+([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
-  { type: "BE", regex: /(?:^|\n)\s*BE\s*([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
-  { type: "E", regex: /(?:^|\n)\s*Exercise\s+([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
-  { type: "P", regex: /(?:^|\n)\s*Problem\s+([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
+  { type: "BE", regex: /(?:^|\n)\s*\*?\s*(?:Brief\s+Exercise)\s+([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
+  { type: "BE", regex: /(?:^|\n)\s*\*?\s*BE\s*([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
+  { type: "E", regex: /(?:^|\n)\s*\*?\s*Exercise\s+([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
+  { type: "P", regex: /(?:^|\n)\s*\*?\s*Problem\s+([0-9]+[-–.][0-9]+[A-Za-z]?)/gi },
 ];
 
 interface DetectedBlock {
