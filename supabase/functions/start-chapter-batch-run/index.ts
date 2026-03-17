@@ -29,6 +29,25 @@ serve(async (req) => {
       userId = user?.id ?? null;
     }
 
+    // ── Soft-reset: clear stale state from any previous failed generation ──
+    // 1. Delete orphan draft variants for these source problems (from partial failures)
+    const { data: orphanVariants } = await sb.from("problem_variants")
+      .select("id")
+      .in("base_problem_id", source_problem_ids)
+      .eq("variant_status", "draft");
+    if (orphanVariants && orphanVariants.length > 0) {
+      const orphanIds = orphanVariants.map((v: any) => v.id);
+      await sb.from("problem_variants").delete().in("id", orphanIds);
+      console.log(`[soft-reset] Cleared ${orphanIds.length} orphan draft variant(s) before new batch`);
+    }
+
+    // 2. Reset source problems that are stuck in 'generated' status back to 'ready'
+    //    (happens when a previous batch partially succeeded but the user wants to re-generate)
+    await sb.from("chapter_problems")
+      .update({ status: "ready", pipeline_status: "imported" })
+      .in("id", source_problem_ids)
+      .eq("status", "generated");
+
     // Create batch run
     const { data: run, error: runErr } = await sb.from("chapter_batch_runs").insert({
       course_id,
