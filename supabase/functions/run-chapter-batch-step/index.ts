@@ -409,7 +409,7 @@ async function respondWithProgress(sb: any, batchRunId: string, totalSources: nu
     .select("status, duration_ms, attempts").eq("batch_run_id", batchRunId);
 
   const successCount = (allItems ?? []).filter((i: any) => i.status === "success").length;
-  const failedCount = (allItems ?? []).filter((i: any) => i.status === "failed" && i.attempts >= 2).length;
+  const failedCount = (allItems ?? []).filter((i: any) => i.status === "failed" && i.attempts >= 3).length;
   const successItems = (allItems ?? []).filter((i: any) => i.status === "success");
   const avgMs = successItems.length > 0
     ? successItems.reduce((s: number, i: any) => s + (i.duration_ms ?? 0), 0) / successItems.length
