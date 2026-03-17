@@ -260,6 +260,7 @@ export default function AssetsLibrary() {
   const effectiveRole = impersonating?.role || primaryRole;
   const isAdmin = !isVa && !impersonating;
   const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+  const { enqueue, activeBatch } = useBackgroundJobs();
   const isContentCreationVa = effectiveRole === "content_creation_va";
   const deepLinkAssetId = searchParams.get("asset");
   const deepLinkAction = searchParams.get("action");
