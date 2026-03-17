@@ -556,8 +556,8 @@ function buildJETableFromRaw(b: RequestBuilder, rawText: string) {
             range: { startIndex: start, endIndex: end },
             paragraphStyle: {
               tabStops: [
-                { offset: { magnitude: debitTab, unit: "PT" }, alignment: "RIGHT" },
-                { offset: { magnitude: creditTab, unit: "PT" }, alignment: "RIGHT" },
+                { offset: { magnitude: debitTab, unit: "PT" }, alignment: "END" },
+                { offset: { magnitude: creditTab, unit: "PT" }, alignment: "END" },
               ],
               spaceBelow: { magnitude: 1, unit: "PT" },
             },
