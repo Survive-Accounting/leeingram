@@ -90,6 +90,7 @@ const AppRoutes = () => {
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
+      <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
