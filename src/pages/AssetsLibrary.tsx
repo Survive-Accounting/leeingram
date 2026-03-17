@@ -339,7 +339,6 @@ export default function AssetsLibrary() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
-  const [bulkPrepDocProgress, setBulkPrepDocProgress] = useState<{ current: number; total: number; batchId?: string } | null>(null);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
