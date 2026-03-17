@@ -31,6 +31,7 @@ import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 import { CoreAssetsTab } from "@/components/CoreAssetsTab";
+import { useBackgroundJobs } from "@/hooks/useBackgroundJobs";
 
 type TeachingAsset = {
   id: string;
