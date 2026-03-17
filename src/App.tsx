@@ -63,6 +63,7 @@ import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
 import EntryBuilderTool from "./pages/EntryBuilderTool";
 import StudyToolsEntryBuilder from "./pages/StudyToolsEntryBuilder";
+import ProblemDissectorTool from "./pages/ProblemDissectorTool";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -89,6 +90,7 @@ const AppRoutes = () => {
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
+      <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
