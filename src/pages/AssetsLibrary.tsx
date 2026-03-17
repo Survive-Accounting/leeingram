@@ -793,37 +793,31 @@ export default function AssetsLibrary() {
                       setSelectedIds(new Set());
                     }
                   } else if (bulkAction === "create-master-sheet" || bulkAction === "create-practice-sheet" || bulkAction === "create-promo-sheet") {
-                    const sheetTypeMap: Record<string, string> = {
-                      "create-master-sheet": "master",
-                      "create-practice-sheet": "practice",
-                      "create-promo-sheet": "promo",
-                    };
-                    const sheetType = sheetTypeMap[bulkAction];
-                    const sheetLabel = bulkAction === "create-master-sheet" ? "Master" : bulkAction === "create-practice-sheet" ? "Study Pass" : "Promo";
-                    setIsCreatingSheets(true);
-                    let sheetSuccess = 0;
-                    let sheetFail = 0;
-                    for (const asset of selected) {
+                    if (selected.length > 1) {
+                      await enqueue("whiteboard", selected.map(a => ({ teaching_asset_id: a.id })), {
+                        invalidateKeys: ["teaching-assets"], label: "whiteboard",
+                      });
+                      setSelectedIds(new Set());
+                    } else {
+                      const sheetTypeMap: Record<string, string> = { "create-master-sheet": "master", "create-practice-sheet": "practice", "create-promo-sheet": "promo" };
+                      const sheetType = sheetTypeMap[bulkAction];
+                      const sheetLabel = bulkAction === "create-master-sheet" ? "Master" : bulkAction === "create-practice-sheet" ? "Study Pass" : "Promo";
+                      setIsCreatingSheets(true);
                       try {
                         const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
-                          body: { asset_id: asset.id, sheet_types: [sheetType] },
+                          body: { asset_id: selected[0].id, sheet_types: [sheetType] },
                         });
                         if (error) throw error;
                         if (data?.error) throw new Error(data.error);
-                        sheetSuccess++;
+                        toast.success(`Created ${sheetLabel} sheet for ${selected[0].asset_name}`);
+                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                        setSelectedIds(new Set());
                       } catch (e: any) {
-                        sheetFail++;
-                        toast.error(`${sheetLabel} sheet failed: ${asset.asset_name}`, { description: e.message });
+                        toast.error(`${sheetLabel} sheet failed: ${selected[0].asset_name}`, { description: e.message });
                       }
-                    }
-                    setIsCreatingSheets(false);
-                    if (sheetSuccess > 0) {
-                      toast.success(`Created ${sheetLabel} sheets for ${sheetSuccess} assets`);
-                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
-                      setSelectedIds(new Set());
+                      setIsCreatingSheets(false);
                     }
                   } else if (bulkAction === "create-test-sheet") {
-                    // Test sheet: one at a time, open when done
                     const asset = selected[0];
                     if (!asset) return;
                     setIsCreatingSheets(true);
@@ -844,55 +838,55 @@ export default function AssetsLibrary() {
                     }
                     setIsCreatingSheets(false);
                   } else if (bulkAction === "create-test-slide") {
-                    const asset = selected[0];
-                    if (!asset) return;
-                    setIsCreatingSheets(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke("create-test-slide", {
-                        body: { teaching_asset_id: asset.id },
+                    if (selected.length > 1) {
+                      await enqueue("filming_slides", selected.map(a => ({ teaching_asset_id: a.id })), {
+                        invalidateKeys: ["teaching-assets"], label: "filming slide",
                       });
-                      if (error) {
-                        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
-                        throw new Error(errMsg);
-                      }
-                      if (data?.error) throw new Error(data.error);
-                      toast.success("Test Slide created — opening now", {
-                        action: { label: "Open Folder", onClick: () => window.open(data.test_slides_folder_url, "_blank") },
-                      });
-                      window.open(data.test_slide_url, "_blank");
-                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
                       setSelectedIds(new Set());
-                    } catch (e: any) {
-                      toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
-                    }
-                    setIsCreatingSheets(false);
-                  } else if (bulkAction === "generate-prep-doc") {
-                    setIsCreatingSheets(true);
-                    let prepSuccess = 0;
-                    for (const asset of selected) {
+                    } else {
+                      const asset = selected[0];
+                      if (!asset) return;
+                      setIsCreatingSheets(true);
                       try {
-                        const { data, error } = await supabase.functions.invoke("create-prep-doc", {
+                        const { data, error } = await supabase.functions.invoke("create-test-slide", {
                           body: { teaching_asset_id: asset.id },
                         });
-                        if (error) {
-                          const errMsg = data?.error || error.message || "Edge Function error";
-                          throw new Error(errMsg);
-                        }
+                        if (error) { throw new Error(data?.error || error.message || "Edge Function error"); }
                         if (data?.error) throw new Error(data.error);
-                        prepSuccess++;
-                        if (selected.length === 1 && data?.doc_url) {
-                          window.open(data.doc_url, "_blank");
-                        }
+                        toast.success("Test Slide created — opening now", {
+                          action: { label: "Open Folder", onClick: () => window.open(data.test_slides_folder_url, "_blank") },
+                        });
+                        window.open(data.test_slide_url, "_blank");
+                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                        setSelectedIds(new Set());
                       } catch (e: any) {
-                        toast.error(`Prep doc failed: ${asset.asset_name}`, { description: e.message });
+                        toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
                       }
+                      setIsCreatingSheets(false);
                     }
-                    if (prepSuccess > 0) {
-                      toast.success(`${prepSuccess} prep doc${prepSuccess > 1 ? "s" : ""} created`);
-                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                  } else if (bulkAction === "generate-prep-doc") {
+                    if (selected.length > 1) {
+                      await enqueue("prep_doc", selected.map(a => ({ teaching_asset_id: a.id })), {
+                        invalidateKeys: ["teaching-assets"], label: "prep doc",
+                      });
+                      setSelectedIds(new Set());
+                    } else {
+                      setIsCreatingSheets(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-prep-doc", {
+                          body: { teaching_asset_id: selected[0].id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success("Prep doc created");
+                        if (data?.doc_url) window.open(data.doc_url, "_blank");
+                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      } catch (e: any) {
+                        toast.error(`Prep doc failed: ${selected[0].asset_name}`, { description: e.message });
+                      }
+                      setSelectedIds(new Set());
+                      setIsCreatingSheets(false);
                     }
-                    setSelectedIds(new Set());
-                    setIsCreatingSheets(false);
                   }
                   setBulkAction(null);
                 }}
