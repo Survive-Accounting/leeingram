@@ -31,6 +31,7 @@ import { format } from "date-fns";
 import { generateEbookDocx } from "@/lib/generateEbookDocx";
 import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 import { CoreAssetsTab } from "@/components/CoreAssetsTab";
+import { useBackgroundJobs } from "@/hooks/useBackgroundJobs";
 
 type TeachingAsset = {
   id: string;
@@ -259,6 +260,7 @@ export default function AssetsLibrary() {
   const effectiveRole = impersonating?.role || primaryRole;
   const isAdmin = !isVa && !impersonating;
   const isSheetPrepVa = effectiveRole === "sheet_prep_va";
+  const { enqueue, activeBatch } = useBackgroundJobs();
   const isContentCreationVa = effectiveRole === "content_creation_va";
   const deepLinkAssetId = searchParams.get("asset");
   const deepLinkAction = searchParams.get("action");
@@ -337,7 +339,6 @@ export default function AssetsLibrary() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
-  const [bulkPrepDocProgress, setBulkPrepDocProgress] = useState<{ current: number; total: number; batchId?: string } | null>(null);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
@@ -762,35 +763,15 @@ export default function AssetsLibrary() {
                       setIsGeneratingEbook(false);
                     }
                   } else if (bulkAction === "bank-mc") {
-                    setIsBanking(true);
-                    let successCount = 0;
-                    let failCount = 0;
-                    for (const asset of selected) {
-                      try {
-                        const { data, error } = await supabase.functions.invoke("bank-teaching-asset", {
-                          body: {
-                            teaching_asset_id: asset.id,
-                            asset_name: asset.asset_name,
-                            problem_text: asset.survive_problem_text,
-                            solution_text: asset.survive_solution_text,
-                            journal_entry_block: asset.journal_entry_block,
-                            difficulty: asset.difficulty,
-                          },
-                        });
-                        if (error) throw error;
-                        if (data?.error) throw new Error(data.error);
-                        successCount++;
-                        toast.success(`Banked ${asset.asset_name}`, { description: `${data.questions_generated} questions generated` });
-                      } catch (e: any) {
-                        failCount++;
-                        toast.error(`Failed to bank ${asset.asset_name}`, { description: e.message });
-                      }
-                    }
-                    setIsBanking(false);
-                    if (successCount > 0) {
-                      qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
-                      setSelectedIds(new Set());
-                    }
+                    await enqueue("bank_mc", selected.map(a => ({
+                      teaching_asset_id: a.id,
+                      asset_name: a.asset_name,
+                      problem_text: a.survive_problem_text,
+                      solution_text: a.survive_solution_text,
+                      journal_entry_block: a.journal_entry_block,
+                      difficulty: a.difficulty,
+                    })), { invalidateKeys: ["banked-questions-review", "teaching-assets"], label: "MC generation" });
+                    setSelectedIds(new Set());
                   } else if (bulkAction === "revert") {
                     for (const asset of selected) {
                       revertMutation.mutate(asset);
@@ -811,37 +792,31 @@ export default function AssetsLibrary() {
                       setSelectedIds(new Set());
                     }
                   } else if (bulkAction === "create-master-sheet" || bulkAction === "create-practice-sheet" || bulkAction === "create-promo-sheet") {
-                    const sheetTypeMap: Record<string, string> = {
-                      "create-master-sheet": "master",
-                      "create-practice-sheet": "practice",
-                      "create-promo-sheet": "promo",
-                    };
-                    const sheetType = sheetTypeMap[bulkAction];
-                    const sheetLabel = bulkAction === "create-master-sheet" ? "Master" : bulkAction === "create-practice-sheet" ? "Study Pass" : "Promo";
-                    setIsCreatingSheets(true);
-                    let sheetSuccess = 0;
-                    let sheetFail = 0;
-                    for (const asset of selected) {
+                    if (selected.length > 1) {
+                      await enqueue("whiteboard", selected.map(a => ({ teaching_asset_id: a.id })), {
+                        invalidateKeys: ["teaching-assets"], label: "whiteboard",
+                      });
+                      setSelectedIds(new Set());
+                    } else {
+                      const sheetTypeMap: Record<string, string> = { "create-master-sheet": "master", "create-practice-sheet": "practice", "create-promo-sheet": "promo" };
+                      const sheetType = sheetTypeMap[bulkAction];
+                      const sheetLabel = bulkAction === "create-master-sheet" ? "Master" : bulkAction === "create-practice-sheet" ? "Study Pass" : "Promo";
+                      setIsCreatingSheets(true);
                       try {
                         const { data, error } = await supabase.functions.invoke("create-asset-sheet", {
-                          body: { asset_id: asset.id, sheet_types: [sheetType] },
+                          body: { asset_id: selected[0].id, sheet_types: [sheetType] },
                         });
                         if (error) throw error;
                         if (data?.error) throw new Error(data.error);
-                        sheetSuccess++;
+                        toast.success(`Created ${sheetLabel} sheet for ${selected[0].asset_name}`);
+                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                        setSelectedIds(new Set());
                       } catch (e: any) {
-                        sheetFail++;
-                        toast.error(`${sheetLabel} sheet failed: ${asset.asset_name}`, { description: e.message });
+                        toast.error(`${sheetLabel} sheet failed: ${selected[0].asset_name}`, { description: e.message });
                       }
-                    }
-                    setIsCreatingSheets(false);
-                    if (sheetSuccess > 0) {
-                      toast.success(`Created ${sheetLabel} sheets for ${sheetSuccess} assets`);
-                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
-                      setSelectedIds(new Set());
+                      setIsCreatingSheets(false);
                     }
                   } else if (bulkAction === "create-test-sheet") {
-                    // Test sheet: one at a time, open when done
                     const asset = selected[0];
                     if (!asset) return;
                     setIsCreatingSheets(true);
@@ -862,55 +837,55 @@ export default function AssetsLibrary() {
                     }
                     setIsCreatingSheets(false);
                   } else if (bulkAction === "create-test-slide") {
-                    const asset = selected[0];
-                    if (!asset) return;
-                    setIsCreatingSheets(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke("create-test-slide", {
-                        body: { teaching_asset_id: asset.id },
+                    if (selected.length > 1) {
+                      await enqueue("filming_slides", selected.map(a => ({ teaching_asset_id: a.id })), {
+                        invalidateKeys: ["teaching-assets"], label: "filming slide",
                       });
-                      if (error) {
-                        const errMsg = data?.error || error.message || "Edge Function returned a non-2xx status code";
-                        throw new Error(errMsg);
-                      }
-                      if (data?.error) throw new Error(data.error);
-                      toast.success("Test Slide created — opening now", {
-                        action: { label: "Open Folder", onClick: () => window.open(data.test_slides_folder_url, "_blank") },
-                      });
-                      window.open(data.test_slide_url, "_blank");
-                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
                       setSelectedIds(new Set());
-                    } catch (e: any) {
-                      toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
-                    }
-                    setIsCreatingSheets(false);
-                  } else if (bulkAction === "generate-prep-doc") {
-                    setIsCreatingSheets(true);
-                    let prepSuccess = 0;
-                    for (const asset of selected) {
+                    } else {
+                      const asset = selected[0];
+                      if (!asset) return;
+                      setIsCreatingSheets(true);
                       try {
-                        const { data, error } = await supabase.functions.invoke("create-prep-doc", {
+                        const { data, error } = await supabase.functions.invoke("create-test-slide", {
                           body: { teaching_asset_id: asset.id },
                         });
-                        if (error) {
-                          const errMsg = data?.error || error.message || "Edge Function error";
-                          throw new Error(errMsg);
-                        }
+                        if (error) { throw new Error(data?.error || error.message || "Edge Function error"); }
                         if (data?.error) throw new Error(data.error);
-                        prepSuccess++;
-                        if (selected.length === 1 && data?.doc_url) {
-                          window.open(data.doc_url, "_blank");
-                        }
+                        toast.success("Test Slide created — opening now", {
+                          action: { label: "Open Folder", onClick: () => window.open(data.test_slides_folder_url, "_blank") },
+                        });
+                        window.open(data.test_slide_url, "_blank");
+                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                        setSelectedIds(new Set());
                       } catch (e: any) {
-                        toast.error(`Prep doc failed: ${asset.asset_name}`, { description: e.message });
+                        toast.error(`Test Slide failed: ${asset.asset_name}`, { description: e.message });
                       }
+                      setIsCreatingSheets(false);
                     }
-                    if (prepSuccess > 0) {
-                      toast.success(`${prepSuccess} prep doc${prepSuccess > 1 ? "s" : ""} created`);
-                      qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                  } else if (bulkAction === "generate-prep-doc") {
+                    if (selected.length > 1) {
+                      await enqueue("prep_doc", selected.map(a => ({ teaching_asset_id: a.id })), {
+                        invalidateKeys: ["teaching-assets"], label: "prep doc",
+                      });
+                      setSelectedIds(new Set());
+                    } else {
+                      setIsCreatingSheets(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-prep-doc", {
+                          body: { teaching_asset_id: selected[0].id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success("Prep doc created");
+                        if (data?.doc_url) window.open(data.doc_url, "_blank");
+                        qc.invalidateQueries({ queryKey: ["teaching-assets"] });
+                      } catch (e: any) {
+                        toast.error(`Prep doc failed: ${selected[0].asset_name}`, { description: e.message });
+                      }
+                      setSelectedIds(new Set());
+                      setIsCreatingSheets(false);
                     }
-                    setSelectedIds(new Set());
-                    setIsCreatingSheets(false);
                   }
                   setBulkAction(null);
                 }}
@@ -925,6 +900,25 @@ export default function AssetsLibrary() {
           )}
         </div>
       </div>
+
+      {/* Background Jobs Progress Banner */}
+      {activeBatch && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
+          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+          <div className="flex-1">
+            <span className="text-xs font-semibold text-foreground capitalize">
+              {activeBatch.jobType.replace(/_/g, " ")}s processing server-side
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">
+              {activeBatch.done} / {activeBatch.total} complete
+              {activeBatch.failed > 0 && ` · ${activeBatch.failed} failed`}
+            </span>
+          </div>
+          <span className="text-xs font-medium text-primary">
+            {Math.round((activeBatch.done / activeBatch.total) * 100)}%
+          </span>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="all" className="w-full">
@@ -943,11 +937,11 @@ export default function AssetsLibrary() {
               variant="outline"
               size="sm"
               className="h-8 text-xs gap-1.5"
-              disabled={!!bulkPrepDocProgress}
+              disabled={!!activeBatch}
               onClick={() => setBulkPrepDocOpen(true)}
             >
-              {bulkPrepDocProgress ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating {bulkPrepDocProgress.current} of {bulkPrepDocProgress.total}…</>
+              {activeBatch ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {activeBatch.jobType.replace(/_/g, " ")} {activeBatch.done}/{activeBatch.total}</>
               ) : (
                 <><BookOpen className="h-3.5 w-3.5" /> Generate All Prep Docs</>
               )}
@@ -1400,42 +1394,9 @@ export default function AssetsLibrary() {
               setBulkPrepDocOpen(false);
               const eligible = assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
               if (!eligible.length) { toast.info("All assets already have prep docs"); return; }
-
-              // Generate a shared batch_id
-              const batchId = crypto.randomUUID();
-              const rows = eligible.map(a => ({
-                batch_id: batchId,
-                teaching_asset_id: a.id,
-                status: "queued",
-              }));
-
-              const { error: insertErr } = await supabase.from("prep_doc_queue" as any).insert(rows);
-              if (insertErr) { toast.error("Failed to enqueue: " + insertErr.message); return; }
-
-              toast.success(`Queued ${eligible.length} prep docs — processing server-side`);
-              setBulkPrepDocProgress({ current: 0, total: eligible.length, batchId });
-
-              // Start the first processing invocation
-              supabase.functions.invoke("process-prep-doc-queue").catch(() => {});
-
-              // Poll for progress
-              const pollInterval = setInterval(async () => {
-                const { data: queueItems } = await supabase
-                  .from("prep_doc_queue" as any)
-                  .select("status")
-                  .eq("batch_id", batchId);
-                if (!queueItems) return;
-                const done = queueItems.filter((i: any) => i.status === "done" || i.status === "failed").length;
-                setBulkPrepDocProgress(prev => prev ? { ...prev, current: done } : null);
-                if (done >= eligible.length) {
-                  clearInterval(pollInterval);
-                  const failed = queueItems.filter((i: any) => i.status === "failed").length;
-                  const succeeded = done - failed;
-                  setBulkPrepDocProgress(null);
-                  toast.success(`Done — ${succeeded} prep docs created${failed > 0 ? `, ${failed} failed` : ""}`);
-                  qc.invalidateQueries({ queryKey: ["teaching-assets"] });
-                }
-              }, 5000);
+              await enqueue("prep_doc", eligible.map(a => ({ teaching_asset_id: a.id })), {
+                invalidateKeys: ["teaching-assets"], label: "prep doc",
+              });
             }}>
               Generate (Server-Side)
             </Button>
