@@ -374,7 +374,7 @@ function validateCandidates(candidates: any[], expectedCount: number): string[] 
     return ["candidates must be an array"];
   }
 
-  if (candidates.length !== expectedCount) {
+  if (candidates.length < expectedCount) {
     errors.push(`expected ${expectedCount} candidates, got ${candidates.length}`);
   }
 
