@@ -363,19 +363,22 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
   // Cell[r][c] paragraph starts at: tableStart + 1 + r*(1 + numCols*3) + 1 + c*3 + 1
   // = tableStart + 2 + r*(1 + 3*numCols) + 3*c + 1
   // Actually: tableStart + 1 (table element), then each row: +1 (row element), each cell: +1 (cell) +1 (paragraph) +1 (newline char)
-  // Cell[r][c] newline char is at: tableStart + 1 + r*(1 + 3*numCols) + 1 + 3*c + 2
-  // We insert text BEFORE the newline at: tableStart + 1 + r*(1 + 3*numCols) + 1 + 3*c + 1
+  // Cell[r][c] insert point (before the newline):
+  // Per row stride = 2 + 2*numCols (row_start + cells*2 + row_end)
+  // Cell[r][c] = tableStartIdx + r*(2 + 2*numCols) + 1 + 2*c + 1
+  //            = tableStartIdx + r*(2 + 2*numCols) + 2 + 2*c
 
   // We'll build insert requests in reverse order (bottom-right to top-left) to avoid index shifting
   const cellRequests: any[] = [];
   let totalCellTextLength = 0;
+  const rowStride = 2 + 2 * numCols;
 
   for (let r = numRows - 1; r >= 0; r--) {
     const row = rows[r];
     for (let c = Math.min(row.length, numCols) - 1; c >= 0; c--) {
       const cellText = row[c] || "";
       if (!cellText) continue;
-      const cellParaIdx = tableStartIdx + 1 + r * (1 + 3 * numCols) + 1 + 3 * c + 1;
+      const cellParaIdx = tableStartIdx + r * rowStride + 2 + 2 * c;
 
       // Insert text at cell paragraph index
       cellRequests.push({ insertText: { location: { index: cellParaIdx }, text: cellText } });
