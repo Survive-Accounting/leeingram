@@ -714,17 +714,23 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ type: "anyone", role: "reader" }),
     });
 
-    // Update Supabase
-    await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
+    // Update Supabase with prep doc reference
+    const patchRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: anonKey,
+        apikey: serviceRoleKey,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
       body: JSON.stringify({ prep_doc_id: docId, prep_doc_url: docUrl }),
     });
+    if (!patchRes.ok) {
+      const patchErr = await patchRes.text();
+      console.error(`Failed to update teaching_assets with prep doc URL: ${patchRes.status} ${patchErr}`);
+    } else {
+      console.log(`Updated teaching_assets.prep_doc_url for ${teaching_asset_id}`);
+    }
 
     return new Response(JSON.stringify({
       success: true,
