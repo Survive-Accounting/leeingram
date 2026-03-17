@@ -944,19 +944,30 @@ export default function AssetsLibrary() {
             </Button>
           )}
           {isAdmin && chapterFilter !== "all" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs gap-1.5"
-              disabled={!!activeBatch}
-              onClick={() => setBulkPrepDocOpen(true)}
-            >
-              {activeBatch ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {activeBatch.jobType.replace(/_/g, " ")} {activeBatch.done}/{activeBatch.total}</>
-              ) : (
-                <><BookOpen className="h-3.5 w-3.5" /> Generate All Prep Docs</>
-              )}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  disabled={!!activeBatch}
+                >
+                  {activeBatch ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {activeBatch.jobType.replace(/_/g, " ")} {activeBatch.done}/{activeBatch.total}</>
+                  ) : (
+                    <><BookOpen className="h-3.5 w-3.5" /> Prep Docs <ChevronDown className="h-3 w-3" /></>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setBulkPrepDocMode("missing"); setBulkPrepDocOpen(true); }}>
+                  Generate Missing Prep Docs
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setBulkPrepDocMode("all"); setBulkPrepDocOpen(true); }} className="text-destructive">
+                  Force Regenerate All
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
