@@ -154,6 +154,7 @@ const AppRoutes = () => {
       <Route path="/study-tools/flashcards" element={<ProtectedRoute><StudyToolsFlashcards /></ProtectedRoute>} />
       <Route path="/study-tools/formula-recall" element={<ProtectedRoute><StudyToolsFormulaRecall /></ProtectedRoute>} />
       <Route path="/study-tools/entry-builder" element={<ProtectedRoute><StudyToolsEntryBuilder /></ProtectedRoute>} />
+      <Route path="/study-tools/problem-dissector" element={<ProtectedRoute><StudyToolsProblemDissector /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
