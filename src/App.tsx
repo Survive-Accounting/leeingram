@@ -59,6 +59,7 @@ import DebugSession from "./pages/DebugSession";
 import BulkFixTool from "./pages/BulkFixTool";
 import FlashcardTool from "./pages/FlashcardTool";
 import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
+import FormulaRecallTool from "./pages/FormulaRecallTool";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -83,6 +84,7 @@ const AppRoutes = () => {
       <Route path="/survive" element={<Navigate to="/" replace />} />
       {/* Public tools */}
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
+      <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
