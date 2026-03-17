@@ -617,16 +617,16 @@ Deno.serve(async (req) => {
     if (!isServiceRole) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const verifyRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: { Authorization: authHeader, apikey: anonKey },
+      const sb = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
       });
-      if (!verifyRes.ok) {
-        await verifyRes.text();
+      const token = authHeader.replace("Bearer ", "");
+      const { data, error: authError } = await sb.auth.getUser(token);
+      if (authError || !data?.user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      await verifyRes.text();
     }
 
     const body = await req.json();
