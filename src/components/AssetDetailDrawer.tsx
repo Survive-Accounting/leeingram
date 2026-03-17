@@ -25,6 +25,7 @@ import { HighlightedText } from "@/components/content-factory/HighlightedText";
 import { type Highlight, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
 import { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
+import SmartTextRenderer from "@/components/SmartTextRenderer";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -714,13 +715,14 @@ export default function AssetDetailDrawer({
                     </div>
                   )}
                   <div className="rounded-lg border border-border bg-background p-4">
-                    <div className="text-sm text-foreground leading-relaxed">
-                      <HighlightedText
-                        text={asset.survive_problem_text || "—"}
-                        highlights={highlights}
-                        showHighlights={showHighlights && highlights.length > 0}
-                      />
-                    </div>
+                    <SmartTextRenderer
+                      text={asset.survive_problem_text || "—"}
+                      highlightedTextProps={
+                        highlights.length > 0
+                          ? { highlights, showHighlights: showHighlights && highlights.length > 0 }
+                          : undefined
+                      }
+                    />
                   </div>
 
                   {instructions.length > 0 && (
@@ -778,9 +780,7 @@ export default function AssetDetailDrawer({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   <div className="rounded-lg border border-border bg-background p-4">
-                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                      {asset.survive_solution_text}
-                    </p>
+                    <SmartTextRenderer text={asset.survive_solution_text} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -938,9 +938,7 @@ export default function AssetDetailDrawer({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3">
                   <div className="rounded-lg border border-border bg-background p-4">
-                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                      {asset.survive_solution_text}
-                    </p>
+                    <SmartTextRenderer text={asset.survive_solution_text} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
