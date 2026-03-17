@@ -35,12 +35,12 @@ export default function StudyToolsProblemDissector() {
     queryKey: ["dissector-admin", chapterId],
     queryFn: async () => {
       // Get teaching assets
-      const { data: assets, error: aErr } = await supabase
+      const { data: assets, error: aErr } = await (supabase
         .from("teaching_assets")
         .select("id, asset_code, asset_name, rank")
-        .eq("chapter_id", chapterId!)
+        .eq("chapter_id", chapterId!) as any)
         .eq("status", "approved")
-        .order("asset_code") as any;
+        .order("asset_code");
       if (aErr) throw aErr;
 
       if (!assets || assets.length === 0) return [];
