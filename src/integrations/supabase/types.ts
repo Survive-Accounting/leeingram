@@ -1147,6 +1147,67 @@ export type Database = {
         }
         Relationships: []
       }
+      dissector_problems: {
+        Row: {
+          chapter_id: string | null
+          completions: number | null
+          course_id: string | null
+          created_at: string | null
+          highlights: Json
+          id: string
+          plays: number | null
+          problem_text: string
+          status: string | null
+          teaching_asset_id: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          completions?: number | null
+          course_id?: string | null
+          created_at?: string | null
+          highlights?: Json
+          id?: string
+          plays?: number | null
+          problem_text: string
+          status?: string | null
+          teaching_asset_id?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          completions?: number | null
+          course_id?: string | null
+          created_at?: string | null
+          highlights?: Json
+          id?: string
+          plays?: number | null
+          problem_text?: string
+          status?: string | null
+          teaching_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dissector_problems_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dissector_problems_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dissector_problems_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emails: {
         Row: {
           ai_refined_body: string | null

@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.generate-entry-builder-set]
 verify_jwt = false
+
+[functions.generate-dissector-highlights]
+verify_jwt = false
