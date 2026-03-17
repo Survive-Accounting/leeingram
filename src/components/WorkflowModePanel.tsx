@@ -90,10 +90,10 @@ export function WorkflowModePanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chapter_problems")
-        .select("id, title, source_label, pipeline_status")
+        .select("id, title, source_label, pipeline_status, combined_group_id")
         .eq("chapter_id", selectedChapter);
       if (error) throw error;
-      return data as { id: string; title: string; source_label: string; pipeline_status: PipelineStatus }[];
+      return data as { id: string; title: string; source_label: string; pipeline_status: PipelineStatus; combined_group_id: string | null }[];
     },
     enabled: !!selectedChapter,
   });
@@ -107,8 +107,21 @@ export function WorkflowModePanel() {
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     PIPELINE_STAGES.forEach((s) => (counts[s.key] = 0));
+
+    // Build set of approved combined_group_ids so secondaries inherit approval
+    const approvedGroupIds = new Set<string>();
     problems?.forEach((p) => {
-      const problemOrder = STAGE_ORDER[p.pipeline_status];
+      if (p.combined_group_id && p.pipeline_status === "approved") {
+        approvedGroupIds.add(p.combined_group_id);
+      }
+    });
+
+    problems?.forEach((p) => {
+      // Treat combined-group secondaries as approved if any member is approved
+      const effectiveStatus = (p.pipeline_status !== "approved" && p.combined_group_id && approvedGroupIds.has(p.combined_group_id))
+        ? "approved"
+        : p.pipeline_status;
+      const problemOrder = STAGE_ORDER[effectiveStatus];
       if (problemOrder === undefined) return;
       // Count this problem for its stage AND all earlier stages
       PIPELINE_STAGES.forEach((s) => {
