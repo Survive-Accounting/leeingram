@@ -1,15 +1,22 @@
 import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { HighlightedText } from "@/components/content-factory/HighlightedText";
+import type { Highlight } from "@/lib/highlightTypes";
 
 /**
  * Detects pipe-delimited tables in text and renders them as styled HTML tables.
  * Non-table text is rendered as whitespace-preserving paragraphs.
+ * Optionally applies highlights to non-table text segments.
  */
 
 interface SmartTextRendererProps {
   text: string;
   className?: string;
+  highlightedTextProps?: {
+    highlights: Highlight[];
+    showHighlights: boolean;
+  };
 }
 
 interface ParsedSegment {
