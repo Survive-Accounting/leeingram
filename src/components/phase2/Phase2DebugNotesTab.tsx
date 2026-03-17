@@ -95,7 +95,7 @@ export function Phase2DebugNotesTab({ chapterId, courseName, chapterName }: Prop
     if (filterResolved === "resolved") result = result.filter((n: any) => n.resolved);
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((n: any) => n.admin_note?.toLowerCase().includes(q));
+      result = result.filter((n: any) => (n.admin_note ?? "").toLowerCase().includes(q));
     }
     return result;
   }, [notes, filterField, filterType, filterResolved, search]);

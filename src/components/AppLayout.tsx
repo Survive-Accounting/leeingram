@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import aorakiBg from "@/assets/aoraki-bg.jpg";
 import { NightSkyOverlay } from "@/components/NightSkyOverlay";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -40,7 +41,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-6">
         <div className="rounded-xl p-5 bg-card border border-border" style={{ boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)" }}>
-          {children}
+          <ErrorBoundary
+            resetKey={`${location.pathname}${location.search}`}
+            title="This page section hit a runtime error"
+            description="Try reloading this component without leaving the page."
+          >
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

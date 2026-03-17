@@ -122,7 +122,7 @@ export default function Phase2Review() {
     // Push undo entry
     setUndoStack(prev => [...prev.slice(-9), {
       assetId: current.id,
-      assetName: current.asset_name,
+      assetName: current.asset_name ?? "Untitled asset",
       previousStatus: current.phase2_status ?? null,
       previousRank: current.core_rank ?? null,
       newStatus: phase2_status,
@@ -168,7 +168,8 @@ export default function Phase2Review() {
   // ── Quick jump ─────────────────────────────────────────────────
   const handleJump = () => {
     if (!jumpQuery.trim()) return;
-    const idx = queue.findIndex(a => a.asset_name.toLowerCase().includes(jumpQuery.trim().toLowerCase()));
+    const normalizedQuery = jumpQuery.trim().toLowerCase();
+    const idx = queue.findIndex((a) => (a.asset_name ?? "").toLowerCase().includes(normalizedQuery));
     if (idx >= 0) { setCurrentIndex(idx); setJumpQuery(""); }
     else toast.error("Asset not found in queue");
   };

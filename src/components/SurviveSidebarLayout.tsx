@@ -17,6 +17,7 @@ import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { DualClock } from "@/components/DualClock";
 import { PipelineProgressStrip } from "@/components/PipelineProgressStrip";
 import { NextTaskBanner } from "@/components/NextTaskBanner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -615,7 +616,13 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)",
             }}
           >
-            {children}
+            <ErrorBoundary
+              resetKey={`${location.pathname}${location.search}`}
+              title="This workspace panel hit a runtime error"
+              description="Try reloading this component without losing the rest of the app shell."
+            >
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>
