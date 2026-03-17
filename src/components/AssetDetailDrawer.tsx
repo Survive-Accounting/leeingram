@@ -25,6 +25,7 @@ import { HighlightedText } from "@/components/content-factory/HighlightedText";
 import { type Highlight, validateHighlights } from "@/lib/highlightTypes";
 import { normalizeToParts, isTextPart, isJEPart, formatPartLabel } from "@/lib/variantParts";
 import { tAccountToTSV } from "@/components/content-factory/LearningStructuresEditor";
+import SmartTextRenderer from "@/components/SmartTextRenderer";
 
 // ── Types ────────────────────────────────────────────────────────────
 
