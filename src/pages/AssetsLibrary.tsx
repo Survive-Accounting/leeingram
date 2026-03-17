@@ -902,6 +902,25 @@ export default function AssetsLibrary() {
         </div>
       </div>
 
+      {/* Background Jobs Progress Banner */}
+      {activeBatch && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
+          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+          <div className="flex-1">
+            <span className="text-xs font-semibold text-foreground capitalize">
+              {activeBatch.jobType.replace(/_/g, " ")}s processing server-side
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">
+              {activeBatch.done} / {activeBatch.total} complete
+              {activeBatch.failed > 0 && ` · ${activeBatch.failed} failed`}
+            </span>
+          </div>
+          <span className="text-xs font-medium text-primary">
+            {Math.round((activeBatch.done / activeBatch.total) * 100)}%
+          </span>
+        </div>
+      )}
+
       {/* Tabs */}
       <Tabs defaultValue="all" className="w-full">
         <div className="flex items-center gap-3 mb-4">
