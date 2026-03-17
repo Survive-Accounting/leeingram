@@ -429,7 +429,6 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
   // Style header row background
   b.requests.push({
     updateTableCellStyle: {
-      tableStartLocation: { index: tableStartIdx },
       tableRange: { tableCellLocation: { tableStartLocation: { index: tableStartIdx }, rowIndex: 0, columnIndex: 0 }, rowSpan: 1, columnSpan: numCols },
       tableCellStyle: { backgroundColor: { color: { rgbColor: NAVY } } },
       fields: "backgroundColor",
