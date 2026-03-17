@@ -445,13 +445,13 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   </>
                 )}
 
-                {/* Study Tools — admin only */}
+                {/* Phase 3 · Study Tools — admin only */}
                 {isLeadVaOrAdmin && !isVa && !impersonating && (
                   <>
                     <div className="border-t border-border my-3" />
                     {!sidebarCollapsed && (
                       <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
-                        Study Tools
+                        Phase 3 · Study Tools
                       </p>
                     )}
                     <div className="space-y-0.5">
@@ -488,7 +488,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                             : "text-white/70 hover:text-white hover:bg-muted/30"
                         )}
                       >
-                        <LayoutGrid className="h-4 w-4 shrink-0" />
+                        <BookOpen className="h-4 w-4 shrink-0" />
                         {!sidebarCollapsed && <span className="text-sm">Entry Builder</span>}
                       </Link>
                       <Link
