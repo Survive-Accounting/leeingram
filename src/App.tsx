@@ -58,6 +58,7 @@ import TemplateManager from "./pages/TemplateManager";
 import DebugSession from "./pages/DebugSession";
 import BulkFixTool from "./pages/BulkFixTool";
 import FlashcardTool from "./pages/FlashcardTool";
+import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -141,6 +142,7 @@ const AppRoutes = () => {
       <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
       <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
       <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
+      <Route path="/study-tools/flashcards" element={<ProtectedRoute><StudyToolsFlashcards /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

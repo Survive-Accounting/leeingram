@@ -4,7 +4,7 @@ import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
-  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench,
+  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -442,6 +442,32 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                       </p>
                     )}
                     <div className="space-y-0.5">{renderNavItems(phase2Items, true)}</div>
+                  </>
+                )}
+
+                {/* Study Tools — admin only */}
+                {isLeadVaOrAdmin && !isVa && !impersonating && (
+                  <>
+                    <div className="border-t border-border my-3" />
+                    {!sidebarCollapsed && (
+                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
+                        Study Tools
+                      </p>
+                    )}
+                    <div className="space-y-0.5">
+                      <Link
+                        to="/study-tools/flashcards"
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                          isActive("/study-tools/flashcards")
+                            ? "bg-primary/20 text-white font-medium border border-primary/30"
+                            : "text-white/70 hover:text-white hover:bg-muted/30"
+                        )}
+                      >
+                        <Layers className="h-4 w-4 shrink-0" />
+                        {!sidebarCollapsed && <span className="text-sm">Flashcards</span>}
+                      </Link>
+                    </div>
                   </>
                 )}
               </>
