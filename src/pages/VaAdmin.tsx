@@ -34,7 +34,7 @@ export default function VaAdmin() {
 
   // Assignment form
   const [assignCourseId, setAssignCourseId] = useState("");
-  const [assignChapterId, setAssignChapterId] = useState("");
+  const [assignChapterIds, setAssignChapterIds] = useState<string[]>([]);
   const [assignRole, setAssignRole] = useState("content_creation_va");
 
   // ── Data fetching ──
