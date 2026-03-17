@@ -380,6 +380,7 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
 
   // We'll build insert requests in reverse order (bottom-right to top-left) to avoid index shifting
   const cellRequests: any[] = [];
+  let totalCellTextLength = 0;
 
   for (let r = numRows - 1; r >= 0; r--) {
     const row = rows[r];
@@ -390,6 +391,7 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
 
       // Insert text at cell paragraph index
       cellRequests.push({ insertText: { location: { index: cellParaIdx }, text: cellText } });
+      totalCellTextLength += cellText.length;
 
       // Style text
       const isHeader = r === 0;
@@ -425,6 +427,8 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
 
   // Add all cell content requests
   b.requests.push(...cellRequests);
+  // Adjust b.idx to account for all the text inserted into cells
+  b.idx += totalCellTextLength;
 
   // Style header row background
   b.requests.push({
