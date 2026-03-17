@@ -1,7 +1,9 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const GOOGLE_DOCS_API = "https://docs.googleapis.com/v1/documents";
@@ -615,16 +617,16 @@ Deno.serve(async (req) => {
     if (!isServiceRole) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const verifyRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: { Authorization: authHeader, apikey: anonKey },
+      const sb = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
       });
-      if (!verifyRes.ok) {
-        await verifyRes.text();
+      const token = authHeader.replace("Bearer ", "");
+      const { data, error: authError } = await sb.auth.getUser(token);
+      if (authError || !data?.user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      await verifyRes.text();
     }
 
     const body = await req.json();
