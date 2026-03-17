@@ -132,22 +132,29 @@ export default function VaAdmin() {
     },
   });
 
-  // ── Add assignment ──
+  // Already-assigned chapter IDs for the VA being edited
+  const alreadyAssignedIds = useMemo(() => {
+    if (!assignOpen) return new Set<string>();
+    return new Set(getAssignmentsFor(assignOpen).map(a => a.chapter_id));
+  }, [assignOpen, allAssignments]);
+
+  // ── Add assignment (bulk) ──
   const addAssignment = useMutation({
     mutationFn: async () => {
-      if (!assignOpen || !assignCourseId || !assignChapterId) return;
-      const { error } = await supabase.from("va_assignments").insert({
+      if (!assignOpen || !assignCourseId || assignChapterIds.length === 0) return;
+      const rows = assignChapterIds.map(chId => ({
         va_account_id: assignOpen,
         course_id: assignCourseId,
-        chapter_id: assignChapterId,
+        chapter_id: chId,
         assigned_role: assignRole,
-      } as any);
+      }));
+      const { error } = await supabase.from("va_assignments").insert(rows as any);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["va-assignments-all"] });
-      toast.success("Chapter assigned");
-      setAssignCourseId(""); setAssignChapterId(""); setAssignRole("content_creation_va");
+      toast.success(`${assignChapterIds.length} chapter(s) assigned`);
+      setAssignCourseId(""); setAssignChapterIds([]); setAssignRole("content_creation_va");
     },
     onError: (e: Error) => toast.error(e.message),
   });
