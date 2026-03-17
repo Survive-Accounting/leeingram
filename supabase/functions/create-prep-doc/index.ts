@@ -390,7 +390,7 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
       };
       const tFields = ["fontSize", "bold"];
       if (isHeader) {
-        tStyle.foregroundColor = { color: { rgbColor: WHITE } };
+        tStyle.foregroundColor = { color: { rgbColor: NAVY } };
         tFields.push("foregroundColor");
       }
 
@@ -416,28 +416,6 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
 
   b.requests.push(...textInsertRequests, ...styleRequests);
   b.idx += totalCellTextLength;
-
-  // Style header row background
-  b.requests.push({
-    updateTableCellStyle: {
-      tableRange: { tableCellLocation: { tableStartLocation: { index: tableStartIdx }, rowIndex: 0, columnIndex: 0 }, rowSpan: 1, columnSpan: numCols },
-      tableCellStyle: { backgroundColor: { color: { rgbColor: NAVY } } },
-      fields: "backgroundColor",
-    },
-  });
-
-  // Style alternating body rows
-  for (let r = 1; r < numRows; r++) {
-    if (r % 2 === 0) {
-      b.requests.push({
-        updateTableCellStyle: {
-          tableRange: { tableCellLocation: { tableStartLocation: { index: tableStartIdx }, rowIndex: r, columnIndex: 0 }, rowSpan: 1, columnSpan: numCols },
-          tableCellStyle: { backgroundColor: { color: { rgbColor: ALT_ROW } } },
-          fields: "backgroundColor",
-        },
-      });
-    }
-  }
 
   insertText(b, "\n");
 }
