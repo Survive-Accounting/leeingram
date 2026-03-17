@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/va-dashboards/ImpersonationBanner";
 import { SprintProvider } from "@/contexts/SprintContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Landing from "./pages/Landing";
 import SurviveHome from "./pages/SurviveHome";
 import ContentFactory from "./pages/ContentFactory";
@@ -67,6 +68,21 @@ import ProblemDissectorTool from "./pages/ProblemDissectorTool";
 import StudyToolsProblemDissector from "./pages/StudyToolsProblemDissector";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
+
+function RoutedAppBoundary({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  return (
+    <ErrorBoundary
+      resetKey={`${location.pathname}${location.search}`}
+      fullScreen
+      title="This view hit a runtime error"
+      description="The app stayed online. Try reloading this component before navigating away."
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
 
 const queryClient = new QueryClient();
 
