@@ -1405,22 +1405,31 @@ export default function AssetsLibrary() {
       <Dialog open={bulkPrepDocOpen} onOpenChange={setBulkPrepDocOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Generate All Prep Docs</DialogTitle>
+            <DialogTitle>{bulkPrepDocMode === "all" ? "Force Regenerate All Prep Docs" : "Generate Missing Prep Docs"}</DialogTitle>
             <DialogDescription>
-              Generate prep docs for all {assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at).length ?? 0} approved assets in this chapter that don't have one yet? This runs server-side — you can close your phone and it'll keep going.
+              {bulkPrepDocMode === "all"
+                ? `This will delete and recreate all ${assets?.filter(a => (a as any).asset_approved_at).length ?? 0} prep docs for this chapter. Old docs will be permanently deleted from Google Drive. Continue?`
+                : `Generate prep docs for all ${assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at).length ?? 0} approved assets in this chapter that don't have one yet? This runs server-side — you can close your phone and it'll keep going.`
+              }
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setBulkPrepDocOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={async () => {
-              setBulkPrepDocOpen(false);
-              const eligible = assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
-              if (!eligible.length) { toast.info("All assets already have prep docs"); return; }
-              await enqueue("prep_doc", eligible.map(a => ({ teaching_asset_id: a.id })), {
-                invalidateKeys: ["teaching-assets"], label: "prep doc",
-              });
-            }}>
-              Generate (Server-Side)
+            <Button
+              size="sm"
+              variant={bulkPrepDocMode === "all" ? "destructive" : "default"}
+              onClick={async () => {
+                setBulkPrepDocOpen(false);
+                const eligible = bulkPrepDocMode === "all"
+                  ? assets?.filter(a => (a as any).asset_approved_at) || []
+                  : assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
+                if (!eligible.length) { toast.info(bulkPrepDocMode === "all" ? "No approved assets found" : "All assets already have prep docs"); return; }
+                await enqueue("prep_doc", eligible.map(a => ({ teaching_asset_id: a.id })), {
+                  invalidateKeys: ["teaching-assets"], label: "prep doc",
+                });
+              }}
+            >
+              {bulkPrepDocMode === "all" ? `Regenerate All (${assets?.filter(a => (a as any).asset_approved_at).length ?? 0})` : "Generate (Server-Side)"}
             </Button>
           </DialogFooter>
         </DialogContent>

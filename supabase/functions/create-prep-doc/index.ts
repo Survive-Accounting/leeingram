@@ -806,10 +806,36 @@ Deno.serve(async (req) => {
 
     console.log(`Asset folder: ${assetFolderId} for ${assetCode}`);
 
-    // Archive previous prep doc if one exists
+    // Delete previous prep doc if one exists (permanent delete, no archiving)
     if (asset.prep_doc_id) {
-      console.log(`Archiving previous prep doc: ${asset.prep_doc_id}`);
-      await archivePreviousPrepDoc(token, assetFolderId, asset.prep_doc_id, assetCode);
+      console.log(`Deleting previous prep doc: ${asset.prep_doc_id}`);
+      try {
+        await googleFetch(
+          `${GOOGLE_DRIVE_API}/${asset.prep_doc_id}?supportsAllDrives=true`,
+          token,
+          { method: "DELETE" }
+        );
+        console.log(`Deleted previous prep doc ${asset.prep_doc_id}`);
+      } catch (e: any) {
+        // 404 = already gone, continue silently
+        if (e?.googleCode === 404) {
+          console.log(`Previous prep doc ${asset.prep_doc_id} already deleted (404)`);
+        } else {
+          console.warn(`Failed to delete previous prep doc ${asset.prep_doc_id}:`, e);
+        }
+      }
+      // Clear old references before creating new doc
+      const clearRes = await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          apikey: serviceRoleKey,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ prep_doc_id: null, prep_doc_url: null }),
+      });
+      if (!clearRes.ok) console.warn("Failed to clear old prep_doc fields");
     }
 
     // Build JE data
