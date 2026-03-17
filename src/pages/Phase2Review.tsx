@@ -168,7 +168,8 @@ export default function Phase2Review() {
   // ── Quick jump ─────────────────────────────────────────────────
   const handleJump = () => {
     if (!jumpQuery.trim()) return;
-    const idx = queue.findIndex(a => a.asset_name.toLowerCase().includes(jumpQuery.trim().toLowerCase()));
+    const normalizedQuery = jumpQuery.trim().toLowerCase();
+    const idx = queue.findIndex((a) => (a.asset_name ?? "").toLowerCase().includes(normalizedQuery));
     if (idx >= 0) { setCurrentIndex(idx); setJumpQuery(""); }
     else toast.error("Asset not found in queue");
   };

@@ -122,26 +122,26 @@ export default function ContentFactory() {
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium text-foreground">{lastSession.courseName}</p>
-                <p className="text-xs text-muted-foreground">
-                  Ch {lastSession.chapterNumber} — {lastSession.chapterName}
-                </p>
-                {"lastPhase" in lastSession && (lastSession as any).lastPhase && (
-                  <Badge variant="outline" className="text-[10px] mt-1">{(lastSession as any).lastPhase}</Badge>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium text-foreground">{lastSession.courseName ?? "Current course"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ch {lastSession.chapterNumber ?? "—"} — {lastSession.chapterName ?? "Selected chapter"}
+                  </p>
+                  {"lastPhase" in lastSession && (lastSession as any).lastPhase && (
+                    <Badge variant="outline" className="text-[10px] mt-1">{(lastSession as any).lastPhase}</Badge>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const tab = "activeTab" in lastSession ? (lastSession as any).activeTab : "problems";
+                    navigate(`/workspace/${lastSession.chapterId}?tab=${tab}`);
+                  }}
+                >
+                  Resume Work <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
               </div>
-              <Button
-                size="sm"
-                onClick={() => {
-                  const tab = "activeTab" in lastSession ? (lastSession as any).activeTab : "problems";
-                  navigate(`/workspace/${lastSession.chapterId}?tab=${tab}`);
-                }}
-              >
-                Resume Work <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </div>
           </CardContent>
         </Card>
       )}

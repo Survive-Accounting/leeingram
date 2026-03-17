@@ -124,61 +124,67 @@ export function Phase2AllView({ chapterId, onAssetClick }: Phase2AllViewProps) {
     toast.success(phase2_status ? `Set to ${phase2_status}` : "Removed from Phase 2");
   };
 
-  const renderRow = (asset: Asset) => (
-    <TableRow key={asset.id}>
-      <TableCell className="font-mono text-xs font-bold">
-        {onAssetClick ? (
-          <button
-            className="text-primary hover:underline cursor-pointer bg-transparent border-none p-0 font-mono text-xs font-bold"
-            onClick={() => onAssetClick(asset.id)}
-          >
-            {asset.asset_name}
-          </button>
-        ) : asset.asset_name}
-      </TableCell>
-      <TableCell className="text-xs text-muted-foreground">{asset.source_ref || "—"}</TableCell>
-      <TableCell><RankBadge rank={asset.core_rank} /></TableCell>
-      <TableCell><StatusDot status={asset.whiteboard_status} /></TableCell>
-      <TableCell><StatusDot status={asset.video_production_status} /></TableCell>
-      <TableCell><StatusDot status={asset.mc_status} /></TableCell>
-      <TableCell><StatusDot status={asset.ebook_status} /></TableCell>
-      <TableCell><StatusDot status={asset.qa_status} /></TableCell>
-      <TableCell><StatusDot status={asset.deployment_status} /></TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          {Array.isArray(asset.admin_notes) && asset.admin_notes.length > 0 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <StickyNote className="h-3 w-3 text-amber-400" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 text-xs space-y-1">
-                {(asset.admin_notes as any[]).map((n: any) => (
-                  <p key={n.id}><span className="text-muted-foreground">{new Date(n.date).toLocaleDateString()}</span> — {n.text}</p>
-                ))}
-              </PopoverContent>
-            </Popover>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleAction(asset.id, "core_asset", 1)}>Rank 1</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction(asset.id, "core_asset", 2)}>Rank 2</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction(asset.id, "core_asset", 3)}>Rank 3</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction(asset.id, "hold", null)}>Move to Hold</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction(asset.id, "needs_debugging", null)}>Needs Debugging</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction(asset.id, "skip", null)}>Skip</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAction(asset.id, null, null)}>Remove from Phase 2</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setNoteAssetId(asset.id); setNoteText(""); }}>Add Note</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
+  const renderRow = (asset: Asset) => {
+    const assetName = asset.asset_name || "Untitled asset";
+
+    return (
+      <TableRow key={asset.id}>
+        <TableCell className="font-mono text-xs font-bold">
+          {onAssetClick ? (
+            <button
+              className="text-primary hover:underline cursor-pointer bg-transparent border-none p-0 font-mono text-xs font-bold"
+              onClick={() => onAssetClick(asset.id)}
+            >
+              {assetName}
+            </button>
+          ) : assetName}
+        </TableCell>
+        <TableCell className="text-xs text-muted-foreground">{asset.source_ref || "—"}</TableCell>
+        <TableCell><RankBadge rank={asset.core_rank} /></TableCell>
+        <TableCell><StatusDot status={asset.whiteboard_status} /></TableCell>
+        <TableCell><StatusDot status={asset.video_production_status} /></TableCell>
+        <TableCell><StatusDot status={asset.mc_status} /></TableCell>
+        <TableCell><StatusDot status={asset.ebook_status} /></TableCell>
+        <TableCell><StatusDot status={asset.qa_status} /></TableCell>
+        <TableCell><StatusDot status={asset.deployment_status} /></TableCell>
+        <TableCell>
+          <div className="flex items-center gap-1">
+            {Array.isArray(asset.admin_notes) && asset.admin_notes.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <StickyNote className="h-3 w-3 text-amber-400" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 text-xs space-y-1">
+                  {(asset.admin_notes as any[]).map((n: any) => (
+                    <p key={n.id ?? `${asset.id}-${n.text ?? "note"}`}>
+                      <span className="text-muted-foreground">{n?.date ? new Date(n.date).toLocaleDateString() : "Unknown date"}</span> — {n?.text ?? "No note text"}
+                    </p>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleAction(asset.id, "core_asset", 1)}>Rank 1</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAction(asset.id, "core_asset", 2)}>Rank 2</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAction(asset.id, "core_asset", 3)}>Rank 3</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAction(asset.id, "hold", null)}>Move to Hold</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAction(asset.id, "needs_debugging", null)}>Needs Debugging</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAction(asset.id, "skip", null)}>Skip</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAction(asset.id, null, null)}>Remove from Phase 2</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setNoteAssetId(asset.id); setNoteText(""); }}>Add Note</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   const tableHead = (
     <TableHeader>

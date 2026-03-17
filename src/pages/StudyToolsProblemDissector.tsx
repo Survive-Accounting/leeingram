@@ -106,11 +106,16 @@ export default function StudyToolsProblemDissector() {
     qc.invalidateQueries({ queryKey: ["dissector-admin", chapterId] });
   };
 
-  const copyEmbed = (assetId: string) => {
+  const copyEmbed = async (assetId: string) => {
     const url = `${window.location.origin}/tools/problem-dissector?asset_id=${assetId}`;
     const html = `<iframe src="${url}" width="100%" height="700" frameborder="0"></iframe>`;
-    navigator.clipboard.writeText(html);
-    toast.success("Embed HTML copied");
+
+    try {
+      await navigator.clipboard.writeText(html);
+      toast.success("Embed HTML copied");
+    } catch {
+      toast.error("Could not copy embed HTML");
+    }
   };
 
   const handleBulkGenerate = async () => {

@@ -186,10 +186,12 @@ const App = () => (
         <AuthProvider>
           <ImpersonationProvider>
             <SprintProvider>
-              <ImpersonationBanner />
-              <SprintTimerBar />
-              <RoleRouteGuard />
-              <AppRoutes />
+              <RoutedAppBoundary>
+                <ImpersonationBanner />
+                <SprintTimerBar />
+                <RoleRouteGuard />
+                <AppRoutes />
+              </RoutedAppBoundary>
             </SprintProvider>
           </ImpersonationProvider>
         </AuthProvider>

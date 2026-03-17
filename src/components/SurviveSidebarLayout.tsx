@@ -616,7 +616,13 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               boxShadow: "0 4px 24px -4px rgba(0,0,0,0.4)",
             }}
           >
-            {children}
+            <ErrorBoundary
+              resetKey={`${location.pathname}${location.search}`}
+              title="This workspace panel hit a runtime error"
+              description="Try reloading this component without losing the rest of the app shell."
+            >
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>
