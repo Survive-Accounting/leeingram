@@ -4,7 +4,7 @@ import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
-  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator,
+  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, LayoutGrid,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -478,6 +478,18 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                       >
                         <Calculator className="h-4 w-4 shrink-0" />
                         {!sidebarCollapsed && <span className="text-sm">Formula Recall</span>}
+                      </Link>
+                      <Link
+                        to="/study-tools/entry-builder"
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                          isActive("/study-tools/entry-builder")
+                            ? "bg-primary/20 text-white font-medium border border-primary/30"
+                            : "text-white/70 hover:text-white hover:bg-muted/30"
+                        )}
+                      >
+                        <LayoutGrid className="h-4 w-4 shrink-0" />
+                        {!sidebarCollapsed && <span className="text-sm">Entry Builder</span>}
                       </Link>
                     </div>
                   </>
