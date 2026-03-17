@@ -1524,6 +1524,99 @@ export type Database = {
           },
         ]
       }
+      formula_items: {
+        Row: {
+          deleted: boolean | null
+          formula_name: string
+          formula_text: string
+          hint: string | null
+          id: string
+          set_id: string | null
+          sort_order: number | null
+          source_asset_id: string | null
+        }
+        Insert: {
+          deleted?: boolean | null
+          formula_name: string
+          formula_text: string
+          hint?: string | null
+          id?: string
+          set_id?: string | null
+          sort_order?: number | null
+          source_asset_id?: string | null
+        }
+        Update: {
+          deleted?: boolean | null
+          formula_name?: string
+          formula_text?: string
+          hint?: string | null
+          id?: string
+          set_id?: string | null
+          sort_order?: number | null
+          source_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formula_items_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "formula_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formula_items_source_asset_id_fkey"
+            columns: ["source_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formula_sets: {
+        Row: {
+          chapter_id: string | null
+          completions: number | null
+          course_id: string | null
+          created_at: string | null
+          id: string
+          plays: number | null
+          status: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          completions?: number | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          plays?: number | null
+          status?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          completions?: number | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          plays?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formula_sets_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formula_sets_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generation_debug_notes: {
         Row: {
           activity_log_run_id: string | null
