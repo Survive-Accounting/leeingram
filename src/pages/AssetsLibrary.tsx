@@ -764,35 +764,15 @@ export default function AssetsLibrary() {
                       setIsGeneratingEbook(false);
                     }
                   } else if (bulkAction === "bank-mc") {
-                    setIsBanking(true);
-                    let successCount = 0;
-                    let failCount = 0;
-                    for (const asset of selected) {
-                      try {
-                        const { data, error } = await supabase.functions.invoke("bank-teaching-asset", {
-                          body: {
-                            teaching_asset_id: asset.id,
-                            asset_name: asset.asset_name,
-                            problem_text: asset.survive_problem_text,
-                            solution_text: asset.survive_solution_text,
-                            journal_entry_block: asset.journal_entry_block,
-                            difficulty: asset.difficulty,
-                          },
-                        });
-                        if (error) throw error;
-                        if (data?.error) throw new Error(data.error);
-                        successCount++;
-                        toast.success(`Banked ${asset.asset_name}`, { description: `${data.questions_generated} questions generated` });
-                      } catch (e: any) {
-                        failCount++;
-                        toast.error(`Failed to bank ${asset.asset_name}`, { description: e.message });
-                      }
-                    }
-                    setIsBanking(false);
-                    if (successCount > 0) {
-                      qc.invalidateQueries({ queryKey: ["banked-questions-review"] });
-                      setSelectedIds(new Set());
-                    }
+                    await enqueue("bank_mc", selected.map(a => ({
+                      teaching_asset_id: a.id,
+                      asset_name: a.asset_name,
+                      problem_text: a.survive_problem_text,
+                      solution_text: a.survive_solution_text,
+                      journal_entry_block: a.journal_entry_block,
+                      difficulty: a.difficulty,
+                    })), { invalidateKeys: ["banked-questions-review", "teaching-assets"], label: "MC generation" });
+                    setSelectedIds(new Set());
                   } else if (bulkAction === "revert") {
                     for (const asset of selected) {
                       revertMutation.mutate(asset);
