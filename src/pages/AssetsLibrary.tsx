@@ -919,10 +919,12 @@ export default function AssetsLibrary() {
               variant="outline"
               size="sm"
               className="h-8 text-xs gap-1.5"
-              disabled={!!bulkPrepDocProgress}
+              disabled={!!activeBatch || !!bulkPrepDocProgress}
               onClick={() => setBulkPrepDocOpen(true)}
             >
-              {bulkPrepDocProgress ? (
+              {activeBatch ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {activeBatch.jobType === "prep_doc" ? "Prep Docs" : activeBatch.label} {activeBatch.done}/{activeBatch.total}</>
+              ) : bulkPrepDocProgress ? (
                 <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating {bulkPrepDocProgress.current} of {bulkPrepDocProgress.total}…</>
               ) : (
                 <><BookOpen className="h-3.5 w-3.5" /> Generate All Prep Docs</>
