@@ -96,12 +96,28 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("status", "queued");
 
+    const remaining = count ?? 0;
+
+    // Self-chain: if more items remain, invoke self again after a brief pause
+    if (remaining > 0) {
+      console.log(`${remaining} items remaining — self-chaining...`);
+      // Fire-and-forget: don't await, let this response return immediately
+      fetch(`${supabaseUrl}/functions/v1/process-prep-doc-queue`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      }).catch(e => console.error("Self-chain failed:", e));
+    }
+
     return new Response(JSON.stringify({
       processed: items.length,
       success: successCount,
       failed: failCount,
-      remaining: count ?? 0,
-      done: (count ?? 0) === 0,
+      remaining,
+      done: remaining === 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
