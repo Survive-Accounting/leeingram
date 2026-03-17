@@ -440,7 +440,6 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
     if (r % 2 === 0) {
       b.requests.push({
         updateTableCellStyle: {
-          tableStartLocation: { index: tableStartIdx },
           tableRange: { tableCellLocation: { tableStartLocation: { index: tableStartIdx }, rowIndex: r, columnIndex: 0 }, rowSpan: 1, columnSpan: numCols },
           tableCellStyle: { backgroundColor: { color: { rgbColor: ALT_ROW } } },
           fields: "backgroundColor",
