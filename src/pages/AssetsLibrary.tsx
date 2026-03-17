@@ -1378,42 +1378,9 @@ export default function AssetsLibrary() {
               setBulkPrepDocOpen(false);
               const eligible = assets?.filter(a => !(a as any).prep_doc_url && (a as any).asset_approved_at) || [];
               if (!eligible.length) { toast.info("All assets already have prep docs"); return; }
-
-              // Generate a shared batch_id
-              const batchId = crypto.randomUUID();
-              const rows = eligible.map(a => ({
-                batch_id: batchId,
-                teaching_asset_id: a.id,
-                status: "queued",
-              }));
-
-              const { error: insertErr } = await supabase.from("prep_doc_queue" as any).insert(rows);
-              if (insertErr) { toast.error("Failed to enqueue: " + insertErr.message); return; }
-
-              toast.success(`Queued ${eligible.length} prep docs — processing server-side`);
-              setBulkPrepDocProgress({ current: 0, total: eligible.length, batchId });
-
-              // Start the first processing invocation
-              supabase.functions.invoke("process-prep-doc-queue").catch(() => {});
-
-              // Poll for progress
-              const pollInterval = setInterval(async () => {
-                const { data: queueItems } = await supabase
-                  .from("prep_doc_queue" as any)
-                  .select("status")
-                  .eq("batch_id", batchId);
-                if (!queueItems) return;
-                const done = queueItems.filter((i: any) => i.status === "done" || i.status === "failed").length;
-                setBulkPrepDocProgress(prev => prev ? { ...prev, current: done } : null);
-                if (done >= eligible.length) {
-                  clearInterval(pollInterval);
-                  const failed = queueItems.filter((i: any) => i.status === "failed").length;
-                  const succeeded = done - failed;
-                  setBulkPrepDocProgress(null);
-                  toast.success(`Done — ${succeeded} prep docs created${failed > 0 ? `, ${failed} failed` : ""}`);
-                  qc.invalidateQueries({ queryKey: ["teaching-assets"] });
-                }
-              }, 5000);
+              await enqueue("prep_doc", eligible.map(a => ({ teaching_asset_id: a.id })), {
+                invalidateKeys: ["teaching-assets"], label: "prep doc",
+              });
             }}>
               Generate (Server-Side)
             </Button>
