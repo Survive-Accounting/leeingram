@@ -80,6 +80,8 @@ const AppRoutes = () => {
       <Route path="/" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
       <Route path="/survive" element={<Navigate to="/content" replace />} />
       <Route path="/survive" element={<Navigate to="/" replace />} />
+      {/* Public tools */}
+      <Route path="/tools/flashcards" element={<FlashcardTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
