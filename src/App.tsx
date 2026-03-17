@@ -57,6 +57,7 @@ import ChapterComplete from "./pages/ChapterComplete";
 import TemplateManager from "./pages/TemplateManager";
 import DebugSession from "./pages/DebugSession";
 import BulkFixTool from "./pages/BulkFixTool";
+import FlashcardTool from "./pages/FlashcardTool";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -79,6 +80,8 @@ const AppRoutes = () => {
       <Route path="/" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
       <Route path="/survive" element={<Navigate to="/content" replace />} />
       <Route path="/survive" element={<Navigate to="/" replace />} />
+      {/* Public tools */}
+      <Route path="/tools/flashcards" element={<FlashcardTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
       {/* Admin auth */}
