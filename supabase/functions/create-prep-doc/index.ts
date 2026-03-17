@@ -352,39 +352,37 @@ function isNumericCell(cell: string): boolean {
 }
 
 function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
-  const [header, ...body] = rows;
   const numRows = rows.length;
-  const numCols = header.length;
+  const numCols = rows[0]?.length ?? 0;
+  if (!numRows || !numCols) return;
 
   const tableStartIdx = insertTable(b, numRows, numCols);
 
-  // Now fill cells. After insertTable, the index is at the end.
-  // We need to go back and fill cells. The cells are at known positions.
-  // Cell[r][c] paragraph starts at: tableStart + 1 + r*(1 + numCols*3) + 1 + c*3 + 1
-  // = tableStart + 2 + r*(1 + 3*numCols) + 3*c + 1
-  // Actually: tableStart + 1 (table element), then each row: +1 (row element), each cell: +1 (cell) +1 (paragraph) +1 (newline char)
-  // Cell[r][c] insert point (before the newline):
-  // Per row stride = 2 + 2*numCols (row_start + cells*2 + row_end)
-  // Cell[r][c] = tableStartIdx + r*(2 + 2*numCols) + 1 + 2*c + 1
-  //            = tableStartIdx + r*(2 + 2*numCols) + 2 + 2*c
-
-  // We'll build insert requests in reverse order (bottom-right to top-left) to avoid index shifting
-  const cellRequests: any[] = [];
+  // Follow the known Google Docs table insertion pattern:
+  // - first cell insert starts at tableStartIdx + 4
+  // - each column advances by 2
+  // - each new row advances by 2 * numCols + 1
+  let nextCellIndex = tableStartIdx + 5;
+  const textInsertRequests: any[] = [];
+  const styleRequests: any[] = [];
   let totalCellTextLength = 0;
-  const rowStride = 2 + 2 * numCols;
 
-  for (let r = numRows - 1; r >= 0; r--) {
-    const row = rows[r];
-    for (let c = Math.min(row.length, numCols) - 1; c >= 0; c--) {
+  for (let r = 0; r < numRows; r++) {
+    const row = rows[r] ?? [];
+    const rowBaseIndex = nextCellIndex + (r === 0 ? 0 : 3) - 1;
+
+    for (let c = 0; c < numCols; c++) {
       const cellText = row[c] || "";
-      if (!cellText) continue;
-      const cellParaIdx = tableStartIdx + r * rowStride + 2 + 2 * c;
+      const cellParaIdx = rowBaseIndex + c * 2;
+      nextCellIndex = cellParaIdx + 1;
 
-      // Insert text at cell paragraph index
-      cellRequests.push({ insertText: { location: { index: cellParaIdx }, text: cellText } });
+      if (!cellText) continue;
+
+      textInsertRequests.unshift({
+        insertText: { location: { index: cellParaIdx }, text: cellText },
+      });
       totalCellTextLength += cellText.length;
 
-      // Style text
       const isHeader = r === 0;
       const tStyle: any = {
         fontSize: { magnitude: 11, unit: "PT" },
@@ -395,7 +393,8 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
         tStyle.foregroundColor = { color: { rgbColor: WHITE } };
         tFields.push("foregroundColor");
       }
-      cellRequests.push({
+
+      styleRequests.push({
         updateTextStyle: {
           range: { startIndex: cellParaIdx, endIndex: cellParaIdx + cellText.length },
           textStyle: tStyle,
@@ -403,9 +402,8 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
         },
       });
 
-      // Right-align numeric cells
       if (!isHeader && isNumericCell(cellText)) {
-        cellRequests.push({
+        styleRequests.push({
           updateParagraphStyle: {
             range: { startIndex: cellParaIdx, endIndex: cellParaIdx + cellText.length + 1 },
             paragraphStyle: { alignment: "END" },
@@ -416,9 +414,7 @@ function buildPipeTableInDoc(b: RequestBuilder, rows: string[][]) {
     }
   }
 
-  // Add all cell content requests
-  b.requests.push(...cellRequests);
-  // Adjust b.idx to account for all the text inserted into cells
+  b.requests.push(...textInsertRequests, ...styleRequests);
   b.idx += totalCellTextLength;
 
   // Style header row background
