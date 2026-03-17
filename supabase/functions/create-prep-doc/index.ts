@@ -519,65 +519,54 @@ function buildJETableFromRaw(b: RequestBuilder, rawText: string) {
     return;
   }
 
-  // Tab stop positions for debit and credit columns (in PT)
-  const debitTab = 300;  // ~4.2 inches
-  const creditTab = 390; // ~5.4 inches
+  const accountWidth = 42;
+  const amountWidth = 14;
+
+  const formatJeRow = (account: string, debitAmt: string, creditAmt: string) => {
+    const safeAccount = account.replace(/\t/g, " ").trimEnd();
+    const gap = Math.max(2, accountWidth - safeAccount.length);
+    return `${safeAccount}${" ".repeat(gap)}${debitAmt.padStart(amountWidth)}${creditAmt.padStart(amountWidth)}\n`;
+  };
 
   for (let gi = 0; gi < groups.length; gi++) {
     const group = groups[gi];
 
-    // Separator line between date groups
     if (gi > 0) {
       insertStyledText(b, "\n", { fontSize: 4 });
     }
 
     for (const line of group) {
       if (line.type === "date") {
-        // Date header: bold, navy, light blue background
         insertStyledText(b, line.text + "\n", {
-          bold: true, fontSize: 11, fgColor: NAVY, bgColor: hexToRgb("#EEF2FF"),
+          bold: true,
+          fontSize: 11,
+          fgColor: NAVY,
+          bgColor: hexToRgb("#EEF2FF"),
         });
-      } else {
-        const isCredit = line.type === "credit";
-        const indent = isCredit ? "    " : "";
-        const debitAmt = !isCredit ? line.amount : "";
-        const creditAmt = isCredit ? line.amount : "";
+        continue;
+      }
 
-        // Build the line: account \t debit \t credit
-        const lineText = `${indent}${line.text}\t${debitAmt}\t${creditAmt}\n`;
-        const { start, end } = insertStyledText(b, lineText, {
-          fontSize: 10,
-          fontFamily: "Courier New",
-        });
+      const isCredit = line.type === "credit";
+      const debitAmt = !isCredit ? line.amount : "";
+      const creditAmt = isCredit ? line.amount : "";
+      const accountText = isCredit ? `    ${line.text}` : line.text;
+      const lineText = formatJeRow(accountText, debitAmt, creditAmt);
+      const { start, end } = insertStyledText(b, lineText, {
+        fontSize: 10,
+        fontFamily: "Courier New",
+      });
 
-        // Apply tab stops to align debit and credit columns
-        b.requests.push({
-          updateParagraphStyle: {
-            range: { startIndex: start, endIndex: end },
-            paragraphStyle: {
-              tabStops: [
-                { offset: { magnitude: debitTab, unit: "PT" }, alignment: "END" },
-                { offset: { magnitude: creditTab, unit: "PT" }, alignment: "END" },
-              ],
-              spaceBelow: { magnitude: 1, unit: "PT" },
-            },
-            fields: "tabStops,spaceBelow",
-          },
-        });
-
-        // Light gray background for credit rows
-        if (isCredit) {
-          styleText(b, start, end - 1, {
-            backgroundColor: { color: { rgbColor: hexToRgb("#F5F5F5") } },
-          }, "backgroundColor");
-        }
+      if (isCredit) {
+        styleText(b, start, end - 1, {
+          backgroundColor: { color: { rgbColor: hexToRgb("#F5F5F5") } },
+        }, "backgroundColor");
       }
     }
   }
 
-  // Closing navy rule (thin dark line)
   insertStyledText(b, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", {
-    fontSize: 4, fgColor: NAVY,
+    fontSize: 4,
+    fgColor: NAVY,
   });
 }
 
