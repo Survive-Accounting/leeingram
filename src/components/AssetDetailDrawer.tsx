@@ -701,6 +701,18 @@ export default function AssetDetailDrawer({
                   <SectionHeader label="Problem Text & Instructions" open={showProblemSection} copyText={asset.survive_problem_text} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-3">
+                  {highlights.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="highlight-toggle"
+                        checked={showHighlights}
+                        onCheckedChange={setShowHighlights}
+                      />
+                      <label htmlFor="highlight-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                        Show highlights
+                      </label>
+                    </div>
+                  )}
                   <div className="rounded-lg border border-border bg-background p-4">
                     <div className="text-sm text-foreground leading-relaxed">
                       <HighlightedText
