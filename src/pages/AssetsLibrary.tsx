@@ -1131,20 +1131,20 @@ export default function AssetsLibrary() {
                                   <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">🎞️</a>
                                 </Tip>
                               )}
-                              {(a as any).prep_doc_url && (
-                                <Tip label="View Prep Doc">
-                                  <a href={(a as any).prep_doc_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
-                                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-                                  </a>
-                                </Tip>
-                              )}
                             </>
                           ) : sheetUrls?.[a.asset_name] ? (
                             <Tip label="Open Google Sheet">
                               <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
                             </Tip>
-                          ) : (
+                          ) : !(a as any).prep_doc_url ? (
                             <span className="text-xs text-muted-foreground">—</span>
+                          ) : null}
+                          {(a as any).prep_doc_url && (
+                            <Tip label="View Prep Doc">
+                              <a href={(a as any).prep_doc_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+                                <BookOpen className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                              </a>
+                            </Tip>
                           )}
                         </div>
                       </TableCell>
