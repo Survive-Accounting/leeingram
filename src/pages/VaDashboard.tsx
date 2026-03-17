@@ -97,20 +97,33 @@ export default function VaDashboard() {
       if (!effectiveChapterIds.length) return {};
       const { data } = await supabase
         .from("chapter_problems")
-        .select("chapter_id, pipeline_status")
+        .select("chapter_id, pipeline_status, combined_group_id")
         .in("chapter_id", effectiveChapterIds);
       const counts: Record<string, { total: number; imported: number; generated: number; in_review: number; approved: number }> = {};
       effectiveChapterIds.forEach(id => {
         counts[id] = { total: 0, imported: 0, generated: 0, in_review: 0, approved: 0 };
       });
+
+      // Build a set of approved combined_group_ids so secondaries inherit approval
+      const approvedGroupIds = new Set<string>();
+      data?.forEach(p => {
+        if (p.combined_group_id && (p.pipeline_status as string) === "approved") {
+          approvedGroupIds.add(p.combined_group_id as string);
+        }
+      });
+
       data?.forEach(p => {
         if (!counts[p.chapter_id]) counts[p.chapter_id] = { total: 0, imported: 0, generated: 0, in_review: 0, approved: 0 };
         counts[p.chapter_id].total++;
         const status = p.pipeline_status as string;
-        if (status === "imported") counts[p.chapter_id].imported++;
-        else if (status === "generated") counts[p.chapter_id].generated++;
-        else if (status === "in_review") counts[p.chapter_id].in_review++;
-        else if (status === "approved") counts[p.chapter_id].approved++;
+        // Treat combined-group secondaries as approved if any member in their group is approved
+        const effectiveStatus = (status !== "approved" && p.combined_group_id && approvedGroupIds.has(p.combined_group_id as string))
+          ? "approved"
+          : status;
+        if (effectiveStatus === "imported") counts[p.chapter_id].imported++;
+        else if (effectiveStatus === "generated") counts[p.chapter_id].generated++;
+        else if (effectiveStatus === "in_review") counts[p.chapter_id].in_review++;
+        else if (effectiveStatus === "approved") counts[p.chapter_id].approved++;
       });
       return counts;
     },

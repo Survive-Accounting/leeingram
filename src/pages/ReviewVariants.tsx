@@ -305,6 +305,15 @@ export default function ReviewVariants() {
         .eq("id", problem.id);
       if (spErr) throw spErr;
 
+      // Also mark secondary combined-group members as approved
+      if (problem.combined_group_id) {
+        await supabase
+          .from("chapter_problems")
+          .update({ status: "approved", pipeline_status: "approved" } as any)
+          .eq("combined_group_id", problem.combined_group_id)
+          .neq("id", problem.id);
+      }
+
       await logActivity({
         actor_type: "user",
         entity_type: "variant",
