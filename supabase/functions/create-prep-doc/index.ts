@@ -545,7 +545,7 @@ function buildDocRequests(
   const answerSummary = asset.survive_solution_text || "";
   if (answerSummary.trim()) {
     insertStyledText(b, "ANSWER SUMMARY\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
-    insertStyledText(b, answerSummary + "\n", { fontSize: 11, bgColor: hexToRgb("#E8F5E9") });
+    insertTextWithPipeTables(b, answerSummary, { fontSize: 11, bgColor: hexToRgb("#E8F5E9") });
     insertText(b, "\n");
   }
 
