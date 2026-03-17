@@ -177,16 +177,41 @@ function PipeTable({ rows }: { rows: string[][] }) {
 export default function SmartTextRenderer({
   text,
   className,
+  highlightedTextProps,
 }: SmartTextRendererProps) {
   if (!text) return <span className="text-muted-foreground">—</span>;
 
   const segments = parseSegments(text);
+
+  // If no pipe tables found and we have highlight props, use HighlightedText for the whole thing
+  const hasTables = segments.some((s) => s.type === "table");
+  if (!hasTables && highlightedTextProps) {
+    return (
+      <div className={className}>
+        <div className="text-sm text-foreground leading-relaxed">
+          <HighlightedText
+            text={text}
+            highlights={highlightedTextProps.highlights}
+            showHighlights={highlightedTextProps.showHighlights}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
       {segments.map((seg, i) =>
         seg.type === "table" && seg.rows ? (
           <PipeTable key={i} rows={seg.rows} />
+        ) : highlightedTextProps ? (
+          <div key={i} className="text-sm text-foreground leading-relaxed">
+            <HighlightedText
+              text={seg.content}
+              highlights={highlightedTextProps.highlights}
+              showHighlights={highlightedTextProps.showHighlights}
+            />
+          </div>
         ) : (
           <p
             key={i}
