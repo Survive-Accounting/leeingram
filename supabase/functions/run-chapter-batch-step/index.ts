@@ -38,9 +38,9 @@ serve(async (req) => {
       .order("seq", { ascending: true })
       .limit(20);
 
-    // Sort: queued first, then failed with attempts < 2
+    // Sort: queued first, then failed with attempts < 3 (increased from 2 for soft-reset retries)
     const eligible = (nextItems ?? [])
-      .filter(item => item.status === "queued" || (item.status === "failed" && item.attempts < 2))
+      .filter(item => item.status === "queued" || (item.status === "failed" && item.attempts < 3))
       .sort((a, b) => {
         if (a.status === "queued" && b.status !== "queued") return -1;
         if (a.status !== "queued" && b.status === "queued") return 1;
