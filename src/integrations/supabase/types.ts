@@ -1360,6 +1360,114 @@ export type Database = {
           },
         ]
       }
+      flashcard_decks: {
+        Row: {
+          chapter_id: string | null
+          chapter_number: number | null
+          completions: number | null
+          course_code: string | null
+          course_id: string | null
+          created_at: string | null
+          id: string
+          plays: number | null
+          status: string | null
+          total_cards: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          chapter_number?: number | null
+          completions?: number | null
+          course_code?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          plays?: number | null
+          status?: string | null
+          total_cards?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          chapter_number?: number | null
+          completions?: number | null
+          course_code?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          plays?: number | null
+          status?: string | null
+          total_cards?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_decks_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_decks_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          back: string
+          card_type: string
+          created_at: string | null
+          deck_id: string | null
+          deleted: boolean | null
+          front: string
+          id: string
+          sort_order: number | null
+          source_asset_id: string | null
+        }
+        Insert: {
+          back: string
+          card_type: string
+          created_at?: string | null
+          deck_id?: string | null
+          deleted?: boolean | null
+          front: string
+          id?: string
+          sort_order?: number | null
+          source_asset_id?: string | null
+        }
+        Update: {
+          back?: string
+          card_type?: string
+          created_at?: string | null
+          deck_id?: string | null
+          deleted?: boolean | null
+          front?: string
+          id?: string
+          sort_order?: number | null
+          source_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcards_source_asset_id_fkey"
+            columns: ["source_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       focus_sessions: {
         Row: {
           actual_minutes: number | null
