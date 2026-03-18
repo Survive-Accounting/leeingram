@@ -24,7 +24,7 @@ Rules:
 2. List every date that requires a journal entry in YYYY-MM-DD format.
 3. Include dates for initial transactions, adjusting entries, interest payments, amortization, etc.
 4. Do NOT generate any journal entry rows — only dates.
-5. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming.
+5. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming. Include the parenthetical role hint ONLY on the very first mention of each entity; omit it on all subsequent mentions.
 6. Return only JSON.`;
 
 export function buildSkeletonUserPrompt(opts: {
