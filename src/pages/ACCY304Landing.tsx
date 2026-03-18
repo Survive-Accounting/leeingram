@@ -111,16 +111,25 @@ function ProblemPickerRow({
     queryKey: ["accy304-picker-problems", selection.chapterId, selection.type],
     queryFn: async () => {
       if (!selection.chapterId) return [];
-      let q = supabase
+
+      // Only show problems that have approved teaching assets
+      const { data: approvedAssets } = await supabase
+        .from("teaching_assets")
+        .select("source_ref")
+        .eq("chapter_id", selection.chapterId)
+        .not("asset_approved_at", "is", null);
+
+      const approvedRefs = new Set((approvedAssets || []).map((a: any) => a.source_ref));
+
+      const { data } = await supabase
         .from("chapter_problems")
         .select("id, source_code, source_label, chapter_id")
         .eq("chapter_id", selection.chapterId)
         .order("source_code");
 
-      const { data } = await q;
       if (!data) return [];
 
-      let filtered = data;
+      let filtered = data.filter((p: any) => approvedRefs.has(p.source_code));
       if (selection.type === "BE") filtered = filtered.filter((p: any) => p.source_code?.startsWith("BE"));
       else if (selection.type === "E") filtered = filtered.filter((p: any) => p.source_code?.startsWith("E") && !p.source_code?.startsWith("EX"));
       else if (selection.type === "P") filtered = filtered.filter((p: any) => p.source_code?.startsWith("P"));
