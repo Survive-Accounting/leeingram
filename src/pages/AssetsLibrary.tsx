@@ -253,6 +253,74 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
   );
 }
 
+/* ── Flowchart button ── */
+function FlowchartButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
+  const [generating, setGenerating] = useState(false);
+
+  const hasWorkedSteps = !!(asset.worked_steps?.trim());
+  const hasFlowchart = !!(asset.flowchart_image_url);
+
+  if (!hasWorkedSteps && !hasFlowchart) return null;
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-flowchart", {
+        body: { teaching_asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.skipped) {
+        toast.info(`Flowchart skipped: ${data.reason || "simple problem"}`);
+      } else {
+        toast.success("Flowchart generated!");
+      }
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || "Flowchart generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const clearFlowchart = async () => {
+    await supabase.from("teaching_assets").update({ flowchart_image_url: null, flowchart_image_id: null } as any).eq("id", asset.id);
+    toast.success("Flowchart cleared");
+    onUpdated();
+  };
+
+  if (hasFlowchart) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
+            <GitBranch className="h-3 w-3 text-green-600" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => window.open(asset.flowchart_image_url!, "_blank")}>
+            View Flowchart
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={generate} disabled={generating}>
+            {generating ? "Regenerating…" : "Regenerate"}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={clearFlowchart} className="text-destructive">
+            Clear Flowchart
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Tip label="Generate Flowchart">
+      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" onClick={generate} disabled={generating}>
+        {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />}
+      </Button>
+    </Tip>
+  );
+}
+
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const navigate = useNavigate();
