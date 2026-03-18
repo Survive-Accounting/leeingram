@@ -1168,15 +1168,12 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 
 function AboutLeeSection({ theme }: { theme: Theme }) {
   return (
-    <div className="mt-10 flex flex-col items-center text-center gap-4">
-      <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase" style={{ color: theme.textMuted }}>
-        About Lee Ingram
-      </h2>
+    <div className="flex flex-col items-center text-center gap-4">
       <img
-        src={LEE_HEADSHOT_URL}
+        src={LEE_HERO_URL}
         alt="Lee Ingram"
-        className="w-40 h-40 rounded-xl object-cover"
-        style={{ objectPosition: "top center" }}
+        className="w-full object-cover"
+        style={{ objectPosition: "center top", height: 200, borderRadius: 12 }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
       <div className="max-w-[400px]">
