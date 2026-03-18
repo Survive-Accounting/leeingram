@@ -230,6 +230,7 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
 export function CoreAssetsTab() {
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
+  const [lastCopiedKey, setLastCopiedKey] = useState<string | null>(null);
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
   const chapterId = workspace?.chapterId;
