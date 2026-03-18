@@ -390,22 +390,30 @@ export default function SolutionsViewer() {
       const { data: assets, error: assetErr } = await supabase
         .from("teaching_assets")
         .select(`
-          id, asset_name, source_ref, problem_title,
-          problem_context, problem_text, problem_text_ht,
-          instruction_1, instruction_2, instruction_3, instruction_4, instruction_5,
-          survive_solution_text, journal_entry_raw, journal_entry_completed_json,
+          id, asset_name, source_ref, source_number,
+          problem_context, survive_problem_text, problem_text_ht_backup,
+          survive_solution_text, journal_entry_completed_json, journal_entry_block,
           important_formulas, concept_notes, exam_traps,
-          worked_steps, flowchart_image_url,
-          lw_quiz_link, sheet_master_url, lw_video_link,
+          lw_quiz_url, sheet_master_url, lw_video_url,
           solutions_page_views, practice_page_views,
-          course_id, chapter_id, phase2_status, asset_approved_at,
+          course_id, chapter_id, phase2_status, asset_approved_at, problem_type,
           chapters!teaching_assets_chapter_id_fkey ( chapter_number, chapter_name ),
           courses!teaching_assets_course_id_fkey ( course_name, code )
         `)
         .eq("asset_name", assetCode!)
         .limit(1);
       if (assetErr) throw assetErr;
-      return assets?.[0] || null;
+      const asset = assets?.[0];
+      if (!asset) return null;
+
+      // Fetch instructions from problem_instructions table
+      const { data: instrData } = await supabase
+        .from("problem_instructions")
+        .select("instruction_number, instruction_text")
+        .eq("teaching_asset_id", asset.id)
+        .order("instruction_number");
+
+      return { ...asset, _instructions: instrData || [] };
     },
     enabled: !!assetCode,
   });
