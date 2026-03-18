@@ -867,14 +867,33 @@ export default function SolutionsViewer() {
 
 
 
-        {asset.flowchart_image_url && (
+        {/* 2. How to Solve This — per-instruction flowcharts */}
+        {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
           <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
-            <img
-              src={asset.flowchart_image_url}
-              alt="How to Solve This — step-by-step flowchart"
-              className="w-full rounded-lg"
-              loading="lazy"
-            />
+            {asset._flowcharts?.length > 0 ? (
+              <div className="space-y-6">
+                {asset._flowcharts.map((fc: any, i: number) => (
+                  <div key={i}>
+                    {asset._flowcharts.length > 1 && fc.instruction_label && (
+                      <p className="font-bold text-[14px] mb-2" style={{ color: t.text }}>{fc.instruction_label}</p>
+                    )}
+                    <img
+                      src={fc.flowchart_image_url}
+                      alt={`How to Solve This${fc.instruction_label ? ` — ${fc.instruction_label}` : ""}`}
+                      className="w-full rounded-lg"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <img
+                src={asset.flowchart_image_url}
+                alt="How to Solve This — step-by-step flowchart"
+                className="w-full rounded-lg"
+                loading="lazy"
+              />
+            )}
           </RevealToggle>
         )}
 
