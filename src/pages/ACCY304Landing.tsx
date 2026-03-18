@@ -331,8 +331,8 @@ export default function ACCY304Landing() {
   const handleEmailSubmit = async () => {
     const trimmed = email.trim().toLowerCase();
     const allowedExceptions = ["lee@survivestudios.com"];
-    if (!trimmed.endsWith(".edu") && !allowedExceptions.includes(trimmed)) {
-      setEmailError("Please use your university .edu email address");
+    if (!trimmed.endsWith("@olemiss.edu") && !allowedExceptions.includes(trimmed)) {
+      setEmailError("This tool is for Ole Miss students only. Please use your @olemiss.edu email address.");
       return;
     }
     setEmailError("");
@@ -397,32 +397,40 @@ export default function ACCY304Landing() {
       }
 
       const trimmedEmail = email.trim().toLowerCase();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-      const { data: session, error: insertErr } = await supabase
-        .from("edu_preview_sessions")
-        .insert({
+      const { data: result, error: fnErr } = await supabase.functions.invoke("create-preview-session", {
+        body: {
           email: trimmedEmail,
           asset_ids: assetLinks.map(a => a.assetId),
           asset_codes: assetLinks.map(a => a.assetCode),
-          expires_at: expiresAt,
-        })
-        .select("id")
-        .single();
+        },
+      });
 
-      if (insertErr) {
-        if (insertErr.code === "23505") {
+      if (fnErr) {
+        toast.error("Something went wrong. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (result?.error) {
+        if (result.error === "already_used") {
           setAlreadyUsed(true);
           setStep("email");
+        } else if (result.error === "rate_limited") {
+          setEmailError(result.message);
+          setStep("email");
+        } else if (result.error === "invalid_email") {
+          setEmailError(result.message);
+          setStep("email");
         } else {
-          toast.error("Failed to create preview session. Please try again.");
+          toast.error(result.message || "Something went wrong.");
         }
         setSubmitting(false);
         return;
       }
 
       setSessionResult({
-        sessionId: session.id,
+        sessionId: result.session_id,
         assetLinks: assetLinks.map(a => ({
           sourceLabel: a.sourceLabel,
           assetName: a.assetName,
@@ -600,7 +608,7 @@ export default function ACCY304Landing() {
                 Get 3 Full Solutions — Free
               </h2>
               <p className="text-white/60 text-[15px] mt-3 mb-10 max-w-[560px] mx-auto leading-relaxed">
-                Enter your olemiss.edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment details required.
+                Enter your @olemiss.edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment details required.
               </p>
 
               <div className="max-w-[420px] mx-auto text-left">
@@ -636,7 +644,7 @@ export default function ACCY304Landing() {
                 You've already used your free preview
               </p>
               <p className="text-white/60 text-[14px] mt-2 max-w-[480px] mx-auto">
-                Each .edu email gets one free preview session. Get full access to every problem with a Study Pass.
+                Each @olemiss.edu email gets one free preview session. Get full access to every problem with a Study Pass.
               </p>
               <a
                 href={enrollUrl}

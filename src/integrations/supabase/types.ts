@@ -2669,6 +2669,30 @@ export type Database = {
           },
         ]
       }
+      preview_rate_limits: {
+        Row: {
+          attempt_count: number
+          first_attempt_at: string
+          id: string
+          ip_hash: string
+          last_attempt_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          first_attempt_at?: string
+          id?: string
+          ip_hash: string
+          last_attempt_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          first_attempt_at?: string
+          id?: string
+          ip_hash?: string
+          last_attempt_at?: string
+        }
+        Relationships: []
+      }
       problem_assets: {
         Row: {
           asset_type: string
