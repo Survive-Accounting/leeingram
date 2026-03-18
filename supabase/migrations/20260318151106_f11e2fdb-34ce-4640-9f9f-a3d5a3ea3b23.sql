@@ -1,0 +1,1 @@
+CREATE POLICY "Public read asset_flowcharts" ON public.asset_flowcharts FOR SELECT TO anon USING (true)
