@@ -195,7 +195,7 @@ export default function BulkFixTool() {
 
   // Build the scope query
   function buildScopeQuery() {
-    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json");
+    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json");
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
     if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
@@ -318,29 +318,30 @@ export default function BulkFixTool() {
 
         const rows: PreviewRow[] = [];
         for (const asset of assets ?? []) {
-          const jeJson = (asset as any).journal_entry_completed_json;
-          if (!jeJson?.scenario_sections) continue;
+          for (const jsonField of ["journal_entry_completed_json", "supplementary_je_json"] as const) {
+            const jeJson = (asset as any)[jsonField];
+            if (!jeJson?.scenario_sections) continue;
 
-          // Count rows that already have the fields vs those that don't
-          let missingCount = 0;
-          let totalRows = 0;
-          for (const section of jeJson.scenario_sections) {
-            for (const entry of section.entries_by_date || []) {
-              for (const row of entry.rows || []) {
-                totalRows++;
-                if (!row.debit_credit_reason || !row.amount_source) missingCount++;
+            let missingCount = 0;
+            let totalRows = 0;
+            for (const section of jeJson.scenario_sections) {
+              for (const entry of section.entries_by_date || []) {
+                for (const row of entry.rows || []) {
+                  totalRows++;
+                  if (!row.debit_credit_reason || !row.amount_source) missingCount++;
+                }
               }
             }
-          }
 
-          if (missingCount > 0) {
-            rows.push({
-              id: asset.id,
-              asset_name: asset.asset_name,
-              field: "journal_entry_completed_json",
-              before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
-              after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
-            });
+            if (missingCount > 0) {
+              rows.push({
+                id: asset.id,
+                asset_name: asset.asset_name,
+                field: jsonField,
+                before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
+                after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
+              });
+            }
           }
         }
 
@@ -440,84 +441,90 @@ export default function BulkFixTool() {
                 if (after !== original) { newValues[f.key] = after; changed = true; }
               }
             } else if (operation === "enrich_je_rows") {
-              const jeJson = (asset as any).journal_entry_completed_json;
-              if (!jeJson?.scenario_sections) { skipped++; return; }
+              // Process both journal_entry_completed_json and supplementary_je_json
+              for (const jsonField of ["journal_entry_completed_json", "supplementary_je_json"] as const) {
+                const jeJson = (asset as any)[jsonField];
+                if (!jeJson?.scenario_sections) continue;
 
-              let hasMissing = false;
-              for (const section of jeJson.scenario_sections) {
-                for (const entry of section.entries_by_date || []) {
-                  for (const row of entry.rows || []) {
-                    if (!row.debit_credit_reason || !row.amount_source) { hasMissing = true; break; }
+                let hasMissing = false;
+                for (const section of jeJson.scenario_sections) {
+                  for (const entry of section.entries_by_date || []) {
+                    for (const row of entry.rows || []) {
+                      if (!row.debit_credit_reason || !row.amount_source) { hasMissing = true; break; }
+                    }
+                    if (hasMissing) break;
                   }
                   if (hasMissing) break;
                 }
-                if (hasMissing) break;
-              }
-              if (!hasMissing) { skipped++; return; }
+                if (!hasMissing) continue;
 
-              const jeSummary: string[] = [];
-              for (const section of jeJson.scenario_sections) {
-                for (const entry of section.entries_by_date || []) {
-                  for (const row of entry.rows || []) {
-                    const side = row.credit != null && row.credit !== 0 ? "Credit" : "Debit";
-                    const amount = row.credit != null && row.credit !== 0 ? row.credit : row.debit;
-                    jeSummary.push(`Account: ${row.account_name}, ${side}: $${amount}, Date: ${entry.date}, Section: ${section.label}`);
+                const jeSummary: string[] = [];
+                for (const section of jeJson.scenario_sections) {
+                  for (const entry of section.entries_by_date || []) {
+                    for (const row of entry.rows || []) {
+                      const side = row.credit != null && row.credit !== 0 ? "Credit" : "Debit";
+                      const amount = row.credit != null && row.credit !== 0 ? row.credit : row.debit;
+                      jeSummary.push(`Account: ${row.account_name}, ${side}: $${amount}, Date: ${entry.date}, Section: ${section.label}`);
+                    }
                   }
                 }
-              }
 
-              const enrichSystemPrompt = `You are an accounting tutor. For each journal entry row below, provide two fields:
+                const enrichSystemPrompt = `You are an accounting tutor. For each journal entry row below, provide two fields:
 1. debit_credit_reason: 1-2 sentences explaining why this account is debited or credited in this context. Written for an accounting student.
 2. amount_source: 1-2 sentences explaining where the dollar amount comes from, referencing the solution/problem when possible.
 
 Return JSON: { "rows": [ { "debit_credit_reason": "...", "amount_source": "..." } ] }
 Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given directly, say so. Return ONLY valid JSON.`;
 
-              const enrichUserPrompt = `Problem:\n${(asset as any).problem_context || (asset as any).survive_problem_text || "N/A"}\n\nSolution:\n${(asset as any).survive_solution_text || "N/A"}\n\nJE rows (${jeSummary.length}):\n${jeSummary.map((s, i) => `${i + 1}. ${s}`).join("\n")}`;
+                const enrichUserPrompt = `Problem:\n${(asset as any).problem_context || (asset as any).survive_problem_text || "N/A"}\n\nSolution:\n${(asset as any).survive_solution_text || "N/A"}\n\nJE rows (${jeSummary.length}):\n${jeSummary.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}`;
 
-              const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
-                body: {
-                  provider: "lovable",
-                  model: "google/gemini-2.5-flash",
-                  messages: [
-                    { role: "system", content: enrichSystemPrompt },
-                    { role: "user", content: enrichUserPrompt },
-                  ],
-                  temperature: 0.1,
-                  max_output_tokens: 4000,
-                },
-              });
+                const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+                  body: {
+                    provider: "lovable",
+                    model: "google/gemini-2.5-flash",
+                    messages: [
+                      { role: "system", content: enrichSystemPrompt },
+                      { role: "user", content: enrichUserPrompt },
+                    ],
+                    temperature: 0.1,
+                    max_output_tokens: 4000,
+                  },
+                });
 
-              if (aiErr) { skipped++; return; }
-              const rawContent = aiResult?.raw || aiResult?.content || "";
-              let parsed: any;
-              try {
-                const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-                parsed = JSON.parse(cleaned);
-              } catch { skipped++; return; }
+                if (aiErr) continue;
+                const rawContent = aiResult?.raw || aiResult?.content || "";
+                let parsed: any;
+                try {
+                  const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+                  parsed = JSON.parse(cleaned);
+                } catch { continue; }
 
-              if (!parsed?.rows || !Array.isArray(parsed.rows)) { skipped++; return; }
+                if (!parsed?.rows || !Array.isArray(parsed.rows)) continue;
 
-              const enriched = JSON.parse(JSON.stringify(jeJson));
-              let rowIdx = 0;
-              for (const section of enriched.scenario_sections) {
-                for (const entry of section.entries_by_date || []) {
-                  for (const row of entry.rows || []) {
-                    if (rowIdx < parsed.rows.length) {
-                      if (!row.debit_credit_reason && parsed.rows[rowIdx].debit_credit_reason) {
-                        row.debit_credit_reason = parsed.rows[rowIdx].debit_credit_reason;
+                const enriched = JSON.parse(JSON.stringify(jeJson));
+                let rowIdx = 0;
+                for (const section of enriched.scenario_sections) {
+                  for (const entry of section.entries_by_date || []) {
+                    for (const row of entry.rows || []) {
+                      if (rowIdx < parsed.rows.length) {
+                        if (!row.debit_credit_reason && parsed.rows[rowIdx].debit_credit_reason) {
+                          row.debit_credit_reason = parsed.rows[rowIdx].debit_credit_reason;
+                        }
+                        if (!row.amount_source && parsed.rows[rowIdx].amount_source) {
+                          row.amount_source = parsed.rows[rowIdx].amount_source;
+                        }
                       }
-                      if (!row.amount_source && parsed.rows[rowIdx].amount_source) {
-                        row.amount_source = parsed.rows[rowIdx].amount_source;
-                      }
+                      rowIdx++;
                     }
-                    rowIdx++;
                   }
                 }
+
+                newValues[jsonField] = enriched;
+                changed = true;
               }
 
-              newValues.journal_entry_completed_json = enriched;
-              changed = true;
+              // If neither field had data, skip
+              if (!changed) { skipped++; return; }
             }
 
             if (changed) {
@@ -667,7 +674,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
             {operation === "enrich_je_rows" && (
               <p className="text-xs text-muted-foreground">
-                Reads each asset's journal_entry_completed_json and uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
+                Reads each asset's <code className="text-foreground">journal_entry_completed_json</code> and <code className="text-foreground">supplementary_je_json</code>, then uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
               </p>
             )}
 
