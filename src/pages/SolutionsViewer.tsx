@@ -229,7 +229,7 @@ function RevealToggle({
             <div className="rounded-lg px-6 py-6 text-center" style={{ background: "linear-gradient(135deg, #0F1623, #1A2E55)" }}>
               <p className="text-[16px] font-bold text-white">🔒 Study Pass Required</p>
               <p className="text-[13px] mt-2" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Unlock full solutions, journal entries, formulas, exam traps, and more for every IA2 problem.
+                Unlock full solutions, journal entries, formulas, exam traps, and more for every Intermediate Accounting 2 problem.
               </p>
               <a
                 href={enrollUrl}
@@ -505,13 +505,12 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
-      const tbl = supabase.from("teaching_assets") as any;
-      const res = await tbl
+      const { data } = await supabase
+        .from("teaching_assets")
         .select("asset_name, source_ref")
         .eq("chapter_id", selectedChapterId)
-        .eq("status", "approved")
+        .not("asset_approved_at", "is", null)
         .order("source_ref");
-      const data = res.data;
       let filtered = data || [];
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
@@ -534,7 +533,7 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
 
   return (
     <div className="rounded-lg px-5 py-3 mb-4" style={{ background: theme.toggleBg, border: `1px solid ${theme.border}` }}>
-      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse IA2 Problems</p>
+      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse Intermediate Accounting 2 Problems</p>
       <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
         <div className="flex-1">
           <Select value={selectedChapterId} onValueChange={(v) => { setSelectedChapterId(v); setSelectedAssetName(""); }}>

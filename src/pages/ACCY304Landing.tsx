@@ -92,7 +92,7 @@ export default function ACCY304Landing() {
         <div className="max-w-[860px] mx-auto text-center">
           <p className="text-white font-bold text-[28px]">Survive Accounting</p>
           <p className="text-white text-[18px] font-normal leading-[1.5] mt-2">
-            Practice any IA2 problem.<br />Instantly. Free preview.
+            Practice any Intermediate Accounting 2 problem.<br />Instantly. Free preview.
           </p>
           <p className="text-white/70 text-[14px] mt-3 max-w-[560px] mx-auto leading-relaxed">
             Built for ACCY 304 students at your university.
@@ -252,7 +252,7 @@ export default function ACCY304Landing() {
         <div className="max-w-[860px] mx-auto text-center">
           <p className="text-white font-bold text-[24px]">Ready to stop guessing on exams?</p>
           <p className="text-white/70 text-[14px] mt-2">
-            Join ACCY 304 students getting full access to every IA2 problem.
+            Join ACCY 304 students getting full access to every Intermediate Accounting 2 problem.
           </p>
           <a
             href={enrollUrl}
