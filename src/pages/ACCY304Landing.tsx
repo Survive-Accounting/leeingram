@@ -201,7 +201,7 @@ export default function ACCY304Landing() {
           {/* Preview area */}
           <div className="mt-8">
             {previewAsset ? (
-              <BlurredAssetPreview asset={previewAsset} />
+              <BlurredPreview assetId={previewAsset.id} />
             ) : (
               <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center" style={{ background: "#F8F9FA" }}>
                 <p className="text-gray-400 text-[14px]">
