@@ -1423,22 +1423,8 @@ export default function SolutionsViewer() {
             <TestimonialsSection theme={t} />
             <AboutLeeSection theme={t} />
 
-            {/* Footer */}
-            <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-              <p className="text-center text-[11px]" style={{ color: t.textMuted }}>
-                <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: t.text }}>
-                  SurviveAccounting.com
-                </a>
-              </p>
-              <p className="text-center text-[11px] mt-1" style={{ color: t.textMuted }}>
-                Created by Lee Ingram in 2020
-              </p>
-              <p className="text-center mt-2">
-                <button onClick={() => setReportOpen(true)} className="text-[11px] hover:underline" style={{ color: t.textMuted }}>
-                  Report Issue
-                </button>
-              </p>
-            </div>
+
+
           </div>
         </div>
       </main>
