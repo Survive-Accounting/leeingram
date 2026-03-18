@@ -1025,7 +1025,7 @@ export default function SolutionsViewer() {
   const [showHighlights, setShowHighlights] = useState(false);
 
   // Practice mode — hides reveal toggles
-  const [practiceMode, setPracticeMode] = useState(isPreview);
+  const [practiceMode, setPracticeMode] = useState(true);
   const problemRef = useRef<HTMLDivElement>(null);
 
   const handleSetPracticeMode = (v: boolean) => {
