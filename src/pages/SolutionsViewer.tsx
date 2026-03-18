@@ -205,6 +205,120 @@ function SectionHeading({ children, theme }: { children: React.ReactNode; theme:
 
 // ── Reveal Toggle ───────────────────────────────────────────────────
 
+// ── Tiered Paywall Card ──────────────────────────────────────────────
+
+function TieredPaywallCard({
+  theme,
+  enrollUrl,
+  fullPassLink,
+  chapterLink,
+  chapterNumber,
+}: {
+  theme: Theme;
+  enrollUrl: string;
+  fullPassLink?: { label: string; price_cents: number; original_price_cents?: number | null; sale_label?: string | null; sale_expires_at?: string | null; url: string } | null;
+  chapterLink?: { label: string; price_cents: number; url: string } | null;
+  chapterNumber?: number | null;
+}) {
+  const now = new Date();
+  const saleActive = fullPassLink?.sale_expires_at
+    ? now < new Date(fullPassLink.sale_expires_at)
+    : false;
+
+  const fullPassUrl = fullPassLink?.url || enrollUrl;
+  const chapterUrl = chapterLink?.url || enrollUrl;
+
+  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+
+  return (
+    <div className="space-y-3">
+      {/* Lock icon + text */}
+      <div className="text-center mb-4">
+        <Lock className="h-5 w-5 mx-auto mb-2" style={{ color: "#14213D" }} />
+        <p className="text-[14px] font-semibold" style={{ color: "#14213D" }}>
+          Unlock with a Study Pass to reveal this section
+        </p>
+      </div>
+
+      {/* Option 1 — Full Pass (highlighted) */}
+      <div
+        className="relative rounded-lg px-5 py-5"
+        style={{
+          border: "2px solid #14213D",
+          background: "linear-gradient(135deg, rgba(20,33,61,0.04), rgba(20,33,61,0.08))",
+          boxShadow: "0 4px 16px rgba(20,33,61,0.12)",
+        }}
+      >
+        <span
+          className="absolute top-0 right-0 text-[10px] font-bold px-2.5 py-1 rounded-bl-lg rounded-tr-md"
+          style={{ background: "#14213D", color: "#00FFFF" }}
+        >
+          Best Value
+        </span>
+        <p className="font-bold text-[15px]" style={{ color: "#14213D" }}>
+          {fullPassLink?.label || "Full Study Pass — All Chapters"}
+        </p>
+        <div className="flex items-baseline gap-2 mt-1">
+          {saleActive && fullPassLink?.original_price_cents && (
+            <span className="line-through text-[14px]" style={{ color: "#999" }}>
+              {formatPrice(fullPassLink.original_price_cents)}
+            </span>
+          )}
+          <span className="font-bold text-[20px]" style={{ color: "#14213D" }}>
+            {formatPrice(fullPassLink?.price_cents || 12500)}
+          </span>
+          {saleActive && fullPassLink?.sale_label && (
+            <span className="text-[12px] font-semibold" style={{ color: "#00BFBF" }}>
+              · {fullPassLink.sale_label}
+            </span>
+          )}
+        </div>
+        <a
+          href={fullPassUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block mt-3 px-6 py-2.5 rounded-md font-bold text-[14px] transition-all hover:scale-105"
+          style={{ background: "#00FFFF", color: "#0A0A0A" }}
+        >
+          Get Full Access →
+        </a>
+      </div>
+
+      {/* Option 2 — Chapter Only (muted) */}
+      {chapterNumber && (
+        <div
+          className="rounded-lg px-5 py-4"
+          style={{
+            border: `1px solid ${theme.border}`,
+            background: theme.cardBg,
+          }}
+        >
+          <p className="font-semibold text-[14px]" style={{ color: theme.text }}>
+            {chapterLink?.label || `Chapter ${chapterNumber} Only`}
+          </p>
+          <p className="font-bold text-[18px] mt-0.5" style={{ color: theme.text }}>
+            {formatPrice(chapterLink?.price_cents || 3000)}
+          </p>
+          <a
+            href={chapterUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 px-5 py-2 rounded-md font-bold text-[13px] transition-all hover:opacity-90"
+            style={{ background: "#14213D", color: "#FFFFFF" }}
+          >
+            Buy Chapter {chapterNumber} →
+          </a>
+          <p className="text-[11px] mt-1.5" style={{ color: theme.textMuted }}>
+            Only includes Chapter {chapterNumber} problems
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reveal Toggle ───────────────────────────────────────────────────
+
 function RevealToggle({
   label,
   children,
@@ -214,6 +328,9 @@ function RevealToggle({
   sectionName,
   assetCode,
   extraFooterLeft,
+  fullPassLink,
+  chapterLink,
+  chapterNumber,
 }: {
   label: string;
   children: React.ReactNode;
@@ -223,6 +340,9 @@ function RevealToggle({
   sectionName?: string;
   assetCode?: string;
   extraFooterLeft?: React.ReactNode;
+  fullPassLink?: any;
+  chapterLink?: any;
+  chapterNumber?: number | null;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -260,24 +380,13 @@ function RevealToggle({
       {open && (
         <div className="px-5 pb-4 pt-3" style={{ borderTop: `1px solid ${theme.border}` }}>
           {isPreview ? (
-            <div className="rounded-lg px-6 py-6 text-center" style={{ background: "linear-gradient(135deg, #0F1623, #1A2E55)" }}>
-              <p className="text-[16px] font-bold text-white">🔒 Study Pass Required</p>
-              <p className="text-[13px] mt-2" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Unlock full solutions, journal entries, formulas, exam traps, and more for every Intermediate Accounting 2 problem.
-              </p>
-              <a
-                href={enrollUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-4 px-6 py-2.5 rounded-md font-bold text-[14px] transition-all hover:scale-105"
-                style={{ background: "#00FFFF", color: "#0A0A0A" }}
-              >
-                Get Study Pass →
-              </a>
-              <p className="text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.5)" }}>
-                7-day refund policy · Access all semester
-              </p>
-            </div>
+            <TieredPaywallCard
+              theme={theme}
+              enrollUrl={enrollUrl}
+              fullPassLink={fullPassLink}
+              chapterLink={chapterLink}
+              chapterNumber={chapterNumber}
+            />
           ) : (
             <>
               {children}
