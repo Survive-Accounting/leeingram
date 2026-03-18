@@ -490,6 +490,23 @@ export default function AssetDetailDrawer({
   const [copySettings, setCopySettings] = useState<JECopySettings>(loadCopySettings);
   const [showCopySettings, setShowCopySettings] = useState(false);
   const [sourceProblem, setSourceProblem] = useState<any>(null);
+  const queryClient = useQueryClient();
+
+  // Issue reports for this asset
+  const { data: issueReports = [] } = useQuery({
+    queryKey: ["asset-issue-reports", asset?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("asset_issue_reports")
+        .select("*")
+        .eq("teaching_asset_id", asset!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: open && !!asset?.id,
+  });
+  const issueCount = issueReports.length;
 
   // Collapsible section states
   const [showProblemSection, setShowProblemSection] = useState(false);
