@@ -974,7 +974,7 @@ function RightPanel({
     <div
       className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
-        right: 20,
+        right: 40,
         width: 180,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
