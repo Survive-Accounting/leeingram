@@ -1240,7 +1240,7 @@ export default function AssetsLibrary() {
             ) : !assets?.length ? (
               <TableRow><TableCell colSpan={isContentCreationVa ? 4 : 6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
-              assets.map((a) => {
+              paginatedAssets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
                 const statusIcon = sheetStatus === "finalized" ? "✓"
                   : sheetStatus === "ready_for_review" ? "⚠"
