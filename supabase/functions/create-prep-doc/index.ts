@@ -516,6 +516,9 @@ function buildDocRequests(
     insertText(b, "\n");
   }
 
+  // ─── 5b. HOW TO SOLVE THIS (flowchart image — inserted by caller if available) ───
+  // This is a placeholder; the actual image is inserted after doc creation by the main handler.
+
   // ─── 6. IMPORTANT FORMULAS (line breaks between formulas) ───
   if (asset.important_formulas?.trim()) {
     insertStyledText(b, "IMPORTANT FORMULAS\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
