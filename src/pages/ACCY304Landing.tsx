@@ -12,7 +12,13 @@ const IA2_COURSE = {
   code: "IA2",
   course_name: "Intermediate Accounting 2",
 };
-const IA2_CHAPTERS = [
+type LandingChapter = {
+  id: string;
+  chapter_number: number;
+  chapter_name: string;
+};
+
+const IA2_CHAPTERS: LandingChapter[] = [
   { id: "ff12c70e-8d9f-4a8a-bc3c-d2fd42fcf2de", chapter_number: 13, chapter_name: "Long Term Liabilities" },
   { id: "71b37666-7f1a-4c88-bc47-d3cbedd37b49", chapter_number: 14, chapter_name: "Stockholder's Equity" },
   { id: "6e7d8d22-9d77-4e99-9e97-efa1b955bd89", chapter_number: 15, chapter_name: "Dilutive Securities and EPS" },
@@ -23,11 +29,9 @@ const IA2_CHAPTERS = [
   { id: "1e973354-ba1f-4629-830e-8a884fccd754", chapter_number: 20, chapter_name: "Leases" },
   { id: "f7a73bd7-65ff-494f-a06d-ac3cd380b7d8", chapter_number: 21, chapter_name: "Accounting Changes" },
   { id: "56c7d37a-cef2-4a9e-9004-3f7d958b9273", chapter_number: 22, chapter_name: "Statement of Cash Flows" },
-] as const;
+];
 
 type Step = "email" | "picker" | "results";
-
-type LandingChapter = (typeof IA2_CHAPTERS)[number];
 
 interface ProblemSelection {
   chapterId: string;
