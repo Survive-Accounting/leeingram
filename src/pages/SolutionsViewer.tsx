@@ -1180,7 +1180,7 @@ export default function SolutionsViewer() {
   const rawProblemText = showHighlights && hasHighlights
     ? asset.problem_text_ht_backup!
     : asset.problem_context || "";
-  const problemParagraphs = splitLongText(rawProblemText);
+  // Don't split problem text — splitLongText can break KV blocks across paragraphs
 
   const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
 
@@ -1270,11 +1270,7 @@ export default function SolutionsViewer() {
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
                       </div>
                     )}
-                    <div className="space-y-4">
-                      {problemParagraphs.map((para, i) => (
-                        <SmartContent key={i} text={para} className="text-[14px] leading-[1.7]" theme={t} />
-                      ))}
-                    </div>
+                    <SmartContent text={rawProblemText} className="text-[14px] leading-[1.7] space-y-4" theme={t} />
                   </div>
                 )}
 
