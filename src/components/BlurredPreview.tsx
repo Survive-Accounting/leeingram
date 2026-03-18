@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-
-const enrollUrl = import.meta.env.VITE_LEARNWORLDS_ENROLL_URL || "https://surviveaccounting.com";
+import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 
 // ── Pipe table rendering (same as SolutionsViewer) ───────────────────
 
