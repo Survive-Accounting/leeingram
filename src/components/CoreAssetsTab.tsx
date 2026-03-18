@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tip } from "@/components/Tip";
 
+const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 const STATUS_CYCLE = ["not_started", "in_progress", "complete"] as const;
 type OutputStatus = (typeof STATUS_CYCLE)[number];
 
