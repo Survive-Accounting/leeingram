@@ -168,32 +168,12 @@ function buildFlowchartHtml(flowchart: any): string {
     font-weight: bold;
     margin-bottom: 4px;
   }
-  .formula-recap {
-    background: #131E35;
-    border-radius: 8px;
-    padding: 14px 18px;
-    margin-top: 16px;
-  }
-  .formula-recap-title {
-    color: #AAAAAA;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 8px;
-  }
-  .formula-line {
-    color: white;
-    font-size: 12px;
-    margin-bottom: 4px;
-    font-family: monospace;
-  }
 </style>
 </head>
 <body>
   <div class="title">${escapeHtml(flowchart.title || "How to Solve This")}</div>
   ${stepsHtml}
   ${remindersHtml}
-  ${formulaHtml}
 </body>
 </html>`;
 }
