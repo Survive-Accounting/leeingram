@@ -115,6 +115,7 @@ const AppRoutes = () => {
       <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
+      <Route path="/accy304" element={<ACCY304Landing />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       {/* Post-login VA auto-redirect handled in DomainSelect */}
