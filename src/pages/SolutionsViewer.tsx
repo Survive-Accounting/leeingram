@@ -1047,11 +1047,36 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const [searchParams] = useSearchParams();
-  const isPreview = searchParams.get("preview") === "true";
+  const rawIsPreview = searchParams.get("preview") === "true";
+  const previewToken = searchParams.get("preview_token") || "";
   const enrollUrl = useEnrollUrl();
 
   // Theme — light only
   const t = lightTheme;
+
+  // ── Preview token validation ──
+  const { data: tokenSession, isLoading: tokenLoading } = useQuery({
+    queryKey: ["preview-token", previewToken],
+    queryFn: async () => {
+      if (!previewToken) return null;
+      const { data } = await supabase
+        .from("edu_preview_sessions")
+        .select("id, asset_codes, expires_at")
+        .eq("id", previewToken)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!previewToken,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Determine access mode based on token
+  const tokenExpired = tokenSession && new Date(tokenSession.expires_at) < new Date();
+  const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
+    (tokenSession.asset_codes as string[])?.includes(assetCode);
+  const isPreview = previewToken
+    ? !tokenValidForAsset // if token present but invalid for this asset, fall back to preview mode
+    : rawIsPreview;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
@@ -1119,10 +1144,33 @@ export default function SolutionsViewer() {
     return () => { document.title = "Survive Accounting"; };
   }, [data]);
 
-  if (isLoading) {
+  if (isLoading || tokenLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
         <div className="animate-spin h-8 w-8 border-4 rounded-full" style={{ borderColor: t.border, borderTopColor: t.text }} />
+      </div>
+    );
+  }
+
+  // Show expired token full-page message
+  if (previewToken && tokenSession && tokenExpired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
+        <div className="text-center max-w-md px-6">
+          <p className="text-2xl font-bold" style={{ color: t.text }}>This preview link has expired</p>
+          <p className="mt-2 text-[14px]" style={{ color: t.textMuted }}>
+            Your 24-hour free preview has ended. Get full access to every problem with a Study Pass.
+          </p>
+          <a
+            href={enrollUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-6 px-8 py-3.5 rounded-md font-bold text-[16px] transition-all hover:scale-105"
+            style={{ background: "#00FFFF", color: "#0A0A0A" }}
+          >
+            Get Full Access →
+          </a>
+        </div>
       </div>
     );
   }
