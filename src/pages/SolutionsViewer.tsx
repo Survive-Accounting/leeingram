@@ -611,11 +611,13 @@ function JEPreviewTeaser({ jeData, jeBlock, hasCanonicalJE, theme, enrollUrl }: 
 // ── Flowchart Sub-Toggle (per instruction) ──────────────────────────
 
 function FlowchartSubToggle({
-  label,
+  letter,
+  instructionText,
   imageUrl,
   theme,
 }: {
-  label: string;
+  letter: string;
+  instructionText: string;
   imageUrl: string;
   theme: Theme;
 }) {
@@ -623,25 +625,45 @@ function FlowchartSubToggle({
 
   return (
     <div
-      className="rounded-md overflow-hidden"
-      style={{ background: theme.pageBg, border: `1px solid ${theme.border}` }}
+      className="rounded-lg overflow-hidden transition-all"
+      style={{
+        background: theme.pageBg,
+        border: `1px solid ${open ? theme.answerBorder : theme.border}`,
+      }}
     >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
+        className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors group"
         style={{ color: theme.text }}
       >
-        <span className="text-[13px] font-semibold leading-snug pr-4">{label}</span>
+        {/* Letter badge */}
+        <span
+          className="shrink-0 flex items-center justify-center h-6 w-6 rounded-full text-[12px] font-bold mt-0.5"
+          style={{
+            background: open ? theme.answerBorder : theme.tableHeaderBg,
+            color: "#FFFFFF",
+          }}
+        >
+          {letter}
+        </span>
+        {/* Instruction text */}
+        <span className="flex-1 text-[13px] leading-[1.5]">
+          {instructionText}
+        </span>
+        {/* Chevron */}
         <ChevronDown
-          className="h-3.5 w-3.5 shrink-0 transition-transform"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0)", color: theme.textMuted }}
+          className="h-4 w-4 shrink-0 mt-0.5 transition-transform"
+          style={{
+            transform: open ? "rotate(180deg)" : "rotate(0)",
+            color: theme.textMuted,
+          }}
         />
       </button>
       {open && (
-        <div className="px-4 pb-3" style={{ borderTop: `1px solid ${theme.border}` }}>
+        <div className="px-4 pb-4" style={{ borderTop: `1px solid ${theme.border}` }}>
           <img
             src={imageUrl}
-            alt={label}
+            alt={`How to solve ${letter}`}
             className="w-full rounded-lg mt-3"
             loading="lazy"
           />
