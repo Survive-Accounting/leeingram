@@ -717,6 +717,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </p>
             )}
 
+            {operation === "generate_supplementary_je" && (
+              <p className="text-xs text-muted-foreground">
+                Generates <code className="text-foreground">supplementary_je_json</code> for assets that have main journal entries but are missing the "Related Journal Entries" section. Calls the existing generation function per asset. Only targets assets where this field is currently null.
+              </p>
+            )}
+
             {operation === "find_replace_simple" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
