@@ -279,7 +279,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
           <>
             <SectionLabel>JOURNAL ENTRIES</SectionLabel>
             <RedactedJETable />
-            <UnlockPill />
+            <UnlockPill enrollUrl={enrollUrl} />
           </>
         )}
 
@@ -287,7 +287,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
           <>
             <SectionLabel>ANSWER SUMMARY</SectionLabel>
             <RedactedLines widths={["90%", "75%", "85%", "60%", "80%"]} />
-            <UnlockPill />
+            <UnlockPill enrollUrl={enrollUrl} />
           </>
         )}
 
@@ -295,7 +295,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
           <>
             <SectionLabel>IMPORTANT FORMULAS</SectionLabel>
             <RedactedFormulas />
-            <UnlockPill />
+            <UnlockPill enrollUrl={enrollUrl} />
           </>
         )}
 
@@ -303,7 +303,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
           <>
             <SectionLabel>KEY CONCEPTS</SectionLabel>
             <RedactedLines widths={["80%", "65%", "90%", "50%"]} />
-            <UnlockPill />
+            <UnlockPill enrollUrl={enrollUrl} />
           </>
         )}
 
@@ -313,7 +313,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
             <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: "#FFF5F5", borderColor: "#C0392B" }}>
               <RedactedLines widths={["85%", "70%", "60%"]} />
             </div>
-            <UnlockPill />
+            <UnlockPill enrollUrl={enrollUrl} />
           </>
         )}
       </div>
