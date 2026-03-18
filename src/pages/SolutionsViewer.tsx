@@ -496,9 +496,11 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
         const contentLines = content.split("\n").filter(l => l.trim());
 
         // Group lines into segments: plain text vs inline JE blocks
-        const segments: { type: "text"; lines: { text: string; idx: number }[] } | { type: "je"; rows: InlineJERow[]; heading?: string }[] = [];
+        type TextSeg = { type: "text"; lines: { text: string; idx: number }[] };
+        type JESeg = { type: "je"; rows: InlineJERow[]; heading?: string };
+        type Seg = TextSeg | JESeg;
         let i = 0;
-        const segs: (typeof segments) = [];
+        const segs: Seg[] = [];
 
         while (i < contentLines.length) {
           const parsed = parseInlineJELine(contentLines[i]);
