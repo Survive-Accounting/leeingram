@@ -187,6 +187,19 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     enabled: !!workspace?.chapterId,
   });
 
+  // Open issue reports count (global)
+  const { data: openIssueCount } = useQuery({
+    queryKey: ["open-issue-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("asset_issue_reports")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const getBadge = (path: string) => {
     if (!pipelineCounts) return null;
     if (path === "/problem-bank") return pipelineCounts.imported || null;
@@ -226,6 +239,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       const active = isActive(item.path);
       const badge = getBadge(item.path);
       const displayLabel = isSheetPrepRole && (item as any).altLabel ? (item as any).altLabel : item.label;
+      const issuesBadge = item.path === "/assets-library" && openIssueCount && openIssueCount > 0 ? openIssueCount : null;
       return (
         <Link
           key={item.path}
@@ -241,6 +255,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         >
           <Icon className="h-4 w-4 shrink-0" />
           {!sidebarCollapsed && <span className="text-sm">{displayLabel}</span>}
+          {!sidebarCollapsed && issuesBadge && (
+            <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+              {issuesBadge}
+            </span>
+          )}
         </Link>
       );
     });
