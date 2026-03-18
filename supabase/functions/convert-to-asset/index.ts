@@ -816,6 +816,7 @@ serve(async (req) => {
           important_formulas: candidate.important_formulas || null,
           concept_notes: candidate.concept_notes || null,
           exam_traps: candidate.exam_traps || null,
+          problem_title: title || null,
         })
         .select()
         .single();

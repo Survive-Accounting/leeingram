@@ -263,6 +263,7 @@ export default function ReviewVariants() {
         source_type: problem.source_type || null,
         source_number: problem.source_label || null,
         problem_type: problem.problem_type || null,
+        problem_title: problem.title || problem.ocr_detected_title || null,
         tags: [],
         important_formulas: candidate.important_formulas || null,
         concept_notes: candidate.concept_notes || null,
