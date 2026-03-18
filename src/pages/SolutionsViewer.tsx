@@ -1096,11 +1096,11 @@ export default function SolutionsViewer() {
         {/* 5. Key Concepts */}
         {conceptNotes.trim() && (
           <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
-            <ul className="space-y-2">
-              {conceptNotes.split(". ").filter((s: string) => s.trim()).map((sentence: string, i: number) => (
+            <ul className="space-y-3">
+              {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
                 <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
-                  <span>{sentence.endsWith(".") ? sentence : sentence + "."}</span>
+                  <span>{sentence}</span>
                 </li>
               ))}
             </ul>
