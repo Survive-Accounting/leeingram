@@ -361,6 +361,53 @@ function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onU
     </Tip>
   );
 }
+
+/* ── Enrich JE Memos button ── */
+function EnrichJEMemosButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
+  const [generating, setGenerating] = useState(false);
+  const hasJE = !!(asset as any).journal_entry_completed_json;
+  if (!hasJE) return null;
+
+  // Check if memos already exist
+  const jeJson = (asset as any).journal_entry_completed_json;
+  const hasMemos = jeJson?.scenario_sections?.some((s: any) => 
+    s.entries_by_date?.some((e: any) => e.memo)
+  );
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-je-memos", {
+        body: { teaching_asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`JE memos added (${data.memos_added} entries)`);
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || "Memo generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <Tip label={hasMemos ? "Regenerate JE Memos" : "Add JE Memos"}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 text-[10px] px-1.5"
+        onClick={generate}
+        disabled={generating}
+      >
+        {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+          <MessageSquare className={`h-3 w-3 ${hasMemos ? "text-green-600" : ""}`} />
+        )}
+      </Button>
+    </Tip>
+  );
+}
+
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const navigate = useNavigate();
