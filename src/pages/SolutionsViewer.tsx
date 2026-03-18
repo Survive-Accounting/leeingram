@@ -1180,7 +1180,7 @@ export default function SolutionsViewer() {
   const rawProblemText = showHighlights && hasHighlights
     ? asset.problem_text_ht_backup!
     : asset.problem_context || "";
-  const problemParagraphs = splitLongText(rawProblemText);
+  // Don't split problem text — splitLongText can break KV blocks across paragraphs
 
   const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
 
