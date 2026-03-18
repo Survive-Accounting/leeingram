@@ -5,7 +5,7 @@ import {
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
-  ChevronRight,
+  ChevronRight, CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
