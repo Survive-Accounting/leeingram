@@ -5,8 +5,9 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, Copy, Check } from "lucide-react";
+import { ExternalLink, Copy, Check, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const APP_URL = window.location.origin;
 
@@ -86,6 +87,18 @@ export default function ACCY304Admin() {
       );
     },
     enabled: !!courseData?.id,
+  });
+
+  // Fetch .edu lead emails
+  const { data: eduLeads } = useQuery({
+    queryKey: ["accy304-edu-leads"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("edu_preview_sessions")
+        .select("email, created_at")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
   });
 
   const totalAssets = assets?.length || 0;
@@ -233,6 +246,37 @@ export default function ACCY304Admin() {
             <p className="text-xs text-muted-foreground">
               Current: <a href={currentEnrollUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{currentEnrollUrl}</a>
             </p>
+          )}
+        </div>
+
+        {/* ── .edu Lead Emails ── */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Mail className="h-4 w-4" /> Lead Gen Emails
+          </h2>
+          {eduLeads && eduLeads.length > 0 ? (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Email</TableHead>
+                    <TableHead className="text-xs text-right">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {eduLeads.map((lead: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm">{lead.email}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground text-right">
+                        {format(new Date(lead.created_at), "MMM d, yyyy h:mm a")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No .edu emails captured yet.</p>
           )}
         </div>
       </div>
