@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -499,6 +500,7 @@ export default function AssetsLibrary() {
   const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
+  const [lastCopiedKey, setLastCopiedKey] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
   const [bulkPrepDocMode, setBulkPrepDocMode] = useState<"missing" | "all">("missing");
 
@@ -1275,12 +1277,13 @@ export default function AssetsLibrary() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 text-[10px] px-1.5"
+                              className={cn("h-6 text-[10px] px-1.5 transition-all duration-300", lastCopiedKey === a.id + "-title" && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}
                               onClick={() => {
                                 const title = (a as any).problem_title
                                   ? `${a.source_ref} — ${(a as any).problem_title}`
                                   : (a.source_ref || a.asset_name);
                                 navigator.clipboard.writeText(title);
+                                setLastCopiedKey(a.id + "-title");
                                 toast.success("Title copied");
                               }}
                             >
@@ -1292,9 +1295,10 @@ export default function AssetsLibrary() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 text-[10px] px-1.5"
+                              className={cn("h-6 text-[10px] px-1.5 transition-all duration-300", lastCopiedKey === a.id + "-iframe-inline" && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}
                               onClick={() => {
                                 navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                setLastCopiedKey(a.id + "-iframe-inline");
                                 toast.success("iFrame copied");
                               }}
                             >
@@ -1379,7 +1383,7 @@ export default function AssetsLibrary() {
                           {/* Solutions embed dropdown */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 relative" onClick={(e) => e.stopPropagation()}>
+                              <Button variant="outline" size="sm" className={cn("h-6 text-[10px] px-1.5 relative transition-all duration-300", lastCopiedKey?.startsWith(a.id + "-") && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")} onClick={(e) => e.stopPropagation()}>
                                 <ExternalLink className="h-3 w-3" />
                                 {(a as any).solutions_page_views > 0 && (
                                   <span className="absolute -top-1.5 -right-1.5 bg-muted text-muted-foreground text-[8px] rounded-full h-3.5 min-w-[14px] flex items-center justify-center px-0.5">
@@ -1398,20 +1402,23 @@ export default function AssetsLibrary() {
                               <DropdownMenuItem onClick={() => window.open(`/practice/${a.asset_name}`, "_blank")}>
                                 Practice Mode →
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
+                              <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-full" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
                                 navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                setLastCopiedKey(a.id + "-full");
                                 toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
                               }}>
                                 Copy Full Solutions iFrame
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
+                              <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-preview" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
                                 navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                setLastCopiedKey(a.id + "-preview");
                                 toast.success("Preview iFrame copied — students will see paywall after problem");
                               }}>
                                 Copy Preview iFrame
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
+                              <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-practice" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
                                 navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                setLastCopiedKey(a.id + "-practice");
                                 toast.success("Practice iFrame copied");
                               }}>
                                 Copy Practice iFrame
