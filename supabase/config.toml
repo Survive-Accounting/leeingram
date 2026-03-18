@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.send-issue-report]
 verify_jwt = false
+
+[functions.generate-flowchart]
+verify_jwt = false

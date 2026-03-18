@@ -516,6 +516,9 @@ function buildDocRequests(
     insertText(b, "\n");
   }
 
+  // ─── 5b. HOW TO SOLVE THIS (flowchart image — inserted by caller if available) ───
+  // This is a placeholder; the actual image is inserted after doc creation by the main handler.
+
   // ─── 6. IMPORTANT FORMULAS (line breaks between formulas) ───
   if (asset.important_formulas?.trim()) {
     insertStyledText(b, "IMPORTANT FORMULAS\n", { bold: true, fontSize: 13, fgColor: NAVY, namedStyle: "HEADING_2" });
@@ -846,6 +849,85 @@ Deno.serve(async (req) => {
         }
         throw batchErr;
       }
+    }
+
+    // ── Generate flowchart and insert into doc (non-blocking) ─────────
+    try {
+      // Call generate-flowchart to get or create the image
+      const flowchartRes = await fetch(`${supabaseUrl}/functions/v1/generate-flowchart`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ teaching_asset_id }),
+      });
+      const flowchartData = await flowchartRes.json();
+
+      if (flowchartData.success && !flowchartData.skipped && flowchartData.image_url) {
+        console.log(`Flowchart available: ${flowchartData.image_url}`);
+
+        // Read the current doc to find where to insert the image
+        // We'll append "HOW TO SOLVE THIS" section with image at the end of the doc body
+        const docInfo = await googleFetch(`${GOOGLE_DOCS_API}/${docId}?fields=body.content`, token);
+        const bodyContent = docInfo?.body?.content || [];
+        // Find the end index (before the last newline)
+        let insertIdx = 1;
+        for (const el of bodyContent) {
+          if (el.endIndex) insertIdx = el.endIndex - 1;
+        }
+
+        // Insert heading + image via batchUpdate
+        const flowchartRequests: any[] = [];
+
+        // Insert heading text first
+        const headingText = "\nHOW TO SOLVE THIS\n";
+        flowchartRequests.push({
+          insertText: { location: { index: insertIdx }, text: headingText },
+        });
+        flowchartRequests.push({
+          updateParagraphStyle: {
+            range: { startIndex: insertIdx + 1, endIndex: insertIdx + headingText.length },
+            paragraphStyle: { namedStyleType: "HEADING_2" },
+            fields: "namedStyleType",
+          },
+        });
+        flowchartRequests.push({
+          updateTextStyle: {
+            range: { startIndex: insertIdx + 1, endIndex: insertIdx + headingText.length - 1 },
+            textStyle: {
+              bold: true,
+              fontSize: { magnitude: 13, unit: "PT" },
+              foregroundColor: { color: { rgbColor: NAVY } },
+            },
+            fields: "bold,fontSize,foregroundColor",
+          },
+        });
+
+        // Insert image after heading
+        const imageIdx = insertIdx + headingText.length;
+        flowchartRequests.push({
+          insertInlineImage: {
+            location: { index: imageIdx },
+            uri: flowchartData.image_url,
+            objectSize: {
+              width: { magnitude: 460, unit: "PT" },
+              height: { magnitude: 600, unit: "PT" },
+            },
+          },
+        });
+
+        await googleFetch(`${GOOGLE_DOCS_API}/${docId}:batchUpdate`, token, {
+          method: "POST",
+          body: JSON.stringify({ requests: flowchartRequests }),
+        });
+        console.log("Flowchart image inserted into prep doc");
+      } else {
+        console.log(`Flowchart skipped: ${flowchartData.reason || "no flowchart"}`);
+      }
+    } catch (flowchartErr: any) {
+      // Never fail the whole prep doc because of flowchart
+      console.warn("Flowchart generation/insertion failed (non-fatal):", flowchartErr.message);
     }
 
     // Make doc viewable by anyone with link

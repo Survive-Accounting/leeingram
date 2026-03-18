@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen, ExternalLink } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen, ExternalLink, GitBranch, X } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { Tip } from "@/components/Tip";
@@ -68,6 +68,9 @@ type TeachingAsset = {
   prep_doc_id?: string | null;
   prep_doc_url?: string | null;
   asset_approved_at?: string | null;
+  flowchart_image_url?: string | null;
+  flowchart_image_id?: string | null;
+  worked_steps?: string | null;
 };
 type JournalOption = "question" | "feedback" | "none";
 
@@ -245,6 +248,74 @@ function SlidesButton({ assetId, hasSheet, slidesUrl, onCreated }: { assetId: st
     <Tip label="Create Filming Slides">
       <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" onClick={createSlides} disabled={creating}>
         {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Film className="h-3 w-3" />}
+      </Button>
+    </Tip>
+  );
+}
+
+/* ── Flowchart button ── */
+function FlowchartButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
+  const [generating, setGenerating] = useState(false);
+
+  const hasWorkedSteps = !!(asset.worked_steps?.trim());
+  const hasFlowchart = !!(asset.flowchart_image_url);
+
+  if (!hasWorkedSteps && !hasFlowchart) return null;
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-flowchart", {
+        body: { teaching_asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.skipped) {
+        toast.info(`Flowchart skipped: ${data.reason || "simple problem"}`);
+      } else {
+        toast.success("Flowchart generated!");
+      }
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || "Flowchart generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const clearFlowchart = async () => {
+    await supabase.from("teaching_assets").update({ flowchart_image_url: null, flowchart_image_id: null } as any).eq("id", asset.id);
+    toast.success("Flowchart cleared");
+    onUpdated();
+  };
+
+  if (hasFlowchart) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5">
+            <GitBranch className="h-3 w-3 text-green-600" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => window.open(asset.flowchart_image_url!, "_blank")}>
+            View Flowchart
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={generate} disabled={generating}>
+            {generating ? "Regenerating…" : "Regenerate"}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={clearFlowchart} className="text-destructive">
+            Clear Flowchart
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Tip label="Generate Flowchart">
+      <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5" onClick={generate} disabled={generating}>
+        {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />}
       </Button>
     </Tip>
   );
@@ -1157,6 +1228,9 @@ export default function AssetsLibrary() {
                                 <BookOpen className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                               </a>
                             </Tip>
+                          )}
+                          {isAdmin && (
+                            <FlowchartButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                           )}
                           {/* Solutions embed dropdown */}
                           <DropdownMenu>
