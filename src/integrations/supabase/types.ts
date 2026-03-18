@@ -3058,6 +3058,12 @@ export type Database = {
           google_sheet_url: string | null
           id: string
           important_formulas: string | null
+          instruction_1: string | null
+          instruction_2: string | null
+          instruction_3: string | null
+          instruction_4: string | null
+          instruction_5: string | null
+          instruction_list: string | null
           journal_entry_block: string | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
@@ -3144,6 +3150,12 @@ export type Database = {
           google_sheet_url?: string | null
           id?: string
           important_formulas?: string | null
+          instruction_1?: string | null
+          instruction_2?: string | null
+          instruction_3?: string | null
+          instruction_4?: string | null
+          instruction_5?: string | null
+          instruction_list?: string | null
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
@@ -3230,6 +3242,12 @@ export type Database = {
           google_sheet_url?: string | null
           id?: string
           important_formulas?: string | null
+          instruction_1?: string | null
+          instruction_2?: string | null
+          instruction_3?: string | null
+          instruction_4?: string | null
+          instruction_5?: string | null
+          instruction_list?: string | null
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
