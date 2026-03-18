@@ -235,6 +235,44 @@ export type Database = {
           },
         ]
       }
+      asset_flowcharts: {
+        Row: {
+          created_at: string
+          flowchart_image_id: string | null
+          flowchart_image_url: string | null
+          id: string
+          instruction_label: string | null
+          instruction_number: number
+          teaching_asset_id: string
+        }
+        Insert: {
+          created_at?: string
+          flowchart_image_id?: string | null
+          flowchart_image_url?: string | null
+          id?: string
+          instruction_label?: string | null
+          instruction_number?: number
+          teaching_asset_id: string
+        }
+        Update: {
+          created_at?: string
+          flowchart_image_id?: string | null
+          flowchart_image_url?: string | null
+          id?: string
+          instruction_label?: string | null
+          instruction_number?: number
+          teaching_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_flowcharts_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_groups: {
         Row: {
           created_at: string
