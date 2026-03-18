@@ -304,7 +304,7 @@ export default function ACCY304Landing() {
         asset_name: p.asset_name,
         source_ref: p.source_ref,
         source_label: labelsByCode.get(p.source_ref) || p.source_ref,
-      }));
+      })).sort((a: any, b: any) => naturalSortRef(a.source_ref, b.source_ref));
     },
     enabled: !!previewChapterId,
   });

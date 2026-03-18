@@ -513,7 +513,7 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
           return true;
         });
       }
-      return filtered;
+      return filtered.sort((a: any, b: any) => naturalSortRef(a.source_ref, b.source_ref));
     },
     enabled: !!selectedChapterId,
   });

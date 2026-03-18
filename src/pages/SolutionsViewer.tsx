@@ -860,7 +860,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
         asset_name: a.asset_name,
         source_ref: a.source_ref,
         source_label: labelsByCode.get(a.source_ref) || a.source_ref,
-      }));
+      })).sort((a: any, b: any) => naturalSortRef(a.source_ref, b.source_ref));
     },
     enabled: !!selectedChapterId,
   });
