@@ -499,6 +499,7 @@ export default function AssetsLibrary() {
   const [sheetsCreatedLogOpen, setSheetsCreatedLogOpen] = useState(false);
   const [syncingAssetId, setSyncingAssetId] = useState<string | null>(null);
   const [generatingPrepDocId, setGeneratingPrepDocId] = useState<string | null>(null);
+  const [lastCopiedKey, setLastCopiedKey] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
   const [bulkPrepDocMode, setBulkPrepDocMode] = useState<"missing" | "all">("missing");
 
