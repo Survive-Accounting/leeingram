@@ -530,7 +530,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         }
 
         await Promise.all(updates);
-        setRunProgress({ current: Math.min(i + BATCH_SIZE, total), total });
+        setRunProgress({ current: Math.min(i + batchSize, total), total });
       }
 
       setRunComplete({ updated, skipped });
