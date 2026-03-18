@@ -1574,8 +1574,7 @@ export default function SolutionsViewer() {
                   border: `1px solid ${t.border}`,
                 }}
               >
-                {/* Chapter navigator (preview only) */}
-                {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
+                {/* Source ref label */}
 
                 {/* Source ref label */}
                 {sourceRef && (
