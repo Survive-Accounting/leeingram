@@ -82,7 +82,6 @@ async function findOrCreateFolder(token: string, name: string, parentId?: string
 function buildFlowchartHtml(flowchart: any): string {
   const steps = flowchart.steps || [];
   const reminders = flowchart.key_reminders || [];
-  const formulas = flowchart.formula_recap || [];
 
   let stepsHtml = "";
   for (let i = 0; i < steps.length; i++) {
@@ -106,14 +105,6 @@ function buildFlowchartHtml(flowchart: any): string {
       </div>`;
     }
     remindersHtml += `</div>`;
-  }
-
-  let formulaHtml = "";
-  if (formulas.length > 0) {
-    formulaHtml = `<div class="formula-recap">
-      <div class="formula-recap-title">Key Formulas</div>
-      ${formulas.map((f: string) => `<div class="formula-line">${escapeHtml(f)}</div>`).join("")}
-    </div>`;
   }
 
   return `<!DOCTYPE html>
@@ -177,32 +168,12 @@ function buildFlowchartHtml(flowchart: any): string {
     font-weight: bold;
     margin-bottom: 4px;
   }
-  .formula-recap {
-    background: #131E35;
-    border-radius: 8px;
-    padding: 14px 18px;
-    margin-top: 16px;
-  }
-  .formula-recap-title {
-    color: #AAAAAA;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 8px;
-  }
-  .formula-line {
-    color: white;
-    font-size: 12px;
-    margin-bottom: 4px;
-    font-family: monospace;
-  }
 </style>
 </head>
 <body>
   <div class="title">${escapeHtml(flowchart.title || "How to Solve This")}</div>
   ${stepsHtml}
   ${remindersHtml}
-  ${formulaHtml}
 </body>
 </html>`;
 }
@@ -292,11 +263,10 @@ Generate a flowchart as a JSON object with this exact structure:
       "text": "brief reminder text",
       "color": "#F0F0F0"
     }
-  ],
-  "formula_recap": [
-    "Formula = Components"
   ]
 }
+
+IMPORTANT: Do NOT include a "formula_recap" section. Formulas are already displayed separately on the page.
 
 Color guide for steps:
 - Use a progression from #2C3E7A (dark blue) through #1B6B45 (dark green) for normal steps
@@ -307,7 +277,7 @@ Only generate a flowchart if the problem involves a multi-step calculation proce
 
 If the problem is a simple single-step journal entry with no multi-step process, return exactly: {"skip": true}
 
-Maximum 6 main steps. Maximum 3 key reminders. Maximum 4 formula recap items.
+Maximum 6 main steps. Maximum 3 key reminders.
 
 Return valid JSON only, no explanation.
 
@@ -315,10 +285,7 @@ PROBLEM CONTEXT:
 ${(asset.problem_context || "").slice(0, 2000)}
 
 WORKED STEPS:
-${(asset.worked_steps || "").slice(0, 3000)}
-
-IMPORTANT FORMULAS:
-${(asset.important_formulas || "").slice(0, 1000)}`;
+${(asset.worked_steps || "").slice(0, 3000)}`;
 
     const aiRes = await fetch(`${supabaseUrl}/functions/v1/generate-ai-output`, {
       method: "POST",
