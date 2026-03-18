@@ -1180,6 +1180,16 @@ export default function AssetsLibrary() {
       </div>
 
       {/* Table */}
+      {(() => {
+        const totalAssets = assets?.length ?? 0;
+        const totalPages = Math.max(1, Math.ceil(totalAssets / PAGE_SIZE));
+        const safePage = Math.min(currentPage, totalPages);
+        const paginatedAssets = assets?.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE) ?? [];
+        const showingFrom = totalAssets > 0 ? (safePage - 1) * PAGE_SIZE + 1 : 0;
+        const showingTo = Math.min(safePage * PAGE_SIZE, totalAssets);
+
+        return (
+          <>
       <div className="rounded-lg overflow-hidden border border-border bg-background/95">
         <Table>
           <TableHeader>
