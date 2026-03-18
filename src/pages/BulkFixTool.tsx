@@ -674,7 +674,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
             {operation === "enrich_je_rows" && (
               <p className="text-xs text-muted-foreground">
-                Reads each asset's journal_entry_completed_json and uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
+                Reads each asset's <code className="text-foreground">journal_entry_completed_json</code> and <code className="text-foreground">supplementary_je_json</code>, then uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
               </p>
             )}
 
