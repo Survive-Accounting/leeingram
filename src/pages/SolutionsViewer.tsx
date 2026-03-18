@@ -960,20 +960,17 @@ export default function SolutionsViewer() {
             {asset._flowcharts?.length > 1 ? (
               <div className="space-y-2">
                 {asset._flowcharts.map((fc: any) => {
-                  // Find the matching instruction text for a friendly label
                   const instr = (asset._instructions || []).find(
                     (ins: any) => ins.instruction_number === fc.instruction_number
                   );
-                  const friendlyLabel = instr?.instruction_text
-                    ? instr.instruction_text.length > 80
-                      ? instr.instruction_text.slice(0, 77) + "…"
-                      : instr.instruction_text
-                    : `Part ${fc.instruction_label || fc.instruction_number}`;
+                  const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
+                  const text = instr?.instruction_text || `Part ${letter}`;
 
                   return (
                     <FlowchartSubToggle
                       key={fc.instruction_number}
-                      label={`${fc.instruction_label || ""} ${friendlyLabel}`.trim()}
+                      letter={letter}
+                      instructionText={text}
                       imageUrl={fc.flowchart_image_url}
                       theme={t}
                     />
