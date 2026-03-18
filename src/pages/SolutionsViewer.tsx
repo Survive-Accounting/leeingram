@@ -862,28 +862,34 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 }
 
 
-// ── About Lee Content (shared between card and left panel) ──────────
+// ── About Lee Content ──────────────────────────────────────────────
 
-function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
+function AboutLeeSection({ theme }: { theme: Theme }) {
   return (
-    <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
+    <div className="mt-10 flex flex-col items-center text-center gap-4">
+      <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase" style={{ color: theme.textMuted }}>
+        About Lee Ingram
+      </h2>
       <img
         src={LEE_HEADSHOT_URL}
         alt="Lee Ingram"
-        className={`${compact ? "w-36 h-36" : "w-40 h-40"} rounded-xl object-cover`}
+        className="w-40 h-40 rounded-xl object-cover"
         style={{ objectPosition: "top center" }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
-      <div className={compact ? "space-y-2" : "space-y-3"}>
-        <p className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`} style={{ color: theme.text }}>
-          Tutoring entrepreneur since 2015. Founder of Survive Accounting — exam prep built from thousands of real Ole Miss tutoring sessions.
+      <div className="space-y-3 max-w-[400px]">
+        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+          Tutor &amp; entrepreneur since 2015. Founder of SurviveAccounting.com.
         </p>
-        <p className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`} style={{ color: theme.text }}>
-          I love helping students ace exams with minimal effort. Thanks for stopping by.
+        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+          I love helping students ace exams with the least effort possible.
         </p>
-        <p className={`${compact ? "text-[12px]" : "text-[13px]"} italic`} style={{ color: theme.text }}>— Lee</p>
+        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+          Best of luck in your course!
+        </p>
+        <p className="text-[13px] italic" style={{ color: theme.text }}>— Lee</p>
       </div>
-      <div className={`flex flex-col gap-1.5 ${compact ? "text-[11px]" : "text-[12px]"}`}>
+      <div className="flex flex-col gap-1.5 text-[12px]">
         <a href="mailto:lee@surviveaccounting.com" className="hover:underline" style={{ color: "#3B82F6" }}>
           lee@surviveaccounting.com
         </a>
