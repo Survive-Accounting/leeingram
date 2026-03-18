@@ -1524,7 +1524,7 @@ export default function SolutionsViewer() {
         <div className="text-center max-w-md px-6">
           <p className="text-2xl font-bold" style={{ color: t.text }}>This preview link has expired</p>
           <p className="mt-2 text-[14px]" style={{ color: t.textMuted }}>
-            Your 24-hour free preview has ended. Get full access to every problem with a Study Pass.
+            Your 2-hour free preview has ended. Get full access to every problem with a Study Pass.
           </p>
           <a
             href={enrollUrl}
