@@ -623,7 +623,10 @@ export default function SolutionsViewer() {
     : "";
   const courseCode = course?.code || "";
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
-  const titleLine = asset.source_ref || asset.asset_name;
+  const problemTitle = asset._problemTitle || "";
+  const titleLine = problemTitle
+    ? `${asset.source_ref || asset.asset_name} — ${problemTitle}`
+    : (asset.source_ref || asset.asset_name);
 
   // Instructions: priority 1 = problem_instructions table, 2 = instruction_1-5, 3 = instruction_list
   let instructions: string[] = (asset._instructions || [])
