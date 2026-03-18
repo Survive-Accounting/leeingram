@@ -1,0 +1,1 @@
+ALTER TYPE problem_type ADD VALUE IF NOT EXISTS 'quick_study';

@@ -4243,7 +4243,7 @@ export type Database = {
         | "banked"
         | "ready_to_film"
         | "deployed"
-      problem_type: "exercise" | "problem" | "custom"
+      problem_type: "exercise" | "problem" | "custom" | "quick_study"
       question_review_status: "pending" | "approved" | "rejected"
       repair_note_status: "open" | "resolved"
       repair_note_type:
@@ -4435,7 +4435,7 @@ export const Constants = {
         "ready_to_film",
         "deployed",
       ],
-      problem_type: ["exercise", "problem", "custom"],
+      problem_type: ["exercise", "problem", "custom", "quick_study"],
       question_review_status: ["pending", "approved", "rejected"],
       repair_note_status: ["open", "resolved"],
       repair_note_type: [
