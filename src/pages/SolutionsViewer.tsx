@@ -1401,7 +1401,7 @@ export default function SolutionsViewer() {
   const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
     (tokenSession.asset_codes as string[])?.includes(assetCode);
   const isPreview = previewToken
-    ? !tokenValidForAsset // if token present but invalid for this asset, fall back to preview mode
+    ? (!tokenValidForAsset || previewExpired) // if token present but invalid/expired, fall back to preview mode
     : rawIsPreview;
 
   // Highlight toggle
