@@ -1269,10 +1269,40 @@ export default function AssetsLibrary() {
                       {a.source_ref || "—"}
                     </TableCell>
                     {!isContentCreationVa && (
-                      <TableCell>
-                        <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
-                          {statusIcon} {statusLabel}
-                        </Badge>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1 items-center">
+                          <Tip label="Copy title: Source Ref — Problem Title">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-1.5"
+                              onClick={() => {
+                                const title = (a as any).problem_title
+                                  ? `${a.source_ref} — ${(a as any).problem_title}`
+                                  : (a.source_ref || a.asset_name);
+                                navigator.clipboard.writeText(title);
+                                toast.success("Title copied");
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                              Title
+                            </Button>
+                          </Tip>
+                          <Tip label="Copy full solutions iFrame embed">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-1.5"
+                              onClick={() => {
+                                navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                toast.success("iFrame copied");
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                              iFrame
+                            </Button>
+                          </Tip>
+                        </div>
                       </TableCell>
                     )}
                     <TableCell className="text-xs text-muted-foreground">
