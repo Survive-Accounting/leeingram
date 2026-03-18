@@ -666,6 +666,11 @@ export default function AssetDetailDrawer({
               <p className="text-xs text-muted-foreground mt-1">
                 {courseLabel} · {chapterLabel}
               </p>
+              {sourceProblem?.title && (
+                <p className="text-xs text-muted-foreground">
+                  {asset.source_ref || sourceNumber} — {sourceProblem.title}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Created {format(new Date(asset.created_at), "MMM d, yyyy")}
               </p>
