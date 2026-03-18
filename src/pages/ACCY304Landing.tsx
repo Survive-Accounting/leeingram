@@ -135,7 +135,7 @@ function ProblemPickerRow({
       else if (selection.type === "E") filtered = filtered.filter((p: any) => p.source_code?.startsWith("E") && !p.source_code?.startsWith("EX"));
       else if (selection.type === "P") filtered = filtered.filter((p: any) => p.source_code?.startsWith("P"));
 
-      return filtered;
+      return filtered.sort((a: any, b: any) => naturalSortRef(a.source_code, b.source_code));
     },
     enabled: !!selection.chapterId,
   });
