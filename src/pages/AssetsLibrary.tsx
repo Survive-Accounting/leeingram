@@ -33,6 +33,8 @@ import AssetDetailDrawer from "@/components/AssetDetailDrawer";
 import { CoreAssetsTab } from "@/components/CoreAssetsTab";
 import { useBackgroundJobs } from "@/hooks/useBackgroundJobs";
 
+const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
+
 type TeachingAsset = {
   id: string;
   course_id: string;
