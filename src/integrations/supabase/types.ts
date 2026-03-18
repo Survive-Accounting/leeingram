@@ -1302,6 +1302,36 @@ export type Database = {
           },
         ]
       }
+      edu_preview_sessions: {
+        Row: {
+          asset_codes: string[]
+          asset_ids: string[]
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          used: boolean
+        }
+        Insert: {
+          asset_codes: string[]
+          asset_ids: string[]
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          used?: boolean
+        }
+        Update: {
+          asset_codes?: string[]
+          asset_ids?: string[]
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
       emails: {
         Row: {
           ai_refined_body: string | null
