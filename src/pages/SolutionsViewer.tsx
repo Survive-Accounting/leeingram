@@ -1267,8 +1267,7 @@ export default function SolutionsViewer() {
         </div>
       </div>
 
-      {/* ── Floating Left Panel (desktop only) ── */}
-      <LeftPanel theme={t} isDark={isDark} />
+      {/* Left panel removed — bio now in right column */}
 
       {/* ── Content with side panel ── */}
       <main className="relative mx-auto px-6 py-8 flex gap-4 justify-center" style={{ zIndex: 5, maxWidth: 1040 }}>
