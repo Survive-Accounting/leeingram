@@ -253,6 +253,44 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_issue_reports: {
+        Row: {
+          asset_name: string | null
+          created_at: string | null
+          id: string
+          message: string
+          reporter_email: string | null
+          status: string | null
+          teaching_asset_id: string | null
+        }
+        Insert: {
+          asset_name?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          reporter_email?: string | null
+          status?: string | null
+          teaching_asset_id?: string | null
+        }
+        Update: {
+          asset_name?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          reporter_email?: string | null
+          status?: string | null
+          teaching_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_issue_reports_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           asset_code: string

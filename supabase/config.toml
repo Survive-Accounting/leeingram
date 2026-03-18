@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.swap-problem-numbers]
 verify_jwt = false
+
+[functions.send-issue-report]
+verify_jwt = false
