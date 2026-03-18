@@ -435,6 +435,54 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
   );
 }
 
+// ── Inline JE detection helpers ──────────────────────────────────────
+
+interface InlineJERow {
+  side: "debit" | "credit";
+  account: string;
+  amount: string;
+}
+
+const DEBIT_CREDIT_RE = /^(Debit|Credit)\s+(.+?)\s+(\$[\d,]+(?:\.\d+)?)\s*$/i;
+
+function parseInlineJELine(line: string): InlineJERow | null {
+  const m = line.trim().match(DEBIT_CREDIT_RE);
+  if (!m) return null;
+  return { side: m[1].toLowerCase() as "debit" | "credit", account: m[2].trim(), amount: m[3] };
+}
+
+function InlineJETable({ rows, heading, theme }: { rows: InlineJERow[]; heading?: string; theme: Theme }) {
+  return (
+    <div style={{ margin: "12px 0" }}>
+      {heading && <p style={{ fontSize: 13, fontWeight: 600, color: theme.text, marginBottom: 6 }}>{heading}</p>}
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead>
+          <tr style={{ background: theme.tableHeaderBg }}>
+            <th style={{ color: "#fff", padding: "6px 10px", textAlign: "left", fontWeight: 600 }}>Account</th>
+            <th style={{ color: "#fff", padding: "6px 10px", textAlign: "right", fontWeight: 600, width: 90 }}>Debit</th>
+            <th style={{ color: "#fff", padding: "6px 10px", textAlign: "right", fontWeight: 600, width: 90 }}>Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} style={{ background: i % 2 === 1 ? theme.tableAltBg : "transparent" }}>
+              <td style={{ padding: "5px 10px", paddingLeft: row.side === "credit" ? 30 : 10, color: theme.text }}>
+                {row.account}
+              </td>
+              <td style={{ padding: "5px 10px", textAlign: "right", color: theme.text }}>
+                {row.side === "debit" ? row.amount : ""}
+              </td>
+              <td style={{ padding: "5px 10px", textAlign: "right", color: theme.text }}>
+                {row.side === "credit" ? row.amount : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
@@ -446,17 +494,62 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
         const label = labelMatch ? `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}` : null;
         const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
         const contentLines = content.split("\n").filter(l => l.trim());
+
+        // Group lines into segments: plain text vs inline JE blocks
+        const segments: { type: "text"; lines: { text: string; idx: number }[] } | { type: "je"; rows: InlineJERow[]; heading?: string }[] = [];
+        let i = 0;
+        const segs: (typeof segments) = [];
+
+        while (i < contentLines.length) {
+          const parsed = parseInlineJELine(contentLines[i]);
+          if (parsed) {
+            // Check if previous line is a JE label heading
+            let heading: string | undefined;
+            const lastSeg = segs[segs.length - 1];
+            if (lastSeg && (lastSeg as any).type === "text") {
+              const textSeg = lastSeg as { type: "text"; lines: { text: string; idx: number }[] };
+              const lastLine = textSeg.lines[textSeg.lines.length - 1];
+              if (lastLine && /^journal\s+entr(y|ies)\s*:/i.test(lastLine.text.trim())) {
+                heading = lastLine.text.trim();
+                textSeg.lines.pop();
+                if (textSeg.lines.length === 0) segs.pop();
+              }
+            }
+            // Collect consecutive debit/credit lines
+            const jeRows: InlineJERow[] = [parsed];
+            i++;
+            while (i < contentLines.length) {
+              const next = parseInlineJELine(contentLines[i]);
+              if (next) { jeRows.push(next); i++; } else break;
+            }
+            segs.push({ type: "je", rows: jeRows, heading } as any);
+          } else {
+            const lastSeg = segs[segs.length - 1];
+            if (lastSeg && (lastSeg as any).type === "text") {
+              (lastSeg as any).lines.push({ text: contentLines[i], idx: i });
+            } else {
+              segs.push({ type: "text", lines: [{ text: contentLines[i], idx: i }] } as any);
+            }
+            i++;
+          }
+        }
+
         return (
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
             {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
-            {contentLines.map((line, li) => {
-              const trimmed = line.trim();
-              const isYearLabel = /^\d{4}\s*:/.test(trimmed);
-              if (isYearLabel) {
-                return <p key={li} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
+            {segs.map((seg: any, segIdx: number) => {
+              if (seg.type === "je") {
+                return <InlineJETable key={`je-${segIdx}`} rows={seg.rows} heading={seg.heading} theme={theme} />;
               }
-              return <p key={li} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
+              return seg.lines.map((line: { text: string; idx: number }) => {
+                const trimmed = line.text.trim();
+                const isYearLabel = /^\d{4}\s*:/.test(trimmed);
+                if (isYearLabel) {
+                  return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
+                }
+                return <p key={line.idx} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
+              });
             })}
           </div>
         );
