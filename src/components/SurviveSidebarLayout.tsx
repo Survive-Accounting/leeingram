@@ -58,6 +58,24 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
   const [completeOpen, setCompleteOpen] = useState(false);
 
+  // Phase section collapse state — auto-expand if current route is inside that phase
+  const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
+  const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
+  const phase3Paths = ["/study-tools/flashcards", "/study-tools/formula-recall", "/study-tools/entry-builder", "/study-tools/problem-dissector"];
+
+  const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
+
+  const [phase1Open, setPhase1Open] = useState(() => true);
+  const [phase2Open, setPhase2Open] = useState(() => true);
+  const [phase3Open, setPhase3Open] = useState(() => true);
+
+  // Auto-expand active phase section on route change
+  useEffect(() => {
+    if (isInPhase(phase1Paths)) setPhase1Open(true);
+    if (isInPhase(phase2Paths)) setPhase2Open(true);
+    if (isInPhase(phase3Paths)) setPhase3Open(true);
+  }, [location.pathname]);
+
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
