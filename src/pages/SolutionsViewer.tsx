@@ -288,44 +288,44 @@ function TieredPaywallCard({
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
   return (
-    <div className="space-y-3">
+    <div className="rounded-xl p-5 space-y-4" style={{ background: "#FFFBF0" }}>
       {/* Lock icon + text */}
-      <div className="text-center mb-4">
-        <Lock className="h-5 w-5 mx-auto mb-2" style={{ color: "#14213D" }} />
-        <p className="text-[14px] font-semibold" style={{ color: "#14213D" }}>
+      <div className="text-center mb-2">
+        <Lock className="h-6 w-6 mx-auto mb-2" style={{ color: "#14213D" }} />
+        <p className="text-[15px] font-bold" style={{ color: "#14213D" }}>
           Unlock with a Study Pass to reveal this section
         </p>
       </div>
 
-      {/* Option 1 — Full Pass (highlighted) */}
+      {/* Option 1 — Full Pass (navy card) */}
       <div
-        className="relative rounded-lg px-5 py-5"
+        className="relative rounded-xl px-6 py-6"
         style={{
-          border: "2px solid #14213D",
-          background: "linear-gradient(135deg, rgba(20,33,61,0.04), rgba(20,33,61,0.08))",
-          boxShadow: "0 4px 16px rgba(20,33,61,0.12)",
+          background: "#14213D",
+          border: "2px solid rgba(212,175,55,0.5)",
+          boxShadow: "0 4px 24px rgba(20,33,61,0.25), 0 0 0 1px rgba(212,175,55,0.15)",
         }}
       >
         <span
-          className="absolute top-0 right-0 text-[10px] font-bold px-2.5 py-1 rounded-bl-lg rounded-tr-md"
-          style={{ background: "#14213D", color: "#00FFFF" }}
+          className="absolute top-0 right-0 text-[10px] font-bold px-3 py-1.5 rounded-bl-xl rounded-tr-xl"
+          style={{ background: "#CE1126", color: "#FFFFFF" }}
         >
           Best Value
         </span>
-        <p className="font-bold text-[15px]" style={{ color: "#14213D" }}>
-          {fullPassLink?.label || "Full Study Pass — All Chapters"}
+        <p className="font-bold text-[16px] text-white">
+          Full Study Pass — Intermediate Accounting 2
         </p>
-        <div className="flex items-baseline gap-2 mt-1">
+        <div className="flex items-baseline gap-2 mt-2">
           {saleActive && fullPassLink?.original_price_cents && (
-            <span className="line-through text-[14px]" style={{ color: "#999" }}>
+            <span className="line-through text-[14px]" style={{ color: "rgba(255,255,255,0.45)" }}>
               {formatPrice(fullPassLink.original_price_cents)}
             </span>
           )}
-          <span className="font-bold text-[20px]" style={{ color: "#14213D" }}>
+          <span className="font-bold text-[24px] text-white">
             {formatPrice(fullPassLink?.price_cents || 12500)}
           </span>
           {saleActive && fullPassLink?.sale_label && (
-            <span className="text-[12px] font-semibold" style={{ color: "#00BFBF" }}>
+            <span className="text-[12px] font-semibold" style={{ color: "#00FFFF" }}>
               · {fullPassLink.sale_label}
             </span>
           )}
@@ -334,39 +334,42 @@ function TieredPaywallCard({
           href={fullPassUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block mt-3 px-6 py-2.5 rounded-md font-bold text-[14px] transition-all hover:scale-105"
-          style={{ background: "#00FFFF", color: "#0A0A0A" }}
+          className="block w-full mt-4 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
+          style={{ background: "#CE1126", height: 48, lineHeight: "24px" }}
         >
           Get Full Access →
         </a>
+        <p className="text-[11px] mt-3 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>
+          7-day refund policy · Covers Ch 13–22 · Access expires after finals
+        </p>
       </div>
 
-      {/* Option 2 — Chapter Only (muted) */}
+      {/* Option 2 — Chapter Only (white card) */}
       {chapterNumber && (
         <div
-          className="rounded-lg px-5 py-4"
+          className="rounded-xl px-6 py-5"
           style={{
             border: `1px solid ${theme.border}`,
-            background: theme.cardBg,
+            background: theme.pageBg,
           }}
         >
-          <p className="font-semibold text-[14px]" style={{ color: theme.text }}>
-            {chapterLink?.label || `Chapter ${chapterNumber} Only`}
+          <p className="font-bold text-[15px]" style={{ color: theme.text }}>
+            Chapter {chapterNumber} Only
           </p>
-          <p className="font-bold text-[18px] mt-0.5" style={{ color: theme.text }}>
+          <p className="font-bold text-[22px] mt-1" style={{ color: theme.text }}>
             {formatPrice(chapterLink?.price_cents || 3000)}
           </p>
           <a
             href={chapterUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-2 px-5 py-2 rounded-md font-bold text-[13px] transition-all hover:opacity-90"
-            style={{ background: "#14213D", color: "#FFFFFF" }}
+            className="block w-full mt-3 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
+            style={{ background: "#006BA6", height: 48, lineHeight: "24px" }}
           >
             Buy Chapter {chapterNumber} →
           </a>
-          <p className="text-[11px] mt-1.5" style={{ color: theme.textMuted }}>
-            Only includes Chapter {chapterNumber} problems
+          <p className="text-[11px] mt-2.5 text-center" style={{ color: theme.textMuted }}>
+            Covers Ch {chapterNumber} only · Access expires after finals
           </p>
         </div>
       )}
