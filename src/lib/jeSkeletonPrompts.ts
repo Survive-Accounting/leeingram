@@ -24,7 +24,7 @@ Rules:
 2. List every date that requires a journal entry in YYYY-MM-DD format.
 3. Include dates for initial transactions, adjusting entries, interest payments, amortization, etc.
 4. Do NOT generate any journal entry rows — only dates.
-5. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming.
+5. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming. Include the parenthetical role hint ONLY on the very first mention of each entity; omit it on all subsequent mentions.
 6. Return only JSON.`;
 
 export function buildSkeletonUserPrompt(opts: {
@@ -57,7 +57,7 @@ Rules:
 3. Total debits must equal total credits.
 4. Use accounts from the approved list when provided.
 5. If an account is not in the approved list, add "needs_review": true to that row.
-6. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming. Always state which entity's books the entry is recorded on using "on the books of Survive Company A/B ([role])".
+6. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming. Always state which entity's books the entry is recorded on using "on the books of Survive Company A/B". Include the parenthetical role hint ONLY on the very first mention of each entity; omit it on all subsequent mentions.
 7. Return only JSON.`;
 
 export function buildSingleDateUserPrompt(opts: {
@@ -83,6 +83,6 @@ export function buildSingleDateUserPrompt(opts: {
     parts.push(`Previously generated entries for context (do NOT regenerate these):\n${JSON.stringify(opts.priorEntries, null, 2)}`);
   }
 
-  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.");
+  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Include the parenthetical role hint only on the FIRST mention of each entity; omit it on all subsequent mentions. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B'. Never leave perspective ambiguous.");
   return parts.join("\n\n");
 }
