@@ -474,6 +474,17 @@ export default function ACCY304Landing() {
           <h1 className="text-white font-extrabold text-[34px] md:text-[46px] leading-[1.1] tracking-tight">
             Exam Prep Built for Ole Miss ACCY 304 Students
           </h1>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <img
+              src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
+              alt="Lee Ingram"
+              className="rounded-full"
+              style={{ width: 28, height: 28, objectFit: "cover" }}
+            />
+            <p className="text-white/40 text-[13px] tracking-wide">
+              Created by Lee Ingram · Ole Miss Accounting Alum · Tutor since 2015
+            </p>
+          </div>
           <p className="text-white/75 text-[16px] md:text-[18px] mt-5 max-w-[620px] mx-auto leading-relaxed">
             Get 500+ practice problems with full worked solutions, journal entries, formulas, and more — covering every chapter in Intermediate Accounting 2.
           </p>
@@ -491,7 +502,7 @@ export default function ACCY304Landing() {
           </div>
 
           <p className="text-white/40 text-[13px] mt-4 tracking-wide">
-            50% off for Spring 2026 · 7-day refund policy · Access all semester · Covers Ch 13–22
+            Covers Ch 13–22 · Access expires after finals · 50% off for Spring 2026 · 7-day refund policy
           </p>
         </div>
       </section>
