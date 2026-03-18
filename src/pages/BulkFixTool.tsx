@@ -664,6 +664,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </p>
             )}
 
+            {operation === "enrich_je_rows" && (
+              <p className="text-xs text-muted-foreground">
+                Reads each asset's journal_entry_completed_json and uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
+              </p>
+            )}
+
             {operation === "find_replace_simple" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
