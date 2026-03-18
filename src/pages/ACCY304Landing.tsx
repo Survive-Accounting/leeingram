@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronDown, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { toast } from "sonner";
 import { naturalSortRef } from "@/lib/utils";
