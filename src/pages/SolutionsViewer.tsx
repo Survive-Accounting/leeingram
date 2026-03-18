@@ -1324,10 +1324,10 @@ export default function SolutionsViewer() {
       {/* ── Floating Left Panel (desktop only) ── */}
       <LeftPanel theme={t} isDark={isDark} />
 
-      {/* ── Content ── */}
-      <main className="relative max-w-[780px] mx-auto px-6 py-8" style={{ zIndex: 5 }}>
-        {/* Content card with drop shadow */}
-        <div
+      {/* ── Content with side panel ── */}
+      <main className="relative mx-auto px-6 py-8 flex gap-4 justify-center" style={{ zIndex: 5, maxWidth: 1040 }}>
+        {/* Main content column */}
+        <div className="w-full" style={{ maxWidth: 780 }}>
           className="rounded-xl px-6 py-6 sm:px-8 sm:py-8"
           style={{
             background: isDark ? t.cardBg : t.pageBg,
