@@ -173,14 +173,22 @@ function RevealToggle({
   theme,
   isPreview,
   enrollUrl,
+  sectionName,
+  assetCode,
 }: {
   label: string;
   children: React.ReactNode;
   theme: Theme;
   isPreview: boolean;
   enrollUrl: string;
+  sectionName?: string;
+  assetCode?: string;
 }) {
   const [open, setOpen] = useState(false);
+
+  const reportMailto = sectionName && assetCode
+    ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
+    : null;
 
   return (
     <div
@@ -226,7 +234,21 @@ function RevealToggle({
               </p>
             </div>
           ) : (
-            children
+            <>
+              {children}
+              {reportMailto && (
+                <div className="flex justify-end mt-3 pt-2" style={{ borderTop: `1px solid ${theme.border}` }}>
+                  <a
+                    href={reportMailto}
+                    className="flex items-center gap-1.5 text-[12px] hover:underline"
+                    style={{ color: theme.textMuted }}
+                  >
+                    <AlertTriangle className="h-3 w-3" />
+                    Report an issue with this section →
+                  </a>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
