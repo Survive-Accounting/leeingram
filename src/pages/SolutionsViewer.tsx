@@ -1298,7 +1298,7 @@ export default function SolutionsViewer() {
                 className="text-[18px] font-bold leading-tight"
                 style={{ color: isDark ? "#FFFFFF" : "#131E35" }}
               >
-                {problemTitle || asset.asset_name}
+                {problemTitle || ""}
               </h1>
               {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
             </div>
