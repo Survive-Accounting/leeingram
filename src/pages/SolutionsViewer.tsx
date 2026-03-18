@@ -173,14 +173,22 @@ function RevealToggle({
   theme,
   isPreview,
   enrollUrl,
+  sectionName,
+  assetCode,
 }: {
   label: string;
   children: React.ReactNode;
   theme: Theme;
   isPreview: boolean;
   enrollUrl: string;
+  sectionName?: string;
+  assetCode?: string;
 }) {
   const [open, setOpen] = useState(false);
+
+  const reportMailto = sectionName && assetCode
+    ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
+    : null;
 
   return (
     <div
@@ -226,7 +234,21 @@ function RevealToggle({
               </p>
             </div>
           ) : (
-            children
+            <>
+              {children}
+              {reportMailto && (
+                <div className="flex justify-end mt-3 pt-2" style={{ borderTop: `1px solid ${theme.border}` }}>
+                  <a
+                    href={reportMailto}
+                    className="flex items-center gap-1.5 text-[12px] hover:underline"
+                    style={{ color: theme.textMuted }}
+                  >
+                    <AlertTriangle className="h-3 w-3" />
+                    Report an issue with this section →
+                  </a>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -859,7 +881,7 @@ export default function SolutionsViewer() {
 
         {/* 1. Solution (was Answer Summary) */}
         {answerSummary.trim() && (
-          <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Solution" assetCode={asset.asset_name}>
             <AnswerSummarySection text={answerSummary} theme={t} />
           </RevealToggle>
         )}
@@ -869,7 +891,7 @@ export default function SolutionsViewer() {
 
         {/* 2. How to Solve This — per-instruction flowcharts */}
         {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
             {asset._flowcharts?.length > 0 ? (
               <div className="space-y-6">
                 {asset._flowcharts.map((fc: any, i: number) => (
@@ -899,7 +921,7 @@ export default function SolutionsViewer() {
 
         {/* 3. Journal Entries — custom preview teaser */}
         {hasJE && (
-          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
             {isPreview ? (
               <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
             ) : (
@@ -918,7 +940,7 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
         {formulas.trim() && (
-          <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
             <div className="space-y-2">
               {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
                 <div key={i} className="rounded px-4 py-2 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
@@ -931,7 +953,7 @@ export default function SolutionsViewer() {
 
         {/* 5. Key Concepts */}
         {conceptNotes.trim() && (
-          <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
             <ul className="space-y-2">
               {conceptNotes.split(". ").filter((s: string) => s.trim()).map((sentence: string, i: number) => (
                 <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
@@ -945,7 +967,7 @@ export default function SolutionsViewer() {
 
         {/* 6. Exam Traps */}
         {examTraps.trim() && (
-          <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
             <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
               <ul className="space-y-2">
                 {examTraps.split(". ").filter((s: string) => s.trim()).map((sentence: string, i: number) => (
