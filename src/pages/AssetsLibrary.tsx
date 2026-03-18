@@ -1229,6 +1229,9 @@ export default function AssetsLibrary() {
                               </a>
                             </Tip>
                           )}
+                          {isAdmin && (
+                            <FlowchartButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
+                          )}
                           {/* Solutions embed dropdown */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
