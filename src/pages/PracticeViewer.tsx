@@ -554,7 +554,7 @@ export default function PracticeViewer() {
           solutions_page_views, practice_page_views,
           course_id, chapter_id, phase2_status, asset_approved_at, problem_type,
           instruction_1, instruction_2, instruction_3, instruction_4, instruction_5,
-          instruction_list,
+          instruction_list, flowchart_image_url,
           chapters!teaching_assets_chapter_id_fkey ( chapter_number, chapter_name ),
           courses!teaching_assets_course_id_fkey ( course_name, code )
         `)

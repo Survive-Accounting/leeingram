@@ -798,8 +798,16 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
 
-        {/* 3. How to Solve (flowchart — only if flowchart_image_url exists on asset) */}
-        {/* flowchart_image_url not in current schema — skipped */}
+        {asset.flowchart_image_url && (
+          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+            <img
+              src={asset.flowchart_image_url}
+              alt="How to Solve This — step-by-step flowchart"
+              className="w-full rounded-lg"
+              loading="lazy"
+            />
+          </RevealToggle>
+        )}
 
         {/* 4. Important Formulas */}
         {formulas.trim() && (
