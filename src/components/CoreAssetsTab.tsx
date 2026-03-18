@@ -423,9 +423,9 @@ export function CoreAssetsTab() {
                         </Tip>
                       )}
                       {/* Solutions embed dropdown */}
-                      <DropdownMenu>
+                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-6 w-6 p-0 relative">
+                          <Button variant="outline" size="sm" className={cn("h-6 w-6 p-0 relative transition-all duration-300", lastCopiedKey?.startsWith(a.id + "-") && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}>
                             <ExternalLink className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -433,20 +433,23 @@ export function CoreAssetsTab() {
                           <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
                             Preview in App →
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
+                          <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-full" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
                             navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            setLastCopiedKey(a.id + "-full");
                             toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
                           }}>
                             Copy Full Solutions iFrame
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
+                          <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-preview" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
                             navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            setLastCopiedKey(a.id + "-preview");
                             toast.success("Preview iFrame copied — students will see paywall after problem");
                           }}>
                             Copy Preview iFrame
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
+                          <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-practice" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
                             navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            setLastCopiedKey(a.id + "-practice");
                             toast.success("Practice iFrame copied");
                           }}>
                             Copy Practice iFrame
