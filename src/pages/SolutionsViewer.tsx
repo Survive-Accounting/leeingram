@@ -608,6 +608,49 @@ function JEPreviewTeaser({ jeData, jeBlock, hasCanonicalJE, theme, enrollUrl }: 
   );
 }
 
+// ── Flowchart Sub-Toggle (per instruction) ──────────────────────────
+
+function FlowchartSubToggle({
+  label,
+  imageUrl,
+  theme,
+}: {
+  label: string;
+  imageUrl: string;
+  theme: Theme;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className="rounded-md overflow-hidden"
+      style={{ background: theme.pageBg, border: `1px solid ${theme.border}` }}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
+        style={{ color: theme.text }}
+      >
+        <span className="text-[13px] font-semibold leading-snug pr-4">{label}</span>
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 transition-transform"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0)", color: theme.textMuted }}
+        />
+      </button>
+      {open && (
+        <div className="px-4 pb-3" style={{ borderTop: `1px solid ${theme.border}` }}>
+          <img
+            src={imageUrl}
+            alt={label}
+            className="w-full rounded-lg mt-3"
+            loading="lazy"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
@@ -892,22 +935,36 @@ export default function SolutionsViewer() {
         {/* 2. How to Solve This — per-instruction flowcharts */}
         {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
           <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
-            {asset._flowcharts?.length > 0 ? (
-              <div className="space-y-6">
-                {asset._flowcharts.map((fc: any, i: number) => (
-                  <div key={i}>
-                    {asset._flowcharts.length > 1 && fc.instruction_label && (
-                      <p className="font-bold text-[14px] mb-2" style={{ color: t.text }}>{fc.instruction_label}</p>
-                    )}
-                    <img
-                      src={fc.flowchart_image_url}
-                      alt={`How to Solve This${fc.instruction_label ? ` — ${fc.instruction_label}` : ""}`}
-                      className="w-full rounded-lg"
-                      loading="lazy"
+            {asset._flowcharts?.length > 1 ? (
+              <div className="space-y-2">
+                {asset._flowcharts.map((fc: any) => {
+                  // Find the matching instruction text for a friendly label
+                  const instr = (asset._instructions || []).find(
+                    (ins: any) => ins.instruction_number === fc.instruction_number
+                  );
+                  const friendlyLabel = instr?.instruction_text
+                    ? instr.instruction_text.length > 80
+                      ? instr.instruction_text.slice(0, 77) + "…"
+                      : instr.instruction_text
+                    : `Part ${fc.instruction_label || fc.instruction_number}`;
+
+                  return (
+                    <FlowchartSubToggle
+                      key={fc.instruction_number}
+                      label={`${fc.instruction_label || ""} ${friendlyLabel}`.trim()}
+                      imageUrl={fc.flowchart_image_url}
+                      theme={t}
                     />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            ) : asset._flowcharts?.length === 1 ? (
+              <img
+                src={asset._flowcharts[0].flowchart_image_url}
+                alt="How to Solve This — step-by-step flowchart"
+                className="w-full rounded-lg"
+                loading="lazy"
+              />
             ) : (
               <img
                 src={asset.flowchart_image_url}
