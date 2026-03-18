@@ -1172,8 +1172,8 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
       <img
         src={LEE_HERO_URL}
         alt="Lee Ingram"
-        className="w-full object-cover"
-        style={{ objectPosition: "center top", height: 200, borderRadius: 12 }}
+        className="w-full"
+        style={{ objectFit: "contain", borderRadius: 12, maxHeight: 280 }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
       <div className="max-w-[400px]">
@@ -1212,73 +1212,100 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
   );
 }
 
-// ── Floating Action Panel (top-right, desktop only) ─────────────────
+// ── About Lee Modal ─────────────────────────────────────────────────
 
-function FloatingActionPanel({ theme, shareUrl, assetCode }: { theme: Theme; shareUrl: string; assetCode: string }) {
+function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenChange: (v: boolean) => void; theme: Theme }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" style={{ borderRadius: 16 }}>
+        <DialogHeader>
+          <DialogTitle className="text-center">About Lee Ingram</DialogTitle>
+          <DialogDescription className="sr-only">Bio and contact info</DialogDescription>
+        </DialogHeader>
+        <AboutLeeSection theme={theme} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Floating Action Bar (fixed top-right) ───────────────────────────
+
+function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; shareUrl: string; assetCode: string }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const reportMailto = `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode}`)}&body=${encodeURIComponent(`I found an issue on this page (${assetCode}). Please describe the issue below:\n\n`)}`;
 
   return (
-    <div
-      className="hidden lg:block fixed z-30"
-      style={{ top: 60, right: 20, width: 180 }}
-    >
+    <>
       <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          background: "#FFFFFF",
-          border: `1px solid ${theme.border}`,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)",
-        }}
+        className="fixed z-30"
+        style={{ top: 56, right: 16 }}
       >
-        {/* Toggle bar */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] font-semibold transition-colors hover:bg-gray-50"
-          style={{ color: theme.textMuted }}
+        <div
+          className="flex items-center rounded-full overflow-hidden"
+          style={{
+            background: "#FFFFFF",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)",
+          }}
         >
-          {collapsed ? (
-            <>Show <ChevronDown className="h-3 w-3" /></>
-          ) : (
-            <>Hide <ChevronUp className="h-3 w-3" /></>
+          {!collapsed && (
+            <>
+              {/* About Lee */}
+              <button
+                onClick={() => setAboutOpen(true)}
+                className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
+                style={{ color: theme.text }}
+              >
+                About Lee Ingram
+              </button>
+
+              <div className="w-px h-5" style={{ background: theme.border }} />
+
+              {/* Report Issue */}
+              <a
+                href={reportMailto}
+                className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
+                style={{ color: theme.textMuted }}
+              >
+                ⚠ Report Issue →
+              </a>
+
+              <div className="w-px h-5" style={{ background: theme.border }} />
+
+              {/* Share */}
+              <button
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+                className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                style={{
+                  color: "#3B82F6",
+                }}
+              >
+                <Share2 className="h-3 w-3" /> Share This
+              </button>
+
+              <div className="w-px h-5" style={{ background: theme.border }} />
+            </>
           )}
-        </button>
 
-        {!collapsed && (
-          <div className="px-3 pb-3 space-y-2.5" style={{ borderTop: `1px solid ${theme.border}` }}>
-            {/* Share button */}
-            <button
-              onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
-              className="w-full flex items-center justify-center gap-1.5 text-[12px] font-bold px-3 py-2 rounded-lg transition-all hover:scale-[1.03] active:scale-[0.97] mt-2"
-              style={{
-                color: "#FFFFFF",
-                background: "linear-gradient(135deg, #3B82F6, #2563EB)",
-                border: "2px solid rgba(255,255,255,0.6)",
-                boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.12)",
-                animation: "share-glow 2s ease-in-out infinite alternate",
-              }}
-            >
-              <Share2 className="h-3.5 w-3.5" /> Share This
-            </button>
-            <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
-
-            {/* Placeholders */}
-            <p className="text-[11px] px-1" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
-            <p className="text-[11px] px-1" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
-
-            {/* Report issue */}
-            <a
-              href={reportMailto}
-              className="flex items-center gap-1 text-[11px] px-1 hover:underline"
-              style={{ color: theme.textMuted }}
-            >
-              ⚠ Report Issue →
-            </a>
-          </div>
-        )}
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
+            style={{ color: theme.textMuted }}
+          >
+            {collapsed ? (
+              <>Show <ChevronDown className="h-3 w-3" /></>
+            ) : (
+              <ChevronUp className="h-3 w-3" />
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
+    </>
   );
 }
 
