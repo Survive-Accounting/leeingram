@@ -725,14 +725,22 @@ function ReportIssueModal({ open, onOpenChange, asset }: { open: boolean; onOpen
   );
 }
 
-// ── Chapter Navigator (preview only) ────────────────────────────────
+// ── Browse Problems Dropdown (compact, preview only) ────────────────
 
-function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
+function BrowseProblemsDropdown({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   const currentChapterId = currentAsset.chapter_id;
+  const currentType = (() => {
+    const ref = (currentAsset.source_ref || "").toUpperCase();
+    if (ref.startsWith("BE")) return "BE";
+    if (ref.startsWith("P")) return "P";
+    if (ref.startsWith("E")) return "E";
+    return "all";
+  })();
 
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
-  const [selectedType, setSelectedType] = useState("all");
+  const [selectedType, setSelectedType] = useState(currentType);
   const [selectedAssetName, setSelectedAssetName] = useState("");
 
   const { data: chapters } = useQuery({
@@ -752,12 +760,13 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
-      const { data } = await supabase
+      let q = supabase
         .from("teaching_assets")
-        .select("asset_name, source_ref")
+        .select("asset_name, source_ref, source_label")
         .eq("chapter_id", selectedChapterId)
         .not("asset_approved_at", "is", null)
         .order("source_ref");
+      const { data } = await q;
       let filtered = data || [];
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
@@ -775,52 +784,81 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
 
   const handleGo = () => {
     const target = selectedAssetName || (chapterAssets && chapterAssets[0]?.asset_name);
-    if (target) navigate(`/solutions/${target}?preview=true`);
+    if (target) {
+      navigate(`/solutions/${target}?preview=true`);
+      setOpen(false);
+    }
   };
 
   return (
-    <div className="rounded-lg px-5 py-3 mb-4" style={{ background: theme.toggleBg, border: `1px solid ${theme.border}` }}>
-      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse Intermediate Accounting 2 Problems</p>
-      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-        <div className="flex-1">
-          <Select value={selectedChapterId} onValueChange={(v) => { setSelectedChapterId(v); setSelectedAssetName(""); }}>
-            <SelectTrigger className="h-8 text-xs" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
-              <SelectValue placeholder="Chapter" />
-            </SelectTrigger>
-            <SelectContent>
-              {(chapters || []).map((ch: any) => (
-                <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="relative inline-block">
+      <button
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors hover:opacity-80"
+        style={{
+          background: theme.badgeBg,
+          border: `1px solid ${theme.badgeBorder}`,
+          color: theme.badgeColor,
+        }}
+      >
+        <Search className="h-3 w-3" />
+        Browse IA2 Problems
+        <ChevronDown className="h-3 w-3" style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 mt-2 rounded-xl p-4 space-y-2.5 shadow-lg"
+          style={{
+            background: "#FFFFFF",
+            border: `1px solid ${theme.border}`,
+            zIndex: 50,
+            width: 320,
+          }}
+        >
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>Chapter</label>
+            <Select value={selectedChapterId} onValueChange={(v) => { setSelectedChapterId(v); setSelectedAssetName(""); }}>
+              <SelectTrigger className="h-8 text-xs mt-1" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
+                <SelectValue placeholder="Select chapter" />
+              </SelectTrigger>
+              <SelectContent>
+                {(chapters || []).map((ch: any) => (
+                  <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>Type</label>
+            <Select value={selectedType} onValueChange={(v) => { setSelectedType(v); setSelectedAssetName(""); }}>
+              <SelectTrigger className="h-8 text-xs mt-1" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="BE">Brief Exercise</SelectItem>
+                <SelectItem value="E">Exercise</SelectItem>
+                <SelectItem value="P">Problem</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>Source #</label>
+            <Select value={selectedAssetName} onValueChange={setSelectedAssetName}>
+              <SelectTrigger className="h-8 text-xs mt-1" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
+                <SelectValue placeholder="Select problem" />
+              </SelectTrigger>
+              <SelectContent>
+                {(chapterAssets || []).map((a: any) => (
+                  <SelectItem key={a.asset_name} value={a.asset_name}>{a.source_label || a.source_ref}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button size="sm" className="w-full h-8 text-xs" onClick={handleGo}>Go →</Button>
         </div>
-        <div className="w-full sm:w-36">
-          <Select value={selectedType} onValueChange={(v) => { setSelectedType(v); setSelectedAssetName(""); }}>
-            <SelectTrigger className="h-8 text-xs" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="BE">Brief Exercise (BE)</SelectItem>
-              <SelectItem value="E">Exercise (E)</SelectItem>
-              <SelectItem value="P">Problem (P)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex-1">
-          <Select value={selectedAssetName} onValueChange={setSelectedAssetName}>
-            <SelectTrigger className="h-8 text-xs" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
-              <SelectValue placeholder="Source #" />
-            </SelectTrigger>
-            <SelectContent>
-              {(chapterAssets || []).map((a: any) => (
-                <SelectItem key={a.asset_name} value={a.asset_name}>{a.source_ref}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button size="sm" className="h-8 text-xs px-4" onClick={handleGo}>Go →</Button>
-      </div>
+      )}
     </div>
   );
 }
