@@ -3087,6 +3087,7 @@ export type Database = {
           problem_context_backup: string | null
           problem_text_backup: string | null
           problem_text_ht_backup: string | null
+          problem_title: string | null
           problem_type: string | null
           qa_status: string
           sheet_last_synced_at: string | null
@@ -3179,6 +3180,7 @@ export type Database = {
           problem_context_backup?: string | null
           problem_text_backup?: string | null
           problem_text_ht_backup?: string | null
+          problem_title?: string | null
           problem_type?: string | null
           qa_status?: string
           sheet_last_synced_at?: string | null
@@ -3271,6 +3273,7 @@ export type Database = {
           problem_context_backup?: string | null
           problem_text_backup?: string | null
           problem_text_ht_backup?: string | null
+          problem_title?: string | null
           problem_type?: string | null
           qa_status?: string
           sheet_last_synced_at?: string | null
