@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { Button } from "@/components/ui/button";
@@ -516,6 +517,75 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
   );
 }
 
+// ── JE Preview Teaser (blanked out) ─────────────────────────────────
+
+function JEPreviewTeaser({ jeData, jeBlock, hasCanonicalJE, theme, enrollUrl }: {
+  jeData: any; jeBlock: string; hasCanonicalJE: boolean; theme: Theme; enrollUrl: string;
+}) {
+  const entries: { date: string; rows: { isCredit: boolean }[] }[] = [];
+
+  if (hasCanonicalJE) {
+    const parsed: CanonicalJEPayload = typeof jeData === "string" ? JSON.parse(jeData) : jeData;
+    for (const section of parsed.scenario_sections) {
+      for (const entry of section.entries_by_date) {
+        const date = entry.entry_date ?? (entry as any).date ?? "";
+        const rows = (entry.rows || []).map((row: any) => ({
+          isCredit: row.side === "credit" || (row.credit != null && row.credit !== 0 && (row.debit == null || row.debit === 0)),
+        }));
+        entries.push({ date, rows });
+      }
+    }
+  } else {
+    // Raw text fallback — just show a generic blanked structure
+    const lines = jeBlock.split("\n").filter((l: string) => l.trim());
+    const rows = lines.map((line: string) => ({
+      isCredit: line.startsWith("\t") || line.startsWith("    ") || line.startsWith("  "),
+    }));
+    entries.push({ date: "", rows });
+  }
+
+  return (
+    <div className="space-y-4">
+      {entries.map((entry, ei) => (
+        <div key={ei}>
+          {entry.date && <p className="font-bold text-sm mb-1" style={{ color: theme.text }}>???</p>}
+          <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: theme.tableHeaderBg }}>
+                  <th className="text-left px-3 py-1.5 text-white font-bold text-[12px]">Account</th>
+                  <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Debit</th>
+                  <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entry.rows.map((row, ri) => (
+                  <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
+                    <td className={`px-3 py-1.5 text-[13px] ${row.isCredit ? "pl-10" : ""}`} style={{ color: theme.textMuted }}>???</td>
+                    <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>{!row.isCredit ? "???" : ""}</td>
+                    <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>{row.isCredit ? "???" : ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+      <div className="text-center pt-2">
+        <a
+          href={enrollUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[13px] font-semibold hover:underline"
+          style={{ color: "#3B82F6" }}
+        >
+          Unlock account names and amounts with a Study Pass →
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
@@ -787,16 +857,8 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
 
-        {/* 2. Journal Entries */}
-        {hasJE && (
-          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
-            {hasCanonicalJE ? (
-              <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
-            ) : (
-              <RawJEFallback text={jeBlock} theme={t} />
-            )}
-          </RevealToggle>
-        )}
+
+
 
         {asset.flowchart_image_url && (
           <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
@@ -809,7 +871,26 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
 
-        {/* 4. Important Formulas */}
+        {/* 3. Journal Entries — custom preview teaser */}
+        {hasJE && (
+          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl}>
+            {isPreview ? (
+              <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
+            ) : (
+              hasCanonicalJE ? (
+                <div className="[&_button]:hidden">
+                  <StructuredJEDisplay
+                    data={typeof jeData === "string" ? JSON.parse(jeData) : jeData}
+                    showHeading={false}
+                    templateMode={false}
+                  />
+                </div>
+              ) : (
+                <RawJEFallback text={jeBlock} theme={t} />
+              )
+            )}
+          </RevealToggle>
+        )}
         {formulas.trim() && (
           <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
             <div className="space-y-2">
