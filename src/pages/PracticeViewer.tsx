@@ -656,7 +656,7 @@ export default function PracticeViewer() {
   const totalSections = availableSections.length;
   const allRevealed = totalSections > 0 && revealedCount === totalSections;
 
-  const shareUrl = `${window.location.origin}/practice/${asset.asset_name}`;
+  const shareUrl = `https://learn.surviveaccounting.com/practice/${asset.asset_name}`;
 
   return (
     <div className="min-h-screen" style={{ background: t.pageBg }}>

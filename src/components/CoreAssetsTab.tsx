@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tip } from "@/components/Tip";
 
+const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 const STATUS_CYCLE = ["not_started", "in_progress", "complete"] as const;
 type OutputStatus = (typeof STATUS_CYCLE)[number];
 
@@ -430,22 +431,19 @@ export function CoreAssetsTab() {
                             Preview in App →
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
-                            const appUrl = window.location.origin;
-                            navigator.clipboard.writeText(`<iframe src="${appUrl}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
                             toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
                           }}>
                             Copy Full Solutions iFrame
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
-                            const appUrl = window.location.origin;
-                            navigator.clipboard.writeText(`<iframe src="${appUrl}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
                             toast.success("Preview iFrame copied — students will see paywall after problem");
                           }}>
                             Copy Preview iFrame
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
-                            const appUrl = window.location.origin;
-                            navigator.clipboard.writeText(`<iframe src="${appUrl}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
                             toast.success("Practice iFrame copied");
                           }}>
                             Copy Practice iFrame
