@@ -621,9 +621,8 @@ export default function SolutionsViewer() {
   // JE data
   const jeData = asset.journal_entry_completed_json;
   const jeBlock = asset.journal_entry_block || "";
-  const jeRaw = (asset as any).journal_entry_raw || "";
   const hasCanonicalJE = jeData && isCanonicalJE(typeof jeData === "string" ? JSON.parse(jeData) : jeData);
-  const hasJE = hasCanonicalJE || jeBlock.trim() || jeRaw.trim();
+  const hasJE = hasCanonicalJE || jeBlock.trim();
 
   const answerSummary = asset.survive_solution_text || "";
   const formulas = asset.important_formulas || "";
