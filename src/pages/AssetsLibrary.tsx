@@ -1252,7 +1252,13 @@ export default function AssetsLibrary() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
-                                Preview in App →
+                                Preview — Paid (Full Solutions) →
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?preview=true`, "_blank")}>
+                                Preview — Free (Paywall) →
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`/practice/${a.asset_name}`, "_blank")}>
+                                Practice Mode →
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 const appUrl = window.location.origin;
