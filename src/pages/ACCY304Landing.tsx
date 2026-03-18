@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown as ChevronDownIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
