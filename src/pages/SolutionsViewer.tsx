@@ -612,27 +612,11 @@ export default function SolutionsViewer() {
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
   const titleLine = asset.source_ref || asset.asset_name;
 
-  // Instructions — try problem_instructions table first, then instruction_1-5, then instruction_list
-  let instructions: string[] = (asset._instructions || [])
+  // Instructions from problem_instructions table
+  const instructions: string[] = (asset._instructions || [])
     .sort((a: any, b: any) => a.instruction_number - b.instruction_number)
     .filter((i: any) => i.instruction_text?.trim())
     .map((i: any) => i.instruction_text);
-
-  if (instructions.length === 0) {
-    const fields = [
-      (asset as any).instruction_1,
-      (asset as any).instruction_2,
-      (asset as any).instruction_3,
-      (asset as any).instruction_4,
-      (asset as any).instruction_5,
-    ].filter((v: any) => v && String(v).trim());
-    if (fields.length > 0) {
-      instructions = fields.map((v: any) => String(v));
-    } else if ((asset as any).instruction_list) {
-      const raw = String((asset as any).instruction_list);
-      instructions = raw.split(/[|\n]/).map((s: string) => s.trim()).filter(Boolean);
-    }
-  }
 
   // JE data
   const jeData = asset.journal_entry_completed_json;
