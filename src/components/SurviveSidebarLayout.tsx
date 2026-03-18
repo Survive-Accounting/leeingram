@@ -187,6 +187,19 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     enabled: !!workspace?.chapterId,
   });
 
+  // Open issue reports count (global)
+  const { data: openIssueCount } = useQuery({
+    queryKey: ["open-issue-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("asset_issue_reports")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const getBadge = (path: string) => {
     if (!pipelineCounts) return null;
     if (path === "/problem-bank") return pipelineCounts.imported || null;

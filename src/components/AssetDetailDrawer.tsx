@@ -1341,6 +1341,55 @@ export default function AssetDetailDrawer({
                 </p>
               </div>
             </TabsContent>
+
+            {/* Issues */}
+            <TabsContent value="issues" className="px-6 pb-6 space-y-3 mt-4">
+              {issueReports.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No issues reported</p>
+              ) : (
+                <div className="space-y-3">
+                  {issueReports.map((issue: any) => (
+                    <div key={issue.id} className="rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{format(new Date(issue.created_at), "MMM d")}</span>
+                          <span>·</span>
+                          <span>{issue.reporter_email || "Anonymous"}</span>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={issue.status === "resolved"
+                            ? "text-emerald-600 border-emerald-500/30 text-[10px]"
+                            : "text-amber-600 border-amber-500/30 text-[10px]"
+                          }
+                        >
+                          {issue.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{issue.message}</p>
+                      {issue.status === "open" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={async () => {
+                            await supabase
+                              .from("asset_issue_reports")
+                              .update({ status: "resolved" })
+                              .eq("id", issue.id);
+                            queryClient.invalidateQueries({ queryKey: ["asset-issue-reports", asset?.id] });
+                            queryClient.invalidateQueries({ queryKey: ["open-issue-count"] });
+                            toast.success("Issue marked resolved");
+                          }}
+                        >
+                          Mark Resolved
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           </ScrollArea>
         </Tabs>
       </DialogContent>
