@@ -68,6 +68,9 @@ type TeachingAsset = {
   prep_doc_id?: string | null;
   prep_doc_url?: string | null;
   asset_approved_at?: string | null;
+  flowchart_image_url?: string | null;
+  flowchart_image_id?: string | null;
+  worked_steps?: string | null;
 };
 type JournalOption = "question" | "feedback" | "none";
 
