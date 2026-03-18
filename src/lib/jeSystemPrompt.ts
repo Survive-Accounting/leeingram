@@ -25,7 +25,9 @@ Your response must match this schema exactly:
             {
               "account": "Account Name",
               "debit": number | null,
-              "credit": number | null
+              "credit": number | null,
+              "debit_credit_reason": "Brief explanation of why this account is debited or credited in this context. Written for an accounting student. Example: 'Income Tax Expense is debited because it is an expense account — expenses increase with a debit and decrease with a credit.'",
+              "amount_source": "Brief explanation of where this specific dollar amount comes from, referencing the calculation in the solution text when possible. Example: 'Current Tax ($136,000) + Deferred Tax ($45,000) = $181,000, as calculated in the solution above.' If the amount is given directly, say so: 'Given directly in the problem — $50,000 annual rent payment.'"
             }
           ]
         }
