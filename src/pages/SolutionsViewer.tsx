@@ -533,7 +533,7 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
 
   return (
     <div className="rounded-lg px-5 py-3 mb-4" style={{ background: theme.toggleBg, border: `1px solid ${theme.border}` }}>
-      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse IA2 Problems</p>
+      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse Intermediate Accounting 2 Problems</p>
       <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
         <div className="flex-1">
           <Select value={selectedChapterId} onValueChange={(v) => { setSelectedChapterId(v); setSelectedAssetName(""); }}>

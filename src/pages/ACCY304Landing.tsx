@@ -252,7 +252,7 @@ export default function ACCY304Landing() {
         <div className="max-w-[860px] mx-auto text-center">
           <p className="text-white font-bold text-[24px]">Ready to stop guessing on exams?</p>
           <p className="text-white/70 text-[14px] mt-2">
-            Join ACCY 304 students getting full access to every IA2 problem.
+            Join ACCY 304 students getting full access to every Intermediate Accounting 2 problem.
           </p>
           <a
             href={enrollUrl}
