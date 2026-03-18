@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Tip } from "@/components/Tip";
 
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
+
+/** Tracks the last copied embed button so it glows yellow */
 const STATUS_CYCLE = ["not_started", "in_progress", "complete"] as const;
 type OutputStatus = (typeof STATUS_CYCLE)[number];
 
