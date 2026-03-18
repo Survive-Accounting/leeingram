@@ -717,7 +717,11 @@ export default function SolutionsViewer() {
       <div style={{ background: t.cardBg, borderBottom: `1px solid ${t.border}` }} className="mt-3">
         <div className="max-w-[780px] mx-auto px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <p className="font-bold text-[14px]" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>{titleLine}</p>
+            <p className="text-[14px]" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>
+              <span className="font-bold">{asset.source_ref || asset.asset_name}</span>
+              {problemTitle && <span style={{ color: t.textMuted }}> — </span>}
+              {problemTitle && <span>{problemTitle}</span>}
+            </p>
             {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
             <a
               href={`mailto:lee@surviveaccounting.com?subject=Video Request: ${asset.asset_name}&body=I would like a video explanation for ${asset.source_ref || ""} (${asset.asset_name}).`}
