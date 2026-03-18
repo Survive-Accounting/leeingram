@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { Button } from "@/components/ui/button";
