@@ -2609,6 +2609,66 @@ export type Database = {
           },
         ]
       }
+      payment_links: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          link_type: string
+          original_price_cents: number | null
+          price_cents: number
+          sale_expires_at: string | null
+          sale_label: string | null
+          url: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          link_type?: string
+          original_price_cents?: number | null
+          price_cents?: number
+          sale_expires_at?: string | null
+          sale_label?: string | null
+          url?: string
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          link_type?: string
+          original_price_cents?: number | null
+          price_cents?: number
+          sale_expires_at?: string | null
+          sale_label?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_links_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_links_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       problem_assets: {
         Row: {
           asset_type: string
