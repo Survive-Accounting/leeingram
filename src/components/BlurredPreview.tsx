@@ -119,7 +119,7 @@ function RedactedFormulas() {
   );
 }
 
-function UnlockPill() {
+function UnlockPill({ enrollUrl }: { enrollUrl: string }) {
   return (
     <div className="flex justify-center mt-3">
       <a
