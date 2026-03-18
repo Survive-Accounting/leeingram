@@ -748,7 +748,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
 
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState(currentType);
-  const [selectedAssetName, setSelectedAssetName] = useState("");
+  const [selectedSourceCode, setSelectedSourceCode] = useState(currentAsset.source_ref || "");
 
   const { data: chapters } = useQuery({
     queryKey: ["ia2-chapters-nav"],
@@ -767,14 +767,24 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
-      let q = supabase
+
+      const { data: approvedAssets } = await supabase
         .from("teaching_assets")
-        .select("asset_name, source_ref, source_label")
+        .select("asset_name, source_ref")
         .eq("chapter_id", selectedChapterId)
         .not("asset_approved_at", "is", null)
         .order("source_ref");
-      const { data } = await q;
-      let filtered = data || [];
+
+      const { data: chapterProblems } = await supabase
+        .from("chapter_problems")
+        .select("source_code, source_label")
+        .eq("chapter_id", selectedChapterId)
+        .order("source_code");
+
+      const approved = approvedAssets || [];
+      const labelsByCode = new Map((chapterProblems || []).map((p: any) => [p.source_code, p.source_label]));
+
+      let filtered = approved;
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
           const ref = (a.source_ref || "").toUpperCase();
@@ -784,15 +794,32 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
           return true;
         });
       }
-      return filtered;
+
+      return filtered.map((a: any) => ({
+        asset_name: a.asset_name,
+        source_ref: a.source_ref,
+        source_label: labelsByCode.get(a.source_ref) || a.source_ref,
+      }));
     },
     enabled: !!selectedChapterId,
   });
 
+  useEffect(() => {
+    if (!chapterAssets?.length) {
+      setSelectedSourceCode("");
+      return;
+    }
+
+    const stillExists = chapterAssets.some((a: any) => a.source_ref === selectedSourceCode);
+    if (!stillExists) {
+      setSelectedSourceCode(chapterAssets[0].source_ref);
+    }
+  }, [chapterAssets, selectedSourceCode]);
+
   const handleGo = () => {
-    const target = selectedAssetName || (chapterAssets && chapterAssets[0]?.asset_name);
-    if (target) {
-      navigate(`/solutions/${target}?preview=true`);
+    const match = chapterAssets?.find((a: any) => a.source_ref === selectedSourceCode);
+    if (match?.asset_name) {
+      navigate(`/solutions/${match.asset_name}?preview=true`);
     }
   };
 
@@ -801,64 +828,67 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     background: theme.pageBg,
     border: `1px solid ${theme.border}`,
     color: theme.text,
-    borderRadius: 6,
-    padding: "4px 24px 4px 8px",
+    borderRadius: 8,
+    padding: "6px 28px 6px 10px",
     fontSize: 12,
-    height: 30,
+    height: 34,
+    minWidth: 116,
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: "no-repeat",
-    backgroundPosition: "right 6px center",
+    backgroundPosition: "right 8px center",
   };
 
   return (
-    <div
-      className="rounded-lg px-4 py-3 mb-4"
-      style={{ background: theme.cardBg, border: `1px solid ${theme.border}` }}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: theme.textMuted }}>
-        <Search className="inline h-3 w-3 mr-1" style={{ verticalAlign: "-2px" }} />
-        Browse IA2 Problems
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="w-full lg:w-auto lg:max-w-[520px]">
+      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="flex items-center gap-1.5 mr-1">
+          <Search className="h-3.5 w-3.5" style={{ color: theme.textMuted }} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>
+            Browse Intermediate 2 Problems
+          </span>
+        </div>
+
         <select
           value={selectedChapterId}
-          onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedAssetName(""); }}
+          onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedSourceCode(""); }}
           style={selectStyle}
         >
           <option value="">Chapter…</option>
           {(chapters || []).map((ch: any) => (
-            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
+            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number}</option>
           ))}
         </select>
 
         <select
           value={selectedType}
-          onChange={(e) => { setSelectedType(e.target.value); setSelectedAssetName(""); }}
+          onChange={(e) => { setSelectedType(e.target.value); setSelectedSourceCode(""); }}
           style={selectStyle}
         >
-          <option value="all">All Types</option>
-          <option value="BE">Brief Exercise</option>
-          <option value="E">Exercise</option>
-          <option value="P">Problem</option>
+          <option value="all">Type…</option>
+          <option value="BE">BE</option>
+          <option value="E">Ex</option>
+          <option value="P">Pr</option>
         </select>
 
         <select
-          value={selectedAssetName}
-          onChange={(e) => setSelectedAssetName(e.target.value)}
+          value={selectedSourceCode}
+          onChange={(e) => setSelectedSourceCode(e.target.value)}
           disabled={!chapterAssets?.length}
-          style={{ ...selectStyle, opacity: chapterAssets?.length ? 1 : 0.5 }}
+          style={{ ...selectStyle, minWidth: 132, opacity: chapterAssets?.length ? 1 : 0.55 }}
         >
-          <option value="">{!selectedChapterId ? "Select chapter first…" : chapterAssets?.length ? "Select #…" : "None found"}</option>
+          <option value="">{!selectedChapterId ? "#…" : chapterAssets?.length ? "Choose #…" : "None found"}</option>
           {(chapterAssets || []).map((a: any) => (
-            <option key={a.asset_name} value={a.asset_name}>{a.source_label || a.source_ref}</option>
+            <option key={a.asset_name} value={a.source_ref}>
+              {a.source_label}
+            </option>
           ))}
         </select>
 
         <button
           onClick={handleGo}
-          disabled={!selectedAssetName && !(chapterAssets && chapterAssets[0])}
+          disabled={!selectedSourceCode}
           className="px-3 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
-          style={{ background: "#14213D", height: 30 }}
+          style={{ background: "#14213D", height: 34 }}
         >
           Go →
         </button>
@@ -1543,11 +1573,16 @@ export default function SolutionsViewer() {
 
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
           <div className="mx-auto px-6 py-4" style={{ maxWidth: 1200 }}>
-            {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
-            <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
-              {problemTitle || ""}
-            </h1>
-            {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
+                <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
+                  {problemTitle || ""}
+                </h1>
+                {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
+              </div>
+              {isPreview && <BrowseProblemsBar currentAsset={asset} theme={t} />}
+            </div>
           </div>
         </div>
       </div>
@@ -1631,8 +1666,6 @@ export default function SolutionsViewer() {
                 border: `1px solid ${t.border}`,
               }}
             >
-              {/* Browse Problems Bar (preview only) */}
-              {isPreview && <BrowseProblemsBar currentAsset={asset} theme={t} />}
 
               {/* 1. Solution */}
               {answerSummary.trim() && (

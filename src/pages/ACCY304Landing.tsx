@@ -248,18 +248,33 @@ export default function ACCY304Landing() {
     queryKey: ["accy304-preview-problems", previewChapterId, previewType],
     queryFn: async () => {
       if (!previewChapterId) return [];
-      const { data } = await supabase
+
+      const { data: approvedAssets } = await supabase
+        .from("teaching_assets")
+        .select("asset_name, source_ref")
+        .eq("chapter_id", previewChapterId)
+        .not("asset_approved_at", "is", null)
+        .order("source_ref");
+
+      const { data: chapterProblems } = await supabase
         .from("chapter_problems")
-        .select("id, source_code, source_label, chapter_id")
+        .select("source_code, source_label")
         .eq("chapter_id", previewChapterId)
         .order("source_code");
-      if (!data) return [];
 
-      let filtered = data;
-      if (previewType === "BE") filtered = filtered.filter((p: any) => p.source_code?.startsWith("BE"));
-      else if (previewType === "E") filtered = filtered.filter((p: any) => p.source_code?.startsWith("E") && !p.source_code?.startsWith("EX"));
-      else if (previewType === "P") filtered = filtered.filter((p: any) => p.source_code?.startsWith("P"));
-      return filtered;
+      const approved = approvedAssets || [];
+      const labelsByCode = new Map((chapterProblems || []).map((p: any) => [p.source_code, p.source_label]));
+
+      let filtered = approved;
+      if (previewType === "BE") filtered = filtered.filter((p: any) => p.source_ref?.startsWith("BE"));
+      else if (previewType === "E") filtered = filtered.filter((p: any) => p.source_ref?.startsWith("E") && !p.source_ref?.startsWith("EX"));
+      else if (previewType === "P") filtered = filtered.filter((p: any) => p.source_ref?.startsWith("P"));
+
+      return filtered.map((p: any) => ({
+        asset_name: p.asset_name,
+        source_ref: p.source_ref,
+        source_label: labelsByCode.get(p.source_ref) || p.source_ref,
+      }));
     },
     enabled: !!previewChapterId,
   });
@@ -501,7 +516,7 @@ export default function ACCY304Landing() {
                 {!previewChapterId ? "Select chapter first…" : previewProblems?.length ? "Select problem…" : "No problems found"}
               </option>
               {previewProblems?.map((p: any) => (
-                <option key={p.source_code} value={p.source_code}>{p.source_label}</option>
+                <option key={p.asset_name} value={p.source_ref}>{p.source_label}</option>
               ))}
             </StyledSelect>
           </div>
