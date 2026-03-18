@@ -161,7 +161,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
     queryFn: async () => {
       const { data } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, problem_context, survive_solution_text, journal_entry_raw, important_formulas, concept_notes, exam_traps, chapter_id, course_id")
+        .select("id, asset_name, source_ref, problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, chapter_id, course_id")
         .eq("id", assetId)
         .single();
       if (!data) return null;
@@ -177,7 +177,7 @@ export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
         .eq("teaching_asset_id", data.id)
         .order("instruction_number");
 
-      return { ...data, chapter, course, instructions: instructions || [] };
+      return { ...(data as any), chapter, course, instructions: instructions || [] };
     },
     enabled: !!assetId,
   });
