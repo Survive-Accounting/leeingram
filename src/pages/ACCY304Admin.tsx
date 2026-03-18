@@ -89,6 +89,18 @@ export default function ACCY304Admin() {
     enabled: !!courseData?.id,
   });
 
+  // Fetch .edu lead emails
+  const { data: eduLeads } = useQuery({
+    queryKey: ["accy304-edu-leads"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("edu_preview_sessions")
+        .select("email, created_at")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
   const totalAssets = assets?.length || 0;
   const totalSolutionViews = assets?.reduce((s: number, a: any) => s + (a.solutions_page_views || 0), 0) || 0;
   const totalPracticeViews = assets?.reduce((s: number, a: any) => s + (a.practice_page_views || 0), 0) || 0;
