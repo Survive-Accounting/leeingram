@@ -62,6 +62,7 @@ import FlashcardTool from "./pages/FlashcardTool";
 import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
 import PracticeViewer from "./pages/PracticeViewer";
+import ACCY304Landing from "./pages/ACCY304Landing";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
 import EntryBuilderTool from "./pages/EntryBuilderTool";
