@@ -479,6 +479,8 @@ export default function AssetsLibrary() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
   const [exportOpen, setExportOpen] = useState(false);
   const [exportName, setExportName] = useState("LearnWorlds Export");
   const [exportQuestionType, setExportQuestionType] = useState("TMC");
