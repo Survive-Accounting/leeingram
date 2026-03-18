@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, Video, X, BookOpen, CheckCircle, Calendar, Share2 } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { JETooltip } from "@/components/JETooltip";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { Button } from "@/components/ui/button";
@@ -346,9 +347,20 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
                     const isCredit = row.side === "credit" || (row.credit != null && row.credit !== 0 && (row.debit == null || row.debit === 0));
                     return (
                       <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
-                        <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>{row.account_name || row.account || ""}</td>
-                        <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.text }}>{!isCredit && row.debit != null && row.debit !== 0 ? Number(row.debit).toLocaleString("en-US") : ""}</td>
-                        <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.text }}>{isCredit && row.credit != null ? Number(row.credit).toLocaleString("en-US") : ""}</td>
+                        <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
+                          {row.account_name || row.account || ""}
+                          {row.debit_credit_reason && <JETooltip text={row.debit_credit_reason} variant="solutions" />}
+                        </td>
+                        <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.text }}>
+                          {!isCredit && row.debit != null && row.debit !== 0 ? (
+                            <span>{Number(row.debit).toLocaleString("en-US")}{row.amount_source && <JETooltip text={row.amount_source} variant="solutions" />}</span>
+                          ) : ""}
+                        </td>
+                        <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.text }}>
+                          {isCredit && row.credit != null ? (
+                            <span>{Number(row.credit).toLocaleString("en-US")}{row.amount_source && <JETooltip text={row.amount_source} variant="solutions" />}</span>
+                          ) : ""}
+                        </td>
                       </tr>
                     );
                   })}

@@ -25,7 +25,9 @@ Your response must match this schema exactly:
             {
               "account": "Account Name",
               "debit": number | null,
-              "credit": number | null
+              "credit": number | null,
+              "debit_credit_reason": "Brief explanation of why this account is debited or credited in this context. Written for an accounting student. Example: 'Income Tax Expense is debited because it is an expense account — expenses increase with a debit and decrease with a credit.'",
+              "amount_source": "Brief explanation of where this specific dollar amount comes from, referencing the calculation in the solution text when possible. Example: 'Current Tax ($136,000) + Deferred Tax ($45,000) = $181,000, as calculated in the solution above.' If the amount is given directly, say so: 'Given directly in the problem — $50,000 annual rent payment.'"
             }
           ]
         }
@@ -39,11 +41,14 @@ Rules:
 2. Each row must contain ONLY:
    - account name (clean text, no prefixes, no dollar signs, no colons)
    - debit OR credit amount (never both, never both null for amount rows)
+   - debit_credit_reason: 1-2 sentence explanation of why this account is debited or credited, written as a tutor explaining to a student
+   - amount_source: 1-2 sentence explanation of where the dollar amount comes from, referencing the solution calculation when possible
 3. Never place dates, explanations, "Situation", slashes, or dollar signs inside account fields.
 4. Accounts must match the approved chart_of_accounts list when possible.
 5. If an account is not found in the list, mark: "needs_review": true
 6. Each entry_by_date block must balance (total debits = total credits).
 7. Also include final_answers with specific numeric/text answers the problem asks for.
+8. debit_credit_reason and amount_source must be included on EVERY row — never omit them.
 
 ENTITY NAMING:
 The primary entity — the one whose transactions are being described and whose books the student will primarily work from — is always named "Survive Company A ([role])" where [role] describes their role (e.g. the issuer, the borrower, the lessor, the seller).
