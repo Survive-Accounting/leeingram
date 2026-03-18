@@ -802,7 +802,26 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
 
-        {/* 4. Important Formulas */}
+        {/* 3. Journal Entries — custom preview teaser */}
+        {hasJE && (
+          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl}>
+            {isPreview ? (
+              <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
+            ) : (
+              hasCanonicalJE ? (
+                <div className="[&_button]:hidden">
+                  <StructuredJEDisplay
+                    data={typeof jeData === "string" ? JSON.parse(jeData) : jeData}
+                    showHeading={false}
+                    templateMode={false}
+                  />
+                </div>
+              ) : (
+                <RawJEFallback text={jeBlock} theme={t} />
+              )
+            )}
+          </RevealToggle>
+        )}
         {formulas.trim() && (
           <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
             <div className="space-y-2">
