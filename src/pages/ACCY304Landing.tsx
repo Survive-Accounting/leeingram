@@ -491,7 +491,7 @@ export default function ACCY304Landing() {
           </div>
 
           <p className="text-white/40 text-[13px] mt-4 tracking-wide">
-            50% off for Spring 2026 · 7-day refund policy · Access all semester · Covers Ch 13–22
+            Covers Ch 13–22 · Access expires after finals · 50% off for Spring 2026 · 7-day refund policy
           </p>
         </div>
       </section>
