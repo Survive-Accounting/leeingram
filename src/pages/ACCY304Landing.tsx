@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
@@ -6,8 +6,7 @@ import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { toast } from "sonner";
 
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
-const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
-const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
+const HERO_IMG = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
 
 type Step = "email" | "picker" | "results";
 
@@ -18,17 +17,38 @@ interface ProblemSelection {
   sourceLabel: string;
 }
 
+// ── Wave SVG Divider ────────────────────────────────────────────────
+function WaveDivider({ topColor, bottomColor, flip }: { topColor: string; bottomColor: string; flip?: boolean }) {
+  return (
+    <div className="relative w-full overflow-hidden leading-[0]" style={{ background: bottomColor, marginTop: -1 }}>
+      <svg
+        viewBox="0 0 1440 100"
+        preserveAspectRatio="none"
+        className="w-full block"
+        style={{ height: 60, transform: flip ? "scaleY(-1)" : undefined }}
+      >
+        <path
+          d="M0,0 C360,100 1080,0 1440,80 L1440,0 L0,0 Z"
+          fill={topColor}
+        />
+      </svg>
+    </div>
+  );
+}
+
 // ── Shared Select Wrapper ───────────────────────────────────────────
 function StyledSelect({
   value,
   onChange,
   disabled,
   children,
+  light,
 }: {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   disabled?: boolean;
   children: React.ReactNode;
+  light?: boolean;
 }) {
   return (
     <div className="relative">
@@ -36,11 +56,16 @@ function StyledSelect({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="w-full appearance-none border border-gray-300 rounded-md px-3 py-2.5 text-[14px] bg-white pr-8 focus:outline-none focus:ring-2 focus:ring-[#14213D]/20 focus:border-[#14213D] disabled:opacity-50 disabled:bg-gray-50"
+        className={`w-full appearance-none rounded-md px-3 py-2.5 text-[14px] pr-8 focus:outline-none focus:ring-2 disabled:opacity-50 ${
+          light
+            ? "bg-white/10 border border-white/20 text-white focus:ring-white/30 focus:border-white/40"
+            : "bg-white border border-gray-300 focus:ring-[#14213D]/20 focus:border-[#14213D]"
+        }`}
+        style={light ? { colorScheme: "dark" } : undefined}
       >
         {children}
       </select>
-      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+      <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${light ? "text-white/50" : "text-gray-400"}`} />
     </div>
   );
 }
@@ -86,11 +111,12 @@ function ProblemPickerRow({
 
   return (
     <div className="space-y-2">
-      <p className="text-[12px] font-bold" style={{ color: "#14213D" }}>Problem {index + 1}</p>
+      <p className="text-[12px] font-bold text-white/70">Problem {index + 1}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <StyledSelect
           value={selection.chapterId}
           onChange={(e) => onChange({ ...selection, chapterId: e.target.value, sourceCode: "", sourceLabel: "" })}
+          light
         >
           <option value="">Select chapter…</option>
           {chapters.map((ch) => (
@@ -101,6 +127,7 @@ function ProblemPickerRow({
         <StyledSelect
           value={selection.type}
           onChange={(e) => onChange({ ...selection, type: e.target.value, sourceCode: "", sourceLabel: "" })}
+          light
         >
           <option value="any">Any Type</option>
           <option value="BE">Brief Exercise (BE)</option>
@@ -115,6 +142,7 @@ function ProblemPickerRow({
             onChange({ ...selection, sourceCode: e.target.value, sourceLabel: prob?.source_label || e.target.value });
           }}
           disabled={!problems?.length}
+          light
         >
           <option value="">
             {!selection.chapterId ? "Select chapter first…" : problems?.length ? "Select problem…" : "No problems found"}
@@ -125,8 +153,43 @@ function ProblemPickerRow({
         </StyledSelect>
       </div>
       {isDuplicate && (
-        <p className="text-red-500 text-[12px]">You've already selected this problem — please choose a different one.</p>
+        <p className="text-red-300 text-[12px]">You've already selected this problem — please choose a different one.</p>
       )}
+    </div>
+  );
+}
+
+// ── Testimonial Widget ──────────────────────────────────────────────
+function TestimonialWidget() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load iframeResizer script
+    const script = document.createElement("script");
+    script.src = "https://testimonial.to/js/iframeResizer.min.js";
+    script.async = true;
+    script.onload = () => {
+      try {
+        (window as any).iFrameResize(
+          { log: false, checkOrigin: false },
+          "#testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
+        );
+      } catch (_) {}
+    };
+    document.head.appendChild(script);
+    return () => { try { document.head.removeChild(script); } catch (_) {} };
+  }, []);
+
+  return (
+    <div ref={ref}>
+      <iframe
+        id="testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
+        src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=317c8816-eefb-469f-8173-b79efef6c2fa"
+        frameBorder="0"
+        scrolling="no"
+        width="100%"
+        style={{ minHeight: 300 }}
+      />
     </div>
   );
 }
@@ -135,13 +198,13 @@ function ProblemPickerRow({
 export default function ACCY304Landing() {
   const enrollUrl = useEnrollUrl();
 
-  // ── Free Preview state (Section 2) ──
+  // ── Free Preview state ──
   const [previewChapterId, setPreviewChapterId] = useState("");
   const [previewType, setPreviewType] = useState("any");
   const [previewSourceCode, setPreviewSourceCode] = useState("");
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
 
-  // ── Email Capture state (Section 3) ──
+  // ── Email Capture state ──
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -180,7 +243,7 @@ export default function ACCY304Landing() {
     },
   });
 
-  // ── Section 2: Free preview problem list ──
+  // ── Free preview problem list ──
   const { data: previewProblems } = useQuery({
     queryKey: ["accy304-preview-problems", previewChapterId, previewType],
     queryFn: async () => {
@@ -203,7 +266,6 @@ export default function ACCY304Landing() {
 
   const handleShowPreview = async () => {
     if (!previewSourceCode) return;
-    // Resolve source_code → teaching_asset asset_name
     const { data: assets } = await supabase
       .from("teaching_assets")
       .select("id, asset_name")
@@ -220,7 +282,7 @@ export default function ACCY304Landing() {
     setIframeSrc(`${STUDENT_BASE_URL}/solutions/${asset.asset_name}?preview=true`);
   };
 
-  // ── Section 3: Email submit ──
+  // ── Email submit ──
   const handleEmailSubmit = async () => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed.endsWith(".edu")) {
@@ -251,7 +313,7 @@ export default function ACCY304Landing() {
     }
   };
 
-  // ── Section 3: Problem submit ──
+  // ── Problem submit ──
   const usedSourceCodes = selections.map(s => s.sourceCode).filter(Boolean);
   const hasDuplicates = new Set(usedSourceCodes).size < usedSourceCodes.length;
   const allSelected = selections.every(s => s.sourceCode);
@@ -334,83 +396,83 @@ export default function ACCY304Landing() {
   };
 
   return (
-    <div className="min-h-screen relative" style={{ background: "#FAFBFC" }}>
-      {/* ── Aoraki Watermark Background ── */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `url(${AORAKI_URL})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: 0.06,
-          zIndex: 0,
-        }}
-      />
-
-      {/* ── Navy Header Bar (matches SolutionsViewer) ── */}
-      <header className="relative sticky top-0" style={{ background: "#14213D", zIndex: 20 }}>
-        <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
-          <div className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="Survive Accounting" className="h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen" style={{ background: "#FAFBFC" }}>
 
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 1 — HERO
+          HERO IMAGE — full width
          ═══════════════════════════════════════════════════════════ */}
-      <section className="relative px-6 py-14 md:py-20" style={{ background: "#14213D", zIndex: 1 }}>
-        <div className="max-w-[860px] mx-auto text-center">
-          <h1 className="text-white font-bold text-[32px] md:text-[38px] leading-tight">Survive Accounting</h1>
-          <p className="text-white/80 text-[17px] font-medium mt-2">
-            Built for Ole Miss ACCY 304 students.
-          </p>
-          <p className="text-white/60 text-[14px] mt-4 max-w-[560px] mx-auto leading-relaxed">
-            Full worked solutions, journal entries, formulas, exam traps, and more — for every problem in Intermediate Accounting 2.
+      <div className="w-full overflow-hidden" style={{ height: 420 }}>
+        <img
+          src={HERO_IMG}
+          alt="Ole Miss campus"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: "center top" }}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          HERO CTA — dark navy
+         ═══════════════════════════════════════════════════════════ */}
+      <section style={{ background: "#14213D" }} className="px-6 py-16 md:py-20">
+        <div className="max-w-[760px] mx-auto text-center">
+          <h1 className="text-white font-extrabold text-[34px] md:text-[46px] leading-[1.1] tracking-tight">
+            Exam Prep Built for Ole Miss ACCY 304 Students
+          </h1>
+          <p className="text-white/75 text-[16px] md:text-[18px] mt-5 max-w-[620px] mx-auto leading-relaxed">
+            Get 500+ practice problems with full worked solutions, journal entries, formulas, exam traps, and more — covering every chapter in Intermediate Accounting 2.
           </p>
 
-          {/* CTA */}
-          <div className="mt-8">
-            <p className="text-white/40 text-[14px] line-through mb-1">$250</p>
+          <div className="mt-10">
             <a
               href={enrollUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block px-10 py-4 rounded-md font-bold text-[17px] transition-all hover:scale-105"
-              style={{ background: "#00FFFF", color: "#0A0A0A" }}
+              className="inline-block w-full md:w-auto px-12 py-4 rounded-lg font-bold text-[18px] text-white transition-all hover:brightness-90"
+              style={{ background: "#CE1126" }}
             >
               Get Full Access — $125/semester
             </a>
-            <p className="text-[13px] mt-2" style={{ color: "#00FFFF", opacity: 0.8 }}>
-              50% off — Spring 2026 only
-            </p>
           </div>
 
-          <p className="mt-6">
-            <a href="#free-preview" className="text-white/50 text-[13px] hover:underline">
-              Or explore free below ↓
-            </a>
+          <p className="text-white/40 text-[13px] mt-4 tracking-wide">
+            50% off for Spring 2026 · Normally $250 · 7-day refund policy · Access all semester · Covers Ch 13–22
           </p>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 2 — FREE PREVIEW (light bg)
+          TESTIMONIALS
          ═══════════════════════════════════════════════════════════ */}
-      <section id="free-preview" className="relative px-6 py-12 md:py-16" style={{ background: "rgba(255,255,255,0.92)", zIndex: 1 }}>
-        <div className="max-w-[860px] mx-auto">
-          <h2 className="text-center font-bold text-[24px]" style={{ color: "#14213D" }}>
-            Try any problem — free preview
+      <WaveDivider topColor="#14213D" bottomColor="#F7F8FA" />
+      <section style={{ background: "#F7F8FA" }} className="px-6 py-16 md:py-20">
+        <div className="max-w-[960px] mx-auto">
+          <h2 className="text-center font-bold text-[26px] md:text-[30px] tracking-tight" style={{ color: "#14213D" }}>
+            What Students Are Saying
           </h2>
-          <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[560px] mx-auto leading-relaxed">
-            See exactly what you get. Pick any problem below and view the full page — solutions are paywalled until you unlock with a Study Pass.
+          <div className="mt-10">
+            <TestimonialWidget />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          FREE PREVIEW — powder blue
+         ═══════════════════════════════════════════════════════════ */}
+      <WaveDivider topColor="#F7F8FA" bottomColor="#006BA6" />
+      <section id="free-preview" style={{ background: "#006BA6" }} className="px-6 py-16 md:py-20">
+        <div className="max-w-[760px] mx-auto">
+          <h2 className="text-center text-white font-bold text-[26px] md:text-[30px] tracking-tight">
+            Try Any Problem — Free Preview
+          </h2>
+          <p className="text-center text-white/70 text-[15px] mt-3 mb-10 max-w-[580px] mx-auto leading-relaxed">
+            See exactly what you get. Pick any problem below and view the full page — solutions are locked until you buy a Study Pass.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <StyledSelect
               value={previewChapterId}
               onChange={(e) => { setPreviewChapterId(e.target.value); setPreviewSourceCode(""); setIframeSrc(null); }}
+              light
             >
               <option value="">Select chapter…</option>
               {(courseData?.chapters || []).map((ch) => (
@@ -421,6 +483,7 @@ export default function ACCY304Landing() {
             <StyledSelect
               value={previewType}
               onChange={(e) => { setPreviewType(e.target.value); setPreviewSourceCode(""); }}
+              light
             >
               <option value="any">Any Type</option>
               <option value="BE">Brief Exercise (BE)</option>
@@ -432,6 +495,7 @@ export default function ACCY304Landing() {
               value={previewSourceCode}
               onChange={(e) => setPreviewSourceCode(e.target.value)}
               disabled={!previewProblems?.length}
+              light
             >
               <option value="">
                 {!previewChapterId ? "Select chapter first…" : previewProblems?.length ? "Select problem…" : "No problems found"}
@@ -445,18 +509,18 @@ export default function ACCY304Landing() {
           <button
             onClick={handleShowPreview}
             disabled={!previewSourceCode}
-            className="px-8 py-3 rounded-md font-bold text-[14px] text-white transition-all hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
-            style={{ background: "#14213D" }}
+            className="px-8 py-3 rounded-md font-bold text-[14px] transition-all hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
+            style={{ background: "#FFFFFF", color: "#006BA6" }}
           >
             Show Me This Problem →
           </button>
 
           {iframeSrc && (
-            <div className="mt-6">
+            <div className="mt-8 rounded-lg overflow-hidden" style={{ background: "#fff" }}>
               <iframe
                 src={iframeSrc}
                 title="Problem Preview"
-                className="w-full border-0 rounded-lg"
+                className="w-full border-0"
                 style={{ height: 900 }}
               />
             </div>
@@ -464,66 +528,64 @@ export default function ACCY304Landing() {
         </div>
       </section>
 
-      {/* ── Section divider ── */}
-      <div className="relative" style={{ height: 1, background: "linear-gradient(90deg, transparent, #14213D20, transparent)", zIndex: 1 }} />
-
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 3 — EMAIL CAPTURE (slightly darker bg)
+          EMAIL CAPTURE — dark navy
          ═══════════════════════════════════════════════════════════ */}
-      <section className="relative px-6 py-12 md:py-16" style={{ background: "rgba(240,242,246,0.95)", zIndex: 1 }}>
-        <div className="max-w-[860px] mx-auto">
+      <WaveDivider topColor="#006BA6" bottomColor="#14213D" />
+      <section style={{ background: "#14213D" }} className="px-6 py-16 md:py-20">
+        <div className="max-w-[760px] mx-auto">
 
           {/* ── STEP 1: Email ── */}
           {step === "email" && !alreadyUsed && (
-            <>
-              <h2 className="text-center font-bold text-[24px]" style={{ color: "#14213D" }}>
-                Get 3 full solutions — free for 24 hours
+            <div className="text-center">
+              <h2 className="text-white font-bold text-[26px] md:text-[30px] tracking-tight">
+                Get 3 Full Solutions — Free
               </h2>
-              <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[520px] mx-auto leading-relaxed">
-                Enter your Ole Miss .edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment required.
+              <p className="text-white/60 text-[15px] mt-3 mb-10 max-w-[560px] mx-auto leading-relaxed">
+                Enter your olemiss.edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment details required.
               </p>
 
-              <div className="max-w-[420px] mx-auto">
-                <label className="block text-[12px] font-medium text-gray-500 mb-1">University Email</label>
+              <div className="max-w-[420px] mx-auto text-left">
+                <label className="block text-[12px] font-medium text-white/50 mb-1.5">University Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
                   placeholder="yourname@olemiss.edu"
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#14213D]/20 focus:border-[#14213D]"
+                  className="w-full rounded-md px-4 py-3 text-[14px] bg-white/10 border border-white/20 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40"
                 />
                 {emailError && (
-                  <p className="text-red-500 text-[13px] mt-2">{emailError}</p>
+                  <p className="text-red-300 text-[13px] mt-2">{emailError}</p>
                 )}
                 <button
                   onClick={handleEmailSubmit}
                   disabled={submitting || !email.trim()}
-                  className="w-full mt-4 px-8 py-3 rounded-md font-bold text-[14px] text-white transition-all hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
-                  style={{ background: "#14213D" }}
+                  className="w-full mt-4 px-8 py-3.5 rounded-md font-bold text-[15px] text-white transition-all hover:brightness-90 disabled:opacity-40 flex items-center justify-center gap-2"
+                  style={{ background: "#CE1126" }}
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   Continue →
                 </button>
               </div>
-            </>
+            </div>
           )}
 
           {/* ── Already used ── */}
           {alreadyUsed && (
             <div className="text-center py-8">
-              <p className="font-bold text-[20px]" style={{ color: "#14213D" }}>
+              <p className="text-white font-bold text-[22px]">
                 You've already used your free preview
               </p>
-              <p className="text-gray-500 text-[14px] mt-2 max-w-[480px] mx-auto">
+              <p className="text-white/60 text-[14px] mt-2 max-w-[480px] mx-auto">
                 Each .edu email gets one free preview session. Get full access to every problem with a Study Pass.
               </p>
               <a
                 href={enrollUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block mt-6 px-8 py-3.5 rounded-md font-bold text-[16px] transition-all hover:scale-105"
-                style={{ background: "#00FFFF", color: "#0A0A0A" }}
+                className="inline-block mt-6 px-8 py-3.5 rounded-md font-bold text-[16px] text-white transition-all hover:brightness-90"
+                style={{ background: "#CE1126" }}
               >
                 Get Full Access — $125/semester →
               </a>
@@ -533,14 +595,14 @@ export default function ACCY304Landing() {
           {/* ── STEP 2: Problem Picker ── */}
           {step === "picker" && (
             <>
-              <h2 className="text-center font-bold text-[24px]" style={{ color: "#14213D" }}>
-                Choose 3 problems to unlock
+              <h2 className="text-center text-white font-bold text-[26px] md:text-[30px] tracking-tight">
+                Choose 3 Problems to Unlock
               </h2>
-              <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[520px] mx-auto">
+              <p className="text-center text-white/60 text-[15px] mt-3 mb-10 max-w-[520px] mx-auto">
                 Pick any 3 problems from Chapters 13–22. You'll get full access to their worked solutions for 24 hours.
               </p>
 
-              <div className="space-y-6 mb-6">
+              <div className="space-y-6 mb-8">
                 {selections.map((sel, i) => (
                   <ProblemPickerRow
                     key={i}
@@ -556,8 +618,8 @@ export default function ACCY304Landing() {
               <button
                 onClick={handleProblemsSubmit}
                 disabled={!canSubmitProblems || submitting}
-                className="w-full md:w-auto px-8 py-3 rounded-md font-bold text-[14px] text-white transition-all hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: "#14213D" }}
+                className="w-full md:w-auto px-8 py-3.5 rounded-md font-bold text-[15px] text-white transition-all hover:brightness-90 disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ background: "#CE1126" }}
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Get My Free Preview →
@@ -568,13 +630,13 @@ export default function ACCY304Landing() {
           {/* ── STEP 3: Results ── */}
           {step === "results" && sessionResult && (
             <div className="text-center">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full mb-4" style={{ background: "#E8F5E9" }}>
-                <CheckCircle className="h-6 w-6" style={{ color: "#2E7D32" }} />
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full mb-4" style={{ background: "rgba(46,125,50,0.2)" }}>
+                <CheckCircle className="h-6 w-6 text-green-400" />
               </div>
-              <h2 className="font-bold text-[22px]" style={{ color: "#14213D" }}>
+              <h2 className="text-white font-bold text-[22px]">
                 Here are your 3 free problems
               </h2>
-              <p className="text-gray-500 text-[14px] mt-2 mb-8">
+              <p className="text-white/60 text-[14px] mt-2 mb-8">
                 Links expire in 24 hours. Bookmark them or come back before they expire.
               </p>
 
@@ -587,23 +649,23 @@ export default function ACCY304Landing() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-5 py-4 rounded-lg border border-gray-200 hover:border-[#14213D]/30 transition-all hover:shadow-sm bg-white"
+                      className="flex items-center gap-3 px-5 py-4 rounded-lg border border-white/10 hover:border-white/30 transition-all hover:bg-white/5"
                     >
-                      <span className="flex items-center justify-center h-8 w-8 rounded-full text-[13px] font-bold text-white shrink-0" style={{ background: "#14213D" }}>
+                      <span className="flex items-center justify-center h-8 w-8 rounded-full text-[13px] font-bold shrink-0" style={{ background: "#CE1126", color: "#fff" }}>
                         {i + 1}
                       </span>
                       <span className="flex-1">
-                        <span className="font-bold text-[14px]" style={{ color: "#14213D" }}>{link.sourceLabel}</span>
+                        <span className="font-bold text-[14px] text-white">{link.sourceLabel}</span>
                       </span>
-                      <ExternalLink className="h-4 w-4 text-gray-400 shrink-0" />
+                      <ExternalLink className="h-4 w-4 text-white/40 shrink-0" />
                     </a>
                   );
                 })}
               </div>
 
-              <p className="text-gray-400 text-[12px] mt-6">
+              <p className="text-white/40 text-[12px] mt-6">
                 Want full access to every problem? →{" "}
-                <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold" style={{ color: "#14213D" }}>
+                <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold text-white/70 hover:text-white">
                   Get a Study Pass
                 </a>
               </p>
@@ -613,36 +675,33 @@ export default function ACCY304Landing() {
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="relative px-6 py-12 md:py-16" style={{ background: "#14213D", zIndex: 1 }}>
-        <div className="max-w-[860px] mx-auto text-center">
-          <p className="text-white font-bold text-[24px]">Ready to stop guessing on exams?</p>
-          <p className="text-white/70 text-[14px] mt-2">
+      <WaveDivider topColor="#14213D" bottomColor="#0D1528" />
+      <section style={{ background: "#0D1528" }} className="px-6 py-16 md:py-20">
+        <div className="max-w-[760px] mx-auto text-center">
+          <p className="text-white font-bold text-[26px] md:text-[30px] tracking-tight">Ready to stop guessing on exams?</p>
+          <p className="text-white/60 text-[15px] mt-3">
             Join ACCY 304 students getting full access to every Intermediate Accounting 2 problem.
           </p>
-          <div className="mt-6">
-            <p className="text-white/40 text-[14px] line-through mb-1">$250</p>
+          <div className="mt-8">
             <a
               href={enrollUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block px-10 py-4 rounded-md font-bold text-[17px] transition-all hover:scale-105"
-              style={{ background: "#00FFFF", color: "#0A0A0A" }}
+              className="inline-block w-full md:w-auto px-12 py-4 rounded-lg font-bold text-[18px] text-white transition-all hover:brightness-90"
+              style={{ background: "#CE1126" }}
             >
               Get Study Pass — $125/semester
             </a>
-            <p className="text-[13px] mt-2" style={{ color: "#00FFFF", opacity: 0.8 }}>
-              50% off — Spring 2026 only
-            </p>
           </div>
-          <p className="text-white/50 text-[12px] mt-4">
-            7-day refund policy · Access all semester · Covers Ch 13–22
+          <p className="text-white/35 text-[12px] mt-4 tracking-wide">
+            50% off for Spring 2026 · 7-day refund policy · Access all semester · Covers Ch 13–22
           </p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="relative px-6 py-6" style={{ background: "#FAFBFC", zIndex: 1 }}>
-        <p className="text-center text-gray-400 text-[12px]">
+      <footer className="px-6 py-6" style={{ background: "#0A0E1A" }}>
+        <p className="text-center text-white/30 text-[12px]">
           Survive Accounting · Lee Ingram · surviveaccounting.com
         </p>
       </footer>
