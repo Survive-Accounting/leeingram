@@ -505,13 +505,12 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
-      const tbl = supabase.from("teaching_assets") as any;
-      const res = await tbl
+      const { data } = await supabase
+        .from("teaching_assets")
         .select("asset_name, source_ref")
         .eq("chapter_id", selectedChapterId)
-        .eq("status", "approved")
+        .not("asset_approved_at", "is", null)
         .order("source_ref");
-      const data = res.data;
       let filtered = data || [];
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
