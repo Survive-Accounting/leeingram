@@ -1302,6 +1302,13 @@ export default function SolutionsViewer() {
           {/* Chapter navigator (preview only) */}
           {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
 
+          {/* Source ref label — above problem text */}
+          {sourceRef && (
+            <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
+              Practice problem based on {sourceRef}
+            </h2>
+          )}
+
           {/* Problem text — always visible */}
           {rawProblemText.trim() && (
             <div ref={problemRef}>
