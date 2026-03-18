@@ -73,6 +73,7 @@ type TeachingAsset = {
   flowchart_image_url?: string | null;
   flowchart_image_id?: string | null;
   worked_steps?: string | null;
+  problem_title?: string | null;
 };
 type JournalOption = "question" | "feedback" | "none";
 
