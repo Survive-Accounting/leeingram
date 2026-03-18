@@ -152,6 +152,7 @@ interface BlurredPreviewProps {
 }
 
 export default function BlurredPreview({ assetId }: BlurredPreviewProps) {
+  const enrollUrl = useEnrollUrl();
   const [swappedContext, setSwappedContext] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
 
