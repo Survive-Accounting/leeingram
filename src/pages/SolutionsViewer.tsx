@@ -1309,48 +1309,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
   );
 }
 
-// ── Testimonials Section ────────────────────────────────────────────
 
-function TestimonialsSection({ theme }: { theme: Theme }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    const scriptId = "testimonialto-resize-script";
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src = "https://testimonial.to/js/iframeResizer.min.js";
-      script.onload = () => {
-        try {
-          if ((window as any).iFrameResize && iframeRef.current) {
-            (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
-          }
-        } catch (e) { /* iframe resizer not critical */ }
-      };
-      document.body.appendChild(script);
-    } else {
-      try {
-        if ((window as any).iFrameResize && iframeRef.current) {
-          (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
-        }
-      } catch (e) { /* iframe resizer not critical */ }
-    }
-  }, []);
-
-  return (
-    <div>
-      <iframe
-        ref={iframeRef}
-        id="testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
-        src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=317c8816-eefb-469f-8173-b79efef6c2fa&theme=light&card=base"
-        frameBorder="0"
-        scrolling="no"
-        width="100%"
-        style={{ minHeight: 400, border: "none" }}
-      />
-    </div>
-  );
-}
 
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
 
