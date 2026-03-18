@@ -5,8 +5,9 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, Copy, Check } from "lucide-react";
+import { ExternalLink, Copy, Check, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const APP_URL = window.location.origin;
 
