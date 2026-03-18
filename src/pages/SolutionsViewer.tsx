@@ -1472,30 +1472,19 @@ export default function SolutionsViewer() {
 
         {/* ── Footer ── */}
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-          {hasFooterLinks && (
-            <p className="text-center text-[13px] mb-3">
-              {quizLink && <a href={quizLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">📝 Practice Quiz</a>}
-              {quizLink && (whiteboardLink || videoLink) && <span className="mx-2" style={{ color: t.border }}>·</span>}
-              {whiteboardLink && <a href={whiteboardLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">📊 Whiteboard</a>}
-              {whiteboardLink && videoLink && <span className="mx-2" style={{ color: t.border }}>·</span>}
-              {videoLink && <a href={videoLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">🎬 Video Walkthrough</a>}
-            </p>
-          )}
           <p className="text-center text-[11px]" style={{ color: t.textMuted }}>
-            Survive Accounting · surviveaccounting.com
+            <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: t.text }}>
+              SurviveAccounting.com
+            </a>
+          </p>
+          <p className="text-center text-[11px] mt-1" style={{ color: t.textMuted }}>
+            Created by Lee Ingram in 2020
           </p>
           <p className="text-center mt-2">
             <button onClick={() => setReportOpen(true)} className="text-[11px] hover:underline" style={{ color: t.textMuted }}>
               Report Issue
             </button>
           </p>
-          {!isPreview && (
-            <p className="text-center mt-1">
-              <a href={`/practice/${asset.asset_name}`} className="text-[12px] hover:underline" style={{ color: "#3B82F6" }}>
-                ← View Practice Mode
-              </a>
-            </p>
-          )}
         </div>
         </div>
         {/* ── Right Mode Panel (desktop) ── */}
