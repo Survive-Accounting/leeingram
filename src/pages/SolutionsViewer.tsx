@@ -802,6 +802,65 @@ function splitLongBullets(text: string): string[] {
   }
   return result;
 }
+/** Group formulas by shared prefix (e.g. "Fair Value Method") and render with headers */
+function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+
+  // Try to detect "Category: formula" pattern
+  const groups: { header: string; items: string[] }[] = [];
+  for (const line of lines) {
+    const colonMatch = line.match(/^(.+?):\s+(.+)$/);
+    if (colonMatch) {
+      const [, prefix, formula] = colonMatch;
+      const existing = groups.find(g => g.header === prefix);
+      if (existing) {
+        existing.items.push(formula);
+      } else {
+        groups.push({ header: prefix, items: [formula] });
+      }
+    } else {
+      // No prefix — standalone formula
+      groups.push({ header: "", items: [line] });
+    }
+  }
+
+  // If grouping produced meaningful headers (at least one group with 2+ items), use grouped layout
+  const hasGrouping = groups.some(g => g.items.length >= 2);
+
+  if (!hasGrouping) {
+    // Flat list fallback
+    return (
+      <div className="space-y-3">
+        {lines.map((line, i) => (
+          <div key={i} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: theme.formulaBg, borderColor: theme.formulaBorder }}>
+            <p className="font-mono text-[13px]" style={{ color: theme.text }}>{line}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {groups.map((group, gi) => (
+        <div key={gi}>
+          {group.header && (
+            <p className="font-bold text-[13px] mb-2" style={{ color: theme.text }}>
+              {group.header}
+            </p>
+          )}
+          <div className="space-y-2">
+            {group.items.map((item, ii) => (
+              <div key={ii} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: theme.formulaBg, borderColor: theme.formulaBorder }}>
+                <p className="font-mono text-[13px]" style={{ color: theme.text }}>{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 
 export default function SolutionsViewer() {
