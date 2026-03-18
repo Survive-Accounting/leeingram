@@ -323,6 +323,44 @@ function FlowchartButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated
   );
 }
 
+/* ── Supplementary JE button ── */
+function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
+  const [generating, setGenerating] = useState(false);
+  const hasSupplementary = !!(asset as any).supplementary_je_json;
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-supplementary-je", {
+        body: { teaching_asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Supplementary JEs generated (${data.entries_count} entries)`);
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || "Generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <Tip label={hasSupplementary ? "Regenerate Supplementary JEs" : "Generate Supplementary JEs"}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 text-[10px] px-1.5"
+        onClick={generate}
+        disabled={generating}
+      >
+        {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+          <BookOpen className={`h-3 w-3 ${hasSupplementary ? "text-green-600" : ""}`} />
+        )}
+      </Button>
+    </Tip>
+  );
+}
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -1247,6 +1285,9 @@ export default function AssetsLibrary() {
                           )}
                           {isAdmin && (
                             <FlowchartButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
+                          )}
+                          {isAdmin && (
+                            <SupplementaryJEButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                           )}
                           {/* Solutions embed dropdown */}
                           <DropdownMenu>

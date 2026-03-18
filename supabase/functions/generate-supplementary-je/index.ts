@@ -1,0 +1,141 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  try {
+    const { teaching_asset_id } = await req.json();
+    if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
+
+    // Fetch asset
+    const { data: asset, error: aErr } = await sb
+      .from("teaching_assets")
+      .select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, instruction_list, chapter_id")
+      .eq("id", teaching_asset_id)
+      .single();
+    if (aErr || !asset) throw new Error("Asset not found: " + (aErr?.message ?? ""));
+
+    // Fetch instructions
+    const { data: instrData } = await sb
+      .from("problem_instructions")
+      .select("instruction_number, instruction_text")
+      .eq("teaching_asset_id", teaching_asset_id)
+      .order("instruction_number");
+
+    const instructions = (instrData || []).map((i: any) => `(${String.fromCharCode(96 + i.instruction_number)}) ${i.instruction_text}`).join("\n");
+
+    // Fetch chapter accounts for reference
+    const { data: accounts } = await sb
+      .from("chapter_accounts")
+      .select("account_name, account_type, normal_balance")
+      .eq("chapter_id", asset.chapter_id)
+      .eq("is_approved", true);
+
+    const accountList = (accounts || []).map((a: any) => a.account_name).join(", ");
+
+    const systemPrompt = `You are an accounting journal entry expert. Given a problem and its solution, identify the IMPLICIT journal entries that a student should understand even if the problem doesn't explicitly ask for them.
+
+Return JSON with this exact schema:
+{
+  "entries": [
+    {
+      "label": "Short description of what this entry records (e.g. 'Record costs incurred during Year 1')",
+      "rows": [
+        {
+          "account_name": "Clean account name",
+          "side": "debit" | "credit"
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+1. Do NOT include any dollar amounts — only account names and sides.
+2. Each entry should have a clear, student-friendly label describing the transaction.
+3. Group related debits and credits into a single entry.
+4. Use standard accounting account names from the provided list when possible.
+5. Order entries chronologically or by logical sequence.
+6. Include ALL relevant entries the student should know about — recording costs, billings, collections, revenue recognition, closing entries, etc.
+7. Keep labels concise but descriptive enough that a student knows what transaction is being recorded.
+8. Return ONLY valid JSON, no markdown.`;
+
+    const userPrompt = `Problem:\n${asset.problem_context || asset.survive_problem_text || "No problem text"}
+
+Solution:\n${asset.survive_solution_text || "No solution text"}
+
+${instructions ? `Instructions:\n${instructions}` : ""}
+
+${accountList ? `Available accounts:\n${accountList}` : ""}
+
+Identify all implicit journal entries a student studying this problem should understand.`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.1,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`AI error: ${res.status} ${errText}`);
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content ?? "";
+    const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    // Validate structure
+    if (!parsed.entries || !Array.isArray(parsed.entries)) {
+      throw new Error("Invalid response structure: missing entries array");
+    }
+
+    // Save to teaching_assets
+    const { error: updateErr } = await sb
+      .from("teaching_assets")
+      .update({ supplementary_je_json: parsed })
+      .eq("id", teaching_asset_id);
+    if (updateErr) throw new Error("Failed to save: " + updateErr.message);
+
+    return new Response(
+      JSON.stringify({ success: true, entries_count: parsed.entries.length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    console.error("generate-supplementary-je error:", e);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

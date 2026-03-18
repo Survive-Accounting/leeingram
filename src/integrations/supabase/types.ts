@@ -3139,6 +3139,7 @@ export type Database = {
           source_number: string | null
           source_ref: string | null
           source_type: string | null
+          supplementary_je_json: Json | null
           survive_problem_text: string
           survive_solution_text: string
           t_accounts_json: Json | null
@@ -3233,6 +3234,7 @@ export type Database = {
           source_number?: string | null
           source_ref?: string | null
           source_type?: string | null
+          supplementary_je_json?: Json | null
           survive_problem_text?: string
           survive_solution_text?: string
           t_accounts_json?: Json | null
@@ -3327,6 +3329,7 @@ export type Database = {
           source_number?: string | null
           source_ref?: string | null
           source_type?: string | null
+          supplementary_je_json?: Json | null
           survive_problem_text?: string
           survive_solution_text?: string
           t_accounts_json?: Json | null
