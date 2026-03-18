@@ -124,19 +124,24 @@ function EntryTable({ rows, entryDate, templateMode }: { rows: CanonicalJERow[];
               const side = templateMode ? inferSide(row) : ((row.credit != null && row.credit !== 0) ? "credit" : "debit");
               const isCredit = side === "credit";
               return (
-                <tr key={ri} className="border-b border-border/50 last:border-0">
+                 <tr key={ri} className="border-b border-border/50 last:border-0">
                   <td className={cn("px-3 py-1.5 text-foreground", isCredit && "pl-10")}>
                     {row.account_name}
+                    {(row as any).debit_credit_reason && <JETooltip text={(row as any).debit_credit_reason} />}
                   </td>
                   <td className="text-right px-3 py-1.5 text-foreground font-mono">
                     {templateMode
                       ? (side === "debit" ? <span className="text-muted-foreground">???</span> : "")
-                      : (!isCredit && row.debit != null ? formatAmount(row.debit) : "")}
+                      : (!isCredit && row.debit != null ? (
+                          <span>{formatAmount(row.debit)}{(row as any).amount_source && <JETooltip text={(row as any).amount_source} />}</span>
+                        ) : "")}
                   </td>
                   <td className="text-right px-3 py-1.5 text-foreground font-mono">
                     {templateMode
                       ? (side === "credit" ? <span className="text-muted-foreground">???</span> : "")
-                      : (isCredit ? formatAmount(row.credit) : "")}
+                      : (isCredit ? (
+                          <span>{formatAmount(row.credit)}{(row as any).amount_source && <JETooltip text={(row as any).amount_source} />}</span>
+                        ) : "")}
                   </td>
                 </tr>
               );
