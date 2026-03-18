@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
@@ -725,11 +725,10 @@ function ReportIssueModal({ open, onOpenChange, asset }: { open: boolean; onOpen
   );
 }
 
-// ── Browse Problems Dropdown (compact, preview only) ────────────────
+// ── Browse Problems Bar (preview only, native selects) ──────────────
 
-function BrowseProblemsDropdown({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
+function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const currentChapterId = currentAsset.chapter_id;
   const currentType = (() => {
     const ref = (currentAsset.source_ref || "").toUpperCase();
@@ -786,79 +785,76 @@ function BrowseProblemsDropdown({ currentAsset, theme }: { currentAsset: any; th
     const target = selectedAssetName || (chapterAssets && chapterAssets[0]?.asset_name);
     if (target) {
       navigate(`/solutions/${target}?preview=true`);
-      setOpen(false);
     }
   };
 
-  return (
-    <div className="relative inline-block">
-      <button
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors hover:opacity-80"
-        style={{
-          background: theme.badgeBg,
-          border: `1px solid ${theme.badgeBorder}`,
-          color: theme.badgeColor,
-        }}
-      >
-        <Search className="h-3 w-3" />
-        Browse IA2 Problems
-        <ChevronDown className="h-3 w-3" style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
-      </button>
+  const selectStyle: React.CSSProperties = {
+    appearance: "none" as const,
+    background: theme.pageBg,
+    border: `1px solid ${theme.border}`,
+    color: theme.text,
+    borderRadius: 6,
+    padding: "4px 24px 4px 8px",
+    fontSize: 12,
+    height: 30,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 6px center",
+  };
 
-      {open && (
-        <div
-          className="absolute left-0 mt-2 rounded-xl p-4 space-y-2.5 shadow-lg"
-          style={{
-            background: "#FFFFFF",
-            border: `1px solid ${theme.border}`,
-            zIndex: 50,
-            width: 320,
-          }}
+  return (
+    <div
+      className="rounded-lg px-4 py-3 mb-4"
+      style={{ background: theme.cardBg, border: `1px solid ${theme.border}` }}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: theme.textMuted }}>
+        <Search className="inline h-3 w-3 mr-1" style={{ verticalAlign: "-2px" }} />
+        Browse IA2 Problems
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={selectedChapterId}
+          onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedAssetName(""); }}
+          style={selectStyle}
         >
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>Chapter</label>
-            <Select value={selectedChapterId} onValueChange={(v) => { setSelectedChapterId(v); setSelectedAssetName(""); }}>
-              <SelectTrigger className="h-8 text-xs mt-1" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
-                <SelectValue placeholder="Select chapter" />
-              </SelectTrigger>
-              <SelectContent>
-                {(chapters || []).map((ch: any) => (
-                  <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>Type</label>
-            <Select value={selectedType} onValueChange={(v) => { setSelectedType(v); setSelectedAssetName(""); }}>
-              <SelectTrigger className="h-8 text-xs mt-1" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="BE">Brief Exercise</SelectItem>
-                <SelectItem value="E">Exercise</SelectItem>
-                <SelectItem value="P">Problem</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>Source #</label>
-            <Select value={selectedAssetName} onValueChange={setSelectedAssetName}>
-              <SelectTrigger className="h-8 text-xs mt-1" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
-                <SelectValue placeholder="Select problem" />
-              </SelectTrigger>
-              <SelectContent>
-                {(chapterAssets || []).map((a: any) => (
-                  <SelectItem key={a.asset_name} value={a.asset_name}>{a.source_label || a.source_ref}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button size="sm" className="w-full h-8 text-xs" onClick={handleGo}>Go →</Button>
-        </div>
-      )}
+          <option value="">Chapter…</option>
+          {(chapters || []).map((ch: any) => (
+            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedType}
+          onChange={(e) => { setSelectedType(e.target.value); setSelectedAssetName(""); }}
+          style={selectStyle}
+        >
+          <option value="all">All Types</option>
+          <option value="BE">Brief Exercise</option>
+          <option value="E">Exercise</option>
+          <option value="P">Problem</option>
+        </select>
+
+        <select
+          value={selectedAssetName}
+          onChange={(e) => setSelectedAssetName(e.target.value)}
+          disabled={!chapterAssets?.length}
+          style={{ ...selectStyle, opacity: chapterAssets?.length ? 1 : 0.5 }}
+        >
+          <option value="">{!selectedChapterId ? "Select chapter first…" : chapterAssets?.length ? "Select #…" : "None found"}</option>
+          {(chapterAssets || []).map((a: any) => (
+            <option key={a.asset_name} value={a.asset_name}>{a.source_label || a.source_ref}</option>
+          ))}
+        </select>
+
+        <button
+          onClick={handleGo}
+          disabled={!selectedAssetName && !(chapterAssets && chapterAssets[0])}
+          className="px-3 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
+          style={{ background: "#14213D", height: 30 }}
+        >
+          Go →
+        </button>
+      </div>
     </div>
   );
 }
@@ -1539,12 +1535,9 @@ export default function SolutionsViewer() {
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
           <div className="mx-auto px-6 py-4" style={{ maxWidth: 1200 }}>
             {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
-                {problemTitle || ""}
-              </h1>
-              {isPreview && <BrowseProblemsDropdown currentAsset={asset} theme={t} />}
-            </div>
+            <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
+              {problemTitle || ""}
+            </h1>
             {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
           </div>
         </div>
@@ -1629,6 +1622,9 @@ export default function SolutionsViewer() {
                 border: `1px solid ${t.border}`,
               }}
             >
+              {/* Browse Problems Bar (preview only) */}
+              {isPreview && <BrowseProblemsBar currentAsset={asset} theme={t} />}
+
               {/* 1. Solution */}
               {answerSummary.trim() && (
                 <RevealToggle
