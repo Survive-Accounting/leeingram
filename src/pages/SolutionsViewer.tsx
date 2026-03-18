@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Sun, Moon, Video } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
@@ -13,6 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
+const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
 const LEE_HEADSHOT_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg";
 
 // ── Theme colors ────────────────────────────────────────────────────
@@ -36,6 +39,7 @@ const lightTheme = {
   badgeColor: "#0A6B4A",
   badgeBg: "rgba(0, 200, 150, 0.12)",
   badgeBorder: "rgba(0, 200, 150, 0.3)",
+  watermarkOverlay: "rgba(255,255,255,0.93)",
 };
 
 const darkTheme = {
@@ -57,6 +61,7 @@ const darkTheme = {
   badgeColor: "rgba(0, 200, 150, 0.9)",
   badgeBg: "rgba(0, 200, 150, 0.12)",
   badgeBorder: "rgba(0, 200, 150, 0.3)",
+  watermarkOverlay: "rgba(15,22,35,0.93)",
 };
 
 type Theme = typeof lightTheme;
@@ -174,6 +179,7 @@ function RevealToggle({
   enrollUrl,
   sectionName,
   assetCode,
+  extraFooterLeft,
 }: {
   label: string;
   children: React.ReactNode;
@@ -182,6 +188,7 @@ function RevealToggle({
   enrollUrl: string;
   sectionName?: string;
   assetCode?: string;
+  extraFooterLeft?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -192,12 +199,17 @@ function RevealToggle({
   return (
     <div
       className="rounded-lg mt-4 overflow-hidden transition-all"
-      style={{ background: theme.toggleBg, border: `1px solid ${theme.border}` }}
+      style={{
+        background: theme.toggleBg,
+        border: `1px solid ${theme.border}`,
+      }}
     >
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors"
         style={{ color: theme.textMuted }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = theme.cardBg; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
         <span className="flex items-center gap-2 text-[13px]">
           {open ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
@@ -235,16 +247,19 @@ function RevealToggle({
           ) : (
             <>
               {children}
-              {reportMailto && (
-                <div className="flex justify-end mt-3 pt-2" style={{ borderTop: `1px solid ${theme.border}` }}>
-                  <a
-                    href={reportMailto}
-                    className="flex items-center gap-1.5 text-[12px] hover:underline"
-                    style={{ color: theme.textMuted }}
-                  >
-                    <AlertTriangle className="h-3 w-3" />
-                    Report an issue with this section →
-                  </a>
+              {(reportMailto || extraFooterLeft) && (
+                <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: `1px solid ${theme.border}` }}>
+                  <div>{extraFooterLeft || null}</div>
+                  {reportMailto ? (
+                    <a
+                      href={reportMailto}
+                      className="flex items-center gap-1.5 text-[12px] hover:underline"
+                      style={{ color: theme.textMuted }}
+                    >
+                      <AlertTriangle className="h-3 w-3" />
+                      Report an issue with this section →
+                    </a>
+                  ) : <div />}
                 </div>
               )}
             </>
@@ -316,7 +331,6 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
 }
 
 function CanonicalJESection({ data, theme }: { data: CanonicalJEPayload; theme: Theme }) {
-  // Group entries by scenario section, showing section labels when multiple scenarios
   const hasMultipleScenarios = data.scenario_sections.length > 1;
   return (
     <div className="space-y-6">
@@ -468,14 +482,12 @@ function ReportIssueModal({ open, onOpenChange, asset }: { open: boolean; onOpen
 
 function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
   const navigate = useNavigate();
-  const chapter = (currentAsset as any).chapters;
   const currentChapterId = currentAsset.chapter_id;
 
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAssetName, setSelectedAssetName] = useState("");
 
-  // Fetch IA2 chapters
   const { data: chapters } = useQuery({
     queryKey: ["ia2-chapters-nav"],
     queryFn: async () => {
@@ -489,7 +501,6 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
     },
   });
 
-  // Fetch assets for selected chapter
   const { data: chapterAssets } = useQuery({
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
@@ -587,7 +598,6 @@ function JEPreviewTeaser({ jeData, jeBlock, hasCanonicalJE, theme, enrollUrl }: 
       }
     }
   } else {
-    // Raw text fallback — just show a generic blanked structure
     const lines = jeBlock.split("\n").filter((l: string) => l.trim());
     const rows = lines.map((line: string) => ({
       isCredit: line.startsWith("\t") || line.startsWith("    ") || line.startsWith("  "),
@@ -665,7 +675,6 @@ function FlowchartSubToggle({
         className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors group"
         style={{ color: theme.text }}
       >
-        {/* Letter badge */}
         <span
           className="shrink-0 flex items-center justify-center h-6 w-6 rounded-full text-[12px] font-bold mt-0.5"
           style={{
@@ -675,11 +684,9 @@ function FlowchartSubToggle({
         >
           {letter}
         </span>
-        {/* Instruction text */}
         <span className="flex-1 text-[13px] leading-[1.5]">
           {instructionText}
         </span>
-        {/* Chevron */}
         <ChevronDown
           className="h-4 w-4 shrink-0 mt-0.5 transition-transform"
           style={{
@@ -754,34 +761,28 @@ function parseExamTraps(text: string): string[] {
   if (lines.length >= 2) {
     return lines.map(l => l.replace(/^[-•·]\s*/, '').replace(/^\d+[.)]\s*/, ''));
   }
-  // Single block — split on sentence boundaries that start new trap topics
   const trapStarters = /(?<=[.!])\s+(?=[A-Z][a-z]+(?:ing|ly|ful)\s)/g;
   const parts = text.split(trapStarters).map(s => s.trim()).filter(Boolean);
   if (parts.length >= 2) {
     return parts.map(p => p.endsWith('.') ? p : p + '.');
   }
-  // Fallback: split on ". " followed by capital letter
   const sentences = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
   return sentences.map(s => s.endsWith('.') ? s : s + '.');
 }
 
 /** Split text into bullet points, breaking long ones at ideal sentence boundaries */
 function splitLongBullets(text: string): string[] {
-  // First split into initial sentences
   const raw = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
   const sentences = raw.map(s => s.endsWith('.') ? s : s + '.');
   
-  // Now split any bullet that's too long (> 200 chars)
   const result: string[] = [];
   for (const s of sentences) {
     if (s.length <= 200) {
       result.push(s);
       continue;
     }
-    // Try to split at a sentence boundary within the long bullet
     const inner = s.match(/[^.!]+[.!]+/g);
     if (inner && inner.length >= 2) {
-      // Find best split point near the middle
       const mid = s.length / 2;
       let bestIdx = 0;
       let bestDist = Infinity;
@@ -809,9 +810,20 @@ export default function SolutionsViewer() {
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
 
-  // Theme — light only
-  const isDark = false;
-  const t = lightTheme;
+  // Theme — persisted dark/light toggle
+  const [isDark, setIsDark] = useState(() => {
+    const stored = localStorage.getItem("sa-viewer-theme");
+    return stored === "dark";
+  });
+  const t = isDark ? darkTheme : lightTheme;
+
+  const toggleTheme = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem("sa-viewer-theme", next ? "dark" : "light");
+      return next;
+    });
+  };
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
@@ -844,14 +856,12 @@ export default function SolutionsViewer() {
       const asset = assets?.[0];
       if (!asset) return null;
 
-      // Fetch instructions from problem_instructions table
       const { data: instrData } = await supabase
         .from("problem_instructions")
         .select("instruction_number, instruction_text")
         .eq("teaching_asset_id", asset.id)
         .order("instruction_number");
 
-      // Fetch per-instruction flowcharts from asset_flowcharts table
       const { data: flowchartsData } = await supabase
         .from("asset_flowcharts")
         .select("instruction_number, instruction_label, flowchart_image_url")
@@ -910,11 +920,9 @@ export default function SolutionsViewer() {
   const courseCode = course?.code || "";
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
   const problemTitle = asset._problemTitle || "";
-  const titleLine = problemTitle
-    ? `${asset.source_ref || asset.asset_name} — ${problemTitle}`
-    : (asset.source_ref || asset.asset_name);
+  const sourceRef = asset.source_ref || "";
 
-  // Instructions: priority 1 = problem_instructions table, 2 = instruction_1-5, 3 = instruction_list
+  // Instructions
   let instructions: string[] = (asset._instructions || [])
     .sort((a: any, b: any) => a.instruction_number - b.instruction_number)
     .filter((i: any) => i.instruction_text?.trim())
@@ -950,248 +958,301 @@ export default function SolutionsViewer() {
     : asset.problem_context || "";
   const problemParagraphs = splitLongText(rawProblemText);
 
-  const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}${isPreview ? "?preview=true" : ""}`;
+  const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
+
+  const videoMailto = `mailto:lee@surviveaccounting.com?subject=Video Request: ${asset.asset_name}&body=I would like a video explanation for ${sourceRef || ""} (${asset.asset_name}).`;
 
   return (
-    <div className="min-h-screen" style={{ background: t.pageBg }}>
-      {/* ── Top Bar ── */}
-      <header style={{ borderBottom: `2px solid ${t.border}` }}>
-        <div className="max-w-[780px] mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-full shrink-0 overflow-hidden" style={{ background: "#131E35" }}>
-              <img
-                src={LEE_HEADSHOT_URL}
-                alt="Lee Ingram"
-                className="h-8 w-8 object-cover"
-                style={{ objectPosition: "top center", borderRadius: "50%" }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            </div>
-            <div>
-              <p className="font-bold text-[15px] leading-tight" style={{ color: t.text }}>Survive Accounting</p>
-              <p className="text-[11px]" style={{ color: t.textMuted }}>by Lee Ingram</p>
-            </div>
+    <div className="min-h-screen relative" style={{ background: t.pageBg }}>
+      {/* ── Watermark Background ── */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: 0 }}
+      >
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${AORAKI_URL})`,
+            opacity: 0.06,
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: t.watermarkOverlay }}
+        />
+      </div>
+
+      {/* ── Navy Header Bar ── */}
+      <header
+        className="relative"
+        style={{ background: "#14213D", zIndex: 10 }}
+      >
+        <div className="max-w-[780px] mx-auto px-6 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src={LOGO_URL}
+              alt="Survive Accounting"
+              className="h-8 object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+            <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-1.5 text-[12px] text-white/60 hover:text-white/90 transition-colors px-2 py-1 rounded"
+          >
+            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            {isDark ? "Light" : "Dark"}
+          </button>
         </div>
       </header>
 
-      {/* ── Marketing Badge ── */}
-      <div className="max-w-[780px] mx-auto px-6 mt-3">
-        <span
-          className="inline-block text-[11px] px-3 py-1 rounded-full"
-          style={{
-            background: t.badgeBg,
-            border: `1px solid ${t.badgeBorder}`,
-            color: t.badgeColor,
-          }}
-        >
-          ✦ Deeper than a solutions manual — built from 10+ years of Ole Miss tutoring
-        </span>
-      </div>
+      {/* ── Hero Section ── */}
+      <div className="relative" style={{ zIndex: 5 }}>
+        {/* Marketing Badge */}
+        <div className="max-w-[780px] mx-auto px-6 mt-4">
+          <span
+            className="inline-block text-[11px] px-3 py-1 rounded-full"
+            style={{
+              background: t.badgeBg,
+              border: `1px solid ${t.badgeBorder}`,
+              color: t.badgeColor,
+            }}
+          >
+            ✦ Deeper than a solutions manual — built from 10+ years of Ole Miss tutoring
+          </span>
+        </div>
 
-      {/* ── Identifier Bar ── */}
-      <div style={{ background: t.cardBg, borderBottom: `1px solid ${t.border}` }} className="mt-3">
-        <div className="max-w-[780px] mx-auto px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <p className="text-[14px]" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>
-              <span className="font-bold">{asset.source_ref || asset.asset_name}</span>
-              {problemTitle && <span style={{ color: t.textMuted }}> — </span>}
-              {problemTitle && <span>{problemTitle}</span>}
-            </p>
-            {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
-            <a
-              href={`mailto:lee@surviveaccounting.com?subject=Video Request: ${asset.asset_name}&body=I would like a video explanation for ${asset.source_ref || ""} (${asset.asset_name}).`}
-              className="text-[12px] hover:underline mt-0.5 inline-block"
-              style={{ color: "#3B82F6" }}
-            >
-              Request Video Explanation →
-            </a>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs h-7"
-              onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); }}
-            >
-              <Copy className="h-3 w-3 mr-1" /> Share
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs h-7 border-amber-400 text-amber-600 hover:bg-amber-50"
-              onClick={() => setReportOpen(true)}
-            >
-              <AlertTriangle className="h-3 w-3 mr-1" /> Report Issue
-            </Button>
+        {/* Identifier / Title Bar */}
+        <div className="mt-3" style={{ background: isDark ? "rgba(26,35,51,0.8)" : "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
+          <div className="max-w-[780px] mx-auto px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              {sourceRef && (
+                <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>
+                  Based on {sourceRef}
+                </p>
+              )}
+              <h1
+                className="text-[18px] font-bold leading-tight"
+                style={{ color: isDark ? "#FFFFFF" : "#131E35" }}
+              >
+                {problemTitle || asset.asset_name}
+              </h1>
+              {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — recipients will need a Study Pass for full access"); }}
+                className="flex items-center gap-1.5 text-[12px] font-semibold px-4 py-2 rounded-lg transition-all hover:scale-[1.03]"
+                style={{
+                  color: "#FFFFFF",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  boxShadow: "0 0 12px rgba(255,255,255,0.08), 0 0 4px rgba(255,255,255,0.05)",
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" /> Share
+              </button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-8 border-amber-400 text-amber-600 hover:bg-amber-50"
+                onClick={() => setReportOpen(true)}
+              >
+                <AlertTriangle className="h-3 w-3 mr-1" /> Report Issue
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <main className="max-w-[780px] mx-auto px-6 py-8">
+      <main className="relative max-w-[780px] mx-auto px-6 py-8" style={{ zIndex: 5 }}>
+        {/* Content card with drop shadow */}
+        <div
+          className="rounded-xl px-6 py-6 sm:px-8 sm:py-8"
+          style={{
+            background: isDark ? t.cardBg : t.pageBg,
+            boxShadow: isDark
+              ? "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)"
+              : "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
+            border: `1px solid ${t.border}`,
+          }}
+        >
+          {/* Chapter navigator (preview only) */}
+          {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
 
-        {/* ── Chapter navigator (preview only) ── */}
-        {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
-
-        {/* Problem text — always visible */}
-        {rawProblemText.trim() && (
-          <div>
-            {hasHighlights && (
-              <div className="flex items-center gap-2 mb-3">
-                <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
-                <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
+          {/* Problem text — always visible */}
+          {rawProblemText.trim() && (
+            <div>
+              {hasHighlights && (
+                <div className="flex items-center gap-2 mb-3">
+                  <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
+                  <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
+                </div>
+              )}
+              <div className="space-y-4">
+                {problemParagraphs.map((para, i) => (
+                  <SmartContent key={i} text={para} className="text-[14px] leading-[1.7]" theme={t} />
+                ))}
               </div>
-            )}
-            <div className="space-y-4">
-              {problemParagraphs.map((para, i) => (
-                <SmartContent key={i} text={para} className="text-[14px] leading-[1.7]" theme={t} />
-              ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* INSTRUCTIONS — always visible */}
-        {instructions.length > 0 && (
-          <>
-            <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
-            <div className="space-y-4">
-              {instructions.map((inst, idx) => {
-                const letter = String.fromCharCode(97 + idx);
-                return (
-                  <p key={idx} className="text-[14px] leading-[1.6]" style={{ color: t.text }}>
-                    <span className="font-bold" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>({letter})</span>{" "}{inst}
-                  </p>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* ── Reveal Toggles ── */}
-
-        {/* 1. Solution (was Answer Summary) */}
-        {answerSummary.trim() && (
-          <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Solution" assetCode={asset.asset_name}>
-            <AnswerSummarySection text={answerSummary} theme={t} />
-          </RevealToggle>
-        )}
-
-
-
-
-        {/* 2. How to Solve This — per-instruction flowcharts */}
-        {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
-            {asset._flowcharts?.length > 1 ? (
-              <div className="space-y-2">
-                {asset._flowcharts.map((fc: any) => {
-                  const instr = (asset._instructions || []).find(
-                    (ins: any) => ins.instruction_number === fc.instruction_number
-                  );
-                  const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
-                  const text = instr?.instruction_text || `Part ${letter}`;
-
+          {/* INSTRUCTIONS — always visible */}
+          {instructions.length > 0 && (
+            <>
+              <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
+              <div className="space-y-4">
+                {instructions.map((inst, idx) => {
+                  const letter = String.fromCharCode(97 + idx);
                   return (
-                    <FlowchartSubToggle
-                      key={fc.instruction_number}
-                      letter={letter}
-                      instructionText={text}
-                      imageUrl={fc.flowchart_image_url}
-                      theme={t}
-                    />
+                    <p key={idx} className="text-[14px] leading-[1.6]" style={{ color: t.text }}>
+                      <span className="font-bold" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>({letter})</span>{" "}{inst}
+                    </p>
                   );
                 })}
               </div>
-            ) : asset._flowcharts?.length === 1 ? (
-              <img
-                src={asset._flowcharts[0].flowchart_image_url}
-                alt="How to Solve This — step-by-step flowchart"
-                className="w-full rounded-lg"
-                loading="lazy"
-              />
-            ) : (
-              <img
-                src={asset.flowchart_image_url}
-                alt="How to Solve This — step-by-step flowchart"
-                className="w-full rounded-lg"
-                loading="lazy"
-              />
-            )}
-          </RevealToggle>
-        )}
+            </>
+          )}
 
-        {/* 3. Journal Entries — custom preview teaser */}
-        {hasJE && (
-          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
-            {isPreview ? (
-              <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
-            ) : (
-              hasCanonicalJE ? (
-                <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
-              ) : (
-                <RawJEFallback text={jeBlock} theme={t} />
-              )
-            )}
-          </RevealToggle>
-        )}
+          {/* ── Reveal Toggles ── */}
 
-        {/* 3b. Supplementary / Related Journal Entries (accounts only) */}
-        {asset.supplementary_je_json && (
-          <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
-            <SupplementaryJESection
-              data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
+          {/* 1. Solution — with video request link in footer */}
+          {answerSummary.trim() && (
+            <RevealToggle
+              label="Reveal Solution"
               theme={t}
-            />
-          </RevealToggle>
-        )}
+              isPreview={isPreview}
+              enrollUrl={enrollUrl}
+              sectionName="Solution"
+              assetCode={asset.asset_name}
+              extraFooterLeft={
+                <a
+                  href={videoMailto}
+                  className="flex items-center gap-1.5 text-[12px] hover:underline"
+                  style={{ color: "#3B82F6" }}
+                >
+                  <Video className="h-3 w-3" />
+                  Request Video Explanation →
+                </a>
+              }
+            >
+              <AnswerSummarySection text={answerSummary} theme={t} />
+            </RevealToggle>
+          )}
 
-        {formulas.trim() && (
-          <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
-            <div className="space-y-3">
-              {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
-                <div key={i} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
-                  <p className="font-mono text-[13px]" style={{ color: t.text }}>{line}</p>
+          {/* 2. How to Solve This — per-instruction flowcharts */}
+          {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
+            <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
+              {asset._flowcharts?.length > 1 ? (
+                <div className="space-y-2">
+                  {asset._flowcharts.map((fc: any) => {
+                    const instr = (asset._instructions || []).find(
+                      (ins: any) => ins.instruction_number === fc.instruction_number
+                    );
+                    const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
+                    const text = instr?.instruction_text || `Part ${letter}`;
+
+                    return (
+                      <FlowchartSubToggle
+                        key={fc.instruction_number}
+                        letter={letter}
+                        instructionText={text}
+                        imageUrl={fc.flowchart_image_url}
+                        theme={t}
+                      />
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          </RevealToggle>
-        )}
+              ) : asset._flowcharts?.length === 1 ? (
+                <img
+                  src={asset._flowcharts[0].flowchart_image_url}
+                  alt="How to Solve This — step-by-step flowchart"
+                  className="w-full rounded-lg"
+                  loading="lazy"
+                />
+              ) : (
+                <img
+                  src={asset.flowchart_image_url}
+                  alt="How to Solve This — step-by-step flowchart"
+                  className="w-full rounded-lg"
+                  loading="lazy"
+                />
+              )}
+            </RevealToggle>
+          )}
 
-        {/* 5. Key Concepts */}
-        {conceptNotes.trim() && (
-          <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
-            <ul className="space-y-3">
-              {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
-                <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
-                  <span>{sentence}</span>
-                </li>
-              ))}
-            </ul>
-          </RevealToggle>
-        )}
+          {/* 3. Journal Entries */}
+          {hasJE && (
+            <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
+              {isPreview ? (
+                <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
+              ) : (
+                hasCanonicalJE ? (
+                  <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
+                ) : (
+                  <RawJEFallback text={jeBlock} theme={t} />
+                )
+              )}
+            </RevealToggle>
+          )}
 
-        {/* 6. Exam Traps */}
-        {examTraps.trim() && (
-          <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
-            <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
+          {/* 3b. Supplementary / Related Journal Entries */}
+          {asset.supplementary_je_json && (
+            <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
+              <SupplementaryJESection
+                data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
+                theme={t}
+              />
+            </RevealToggle>
+          )}
+
+          {formulas.trim() && (
+            <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
+              <div className="space-y-3">
+                {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
+                  <div key={i} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
+                    <p className="font-mono text-[13px]" style={{ color: t.text }}>{line}</p>
+                  </div>
+                ))}
+              </div>
+            </RevealToggle>
+          )}
+
+          {/* 5. Key Concepts */}
+          {conceptNotes.trim() && (
+            <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
               <ul className="space-y-3">
-                {parseExamTraps(examTraps).map((trap: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
-                    <span>{trap}</span>
+                {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
+                    <span>{sentence}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-          </RevealToggle>
-        )}
+            </RevealToggle>
+          )}
+
+          {/* 6. Exam Traps */}
+          {examTraps.trim() && (
+            <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
+              <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
+                <ul className="space-y-3">
+                  {parseExamTraps(examTraps).map((trap: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
+                      <span>{trap}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </RevealToggle>
+          )}
+        </div>
 
         {/* ── About Lee Card ── */}
-        <div className="mt-12 rounded-xl p-6" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
+        <div className="mt-12 rounded-xl p-6" style={{ background: t.cardBg, border: `1px solid ${t.border}`, boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.3)" : "0 4px 16px rgba(0,0,0,0.04)" }}>
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="sm:w-[30%] flex flex-col items-center text-center shrink-0">
               <img
