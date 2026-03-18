@@ -936,8 +936,8 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
     <div
       className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
-        left: 20,
-        width: 230,
+        left: 40,
+        width: 260,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
         borderRadius: "12px",
