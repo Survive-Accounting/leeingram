@@ -61,6 +61,7 @@ import BulkFixTool from "./pages/BulkFixTool";
 import FlashcardTool from "./pages/FlashcardTool";
 import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
+import PracticeViewer from "./pages/PracticeViewer";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
 import EntryBuilderTool from "./pages/EntryBuilderTool";
