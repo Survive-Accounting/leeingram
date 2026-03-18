@@ -563,7 +563,10 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             }
 
             if (changed) {
-              await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
+              // generate_supplementary_je writes via edge function; others need explicit update
+              if (operation !== "generate_supplementary_je") {
+                await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
+              }
               updated++;
             } else {
               skipped++;
