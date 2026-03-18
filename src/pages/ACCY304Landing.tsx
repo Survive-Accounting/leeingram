@@ -79,21 +79,14 @@ function StyledSelect({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className={`w-full appearance-none rounded-md px-3 py-2.5 text-[14px] pr-8 focus:outline-none focus:ring-2 disabled:opacity-50 ${
+        className={`w-full appearance-none rounded-md px-3 py-2.5 text-[14px] pr-8 focus:outline-none focus:ring-2 disabled:opacity-50 [&>option]:text-[#1A1A1A] [&>option]:bg-white ${
           light
             ? "bg-white/10 border border-white/20 text-white focus:ring-white/30 focus:border-white/40"
             : "bg-white border border-gray-300 focus:ring-[#14213D]/20 focus:border-[#14213D]"
         }`}
         style={light ? { colorScheme: "dark" } : undefined}
       >
-        {React.Children.map(children, (child) => {
-          if (React.isValidElement<React.OptionHTMLAttributes<HTMLOptionElement>>(child) && child.type === 'option') {
-            return React.cloneElement(child, {
-              style: { ...((child.props as any).style || {}), color: '#1A1A1A', background: '#FFFFFF' },
-            });
-          }
-          return child;
-        })}
+        {children}
       </select>
       <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${light ? "text-white/50" : "text-gray-400"}`} />
     </div>
