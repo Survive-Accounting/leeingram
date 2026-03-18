@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Sun, Moon, Video, X, BookOpen, CheckCircle, Calendar } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Video, X, BookOpen, CheckCircle, Calendar } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
@@ -879,19 +879,26 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
       />
       <div className="space-y-3 max-w-[400px]">
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Tutor &amp; entrepreneur since 2015. Founder of SurviveAccounting.com.
+          Founder of{" "}
+          <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
+            SurviveAccounting.com
+          </a>.
         </p>
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          I love helping students ace exams with the least effort possible.
+          Tutoring entrepreneur since 2015.
         </p>
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Best of luck in your course!
+          I love helping students ace exams!
         </p>
         <p className="text-[13px] italic" style={{ color: theme.text }}>— Lee</p>
+        <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted }}>
+          Ole Miss Alum<br />
+          B.A. &amp; M.Acc. in Accounting • 3.75 GPA
+        </p>
       </div>
       <div className="flex flex-col gap-1.5 text-[12px]">
-        <a href="mailto:lee@surviveaccounting.com" className="hover:underline" style={{ color: "#3B82F6" }}>
-          lee@surviveaccounting.com
+        <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
+          <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
         </a>
         <a
           href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
@@ -900,7 +907,7 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
           className="flex items-center justify-center gap-1 hover:underline font-semibold"
           style={{ color: "#3B82F6" }}
         >
-          <Calendar className="h-3 w-3" /> Book 1-on-1 Virtual Tutoring →
+          <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
         </a>
       </div>
     </div>
@@ -913,21 +920,16 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
 
 function RightModePanel({
   theme,
-  isDark,
   practiceMode,
   onSetPracticeMode,
+  shareUrl,
 }: {
   theme: Theme;
-  isDark: boolean;
   practiceMode: boolean;
   onSetPracticeMode: (v: boolean) => void;
+  shareUrl: string;
 }) {
   const [showSpotlight, setShowSpotlight] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSpotlight(false), 3500);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="hidden xl:flex flex-col gap-4 shrink-0 self-start sticky top-[160px]" style={{ width: 220 }}>
@@ -935,20 +937,23 @@ function RightModePanel({
       <div
         className="rounded-xl p-4 relative"
         style={{
-          background: isDark ? theme.cardBg : "#FFFFFF",
+          background: "#FFFFFF",
           border: `1px solid ${theme.border}`,
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.08)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
         }}
       >
         <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: theme.textMuted }}>Study Mode</p>
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => onSetPracticeMode(true)}
+            onClick={() => {
+              onSetPracticeMode(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
             className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left"
             style={{
-              background: practiceMode ? (isDark ? "#1A2E55" : "#EEF2FF") : "transparent",
-              color: practiceMode ? (isDark ? "#93C5FD" : "#3B52B5") : theme.textMuted,
-              border: `1.5px solid ${practiceMode ? (isDark ? "#3B52B5" : "#C7D2FE") : theme.border}`,
+              background: practiceMode ? "#EEF2FF" : "transparent",
+              color: practiceMode ? "#3B52B5" : theme.textMuted,
+              border: `1.5px solid ${practiceMode ? "#C7D2FE" : theme.border}`,
             }}
           >
             <BookOpen className="h-4 w-4 shrink-0" /> Practice Mode
@@ -958,9 +963,9 @@ function RightModePanel({
               onClick={() => { onSetPracticeMode(false); setShowSpotlight(false); }}
               className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left relative z-10"
               style={{
-                background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
-                color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
-                border: `1.5px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
+                background: !practiceMode ? "#F0FFF4" : "transparent",
+                color: !practiceMode ? "#166534" : theme.textMuted,
+                border: `1.5px solid ${!practiceMode ? "#BBF7D0" : theme.border}`,
                 boxShadow: showSpotlight && practiceMode ? "0 0 20px rgba(22,101,52,0.5), 0 0 8px rgba(34,197,94,0.4)" : "none",
                 animation: showSpotlight && practiceMode ? "spotlight-pulse 1.2s ease-in-out infinite alternate" : "none",
               }}
@@ -978,12 +983,28 @@ function RightModePanel({
           </div>
         </div>
         <style>{`@keyframes spotlight-pulse { 0% { box-shadow: 0 0 12px rgba(22,101,52,0.3), 0 0 4px rgba(34,197,94,0.2); } 100% { box-shadow: 0 0 24px rgba(22,101,52,0.6), 0 0 10px rgba(34,197,94,0.4); } }`}</style>
+
+        {/* Share button */}
+        <button
+          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+          className="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold px-4 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97] mt-3"
+          style={{
+            color: "#FFFFFF",
+            background: "linear-gradient(135deg, #3B82F6, #2563EB)",
+            border: "1px solid rgba(59,130,246,0.5)",
+            boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
+            animation: "share-glow 2s ease-in-out infinite alternate",
+          }}
+        >
+          <Copy className="h-4 w-4" /> Share This
+        </button>
+        <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
+
         <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${theme.border}` }}>
           <p className="text-[12px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
           <p className="text-[12px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
         </div>
       </div>
-
     </div>
   );
 }
@@ -1017,7 +1038,7 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
   }, []);
 
   return (
-    <div className="mt-10">
+    <div className="mt-16">
       <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase mb-4 text-center" style={{ color: theme.textMuted }}>
         What Lee's Students Are Saying
       </h2>
@@ -1040,20 +1061,9 @@ export default function SolutionsViewer() {
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
 
-  // Theme — persisted dark/light toggle
-  const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem("sa-viewer-theme");
-    return stored === "dark";
-  });
-  const t = isDark ? darkTheme : lightTheme;
-
-  const toggleTheme = () => {
-    setIsDark(prev => {
-      const next = !prev;
-      localStorage.setItem("sa-viewer-theme", next ? "dark" : "light");
-      return next;
-    });
-  };
+  // Theme — light only (dark mode removed)
+  const isDark = false;
+  const t = lightTheme;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
@@ -1228,7 +1238,7 @@ export default function SolutionsViewer() {
         className="relative"
         style={{ background: "#14213D", zIndex: 10 }}
       >
-        <div className="max-w-[780px] mx-auto px-6 py-2.5 flex items-center justify-between">
+        <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1040 }}>
           <div className="flex items-center gap-3">
             <img
               src={LOGO_URL}
@@ -1238,20 +1248,13 @@ export default function SolutionsViewer() {
             />
             <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
           </div>
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-1.5 text-[12px] text-white/60 hover:text-white/90 transition-colors px-2 py-1 rounded"
-          >
-            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            {isDark ? "Light" : "Dark"}
-          </button>
         </div>
       </header>
 
       {/* ── Hero Section ── */}
       <div className="relative" style={{ zIndex: 5 }}>
         {/* Marketing Badge */}
-        <div className="max-w-[780px] mx-auto px-6 mt-4">
+        <div className="mx-auto px-6 mt-4" style={{ maxWidth: 1040 }}>
           <span
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{
@@ -1265,37 +1268,16 @@ export default function SolutionsViewer() {
         </div>
 
         {/* Identifier / Title Bar */}
-        <div className="mt-3" style={{ background: isDark ? "rgba(26,35,51,0.8)" : "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
-          <div className="max-w-[780px] mx-auto px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
+          <div className="mx-auto px-6 py-4" style={{ maxWidth: 1040 }}>
             <div>
-              {sourceRef && (
-                <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>
-                  Based on {sourceRef}
-                </p>
-              )}
               <h1
                 className="text-[18px] font-bold leading-tight"
-                style={{ color: isDark ? "#FFFFFF" : "#131E35" }}
+                style={{ color: "#131E35" }}
               >
                 {problemTitle || ""}
               </h1>
               {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — share with classmates!"); }}
-                className="flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97]"
-                style={{
-                  color: "#FFFFFF",
-                  background: "linear-gradient(135deg, #3B82F6, #2563EB)",
-                  border: "1px solid rgba(59,130,246,0.5)",
-                  boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
-                  animation: "share-glow 2s ease-in-out infinite alternate",
-                }}
-              >
-                <Copy className="h-4 w-4" /> Share This
-              </button>
-              <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
             </div>
           </div>
         </div>
@@ -1319,6 +1301,13 @@ export default function SolutionsViewer() {
         >
           {/* Chapter navigator (preview only) */}
           {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
+
+          {/* Source ref label — above problem text */}
+          {sourceRef && (
+            <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
+              Practice problem based on {sourceRef}
+            </h2>
+          )}
 
           {/* Problem text — always visible */}
           {rawProblemText.trim() && (
@@ -1483,34 +1472,23 @@ export default function SolutionsViewer() {
 
         {/* ── Footer ── */}
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-          {hasFooterLinks && (
-            <p className="text-center text-[13px] mb-3">
-              {quizLink && <a href={quizLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">📝 Practice Quiz</a>}
-              {quizLink && (whiteboardLink || videoLink) && <span className="mx-2" style={{ color: t.border }}>·</span>}
-              {whiteboardLink && <a href={whiteboardLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">📊 Whiteboard</a>}
-              {whiteboardLink && videoLink && <span className="mx-2" style={{ color: t.border }}>·</span>}
-              {videoLink && <a href={videoLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">🎬 Video Walkthrough</a>}
-            </p>
-          )}
           <p className="text-center text-[11px]" style={{ color: t.textMuted }}>
-            Survive Accounting · surviveaccounting.com
+            <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: t.text }}>
+              SurviveAccounting.com
+            </a>
+          </p>
+          <p className="text-center text-[11px] mt-1" style={{ color: t.textMuted }}>
+            Created by Lee Ingram in 2020
           </p>
           <p className="text-center mt-2">
             <button onClick={() => setReportOpen(true)} className="text-[11px] hover:underline" style={{ color: t.textMuted }}>
               Report Issue
             </button>
           </p>
-          {!isPreview && (
-            <p className="text-center mt-1">
-              <a href={`/practice/${asset.asset_name}`} className="text-[12px] hover:underline" style={{ color: "#3B82F6" }}>
-                ← View Practice Mode
-              </a>
-            </p>
-          )}
         </div>
         </div>
         {/* ── Right Mode Panel (desktop) ── */}
-        <RightModePanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
+        <RightModePanel theme={t} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} shareUrl={shareUrl} />
       </main>
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
