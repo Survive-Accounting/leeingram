@@ -892,22 +892,36 @@ export default function SolutionsViewer() {
         {/* 2. How to Solve This — per-instruction flowcharts */}
         {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
           <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
-            {asset._flowcharts?.length > 0 ? (
-              <div className="space-y-6">
-                {asset._flowcharts.map((fc: any, i: number) => (
-                  <div key={i}>
-                    {asset._flowcharts.length > 1 && fc.instruction_label && (
-                      <p className="font-bold text-[14px] mb-2" style={{ color: t.text }}>{fc.instruction_label}</p>
-                    )}
-                    <img
-                      src={fc.flowchart_image_url}
-                      alt={`How to Solve This${fc.instruction_label ? ` — ${fc.instruction_label}` : ""}`}
-                      className="w-full rounded-lg"
-                      loading="lazy"
+            {asset._flowcharts?.length > 1 ? (
+              <div className="space-y-2">
+                {asset._flowcharts.map((fc: any) => {
+                  // Find the matching instruction text for a friendly label
+                  const instr = (asset._instructions || []).find(
+                    (ins: any) => ins.instruction_number === fc.instruction_number
+                  );
+                  const friendlyLabel = instr?.instruction_text
+                    ? instr.instruction_text.length > 80
+                      ? instr.instruction_text.slice(0, 77) + "…"
+                      : instr.instruction_text
+                    : `Part ${fc.instruction_label || fc.instruction_number}`;
+
+                  return (
+                    <FlowchartSubToggle
+                      key={fc.instruction_number}
+                      label={`${fc.instruction_label || ""} ${friendlyLabel}`.trim()}
+                      imageUrl={fc.flowchart_image_url}
+                      theme={t}
                     />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            ) : asset._flowcharts?.length === 1 ? (
+              <img
+                src={asset._flowcharts[0].flowchart_image_url}
+                alt="How to Solve This — step-by-step flowchart"
+                className="w-full rounded-lg"
+                loading="lazy"
+              />
             ) : (
               <img
                 src={asset.flowchart_image_url}
