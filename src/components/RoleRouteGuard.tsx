@@ -6,13 +6,18 @@ import { resolveEffectiveRole, isPathActiveForRole } from "@/lib/rolePermissions
 import { toast } from "sonner";
 
 /** Pages that should never be blocked (auth, dashboard, etc.) */
+/** Paths that are fully public (no auth needed) */
+const PUBLIC_PREFIXES = [
+  "/solutions", "/practice", "/tools", "/accy304", "/landing",
+];
+
 const ALWAYS_ALLOWED = [
   "/admin", "/auth", "/domains", "/va-dashboard", "/va-admin", "/dashboard",
   "/landing", "/focus", "/marketing", "/writing", "/leeingram", "/prof-ingram",
   "/travel", "/chart-of-accounts", "/style-guide", "/ideas", "/pipeline",
   "/template-manager", "/export-sets", "/tutoring", "/filming",
   "/solutions-upload", "/screenshot-capture", "/batch-run", "/bulk-fix-tool",
-  "/study-tools",
+  "/study-tools", ...PUBLIC_PREFIXES,
 ];
 
 export function RoleRouteGuard() {
