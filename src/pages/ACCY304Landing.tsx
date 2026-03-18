@@ -249,16 +249,22 @@ export default function ACCY304Landing() {
     queryFn: async () => {
       if (!previewChapterId) return [];
       const { data } = await supabase
-        .from("chapter_problems")
-        .select("id, source_code, source_label, chapter_id")
+        .from("teaching_assets")
+        .select(`
+          asset_name,
+          source_ref,
+          source_problem_id,
+          chapter_problems!teaching_assets_source_problem_id_fkey(source_label)
+        `)
         .eq("chapter_id", previewChapterId)
-        .order("source_code");
+        .not("asset_approved_at", "is", null)
+        .order("source_ref");
       if (!data) return [];
 
       let filtered = data;
-      if (previewType === "BE") filtered = filtered.filter((p: any) => p.source_code?.startsWith("BE"));
-      else if (previewType === "E") filtered = filtered.filter((p: any) => p.source_code?.startsWith("E") && !p.source_code?.startsWith("EX"));
-      else if (previewType === "P") filtered = filtered.filter((p: any) => p.source_code?.startsWith("P"));
+      if (previewType === "BE") filtered = filtered.filter((p: any) => p.source_ref?.startsWith("BE"));
+      else if (previewType === "E") filtered = filtered.filter((p: any) => p.source_ref?.startsWith("E") && !p.source_ref?.startsWith("EX"));
+      else if (previewType === "P") filtered = filtered.filter((p: any) => p.source_ref?.startsWith("P"));
       return filtered;
     },
     enabled: !!previewChapterId,

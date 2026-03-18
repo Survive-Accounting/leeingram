@@ -748,7 +748,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
 
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState(currentType);
-  const [selectedAssetName, setSelectedAssetName] = useState("");
+  const [selectedAssetName, setSelectedAssetName] = useState(currentAsset.asset_name || "");
 
   const { data: chapters } = useQuery({
     queryKey: ["ia2-chapters-nav"],
@@ -767,13 +767,18 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
-      let q = supabase
+      const { data } = await supabase
         .from("teaching_assets")
-        .select("asset_name, source_ref, source_label")
+        .select(`
+          asset_name,
+          source_ref,
+          source_problem_id,
+          chapter_problems!teaching_assets_source_problem_id_fkey(source_label)
+        `)
         .eq("chapter_id", selectedChapterId)
         .not("asset_approved_at", "is", null)
         .order("source_ref");
-      const { data } = await q;
+
       let filtered = data || [];
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
@@ -789,10 +794,21 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     enabled: !!selectedChapterId,
   });
 
+  useEffect(() => {
+    if (!chapterAssets?.length) {
+      setSelectedAssetName("");
+      return;
+    }
+
+    const stillExists = chapterAssets.some((a: any) => a.asset_name === selectedAssetName);
+    if (!stillExists) {
+      setSelectedAssetName(chapterAssets[0].asset_name);
+    }
+  }, [chapterAssets, selectedAssetName]);
+
   const handleGo = () => {
-    const target = selectedAssetName || (chapterAssets && chapterAssets[0]?.asset_name);
-    if (target) {
-      navigate(`/solutions/${target}?preview=true`);
+    if (selectedAssetName) {
+      navigate(`/solutions/${selectedAssetName}?preview=true`);
     }
   };
 
@@ -801,25 +817,26 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     background: theme.pageBg,
     border: `1px solid ${theme.border}`,
     color: theme.text,
-    borderRadius: 6,
-    padding: "4px 24px 4px 8px",
+    borderRadius: 8,
+    padding: "6px 28px 6px 10px",
     fontSize: 12,
-    height: 30,
+    height: 34,
+    minWidth: 116,
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: "no-repeat",
-    backgroundPosition: "right 6px center",
+    backgroundPosition: "right 8px center",
   };
 
   return (
-    <div
-      className="rounded-lg px-4 py-3 mb-4"
-      style={{ background: theme.cardBg, border: `1px solid ${theme.border}` }}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: theme.textMuted }}>
-        <Search className="inline h-3 w-3 mr-1" style={{ verticalAlign: "-2px" }} />
-        Browse IA2 Problems
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="w-full lg:w-auto lg:max-w-[520px]">
+      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="flex items-center gap-1.5 mr-1">
+          <Search className="h-3.5 w-3.5" style={{ color: theme.textMuted }} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>
+            Browse Intermediate 2 Problems
+          </span>
+        </div>
+
         <select
           value={selectedChapterId}
           onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedAssetName(""); }}
@@ -827,7 +844,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
         >
           <option value="">Chapter…</option>
           {(chapters || []).map((ch: any) => (
-            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
+            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number}</option>
           ))}
         </select>
 
@@ -836,29 +853,31 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
           onChange={(e) => { setSelectedType(e.target.value); setSelectedAssetName(""); }}
           style={selectStyle}
         >
-          <option value="all">All Types</option>
-          <option value="BE">Brief Exercise</option>
-          <option value="E">Exercise</option>
-          <option value="P">Problem</option>
+          <option value="all">Type…</option>
+          <option value="BE">BE</option>
+          <option value="E">Ex</option>
+          <option value="P">Pr</option>
         </select>
 
         <select
           value={selectedAssetName}
           onChange={(e) => setSelectedAssetName(e.target.value)}
           disabled={!chapterAssets?.length}
-          style={{ ...selectStyle, opacity: chapterAssets?.length ? 1 : 0.5 }}
+          style={{ ...selectStyle, minWidth: 132, opacity: chapterAssets?.length ? 1 : 0.55 }}
         >
-          <option value="">{!selectedChapterId ? "Select chapter first…" : chapterAssets?.length ? "Select #…" : "None found"}</option>
+          <option value="">{!selectedChapterId ? "#…" : chapterAssets?.length ? "Choose #…" : "None found"}</option>
           {(chapterAssets || []).map((a: any) => (
-            <option key={a.asset_name} value={a.asset_name}>{a.source_label || a.source_ref}</option>
+            <option key={a.asset_name} value={a.asset_name}>
+              {a.chapter_problems?.source_label || a.source_ref}
+            </option>
           ))}
         </select>
 
         <button
           onClick={handleGo}
-          disabled={!selectedAssetName && !(chapterAssets && chapterAssets[0])}
+          disabled={!selectedAssetName}
           className="px-3 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
-          style={{ background: "#14213D", height: 30 }}
+          style={{ background: "#14213D", height: 34 }}
         >
           Go →
         </button>
