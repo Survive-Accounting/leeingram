@@ -248,6 +248,37 @@ export default function ACCY304Admin() {
             </p>
           )}
         </div>
+
+        {/* ── .edu Lead Emails ── */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Mail className="h-4 w-4" /> Lead Gen Emails
+          </h2>
+          {eduLeads && eduLeads.length > 0 ? (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Email</TableHead>
+                    <TableHead className="text-xs text-right">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {eduLeads.map((lead: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm">{lead.email}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground text-right">
+                        {format(new Date(lead.created_at), "MMM d, yyyy h:mm a")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No .edu emails captured yet.</p>
+          )}
+        </div>
       </div>
     </SurviveSidebarLayout>
   );
