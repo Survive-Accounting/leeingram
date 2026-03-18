@@ -593,7 +593,7 @@ export default function ACCY304Landing() {
                 {iframeVisible ? (
                   <><ChevronUp className="h-3.5 w-3.5" /> Hide Preview</>
                 ) : (
-                  <><ChevronDownIcon className="h-3.5 w-3.5" /> Show Preview</>
+                  <><ChevronDown className="h-3.5 w-3.5" /> Show Preview</>
                 )}
               </button>
               <div
