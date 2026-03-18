@@ -1047,11 +1047,36 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const [searchParams] = useSearchParams();
-  const isPreview = searchParams.get("preview") === "true";
+  const rawIsPreview = searchParams.get("preview") === "true";
+  const previewToken = searchParams.get("preview_token") || "";
   const enrollUrl = useEnrollUrl();
 
   // Theme — light only
   const t = lightTheme;
+
+  // ── Preview token validation ──
+  const { data: tokenSession, isLoading: tokenLoading } = useQuery({
+    queryKey: ["preview-token", previewToken],
+    queryFn: async () => {
+      if (!previewToken) return null;
+      const { data } = await supabase
+        .from("edu_preview_sessions")
+        .select("id, asset_codes, expires_at")
+        .eq("id", previewToken)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!previewToken,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Determine access mode based on token
+  const tokenExpired = tokenSession && new Date(tokenSession.expires_at) < new Date();
+  const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
+    (tokenSession.asset_codes as string[])?.includes(assetCode);
+  const isPreview = previewToken
+    ? !tokenValidForAsset // if token present but invalid for this asset, fall back to preview mode
+    : rawIsPreview;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
