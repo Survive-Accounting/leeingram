@@ -418,6 +418,40 @@ export function CoreAssetsTab() {
                           </Button>
                         </Tip>
                       )}
+                      {/* Solutions embed dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-6 w-6 p-0 relative">
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
+                            Preview in App →
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const appUrl = window.location.origin;
+                            navigator.clipboard.writeText(`<iframe src="${appUrl}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
+                          }}>
+                            Copy Full Solutions iFrame
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const appUrl = window.location.origin;
+                            navigator.clipboard.writeText(`<iframe src="${appUrl}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            toast.success("Preview iFrame copied — students will see paywall after problem");
+                          }}>
+                            Copy Preview iFrame
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const appUrl = window.location.origin;
+                            navigator.clipboard.writeText(`<iframe src="${appUrl}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            toast.success("Practice iFrame copied");
+                          }}>
+                            Copy Practice iFrame
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {/* Admin notes popover */}
                       {Array.isArray(a.admin_notes) && a.admin_notes.length > 0 && (
                         <Popover>
