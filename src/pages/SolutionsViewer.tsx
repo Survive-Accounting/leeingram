@@ -800,9 +800,11 @@ export default function SolutionsViewer() {
         {/* 4. Important Formulas */}
         {formulas.trim() && (
           <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
-            <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
+            <div className="space-y-2">
               {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
-                <p key={i} className="font-mono text-[13px] mb-2" style={{ color: t.text }}>{line}</p>
+                <div key={i} className="rounded px-4 py-2 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
+                  <p className="font-mono text-[13px]" style={{ color: t.text }}>{line}</p>
+                </div>
               ))}
             </div>
           </RevealToggle>
