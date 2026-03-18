@@ -229,7 +229,7 @@ function RevealToggle({
             <div className="rounded-lg px-6 py-6 text-center" style={{ background: "linear-gradient(135deg, #0F1623, #1A2E55)" }}>
               <p className="text-[16px] font-bold text-white">🔒 Study Pass Required</p>
               <p className="text-[13px] mt-2" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Unlock full solutions, journal entries, formulas, exam traps, and more for every IA2 problem.
+                Unlock full solutions, journal entries, formulas, exam traps, and more for every Intermediate Accounting 2 problem.
               </p>
               <a
                 href={enrollUrl}
