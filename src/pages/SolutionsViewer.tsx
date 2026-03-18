@@ -866,13 +866,12 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 // ── About Lee Content (shared between card and left panel) ──────────
 
 function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
-  const imgSize = compact ? "w-28 h-28" : "w-28 h-28";
   return (
     <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
       <img
         src={LEE_HEADSHOT_URL}
         alt="Lee Ingram"
-        className={`${imgSize} rounded-full object-cover`}
+        className={`${compact ? "w-36 h-36" : "w-40 h-40"} rounded-xl object-cover`}
         style={{ objectPosition: "top center" }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
@@ -914,7 +913,7 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
         onClick={() => setOpen(true)}
         className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
         style={{
-          left: 20,
+          left: 40,
           writingMode: "vertical-rl",
           textOrientation: "mixed",
           background: isDark ? theme.cardBg : "#FFFFFF",
@@ -937,8 +936,8 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
     <div
       className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
-        left: 20,
-        width: 230,
+        left: 40,
+        width: 260,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
         borderRadius: "12px",
@@ -975,7 +974,7 @@ function RightPanel({
     <div
       className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
-        right: 20,
+        right: 40,
         width: 180,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
@@ -1299,7 +1298,7 @@ export default function SolutionsViewer() {
                 className="text-[18px] font-bold leading-tight"
                 style={{ color: isDark ? "#FFFFFF" : "#131E35" }}
               >
-                {problemTitle || asset.asset_name}
+                {problemTitle || ""}
               </h1>
               {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
             </div>
@@ -1503,9 +1502,6 @@ export default function SolutionsViewer() {
             </>
           )}
         </div>
-
-        {/* ── Testimonials ── */}
-        <TestimonialsSection theme={t} />
 
         {/* ── Testimonials ── */}
         <TestimonialsSection theme={t} />
