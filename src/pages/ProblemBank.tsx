@@ -456,7 +456,7 @@ export default function ProblemBank() {
       <div className="flex items-center gap-1.5 mb-3">
         {canAdd && chapterFilter && chapterFilter !== "all" && (
           <>
-            {!isVa && (
+            {!isVa && !isIntroCourse && (
               <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" asChild>
                 <Link to={`/solutions-upload/${chapterFilter}`}>
                   <FileUp className="h-3 w-3 mr-1" /> Upload Solutions
@@ -470,10 +470,12 @@ export default function ProblemBank() {
             </Button>
           </>
         )}
-        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(true)} disabled={ocrRunning}>
-          {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
-          {ocrRunning ? "Running OCR…" : "Re-run OCR"}
-        </Button>
+        {!isIntroCourse && (
+          <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => runBulkOcr(true)} disabled={ocrRunning}>
+            {ocrRunning ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ScanText className="h-3 w-3 mr-1" />}
+            {ocrRunning ? "Running OCR…" : "Re-run OCR"}
+          </Button>
+        )}
         {canAdd && !isVa && problems && problems.length > 0 && (
           <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10 ml-auto" onClick={() => setDeleteAllOpen(true)}>
             <Trash2 className="h-3 w-3 mr-1" /> Delete All Sources
