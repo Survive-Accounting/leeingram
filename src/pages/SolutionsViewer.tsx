@@ -1351,7 +1351,7 @@ export default function SolutionsViewer() {
 
           {/* Problem text — always visible */}
           {rawProblemText.trim() && (
-            <div>
+            <div ref={problemRef}>
               {hasHighlights && (
                 <div className="flex items-center gap-2 mb-3">
                   <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
