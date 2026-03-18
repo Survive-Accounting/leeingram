@@ -896,19 +896,16 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
   };
 
   return (
-    <div className="w-full lg:w-auto lg:max-w-[520px]">
-      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-        <div className="flex items-center gap-1.5 mr-1">
-          <Search className="h-3.5 w-3.5" style={{ color: theme.textMuted }} />
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>
-            Browse Intermediate 2 Problems
-          </span>
-        </div>
-
+    <div className="w-full">
+      <p className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: theme.textMuted }}>
+        Browse Intermediate 2 Problems
+      </p>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <select
           value={selectedChapterId}
           onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedSourceCode(""); }}
           style={selectStyle}
+          className="w-full sm:w-auto"
         >
           <option value="">Chapter…</option>
           {(chapters || []).map((ch: any) => (
@@ -920,8 +917,9 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
           value={selectedType}
           onChange={(e) => { setSelectedType(e.target.value); setSelectedSourceCode(""); }}
           style={selectStyle}
+          className="w-full sm:w-auto"
         >
-          <option value="all">Type…</option>
+          <option value="all">Problem Type…</option>
           <option value="BE">Brief Exercise</option>
           <option value="E">Exercise</option>
           <option value="P">Problem</option>
@@ -931,9 +929,10 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
           value={selectedSourceCode}
           onChange={(e) => setSelectedSourceCode(e.target.value)}
           disabled={!chapterAssets?.length}
-          style={{ ...selectStyle, minWidth: 132, opacity: chapterAssets?.length ? 1 : 0.55 }}
+          style={{ ...selectStyle, opacity: chapterAssets?.length ? 1 : 0.55 }}
+          className="w-full sm:w-auto"
         >
-          <option value="">{!selectedChapterId ? "#…" : chapterAssets?.length ? "Choose #…" : "None found"}</option>
+          <option value="">{!selectedChapterId ? "Source #…" : chapterAssets?.length ? "Source #…" : "None found"}</option>
           {(chapterAssets || []).map((a: any) => (
             <option key={a.asset_name} value={a.source_ref}>
               {a.source_label}
@@ -944,7 +943,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
         <button
           onClick={handleGo}
           disabled={!selectedSourceCode}
-          className="px-3 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
+          className="w-full sm:w-auto px-4 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
           style={{ background: "#14213D", height: 34 }}
         >
           Go →
