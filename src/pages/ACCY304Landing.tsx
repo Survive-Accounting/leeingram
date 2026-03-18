@@ -7,6 +7,29 @@ import { toast } from "sonner";
 
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 const HERO_IMG = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
+const IA2_COURSE = {
+  id: "44444444-4444-4444-4444-444444444444",
+  code: "IA2",
+  course_name: "Intermediate Accounting 2",
+};
+type LandingChapter = {
+  id: string;
+  chapter_number: number;
+  chapter_name: string;
+};
+
+const IA2_CHAPTERS: LandingChapter[] = [
+  { id: "ff12c70e-8d9f-4a8a-bc3c-d2fd42fcf2de", chapter_number: 13, chapter_name: "Long Term Liabilities" },
+  { id: "71b37666-7f1a-4c88-bc47-d3cbedd37b49", chapter_number: 14, chapter_name: "Stockholder's Equity" },
+  { id: "6e7d8d22-9d77-4e99-9e97-efa1b955bd89", chapter_number: 15, chapter_name: "Dilutive Securities and EPS" },
+  { id: "65a9d581-f025-44d3-85cd-6462deec1532", chapter_number: 16, chapter_name: "Investments" },
+  { id: "572e302c-30f6-42ba-aa5d-51d6bda24a2a", chapter_number: 17, chapter_name: "Revenue Recognition" },
+  { id: "d6d10c34-1732-46dd-a741-c68daf1e480e", chapter_number: 18, chapter_name: "Income Taxes" },
+  { id: "d3005950-75d6-4876-aa71-4ff49211703f", chapter_number: 19, chapter_name: "Pensions" },
+  { id: "1e973354-ba1f-4629-830e-8a884fccd754", chapter_number: 20, chapter_name: "Leases" },
+  { id: "f7a73bd7-65ff-494f-a06d-ac3cd380b7d8", chapter_number: 21, chapter_name: "Accounting Changes" },
+  { id: "56c7d37a-cef2-4a9e-9004-3f7d958b9273", chapter_number: 22, chapter_name: "Statement of Cash Flows" },
+];
 
 type Step = "email" | "picker" | "results";
 
@@ -219,28 +242,25 @@ export default function ACCY304Landing() {
     assetLinks: { sourceLabel: string; assetName: string; assetCode: string }[];
   } | null>(null);
 
-  // ── Shared: Fetch IA2 course + chapters ──
-  const { data: courseData } = useQuery({
+  // ── Shared: Fetch IA2 chapters with a fixed public fallback ──
+  const { data: courseData } = useQuery<{ course: typeof IA2_COURSE; chapters: LandingChapter[] }>({
     queryKey: ["accy304-course"],
     queryFn: async () => {
-      const { data: courses } = await supabase
-        .from("courses")
-        .select("id, course_name, code")
-        .eq("code", "IA2")
-        .limit(1);
-      const course = courses?.[0];
-      if (!course) return null;
-
       const { data: chapters } = await supabase
         .from("chapters")
         .select("id, chapter_number, chapter_name")
-        .eq("course_id", course.id)
+        .eq("course_id", IA2_COURSE.id)
         .gte("chapter_number", 13)
         .lte("chapter_number", 22)
         .order("chapter_number");
 
-      return { course, chapters: chapters || [] };
+      const normalizedChapters = (chapters?.length ? chapters : IA2_CHAPTERS).filter(
+        (chapter) => chapter.chapter_number >= 13 && chapter.chapter_number <= 22
+      ) as LandingChapter[];
+
+      return { course: IA2_COURSE, chapters: normalizedChapters };
     },
+    initialData: { course: IA2_COURSE, chapters: IA2_CHAPTERS as LandingChapter[] },
   });
 
   // ── Free preview problem list ──
