@@ -50,6 +50,7 @@ The primary entity — the one whose transactions are being described and whose 
 If a second entity is involved, name them "Survive Company B ([role])" (e.g. the investor, the lender, the lessee, the buyer).
 Never use "Survive Company" without the A or B suffix and role hint.
 Never use "Counterparty", "the other party", or X/Y naming.
+Include the parenthetical role hint ONLY on the very first mention of each entity in the problem text. All subsequent mentions use only the name without the parenthetical (e.g. first: "Survive Company A (the issuer)", later: "Survive Company A").
 
 PERSPECTIVE CLARITY:
 Every instruction that asks the student to prepare a journal entry must explicitly name the entity inline.
