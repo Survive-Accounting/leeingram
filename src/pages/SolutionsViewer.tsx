@@ -1506,37 +1506,11 @@ export default function SolutionsViewer() {
 
         {/* ── About Lee Card ── */}
         <div className="mt-12 rounded-xl p-6" style={{ background: t.cardBg, border: `1px solid ${t.border}`, boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.3)" : "0 4px 16px rgba(0,0,0,0.04)" }}>
-          <div className="flex flex-col sm:flex-row gap-6">
-            <div className="sm:w-[30%] flex flex-col items-center text-center shrink-0">
-              <img
-                src={LEE_HEADSHOT_URL}
-                alt="Lee Ingram"
-                className="w-full object-cover"
-                style={{ maxWidth: 220, borderRadius: 12 }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-              <p className="font-bold text-[14px] mt-3" style={{ color: t.text }}>Lee Ingram</p>
-              <p className="text-[12px]" style={{ color: t.textMuted }}>Ole Miss ACCY Tutor since 2015</p>
-            </div>
-            <div className="sm:w-[70%]">
-              <p className="font-bold text-[13px] mb-2" style={{ color: t.text }}>About Lee Ingram</p>
-              <p className="text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                Ole Miss Accounting alum · B.A. &amp; M.Acc. · 3.75 GPA
-              </p>
-              <p className="text-[13px] leading-[1.6] mt-3" style={{ color: t.text }}>
-                Tutoring entrepreneur since 2015, building exam prep from thousands of real Ole Miss tutoring sessions.
-              </p>
-              <p className="text-[12px] mt-3" style={{ color: t.textMuted }}>
-                Join 2,000+ Ole Miss students I've helped since 2015.
-              </p>
-              <a href="mailto:lee@surviveaccounting.com" className="text-[12px] mt-1 inline-block hover:underline" style={{ color: "#3B82F6" }}>
-                📨 lee@surviveaccounting.com
-              </a>
-            </div>
-          </div>
+          <AboutLeeContent theme={t} />
         </div>
+
+        {/* ── Testimonials ── */}
+        <TestimonialsSection theme={t} />
 
         {/* ── Footer ── */}
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
