@@ -1023,11 +1023,11 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
       <iframe
         ref={iframeRef}
         id="testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
-        src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=317c8816-eefb-469f-8173-b79efef6c2fa"
+        src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=317c8816-eefb-469f-8173-b79efef6c2fa&theme=light&card=base"
         frameBorder="0"
         scrolling="no"
         width="100%"
-        style={{ minHeight: 300, border: "none" }}
+        style={{ minHeight: 400, border: "none" }}
       />
     </div>
   );
