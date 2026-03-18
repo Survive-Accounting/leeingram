@@ -936,13 +936,13 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
 
   return (
     <div
-      className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
-        width: 220,
+        left: 20,
+        width: 230,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
-        borderLeft: "none",
-        borderRadius: "0 12px 12px 0",
+        borderRadius: "12px",
         boxShadow: isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.08)",
         padding: "16px 14px",
       }}
