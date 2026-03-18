@@ -788,16 +788,8 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
 
-        {/* 2. Journal Entries */}
-        {hasJE && (
-          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
-            {hasCanonicalJE ? (
-              <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
-            ) : (
-              <RawJEFallback text={jeBlock} theme={t} />
-            )}
-          </RevealToggle>
-        )}
+
+
 
         {asset.flowchart_image_url && (
           <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
