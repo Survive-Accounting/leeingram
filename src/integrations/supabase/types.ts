@@ -3116,6 +3116,7 @@ export type Database = {
           video_production_status: string
           video_ready_at: string | null
           whiteboard_status: string
+          worked_steps: string | null
           worked_steps_backup: string | null
         }
         Insert: {
@@ -3209,6 +3210,7 @@ export type Database = {
           video_production_status?: string
           video_ready_at?: string | null
           whiteboard_status?: string
+          worked_steps?: string | null
           worked_steps_backup?: string | null
         }
         Update: {
@@ -3302,6 +3304,7 @@ export type Database = {
           video_production_status?: string
           video_ready_at?: string | null
           whiteboard_status?: string
+          worked_steps?: string | null
           worked_steps_backup?: string | null
         }
         Relationships: [
