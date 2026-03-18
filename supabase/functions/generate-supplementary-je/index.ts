@@ -52,13 +52,13 @@ serve(async (req) => {
 
     const accountList = (accounts || []).map((a: any) => a.account_name).join(", ");
 
-    const systemPrompt = `You are an accounting journal entry expert. Given a problem and its solution, identify the IMPLICIT journal entries that a student should understand even if the problem doesn't explicitly ask for them.
+    const systemPrompt = `You are an accounting journal entry expert. Given a problem and its solution, identify the DISTINCT types of journal entries a student should understand, even if the problem doesn't explicitly ask for them.
 
 Return JSON with this exact schema:
 {
   "entries": [
     {
-      "label": "Short description of what this entry records (e.g. 'Record costs incurred during Year 1')",
+      "label": "How to record [transaction type]",
       "rows": [
         {
           "account_name": "Clean account name",
@@ -71,12 +71,12 @@ Return JSON with this exact schema:
 
 Rules:
 1. Do NOT include any dollar amounts — only account names and sides.
-2. Each entry should have a clear, student-friendly label describing the transaction.
-3. Group related debits and credits into a single entry.
-4. Use standard accounting account names from the provided list when possible.
-5. Order entries chronologically or by logical sequence.
-6. Include ALL relevant entries the student should know about — recording costs, billings, collections, revenue recognition, closing entries, etc.
-7. Keep labels concise but descriptive enough that a student knows what transaction is being recorded.
+2. Show each UNIQUE entry type ONLY ONCE. Do NOT repeat the same entry for different years or periods. For example, "Record costs incurred" appears once, not once per year.
+3. Labels must follow the format: "How to record [transaction]" — e.g. "How to record costs incurred", "How to record billings to customer", "How to record revenue recognition (Percentage-of-Completion)".
+4. If the same entry type differs by method (e.g. Percentage-of-Completion vs Cost-Recovery), show each method variant once.
+5. Group related debits and credits into a single entry.
+6. Use standard accounting account names from the provided list when possible.
+7. Order entries by logical sequence (costs → billings → collections → revenue → closing).
 8. Return ONLY valid JSON, no markdown.`;
 
     const userPrompt = `Problem:\n${asset.problem_context || asset.survive_problem_text || "No problem text"}
