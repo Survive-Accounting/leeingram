@@ -541,7 +541,7 @@ export default function SolutionsViewer() {
   const { data, isLoading } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
     queryFn: async () => {
-      const { data: assets, error: assetErr } = await supabase
+      const { data: assets, error: assetErr } = await (supabase
         .from("teaching_assets")
         .select(`
           id, asset_name, source_ref, source_number,
@@ -555,7 +555,7 @@ export default function SolutionsViewer() {
           courses!teaching_assets_course_id_fkey ( course_name, code )
         `)
         .eq("asset_name", assetCode!)
-        .limit(1);
+        .limit(1) as any);
       if (assetErr) throw assetErr;
       const asset = assets?.[0];
       if (!asset) return null;
