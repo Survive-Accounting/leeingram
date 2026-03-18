@@ -550,7 +550,7 @@ export default function PracticeViewer() {
       const { data: assets, error: assetErr } = await (supabase
         .from("teaching_assets")
         .select(`
-          id, asset_name, source_ref, source_number, base_raw_problem_id,
+          id, asset_name, source_ref, source_number, problem_title,
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
           important_formulas, concept_notes, exam_traps,
@@ -568,24 +568,13 @@ export default function PracticeViewer() {
       const asset = assets?.[0];
       if (!asset) return null;
 
-      // Fetch problem title from chapter_problems
-      let problemTitle = "";
-      if (asset.base_raw_problem_id) {
-        const { data: cpData } = await supabase
-          .from("chapter_problems")
-          .select("title")
-          .eq("id", asset.base_raw_problem_id)
-          .single();
-        problemTitle = cpData?.title || "";
-      }
-
       const { data: instrData } = await supabase
         .from("problem_instructions")
         .select("instruction_number, instruction_text")
         .eq("teaching_asset_id", asset.id)
         .order("instruction_number");
 
-      return { ...asset, _problemTitle: problemTitle, _instructions: instrData || [] };
+      return { ...asset, _problemTitle: asset.problem_title || "", _instructions: instrData || [] };
     },
     enabled: !!assetCode,
   });
