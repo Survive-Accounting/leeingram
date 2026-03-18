@@ -991,7 +991,7 @@ function FlowchartSubToggle({
 
 // ── Supplementary JE Display (accounts only, ??? amounts) ───────────
 
-function SupplementaryJESection({ data, theme }: { data: { entries: { label: string; rows: { account_name: string; side: "debit" | "credit" }[] }[] }; theme: Theme }) {
+function SupplementaryJESection({ data, theme }: { data: { entries: { label: string; rows: { account_name: string; side: "debit" | "credit"; debit_credit_reason?: string; amount_source?: string }[] }[] }; theme: Theme }) {
   return (
     <div className="space-y-4">
       <p className="text-[12px] leading-[1.5] rounded-md px-3 py-2" style={{ background: theme.cardBg, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
@@ -1016,6 +1016,7 @@ function SupplementaryJESection({ data, theme }: { data: { entries: { label: str
                     <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
                       <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
                         {row.account_name}
+                        {row.debit_credit_reason && <JETooltip text={row.debit_credit_reason} variant="solutions" />}
                       </td>
                       <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
                         {!isCredit ? "???" : ""}
