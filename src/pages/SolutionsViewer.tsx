@@ -1038,7 +1038,7 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
   }, []);
 
   return (
-    <div className="mt-10">
+    <div className="mt-16">
       <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase mb-4 text-center" style={{ color: theme.textMuted }}>
         What Lee's Students Are Saying
       </h2>
