@@ -1097,10 +1097,10 @@ export default function SolutionsViewer() {
           <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
             <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
               <ul className="space-y-2">
-                {examTraps.split(". ").filter((s: string) => s.trim()).map((sentence: string, i: number) => (
+                {parseExamTraps(examTraps).map((trap: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
-                    <span>{sentence.endsWith(".") ? sentence : sentence + "."}</span>
+                    <span>{trap}</span>
                   </li>
                 ))}
               </ul>
