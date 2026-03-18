@@ -62,6 +62,7 @@ import FlashcardTool from "./pages/FlashcardTool";
 import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
 import PracticeViewer from "./pages/PracticeViewer";
+import ACCY304Landing from "./pages/ACCY304Landing";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
 import EntryBuilderTool from "./pages/EntryBuilderTool";
@@ -114,6 +115,7 @@ const AppRoutes = () => {
       <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
+      <Route path="/accy304" element={<ACCY304Landing />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       {/* Post-login VA auto-redirect handled in DomainSelect */}
