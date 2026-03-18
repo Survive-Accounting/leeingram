@@ -695,6 +695,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="find_replace_simple">Simple Find &amp; Replace</SelectItem>
                 <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
                 <SelectItem value="enrich_je_rows">Enrich JE Rows (add debit_credit_reason + amount_source)</SelectItem>
+                <SelectItem value="generate_supplementary_je">Generate Supplementary JEs (backfill missing)</SelectItem>
               </SelectContent>
             </Select>
 
