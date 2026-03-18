@@ -442,13 +442,12 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [];
-      let query = supabase
+      const { data } = await supabase
         .from("teaching_assets")
         .select("asset_name, source_ref")
         .eq("chapter_id", selectedChapterId)
         .eq("status", "approved")
-        .order("source_ref");
-      const { data } = await query;
+        .order("source_ref") as any;
       let filtered = data || [];
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
