@@ -1148,7 +1148,7 @@ export default function AssetsLibrary() {
         <TabsContent value="all">
       {/* Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-        <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
+        <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); setCurrentPage(1); }}>
           <SelectTrigger className="h-8 text-xs bg-background/95 border-border">
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
@@ -1158,7 +1158,7 @@ export default function AssetsLibrary() {
           </SelectContent>
         </Select>
 
-        <Select value={chapterFilter} onValueChange={setChapterFilter}>
+        <Select value={chapterFilter} onValueChange={(v) => { setChapterFilter(v); setCurrentPage(1); }}>
           <SelectTrigger className="h-8 text-xs bg-background/95 border-border">
             <SelectValue placeholder="All Chapters" />
           </SelectTrigger>
@@ -1172,7 +1172,7 @@ export default function AssetsLibrary() {
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder="Search name, tags, or problem text…"
             className="h-8 text-xs pl-7 bg-background/95 border-border"
           />
