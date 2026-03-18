@@ -509,7 +509,7 @@ ${(asset.important_formulas || "").slice(0, 1000)}`;
       body: JSON.stringify({ type: "anyone", role: "reader" }),
     });
 
-    const driveViewUrl = `https://drive.google.com/uc?id=${fileId}&export=view`;
+    const driveViewUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
 
     // STEP 7 — Save to database
     await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
