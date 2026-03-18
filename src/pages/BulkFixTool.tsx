@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows";
 
 interface HistoryEntry {
   label: string;
@@ -189,12 +189,13 @@ export default function BulkFixTool() {
     if (operation === "fix_entity_perspective") return "Fix Entity Naming + Perspective (Full Correction)";
     if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
     if (operation === "custom_ai") return "Custom AI Rewrite";
+    if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
     return "";
   }, [operation, findText, replaceText]);
 
   // Build the scope query
   function buildScopeQuery() {
-    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text");
+    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json");
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
     if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
@@ -301,6 +302,50 @@ export default function BulkFixTool() {
 
         setPreviewRows(rows);
         setIsAiPreview(true);
+      } else if (operation === "enrich_je_rows") {
+        // JE enrichment preview: sample 2 assets that have JE data
+        const { data: assets, error } = await buildScopeQuery().not("journal_entry_completed_json", "is", null).limit(2);
+        if (error) throw error;
+
+        // Count total with JE data
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true }).not("journal_entry_completed_json", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: jeCount } = await countQ;
+        setTotalMatched(jeCount ?? 0);
+
+        const rows: PreviewRow[] = [];
+        for (const asset of assets ?? []) {
+          const jeJson = (asset as any).journal_entry_completed_json;
+          if (!jeJson?.scenario_sections) continue;
+
+          // Count rows that already have the fields vs those that don't
+          let missingCount = 0;
+          let totalRows = 0;
+          for (const section of jeJson.scenario_sections) {
+            for (const entry of section.entries_by_date || []) {
+              for (const row of entry.rows || []) {
+                totalRows++;
+                if (!row.debit_credit_reason || !row.amount_source) missingCount++;
+              }
+            }
+          }
+
+          if (missingCount > 0) {
+            rows.push({
+              id: asset.id,
+              asset_name: asset.asset_name,
+              field: "journal_entry_completed_json",
+              before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
+              after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
+            });
+          }
+        }
+
+        setPreviewRows(rows);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -335,9 +380,10 @@ export default function BulkFixTool() {
       let updated = 0;
       let skipped = 0;
 
-      // Process in batches
-      for (let i = 0; i < total; i += BATCH_SIZE) {
-        const batch = assets.slice(i, i + BATCH_SIZE);
+      // Process in batches — use smaller batch for AI-heavy JE enrichment
+      const batchSize = operation === "enrich_je_rows" ? 2 : BATCH_SIZE;
+      for (let i = 0; i < total; i += batchSize) {
+        const batch = assets.slice(i, i + batchSize);
         const updates: Promise<void>[] = [];
 
         for (const asset of batch) {
@@ -393,6 +439,85 @@ export default function BulkFixTool() {
                 const after = aiResult?.raw || aiResult?.content || original;
                 if (after !== original) { newValues[f.key] = after; changed = true; }
               }
+            } else if (operation === "enrich_je_rows") {
+              const jeJson = (asset as any).journal_entry_completed_json;
+              if (!jeJson?.scenario_sections) { skipped++; return; }
+
+              let hasMissing = false;
+              for (const section of jeJson.scenario_sections) {
+                for (const entry of section.entries_by_date || []) {
+                  for (const row of entry.rows || []) {
+                    if (!row.debit_credit_reason || !row.amount_source) { hasMissing = true; break; }
+                  }
+                  if (hasMissing) break;
+                }
+                if (hasMissing) break;
+              }
+              if (!hasMissing) { skipped++; return; }
+
+              const jeSummary: string[] = [];
+              for (const section of jeJson.scenario_sections) {
+                for (const entry of section.entries_by_date || []) {
+                  for (const row of entry.rows || []) {
+                    const side = row.credit != null && row.credit !== 0 ? "Credit" : "Debit";
+                    const amount = row.credit != null && row.credit !== 0 ? row.credit : row.debit;
+                    jeSummary.push(`Account: ${row.account_name}, ${side}: $${amount}, Date: ${entry.date}, Section: ${section.label}`);
+                  }
+                }
+              }
+
+              const enrichSystemPrompt = `You are an accounting tutor. For each journal entry row below, provide two fields:
+1. debit_credit_reason: 1-2 sentences explaining why this account is debited or credited in this context. Written for an accounting student.
+2. amount_source: 1-2 sentences explaining where the dollar amount comes from, referencing the solution/problem when possible.
+
+Return JSON: { "rows": [ { "debit_credit_reason": "...", "amount_source": "..." } ] }
+Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given directly, say so. Return ONLY valid JSON.`;
+
+              const enrichUserPrompt = `Problem:\n${(asset as any).problem_context || (asset as any).survive_problem_text || "N/A"}\n\nSolution:\n${(asset as any).survive_solution_text || "N/A"}\n\nJE rows (${jeSummary.length}):\n${jeSummary.map((s, i) => `${i + 1}. ${s}`).join("\n")}`;
+
+              const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+                body: {
+                  provider: "lovable",
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    { role: "system", content: enrichSystemPrompt },
+                    { role: "user", content: enrichUserPrompt },
+                  ],
+                  temperature: 0.1,
+                  max_output_tokens: 4000,
+                },
+              });
+
+              if (aiErr) { skipped++; return; }
+              const rawContent = aiResult?.raw || aiResult?.content || "";
+              let parsed: any;
+              try {
+                const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+                parsed = JSON.parse(cleaned);
+              } catch { skipped++; return; }
+
+              if (!parsed?.rows || !Array.isArray(parsed.rows)) { skipped++; return; }
+
+              const enriched = JSON.parse(JSON.stringify(jeJson));
+              let rowIdx = 0;
+              for (const section of enriched.scenario_sections) {
+                for (const entry of section.entries_by_date || []) {
+                  for (const row of entry.rows || []) {
+                    if (rowIdx < parsed.rows.length) {
+                      if (!row.debit_credit_reason && parsed.rows[rowIdx].debit_credit_reason) {
+                        row.debit_credit_reason = parsed.rows[rowIdx].debit_credit_reason;
+                      }
+                      if (!row.amount_source && parsed.rows[rowIdx].amount_source) {
+                        row.amount_source = parsed.rows[rowIdx].amount_source;
+                      }
+                    }
+                    rowIdx++;
+                  }
+                }
+              }
+
+              newValues.journal_entry_completed_json = enriched;
+              changed = true;
             }
 
             if (changed) {
@@ -405,7 +530,7 @@ export default function BulkFixTool() {
         }
 
         await Promise.all(updates);
-        setRunProgress({ current: Math.min(i + BATCH_SIZE, total), total });
+        setRunProgress({ current: Math.min(i + batchSize, total), total });
       }
 
       setRunComplete({ updated, skipped });
@@ -524,6 +649,7 @@ export default function BulkFixTool() {
                 <SelectItem value="fix_entity_perspective">Fix Entity Naming + Perspective (Full Correction)</SelectItem>
                 <SelectItem value="find_replace_simple">Simple Find &amp; Replace</SelectItem>
                 <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
+                <SelectItem value="enrich_je_rows">Enrich JE Rows (add debit_credit_reason + amount_source)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -536,6 +662,12 @@ export default function BulkFixTool() {
             {operation === "fix_entity_perspective" && (
               <p className="text-xs text-muted-foreground">
                 Renames "Survive Company" to "Survive Company A ([role])" where missing, ensures Survive Company B has role hint, and rewrites each instruction line to include "on the books of Survive Company A/B ([role])" inline. Numbers and dates are not changed.
+              </p>
+            )}
+
+            {operation === "enrich_je_rows" && (
+              <p className="text-xs text-muted-foreground">
+                Reads each asset's journal_entry_completed_json and uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
               </p>
             )}
 
