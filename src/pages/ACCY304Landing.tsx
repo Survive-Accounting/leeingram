@@ -564,13 +564,23 @@ export default function ACCY304Landing() {
           </button>
 
           {iframeSrc && (
-            <div className="mt-8 rounded-lg overflow-hidden" style={{ background: "#fff" }}>
+            <div
+              className="mt-4 overflow-hidden"
+              style={{
+                position: "relative",
+                left: "50%",
+                width: "100vw",
+                transform: "translateX(-50%)",
+                boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
+              }}
+            >
               <iframe
                 src={iframeSrc}
                 title="Problem Preview"
                 className="w-full border-0"
-                style={{ height: 900 }}
+                style={{ height: 1000, background: "#fff" }}
               />
+              <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
             </div>
           )}
         </div>
