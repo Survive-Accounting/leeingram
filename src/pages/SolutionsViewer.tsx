@@ -1254,7 +1254,7 @@ export default function SolutionsViewer() {
       {/* ── Hero Section ── */}
       <div className="relative" style={{ zIndex: 5 }}>
         {/* Marketing Badge */}
-        <div className="max-w-[780px] mx-auto px-6 mt-4">
+        <div className="mx-auto px-6 mt-4" style={{ maxWidth: 1040 }}>
           <span
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{
