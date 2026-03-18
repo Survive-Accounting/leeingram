@@ -599,6 +599,15 @@ export default function PracticeViewer() {
     supabase.rpc("increment_practice_views", { asset_id: data.id }).then(() => {});
   }, [data?.id]);
 
+  // Page title
+  useEffect(() => {
+    if (!data) return;
+    const ref = data.source_ref || data.asset_name || "";
+    const pt = data._problemTitle || "";
+    document.title = pt ? `${ref} — ${pt} | Survive Accounting` : `${ref} | Survive Accounting`;
+    return () => { document.title = "Survive Accounting"; };
+  }, [data]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
