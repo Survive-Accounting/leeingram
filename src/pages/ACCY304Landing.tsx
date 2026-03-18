@@ -300,7 +300,8 @@ export default function ACCY304Landing() {
   // ── Email submit ──
   const handleEmailSubmit = async () => {
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed.endsWith(".edu")) {
+    const allowedExceptions = ["lee@survivestudios.com"];
+    if (!trimmed.endsWith(".edu") && !allowedExceptions.includes(trimmed)) {
       setEmailError("Please use your university .edu email address");
       return;
     }
