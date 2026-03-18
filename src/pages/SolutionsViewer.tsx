@@ -614,11 +614,20 @@ export default function SolutionsViewer() {
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
   const titleLine = asset.source_ref || asset.asset_name;
 
-  // Instructions from problem_instructions table
-  const instructions: string[] = (asset._instructions || [])
+  // Instructions: priority 1 = problem_instructions table, 2 = instruction_1-5, 3 = instruction_list
+  let instructions: string[] = (asset._instructions || [])
     .sort((a: any, b: any) => a.instruction_number - b.instruction_number)
     .filter((i: any) => i.instruction_text?.trim())
     .map((i: any) => i.instruction_text);
+  if (instructions.length === 0) {
+    const i1 = asset.instruction_1;
+    if (i1?.trim()) {
+      instructions = [i1, asset.instruction_2, asset.instruction_3, asset.instruction_4, asset.instruction_5]
+        .filter((v: string | null) => v?.trim()) as string[];
+    } else if (asset.instruction_list?.trim()) {
+      instructions = asset.instruction_list.split(/[\n|]/).map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
 
   // JE data
   const jeData = asset.journal_entry_completed_json;
