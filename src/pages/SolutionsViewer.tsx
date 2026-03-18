@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Sun, Moon, Video, X, BookOpen, CheckCircle, Calendar } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Video, X, BookOpen, CheckCircle, Calendar } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
