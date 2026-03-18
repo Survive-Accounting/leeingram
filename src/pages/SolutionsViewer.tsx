@@ -866,7 +866,7 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 // ── About Lee Content (shared between card and left panel) ──────────
 
 function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
-  const imgSize = compact ? "w-20 h-20" : "w-28 h-28";
+  const imgSize = compact ? "w-28 h-28" : "w-28 h-28";
   return (
     <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
       <img
