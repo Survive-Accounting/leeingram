@@ -913,7 +913,7 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
         onClick={() => setOpen(true)}
         className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
         style={{
-          left: 20,
+          left: 40,
           writingMode: "vertical-rl",
           textOrientation: "mixed",
           background: isDark ? theme.cardBg : "#FFFFFF",
