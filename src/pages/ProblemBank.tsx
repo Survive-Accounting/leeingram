@@ -69,6 +69,7 @@ export default function ProblemBank() {
 
   const courseFilter = workspace?.courseId || "all";
   const chapterFilter = workspace?.chapterId || "all";
+  const isIntroCourse = courseFilter === "11111111-1111-1111-1111-111111111111" || courseFilter === "22222222-2222-2222-2222-222222222222";
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
