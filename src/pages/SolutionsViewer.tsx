@@ -1696,8 +1696,8 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 3b. Supplementary JEs */}
-              {asset.supplementary_je_json && (
+              {/* 3b. Supplementary JEs — only show if there are NO main JEs */}
+              {asset.supplementary_je_json && !hasJE && (
                 <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum}>
                   <SupplementaryJESection
                     data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
