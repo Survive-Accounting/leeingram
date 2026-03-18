@@ -438,8 +438,16 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
           <div key={ei}>
             {(formattedDate || memo) && (
               <div className="mb-1.5">
-                {formattedDate && <p className="font-bold text-sm" style={{ color: theme.text }}>{formattedDate}</p>}
-                {memo && <p className="text-[12px] italic" style={{ color: theme.textMuted }}>{memo}</p>}
+                {formattedDate && memo ? (
+                  <p className="font-bold text-sm" style={{ color: theme.text }}>
+                    {formattedDate} — <span className="font-semibold italic">{memo.replace(/^To record\s*/i, "").replace(/\.$/, "")}</span>
+                  </p>
+                ) : (
+                  <>
+                    {formattedDate && <p className="font-bold text-sm" style={{ color: theme.text }}>{formattedDate}</p>}
+                    {memo && <p className="text-[12px] italic" style={{ color: theme.textMuted }}>{memo}</p>}
+                  </>
+                )}
               </div>
             )}
             <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
@@ -1688,8 +1696,8 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 3b. Supplementary JEs */}
-              {asset.supplementary_je_json && (
+              {/* 3b. Supplementary JEs — only show if there are NO main JEs */}
+              {asset.supplementary_je_json && !hasJE && (
                 <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum}>
                   <SupplementaryJESection
                     data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
