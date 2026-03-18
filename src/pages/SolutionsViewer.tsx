@@ -1478,6 +1478,9 @@ export default function SolutionsViewer() {
         {/* ── Testimonials ── */}
         <TestimonialsSection theme={t} />
 
+        {/* ── About Lee ── */}
+        <AboutLeeSection theme={t} />
+
         {/* ── Footer ── */}
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
           {hasFooterLinks && (
