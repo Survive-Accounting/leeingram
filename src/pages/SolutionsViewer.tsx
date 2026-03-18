@@ -866,7 +866,7 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 // ── About Lee Content (shared between card and left panel) ──────────
 
 function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
-  const imgSize = compact ? "w-20 h-20" : "w-28 h-28";
+  const imgSize = compact ? "w-28 h-28" : "w-28 h-28";
   return (
     <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
       <img
@@ -912,15 +912,15 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
+        className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
         style={{
+          left: 20,
           writingMode: "vertical-rl",
           textOrientation: "mixed",
           background: isDark ? theme.cardBg : "#FFFFFF",
           color: theme.textMuted,
           border: `1px solid ${theme.border}`,
-          borderLeft: "none",
-          borderRadius: "0 8px 8px 0",
+          borderRadius: "8px",
           padding: "12px 8px",
           fontSize: "12px",
           fontWeight: 600,
@@ -935,13 +935,13 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
 
   return (
     <div
-      className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
-        width: 220,
+        left: 20,
+        width: 230,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
-        borderLeft: "none",
-        borderRadius: "0 12px 12px 0",
+        borderRadius: "12px",
         boxShadow: isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.08)",
         padding: "16px 14px",
       }}
@@ -973,13 +973,13 @@ function RightPanel({
 }) {
   return (
     <div
-      className="fixed right-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
       style={{
+        right: 20,
         width: 180,
         background: isDark ? theme.cardBg : "#FFFFFF",
         border: `1px solid ${theme.border}`,
-        borderRight: "none",
-        borderRadius: "12px 0 0 12px",
+        borderRadius: "12px",
         boxShadow: isDark ? "-4px 0 24px rgba(0,0,0,0.3)" : "-4px 0 24px rgba(0,0,0,0.08)",
         padding: "16px 14px",
       }}
@@ -1040,7 +1040,7 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
 
   return (
     <div className="mt-10">
-      <h2 className="text-[13px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: theme.textMuted }}>
+      <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase mb-4 text-center" style={{ color: theme.textMuted }}>
         What Students Are Saying
       </h2>
       <iframe
@@ -1504,10 +1504,8 @@ export default function SolutionsViewer() {
           )}
         </div>
 
-        {/* ── About Lee Card ── */}
-        <div className="mt-12 rounded-xl p-6" style={{ background: t.cardBg, border: `1px solid ${t.border}`, boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.3)" : "0 4px 16px rgba(0,0,0,0.04)" }}>
-          <AboutLeeContent theme={t} />
-        </div>
+        {/* ── Testimonials ── */}
+        <TestimonialsSection theme={t} />
 
         {/* ── Testimonials ── */}
         <TestimonialsSection theme={t} />
