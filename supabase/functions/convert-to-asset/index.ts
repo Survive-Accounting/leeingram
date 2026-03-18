@@ -1280,9 +1280,11 @@ TEXT parts (type: "text"):
 - units: optional (e.g. "USD", "%")
 
 JOURNAL ENTRY parts (type: "je"):
-- je_structured: array of { date: string, entries: [{ account: string, debit: number|null, credit: number|null }] }
+- je_structured: array of { date: string, entries: [{ account: string, debit: number|null, credit: number|null, debit_credit_reason: string, amount_source: string }] }
 - Each entry must balance (total debits = total credits)
 - Account names must be CLEAN: no "$", no ":", no narrative text
+- debit_credit_reason: 1-2 sentence explanation of why this account is debited or credited, written as a tutor explaining to a student
+- amount_source: 1-2 sentence explanation of where the dollar amount comes from, referencing the calculation when possible. If given directly, say so plainly.
 ${accountWhitelistBlock ? `- Use ONLY accounts from the approved whitelist\n${accountWhitelistBlock}` : ""}
 
 HYBRID problems: Maintain the same order as the problem instructions.
