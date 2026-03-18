@@ -1387,7 +1387,7 @@ export default function SolutionsViewer() {
       if (!previewToken) return null;
       const { data } = await supabase
         .from("edu_preview_sessions")
-        .select("id, asset_codes, expires_at")
+        .select("id, asset_codes, expires_at, email")
         .eq("id", previewToken)
         .maybeSingle();
       return data;
