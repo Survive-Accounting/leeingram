@@ -6,14 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files";
-const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
-const SCOPES = [
-  "https://www.googleapis.com/auth/drive",
-  "https://www.googleapis.com/auth/drive.file",
-];
-
-// ── Google Auth helpers (same as create-prep-doc) ────────────────────
+// ── Google Auth helpers ────────────────────────────────────────────
 
 function base64url(buf: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
@@ -25,6 +18,11 @@ async function importKey(pem: string): Promise<CryptoKey> {
   const binary = Uint8Array.from(atob(lines), c => c.charCodeAt(0));
   return crypto.subtle.importKey("pkcs8", binary, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
 }
+
+const SCOPES = [
+  "https://www.googleapis.com/auth/drive",
+  "https://www.googleapis.com/auth/drive.file",
+];
 
 async function getAccessToken(sa: { client_email: string; private_key: string }): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
@@ -44,37 +42,6 @@ async function getAccessToken(sa: { client_email: string; private_key: string })
   const data = await res.json();
   if (!res.ok) throw new Error(`Google token error: ${JSON.stringify(data)}`);
   return data.access_token;
-}
-
-async function googleFetch(url: string, token: string, opts: RequestInit = {}): Promise<any> {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(opts.headers || {}) },
-  });
-  const text = await res.text();
-  let data: any;
-  try { data = JSON.parse(text); } catch { data = { rawBody: text }; }
-  if (!res.ok) {
-    const ge = data?.error;
-    const code = ge?.code ?? res.status;
-    const message = ge?.message ?? text;
-    throw Object.assign(new Error(`Google API ${code}: ${message}`), { googleCode: code });
-  }
-  return data;
-}
-
-async function findOrCreateFolder(token: string, name: string, parentId?: string): Promise<string> {
-  const q = `mimeType='application/vnd.google-apps.folder' and name='${name}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ""}`;
-  const searchData = await googleFetch(
-    `${GOOGLE_DRIVE_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`,
-    token
-  );
-  if (searchData.files?.length) return searchData.files[0].id;
-  const createData = await googleFetch(`${GOOGLE_DRIVE_API}?supportsAllDrives=true`, token, {
-    method: "POST",
-    body: JSON.stringify({ name, mimeType: "application/vnd.google-apps.folder", ...(parentId ? { parents: [parentId] } : {}) }),
-  });
-  return createData.id;
 }
 
 // ── HTML builder ─────────────────────────────────────────────────────
@@ -186,6 +153,132 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// ── Generate a single flowchart image via AI + HCTI ─────────────────
+
+async function generateSingleFlowchart(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  hctiAuth: string,
+  problemContext: string,
+  workedSteps: string,
+  instructionText: string | null,
+  instructionLabel: string | null,
+): Promise<{ skipped: boolean; reason?: string; imageUrl?: string }> {
+  // Build prompt
+  const instructionBlock = instructionText
+    ? `\n\nSPECIFIC INSTRUCTION TO SOLVE:\n${instructionLabel ? `${instructionLabel} ` : ""}${instructionText}`
+    : "";
+
+  const prompt = `You are an accounting educator creating a step-by-step solution flowchart for students.
+
+Analyze the worked steps and problem context below.${instructionText ? " Focus specifically on the instruction provided." : ""}
+
+Generate a flowchart as a JSON object with this exact structure:
+{
+  "title": "How to Solve This",
+  "steps": [
+    {
+      "step_number": 1,
+      "title": "5 words max",
+      "description": "1-2 sentences explaining this step",
+      "color": "#2C3E7A"
+    }
+  ],
+  "key_reminders": [
+    {
+      "label": "short label",
+      "text": "brief reminder text",
+      "color": "#F0F0F0"
+    }
+  ]
+}
+
+IMPORTANT: Do NOT include a "formula_recap" section. Formulas are already displayed separately on the page.
+
+Color guide for steps:
+- Use a progression from #2C3E7A (dark blue) through #1B6B45 (dark green) for normal steps
+- Use #8B3A0F (dark amber/brown) for warning steps or loss recognition steps
+- First step always #2C3E7A
+
+Only generate a flowchart if the problem involves a multi-step calculation process (e.g. revenue recognition, bond amortization, lease accounting, depreciation schedules, percentage-of-completion, EPS calculations).
+
+If the problem is a simple single-step journal entry with no multi-step process, return exactly: {"skip": true}
+
+Maximum 6 main steps. Maximum 3 key reminders.
+
+Return valid JSON only, no explanation.
+
+PROBLEM CONTEXT:
+${(problemContext || "").slice(0, 2000)}
+
+WORKED STEPS:
+${(workedSteps || "").slice(0, 3000)}${instructionBlock}`;
+
+  const aiRes = await fetch(`${supabaseUrl}/functions/v1/generate-ai-output`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      provider: "lovable",
+      model: "google/gemini-2.5-flash",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      max_output_tokens: 2000,
+    }),
+  });
+
+  const aiData = await aiRes.json();
+  if (!aiRes.ok || aiData.error) {
+    return { skipped: true, reason: `AI error: ${aiData.error || "unknown"}` };
+  }
+
+  let flowchart = aiData.parsed;
+  if (!flowchart) {
+    try {
+      let raw = aiData.raw || "";
+      raw = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      flowchart = JSON.parse(raw);
+    } catch {
+      return { skipped: true, reason: "Could not parse AI response" };
+    }
+  }
+
+  if (flowchart.skip === true) {
+    return { skipped: true, reason: "Simple problem, no flowchart needed" };
+  }
+
+  if (!flowchart.steps || !Array.isArray(flowchart.steps) || flowchart.steps.length === 0) {
+    return { skipped: true, reason: "No steps in flowchart" };
+  }
+
+  // Build HTML and convert to PNG
+  const html = buildFlowchartHtml(flowchart);
+
+  const hctiRes = await fetch("https://hcti.io/v1/image", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${hctiAuth}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      html,
+      viewport_width: 640,
+      viewport_height: 800,
+      device_scale: 2,
+    }),
+  });
+
+  const hctiData = await hctiRes.json();
+  if (!hctiRes.ok || !hctiData.url) {
+    return { skipped: true, reason: `HCTI error: ${JSON.stringify(hctiData)}` };
+  }
+
+  const imageUrl = hctiData.url + ".png";
+  return { skipped: false, imageUrl };
+}
+
 // ── Main handler ─────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -234,170 +327,107 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if there's enough content to generate a flowchart
+    // Check if there's enough content
     if (!asset.worked_steps?.trim() && !asset.problem_context?.trim()) {
       return new Response(JSON.stringify({ success: true, skipped: true, reason: "No worked_steps or problem_context" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // STEP 2 — Generate flowchart JSON via AI
-    const prompt = `You are an accounting educator creating a step-by-step solution flowchart for students.
-
-Analyze the worked steps and problem context below.
-
-Generate a flowchart as a JSON object with this exact structure:
-{
-  "title": "How to Solve This",
-  "steps": [
-    {
-      "step_number": 1,
-      "title": "5 words max",
-      "description": "1-2 sentences explaining this step",
-      "color": "#2C3E7A"
-    }
-  ],
-  "key_reminders": [
-    {
-      "label": "short label",
-      "text": "brief reminder text",
-      "color": "#F0F0F0"
-    }
-  ]
-}
-
-IMPORTANT: Do NOT include a "formula_recap" section. Formulas are already displayed separately on the page.
-
-Color guide for steps:
-- Use a progression from #2C3E7A (dark blue) through #1B6B45 (dark green) for normal steps
-- Use #8B3A0F (dark amber/brown) for warning steps or loss recognition steps
-- First step always #2C3E7A
-
-Only generate a flowchart if the problem involves a multi-step calculation process (e.g. revenue recognition, bond amortization, lease accounting, depreciation schedules, percentage-of-completion, EPS calculations).
-
-If the problem is a simple single-step journal entry with no multi-step process, return exactly: {"skip": true}
-
-Maximum 6 main steps. Maximum 3 key reminders.
-
-Return valid JSON only, no explanation.
-
-PROBLEM CONTEXT:
-${(asset.problem_context || "").slice(0, 2000)}
-
-WORKED STEPS:
-${(asset.worked_steps || "").slice(0, 3000)}`;
-
-    const aiRes = await fetch(`${supabaseUrl}/functions/v1/generate-ai-output`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        provider: "lovable",
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3,
-        max_output_tokens: 2000,
-      }),
-    });
-
-    const aiData = await aiRes.json();
-    if (!aiRes.ok || aiData.error) {
-      console.error("AI generation failed:", aiData.error);
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: `AI error: ${aiData.error || "unknown"}` }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // STEP 3 — Parse and handle skip
-    let flowchart = aiData.parsed;
-    if (!flowchart) {
-      // Try to parse raw
-      try {
-        let raw = aiData.raw || "";
-        raw = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        flowchart = JSON.parse(raw);
-      } catch {
-        console.warn("Could not parse flowchart JSON from AI response");
-        return new Response(JSON.stringify({ success: true, skipped: true, reason: "Could not parse AI response" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    if (flowchart.skip === true) {
-      console.log(`Flowchart skipped for ${asset.asset_name} — simple problem`);
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: "Simple problem, no flowchart needed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!flowchart.steps || !Array.isArray(flowchart.steps) || flowchart.steps.length === 0) {
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: "No steps in flowchart" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // STEP 4 — Build HTML
-    const html = buildFlowchartHtml(flowchart);
-
-    // STEP 5 — Convert HTML to PNG via HCTI
+    // Check HCTI credentials
     const hctiUserId = Deno.env.get("HCTI_USER_ID");
     const hctiApiKey = Deno.env.get("HCTI_API_KEY");
-
     if (!hctiUserId || !hctiApiKey) {
-      console.warn("HCTI credentials not configured");
       return new Response(JSON.stringify({ success: true, skipped: true, reason: "HCTI credentials not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     const hctiAuth = btoa(`${hctiUserId}:${hctiApiKey}`);
-    const hctiRes = await fetch("https://hcti.io/v1/image", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${hctiAuth}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        html,
-        viewport_width: 640,
-        viewport_height: 800,
-        device_scale: 2,
-      }),
-    });
 
-    const hctiData = await hctiRes.json();
-    if (!hctiRes.ok || !hctiData.url) {
-      console.error("HCTI error:", hctiData);
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: `HCTI error: ${JSON.stringify(hctiData)}` }), {
+    // STEP 2 — Fetch instructions from problem_instructions table
+    const instrRes = await fetch(
+      `${supabaseUrl}/rest/v1/problem_instructions?teaching_asset_id=eq.${teaching_asset_id}&select=instruction_number,instruction_text&order=instruction_number`,
+      { headers: authHeaders }
+    );
+    const instrData = await instrRes.json();
+    const instructions: { instruction_number: number; instruction_text: string }[] =
+      Array.isArray(instrData) ? instrData.filter((i: any) => i.instruction_text?.trim()) : [];
+
+    // STEP 3 — Delete existing flowcharts for this asset
+    await fetch(
+      `${supabaseUrl}/rest/v1/asset_flowcharts?teaching_asset_id=eq.${teaching_asset_id}`,
+      { method: "DELETE", headers: { ...authHeaders, "Content-Type": "application/json", Prefer: "return=minimal" } }
+    );
+
+    // STEP 4 — Generate flowcharts
+    const results: { instruction_number: number; instruction_label: string | null; imageUrl: string }[] = [];
+
+    if (instructions.length <= 1) {
+      // Single or no instructions — generate one whole-problem flowchart
+      const instrText = instructions.length === 1 ? instructions[0].instruction_text : null;
+      const result = await generateSingleFlowchart(
+        supabaseUrl, serviceRoleKey, hctiAuth,
+        asset.problem_context || "", asset.worked_steps || "",
+        instrText, null,
+      );
+      if (!result.skipped && result.imageUrl) {
+        results.push({ instruction_number: 0, instruction_label: null, imageUrl: result.imageUrl });
+      }
+    } else {
+      // Multiple instructions — generate one flowchart per instruction
+      for (const instr of instructions) {
+        const label = `(${String.fromCharCode(96 + instr.instruction_number)})`;
+        const result = await generateSingleFlowchart(
+          supabaseUrl, serviceRoleKey, hctiAuth,
+          asset.problem_context || "", asset.worked_steps || "",
+          instr.instruction_text, label,
+        );
+        if (!result.skipped && result.imageUrl) {
+          results.push({ instruction_number: instr.instruction_number, instruction_label: label, imageUrl: result.imageUrl });
+        }
+      }
+    }
+
+    if (results.length === 0) {
+      console.log(`No flowcharts generated for ${asset.asset_name}`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: "AI skipped all instructions" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // HCTI returns a URL like https://hcti.io/v1/image/abc123
-    // Append .png to get a direct image URL that works in <img> tags
-    const imageUrl = hctiData.url + ".png";
-    console.log(`Flowchart image created: ${imageUrl}`);
+    // STEP 5 — Insert into asset_flowcharts
+    const rows = results.map(r => ({
+      teaching_asset_id,
+      instruction_number: r.instruction_number,
+      instruction_label: r.instruction_label,
+      flowchart_image_url: r.imageUrl,
+      flowchart_image_id: null,
+    }));
 
-    // STEP 6 — Save HCTI URL directly to database
-    // HCTI URLs are permanent and directly embeddable
+    await fetch(`${supabaseUrl}/rest/v1/asset_flowcharts`, {
+      method: "POST",
+      headers: { ...authHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(rows),
+    });
+
+    // STEP 6 — Also update the legacy flowchart_image_url on teaching_assets
+    // Use the first (or only) flowchart for backward compat
     await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
       method: "PATCH",
       headers: { ...authHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ flowchart_image_url: imageUrl, flowchart_image_id: null }),
+      body: JSON.stringify({ flowchart_image_url: results[0].imageUrl, flowchart_image_id: null }),
     });
 
-    console.log(`Flowchart saved for ${asset.asset_name}: ${imageUrl}`);
+    console.log(`Generated ${results.length} flowchart(s) for ${asset.asset_name}`);
 
     return new Response(JSON.stringify({
       success: true,
       skipped: false,
-      image_url: imageUrl,
-      file_id: null,
+      flowcharts: results.map(r => ({
+        instruction_number: r.instruction_number,
+        instruction_label: r.instruction_label,
+        image_url: r.imageUrl,
+      })),
       asset_name: asset.asset_name,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 

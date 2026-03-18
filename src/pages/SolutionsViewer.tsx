@@ -636,7 +636,14 @@ export default function SolutionsViewer() {
         .eq("teaching_asset_id", asset.id)
         .order("instruction_number");
 
-      return { ...asset, _problemTitle: asset.problem_title || "", _instructions: instrData || [] };
+      // Fetch per-instruction flowcharts from asset_flowcharts table
+      const { data: flowchartsData } = await supabase
+        .from("asset_flowcharts")
+        .select("instruction_number, instruction_label, flowchart_image_url")
+        .eq("teaching_asset_id", asset.id)
+        .order("instruction_number");
+
+      return { ...asset, _problemTitle: asset.problem_title || "", _instructions: instrData || [], _flowcharts: flowchartsData || [] };
     },
     enabled: !!assetCode,
   });
