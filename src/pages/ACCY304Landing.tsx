@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { toast } from "sonner";
+import { naturalSortRef } from "@/lib/utils";
 
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 const HERO_IMG = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
@@ -134,7 +135,7 @@ function ProblemPickerRow({
       else if (selection.type === "E") filtered = filtered.filter((p: any) => p.source_code?.startsWith("E") && !p.source_code?.startsWith("EX"));
       else if (selection.type === "P") filtered = filtered.filter((p: any) => p.source_code?.startsWith("P"));
 
-      return filtered;
+      return filtered.sort((a: any, b: any) => naturalSortRef(a.source_code, b.source_code));
     },
     enabled: !!selection.chapterId,
   });
@@ -303,7 +304,7 @@ export default function ACCY304Landing() {
         asset_name: p.asset_name,
         source_ref: p.source_ref,
         source_label: labelsByCode.get(p.source_ref) || p.source_ref,
-      }));
+      })).sort((a: any, b: any) => naturalSortRef(a.source_ref, b.source_ref));
     },
     enabled: !!previewChapterId,
   });
