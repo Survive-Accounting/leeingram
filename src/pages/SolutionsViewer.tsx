@@ -901,60 +901,7 @@ function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: b
   );
 }
 
-// ── Left Floating Panel — About Lee ─────────────────────────────────
-
-function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
-  const [open, setOpen] = useState(true);
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
-        style={{
-          left: 40,
-          writingMode: "vertical-rl",
-          textOrientation: "mixed",
-          background: isDark ? theme.cardBg : "#FFFFFF",
-          color: theme.textMuted,
-          border: `1px solid ${theme.border}`,
-          borderRadius: "8px",
-          padding: "12px 8px",
-          fontSize: "12px",
-          fontWeight: 600,
-          boxShadow: isDark ? "2px 0 12px rgba(0,0,0,0.3)" : "2px 0 12px rgba(0,0,0,0.06)",
-          letterSpacing: "0.05em",
-        }}
-      >
-        About Lee
-      </button>
-    );
-  }
-
-  return (
-    <div
-      className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
-      style={{
-        left: 40,
-        width: 260,
-        background: isDark ? theme.cardBg : "#FFFFFF",
-        border: `1px solid ${theme.border}`,
-        borderRadius: "12px",
-        boxShadow: isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.08)",
-        padding: "16px 14px",
-      }}
-    >
-      <button
-        onClick={() => setOpen(false)}
-        className="absolute top-2 right-2 p-1 rounded-full hover:bg-black/5 transition-colors"
-        style={{ color: theme.textMuted }}
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-      <AboutLeeContent theme={theme} compact />
-    </div>
-  );
-}
+// LeftPanel removed — bio now lives under the RightModePanel
 
 // ── Right Panel — Mode Switcher (attached to content card) ──────────
 
