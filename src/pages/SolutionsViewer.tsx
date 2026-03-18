@@ -1238,7 +1238,7 @@ export default function SolutionsViewer() {
         className="relative"
         style={{ background: "#14213D", zIndex: 10 }}
       >
-        <div className="max-w-[780px] mx-auto px-6 py-2.5 flex items-center justify-between">
+        <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1040 }}>
           <div className="flex items-center gap-3">
             <img
               src={LOGO_URL}
@@ -1248,13 +1248,6 @@ export default function SolutionsViewer() {
             />
             <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
           </div>
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-1.5 text-[12px] text-white/60 hover:text-white/90 transition-colors px-2 py-1 rounded"
-          >
-            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            {isDark ? "Light" : "Dark"}
-          </button>
         </div>
       </header>
 
