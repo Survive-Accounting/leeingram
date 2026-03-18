@@ -940,7 +940,7 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
         {formulas.trim() && (
-          <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
             <div className="space-y-2">
               {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
                 <div key={i} className="rounded px-4 py-2 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
