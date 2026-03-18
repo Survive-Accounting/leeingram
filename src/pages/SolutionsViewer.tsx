@@ -1061,20 +1061,9 @@ export default function SolutionsViewer() {
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
 
-  // Theme — persisted dark/light toggle
-  const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem("sa-viewer-theme");
-    return stored === "dark";
-  });
-  const t = isDark ? darkTheme : lightTheme;
-
-  const toggleTheme = () => {
-    setIsDark(prev => {
-      const next = !prev;
-      localStorage.setItem("sa-viewer-theme", next ? "dark" : "light");
-      return next;
-    });
-  };
+  // Theme — light only (dark mode removed)
+  const isDark = false;
+  const t = lightTheme;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
