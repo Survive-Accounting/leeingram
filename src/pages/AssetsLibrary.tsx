@@ -1409,7 +1409,50 @@ export default function AssetsLibrary() {
         </Table>
       </div>
 
-      {/* Sheet Prep Log (Admin only) */}
+      {/* Pagination Controls */}
+      {totalAssets > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-3 px-1">
+          <p className="text-xs text-muted-foreground">
+            Showing {showingFrom}–{showingTo} of {totalAssets} assets
+            {selectedIds.size > 0 && ` · ${selectedIds.size} selected`}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              ← Prev
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <Button
+                key={page}
+                variant={page === safePage ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs px-2.5 min-w-[28px]"
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next →
+            </Button>
+          </div>
+        </div>
+      )}
+          </>
+        );
+      })()}
+
       {isAdmin && (
         <div className="mt-6 space-y-4">
           <Collapsible open={sheetLogOpen} onOpenChange={setSheetLogOpen}>
