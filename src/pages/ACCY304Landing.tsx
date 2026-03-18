@@ -237,6 +237,7 @@ export default function ACCY304Landing() {
   const [previewType, setPreviewType] = useState("any");
   const [previewSourceCode, setPreviewSourceCode] = useState("");
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const [iframeVisible, setIframeVisible] = useState(true);
 
   // ── Email Capture state ──
   const [step, setStep] = useState<Step>("email");
