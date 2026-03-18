@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
 const LEE_HEADSHOT_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg";
+const LEE_HERO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
 
 // ── Theme colors ────────────────────────────────────────────────────
 
@@ -1167,15 +1168,12 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 
 function AboutLeeSection({ theme }: { theme: Theme }) {
   return (
-    <div className="mt-10 flex flex-col items-center text-center gap-4">
-      <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase" style={{ color: theme.textMuted }}>
-        About Lee Ingram
-      </h2>
+    <div className="flex flex-col items-center text-center gap-4">
       <img
-        src={LEE_HEADSHOT_URL}
+        src={LEE_HERO_URL}
         alt="Lee Ingram"
-        className="w-40 h-40 rounded-xl object-cover"
-        style={{ objectPosition: "top center" }}
+        className="w-full object-cover"
+        style={{ objectPosition: "center top", height: 200, borderRadius: 12 }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
       <div className="max-w-[400px]">
@@ -1313,10 +1311,7 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
   }, []);
 
   return (
-    <div className="mt-16">
-      <h2 className="text-[16px] font-bold tracking-[0.1em] uppercase mb-4 text-center" style={{ color: theme.textMuted }}>
-        What Lee's Students Are Saying
-      </h2>
+    <div>
       <iframe
         ref={iframeRef}
         id="testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
@@ -1777,9 +1772,39 @@ export default function SolutionsViewer() {
               )}
             </div>
 
-            {/* Testimonials + About Lee below the reveal card */}
-            <TestimonialsSection theme={t} />
-            <AboutLeeSection theme={t} />
+            {/* Testimonials card */}
+            <div className="mt-4">
+              <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: t.heading }}>
+                WHAT LEE'S STUDENTS ARE SAYING
+              </h2>
+              <div
+                className="rounded-xl px-6 py-6"
+                style={{
+                  background: t.pageBg,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
+                  border: `1px solid ${t.border}`,
+                }}
+              >
+                <TestimonialsSection theme={t} />
+              </div>
+            </div>
+
+            {/* About Lee card */}
+            <div className="mt-4">
+              <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: t.heading }}>
+                ABOUT LEE INGRAM
+              </h2>
+              <div
+                className="rounded-xl px-6 py-6"
+                style={{
+                  background: t.pageBg,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
+                  border: `1px solid ${t.border}`,
+                }}
+              >
+                <AboutLeeSection theme={t} />
+              </div>
+            </div>
 
 
 
