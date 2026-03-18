@@ -523,13 +523,9 @@ export default function PracticeViewer() {
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
 
-  // Theme state (shared localStorage key with SolutionsViewer)
-  const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem("sa-viewer-theme");
-    return stored ? stored === "dark" : true;
-  });
-  useEffect(() => { localStorage.setItem("sa-viewer-theme", isDark ? "dark" : "light"); }, [isDark]);
-  const t = isDark ? darkTheme : lightTheme;
+  // Theme — light only
+  const isDark = false;
+  const t = lightTheme;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
