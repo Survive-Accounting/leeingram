@@ -1005,13 +1005,19 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
       script.id = scriptId;
       script.src = "https://testimonial.to/js/iframeResizer.min.js";
       script.onload = () => {
+        try {
+          if ((window as any).iFrameResize && iframeRef.current) {
+            (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+          }
+        } catch (e) { /* iframe resizer not critical */ }
+      };
+      document.body.appendChild(script);
+    } else {
+      try {
         if ((window as any).iFrameResize && iframeRef.current) {
           (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
         }
-      };
-      document.body.appendChild(script);
-    } else if ((window as any).iFrameResize && iframeRef.current) {
-      (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+      } catch (e) { /* iframe resizer not critical */ }
     }
   }, []);
 
