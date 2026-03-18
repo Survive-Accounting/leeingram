@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.generate-dissector-highlights]
 verify_jwt = false
+
+[functions.swap-problem-numbers]
+verify_jwt = false

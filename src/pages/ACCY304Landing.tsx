@@ -1,75 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import BlurredPreview from "@/components/BlurredPreview";
 
 const enrollUrl = import.meta.env.VITE_LEARNWORLDS_ENROLL_URL || "https://surviveaccounting.com";
-
-// ── Blurred preview of a single asset ────────────────────────────────
-
-function BlurredAssetPreview({ asset }: { asset: any }) {
-  const context = asset.problem_context || "";
-  const segments = context.split("\n").filter((l: string) => l.trim());
-
-  return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden">
-      {/* Visible: problem context */}
-      <div className="p-5">
-        <p className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3 border-b border-gray-200" style={{ color: "#131E35" }}>
-          PROBLEM
-        </p>
-        <div className="text-[14px] leading-[1.7] text-[#1A1A1A] whitespace-pre-wrap">
-          {segments.slice(0, 8).join("\n")}
-          {segments.length > 8 && <span className="text-gray-400">…</span>}
-        </div>
-      </div>
-
-      {/* Blurred paywall */}
-      <div className="relative">
-        <div className="absolute inset-0 backdrop-blur-md z-10 rounded-b-lg flex items-center justify-center" style={{ background: "rgba(19, 30, 53, 0.85)" }}>
-          <div className="text-center px-6 py-8 max-w-sm">
-            <Lock className="h-8 w-8 text-white/80 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-white mb-1">Full solution available with Study Pass</h3>
-            <p className="text-white/60 text-[13px] mb-4">Journal entries, formulas, exam traps & more</p>
-            <a
-              href={enrollUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-6 py-3 rounded-md font-bold text-sm transition-all hover:scale-105"
-              style={{ background: "#00FFFF", color: "#0A0A0A" }}
-            >
-              Get Study Pass — $99/semester
-            </a>
-            <div className="flex gap-3 mt-4 justify-center">
-              <a
-                href={`/solutions/${asset.asset_name}?preview=true`}
-                className="text-white/70 text-[12px] hover:text-white hover:underline"
-              >
-                Preview full solution →
-              </a>
-              <a
-                href={`/practice/${asset.asset_name}?preview=true`}
-                className="text-white/70 text-[12px] hover:text-white hover:underline"
-              >
-                Try practice mode →
-              </a>
-            </div>
-          </div>
-        </div>
-        <div className="filter blur-sm pointer-events-none select-none min-h-[220px] opacity-30 p-5">
-          <div className="space-y-4">
-            <div className="h-12 bg-gray-100 rounded" />
-            <div className="h-20 bg-gray-100 rounded" />
-            <div className="h-8 bg-gray-100 rounded" />
-            <div className="h-16 bg-gray-100 rounded" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ────────────────────────────────────────────────────────
 
 export default function ACCY304Landing() {
   const [selectedChapterId, setSelectedChapterId] = useState("");
