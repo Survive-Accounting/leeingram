@@ -304,20 +304,20 @@ export default function BulkFixTool() {
         setPreviewRows(rows);
         setIsAiPreview(true);
       } else if (operation === "enrich_je_rows") {
-        // JE enrichment preview: sample 2 assets that have JE data
-        const { data: assets, error } = await buildScopeQuery().not("journal_entry_completed_json", "is", null).limit(2);
+        // JE enrichment preview: sample more assets to find ones that actually need enrichment
+        const { data: assets, error } = await buildScopeQuery().not("journal_entry_completed_json", "is", null).limit(20);
         if (error) throw error;
 
-        // Count total with JE data
+        // Count total with JE data that need enrichment (we'll count client-side from larger sample)
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true }).not("journal_entry_completed_json", "is", null);
         if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
         if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
         if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
         if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
         const { count: jeCount } = await countQ;
-        setTotalMatched(jeCount ?? 0);
 
         const rows: PreviewRow[] = [];
+        let assetsNeedingEnrichment = 0;
         for (const asset of assets ?? []) {
           for (const jsonField of ["journal_entry_completed_json", "supplementary_je_json"] as const) {
             const jeJson = (asset as any)[jsonField];
@@ -335,16 +335,27 @@ export default function BulkFixTool() {
             }
 
             if (missingCount > 0) {
-              rows.push({
-                id: asset.id,
-                asset_name: asset.asset_name,
-                field: jsonField,
-                before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
-                after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
-              });
+              assetsNeedingEnrichment++;
+              // Only show first 4 preview rows to keep UI clean
+              if (rows.length < 4) {
+                rows.push({
+                  id: asset.id,
+                  asset_name: asset.asset_name,
+                  field: jsonField,
+                  before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
+                  after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
+                });
+              }
             }
           }
         }
+
+        // Estimate total needing enrichment based on sample ratio
+        const sampleSize = (assets ?? []).length;
+        const estimatedNeedEnrichment = sampleSize > 0
+          ? Math.round(((assetsNeedingEnrichment / sampleSize) * (jeCount ?? 0)))
+          : 0;
+        setTotalMatched(estimatedNeedEnrichment > 0 ? estimatedNeedEnrichment : assetsNeedingEnrichment);
 
         setPreviewRows(rows);
         setIsAiPreview(true);
