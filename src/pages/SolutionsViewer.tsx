@@ -594,7 +594,7 @@ export default function SolutionsViewer() {
                 {hasCanonicalJE ? (
                   <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
                 ) : (
-                  <RawJEFallback text={jeRaw} theme={t} />
+                  <RawJEFallback text={jeBlock} theme={t} />
                 )}
               </>
             )}
