@@ -1197,6 +1197,7 @@ export default function AssetsLibrary() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                        </div>
                       </TableCell>
                     )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
