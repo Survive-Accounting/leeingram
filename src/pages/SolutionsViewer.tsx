@@ -508,13 +508,12 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
             // Check if previous line is a JE label heading
             let heading: string | undefined;
             const lastSeg = segs[segs.length - 1];
-            if (lastSeg && (lastSeg as any).type === "text") {
-              const textSeg = lastSeg as { type: "text"; lines: { text: string; idx: number }[] };
-              const lastLine = textSeg.lines[textSeg.lines.length - 1];
+            if (lastSeg && lastSeg.type === "text") {
+              const lastLine = lastSeg.lines[lastSeg.lines.length - 1];
               if (lastLine && /^journal\s+entr(y|ies)\s*:/i.test(lastLine.text.trim())) {
                 heading = lastLine.text.trim();
-                textSeg.lines.pop();
-                if (textSeg.lines.length === 0) segs.pop();
+                lastSeg.lines.pop();
+                if (lastSeg.lines.length === 0) segs.pop();
               }
             }
             // Collect consecutive debit/credit lines
@@ -524,13 +523,13 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
               const next = parseInlineJELine(contentLines[i]);
               if (next) { jeRows.push(next); i++; } else break;
             }
-            segs.push({ type: "je", rows: jeRows, heading } as any);
+            segs.push({ type: "je", rows: jeRows, heading });
           } else {
             const lastSeg = segs[segs.length - 1];
-            if (lastSeg && (lastSeg as any).type === "text") {
-              (lastSeg as any).lines.push({ text: contentLines[i], idx: i });
+            if (lastSeg && lastSeg.type === "text") {
+              lastSeg.lines.push({ text: contentLines[i], idx: i });
             } else {
-              segs.push({ type: "text", lines: [{ text: contentLines[i], idx: i }] } as any);
+              segs.push({ type: "text", lines: [{ text: contentLines[i], idx: i }] });
             }
             i++;
           }
