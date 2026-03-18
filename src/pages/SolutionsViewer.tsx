@@ -98,13 +98,8 @@ function isNumericCell(cell: string) {
 function PipeTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
   const header = rows[0];
   const body = rows.slice(1);
-  const copyTSV = () => {
-    navigator.clipboard.writeText(rows.map(r => r.join("\t")).join("\n"));
-    toast.success("Copied as TSV");
-  };
   return (
-    <div className="my-4 relative">
-      <button onClick={copyTSV} className="absolute top-2 right-2 text-[10px] px-2 py-1 rounded z-10 transition-colors" style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, color: theme.textMuted }}>Copy as TSV</button>
+    <div className="my-4">
       <div className="overflow-x-auto rounded-lg" style={{ border: `1px solid ${theme.border}` }}>
         <table className="w-full text-[13px]">
           <thead>
