@@ -664,16 +664,17 @@ export default function PracticeViewer() {
       <header style={{ borderBottom: `2px solid ${t.border}` }}>
         <div className="max-w-[780px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img
-              src={leeHeadshot}
-              alt="Lee Ingram"
-              className="h-8 w-8 rounded-full object-cover shrink-0"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-                (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
-              }}
-            />
-            <div className="h-8 w-8 rounded-full shrink-0 hidden items-center justify-center text-[11px] font-bold text-white" style={{ background: "#1A2E55" }}>LI</div>
+            <div className="h-8 w-8 rounded-full shrink-0 overflow-hidden" style={{ background: "#131E35" }}>
+              <img
+                src={LEE_HEADSHOT_URL}
+                alt="Lee Ingram"
+                className="h-8 w-8 object-cover"
+                style={{ objectPosition: "top center", borderRadius: "50%" }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
             <div>
               <p className="font-bold text-[15px] leading-tight" style={{ color: t.text }}>Survive Accounting</p>
               <p className="text-[11px]" style={{ color: t.textMuted }}>by Lee Ingram</p>
