@@ -63,9 +63,24 @@ type Theme = typeof lightTheme;
 
 // ── Pipe table helpers ──────────────────────────────────────────────
 
+function isKVLine(line: string): boolean {
+  const t = line.trim();
+  if (!t) return false;
+  return /^[\w\s&]+:\s*.+$/.test(t);
+}
+
+function parseKVBlock(lines: string[]): string[][] {
+  return lines
+    .filter(l => l.trim())
+    .map(l => {
+      const idx = l.indexOf(":");
+      return [l.slice(0, idx).trim(), l.slice(idx + 1).trim()];
+    });
+}
+
 function parsePipeSegments(text: string) {
   const lines = text.split("\n");
-  const segments: { type: "text" | "table"; content: string; rows?: string[][] }[] = [];
+  const segments: { type: "text" | "table" | "kv-table"; content: string; rows?: string[][] }[] = [];
   let i = 0;
   while (i < lines.length) {
     if (i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|")) {
@@ -82,10 +97,31 @@ function parsePipeSegments(text: string) {
       if (dataRows.length >= 2) segments.push({ type: "table", content: block, rows: dataRows });
       else segments.push({ type: "text", content: block });
     } else {
-      const start = i;
-      while (i < lines.length && !(i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|"))) i++;
-      const block = lines.slice(start, i).join("\n");
-      if (block.trim()) segments.push({ type: "text", content: block });
+      if (isKVLine(lines[i]) && i < lines.length - 1 && isKVLine(lines[i + 1])) {
+        const start = i;
+        while (i < lines.length && (isKVLine(lines[i]) || !lines[i].trim())) {
+          if (!lines[i].trim()) {
+            if (i + 1 < lines.length && isKVLine(lines[i + 1])) { i++; continue; }
+            break;
+          }
+          i++;
+        }
+        const kvLines = lines.slice(start, i).filter(l => l.trim());
+        if (kvLines.length >= 2) {
+          segments.push({ type: "kv-table", content: kvLines.join("\n"), rows: parseKVBlock(kvLines) });
+        } else {
+          segments.push({ type: "text", content: kvLines.join("\n") });
+        }
+      } else {
+        const start = i;
+        while (
+          i < lines.length &&
+          !(i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|")) &&
+          !(isKVLine(lines[i]) && i < lines.length - 1 && isKVLine(lines[i + 1]))
+        ) i++;
+        const block = lines.slice(start, i).join("\n");
+        if (block.trim()) segments.push({ type: "text", content: block });
+      }
     }
   }
   return segments;
@@ -120,6 +156,23 @@ function PipeTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
   );
 }
 
+function KVTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
+  return (
+    <div className="my-4 flex justify-center">
+      <table className="text-[14px]">
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri}>
+              <td className="pr-6 py-[3px] text-right" style={{ color: theme.text }}>{row[0]}</td>
+              <td className="py-[3px] text-right font-mono" style={{ color: theme.text }}>{row[1]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function SmartContent({ text, className, theme }: { text: string; className?: string; theme: Theme }) {
   const segments = parsePipeSegments(text);
   return (
@@ -127,7 +180,9 @@ function SmartContent({ text, className, theme }: { text: string; className?: st
       {segments.map((seg, i) =>
         seg.type === "table" && seg.rows
           ? <PipeTable key={i} rows={seg.rows} theme={theme} />
-          : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
+          : seg.type === "kv-table" && seg.rows
+            ? <KVTable key={i} rows={seg.rows} theme={theme} />
+            : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
       )}
     </div>
   );
