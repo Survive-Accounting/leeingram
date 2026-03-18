@@ -891,7 +891,7 @@ export default function SolutionsViewer() {
 
         {/* 2. How to Solve This — per-instruction flowcharts */}
         {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
             {asset._flowcharts?.length > 0 ? (
               <div className="space-y-6">
                 {asset._flowcharts.map((fc: any, i: number) => (
