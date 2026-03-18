@@ -549,7 +549,7 @@ export default function SolutionsViewer() {
           solutions_page_views, practice_page_views,
           course_id, chapter_id, phase2_status, asset_approved_at, problem_type,
           instruction_1, instruction_2, instruction_3, instruction_4, instruction_5,
-          instruction_list,
+          instruction_list, flowchart_image_url,
           chapters!teaching_assets_chapter_id_fkey ( chapter_number, chapter_name ),
           courses!teaching_assets_course_id_fkey ( course_name, code )
         `)
@@ -798,8 +798,16 @@ export default function SolutionsViewer() {
           </RevealToggle>
         )}
 
-        {/* 3. How to Solve (flowchart — only if flowchart_image_url exists on asset) */}
-        {/* flowchart_image_url not in current schema — skipped */}
+        {asset.flowchart_image_url && (
+          <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+            <img
+              src={asset.flowchart_image_url}
+              alt="How to Solve This — step-by-step flowchart"
+              className="w-full rounded-lg"
+              loading="lazy"
+            />
+          </RevealToggle>
+        )}
 
         {/* 4. Important Formulas */}
         {formulas.trim() && (
