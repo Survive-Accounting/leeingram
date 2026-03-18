@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
-import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { Button } from "@/components/ui/button";
@@ -719,6 +718,22 @@ function SupplementaryJESection({ data, theme }: { data: { entries: { label: str
   );
 }
 
+/** Parse exam traps text into individual bullet points */
+function parseExamTraps(text: string): string[] {
+  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length >= 2) {
+    return lines.map(l => l.replace(/^[-•·]\s*/, '').replace(/^\d+[.)]\s*/, ''));
+  }
+  // Single block — split on sentence boundaries that start new trap topics
+  const trapStarters = /(?<=[.!])\s+(?=[A-Z][a-z]+(?:ing|ly|ful)\s)/g;
+  const parts = text.split(trapStarters).map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return parts.map(p => p.endsWith('.') ? p : p + '.');
+  }
+  // Fallback: split on ". " followed by capital letter
+  const sentences = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
+  return sentences.map(s => s.endsWith('.') ? s : s + '.');
+}
 
 
 export default function SolutionsViewer() {
@@ -1048,13 +1063,7 @@ export default function SolutionsViewer() {
               <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
             ) : (
               hasCanonicalJE ? (
-                <div className="[&_button]:hidden">
-                  <StructuredJEDisplay
-                    data={typeof jeData === "string" ? JSON.parse(jeData) : jeData}
-                    showHeading={false}
-                    templateMode={false}
-                  />
-                </div>
+                <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
               ) : (
                 <RawJEFallback text={jeBlock} theme={t} />
               )
@@ -1074,9 +1083,9 @@ export default function SolutionsViewer() {
 
         {formulas.trim() && (
           <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
-                <div key={i} className="rounded px-4 py-2 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
+                <div key={i} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
                   <p className="font-mono text-[13px]" style={{ color: t.text }}>{line}</p>
                 </div>
               ))}
@@ -1103,10 +1112,10 @@ export default function SolutionsViewer() {
           <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
             <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
               <ul className="space-y-2">
-                {examTraps.split(". ").filter((s: string) => s.trim()).map((sentence: string, i: number) => (
+                {parseExamTraps(examTraps).map((trap: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
-                    <span>{sentence.endsWith(".") ? sentence : sentence + "."}</span>
+                    <span>{trap}</span>
                   </li>
                 ))}
               </ul>
