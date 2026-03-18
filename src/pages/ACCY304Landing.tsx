@@ -6,18 +6,46 @@ import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { toast } from "sonner";
 
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
+const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
+const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
 
 type Step = "email" | "picker" | "results";
 
 interface ProblemSelection {
   chapterId: string;
   type: string;
-  sourceCode: string; // source_code from chapter_problems
+  sourceCode: string;
   sourceLabel: string;
 }
 
-// ── Problem Picker Row ──────────────────────────────────────────────
+// ── Shared Select Wrapper ───────────────────────────────────────────
+function StyledSelect({
+  value,
+  onChange,
+  disabled,
+  children,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className="w-full appearance-none border border-gray-300 rounded-md px-3 py-2.5 text-[14px] bg-white pr-8 focus:outline-none focus:ring-2 focus:ring-[#14213D]/20 focus:border-[#14213D] disabled:opacity-50 disabled:bg-gray-50"
+      >
+        {children}
+      </select>
+      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+    </div>
+  );
+}
 
+// ── Problem Picker Row (for email capture section) ──────────────────
 function ProblemPickerRow({
   index,
   selection,
@@ -58,60 +86,43 @@ function ProblemPickerRow({
 
   return (
     <div className="space-y-2">
-      <p className="text-[12px] font-bold" style={{ color: "#131E35" }}>Problem {index + 1}</p>
+      <p className="text-[12px] font-bold" style={{ color: "#14213D" }}>Problem {index + 1}</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Chapter */}
-        <div className="relative">
-          <select
-            value={selection.chapterId}
-            onChange={(e) => onChange({ ...selection, chapterId: e.target.value, sourceCode: "", sourceLabel: "" })}
-            className="w-full appearance-none border border-gray-300 rounded-md px-3 py-2.5 text-[14px] bg-white pr-8 focus:outline-none focus:ring-2 focus:ring-[#131E35]/20 focus:border-[#131E35]"
-          >
-            <option value="">Select chapter…</option>
-            {chapters.map((ch) => (
-              <option key={ch.id} value={ch.id}>
-                Ch {ch.chapter_number} — {ch.chapter_name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-        </div>
+        <StyledSelect
+          value={selection.chapterId}
+          onChange={(e) => onChange({ ...selection, chapterId: e.target.value, sourceCode: "", sourceLabel: "" })}
+        >
+          <option value="">Select chapter…</option>
+          {chapters.map((ch) => (
+            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
+          ))}
+        </StyledSelect>
 
-        {/* Type */}
-        <div className="relative">
-          <select
-            value={selection.type}
-            onChange={(e) => onChange({ ...selection, type: e.target.value, sourceCode: "", sourceLabel: "" })}
-            className="w-full appearance-none border border-gray-300 rounded-md px-3 py-2.5 text-[14px] bg-white pr-8 focus:outline-none focus:ring-2 focus:ring-[#131E35]/20 focus:border-[#131E35]"
-          >
-            <option value="any">Any Type</option>
-            <option value="BE">Brief Exercise (BE)</option>
-            <option value="E">Exercise (E)</option>
-            <option value="P">Problem (P)</option>
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-        </div>
+        <StyledSelect
+          value={selection.type}
+          onChange={(e) => onChange({ ...selection, type: e.target.value, sourceCode: "", sourceLabel: "" })}
+        >
+          <option value="any">Any Type</option>
+          <option value="BE">Brief Exercise (BE)</option>
+          <option value="E">Exercise (E)</option>
+          <option value="P">Problem (P)</option>
+        </StyledSelect>
 
-        {/* Source # */}
-        <div className="relative">
-          <select
-            value={selection.sourceCode}
-            onChange={(e) => {
-              const prob = problems?.find((p: any) => p.source_code === e.target.value);
-              onChange({ ...selection, sourceCode: e.target.value, sourceLabel: prob?.source_label || e.target.value });
-            }}
-            disabled={!problems?.length}
-            className="w-full appearance-none border border-gray-300 rounded-md px-3 py-2.5 text-[14px] bg-white pr-8 focus:outline-none focus:ring-2 focus:ring-[#131E35]/20 focus:border-[#131E35] disabled:opacity-50 disabled:bg-gray-50"
-          >
-            <option value="">
-              {!selection.chapterId ? "Select chapter first…" : problems?.length ? "Select problem…" : "No problems found"}
-            </option>
-            {problems?.map((p: any) => (
-              <option key={p.source_code} value={p.source_code}>{p.source_label}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-        </div>
+        <StyledSelect
+          value={selection.sourceCode}
+          onChange={(e) => {
+            const prob = problems?.find((p: any) => p.source_code === e.target.value);
+            onChange({ ...selection, sourceCode: e.target.value, sourceLabel: prob?.source_label || e.target.value });
+          }}
+          disabled={!problems?.length}
+        >
+          <option value="">
+            {!selection.chapterId ? "Select chapter first…" : problems?.length ? "Select problem…" : "No problems found"}
+          </option>
+          {problems?.map((p: any) => (
+            <option key={p.source_code} value={p.source_code}>{p.source_label}</option>
+          ))}
+        </StyledSelect>
       </div>
       {isDuplicate && (
         <p className="text-red-500 text-[12px]">You've already selected this problem — please choose a different one.</p>
@@ -121,9 +132,16 @@ function ProblemPickerRow({
 }
 
 // ── Main Landing Page ───────────────────────────────────────────────
-
 export default function ACCY304Landing() {
   const enrollUrl = useEnrollUrl();
+
+  // ── Free Preview state (Section 2) ──
+  const [previewChapterId, setPreviewChapterId] = useState("");
+  const [previewType, setPreviewType] = useState("any");
+  const [previewSourceCode, setPreviewSourceCode] = useState("");
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+
+  // ── Email Capture state (Section 3) ──
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -138,7 +156,7 @@ export default function ACCY304Landing() {
     assetLinks: { sourceLabel: string; assetName: string; assetCode: string }[];
   } | null>(null);
 
-  // Fetch IA2 course + chapters
+  // ── Shared: Fetch IA2 course + chapters ──
   const { data: courseData } = useQuery({
     queryKey: ["accy304-course"],
     queryFn: async () => {
@@ -162,8 +180,47 @@ export default function ACCY304Landing() {
     },
   });
 
-  // ── Step 1: Email submit ──
+  // ── Section 2: Free preview problem list ──
+  const { data: previewProblems } = useQuery({
+    queryKey: ["accy304-preview-problems", previewChapterId, previewType],
+    queryFn: async () => {
+      if (!previewChapterId) return [];
+      const { data } = await supabase
+        .from("chapter_problems")
+        .select("id, source_code, source_label, chapter_id")
+        .eq("chapter_id", previewChapterId)
+        .order("source_code");
+      if (!data) return [];
 
+      let filtered = data;
+      if (previewType === "BE") filtered = filtered.filter((p: any) => p.source_code?.startsWith("BE"));
+      else if (previewType === "E") filtered = filtered.filter((p: any) => p.source_code?.startsWith("E") && !p.source_code?.startsWith("EX"));
+      else if (previewType === "P") filtered = filtered.filter((p: any) => p.source_code?.startsWith("P"));
+      return filtered;
+    },
+    enabled: !!previewChapterId,
+  });
+
+  const handleShowPreview = async () => {
+    if (!previewSourceCode) return;
+    // Resolve source_code → teaching_asset asset_name
+    const { data: assets } = await supabase
+      .from("teaching_assets")
+      .select("id, asset_name")
+      .eq("chapter_id", previewChapterId)
+      .eq("source_ref", previewSourceCode)
+      .not("asset_approved_at", "is", null)
+      .limit(1);
+
+    const asset = assets?.[0];
+    if (!asset) {
+      toast.error("No approved asset found for this problem yet. Try a different one.");
+      return;
+    }
+    setIframeSrc(`${STUDENT_BASE_URL}/solutions/${asset.asset_name}?preview=true`);
+  };
+
+  // ── Section 3: Email submit ──
   const handleEmailSubmit = async () => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed.endsWith(".edu")) {
@@ -194,8 +251,7 @@ export default function ACCY304Landing() {
     }
   };
 
-  // ── Step 2: Problem submit ──
-
+  // ── Section 3: Problem submit ──
   const usedSourceCodes = selections.map(s => s.sourceCode).filter(Boolean);
   const hasDuplicates = new Set(usedSourceCodes).size < usedSourceCodes.length;
   const allSelected = selections.every(s => s.sourceCode);
@@ -206,11 +262,9 @@ export default function ACCY304Landing() {
     setSubmitting(true);
 
     try {
-      // Resolve chapter_problems → teaching_assets
       const assetLinks: { sourceLabel: string; assetName: string; assetCode: string; assetId: string }[] = [];
 
       for (const sel of selections) {
-        // Find the teaching asset matching this chapter + source_ref
         const { data: assets } = await supabase
           .from("teaching_assets")
           .select("id, asset_name, source_ref, problem_title")
@@ -234,7 +288,6 @@ export default function ACCY304Landing() {
         });
       }
 
-      // Insert session
       const trimmedEmail = email.trim().toLowerCase();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -281,48 +334,153 @@ export default function ACCY304Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* ── HERO ── */}
-      <section style={{ background: "#131E35" }} className="px-6 py-12 md:py-16">
+    <div className="min-h-screen relative" style={{ background: "#FAFBFC" }}>
+      {/* ── Aoraki Watermark Background ── */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url(${AORAKI_URL})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.06,
+          zIndex: 0,
+        }}
+      />
+
+      {/* ── Navy Header Bar (matches SolutionsViewer) ── */}
+      <header className="relative sticky top-0" style={{ background: "#14213D", zIndex: 20 }}>
+        <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
+          <div className="flex items-center gap-3">
+            <img src={LOGO_URL} alt="Survive Accounting" className="h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
+          </div>
+        </div>
+      </header>
+
+      {/* ═══════════════════════════════════════════════════════════
+          SECTION 1 — HERO
+         ═══════════════════════════════════════════════════════════ */}
+      <section className="relative px-6 py-14 md:py-20" style={{ background: "#14213D", zIndex: 1 }}>
         <div className="max-w-[860px] mx-auto text-center">
-          <p className="text-white font-bold text-[28px]">Survive Accounting</p>
-          <p className="text-white text-[18px] font-normal leading-[1.5] mt-2">
-            Practice any Intermediate Accounting 2 problem.<br />Instantly. Free preview.
+          <h1 className="text-white font-bold text-[32px] md:text-[38px] leading-tight">Survive Accounting</h1>
+          <p className="text-white/80 text-[17px] font-medium mt-2">
+            Built for Ole Miss ACCY 304 students.
           </p>
-          <p className="text-white/70 text-[14px] mt-3 max-w-[560px] mx-auto leading-relaxed">
-            Built for ACCY 304 students at your university.
-            Work through real textbook problems with full worked solutions,
-            journal entries, formulas, and exam traps.
+          <p className="text-white/60 text-[14px] mt-4 max-w-[560px] mx-auto leading-relaxed">
+            Full worked solutions, journal entries, formulas, exam traps, and more — for every problem in Intermediate Accounting 2.
           </p>
-          <a
-            href={enrollUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-6 px-8 py-3.5 rounded-md font-bold text-[16px] transition-all hover:scale-105"
-            style={{ background: "#00FFFF", color: "#0A0A0A" }}
-          >
-            Get Full Access — $99/semester
-          </a>
-          <p className="mt-3">
-            <a href="#picker" className="text-white/50 text-[13px] hover:underline">
-              Or try a free preview below ↓
+
+          {/* CTA */}
+          <div className="mt-8">
+            <p className="text-white/40 text-[14px] line-through mb-1">$250</p>
+            <a
+              href={enrollUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-10 py-4 rounded-md font-bold text-[17px] transition-all hover:scale-105"
+              style={{ background: "#00FFFF", color: "#0A0A0A" }}
+            >
+              Get Full Access — $125/semester
+            </a>
+            <p className="text-[13px] mt-2" style={{ color: "#00FFFF", opacity: 0.8 }}>
+              50% off — Spring 2026 only
+            </p>
+          </div>
+
+          <p className="mt-6">
+            <a href="#free-preview" className="text-white/50 text-[13px] hover:underline">
+              Or explore free below ↓
             </a>
           </p>
         </div>
       </section>
 
-      {/* ── LEAD GEN FLOW ── */}
-      <section id="picker" className="px-6 py-10 md:py-14">
+      {/* ═══════════════════════════════════════════════════════════
+          SECTION 2 — FREE PREVIEW (light bg)
+         ═══════════════════════════════════════════════════════════ */}
+      <section id="free-preview" className="relative px-6 py-12 md:py-16" style={{ background: "rgba(255,255,255,0.92)", zIndex: 1 }}>
+        <div className="max-w-[860px] mx-auto">
+          <h2 className="text-center font-bold text-[24px]" style={{ color: "#14213D" }}>
+            Try any problem — free preview
+          </h2>
+          <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[560px] mx-auto leading-relaxed">
+            See exactly what you get. Pick any problem below and view the full page — solutions are paywalled until you unlock with a Study Pass.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <StyledSelect
+              value={previewChapterId}
+              onChange={(e) => { setPreviewChapterId(e.target.value); setPreviewSourceCode(""); setIframeSrc(null); }}
+            >
+              <option value="">Select chapter…</option>
+              {(courseData?.chapters || []).map((ch) => (
+                <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
+              ))}
+            </StyledSelect>
+
+            <StyledSelect
+              value={previewType}
+              onChange={(e) => { setPreviewType(e.target.value); setPreviewSourceCode(""); }}
+            >
+              <option value="any">Any Type</option>
+              <option value="BE">Brief Exercise (BE)</option>
+              <option value="E">Exercise (E)</option>
+              <option value="P">Problem (P)</option>
+            </StyledSelect>
+
+            <StyledSelect
+              value={previewSourceCode}
+              onChange={(e) => setPreviewSourceCode(e.target.value)}
+              disabled={!previewProblems?.length}
+            >
+              <option value="">
+                {!previewChapterId ? "Select chapter first…" : previewProblems?.length ? "Select problem…" : "No problems found"}
+              </option>
+              {previewProblems?.map((p: any) => (
+                <option key={p.source_code} value={p.source_code}>{p.source_label}</option>
+              ))}
+            </StyledSelect>
+          </div>
+
+          <button
+            onClick={handleShowPreview}
+            disabled={!previewSourceCode}
+            className="px-8 py-3 rounded-md font-bold text-[14px] text-white transition-all hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
+            style={{ background: "#14213D" }}
+          >
+            Show Me This Problem →
+          </button>
+
+          {iframeSrc && (
+            <div className="mt-6">
+              <iframe
+                src={iframeSrc}
+                title="Problem Preview"
+                className="w-full border-0 rounded-lg"
+                style={{ height: 900 }}
+              />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Section divider ── */}
+      <div className="relative" style={{ height: 1, background: "linear-gradient(90deg, transparent, #14213D20, transparent)", zIndex: 1 }} />
+
+      {/* ═══════════════════════════════════════════════════════════
+          SECTION 3 — EMAIL CAPTURE (slightly darker bg)
+         ═══════════════════════════════════════════════════════════ */}
+      <section className="relative px-6 py-12 md:py-16" style={{ background: "rgba(240,242,246,0.95)", zIndex: 1 }}>
         <div className="max-w-[860px] mx-auto">
 
           {/* ── STEP 1: Email ── */}
           {step === "email" && !alreadyUsed && (
             <>
-              <h2 className="text-center font-bold text-[22px]" style={{ color: "#131E35" }}>
-                Get 3 free problem previews
+              <h2 className="text-center font-bold text-[24px]" style={{ color: "#14213D" }}>
+                Get 3 full solutions — free for 24 hours
               </h2>
-              <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[480px] mx-auto">
-                Enter your .edu email to unlock 3 full worked solutions for 24 hours — no payment required.
+              <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[520px] mx-auto leading-relaxed">
+                Enter your Ole Miss .edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment required.
               </p>
 
               <div className="max-w-[420px] mx-auto">
@@ -332,8 +490,8 @@ export default function ACCY304Landing() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
-                  placeholder="yourname@university.edu"
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#131E35]/20 focus:border-[#131E35]"
+                  placeholder="yourname@olemiss.edu"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-[#14213D]/20 focus:border-[#14213D]"
                 />
                 {emailError && (
                   <p className="text-red-500 text-[13px] mt-2">{emailError}</p>
@@ -342,7 +500,7 @@ export default function ACCY304Landing() {
                   onClick={handleEmailSubmit}
                   disabled={submitting || !email.trim()}
                   className="w-full mt-4 px-8 py-3 rounded-md font-bold text-[14px] text-white transition-all hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
-                  style={{ background: "#131E35" }}
+                  style={{ background: "#14213D" }}
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   Continue →
@@ -354,7 +512,7 @@ export default function ACCY304Landing() {
           {/* ── Already used ── */}
           {alreadyUsed && (
             <div className="text-center py-8">
-              <p className="font-bold text-[20px]" style={{ color: "#131E35" }}>
+              <p className="font-bold text-[20px]" style={{ color: "#14213D" }}>
                 You've already used your free preview
               </p>
               <p className="text-gray-500 text-[14px] mt-2 max-w-[480px] mx-auto">
@@ -367,7 +525,7 @@ export default function ACCY304Landing() {
                 className="inline-block mt-6 px-8 py-3.5 rounded-md font-bold text-[16px] transition-all hover:scale-105"
                 style={{ background: "#00FFFF", color: "#0A0A0A" }}
               >
-                Get Full Access — $99/semester →
+                Get Full Access — $125/semester →
               </a>
             </div>
           )}
@@ -375,8 +533,8 @@ export default function ACCY304Landing() {
           {/* ── STEP 2: Problem Picker ── */}
           {step === "picker" && (
             <>
-              <h2 className="text-center font-bold text-[22px]" style={{ color: "#131E35" }}>
-                Choose 3 problems to preview
+              <h2 className="text-center font-bold text-[24px]" style={{ color: "#14213D" }}>
+                Choose 3 problems to unlock
               </h2>
               <p className="text-center text-gray-500 text-[14px] mt-2 mb-8 max-w-[520px] mx-auto">
                 Pick any 3 problems from Chapters 13–22. You'll get full access to their worked solutions for 24 hours.
@@ -399,7 +557,7 @@ export default function ACCY304Landing() {
                 onClick={handleProblemsSubmit}
                 disabled={!canSubmitProblems || submitting}
                 className="w-full md:w-auto px-8 py-3 rounded-md font-bold text-[14px] text-white transition-all hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: "#131E35" }}
+                style={{ background: "#14213D" }}
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Get My Free Preview →
@@ -413,7 +571,7 @@ export default function ACCY304Landing() {
               <div className="inline-flex items-center justify-center h-12 w-12 rounded-full mb-4" style={{ background: "#E8F5E9" }}>
                 <CheckCircle className="h-6 w-6" style={{ color: "#2E7D32" }} />
               </div>
-              <h2 className="font-bold text-[22px]" style={{ color: "#131E35" }}>
+              <h2 className="font-bold text-[22px]" style={{ color: "#14213D" }}>
                 Here are your 3 free problems
               </h2>
               <p className="text-gray-500 text-[14px] mt-2 mb-8">
@@ -429,14 +587,13 @@ export default function ACCY304Landing() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-5 py-4 rounded-lg border border-gray-200 hover:border-[#131E35]/30 transition-all hover:shadow-sm"
-                      style={{ background: "#F8F9FA" }}
+                      className="flex items-center gap-3 px-5 py-4 rounded-lg border border-gray-200 hover:border-[#14213D]/30 transition-all hover:shadow-sm bg-white"
                     >
-                      <span className="flex items-center justify-center h-8 w-8 rounded-full text-[13px] font-bold text-white shrink-0" style={{ background: "#131E35" }}>
+                      <span className="flex items-center justify-center h-8 w-8 rounded-full text-[13px] font-bold text-white shrink-0" style={{ background: "#14213D" }}>
                         {i + 1}
                       </span>
                       <span className="flex-1">
-                        <span className="font-bold text-[14px]" style={{ color: "#131E35" }}>{link.sourceLabel}</span>
+                        <span className="font-bold text-[14px]" style={{ color: "#14213D" }}>{link.sourceLabel}</span>
                       </span>
                       <ExternalLink className="h-4 w-4 text-gray-400 shrink-0" />
                     </a>
@@ -446,7 +603,7 @@ export default function ACCY304Landing() {
 
               <p className="text-gray-400 text-[12px] mt-6">
                 Want full access to every problem? →{" "}
-                <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold" style={{ color: "#131E35" }}>
+                <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold" style={{ color: "#14213D" }}>
                   Get a Study Pass
                 </a>
               </p>
@@ -455,64 +612,36 @@ export default function ACCY304Landing() {
         </div>
       </section>
 
-      {/* ── WHAT YOU GET ── */}
-      <section className="px-6 py-10 md:py-14 border-t border-gray-100">
-        <div className="max-w-[860px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                icon: "📝",
-                title: "Full Worked Solutions",
-                desc: "Step-by-step solutions for every Core problem in Chapters 13–22.",
-              },
-              {
-                icon: "📊",
-                title: "Practice Mode",
-                desc: "Work problems yourself then reveal answers section by section.",
-              },
-              {
-                icon: "🎯",
-                title: "Exam Prep Tools",
-                desc: "Flashcards, formula drills, journal entry builder, and problem dissector.",
-              },
-            ].map((card, i) => (
-              <div
-                key={i}
-                className="border border-gray-200 rounded-lg p-6 text-center"
-              >
-                <p className="text-[32px] mb-3">{card.icon}</p>
-                <p className="font-bold text-[15px] mb-2" style={{ color: "#131E35" }}>{card.title}</p>
-                <p className="text-gray-500 text-[13px] leading-relaxed">{card.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── FINAL CTA ── */}
-      <section style={{ background: "#131E35" }} className="px-6 py-12 md:py-16">
+      <section className="relative px-6 py-12 md:py-16" style={{ background: "#14213D", zIndex: 1 }}>
         <div className="max-w-[860px] mx-auto text-center">
           <p className="text-white font-bold text-[24px]">Ready to stop guessing on exams?</p>
           <p className="text-white/70 text-[14px] mt-2">
             Join ACCY 304 students getting full access to every Intermediate Accounting 2 problem.
           </p>
-          <a
-            href={enrollUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-6 px-8 py-3.5 rounded-md font-bold text-[16px] transition-all hover:scale-105"
-            style={{ background: "#00FFFF", color: "#0A0A0A" }}
-          >
-            Get Study Pass — $99/semester
-          </a>
-          <p className="text-white/50 text-[12px] mt-3">
+          <div className="mt-6">
+            <p className="text-white/40 text-[14px] line-through mb-1">$250</p>
+            <a
+              href={enrollUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-10 py-4 rounded-md font-bold text-[17px] transition-all hover:scale-105"
+              style={{ background: "#00FFFF", color: "#0A0A0A" }}
+            >
+              Get Study Pass — $125/semester
+            </a>
+            <p className="text-[13px] mt-2" style={{ color: "#00FFFF", opacity: 0.8 }}>
+              50% off — Spring 2026 only
+            </p>
+          </div>
+          <p className="text-white/50 text-[12px] mt-4">
             7-day refund policy · Access all semester · Covers Ch 13–22
           </p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="px-6 py-6">
+      <footer className="relative px-6 py-6" style={{ background: "#FAFBFC", zIndex: 1 }}>
         <p className="text-center text-gray-400 text-[12px]">
           Survive Accounting · Lee Ingram · surviveaccounting.com
         </p>
