@@ -411,121 +411,26 @@ ${(asset.important_formulas || "").slice(0, 1000)}`;
       });
     }
 
-    const imageUrl = hctiData.url;
+    // HCTI returns a URL like https://hcti.io/v1/image/abc123
+    // Append .png to get a direct image URL that works in <img> tags
+    const imageUrl = hctiData.url + ".png";
     console.log(`Flowchart image created: ${imageUrl}`);
 
-    // STEP 6 — Upload to Google Drive
-    const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (!saJson) {
-      // No Google creds — just save the HCTI URL directly
-      console.warn("No GOOGLE_SERVICE_ACCOUNT_JSON — saving HCTI URL directly");
-      await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
-        method: "PATCH",
-        headers: { ...authHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ flowchart_image_url: imageUrl, flowchart_image_id: null }),
-      });
-
-      return new Response(JSON.stringify({
-        success: true, skipped: false, image_url: imageUrl, file_id: null, asset_name: asset.asset_name,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const sa = JSON.parse(saJson);
-    const gToken = await getAccessToken(sa);
-
-    // Fetch chapter and course for folder hierarchy
-    let courseCode = "IA2";
-    let chapterNumber = 0;
-    if (asset.chapter_id) {
-      const chRes = await fetch(`${supabaseUrl}/rest/v1/chapters?id=eq.${asset.chapter_id}&select=chapter_number`, { headers: authHeaders });
-      const chs = await chRes.json();
-      chapterNumber = chs?.[0]?.chapter_number ?? 0;
-    }
-    if (asset.course_id) {
-      const coRes = await fetch(`${supabaseUrl}/rest/v1/courses?id=eq.${asset.course_id}&select=code`, { headers: authHeaders });
-      const cos = await coRes.json();
-      courseCode = cos?.[0]?.code || "IA2";
-    }
-
-    // Navigate folder hierarchy
-    const courseFolderId = await findOrCreateFolder(gToken, courseCode, ROOT_FOLDER_ID);
-    const chapterLabel = `Chapter ${String(chapterNumber).padStart(2, "0")}`;
-    const chapterFolderId = await findOrCreateFolder(gToken, chapterLabel, courseFolderId);
-    const assetFolderId = await findOrCreateFolder(gToken, asset.asset_name, chapterFolderId);
-
-    // Download the PNG
-    const pngRes = await fetch(imageUrl);
-    const pngBlob = await pngRes.blob();
-    const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
-
-    // Upload to Google Drive using multipart upload
-    const fileName = `${asset.asset_name}_flowchart.png`;
-    const boundary = "flowchart_boundary_" + Date.now();
-    const metadata = JSON.stringify({
-      name: fileName,
-      parents: [assetFolderId],
-      mimeType: "image/png",
-    });
-
-    const multipartBody = new Uint8Array(
-      await new Blob([
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: image/png\r\n\r\n`,
-        pngBytes,
-        `\r\n--${boundary}--`,
-      ]).arrayBuffer()
-    );
-
-    const uploadRes = await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${gToken}`,
-          "Content-Type": `multipart/related; boundary=${boundary}`,
-        },
-        body: multipartBody,
-      }
-    );
-
-    const uploadData = await uploadRes.json();
-    if (!uploadRes.ok) {
-      console.error("Drive upload error:", uploadData);
-      // Fall back to HCTI URL
-      await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
-        method: "PATCH",
-        headers: { ...authHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ flowchart_image_url: imageUrl, flowchart_image_id: null }),
-      });
-      return new Response(JSON.stringify({
-        success: true, skipped: false, image_url: imageUrl, file_id: null, asset_name: asset.asset_name,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const fileId = uploadData.id;
-
-    // Make file public
-    await googleFetch(`${GOOGLE_DRIVE_API}/${fileId}/permissions?supportsAllDrives=true`, gToken, {
-      method: "POST",
-      body: JSON.stringify({ type: "anyone", role: "reader" }),
-    });
-
-    const driveViewUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
-
-    // STEP 7 — Save to database
+    // STEP 6 — Save HCTI URL directly to database
+    // HCTI URLs are permanent and directly embeddable
     await fetch(`${supabaseUrl}/rest/v1/teaching_assets?id=eq.${teaching_asset_id}`, {
       method: "PATCH",
       headers: { ...authHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ flowchart_image_url: driveViewUrl, flowchart_image_id: fileId }),
+      body: JSON.stringify({ flowchart_image_url: imageUrl, flowchart_image_id: null }),
     });
 
-    console.log(`Flowchart saved for ${asset.asset_name}: ${driveViewUrl}`);
+    console.log(`Flowchart saved for ${asset.asset_name}: ${imageUrl}`);
 
-    // STEP 8 — Return
     return new Response(JSON.stringify({
       success: true,
       skipped: false,
-      image_url: driveViewUrl,
-      file_id: fileId,
+      image_url: imageUrl,
+      file_id: null,
       asset_name: asset.asset_name,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
