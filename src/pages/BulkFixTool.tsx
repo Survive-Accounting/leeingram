@@ -348,6 +348,26 @@ export default function BulkFixTool() {
 
         setPreviewRows(rows);
         setIsAiPreview(true);
+      } else if (operation === "generate_supplementary_je") {
+        // Preview: count assets with main JE but no supplementary
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("journal_entry_completed_json", "is", null)
+          .is("supplementary_je_json", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: missingCount } = await countQ;
+        setTotalMatched(missingCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "supplementary_je_json",
+          before: `${missingCount ?? 0} assets have main JE but no supplementary JE`,
+          after: `Will generate supplementary JEs for ${missingCount ?? 0} assets via AI`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
