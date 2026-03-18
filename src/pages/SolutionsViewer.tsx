@@ -1461,6 +1461,11 @@ export default function SolutionsViewer() {
 
   const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
 
+  // Payment link data for tiered paywall
+  const chapterNum = chapter?.chapter_number || null;
+  const fullPassLink = (paymentLinks || []).find((l: any) => l.link_type === "full_pass" && l.course_id === asset.course_id);
+  const chapterLink = (paymentLinks || []).find((l: any) => l.link_type === "chapter" && l.chapter_id === asset.chapter_id);
+
   // Navy header height ≈ 48px
   const HEADER_HEIGHT = 48;
 
