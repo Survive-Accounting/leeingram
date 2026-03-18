@@ -1,0 +1,2 @@
+CREATE POLICY "Public read app_settings" ON public.app_settings FOR SELECT TO anon USING (true);
+CREATE POLICY "Public insert asset_issue_reports" ON public.asset_issue_reports FOR INSERT TO anon WITH CHECK (true)
