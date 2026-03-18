@@ -729,7 +729,7 @@ export default function ACCY304Landing() {
                 Here are your 3 free problems
               </h2>
               <p className="text-white/60 text-[14px] mt-2 mb-8">
-                Links expire in 24 hours. Bookmark them or come back before they expire.
+                Links expire in 2 hours. Bookmark them or come back before they expire.
               </p>
 
               <div className="space-y-3 max-w-[560px] mx-auto text-left">
