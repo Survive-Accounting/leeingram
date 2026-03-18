@@ -1328,6 +1328,7 @@ export default function SolutionsViewer() {
       <main className="relative mx-auto px-6 py-8 flex gap-4 justify-center" style={{ zIndex: 5, maxWidth: 1040 }}>
         {/* Main content column */}
         <div className="w-full" style={{ maxWidth: 780 }}>
+        <div
           className="rounded-xl px-6 py-6 sm:px-8 sm:py-8"
           style={{
             background: isDark ? t.cardBg : t.pageBg,
