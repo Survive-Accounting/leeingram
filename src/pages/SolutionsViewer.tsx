@@ -1387,7 +1387,7 @@ export default function SolutionsViewer() {
       if (!previewToken) return null;
       const { data } = await supabase
         .from("edu_preview_sessions")
-        .select("id, asset_codes, expires_at")
+        .select("id, asset_codes, expires_at, email")
         .eq("id", previewToken)
         .maybeSingle();
       return data;
@@ -1396,12 +1396,16 @@ export default function SolutionsViewer() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Countdown timer for preview token
+  const [countdown, setCountdown] = useState("");
+  const [previewExpired, setPreviewExpired] = useState(false);
+
   // Determine access mode based on token
   const tokenExpired = tokenSession && new Date(tokenSession.expires_at) < new Date();
   const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
     (tokenSession.asset_codes as string[])?.includes(assetCode);
   const isPreview = previewToken
-    ? !tokenValidForAsset // if token present but invalid for this asset, fall back to preview mode
+    ? (!tokenValidForAsset || previewExpired)
     : rawIsPreview;
 
   // Highlight toggle
@@ -1409,6 +1413,27 @@ export default function SolutionsViewer() {
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
+
+  useEffect(() => {
+    if (!tokenSession?.expires_at || !previewToken) return;
+    const update = () => {
+      const now = Date.now();
+      const exp = new Date(tokenSession.expires_at).getTime();
+      const diff = exp - now;
+      if (diff <= 0) {
+        setCountdown("00:00:00");
+        setPreviewExpired(true);
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+    };
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [tokenSession?.expires_at, previewToken]);
 
   // Fetch asset
   const { data, isLoading } = useQuery({
@@ -1499,7 +1524,7 @@ export default function SolutionsViewer() {
         <div className="text-center max-w-md px-6">
           <p className="text-2xl font-bold" style={{ color: t.text }}>This preview link has expired</p>
           <p className="mt-2 text-[14px]" style={{ color: t.textMuted }}>
-            Your 24-hour free preview has ended. Get full access to every problem with a Study Pass.
+            Your 2-hour free preview has ended. Get full access to every problem with a Study Pass.
           </p>
           <a
             href={enrollUrl}
@@ -1594,6 +1619,41 @@ export default function SolutionsViewer() {
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${AORAKI_URL})`, opacity: 0.06 }} />
         <div className="absolute inset-0" style={{ background: t.watermarkOverlay }} />
       </div>
+
+      {/* ── Preview Countdown Banner ── */}
+      {previewToken && tokenSession && tokenValidForAsset && (
+        <div
+          className="w-full text-center text-white font-bold text-[13px] flex items-center justify-center gap-2 flex-wrap"
+          style={{ background: "#CE1126", height: 40, position: "relative", zIndex: 25 }}
+        >
+          {previewExpired ? (
+            <>
+              Your preview has expired —{" "}
+              <a
+                href={enrollUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-bold hover:opacity-80"
+              >
+                Get Full Access →
+              </a>
+            </>
+          ) : (
+            <>
+              🔓 Free preview for {tokenSession.email} — Expires in{" "}
+              <span className="font-mono">{countdown}</span> ·{" "}
+              <a
+                href={enrollUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-bold hover:opacity-80"
+              >
+                Get Full Access →
+              </a>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Navy Header Bar ── */}
       <header className="relative sticky top-0" style={{ background: "#14213D", zIndex: 20, height: HEADER_HEIGHT }}>

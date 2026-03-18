@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     }
 
     // 5. Create session
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 
     const { data: session, error: insertErr } = await supabase
       .from("edu_preview_sessions")

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronDown, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { toast } from "sonner";
 import { naturalSortRef } from "@/lib/utils";
@@ -236,6 +236,7 @@ export default function ACCY304Landing() {
   const [previewType, setPreviewType] = useState("any");
   const [previewSourceCode, setPreviewSourceCode] = useState("");
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const [iframeVisible, setIframeVisible] = useState(true);
 
   // ── Email Capture state ──
   const [step, setStep] = useState<Step>("email");
@@ -583,24 +584,38 @@ export default function ACCY304Landing() {
           </button>
 
           {iframeSrc && (
-            <div
-              className="mt-4 overflow-hidden"
-              style={{
-                position: "relative",
-                left: "50%",
-                width: "100vw",
-                transform: "translateX(-50%)",
-                boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
-              }}
-            >
-              <iframe
-                src={iframeSrc}
-                title="Problem Preview"
-                className="w-full border-0"
-                style={{ height: 1000, background: "#fff" }}
-              />
-              <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
-            </div>
+            <>
+              <button
+                onClick={() => setIframeVisible(!iframeVisible)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-semibold border transition-all hover:opacity-90"
+                style={{ background: "transparent", color: "#FFFFFF", borderColor: "rgba(255,255,255,0.3)" }}
+              >
+                {iframeVisible ? (
+                  <><ChevronUp className="h-3.5 w-3.5" /> Hide Preview</>
+                ) : (
+                  <><ChevronDown className="h-3.5 w-3.5" /> Show Preview</>
+                )}
+              </button>
+              <div
+                className="mt-2 overflow-hidden"
+                style={{
+                  position: "relative",
+                  left: "50%",
+                  width: "100vw",
+                  transform: "translateX(-50%)",
+                  boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
+                  display: iframeVisible ? "block" : "none",
+                }}
+              >
+                <iframe
+                  src={iframeSrc}
+                  title="Problem Preview"
+                  className="w-full border-0"
+                  style={{ height: 1000, background: "#fff" }}
+                />
+                <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -676,7 +691,7 @@ export default function ACCY304Landing() {
                 Choose 3 Problems to Unlock
               </h2>
               <p className="text-center text-white/60 text-[15px] mt-3 mb-10 max-w-[520px] mx-auto">
-                Pick any 3 problems from Chapters 13–22. You'll get full access to their worked solutions for 24 hours.
+                Pick any 3 problems from Chapters 13–22. You'll get full access to their worked solutions for 2 hours.
               </p>
 
               <div className="space-y-6 mb-8">
@@ -714,7 +729,7 @@ export default function ACCY304Landing() {
                 Here are your 3 free problems
               </h2>
               <p className="text-white/60 text-[14px] mt-2 mb-8">
-                Links expire in 24 hours. Bookmark them or come back before they expire.
+                Links expire in 2 hours. Bookmark them or come back before they expire.
               </p>
 
               <div className="space-y-3 max-w-[560px] mx-auto text-left">
