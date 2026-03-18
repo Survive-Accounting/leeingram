@@ -1341,6 +1341,20 @@ export default function SolutionsViewer() {
     enabled: !!assetCode,
   });
 
+  // Fetch payment links for tiered paywall
+  const { data: paymentLinks } = useQuery({
+    queryKey: ["payment-links-public"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payment_links")
+        .select("*")
+        .eq("is_active", true);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: isPreview,
+  });
+
   // Track page view
   useEffect(() => {
     if (!data?.id) return;
