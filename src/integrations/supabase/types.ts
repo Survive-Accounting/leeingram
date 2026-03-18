@@ -3016,6 +3016,7 @@ export type Database = {
           mc_status: string
           phase2_entered_at: string | null
           phase2_status: string | null
+          practice_page_views: number | null
           prep_doc_id: string | null
           prep_doc_url: string | null
           problem_context: string | null
@@ -3031,6 +3032,7 @@ export type Database = {
           sheet_promo_url: string | null
           sheet_template_version: string | null
           solution_screenshot_url: string | null
+          solutions_page_views: number | null
           source_number: string | null
           source_ref: string | null
           source_type: string | null
@@ -3098,6 +3100,7 @@ export type Database = {
           mc_status?: string
           phase2_entered_at?: string | null
           phase2_status?: string | null
+          practice_page_views?: number | null
           prep_doc_id?: string | null
           prep_doc_url?: string | null
           problem_context?: string | null
@@ -3113,6 +3116,7 @@ export type Database = {
           sheet_promo_url?: string | null
           sheet_template_version?: string | null
           solution_screenshot_url?: string | null
+          solutions_page_views?: number | null
           source_number?: string | null
           source_ref?: string | null
           source_type?: string | null
@@ -3180,6 +3184,7 @@ export type Database = {
           mc_status?: string
           phase2_entered_at?: string | null
           phase2_status?: string | null
+          practice_page_views?: number | null
           prep_doc_id?: string | null
           prep_doc_url?: string | null
           problem_context?: string | null
@@ -3195,6 +3200,7 @@ export type Database = {
           sheet_promo_url?: string | null
           sheet_template_version?: string | null
           solution_screenshot_url?: string | null
+          solutions_page_views?: number | null
           source_number?: string | null
           source_ref?: string | null
           source_type?: string | null
@@ -4051,7 +4057,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_practice_views: {
+        Args: { asset_id: string }
+        Returns: undefined
+      }
+      increment_solutions_views: {
+        Args: { asset_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       actor_type: "user" | "system" | "ai"
