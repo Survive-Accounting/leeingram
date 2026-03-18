@@ -793,9 +793,15 @@ export default function AssetsLibrary() {
                   )}
                   {isAdmin && (
                     <SelectItem value="generate-prep-doc">
-                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Prep Doc</span>
+                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Google Prep Doc</span>
                     </SelectItem>
                   )}
+                  <SelectItem value="preview-paid">
+                    <span className="flex items-center gap-1.5"><ExternalLink className="h-3 w-3" /> Preview Solutions (Paid)</span>
+                  </SelectItem>
+                  <SelectItem value="preview-free">
+                    <span className="flex items-center gap-1.5"><Eye className="h-3 w-3" /> Preview Solutions (Free)</span>
+                  </SelectItem>
                   {(isAdmin || isSheetPrepVa) && (
                     <SelectItem value="create-test-sheet">
                       <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Test Sheet</span>
