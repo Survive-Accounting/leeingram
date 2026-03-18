@@ -1276,12 +1276,13 @@ export default function AssetsLibrary() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 text-[10px] px-1.5"
+                              className={cn("h-6 text-[10px] px-1.5 transition-all duration-300", lastCopiedKey === a.id + "-title" && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}
                               onClick={() => {
                                 const title = (a as any).problem_title
                                   ? `${a.source_ref} — ${(a as any).problem_title}`
                                   : (a.source_ref || a.asset_name);
                                 navigator.clipboard.writeText(title);
+                                setLastCopiedKey(a.id + "-title");
                                 toast.success("Title copied");
                               }}
                             >
@@ -1293,9 +1294,10 @@ export default function AssetsLibrary() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 text-[10px] px-1.5"
+                              className={cn("h-6 text-[10px] px-1.5 transition-all duration-300", lastCopiedKey === a.id + "-iframe-inline" && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}
                               onClick={() => {
                                 navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                setLastCopiedKey(a.id + "-iframe-inline");
                                 toast.success("iFrame copied");
                               }}
                             >
