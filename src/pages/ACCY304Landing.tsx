@@ -644,7 +644,7 @@ export default function ACCY304Landing() {
                 You've already used your free preview
               </p>
               <p className="text-white/60 text-[14px] mt-2 max-w-[480px] mx-auto">
-                Each .edu email gets one free preview session. Get full access to every problem with a Study Pass.
+                Each @olemiss.edu email gets one free preview session. Get full access to every problem with a Study Pass.
               </p>
               <a
                 href={enrollUrl}
