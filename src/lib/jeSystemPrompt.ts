@@ -87,7 +87,7 @@ export function buildJEUserPrompt(opts: {
     parts.push(`Approved Chart of Accounts:\n${opts.chartOfAccounts.join(", ")}`);
   }
 
-  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B ([role])'. Never leave perspective ambiguous.");
+  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Include the parenthetical role hint only on the FIRST mention of each entity; omit it on all subsequent mentions. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B'. Never leave perspective ambiguous.");
 
   return parts.join("\n\n");
 }

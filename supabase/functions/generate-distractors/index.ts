@@ -37,7 +37,7 @@ When writing distractor text that references a company name, always use the full
 Return a JSON array with one object per asset, in the same order as input.
 Each object: { "correct_answer": "...", "distractor_1": "...", "distractor_2": "...", "distractor_3": "..." }
 
-REMINDER: Use the exact company names from the problem text including role hints in parentheses, e.g. 'Survive Company A (the issuer)'. Do not shorten or omit the role hint.
+REMINDER: Use the exact company names from the problem text. Include the parenthetical role hint only on the first mention of each entity; omit it on subsequent mentions. Do not shorten 'Survive Company A' to just 'Survive Company'.
 
 Assets:
 ${assets.map((a: any, i: number) => `
