@@ -64,6 +64,7 @@ import SolutionsViewer from "./pages/SolutionsViewer";
 import PracticeViewer from "./pages/PracticeViewer";
 import ACCY304Landing from "./pages/ACCY304Landing";
 import ACCY304Admin from "./pages/ACCY304Admin";
+import PaymentLinksAdmin from "./pages/PaymentLinksAdmin";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
 import EntryBuilderTool from "./pages/EntryBuilderTool";
@@ -173,6 +174,7 @@ const AppRoutes = () => {
       <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />
       <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
       <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
+      <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
       <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
       <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
       <Route path="/study-tools/flashcards" element={<ProtectedRoute><StudyToolsFlashcards /></ProtectedRoute>} />
