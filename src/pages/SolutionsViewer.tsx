@@ -1252,6 +1252,17 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
         >
           {!collapsed && (
             <>
+              {/* Share — most prominent, first */}
+              <button
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+                className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                style={{ color: "#3B82F6" }}
+              >
+                <Share2 className="h-3 w-3" /> Share This
+              </button>
+
+              <div className="w-px h-5" style={{ background: theme.border }} />
+
               {/* About Lee */}
               <button
                 onClick={() => setAboutOpen(true)}
@@ -1271,19 +1282,6 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
               >
                 ⚠ Report Issue →
               </a>
-
-              <div className="w-px h-5" style={{ background: theme.border }} />
-
-              {/* Share */}
-              <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
-                className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                style={{
-                  color: "#3B82F6",
-                }}
-              >
-                <Share2 className="h-3 w-3" /> Share This
-              </button>
 
               <div className="w-px h-5" style={{ background: theme.border }} />
             </>
