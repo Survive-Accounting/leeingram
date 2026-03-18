@@ -397,32 +397,40 @@ export default function ACCY304Landing() {
       }
 
       const trimmedEmail = email.trim().toLowerCase();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-      const { data: session, error: insertErr } = await supabase
-        .from("edu_preview_sessions")
-        .insert({
+      const { data: result, error: fnErr } = await supabase.functions.invoke("create-preview-session", {
+        body: {
           email: trimmedEmail,
           asset_ids: assetLinks.map(a => a.assetId),
           asset_codes: assetLinks.map(a => a.assetCode),
-          expires_at: expiresAt,
-        })
-        .select("id")
-        .single();
+        },
+      });
 
-      if (insertErr) {
-        if (insertErr.code === "23505") {
+      if (fnErr) {
+        toast.error("Something went wrong. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (result?.error) {
+        if (result.error === "already_used") {
           setAlreadyUsed(true);
           setStep("email");
+        } else if (result.error === "rate_limited") {
+          setEmailError(result.message);
+          setStep("email");
+        } else if (result.error === "invalid_email") {
+          setEmailError(result.message);
+          setStep("email");
         } else {
-          toast.error("Failed to create preview session. Please try again.");
+          toast.error(result.message || "Something went wrong.");
         }
         setSubmitting(false);
         return;
       }
 
       setSessionResult({
-        sessionId: session.id,
+        sessionId: result.session_id,
         assetLinks: assetLinks.map(a => ({
           sourceLabel: a.sourceLabel,
           assetName: a.assetName,
