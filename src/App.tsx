@@ -61,6 +61,7 @@ import BulkFixTool from "./pages/BulkFixTool";
 import FlashcardTool from "./pages/FlashcardTool";
 import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
+import PracticeViewer from "./pages/PracticeViewer";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
 import EntryBuilderTool from "./pages/EntryBuilderTool";
@@ -106,6 +107,7 @@ const AppRoutes = () => {
       <Route path="/survive" element={<Navigate to="/" replace />} />
       {/* Public tools */}
       <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
+      <Route path="/practice/:assetCode" element={<PracticeViewer />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
