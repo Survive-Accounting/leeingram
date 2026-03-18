@@ -257,15 +257,34 @@ function RevealToggle({
 
 // ── JE Tables ───────────────────────────────────────────────────────
 
-function JETable({ entries, theme }: { entries: any[]; theme: Theme }) {
+/** Format YYYY-MM-DD to "Month Day, Year" (e.g., "March 18, 2025") */
+function formatJEDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return dateStr;
+  const [, y, m, d] = match;
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const monthName = months[parseInt(m, 10) - 1] || m;
+  const day = parseInt(d, 10);
+  return `${monthName} ${day}, ${y}`;
+}
+
+function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: Theme; scenarioLabel?: string }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {entries.map((entry: any, ei: number) => {
-        const date = entry.entry_date || entry.date || "";
+        const rawDate = entry.entry_date || entry.date || "";
+        const formattedDate = formatJEDate(rawDate);
+        const memo = entry.memo || "";
         const rows = entry.rows || entry.accounts || [];
         return (
           <div key={ei}>
-            {date && <p className="font-bold text-sm mb-1" style={{ color: theme.text }}>{date}</p>}
+            {(formattedDate || memo) && (
+              <div className="mb-1.5">
+                {formattedDate && <p className="font-bold text-sm" style={{ color: theme.text }}>{formattedDate}</p>}
+                {memo && <p className="text-[12px] italic" style={{ color: theme.textMuted }}>{memo}</p>}
+              </div>
+            )}
             <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
               <table className="w-full text-sm">
                 <thead>
@@ -297,11 +316,22 @@ function JETable({ entries, theme }: { entries: any[]; theme: Theme }) {
 }
 
 function CanonicalJESection({ data, theme }: { data: CanonicalJEPayload; theme: Theme }) {
-  const allEntries: any[] = [];
-  for (const section of data.scenario_sections) {
-    for (const entry of section.entries_by_date) allEntries.push(entry);
-  }
-  return <JETable entries={allEntries} theme={theme} />;
+  // Group entries by scenario section, showing section labels when multiple scenarios
+  const hasMultipleScenarios = data.scenario_sections.length > 1;
+  return (
+    <div className="space-y-6">
+      {data.scenario_sections.map((section, si) => (
+        <div key={si}>
+          {hasMultipleScenarios && (
+            <p className="font-bold text-[13px] mb-2 pb-1" style={{ color: theme.text, borderBottom: `1px solid ${theme.border}` }}>
+              {section.label}
+            </p>
+          )}
+          <JETable entries={section.entries_by_date} theme={theme} scenarioLabel={section.label} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
