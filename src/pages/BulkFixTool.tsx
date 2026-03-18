@@ -318,29 +318,30 @@ export default function BulkFixTool() {
 
         const rows: PreviewRow[] = [];
         for (const asset of assets ?? []) {
-          const jeJson = (asset as any).journal_entry_completed_json;
-          if (!jeJson?.scenario_sections) continue;
+          for (const jsonField of ["journal_entry_completed_json", "supplementary_je_json"] as const) {
+            const jeJson = (asset as any)[jsonField];
+            if (!jeJson?.scenario_sections) continue;
 
-          // Count rows that already have the fields vs those that don't
-          let missingCount = 0;
-          let totalRows = 0;
-          for (const section of jeJson.scenario_sections) {
-            for (const entry of section.entries_by_date || []) {
-              for (const row of entry.rows || []) {
-                totalRows++;
-                if (!row.debit_credit_reason || !row.amount_source) missingCount++;
+            let missingCount = 0;
+            let totalRows = 0;
+            for (const section of jeJson.scenario_sections) {
+              for (const entry of section.entries_by_date || []) {
+                for (const row of entry.rows || []) {
+                  totalRows++;
+                  if (!row.debit_credit_reason || !row.amount_source) missingCount++;
+                }
               }
             }
-          }
 
-          if (missingCount > 0) {
-            rows.push({
-              id: asset.id,
-              asset_name: asset.asset_name,
-              field: "journal_entry_completed_json",
-              before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
-              after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
-            });
+            if (missingCount > 0) {
+              rows.push({
+                id: asset.id,
+                asset_name: asset.asset_name,
+                field: jsonField,
+                before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
+                after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
+              });
+            }
           }
         }
 
