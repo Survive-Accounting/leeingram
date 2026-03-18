@@ -444,16 +444,17 @@ export default function ACCY304Landing() {
     <div className="min-h-screen" style={{ background: "#FAFBFC" }}>
 
       {/* ═══════════════════════════════════════════════════════════
-          HERO IMAGE — full width
+          HERO IMAGE — full image visible
          ═══════════════════════════════════════════════════════════ */}
-      <div className="w-full overflow-hidden" style={{ height: 420 }}>
-        <img
-          src={HERO_IMG}
-          alt="Ole Miss campus"
-          className="w-full h-full object-cover"
-          style={{ objectPosition: "center top" }}
-        />
-      </div>
+      <section className="px-6 pt-8 md:pt-10" style={{ background: "#FAFBFC" }}>
+        <div className="max-w-[1180px] mx-auto">
+          <img
+            src={HERO_IMG}
+            alt="Survive Accounting ACCY 304 study guide cover art"
+            className="w-full h-auto object-contain"
+          />
+        </div>
+      </section>
 
       {/* ═══════════════════════════════════════════════════════════
           HERO CTA — dark navy
@@ -464,7 +465,7 @@ export default function ACCY304Landing() {
             Exam Prep Built for Ole Miss ACCY 304 Students
           </h1>
           <p className="text-white/75 text-[16px] md:text-[18px] mt-5 max-w-[620px] mx-auto leading-relaxed">
-            Get 500+ practice problems with full worked solutions, journal entries, formulas, exam traps, and more — covering every chapter in Intermediate Accounting 2.
+            Get 500+ practice problems with full worked solutions, journal entries, formulas, and more — covering every chapter in Intermediate Accounting 2.
           </p>
 
           <div className="mt-10">
@@ -480,7 +481,7 @@ export default function ACCY304Landing() {
           </div>
 
           <p className="text-white/40 text-[13px] mt-4 tracking-wide">
-            50% off for Spring 2026 · Normally $250 · 7-day refund policy · Access all semester · Covers Ch 13–22
+            50% off for Spring 2026 · 7-day refund policy · Access all semester · Covers Ch 13–22
           </p>
         </div>
       </section>
