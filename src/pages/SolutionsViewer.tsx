@@ -186,6 +186,32 @@ function KVTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
   );
 }
 
+function NumberedAmountTable({ rows, theme }: { rows: { description: string; amount: string; extra: string }[]; theme: Theme }) {
+  return (
+    <div className="my-5">
+      <div className="flex justify-center">
+        <table className="text-[14px]" style={{ borderCollapse: "collapse" }}>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri}>
+                <td className="pr-8 py-[5px] text-left" style={{ color: theme.text, verticalAlign: "top" }}>{row.description}</td>
+                <td className="py-[5px] text-right font-mono whitespace-nowrap" style={{ color: theme.text }}>{row.amount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.some(r => r.extra) && (
+        <div className="mt-3 space-y-1">
+          {rows.map((r, i) => r.extra ? (
+            <p key={i} className="text-[13px] whitespace-pre-wrap" style={{ color: theme.textMuted }}>{r.extra}</p>
+          ) : null)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SmartContent({ text, className, theme }: { text: string; className?: string; theme: Theme }) {
   const segments = parsePipeSegments(text);
   return (
@@ -195,7 +221,9 @@ function SmartContent({ text, className, theme }: { text: string; className?: st
           ? <PipeTable key={i} rows={seg.rows} theme={theme} />
           : seg.type === "kv-table" && seg.rows
             ? <KVTable key={i} rows={seg.rows} theme={theme} />
-            : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
+            : seg.type === "numbered-amount" && seg.numberedRows
+              ? <NumberedAmountTable key={i} rows={seg.numberedRows} theme={theme} />
+              : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
       )}
     </div>
   );
