@@ -292,11 +292,10 @@ Generate a flowchart as a JSON object with this exact structure:
       "text": "brief reminder text",
       "color": "#F0F0F0"
     }
-  ],
-  "formula_recap": [
-    "Formula = Components"
   ]
 }
+
+IMPORTANT: Do NOT include a "formula_recap" section. Formulas are already displayed separately on the page.
 
 Color guide for steps:
 - Use a progression from #2C3E7A (dark blue) through #1B6B45 (dark green) for normal steps
@@ -307,7 +306,7 @@ Only generate a flowchart if the problem involves a multi-step calculation proce
 
 If the problem is a simple single-step journal entry with no multi-step process, return exactly: {"skip": true}
 
-Maximum 6 main steps. Maximum 3 key reminders. Maximum 4 formula recap items.
+Maximum 6 main steps. Maximum 3 key reminders.
 
 Return valid JSON only, no explanation.
 
@@ -315,10 +314,7 @@ PROBLEM CONTEXT:
 ${(asset.problem_context || "").slice(0, 2000)}
 
 WORKED STEPS:
-${(asset.worked_steps || "").slice(0, 3000)}
-
-IMPORTANT FORMULAS:
-${(asset.important_formulas || "").slice(0, 1000)}`;
+${(asset.worked_steps || "").slice(0, 3000)}`;
 
     const aiRes = await fetch(`${supabaseUrl}/functions/v1/generate-ai-output`, {
       method: "POST",
