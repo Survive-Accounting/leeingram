@@ -1158,7 +1158,45 @@ export default function AssetsLibrary() {
                               </a>
                             </Tip>
                           )}
-                        </div>
+                          {/* Solutions embed dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 relative" onClick={(e) => e.stopPropagation()}>
+                                <ExternalLink className="h-3 w-3" />
+                                {(a as any).solutions_page_views > 0 && (
+                                  <span className="absolute -top-1.5 -right-1.5 bg-muted text-muted-foreground text-[8px] rounded-full h-3.5 min-w-[14px] flex items-center justify-center px-0.5">
+                                    {(a as any).solutions_page_views}
+                                  </span>
+                                )}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
+                                Preview in App →
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                const appUrl = window.location.origin;
+                                navigator.clipboard.writeText(`<iframe src="${appUrl}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
+                              }}>
+                                Copy Full Solutions iFrame
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                const appUrl = window.location.origin;
+                                navigator.clipboard.writeText(`<iframe src="${appUrl}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                toast.success("Preview iFrame copied — students will see paywall after problem");
+                              }}>
+                                Copy Preview iFrame
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                const appUrl = window.location.origin;
+                                navigator.clipboard.writeText(`<iframe src="${appUrl}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                toast.success("Practice iFrame copied");
+                              }}>
+                                Copy Practice iFrame
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                       </TableCell>
                     )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
