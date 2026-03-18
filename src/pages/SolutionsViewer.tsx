@@ -608,6 +608,49 @@ function JEPreviewTeaser({ jeData, jeBlock, hasCanonicalJE, theme, enrollUrl }: 
   );
 }
 
+// ── Flowchart Sub-Toggle (per instruction) ──────────────────────────
+
+function FlowchartSubToggle({
+  label,
+  imageUrl,
+  theme,
+}: {
+  label: string;
+  imageUrl: string;
+  theme: Theme;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className="rounded-md overflow-hidden"
+      style={{ background: theme.pageBg, border: `1px solid ${theme.border}` }}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
+        style={{ color: theme.text }}
+      >
+        <span className="text-[13px] font-semibold leading-snug pr-4">{label}</span>
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 transition-transform"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0)", color: theme.textMuted }}
+        />
+      </button>
+      {open && (
+        <div className="px-4 pb-3" style={{ borderTop: `1px solid ${theme.border}` }}>
+          <img
+            src={imageUrl}
+            alt={label}
+            className="w-full rounded-lg mt-3"
+            loading="lazy"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
