@@ -82,7 +82,6 @@ async function findOrCreateFolder(token: string, name: string, parentId?: string
 function buildFlowchartHtml(flowchart: any): string {
   const steps = flowchart.steps || [];
   const reminders = flowchart.key_reminders || [];
-  const formulas = flowchart.formula_recap || [];
 
   let stepsHtml = "";
   for (let i = 0; i < steps.length; i++) {
@@ -106,14 +105,6 @@ function buildFlowchartHtml(flowchart: any): string {
       </div>`;
     }
     remindersHtml += `</div>`;
-  }
-
-  let formulaHtml = "";
-  if (formulas.length > 0) {
-    formulaHtml = `<div class="formula-recap">
-      <div class="formula-recap-title">Key Formulas</div>
-      ${formulas.map((f: string) => `<div class="formula-line">${escapeHtml(f)}</div>`).join("")}
-    </div>`;
   }
 
   return `<!DOCTYPE html>
