@@ -608,7 +608,7 @@ export default function ACCY304Landing() {
                 Get 3 Full Solutions — Free
               </h2>
               <p className="text-white/60 text-[15px] mt-3 mb-10 max-w-[560px] mx-auto leading-relaxed">
-                Enter your olemiss.edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment details required.
+                Enter your @olemiss.edu email to unlock 3 fully worked solutions normally only available to Study Pass holders. No payment details required.
               </p>
 
               <div className="max-w-[420px] mx-auto text-left">
