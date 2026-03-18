@@ -1562,11 +1562,16 @@ export default function SolutionsViewer() {
 
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
           <div className="mx-auto px-6 py-4" style={{ maxWidth: 1200 }}>
-            {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
-            <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
-              {problemTitle || ""}
-            </h1>
-            {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
+                <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
+                  {problemTitle || ""}
+                </h1>
+                {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
+              </div>
+              {isPreview && <BrowseProblemsBar currentAsset={asset} theme={t} />}
+            </div>
           </div>
         </div>
       </div>
