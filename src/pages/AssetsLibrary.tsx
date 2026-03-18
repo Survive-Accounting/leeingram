@@ -1289,6 +1289,9 @@ export default function AssetsLibrary() {
                           {isAdmin && (
                             <SupplementaryJEButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                           )}
+                          {isAdmin && (
+                            <EnrichJEMemosButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
+                          )}
                           {/* Solutions embed dropdown */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
