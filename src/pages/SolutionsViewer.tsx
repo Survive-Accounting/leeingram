@@ -1048,13 +1048,7 @@ export default function SolutionsViewer() {
               <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
             ) : (
               hasCanonicalJE ? (
-                <div className="[&_button]:hidden">
-                  <StructuredJEDisplay
-                    data={typeof jeData === "string" ? JSON.parse(jeData) : jeData}
-                    showHeading={false}
-                    templateMode={false}
-                  />
-                </div>
+                <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
               ) : (
                 <RawJEFallback text={jeBlock} theme={t} />
               )
