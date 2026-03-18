@@ -438,8 +438,16 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
           <div key={ei}>
             {(formattedDate || memo) && (
               <div className="mb-1.5">
-                {formattedDate && <p className="font-bold text-sm" style={{ color: theme.text }}>{formattedDate}</p>}
-                {memo && <p className="text-[12px] italic" style={{ color: theme.textMuted }}>{memo}</p>}
+                {formattedDate && memo ? (
+                  <p className="font-bold text-sm" style={{ color: theme.text }}>
+                    {formattedDate} — <span className="font-semibold italic">{memo.replace(/^To record\s*/i, "").replace(/\.$/, "")}</span>
+                  </p>
+                ) : (
+                  <>
+                    {formattedDate && <p className="font-bold text-sm" style={{ color: theme.text }}>{formattedDate}</p>}
+                    {memo && <p className="text-[12px] italic" style={{ color: theme.textMuted }}>{memo}</p>}
+                  </>
+                )}
               </div>
             )}
             <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
