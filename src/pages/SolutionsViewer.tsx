@@ -1410,6 +1410,31 @@ export default function SolutionsViewer() {
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
 
+  // Countdown timer for preview token
+  const [countdown, setCountdown] = useState("");
+  const [previewExpired, setPreviewExpired] = useState(false);
+
+  useEffect(() => {
+    if (!tokenSession?.expires_at || !previewToken) return;
+    const update = () => {
+      const now = Date.now();
+      const exp = new Date(tokenSession.expires_at).getTime();
+      const diff = exp - now;
+      if (diff <= 0) {
+        setCountdown("00:00:00");
+        setPreviewExpired(true);
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+    };
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [tokenSession?.expires_at, previewToken]);
+
   // Fetch asset
   const { data, isLoading } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
