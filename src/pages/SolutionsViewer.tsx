@@ -682,14 +682,6 @@ export default function SolutionsViewer() {
               <p className="text-[11px]" style={{ color: t.textMuted }}>by Lee Ingram</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="p-2 rounded-md transition-colors"
-            style={{ background: t.cardBg, border: `1px solid ${t.border}` }}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDark ? <Sun className="h-4 w-4" style={{ color: t.text }} /> : <Moon className="h-4 w-4" style={{ color: t.text }} />}
-          </button>
         </div>
       </header>
 
