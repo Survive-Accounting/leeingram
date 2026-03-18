@@ -57,7 +57,7 @@ Rules:
 3. Total debits must equal total credits.
 4. Use accounts from the approved list when provided.
 5. If an account is not in the approved list, add "needs_review": true to that row.
-6. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming. Always state which entity's books the entry is recorded on using "on the books of Survive Company A/B ([role])".
+6. ENTITY NAMING: The primary entity is always "Survive Company A ([role])". A second entity is "Survive Company B ([role])". Never use "Survive Company" without A/B suffix and role hint. Never use "Counterparty" or X/Y naming. Always state which entity's books the entry is recorded on using "on the books of Survive Company A/B". Include the parenthetical role hint ONLY on the very first mention of each entity; omit it on all subsequent mentions.
 7. Return only JSON.`;
 
 export function buildSingleDateUserPrompt(opts: {
