@@ -98,13 +98,8 @@ function isNumericCell(cell: string) {
 function PipeTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
   const header = rows[0];
   const body = rows.slice(1);
-  const copyTSV = () => {
-    navigator.clipboard.writeText(rows.map(r => r.join("\t")).join("\n"));
-    toast.success("Copied as TSV");
-  };
   return (
-    <div className="my-4 relative">
-      <button onClick={copyTSV} className="absolute top-2 right-2 text-[10px] px-2 py-1 rounded z-10 transition-colors" style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, color: theme.textMuted }}>Copy as TSV</button>
+    <div className="my-4">
       <div className="overflow-x-auto rounded-lg" style={{ border: `1px solid ${theme.border}` }}>
         <table className="w-full text-[13px]">
           <thead>
@@ -346,10 +341,15 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
         return (
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
-            {label && <p className="font-bold text-[14px] mt-4 first:mt-0" style={{ color: theme.text }}>{label}</p>}
-            {contentLines.map((line, li) => (
-              <p key={li} className="text-[13px] ml-4 mb-1" style={{ color: theme.text }}>{line.trim()}</p>
-            ))}
+            {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
+            {contentLines.map((line, li) => {
+              const trimmed = line.trim();
+              const isYearLabel = /^\d{4}\s*:/.test(trimmed);
+              if (isYearLabel) {
+                return <p key={li} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
+              }
+              return <p key={li} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
+            })}
           </div>
         );
       })}
@@ -557,6 +557,8 @@ export default function PracticeViewer() {
           lw_quiz_url, sheet_master_url, lw_video_url,
           solutions_page_views, practice_page_views,
           course_id, chapter_id, phase2_status, asset_approved_at, problem_type,
+          instruction_1, instruction_2, instruction_3, instruction_4, instruction_5,
+          instruction_list,
           chapters!teaching_assets_chapter_id_fkey ( chapter_number, chapter_name ),
           courses!teaching_assets_course_id_fkey ( course_name, code )
         `)
@@ -616,11 +618,20 @@ export default function PracticeViewer() {
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
   const titleLine = asset.source_ref || asset.asset_name;
 
-  // Instructions from problem_instructions table
-  const instructions: string[] = (asset._instructions || [])
+  // Instructions: priority 1 = problem_instructions table, 2 = instruction_1-5, 3 = instruction_list
+  let instructions: string[] = (asset._instructions || [])
     .sort((a: any, b: any) => a.instruction_number - b.instruction_number)
     .filter((i: any) => i.instruction_text?.trim())
     .map((i: any) => i.instruction_text);
+  if (instructions.length === 0) {
+    const i1 = asset.instruction_1;
+    if (i1?.trim()) {
+      instructions = [i1, asset.instruction_2, asset.instruction_3, asset.instruction_4, asset.instruction_5]
+        .filter((v: string | null) => v?.trim()) as string[];
+    } else if (asset.instruction_list?.trim()) {
+      instructions = asset.instruction_list.split(/[\n|]/).map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
 
   // JE data
   const jeData = asset.journal_entry_completed_json;
@@ -807,9 +818,11 @@ export default function PracticeViewer() {
         {/* 3. Important Formulas */}
         {formulas.trim() && (
           <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} revealed={!!revealed.formulas} onToggle={() => toggle("formulas")}>
-            <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
+            <div className="space-y-2">
               {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
-                <p key={i} className="font-mono text-[13px] mb-2" style={{ color: t.text }}>{line}</p>
+                <div key={i} className="rounded px-4 py-2 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
+                  <p className="font-mono text-[13px]" style={{ color: t.text }}>{line}</p>
+                </div>
               ))}
             </div>
           </RevealToggle>
