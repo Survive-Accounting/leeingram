@@ -879,19 +879,26 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
       />
       <div className="space-y-3 max-w-[400px]">
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Tutor &amp; entrepreneur since 2015. Founder of SurviveAccounting.com.
+          Founder of{" "}
+          <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
+            SurviveAccounting.com
+          </a>.
         </p>
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          I love helping students ace exams with the least effort possible.
+          Tutoring entrepreneur since 2015.
         </p>
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Best of luck in your course!
+          I love helping students ace exams!
         </p>
         <p className="text-[13px] italic" style={{ color: theme.text }}>— Lee</p>
+        <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted }}>
+          Ole Miss Alum<br />
+          B.A. &amp; M.Acc. in Accounting • 3.75 GPA
+        </p>
       </div>
       <div className="flex flex-col gap-1.5 text-[12px]">
-        <a href="mailto:lee@surviveaccounting.com" className="hover:underline" style={{ color: "#3B82F6" }}>
-          lee@surviveaccounting.com
+        <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
+          <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
         </a>
         <a
           href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
@@ -900,7 +907,7 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
           className="flex items-center justify-center gap-1 hover:underline font-semibold"
           style={{ color: "#3B82F6" }}
         >
-          <Calendar className="h-3 w-3" /> Book 1-on-1 Virtual Tutoring →
+          <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
         </a>
       </div>
     </div>
