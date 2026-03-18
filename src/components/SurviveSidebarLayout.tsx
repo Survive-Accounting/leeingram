@@ -5,6 +5,7 @@ import {
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -56,6 +57,24 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
   const [completeOpen, setCompleteOpen] = useState(false);
+
+  // Phase section collapse state — auto-expand if current route is inside that phase
+  const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
+  const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
+  const phase3Paths = ["/study-tools/flashcards", "/study-tools/formula-recall", "/study-tools/entry-builder", "/study-tools/problem-dissector"];
+
+  const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
+
+  const [phase1Open, setPhase1Open] = useState(() => true);
+  const [phase2Open, setPhase2Open] = useState(() => true);
+  const [phase3Open, setPhase3Open] = useState(() => true);
+
+  // Auto-expand active phase section on route change
+  useEffect(() => {
+    if (isInPhase(phase1Paths)) setPhase1Open(true);
+    if (isInPhase(phase2Paths)) setPhase2Open(true);
+    if (isInPhase(phase3Paths)) setPhase3Open(true);
+  }, [location.pathname]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -446,22 +465,35 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   </Link>
                 )}
 
+                {/* Phase 1 — collapsible */}
                 {!sidebarCollapsed && (
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5">
+                  <button
+                    onClick={() => setPhase1Open(p => !p)}
+                    className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5 hover:text-primary/80 transition-colors"
+                  >
+                    <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase1Open && "rotate-90")} />
                     Phase 1 · Teaching Asset Creation
-                  </p>
+                  </button>
                 )}
-                <div className="space-y-0.5">{renderNavItems(phase1Items)}</div>
+                {(sidebarCollapsed || phase1Open) && (
+                  <div className="space-y-0.5">{renderNavItems(phase1Items)}</div>
+                )}
 
                 {showPhase2 && (
                   <>
                     <div className="border-t border-border my-3" />
                     {!sidebarCollapsed && (
-                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
+                      <button
+                        onClick={() => setPhase2Open(p => !p)}
+                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
+                      >
+                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase2Open && "rotate-90")} />
                         Phase 2 · Content Production
-                      </p>
+                      </button>
                     )}
-                    <div className="space-y-0.5">{renderNavItems(phase2Items, true)}</div>
+                    {(sidebarCollapsed || phase2Open) && (
+                      <div className="space-y-0.5">{renderNavItems(phase2Items, true)}</div>
+                    )}
                   </>
                 )}
 
@@ -470,60 +502,66 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   <>
                     <div className="border-t border-border my-3" />
                     {!sidebarCollapsed && (
-                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5">
+                      <button
+                        onClick={() => setPhase3Open(p => !p)}
+                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
+                      >
+                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase3Open && "rotate-90")} />
                         Phase 3 · Study Tools
-                      </p>
+                      </button>
                     )}
-                    <div className="space-y-0.5">
-                      <Link
-                        to="/study-tools/flashcards"
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                          isActive("/study-tools/flashcards")
-                            ? "bg-primary/20 text-white font-medium border border-primary/30"
-                            : "text-white/70 hover:text-white hover:bg-muted/30"
-                        )}
-                      >
-                        <Layers className="h-4 w-4 shrink-0" />
-                        {!sidebarCollapsed && <span className="text-sm">Flashcards</span>}
-                      </Link>
-                      <Link
-                        to="/study-tools/formula-recall"
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                          isActive("/study-tools/formula-recall")
-                            ? "bg-primary/20 text-white font-medium border border-primary/30"
-                            : "text-white/70 hover:text-white hover:bg-muted/30"
-                        )}
-                      >
-                        <Calculator className="h-4 w-4 shrink-0" />
-                        {!sidebarCollapsed && <span className="text-sm">Formula Recall</span>}
-                      </Link>
-                      <Link
-                        to="/study-tools/entry-builder"
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                          isActive("/study-tools/entry-builder")
-                            ? "bg-primary/20 text-white font-medium border border-primary/30"
-                            : "text-white/70 hover:text-white hover:bg-muted/30"
-                        )}
-                      >
-                        <BookOpen className="h-4 w-4 shrink-0" />
-                        {!sidebarCollapsed && <span className="text-sm">Entry Builder</span>}
-                      </Link>
-                      <Link
-                        to="/study-tools/problem-dissector"
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                          isActive("/study-tools/problem-dissector")
-                            ? "bg-primary/20 text-white font-medium border border-primary/30"
-                            : "text-white/70 hover:text-white hover:bg-muted/30"
-                        )}
-                      >
-                        <Search className="h-4 w-4 shrink-0" />
-                        {!sidebarCollapsed && <span className="text-sm">Problem Dissector</span>}
-                      </Link>
-                    </div>
+                    {(sidebarCollapsed || phase3Open) && (
+                      <div className="space-y-0.5">
+                        <Link
+                          to="/study-tools/flashcards"
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                            isActive("/study-tools/flashcards")
+                              ? "bg-primary/20 text-white font-medium border border-primary/30"
+                              : "text-white/70 hover:text-white hover:bg-muted/30"
+                          )}
+                        >
+                          <Layers className="h-4 w-4 shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm">Flashcards</span>}
+                        </Link>
+                        <Link
+                          to="/study-tools/formula-recall"
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                            isActive("/study-tools/formula-recall")
+                              ? "bg-primary/20 text-white font-medium border border-primary/30"
+                              : "text-white/70 hover:text-white hover:bg-muted/30"
+                          )}
+                        >
+                          <Calculator className="h-4 w-4 shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm">Formula Recall</span>}
+                        </Link>
+                        <Link
+                          to="/study-tools/entry-builder"
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                            isActive("/study-tools/entry-builder")
+                              ? "bg-primary/20 text-white font-medium border border-primary/30"
+                              : "text-white/70 hover:text-white hover:bg-muted/30"
+                          )}
+                        >
+                          <BookOpen className="h-4 w-4 shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm">Entry Builder</span>}
+                        </Link>
+                        <Link
+                          to="/study-tools/problem-dissector"
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                            isActive("/study-tools/problem-dissector")
+                              ? "bg-primary/20 text-white font-medium border border-primary/30"
+                              : "text-white/70 hover:text-white hover:bg-muted/30"
+                          )}
+                        >
+                          <Search className="h-4 w-4 shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm">Problem Dissector</span>}
+                        </Link>
+                      </div>
+                    )}
                   </>
                 )}
               </>

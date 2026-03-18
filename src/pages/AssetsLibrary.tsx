@@ -479,6 +479,8 @@ export default function AssetsLibrary() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
   const [exportOpen, setExportOpen] = useState(false);
   const [exportName, setExportName] = useState("LearnWorlds Export");
   const [exportQuestionType, setExportQuestionType] = useState("TMC");
@@ -1146,7 +1148,7 @@ export default function AssetsLibrary() {
         <TabsContent value="all">
       {/* Filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-        <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); }}>
+        <Select value={courseFilter} onValueChange={(v) => { setCourseFilter(v); setChapterFilter("all"); setCurrentPage(1); }}>
           <SelectTrigger className="h-8 text-xs bg-background/95 border-border">
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
@@ -1156,7 +1158,7 @@ export default function AssetsLibrary() {
           </SelectContent>
         </Select>
 
-        <Select value={chapterFilter} onValueChange={setChapterFilter}>
+        <Select value={chapterFilter} onValueChange={(v) => { setChapterFilter(v); setCurrentPage(1); }}>
           <SelectTrigger className="h-8 text-xs bg-background/95 border-border">
             <SelectValue placeholder="All Chapters" />
           </SelectTrigger>
@@ -1170,7 +1172,7 @@ export default function AssetsLibrary() {
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder="Search name, tags, or problem text…"
             className="h-8 text-xs pl-7 bg-background/95 border-border"
           />
@@ -1178,6 +1180,16 @@ export default function AssetsLibrary() {
       </div>
 
       {/* Table */}
+      {(() => {
+        const totalAssets = assets?.length ?? 0;
+        const totalPages = Math.max(1, Math.ceil(totalAssets / PAGE_SIZE));
+        const safePage = Math.min(currentPage, totalPages);
+        const paginatedAssets = assets?.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE) ?? [];
+        const showingFrom = totalAssets > 0 ? (safePage - 1) * PAGE_SIZE + 1 : 0;
+        const showingTo = Math.min(safePage * PAGE_SIZE, totalAssets);
+
+        return (
+          <>
       <div className="rounded-lg overflow-hidden border border-border bg-background/95">
         <Table>
           <TableHeader>
@@ -1228,7 +1240,7 @@ export default function AssetsLibrary() {
             ) : !assets?.length ? (
               <TableRow><TableCell colSpan={isContentCreationVa ? 4 : 6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
-              assets.map((a) => {
+              paginatedAssets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
                 const statusIcon = sheetStatus === "finalized" ? "✓"
                   : sheetStatus === "ready_for_review" ? "⚠"
@@ -1397,7 +1409,50 @@ export default function AssetsLibrary() {
         </Table>
       </div>
 
-      {/* Sheet Prep Log (Admin only) */}
+      {/* Pagination Controls */}
+      {totalAssets > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-3 px-1">
+          <p className="text-xs text-muted-foreground">
+            Showing {showingFrom}–{showingTo} of {totalAssets} assets
+            {selectedIds.size > 0 && ` · ${selectedIds.size} selected`}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              ← Prev
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <Button
+                key={page}
+                variant={page === safePage ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs px-2.5 min-w-[28px]"
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next →
+            </Button>
+          </div>
+        </div>
+      )}
+          </>
+        );
+      })()}
+
       {isAdmin && (
         <div className="mt-6 space-y-4">
           <Collapsible open={sheetLogOpen} onOpenChange={setSheetLogOpen}>
