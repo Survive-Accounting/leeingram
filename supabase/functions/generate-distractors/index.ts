@@ -32,7 +32,7 @@ ENTITY NAMING IN QUESTION STEMS:
 The teaching assets use this naming convention:
   Survive Company A ([role]) — the primary entity
   Survive Company B ([role]) — the secondary entity
-When writing distractor text that references a company name, always use the full name with role hint exactly as it appears in the source asset text. Do not shorten "Survive Company A (the issuer)" to "Survive Company" or "the issuer". If a question asks about a specific entity's perspective, name that entity explicitly.
+When writing distractor text that references a company name, always use the full name as it appears in the source asset text. Include the parenthetical role hint only on the first mention of each entity; omit it on subsequent mentions. Do not shorten "Survive Company A" to "Survive Company" or "the issuer". If a question asks about a specific entity's perspective, name that entity explicitly.
 
 Return a JSON array with one object per asset, in the same order as input.
 Each object: { "correct_answer": "...", "distractor_1": "...", "distractor_2": "...", "distractor_3": "..." }
