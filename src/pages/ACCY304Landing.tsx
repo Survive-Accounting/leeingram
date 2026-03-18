@@ -585,24 +585,38 @@ export default function ACCY304Landing() {
           </button>
 
           {iframeSrc && (
-            <div
-              className="mt-4 overflow-hidden"
-              style={{
-                position: "relative",
-                left: "50%",
-                width: "100vw",
-                transform: "translateX(-50%)",
-                boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
-              }}
-            >
-              <iframe
-                src={iframeSrc}
-                title="Problem Preview"
-                className="w-full border-0"
-                style={{ height: 1000, background: "#fff" }}
-              />
-              <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
-            </div>
+            <>
+              <button
+                onClick={() => setIframeVisible(!iframeVisible)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-semibold border transition-all hover:opacity-90"
+                style={{ background: "transparent", color: "#FFFFFF", borderColor: "rgba(255,255,255,0.3)" }}
+              >
+                {iframeVisible ? (
+                  <><ChevronUp className="h-3.5 w-3.5" /> Hide Preview</>
+                ) : (
+                  <><ChevronDownIcon className="h-3.5 w-3.5" /> Show Preview</>
+                )}
+              </button>
+              <div
+                className="mt-2 overflow-hidden"
+                style={{
+                  position: "relative",
+                  left: "50%",
+                  width: "100vw",
+                  transform: "translateX(-50%)",
+                  boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
+                  display: iframeVisible ? "block" : "none",
+                }}
+              >
+                <iframe
+                  src={iframeSrc}
+                  title="Problem Preview"
+                  className="w-full border-0"
+                  style={{ height: 1000, background: "#fff" }}
+                />
+                <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
+              </div>
+            </>
           )}
         </div>
       </section>
