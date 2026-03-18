@@ -548,7 +548,6 @@ export default function SolutionsViewer() {
           id, asset_name, source_ref, source_number,
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
-          journal_entry_raw,
           important_formulas, concept_notes, exam_traps,
           instruction_1, instruction_2, instruction_3, instruction_4, instruction_5,
           instruction_list,
