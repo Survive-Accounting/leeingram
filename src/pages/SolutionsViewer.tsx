@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Video, X, BookOpen, CheckCircle, Calendar } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, Video, X, BookOpen, CheckCircle, Calendar, Share2 } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
@@ -42,33 +42,10 @@ const lightTheme = {
   watermarkOverlay: "rgba(255,255,255,0.93)",
 };
 
-const darkTheme = {
-  pageBg: "#0F1623",
-  cardBg: "#1A2333",
-  text: "rgba(255,255,255,0.85)",
-  textMuted: "rgba(255,255,255,0.5)",
-  heading: "rgba(255,255,255,0.5)",
-  border: "rgba(255,255,255,0.08)",
-  answerBg: "#0D2B1A",
-  answerBorder: "#1B8A3E",
-  formulaBg: "#1A1600",
-  formulaBorder: "#D97706",
-  trapBg: "#2B0D0D",
-  trapBorder: "#C0392B",
-  tableHeaderBg: "#1A2E55",
-  tableAltBg: "#151E2C",
-  toggleBg: "#1E2A3A",
-  badgeColor: "rgba(0, 200, 150, 0.9)",
-  badgeBg: "rgba(0, 200, 150, 0.12)",
-  badgeBorder: "rgba(0, 200, 150, 0.3)",
-  watermarkOverlay: "rgba(15,22,35,0.93)",
-};
-
 type Theme = typeof lightTheme;
 
 // ── Pipe table helpers ──────────────────────────────────────────────
 
-// Detect lines like "2025: $50,000" or "2023 and 2024: 40%"
 function isKVLine(line: string): boolean {
   const t = line.trim();
   if (!t) return false;
@@ -103,12 +80,10 @@ function parsePipeSegments(text: string) {
       if (dataRows.length >= 2) segments.push({ type: "table", content: block, rows: dataRows });
       else segments.push({ type: "text", content: block });
     } else {
-      // Check for key-value list blocks (2+ consecutive "Label: Value" lines)
       if (isKVLine(lines[i]) && i < lines.length - 1 && isKVLine(lines[i + 1])) {
         const start = i;
         while (i < lines.length && (isKVLine(lines[i]) || !lines[i].trim())) {
           if (!lines[i].trim()) {
-            // Only skip blank lines if there are more KV lines after
             if (i + 1 < lines.length && isKVLine(lines[i + 1])) { i++; continue; }
             break;
           }
@@ -330,7 +305,6 @@ function RevealToggle({
 
 // ── JE Tables ───────────────────────────────────────────────────────
 
-/** Format YYYY-MM-DD to "Month Day, Year" (e.g., "March 18, 2025") */
 function formatJEDate(dateStr: string): string {
   if (!dateStr) return "";
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -827,17 +801,13 @@ function parseExamTraps(text: string): string[] {
   return sentences.map(s => s.endsWith('.') ? s : s + '.');
 }
 
-/** Split text into bullet points, breaking long ones at ideal sentence boundaries */
+/** Split text into bullet points */
 function splitLongBullets(text: string): string[] {
   const raw = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
   const sentences = raw.map(s => s.endsWith('.') ? s : s + '.');
-  
   const result: string[] = [];
   for (const s of sentences) {
-    if (s.length <= 200) {
-      result.push(s);
-      continue;
-    }
+    if (s.length <= 200) { result.push(s); continue; }
     const inner = s.match(/[^.!]+[.!]+/g);
     if (inner && inner.length >= 2) {
       const mid = s.length / 2;
@@ -859,33 +829,24 @@ function splitLongBullets(text: string): string[] {
   }
   return result;
 }
-/** Group formulas by shared prefix (e.g. "Fair Value Method") and render with headers */
+
+/** Group formulas by shared prefix */
 function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-
-  // Try to detect "Category: formula" pattern
   const groups: { header: string; items: string[] }[] = [];
   for (const line of lines) {
     const colonMatch = line.match(/^(.+?):\s+(.+)$/);
     if (colonMatch) {
       const [, prefix, formula] = colonMatch;
       const existing = groups.find(g => g.header === prefix);
-      if (existing) {
-        existing.items.push(formula);
-      } else {
-        groups.push({ header: prefix, items: [formula] });
-      }
+      if (existing) { existing.items.push(formula); }
+      else { groups.push({ header: prefix, items: [formula] }); }
     } else {
-      // No prefix — standalone formula
       groups.push({ header: "", items: [line] });
     }
   }
-
-  // If grouping produced meaningful headers (at least one group with 2+ items), use grouped layout
   const hasGrouping = groups.some(g => g.items.length >= 2);
-
   if (!hasGrouping) {
-    // Flat list fallback
     return (
       <div className="space-y-3">
         {lines.map((line, i) => (
@@ -896,16 +857,11 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
       </div>
     );
   }
-
   return (
     <div className="space-y-5">
       {groups.map((group, gi) => (
         <div key={gi}>
-          {group.header && (
-            <p className="font-bold text-[13px] mb-2" style={{ color: theme.text }}>
-              {group.header}
-            </p>
-          )}
+          {group.header && <p className="font-bold text-[13px] mb-2" style={{ color: theme.text }}>{group.header}</p>}
           <div className="space-y-2">
             {group.items.map((item, ii) => (
               <div key={ii} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: theme.formulaBg, borderColor: theme.formulaBorder }}>
@@ -918,7 +874,6 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
     </div>
   );
 }
-
 
 // ── About Lee Content ──────────────────────────────────────────────
 
@@ -972,96 +927,71 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
   );
 }
 
-// LeftPanel removed — bio now lives under the RightModePanel
+// ── Floating Action Panel (top-right, desktop only) ─────────────────
 
-// ── Right Column — Mode Switcher + About Lee ───────────────────────
+function FloatingActionPanel({ theme, shareUrl, assetCode }: { theme: Theme; shareUrl: string; assetCode: string }) {
+  const [collapsed, setCollapsed] = useState(false);
 
-function RightModePanel({
-  theme,
-  practiceMode,
-  onSetPracticeMode,
-  shareUrl,
-}: {
-  theme: Theme;
-  practiceMode: boolean;
-  onSetPracticeMode: (v: boolean) => void;
-  shareUrl: string;
-}) {
-  const [showSpotlight, setShowSpotlight] = useState(true);
+  const reportMailto = `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode}`)}&body=${encodeURIComponent(`I found an issue on this page (${assetCode}). Please describe the issue below:\n\n`)}`;
 
   return (
-    <div className="hidden xl:flex flex-col gap-4 shrink-0 self-start sticky top-[160px]" style={{ width: 220 }}>
-      {/* Study Mode Card */}
+    <div
+      className="hidden lg:block fixed z-30"
+      style={{ top: 60, right: 20, width: 180 }}
+    >
       <div
-        className="rounded-xl p-4 relative"
+        className="rounded-xl overflow-hidden"
         style={{
           background: "#FFFFFF",
           border: `1px solid ${theme.border}`,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)",
         }}
       >
-        <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: theme.textMuted }}>Study Mode</p>
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => {
-              onSetPracticeMode(true);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left"
-            style={{
-              background: practiceMode ? "#EEF2FF" : "transparent",
-              color: practiceMode ? "#3B52B5" : theme.textMuted,
-              border: `1.5px solid ${practiceMode ? "#C7D2FE" : theme.border}`,
-            }}
-          >
-            <BookOpen className="h-4 w-4 shrink-0" /> Practice Mode
-          </button>
-          <div className="relative">
+        {/* Toggle bar */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full flex items-center justify-center gap-1 px-3 py-1.5 text-[10px] font-semibold transition-colors hover:bg-gray-50"
+          style={{ color: theme.textMuted }}
+        >
+          {collapsed ? (
+            <>Show <ChevronDown className="h-3 w-3" /></>
+          ) : (
+            <>Hide <ChevronUp className="h-3 w-3" /></>
+          )}
+        </button>
+
+        {!collapsed && (
+          <div className="px-3 pb-3 space-y-2.5" style={{ borderTop: `1px solid ${theme.border}` }}>
+            {/* Share button */}
             <button
-              onClick={() => { onSetPracticeMode(false); setShowSpotlight(false); }}
-              className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left relative z-10"
+              onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+              className="w-full flex items-center justify-center gap-1.5 text-[12px] font-bold px-3 py-2 rounded-lg transition-all hover:scale-[1.03] active:scale-[0.97] mt-2"
               style={{
-                background: !practiceMode ? "#F0FFF4" : "transparent",
-                color: !practiceMode ? "#166534" : theme.textMuted,
-                border: `1.5px solid ${!practiceMode ? "#BBF7D0" : theme.border}`,
-                boxShadow: showSpotlight && practiceMode ? "0 0 20px rgba(22,101,52,0.5), 0 0 8px rgba(34,197,94,0.4)" : "none",
-                animation: showSpotlight && practiceMode ? "spotlight-pulse 1.2s ease-in-out infinite alternate" : "none",
+                color: "#FFFFFF",
+                background: "linear-gradient(135deg, #3B82F6, #2563EB)",
+                border: "2px solid rgba(255,255,255,0.6)",
+                boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.12)",
+                animation: "share-glow 2s ease-in-out infinite alternate",
               }}
             >
-              <CheckCircle className="h-4 w-4 shrink-0" /> View Solution
+              <Share2 className="h-3.5 w-3.5" /> Share This
             </button>
-            {showSpotlight && practiceMode && (
-              <div
-                className="absolute -top-2 -right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold z-20 animate-bounce"
-                style={{ background: "#166534", color: "#FFFFFF" }}
-              >
-                ← Tap to reveal
-              </div>
-            )}
+            <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
+
+            {/* Placeholders */}
+            <p className="text-[11px] px-1" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
+            <p className="text-[11px] px-1" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
+
+            {/* Report issue */}
+            <a
+              href={reportMailto}
+              className="flex items-center gap-1 text-[11px] px-1 hover:underline"
+              style={{ color: theme.textMuted }}
+            >
+              ⚠ Report Issue →
+            </a>
           </div>
-        </div>
-        <style>{`@keyframes spotlight-pulse { 0% { box-shadow: 0 0 12px rgba(22,101,52,0.3), 0 0 4px rgba(34,197,94,0.2); } 100% { box-shadow: 0 0 24px rgba(22,101,52,0.6), 0 0 10px rgba(34,197,94,0.4); } }`}</style>
-
-        {/* Share button */}
-        <button
-          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
-          className="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold px-4 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97] mt-3"
-          style={{
-            color: "#FFFFFF",
-            background: "linear-gradient(135deg, #3B82F6, #2563EB)",
-            border: "1px solid rgba(59,130,246,0.5)",
-            boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
-            animation: "share-glow 2s ease-in-out infinite alternate",
-          }}
-        >
-          <Copy className="h-4 w-4" /> Share This
-        </button>
-        <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
-
-        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${theme.border}` }}>
-          <p className="text-[12px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
-          <p className="text-[12px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -1113,34 +1043,24 @@ function TestimonialsSection({ theme }: { theme: Theme }) {
   );
 }
 
+// ── MAIN COMPONENT ──────────────────────────────────────────────────
+
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
 
-  // Theme — light only (dark mode removed)
-  const isDark = false;
+  // Theme — light only
   const t = lightTheme;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
 
-  // Practice mode — hides reveal toggles
-  const [practiceMode, setPracticeMode] = useState(true);
-  const problemRef = useRef<HTMLDivElement>(null);
-
-  const handleSetPracticeMode = (v: boolean) => {
-    setPracticeMode(v);
-    if (v && problemRef.current) {
-      problemRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
 
-  // Fetch asset with chapter+course join + instruction fields
+  // Fetch asset
   const { data, isLoading } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
     queryFn: async () => {
@@ -1256,10 +1176,6 @@ export default function SolutionsViewer() {
   const formulas = asset.important_formulas || "";
   const conceptNotes = asset.concept_notes || "";
   const examTraps = asset.exam_traps || "";
-  const quizLink = asset.lw_quiz_url || null;
-  const whiteboardLink = asset.sheet_master_url || null;
-  const videoLink = asset.lw_video_url || null;
-  const hasFooterLinks = quizLink || whiteboardLink || videoLink;
 
   const hasHighlights = !!asset.problem_text_ht_backup?.trim();
   const rawProblemText = showHighlights && hasHighlights
@@ -1269,41 +1185,22 @@ export default function SolutionsViewer() {
 
   const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
 
-  const videoMailto = `mailto:lee@surviveaccounting.com?subject=Video Request: ${asset.asset_name}&body=I would like a video explanation for ${sourceRef || ""} (${asset.asset_name}).`;
+  // Navy header height ≈ 48px
+  const HEADER_HEIGHT = 48;
 
   return (
     <div className="min-h-screen relative" style={{ background: t.pageBg }}>
       {/* ── Watermark Background ── */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{ zIndex: 0 }}
-      >
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${AORAKI_URL})`,
-            opacity: 0.06,
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: t.watermarkOverlay }}
-        />
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${AORAKI_URL})`, opacity: 0.06 }} />
+        <div className="absolute inset-0" style={{ background: t.watermarkOverlay }} />
       </div>
 
       {/* ── Navy Header Bar ── */}
-      <header
-        className="relative"
-        style={{ background: "#14213D", zIndex: 10 }}
-      >
-        <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1040 }}>
+      <header className="relative sticky top-0" style={{ background: "#14213D", zIndex: 20, height: HEADER_HEIGHT }}>
+        <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
           <div className="flex items-center gap-3">
-            <img
-              src={LOGO_URL}
-              alt="Survive Accounting"
-              className="h-8 object-contain"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
+            <img src={LOGO_URL} alt="Survive Accounting" className="h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
             <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
           </div>
         </div>
@@ -1311,100 +1208,111 @@ export default function SolutionsViewer() {
 
       {/* ── Hero Section ── */}
       <div className="relative" style={{ zIndex: 5 }}>
-        {/* Marketing Badge */}
-        <div className="mx-auto px-6 mt-4" style={{ maxWidth: 1040 }}>
+        <div className="mx-auto px-6 mt-4" style={{ maxWidth: 1200 }}>
           <span
             className="inline-block text-[11px] px-3 py-1 rounded-full"
-            style={{
-              background: t.badgeBg,
-              border: `1px solid ${t.badgeBorder}`,
-              color: t.badgeColor,
-            }}
+            style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
           >
             ✦ Deeper than a solutions manual — built from 10+ years of Ole Miss tutoring
           </span>
         </div>
 
-        {/* Identifier / Title Bar */}
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
-          <div className="mx-auto px-6 py-4" style={{ maxWidth: 1040 }}>
-            <div>
-              <h1
-                className="text-[18px] font-bold leading-tight"
-                style={{ color: "#131E35" }}
-              >
-                {problemTitle || ""}
-              </h1>
-              {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
-            </div>
+          <div className="mx-auto px-6 py-4" style={{ maxWidth: 1200 }}>
+            {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
+            <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
+              {problemTitle || ""}
+            </h1>
+            {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
           </div>
         </div>
       </div>
 
-      {/* Left panel removed — bio now in right column */}
+      {/* ── Floating Action Panel (desktop) ── */}
+      <FloatingActionPanel theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} />
 
-      {/* ── Content with side panel ── */}
-      <main className="relative mx-auto px-6 py-8 flex gap-4 justify-center" style={{ zIndex: 5, maxWidth: 1040 }}>
-        {/* Main content column */}
-        <div className="w-full" style={{ maxWidth: 780 }}>
-        <div
-          className="rounded-xl px-6 py-6 sm:px-8 sm:py-8"
-          style={{
-            background: isDark ? t.cardBg : t.pageBg,
-            boxShadow: isDark
-              ? "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)"
-              : "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
-            border: `1px solid ${t.border}`,
-          }}
-        >
-          {/* Chapter navigator (preview only) */}
-          {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
+      {/* ── Two-Column Content ── */}
+      <main className="relative mx-auto px-6 py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
+        <div className="flex flex-col lg:flex-row gap-0">
 
-          {/* Source ref label — above problem text */}
-          {sourceRef && (
-            <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
-              Practice problem based on {sourceRef}
-            </h2>
-          )}
+          {/* ── LEFT COLUMN: Problem + Instructions (sticky on desktop) ── */}
+          <div
+            className="w-full lg:w-[40%] lg:pr-6"
+            style={{ borderRight: undefined }}
+          >
+            <div
+              className="lg:sticky overflow-y-auto"
+              style={{ top: HEADER_HEIGHT + 16, maxHeight: `calc(100vh - ${HEADER_HEIGHT + 32}px)` }}
+            >
+              <div
+                className="rounded-xl px-6 py-6"
+                style={{
+                  background: t.pageBg,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
+                  border: `1px solid ${t.border}`,
+                }}
+              >
+                {/* Chapter navigator (preview only) */}
+                {isPreview && <ChapterNavigator currentAsset={asset} theme={t} />}
 
-          {/* Problem text — always visible */}
-          {rawProblemText.trim() && (
-            <div ref={problemRef}>
-              {hasHighlights && (
-                <div className="flex items-center gap-2 mb-3">
-                  <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
-                  <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
-                </div>
-              )}
-              <div className="space-y-4">
-                {problemParagraphs.map((para, i) => (
-                  <SmartContent key={i} text={para} className="text-[14px] leading-[1.7]" theme={t} />
-                ))}
+                {/* Source ref label */}
+                {sourceRef && (
+                  <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
+                    Practice problem based on {sourceRef}
+                  </h2>
+                )}
+
+                {/* Problem text */}
+                {rawProblemText.trim() && (
+                  <div>
+                    {hasHighlights && (
+                      <div className="flex items-center gap-2 mb-3">
+                        <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
+                        <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
+                      </div>
+                    )}
+                    <div className="space-y-4">
+                      {problemParagraphs.map((para, i) => (
+                        <SmartContent key={i} text={para} className="text-[14px] leading-[1.7]" theme={t} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* INSTRUCTIONS */}
+                {instructions.length > 0 && (
+                  <>
+                    <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
+                    <div className="space-y-4">
+                      {instructions.map((inst, idx) => {
+                        const letter = String.fromCharCode(97 + idx);
+                        return (
+                          <p key={idx} className="text-[14px] leading-[1.6]" style={{ color: t.text }}>
+                            <span className="font-bold" style={{ color: "#131E35" }}>({letter})</span>{" "}{inst}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-          )}
 
-          {/* INSTRUCTIONS — always visible */}
-          {instructions.length > 0 && (
-            <>
-              <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
-              <div className="space-y-4">
-                {instructions.map((inst, idx) => {
-                  const letter = String.fromCharCode(97 + idx);
-                  return (
-                    <p key={idx} className="text-[14px] leading-[1.6]" style={{ color: t.text }}>
-                      <span className="font-bold" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>({letter})</span>{" "}{inst}
-                    </p>
-                  );
-                })}
-              </div>
-            </>
-          )}
+            {/* Subtle right border for desktop */}
+            <div className="hidden lg:block absolute top-0 bottom-0" style={{ right: 0, width: 1, background: t.border }} />
+          </div>
 
-          {/* ── Reveal Toggles (hidden in practice mode) ── */}
-          {!practiceMode && (
-            <>
-              {/* 1. Solution — with video request link in footer */}
+          {/* ── RIGHT COLUMN: Reveal Toggles + About + Testimonials ── */}
+          <div className="w-full lg:w-[60%] lg:pl-6 mt-6 lg:mt-0">
+            <div
+              className="rounded-xl px-6 py-6"
+              style={{
+                background: t.pageBg,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
+                border: `1px solid ${t.border}`,
+              }}
+            >
+              {/* 1. Solution */}
               {answerSummary.trim() && (
                 <RevealToggle
                   label="Reveal Solution"
@@ -1413,22 +1321,12 @@ export default function SolutionsViewer() {
                   enrollUrl={enrollUrl}
                   sectionName="Solution"
                   assetCode={asset.asset_name}
-                  extraFooterLeft={
-                    <a
-                      href={videoMailto}
-                      className="flex items-center gap-1.5 text-[12px] hover:underline"
-                      style={{ color: "#3B82F6" }}
-                    >
-                      <Video className="h-3 w-3" />
-                      Request Video Explanation →
-                    </a>
-                  }
                 >
                   <AnswerSummarySection text={answerSummary} theme={t} />
                 </RevealToggle>
               )}
 
-              {/* 2. How to Solve This — per-instruction flowcharts */}
+              {/* 2. How to Solve This */}
               {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
                 <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
                   {asset._flowcharts?.length > 1 ? (
@@ -1473,7 +1371,7 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 3b. Supplementary / Related Journal Entries */}
+              {/* 3b. Supplementary JEs */}
               {asset.supplementary_je_json && (
                 <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
                   <SupplementaryJESection
@@ -1483,6 +1381,7 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
+              {/* 4. Important Formulas */}
               {formulas.trim() && (
                 <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
                   <GroupedFormulas text={formulas} theme={t} />
@@ -1495,7 +1394,7 @@ export default function SolutionsViewer() {
                   <ul className="space-y-3">
                     {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
                       <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#131E35" }} />
                         <span>{sentence}</span>
                       </li>
                     ))}
@@ -1518,35 +1417,30 @@ export default function SolutionsViewer() {
                   </div>
                 </RevealToggle>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* ── Testimonials ── */}
-        <TestimonialsSection theme={t} />
+            {/* Testimonials + About Lee below the reveal card */}
+            <TestimonialsSection theme={t} />
+            <AboutLeeSection theme={t} />
 
-        {/* ── About Lee ── */}
-        <AboutLeeSection theme={t} />
-
-        {/* ── Footer ── */}
-        <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-          <p className="text-center text-[11px]" style={{ color: t.textMuted }}>
-            <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: t.text }}>
-              SurviveAccounting.com
-            </a>
-          </p>
-          <p className="text-center text-[11px] mt-1" style={{ color: t.textMuted }}>
-            Created by Lee Ingram in 2020
-          </p>
-          <p className="text-center mt-2">
-            <button onClick={() => setReportOpen(true)} className="text-[11px] hover:underline" style={{ color: t.textMuted }}>
-              Report Issue
-            </button>
-          </p>
+            {/* Footer */}
+            <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+              <p className="text-center text-[11px]" style={{ color: t.textMuted }}>
+                <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: t.text }}>
+                  SurviveAccounting.com
+                </a>
+              </p>
+              <p className="text-center text-[11px] mt-1" style={{ color: t.textMuted }}>
+                Created by Lee Ingram in 2020
+              </p>
+              <p className="text-center mt-2">
+                <button onClick={() => setReportOpen(true)} className="text-[11px] hover:underline" style={{ color: t.textMuted }}>
+                  Report Issue
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
-        </div>
-        {/* ── Right Mode Panel (desktop) ── */}
-        <RightModePanel theme={t} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} shareUrl={shareUrl} />
       </main>
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
