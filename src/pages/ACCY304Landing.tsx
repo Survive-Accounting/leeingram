@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown } from "lucide-react";
 import BlurredPreview from "@/components/BlurredPreview";
-
-const enrollUrl = import.meta.env.VITE_LEARNWORLDS_ENROLL_URL || "https://surviveaccounting.com";
+import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 
 export default function ACCY304Landing() {
+  const enrollUrl = useEnrollUrl();
   const [selectedChapterId, setSelectedChapterId] = useState("");
   const [selectedType, setSelectedType] = useState("any");
   const [selectedAssetId, setSelectedAssetId] = useState("");

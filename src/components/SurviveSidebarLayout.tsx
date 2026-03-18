@@ -600,6 +600,17 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 >
                   <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
                 </Link>
+                <Link
+                  to="/accy304-admin"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/accy304-admin")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <Rocket className="h-3.5 w-3.5" /> ACCY 304 Beta
+                </Link>
               </>
             )}
           </div>
