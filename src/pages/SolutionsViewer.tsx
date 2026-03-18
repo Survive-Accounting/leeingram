@@ -1321,9 +1321,8 @@ export default function SolutionsViewer() {
         </div>
       </div>
 
-      {/* ── Floating Side Panels (desktop only) ── */}
+      {/* ── Floating Left Panel (desktop only) ── */}
       <LeftPanel theme={t} isDark={isDark} />
-      <RightPanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
 
       {/* ── Content ── */}
       <main className="relative max-w-[780px] mx-auto px-6 py-8" style={{ zIndex: 5 }}>
