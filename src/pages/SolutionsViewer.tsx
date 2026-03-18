@@ -921,7 +921,7 @@ export default function SolutionsViewer() {
 
         {/* 3. Journal Entries — custom preview teaser */}
         {hasJE && (
-          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
             {isPreview ? (
               <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
             ) : (
