@@ -46,7 +46,27 @@ const lightTheme = {
 
 type Theme = typeof lightTheme;
 
-// ── Pipe table helpers ──────────────────────────────────────────────
+// ── Numbered-amount list detection ──────────────────────────────────
+// Matches lines like "1. Investment in common stock... $1,500,000. ..."
+const NUMBERED_AMOUNT_RE = /^(\d+)\.\s+(.+?)\$\s*([\d,]+(?:\.\d+)?)/;
+
+function isNumberedAmountLine(line: string): boolean {
+  return NUMBERED_AMOUNT_RE.test(line.trim());
+}
+
+function parseNumberedAmountBlock(lines: string[]): { description: string; amount: string; extra: string }[] {
+  return lines.filter(l => l.trim()).map(l => {
+    const m = l.trim().match(NUMBERED_AMOUNT_RE);
+    if (!m) return { description: l.trim(), amount: "", extra: "" };
+    const rawDesc = m[2].trim();
+    // Remove trailing colon/period from the description before the amount
+    const description = rawDesc.replace(/[:.]\s*$/, "").trim();
+    const amount = `$${m[3]}`;
+    // Anything after the dollar amount
+    const afterAmount = l.trim().slice(m[0].length).replace(/^[.,;:\s]+/, "").trim();
+    return { description, amount, extra: afterAmount };
+  });
+}
 
 function isKVLine(line: string): boolean {
   const t = line.trim();
@@ -65,7 +85,7 @@ function parseKVBlock(lines: string[]): string[][] {
 
 function parsePipeSegments(text: string) {
   const lines = text.split("\n");
-  const segments: { type: "text" | "table" | "kv-table"; content: string; rows?: string[][] }[] = [];
+  const segments: { type: "text" | "table" | "kv-table" | "numbered-amount"; content: string; rows?: string[][]; numberedRows?: { description: string; amount: string; extra: string }[] }[] = [];
   let i = 0;
   while (i < lines.length) {
     if (i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|")) {
@@ -81,6 +101,13 @@ function parsePipeSegments(text: string) {
       const dataRows = rows.filter(row => !row.every(c => /^[-:]+$/.test(c)));
       if (dataRows.length >= 2) segments.push({ type: "table", content: block, rows: dataRows });
       else segments.push({ type: "text", content: block });
+    } else if (isNumberedAmountLine(lines[i]) && i < lines.length - 1 && isNumberedAmountLine(lines[i + 1])) {
+      // Detect 2+ consecutive numbered lines with dollar amounts
+      const start = i;
+      while (i < lines.length && isNumberedAmountLine(lines[i])) i++;
+      const block = lines.slice(start, i);
+      const numberedRows = parseNumberedAmountBlock(block);
+      segments.push({ type: "numbered-amount", content: block.join("\n"), numberedRows });
     } else {
       if (isKVLine(lines[i]) && i < lines.length - 1 && isKVLine(lines[i + 1])) {
         const start = i;
@@ -102,7 +129,8 @@ function parsePipeSegments(text: string) {
         while (
           i < lines.length &&
           !(i < lines.length - 1 && lines[i].includes("|") && lines[i + 1].includes("|")) &&
-          !(isKVLine(lines[i]) && i < lines.length - 1 && isKVLine(lines[i + 1]))
+          !(isKVLine(lines[i]) && i < lines.length - 1 && isKVLine(lines[i + 1])) &&
+          !(isNumberedAmountLine(lines[i]) && i < lines.length - 1 && isNumberedAmountLine(lines[i + 1]))
         ) i++;
         const block = lines.slice(start, i).join("\n");
         if (block.trim()) segments.push({ type: "text", content: block });
@@ -158,6 +186,32 @@ function KVTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
   );
 }
 
+function NumberedAmountTable({ rows, theme }: { rows: { description: string; amount: string; extra: string }[]; theme: Theme }) {
+  return (
+    <div className="my-5">
+      <div className="flex justify-center">
+        <table className="text-[14px]" style={{ borderCollapse: "collapse" }}>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri}>
+                <td className="pr-8 py-[5px] text-left" style={{ color: theme.text, verticalAlign: "top" }}>{row.description}</td>
+                <td className="py-[5px] text-right font-mono whitespace-nowrap" style={{ color: theme.text }}>{row.amount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.some(r => r.extra) && (
+        <div className="mt-3 space-y-1">
+          {rows.map((r, i) => r.extra ? (
+            <p key={i} className="text-[13px] whitespace-pre-wrap" style={{ color: theme.textMuted }}>{r.extra}</p>
+          ) : null)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SmartContent({ text, className, theme }: { text: string; className?: string; theme: Theme }) {
   const segments = parsePipeSegments(text);
   return (
@@ -167,7 +221,9 @@ function SmartContent({ text, className, theme }: { text: string; className?: st
           ? <PipeTable key={i} rows={seg.rows} theme={theme} />
           : seg.type === "kv-table" && seg.rows
             ? <KVTable key={i} rows={seg.rows} theme={theme} />
-            : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
+            : seg.type === "numbered-amount" && seg.numberedRows
+              ? <NumberedAmountTable key={i} rows={seg.numberedRows} theme={theme} />
+              : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
       )}
     </div>
   );
