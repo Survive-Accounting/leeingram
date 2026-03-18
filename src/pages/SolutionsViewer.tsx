@@ -549,8 +549,6 @@ export default function SolutionsViewer() {
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
           important_formulas, concept_notes, exam_traps,
-          instruction_1, instruction_2, instruction_3, instruction_4, instruction_5,
-          instruction_list,
           lw_quiz_url, sheet_master_url, lw_video_url,
           solutions_page_views, practice_page_views,
           course_id, chapter_id, phase2_status, asset_approved_at, problem_type,
