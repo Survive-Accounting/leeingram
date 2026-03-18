@@ -1,0 +1,1 @@
+CREATE POLICY "Anon read courses" ON public.courses FOR SELECT TO anon USING (true);

@@ -866,9 +866,9 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
           style={selectStyle}
         >
           <option value="all">Type…</option>
-          <option value="BE">BE</option>
-          <option value="E">Ex</option>
-          <option value="P">Pr</option>
+          <option value="BE">Brief Exercise</option>
+          <option value="E">Exercise</option>
+          <option value="P">Problem</option>
         </select>
 
         <select
