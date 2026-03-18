@@ -912,7 +912,9 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
+        className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
+        style={{
+          left: 20,
         style={{
           writingMode: "vertical-rl",
           textOrientation: "mixed",
