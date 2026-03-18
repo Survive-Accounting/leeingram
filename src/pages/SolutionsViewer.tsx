@@ -545,7 +545,7 @@ export default function SolutionsViewer() {
       const { data: assets, error: assetErr } = await (supabase
         .from("teaching_assets")
         .select(`
-          id, asset_name, source_ref, source_number,
+          id, asset_name, source_ref, source_number, base_raw_problem_id,
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
           important_formulas, concept_notes, exam_traps,
@@ -563,6 +563,17 @@ export default function SolutionsViewer() {
       const asset = assets?.[0];
       if (!asset) return null;
 
+      // Fetch problem title from chapter_problems
+      let problemTitle = "";
+      if (asset.base_raw_problem_id) {
+        const { data: cpData } = await supabase
+          .from("chapter_problems")
+          .select("title")
+          .eq("id", asset.base_raw_problem_id)
+          .single();
+        problemTitle = cpData?.title || "";
+      }
+
       // Fetch instructions from problem_instructions table
       const { data: instrData } = await supabase
         .from("problem_instructions")
@@ -570,7 +581,7 @@ export default function SolutionsViewer() {
         .eq("teaching_asset_id", asset.id)
         .order("instruction_number");
 
-      return { ...asset, _instructions: instrData || [] };
+      return { ...asset, _problemTitle: problemTitle, _instructions: instrData || [] };
     },
     enabled: !!assetCode,
   });
