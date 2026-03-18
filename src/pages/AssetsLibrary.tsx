@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen, ExternalLink, GitBranch, X } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen, ExternalLink, GitBranch, X, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { Tip } from "@/components/Tip";
@@ -361,6 +361,53 @@ function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onU
     </Tip>
   );
 }
+
+/* ── Enrich JE Memos button ── */
+function EnrichJEMemosButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
+  const [generating, setGenerating] = useState(false);
+  const hasJE = !!(asset as any).journal_entry_completed_json;
+  if (!hasJE) return null;
+
+  // Check if memos already exist
+  const jeJson = (asset as any).journal_entry_completed_json;
+  const hasMemos = jeJson?.scenario_sections?.some((s: any) => 
+    s.entries_by_date?.some((e: any) => e.memo)
+  );
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-je-memos", {
+        body: { teaching_asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`JE memos added (${data.memos_added} entries)`);
+      onUpdated();
+    } catch (err: any) {
+      toast.error(err.message || "Memo generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <Tip label={hasMemos ? "Regenerate JE Memos" : "Add JE Memos"}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 text-[10px] px-1.5"
+        onClick={generate}
+        disabled={generating}
+      >
+        {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+          <MessageSquare className={`h-3 w-3 ${hasMemos ? "text-green-600" : ""}`} />
+        )}
+      </Button>
+    </Tip>
+  );
+}
+
 export default function AssetsLibrary() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -1288,6 +1335,9 @@ export default function AssetsLibrary() {
                           )}
                           {isAdmin && (
                             <SupplementaryJEButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
+                          )}
+                          {isAdmin && (
+                            <EnrichJEMemosButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
                           )}
                           {/* Solutions embed dropdown */}
                           <DropdownMenu>
