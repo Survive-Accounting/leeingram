@@ -1526,6 +1526,9 @@ export default function SolutionsViewer() {
             </p>
           )}
         </div>
+        </div>
+        {/* ── Right Mode Panel (desktop) ── */}
+        <RightModePanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
       </main>
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
