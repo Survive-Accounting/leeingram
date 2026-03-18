@@ -718,6 +718,22 @@ function SupplementaryJESection({ data, theme }: { data: { entries: { label: str
   );
 }
 
+/** Parse exam traps text into individual bullet points */
+function parseExamTraps(text: string): string[] {
+  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length >= 2) {
+    return lines.map(l => l.replace(/^[-•·]\s*/, '').replace(/^\d+[.)]\s*/, ''));
+  }
+  // Single block — split on sentence boundaries that start new trap topics
+  const trapStarters = /(?<=[.!])\s+(?=[A-Z][a-z]+(?:ing|ly|ful)\s)/g;
+  const parts = text.split(trapStarters).map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return parts.map(p => p.endsWith('.') ? p : p + '.');
+  }
+  // Fallback: split on ". " followed by capital letter
+  const sentences = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
+  return sentences.map(s => s.endsWith('.') ? s : s + '.');
+}
 
 
 export default function SolutionsViewer() {
