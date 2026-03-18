@@ -984,17 +984,6 @@ function RightModePanel({
         </div>
       </div>
 
-      {/* About Lee Card */}
-      <div
-        className="rounded-xl p-4"
-        style={{
-          background: isDark ? theme.cardBg : "#FFFFFF",
-          border: `1px solid ${theme.border}`,
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.08)",
-        }}
-      >
-        <AboutLeeContent theme={theme} compact />
-      </div>
     </div>
   );
 }
