@@ -1488,7 +1488,7 @@ export default function SolutionsViewer() {
         </div>
         </div>
         {/* ── Right Mode Panel (desktop) ── */}
-        <RightModePanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
+        <RightModePanel theme={t} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} shareUrl={shareUrl} />
       </main>
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
