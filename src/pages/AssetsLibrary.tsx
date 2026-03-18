@@ -974,6 +974,14 @@ export default function AssetsLibrary() {
                       setSelectedIds(new Set());
                       setIsCreatingSheets(false);
                     }
+                  } else if (bulkAction === "preview-paid" || bulkAction === "preview-free") {
+                    if (selected.length !== 1) {
+                      toast.error("Select one asset to preview");
+                    } else {
+                      const suffix = bulkAction === "preview-free" ? "?preview=true" : "";
+                      window.open(`/solutions/${selected[0].asset_name}${suffix}`, "_blank");
+                    }
+                    setSelectedIds(new Set());
                   }
                   setBulkAction(null);
                 }}
