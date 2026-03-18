@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
 import { SheetsCreatedLog } from "@/components/admin-dashboard/SheetsCreatedLog";
 
-import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen, ExternalLink, GitBranch, X, MessageSquare } from "lucide-react";
+import { Trash2, Search, Library, Download, Loader2, FolderPlus, FileText, Undo2, Layers, Landmark, Sheet, ChevronDown, ClipboardList, CheckCircle2, Eye, Presentation, ArrowUpDown, ArrowUp, ArrowDown, Wrench, RefreshCw, ListPlus, Film, BookOpen, ExternalLink, GitBranch, X, MessageSquare, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { InfoTip } from "@/components/InfoTip";
 import { Tip } from "@/components/Tip";
@@ -73,6 +73,7 @@ type TeachingAsset = {
   flowchart_image_url?: string | null;
   flowchart_image_id?: string | null;
   worked_steps?: string | null;
+  problem_title?: string | null;
 };
 type JournalOption = "question" | "feedback" | "none";
 
@@ -1214,13 +1215,7 @@ export default function AssetsLibrary() {
                 </button>
               </TableHead>
               {!isContentCreationVa && (
-                <TableHead className="text-xs">
-                  <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "google_sheet_status") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("google_sheet_status"); setSortDir("asc"); } }}>
-                    Sheet Status
-                    {sortField === "google_sheet_status" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                    <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
-                  </button>
-                </TableHead>
+                <TableHead className="text-xs">LW Tools</TableHead>
               )}
               <TableHead className="text-xs">
                 <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
@@ -1274,10 +1269,40 @@ export default function AssetsLibrary() {
                       {a.source_ref || "—"}
                     </TableCell>
                     {!isContentCreationVa && (
-                      <TableCell>
-                        <Badge variant="outline" className={`text-[9px] ${statusColor}`}>
-                          {statusIcon} {statusLabel}
-                        </Badge>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1 items-center">
+                          <Tip label="Copy title: Source Ref — Problem Title">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-1.5"
+                              onClick={() => {
+                                const title = (a as any).problem_title
+                                  ? `${a.source_ref} — ${(a as any).problem_title}`
+                                  : (a.source_ref || a.asset_name);
+                                navigator.clipboard.writeText(title);
+                                toast.success("Title copied");
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                              Title
+                            </Button>
+                          </Tip>
+                          <Tip label="Copy full solutions iFrame embed">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-1.5"
+                              onClick={() => {
+                                navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                                toast.success("iFrame copied");
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                              iFrame
+                            </Button>
+                          </Tip>
+                        </div>
                       </TableCell>
                     )}
                     <TableCell className="text-xs text-muted-foreground">
