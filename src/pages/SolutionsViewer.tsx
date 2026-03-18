@@ -539,11 +539,11 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
             {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
-            {segs.map((seg: any, segIdx: number) => {
+            {segs.map((seg, segIdx) => {
               if (seg.type === "je") {
                 return <InlineJETable key={`je-${segIdx}`} rows={seg.rows} heading={seg.heading} theme={theme} />;
               }
-              return seg.lines.map((line: { text: string; idx: number }) => {
+              return seg.lines.map((line) => {
                 const trimmed = line.text.trim();
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 if (isYearLabel) {
