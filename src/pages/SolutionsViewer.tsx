@@ -1799,39 +1799,8 @@ export default function SolutionsViewer() {
               )}
             </div>
 
-            {/* Testimonials card */}
-            <div className="mt-4">
-              <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: t.heading }}>
-                WHAT LEE'S STUDENTS ARE SAYING
-              </h2>
-              <div
-                className="rounded-xl px-6 py-6"
-                style={{
-                  background: t.pageBg,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
-                  border: `1px solid ${t.border}`,
-                }}
-              >
-                <TestimonialsSection theme={t} />
-              </div>
-            </div>
 
-            {/* About Lee card */}
-            <div className="mt-4">
-              <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: t.heading }}>
-                ABOUT LEE INGRAM
-              </h2>
-              <div
-                className="rounded-xl px-6 py-6"
-                style={{
-                  background: t.pageBg,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
-                  border: `1px solid ${t.border}`,
-                }}
-              >
-                <AboutLeeSection theme={t} />
-              </div>
-            </div>
+
 
 
 
