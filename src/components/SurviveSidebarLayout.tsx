@@ -668,6 +668,19 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 >
                   <Rocket className="h-3.5 w-3.5" /> ACCY 304 Beta
                 </Link>
+                <div className="border-t border-border my-2" />
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40 px-3 pb-1">Settings</p>
+                <Link
+                  to="/payment-links-admin"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/payment-links-admin")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <CreditCard className="h-3.5 w-3.5" /> Payment Links
+                </Link>
               </>
             )}
           </div>
