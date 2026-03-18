@@ -735,6 +735,43 @@ function parseExamTraps(text: string): string[] {
   return sentences.map(s => s.endsWith('.') ? s : s + '.');
 }
 
+/** Split text into bullet points, breaking long ones at ideal sentence boundaries */
+function splitLongBullets(text: string): string[] {
+  // First split into initial sentences
+  const raw = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
+  const sentences = raw.map(s => s.endsWith('.') ? s : s + '.');
+  
+  // Now split any bullet that's too long (> 200 chars)
+  const result: string[] = [];
+  for (const s of sentences) {
+    if (s.length <= 200) {
+      result.push(s);
+      continue;
+    }
+    // Try to split at a sentence boundary within the long bullet
+    const inner = s.match(/[^.!]+[.!]+/g);
+    if (inner && inner.length >= 2) {
+      // Find best split point near the middle
+      const mid = s.length / 2;
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      let cumLen = 0;
+      for (let i = 0; i < inner.length - 1; i++) {
+        cumLen += inner[i].length;
+        const dist = Math.abs(cumLen - mid);
+        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      }
+      const first = inner.slice(0, bestIdx + 1).join('').trim();
+      const second = inner.slice(bestIdx + 1).join('').trim();
+      if (first) result.push(first.endsWith('.') ? first : first + '.');
+      if (second) result.push(second.endsWith('.') ? second : second + '.');
+    } else {
+      result.push(s);
+    }
+  }
+  return result;
+}
+
 
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
@@ -1096,11 +1133,11 @@ export default function SolutionsViewer() {
         {/* 5. Key Concepts */}
         {conceptNotes.trim() && (
           <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
-            <ul className="space-y-2">
-              {conceptNotes.split(". ").filter((s: string) => s.trim()).map((sentence: string, i: number) => (
+            <ul className="space-y-3">
+              {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
                 <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
-                  <span>{sentence.endsWith(".") ? sentence : sentence + "."}</span>
+                  <span>{sentence}</span>
                 </li>
               ))}
             </ul>
@@ -1111,7 +1148,7 @@ export default function SolutionsViewer() {
         {examTraps.trim() && (
           <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
             <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {parseExamTraps(examTraps).map((trap: string, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
