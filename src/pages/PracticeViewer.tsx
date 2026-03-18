@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, Unlock, Moon, Sun, Copy, AlertTriangle, ChevronDown } from "lucide-react";
+import { Lock, Unlock, Copy, AlertTriangle, ChevronDown } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
@@ -523,13 +523,9 @@ export default function PracticeViewer() {
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
 
-  // Theme state (shared localStorage key with SolutionsViewer)
-  const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem("sa-viewer-theme");
-    return stored ? stored === "dark" : true;
-  });
-  useEffect(() => { localStorage.setItem("sa-viewer-theme", isDark ? "dark" : "light"); }, [isDark]);
-  const t = isDark ? darkTheme : lightTheme;
+  // Theme — light only
+  const isDark = false;
+  const t = lightTheme;
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
@@ -703,14 +699,6 @@ export default function PracticeViewer() {
               <p className="text-[11px]" style={{ color: t.textMuted }}>by Lee Ingram</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="p-2 rounded-md transition-colors"
-            style={{ background: t.cardBg, border: `1px solid ${t.border}` }}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDark ? <Sun className="h-4 w-4" style={{ color: t.text }} /> : <Moon className="h-4 w-4" style={{ color: t.text }} />}
-          </button>
         </div>
       </header>
 
