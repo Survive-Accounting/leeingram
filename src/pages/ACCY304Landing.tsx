@@ -331,8 +331,8 @@ export default function ACCY304Landing() {
   const handleEmailSubmit = async () => {
     const trimmed = email.trim().toLowerCase();
     const allowedExceptions = ["lee@survivestudios.com"];
-    if (!trimmed.endsWith(".edu") && !allowedExceptions.includes(trimmed)) {
-      setEmailError("Please use your university .edu email address");
+    if (!trimmed.endsWith("@olemiss.edu") && !allowedExceptions.includes(trimmed)) {
+      setEmailError("This tool is for Ole Miss students only. Please use your @olemiss.edu email address.");
       return;
     }
     setEmailError("");
