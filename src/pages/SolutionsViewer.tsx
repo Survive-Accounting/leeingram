@@ -920,21 +920,16 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
 
 function RightModePanel({
   theme,
-  isDark,
   practiceMode,
   onSetPracticeMode,
+  shareUrl,
 }: {
   theme: Theme;
-  isDark: boolean;
   practiceMode: boolean;
   onSetPracticeMode: (v: boolean) => void;
+  shareUrl: string;
 }) {
   const [showSpotlight, setShowSpotlight] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSpotlight(false), 3500);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="hidden xl:flex flex-col gap-4 shrink-0 self-start sticky top-[160px]" style={{ width: 220 }}>
@@ -942,20 +937,23 @@ function RightModePanel({
       <div
         className="rounded-xl p-4 relative"
         style={{
-          background: isDark ? theme.cardBg : "#FFFFFF",
+          background: "#FFFFFF",
           border: `1px solid ${theme.border}`,
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.08)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
         }}
       >
         <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: theme.textMuted }}>Study Mode</p>
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => onSetPracticeMode(true)}
+            onClick={() => {
+              onSetPracticeMode(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
             className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left"
             style={{
-              background: practiceMode ? (isDark ? "#1A2E55" : "#EEF2FF") : "transparent",
-              color: practiceMode ? (isDark ? "#93C5FD" : "#3B52B5") : theme.textMuted,
-              border: `1.5px solid ${practiceMode ? (isDark ? "#3B52B5" : "#C7D2FE") : theme.border}`,
+              background: practiceMode ? "#EEF2FF" : "transparent",
+              color: practiceMode ? "#3B52B5" : theme.textMuted,
+              border: `1.5px solid ${practiceMode ? "#C7D2FE" : theme.border}`,
             }}
           >
             <BookOpen className="h-4 w-4 shrink-0" /> Practice Mode
@@ -965,9 +963,9 @@ function RightModePanel({
               onClick={() => { onSetPracticeMode(false); setShowSpotlight(false); }}
               className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left relative z-10"
               style={{
-                background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
-                color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
-                border: `1.5px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
+                background: !practiceMode ? "#F0FFF4" : "transparent",
+                color: !practiceMode ? "#166534" : theme.textMuted,
+                border: `1.5px solid ${!practiceMode ? "#BBF7D0" : theme.border}`,
                 boxShadow: showSpotlight && practiceMode ? "0 0 20px rgba(22,101,52,0.5), 0 0 8px rgba(34,197,94,0.4)" : "none",
                 animation: showSpotlight && practiceMode ? "spotlight-pulse 1.2s ease-in-out infinite alternate" : "none",
               }}
@@ -985,12 +983,28 @@ function RightModePanel({
           </div>
         </div>
         <style>{`@keyframes spotlight-pulse { 0% { box-shadow: 0 0 12px rgba(22,101,52,0.3), 0 0 4px rgba(34,197,94,0.2); } 100% { box-shadow: 0 0 24px rgba(22,101,52,0.6), 0 0 10px rgba(34,197,94,0.4); } }`}</style>
+
+        {/* Share button */}
+        <button
+          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+          className="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold px-4 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97] mt-3"
+          style={{
+            color: "#FFFFFF",
+            background: "linear-gradient(135deg, #3B82F6, #2563EB)",
+            border: "1px solid rgba(59,130,246,0.5)",
+            boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
+            animation: "share-glow 2s ease-in-out infinite alternate",
+          }}
+        >
+          <Copy className="h-4 w-4" /> Share This
+        </button>
+        <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
+
         <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${theme.border}` }}>
           <p className="text-[12px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
           <p className="text-[12px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
         </div>
       </div>
-
     </div>
   );
 }
