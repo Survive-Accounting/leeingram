@@ -866,13 +866,12 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 // ── About Lee Content (shared between card and left panel) ──────────
 
 function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
-  const imgSize = compact ? "w-28 h-28" : "w-28 h-28";
   return (
     <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
       <img
         src={LEE_HEADSHOT_URL}
         alt="Lee Ingram"
-        className={`${imgSize} rounded-full object-cover`}
+        className={`${compact ? "w-36 h-36" : "w-40 h-40"} rounded-xl object-cover`}
         style={{ objectPosition: "top center" }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
