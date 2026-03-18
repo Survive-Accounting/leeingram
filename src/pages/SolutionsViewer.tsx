@@ -673,7 +673,53 @@ function FlowchartSubToggle({
   );
 }
 
-// ── Main page ───────────────────────────────────────────────────────
+// ── Supplementary JE Display (accounts only, ??? amounts) ───────────
+
+function SupplementaryJESection({ data, theme }: { data: { entries: { label: string; rows: { account_name: string; side: "debit" | "credit" }[] }[] }; theme: Theme }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-[12px] leading-[1.5] rounded-md px-3 py-2" style={{ background: theme.cardBg, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+        💡 These journal entries aren't explicitly required by the problem — but understanding the underlying entries helps you master the topic.
+      </p>
+      {data.entries.map((entry, ei) => (
+        <div key={ei}>
+          <p className="font-semibold text-[13px] mb-1.5" style={{ color: theme.text }}>{entry.label}</p>
+          <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: theme.tableHeaderBg }}>
+                  <th className="text-left px-3 py-1.5 text-white font-bold text-[12px]">Account</th>
+                  <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Debit</th>
+                  <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entry.rows.map((row, ri) => {
+                  const isCredit = row.side === "credit";
+                  return (
+                    <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
+                      <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
+                        {row.account_name}
+                      </td>
+                      <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
+                        {!isCredit ? "???" : ""}
+                      </td>
+                      <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
+                        {isCredit ? "???" : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
 
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
