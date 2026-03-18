@@ -1620,17 +1620,46 @@ export default function SolutionsViewer() {
         <div className="absolute inset-0" style={{ background: t.watermarkOverlay }} />
       </div>
 
+      {/* ── Preview Countdown Banner ── */}
+      {previewToken && tokenSession && tokenValidForAsset && (
+        <div
+          className="w-full text-center text-white font-bold text-[13px] flex items-center justify-center gap-2 flex-wrap"
+          style={{ background: "#CE1126", height: 40, position: "relative", zIndex: 25 }}
+        >
+          {previewExpired ? (
+            <>
+              Your preview has expired —{" "}
+              <a
+                href={enrollUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-bold hover:opacity-80"
+              >
+                Get Full Access →
+              </a>
+            </>
+          ) : (
+            <>
+              🔓 Free preview for {tokenSession.email} — Expires in{" "}
+              <span className="font-mono">{countdown}</span> ·{" "}
+              <a
+                href={enrollUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-bold hover:opacity-80"
+              >
+                Get Full Access →
+              </a>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── Navy Header Bar ── */}
       <header className="relative sticky top-0" style={{ background: "#14213D", zIndex: 20, height: HEADER_HEIGHT }}>
         <div className="mx-auto px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
-          <div className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="Survive Accounting" className="h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            <span className="text-[12px] text-white/50">Created by Lee Ingram</span>
-          </div>
-        </div>
-      </header>
 
-      {/* ── Hero Section ── */}
+          {/* ── Hero Section ── */}
       <div className="relative" style={{ zIndex: 5 }}>
         <div className="mx-auto px-6 mt-4" style={{ maxWidth: 1200 }}>
           <span
