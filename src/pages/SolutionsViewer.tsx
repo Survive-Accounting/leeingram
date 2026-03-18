@@ -735,6 +735,43 @@ function parseExamTraps(text: string): string[] {
   return sentences.map(s => s.endsWith('.') ? s : s + '.');
 }
 
+/** Split text into bullet points, breaking long ones at ideal sentence boundaries */
+function splitLongBullets(text: string): string[] {
+  // First split into initial sentences
+  const raw = text.split(/\.\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
+  const sentences = raw.map(s => s.endsWith('.') ? s : s + '.');
+  
+  // Now split any bullet that's too long (> 200 chars)
+  const result: string[] = [];
+  for (const s of sentences) {
+    if (s.length <= 200) {
+      result.push(s);
+      continue;
+    }
+    // Try to split at a sentence boundary within the long bullet
+    const inner = s.match(/[^.!]+[.!]+/g);
+    if (inner && inner.length >= 2) {
+      // Find best split point near the middle
+      const mid = s.length / 2;
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      let cumLen = 0;
+      for (let i = 0; i < inner.length - 1; i++) {
+        cumLen += inner[i].length;
+        const dist = Math.abs(cumLen - mid);
+        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      }
+      const first = inner.slice(0, bestIdx + 1).join('').trim();
+      const second = inner.slice(bestIdx + 1).join('').trim();
+      if (first) result.push(first.endsWith('.') ? first : first + '.');
+      if (second) result.push(second.endsWith('.') ? second : second + '.');
+    } else {
+      result.push(s);
+    }
+  }
+  return result;
+}
+
 
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
