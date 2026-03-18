@@ -190,6 +190,7 @@ export default function BulkFixTool() {
     if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
     if (operation === "custom_ai") return "Custom AI Rewrite";
     if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
+    if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
     return "";
   }, [operation, findText, replaceText]);
 
