@@ -341,10 +341,15 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
         return (
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
-            {label && <p className="font-bold text-[14px] mt-4 first:mt-0" style={{ color: theme.text }}>{label}</p>}
-            {contentLines.map((line, li) => (
-              <p key={li} className="text-[13px] ml-4 mb-1" style={{ color: theme.text }}>{line.trim()}</p>
-            ))}
+            {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
+            {contentLines.map((line, li) => {
+              const trimmed = line.trim();
+              const isYearLabel = /^\d{4}\s*:/.test(trimmed);
+              if (isYearLabel) {
+                return <p key={li} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
+              }
+              return <p key={li} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
+            })}
           </div>
         );
       })}
