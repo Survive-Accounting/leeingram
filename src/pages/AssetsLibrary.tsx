@@ -793,9 +793,15 @@ export default function AssetsLibrary() {
                   )}
                   {isAdmin && (
                     <SelectItem value="generate-prep-doc">
-                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Prep Doc</span>
+                      <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Generate Google Prep Doc</span>
                     </SelectItem>
                   )}
+                  <SelectItem value="preview-paid">
+                    <span className="flex items-center gap-1.5"><ExternalLink className="h-3 w-3" /> Preview Solutions (Paid)</span>
+                  </SelectItem>
+                  <SelectItem value="preview-free">
+                    <span className="flex items-center gap-1.5"><Eye className="h-3 w-3" /> Preview Solutions (Free)</span>
+                  </SelectItem>
                   {(isAdmin || isSheetPrepVa) && (
                     <SelectItem value="create-test-sheet">
                       <span className="flex items-center gap-1.5"><Sheet className="h-3 w-3" /> Create Test Sheet</span>
@@ -968,6 +974,14 @@ export default function AssetsLibrary() {
                       setSelectedIds(new Set());
                       setIsCreatingSheets(false);
                     }
+                  } else if (bulkAction === "preview-paid" || bulkAction === "preview-free") {
+                    if (selected.length !== 1) {
+                      toast.error("Select one asset to preview");
+                    } else {
+                      const suffix = bulkAction === "preview-free" ? "?preview=true" : "";
+                      window.open(`/solutions/${selected[0].asset_name}${suffix}`, "_blank");
+                    }
+                    setSelectedIds(new Set());
                   }
                   setBulkAction(null);
                 }}
@@ -1246,7 +1260,13 @@ export default function AssetsLibrary() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
-                                Preview in App →
+                                Preview — Paid (Full Solutions) →
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?preview=true`, "_blank")}>
+                                Preview — Free (Paywall) →
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`/practice/${a.asset_name}`, "_blank")}>
+                                Practice Mode →
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 const appUrl = window.location.origin;
