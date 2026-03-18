@@ -901,62 +901,9 @@ function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: b
   );
 }
 
-// ── Left Floating Panel — About Lee ─────────────────────────────────
+// LeftPanel removed — bio now lives under the RightModePanel
 
-function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
-  const [open, setOpen] = useState(true);
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
-        style={{
-          left: 40,
-          writingMode: "vertical-rl",
-          textOrientation: "mixed",
-          background: isDark ? theme.cardBg : "#FFFFFF",
-          color: theme.textMuted,
-          border: `1px solid ${theme.border}`,
-          borderRadius: "8px",
-          padding: "12px 8px",
-          fontSize: "12px",
-          fontWeight: 600,
-          boxShadow: isDark ? "2px 0 12px rgba(0,0,0,0.3)" : "2px 0 12px rgba(0,0,0,0.06)",
-          letterSpacing: "0.05em",
-        }}
-      >
-        About Lee
-      </button>
-    );
-  }
-
-  return (
-    <div
-      className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
-      style={{
-        left: 40,
-        width: 260,
-        background: isDark ? theme.cardBg : "#FFFFFF",
-        border: `1px solid ${theme.border}`,
-        borderRadius: "12px",
-        boxShadow: isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.08)",
-        padding: "16px 14px",
-      }}
-    >
-      <button
-        onClick={() => setOpen(false)}
-        className="absolute top-2 right-2 p-1 rounded-full hover:bg-black/5 transition-colors"
-        style={{ color: theme.textMuted }}
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-      <AboutLeeContent theme={theme} compact />
-    </div>
-  );
-}
-
-// ── Right Panel — Mode Switcher (attached to content card) ──────────
+// ── Right Column — Mode Switcher + About Lee ───────────────────────
 
 function RightModePanel({
   theme,
@@ -969,10 +916,18 @@ function RightModePanel({
   practiceMode: boolean;
   onSetPracticeMode: (v: boolean) => void;
 }) {
+  const [showSpotlight, setShowSpotlight] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSpotlight(false), 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="hidden xl:flex flex-col gap-2.5 shrink-0 self-start sticky top-[160px]" style={{ width: 200 }}>
+    <div className="hidden xl:flex flex-col gap-4 shrink-0 self-start sticky top-[160px]" style={{ width: 220 }}>
+      {/* Study Mode Card */}
       <div
-        className="rounded-xl p-4"
+        className="rounded-xl p-4 relative"
         style={{
           background: isDark ? theme.cardBg : "#FFFFFF",
           border: `1px solid ${theme.border}`,
@@ -992,22 +947,47 @@ function RightModePanel({
           >
             <BookOpen className="h-4 w-4 shrink-0" /> Practice Mode
           </button>
-          <button
-            onClick={() => onSetPracticeMode(false)}
-            className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left"
-            style={{
-              background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
-              color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
-              border: `1.5px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
-            }}
-          >
-            <CheckCircle className="h-4 w-4 shrink-0" /> View Solution
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => { onSetPracticeMode(false); setShowSpotlight(false); }}
+              className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left relative z-10"
+              style={{
+                background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
+                color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
+                border: `1.5px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
+                boxShadow: showSpotlight && practiceMode ? "0 0 20px rgba(22,101,52,0.5), 0 0 8px rgba(34,197,94,0.4)" : "none",
+                animation: showSpotlight && practiceMode ? "spotlight-pulse 1.2s ease-in-out infinite alternate" : "none",
+              }}
+            >
+              <CheckCircle className="h-4 w-4 shrink-0" /> View Solution
+            </button>
+            {showSpotlight && practiceMode && (
+              <div
+                className="absolute -top-2 -right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold z-20 animate-bounce"
+                style={{ background: "#166534", color: "#FFFFFF" }}
+              >
+                ← Tap to reveal
+              </div>
+            )}
+          </div>
         </div>
+        <style>{`@keyframes spotlight-pulse { 0% { box-shadow: 0 0 12px rgba(22,101,52,0.3), 0 0 4px rgba(34,197,94,0.2); } 100% { box-shadow: 0 0 24px rgba(22,101,52,0.6), 0 0 10px rgba(34,197,94,0.4); } }`}</style>
         <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${theme.border}` }}>
           <p className="text-[12px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
           <p className="text-[12px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
         </div>
+      </div>
+
+      {/* About Lee Card */}
+      <div
+        className="rounded-xl p-4"
+        style={{
+          background: isDark ? theme.cardBg : "#FFFFFF",
+          border: `1px solid ${theme.border}`,
+          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.08)",
+        }}
+      >
+        <AboutLeeContent theme={theme} compact />
       </div>
     </div>
   );
@@ -1078,7 +1058,7 @@ export default function SolutionsViewer() {
   const [showHighlights, setShowHighlights] = useState(false);
 
   // Practice mode — hides reveal toggles
-  const [practiceMode, setPracticeMode] = useState(isPreview);
+  const [practiceMode, setPracticeMode] = useState(true);
   const problemRef = useRef<HTMLDivElement>(null);
 
   const handleSetPracticeMode = (v: boolean) => {
@@ -1320,8 +1300,7 @@ export default function SolutionsViewer() {
         </div>
       </div>
 
-      {/* ── Floating Left Panel (desktop only) ── */}
-      <LeftPanel theme={t} isDark={isDark} />
+      {/* Left panel removed — bio now in right column */}
 
       {/* ── Content with side panel ── */}
       <main className="relative mx-auto px-6 py-8 flex gap-4 justify-center" style={{ zIndex: 5, maxWidth: 1040 }}>
