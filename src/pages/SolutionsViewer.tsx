@@ -881,7 +881,7 @@ export default function SolutionsViewer() {
 
         {/* 1. Solution (was Answer Summary) */}
         {answerSummary.trim() && (
-          <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl}>
+          <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Solution" assetCode={asset.asset_name}>
             <AnswerSummarySection text={answerSummary} theme={t} />
           </RevealToggle>
         )}
