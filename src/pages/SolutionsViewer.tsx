@@ -164,6 +164,23 @@ function PipeTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
   );
 }
 
+function KVTable({ rows, theme }: { rows: string[][]; theme: Theme }) {
+  return (
+    <div className="my-4 flex justify-center">
+      <table className="text-[14px]">
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri}>
+              <td className="pr-6 py-[3px] text-right" style={{ color: theme.text }}>{row[0]}</td>
+              <td className="py-[3px] text-right font-mono" style={{ color: theme.text }}>{row[1]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function SmartContent({ text, className, theme }: { text: string; className?: string; theme: Theme }) {
   const segments = parsePipeSegments(text);
   return (
@@ -171,7 +188,9 @@ function SmartContent({ text, className, theme }: { text: string; className?: st
       {segments.map((seg, i) =>
         seg.type === "table" && seg.rows
           ? <PipeTable key={i} rows={seg.rows} theme={theme} />
-          : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
+          : seg.type === "kv-table" && seg.rows
+            ? <KVTable key={i} rows={seg.rows} theme={theme} />
+            : <p key={i} className="whitespace-pre-wrap">{seg.content}</p>
       )}
     </div>
   );
