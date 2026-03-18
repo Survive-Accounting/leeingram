@@ -1505,10 +1505,8 @@ export default function SolutionsViewer() {
           )}
         </div>
 
-        {/* ── About Lee Card ── */}
-        <div className="mt-12 rounded-xl p-6" style={{ background: t.cardBg, border: `1px solid ${t.border}`, boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.3)" : "0 4px 16px rgba(0,0,0,0.04)" }}>
-          <AboutLeeContent theme={t} />
-        </div>
+        {/* ── Testimonials ── */}
+        <TestimonialsSection theme={t} />
 
         {/* ── Testimonials ── */}
         <TestimonialsSection theme={t} />
