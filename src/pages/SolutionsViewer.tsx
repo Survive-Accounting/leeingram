@@ -748,7 +748,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
 
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState(currentType);
-  const [selectedAssetName, setSelectedAssetName] = useState(currentAsset.asset_name || "");
+  const [selectedSourceCode, setSelectedSourceCode] = useState(currentAsset.source_ref || "");
 
   const { data: chapters } = useQuery({
     queryKey: ["ia2-chapters-nav"],
@@ -767,19 +767,24 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     queryKey: ["nav-assets", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
-      const { data } = await supabase
+
+      const { data: approvedAssets } = await supabase
         .from("teaching_assets")
-        .select(`
-          asset_name,
-          source_ref,
-          source_problem_id,
-          chapter_problems!teaching_assets_source_problem_id_fkey(source_label)
-        `)
+        .select("asset_name, source_ref")
         .eq("chapter_id", selectedChapterId)
         .not("asset_approved_at", "is", null)
         .order("source_ref");
 
-      let filtered = data || [];
+      const { data: chapterProblems } = await supabase
+        .from("chapter_problems")
+        .select("source_code, source_label")
+        .eq("chapter_id", selectedChapterId)
+        .order("source_code");
+
+      const approved = approvedAssets || [];
+      const labelsByCode = new Map((chapterProblems || []).map((p: any) => [p.source_code, p.source_label]));
+
+      let filtered = approved;
       if (selectedType !== "all") {
         filtered = filtered.filter((a: any) => {
           const ref = (a.source_ref || "").toUpperCase();
@@ -789,26 +794,32 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
           return true;
         });
       }
-      return filtered;
+
+      return filtered.map((a: any) => ({
+        asset_name: a.asset_name,
+        source_ref: a.source_ref,
+        source_label: labelsByCode.get(a.source_ref) || a.source_ref,
+      }));
     },
     enabled: !!selectedChapterId,
   });
 
   useEffect(() => {
     if (!chapterAssets?.length) {
-      setSelectedAssetName("");
+      setSelectedSourceCode("");
       return;
     }
 
-    const stillExists = chapterAssets.some((a: any) => a.asset_name === selectedAssetName);
+    const stillExists = chapterAssets.some((a: any) => a.source_ref === selectedSourceCode);
     if (!stillExists) {
-      setSelectedAssetName(chapterAssets[0].asset_name);
+      setSelectedSourceCode(chapterAssets[0].source_ref);
     }
-  }, [chapterAssets, selectedAssetName]);
+  }, [chapterAssets, selectedSourceCode]);
 
   const handleGo = () => {
-    if (selectedAssetName) {
-      navigate(`/solutions/${selectedAssetName}?preview=true`);
+    const match = chapterAssets?.find((a: any) => a.source_ref === selectedSourceCode);
+    if (match?.asset_name) {
+      navigate(`/solutions/${match.asset_name}?preview=true`);
     }
   };
 
@@ -839,7 +850,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
 
         <select
           value={selectedChapterId}
-          onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedAssetName(""); }}
+          onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedSourceCode(""); }}
           style={selectStyle}
         >
           <option value="">Chapter…</option>
@@ -850,7 +861,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
 
         <select
           value={selectedType}
-          onChange={(e) => { setSelectedType(e.target.value); setSelectedAssetName(""); }}
+          onChange={(e) => { setSelectedType(e.target.value); setSelectedSourceCode(""); }}
           style={selectStyle}
         >
           <option value="all">Type…</option>
@@ -860,22 +871,22 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
         </select>
 
         <select
-          value={selectedAssetName}
-          onChange={(e) => setSelectedAssetName(e.target.value)}
+          value={selectedSourceCode}
+          onChange={(e) => setSelectedSourceCode(e.target.value)}
           disabled={!chapterAssets?.length}
           style={{ ...selectStyle, minWidth: 132, opacity: chapterAssets?.length ? 1 : 0.55 }}
         >
           <option value="">{!selectedChapterId ? "#…" : chapterAssets?.length ? "Choose #…" : "None found"}</option>
           {(chapterAssets || []).map((a: any) => (
-            <option key={a.asset_name} value={a.asset_name}>
-              {a.chapter_problems?.source_label || a.source_ref}
+            <option key={a.asset_name} value={a.source_ref}>
+              {a.source_label}
             </option>
           ))}
         </select>
 
         <button
           onClick={handleGo}
-          disabled={!selectedAssetName}
+          disabled={!selectedSourceCode}
           className="px-3 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
           style={{ background: "#14213D", height: 34 }}
         >
