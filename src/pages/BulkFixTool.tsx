@@ -546,6 +546,20 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
               // If neither field had data, skip
               if (!changed) { skipped++; return; }
+            } else if (operation === "generate_supplementary_je") {
+              // Skip if already has supplementary JE or no main JE
+              const jeJson = (asset as any).journal_entry_completed_json;
+              const suppJson = (asset as any).supplementary_je_json;
+              if (!jeJson || suppJson) { skipped++; return; }
+
+              // Call the existing edge function
+              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-supplementary-je", {
+                body: { teaching_asset_id: asset.id },
+              });
+
+              if (fnErr || !result?.success) { skipped++; return; }
+              changed = true;
+              // No need to update here — edge function already writes to DB
             }
 
             if (changed) {
