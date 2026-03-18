@@ -1210,13 +1210,7 @@ export default function SolutionsViewer() {
 
           {formulas.trim() && (
             <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
-              <div className="space-y-3">
-                {formulas.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => (
-                  <div key={i} className="rounded px-4 py-2.5 border-l-[3px]" style={{ background: t.formulaBg, borderColor: t.formulaBorder }}>
-                    <p className="font-mono text-[13px]" style={{ color: t.text }}>{line}</p>
-                  </div>
-                ))}
-              </div>
+              <GroupedFormulas text={formulas} theme={t} />
             </RevealToggle>
           )}
 
