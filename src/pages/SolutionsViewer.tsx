@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Sun, Moon, Video } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, Sun, Moon, Video, X, BookOpen, CheckCircle, Calendar } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
@@ -863,6 +863,199 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 }
 
 
+// ── About Lee Content (shared between card and left panel) ──────────
+
+function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
+  const imgSize = compact ? "w-20 h-20" : "w-28 h-28";
+  return (
+    <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
+      <img
+        src={LEE_HEADSHOT_URL}
+        alt="Lee Ingram"
+        className={`${imgSize} rounded-full object-cover`}
+        style={{ objectPosition: "top center" }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+      <div className={compact ? "space-y-2" : "space-y-3"}>
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`} style={{ color: theme.text }}>
+          Tutoring entrepreneur since 2015. Founder of Survive Accounting — exam prep built from thousands of real Ole Miss tutoring sessions.
+        </p>
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`} style={{ color: theme.text }}>
+          I love helping students ace exams with minimal effort. Thanks for stopping by.
+        </p>
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} italic`} style={{ color: theme.text }}>— Lee</p>
+      </div>
+      <div className={`flex flex-col gap-1.5 ${compact ? "text-[11px]" : "text-[12px]"}`}>
+        <a href="mailto:lee@surviveaccounting.com" className="hover:underline" style={{ color: "#3B82F6" }}>
+          lee@surviveaccounting.com
+        </a>
+        <a
+          href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1 hover:underline font-semibold"
+          style={{ color: "#3B82F6" }}
+        >
+          <Calendar className="h-3 w-3" /> Book 1-on-1 Virtual Tutoring →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Left Floating Panel — About Lee ─────────────────────────────────
+
+function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
+  const [open, setOpen] = useState(true);
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
+        style={{
+          writingMode: "vertical-rl",
+          textOrientation: "mixed",
+          background: isDark ? theme.cardBg : "#FFFFFF",
+          color: theme.textMuted,
+          border: `1px solid ${theme.border}`,
+          borderLeft: "none",
+          borderRadius: "0 8px 8px 0",
+          padding: "12px 8px",
+          fontSize: "12px",
+          fontWeight: 600,
+          boxShadow: isDark ? "2px 0 12px rgba(0,0,0,0.3)" : "2px 0 12px rgba(0,0,0,0.06)",
+          letterSpacing: "0.05em",
+        }}
+      >
+        About Lee
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      style={{
+        width: 220,
+        background: isDark ? theme.cardBg : "#FFFFFF",
+        border: `1px solid ${theme.border}`,
+        borderLeft: "none",
+        borderRadius: "0 12px 12px 0",
+        boxShadow: isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.08)",
+        padding: "16px 14px",
+      }}
+    >
+      <button
+        onClick={() => setOpen(false)}
+        className="absolute top-2 right-2 p-1 rounded-full hover:bg-black/5 transition-colors"
+        style={{ color: theme.textMuted }}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+      <AboutLeeContent theme={theme} compact />
+    </div>
+  );
+}
+
+// ── Right Floating Panel — Mode Switcher ────────────────────────────
+
+function RightPanel({
+  theme,
+  isDark,
+  practiceMode,
+  onSetPracticeMode,
+}: {
+  theme: Theme;
+  isDark: boolean;
+  practiceMode: boolean;
+  onSetPracticeMode: (v: boolean) => void;
+}) {
+  return (
+    <div
+      className="fixed right-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      style={{
+        width: 180,
+        background: isDark ? theme.cardBg : "#FFFFFF",
+        border: `1px solid ${theme.border}`,
+        borderRight: "none",
+        borderRadius: "12px 0 0 12px",
+        boxShadow: isDark ? "-4px 0 24px rgba(0,0,0,0.3)" : "-4px 0 24px rgba(0,0,0,0.08)",
+        padding: "16px 14px",
+      }}
+    >
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={() => onSetPracticeMode(true)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all text-left"
+          style={{
+            background: practiceMode ? (isDark ? "#1A2E55" : "#EEF2FF") : "transparent",
+            color: practiceMode ? (isDark ? "#93C5FD" : "#3B52B5") : theme.textMuted,
+            border: `1px solid ${practiceMode ? (isDark ? "#3B52B5" : "#C7D2FE") : theme.border}`,
+          }}
+        >
+          <BookOpen className="h-3.5 w-3.5 shrink-0" /> Practice Mode
+        </button>
+        <button
+          onClick={() => onSetPracticeMode(false)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all text-left"
+          style={{
+            background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
+            color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
+            border: `1px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
+          }}
+        >
+          <CheckCircle className="h-3.5 w-3.5 shrink-0" /> View Solution
+        </button>
+      </div>
+      <div className="mt-4 pt-3 space-y-1.5" style={{ borderTop: `1px solid ${theme.border}` }}>
+        <p className="text-[11px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
+        <p className="text-[11px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Testimonials Section ────────────────────────────────────────────
+
+function TestimonialsSection({ theme }: { theme: Theme }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const scriptId = "testimonialto-resize-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://testimonial.to/js/iframeResizer.min.js";
+      script.onload = () => {
+        if ((window as any).iFrameResize && iframeRef.current) {
+          (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+        }
+      };
+      document.body.appendChild(script);
+    } else if ((window as any).iFrameResize && iframeRef.current) {
+      (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+    }
+  }, []);
+
+  return (
+    <div className="mt-10">
+      <h2 className="text-[13px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: theme.textMuted }}>
+        What Students Are Saying
+      </h2>
+      <iframe
+        ref={iframeRef}
+        id="testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
+        src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=317c8816-eefb-469f-8173-b79efef6c2fa"
+        frameBorder="0"
+        scrolling="no"
+        width="100%"
+        style={{ minHeight: 300, border: "none" }}
+      />
+    </div>
+  );
+}
+
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const [searchParams] = useSearchParams();
@@ -886,6 +1079,17 @@ export default function SolutionsViewer() {
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
+
+  // Practice mode — hides reveal toggles
+  const [practiceMode, setPracticeMode] = useState(isPreview);
+  const problemRef = useRef<HTMLDivElement>(null);
+
+  const handleSetPracticeMode = (v: boolean) => {
+    setPracticeMode(v);
+    if (v && problemRef.current) {
+      problemRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
@@ -1125,6 +1329,10 @@ export default function SolutionsViewer() {
         </div>
       </div>
 
+      {/* ── Floating Side Panels (desktop only) ── */}
+      <LeftPanel theme={t} isDark={isDark} />
+      <RightPanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
+
       {/* ── Content ── */}
       <main className="relative max-w-[780px] mx-auto px-6 py-8" style={{ zIndex: 5 }}>
         {/* Content card with drop shadow */}
@@ -1143,7 +1351,7 @@ export default function SolutionsViewer() {
 
           {/* Problem text — always visible */}
           {rawProblemText.trim() && (
-            <div>
+            <div ref={problemRef}>
               {hasHighlights && (
                 <div className="flex items-center gap-2 mb-3">
                   <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
@@ -1175,168 +1383,134 @@ export default function SolutionsViewer() {
             </>
           )}
 
-          {/* ── Reveal Toggles ── */}
-
-          {/* 1. Solution — with video request link in footer */}
-          {answerSummary.trim() && (
-            <RevealToggle
-              label="Reveal Solution"
-              theme={t}
-              isPreview={isPreview}
-              enrollUrl={enrollUrl}
-              sectionName="Solution"
-              assetCode={asset.asset_name}
-              extraFooterLeft={
-                <a
-                  href={videoMailto}
-                  className="flex items-center gap-1.5 text-[12px] hover:underline"
-                  style={{ color: "#3B82F6" }}
+          {/* ── Reveal Toggles (hidden in practice mode) ── */}
+          {!practiceMode && (
+            <>
+              {/* 1. Solution — with video request link in footer */}
+              {answerSummary.trim() && (
+                <RevealToggle
+                  label="Reveal Solution"
+                  theme={t}
+                  isPreview={isPreview}
+                  enrollUrl={enrollUrl}
+                  sectionName="Solution"
+                  assetCode={asset.asset_name}
+                  extraFooterLeft={
+                    <a
+                      href={videoMailto}
+                      className="flex items-center gap-1.5 text-[12px] hover:underline"
+                      style={{ color: "#3B82F6" }}
+                    >
+                      <Video className="h-3 w-3" />
+                      Request Video Explanation →
+                    </a>
+                  }
                 >
-                  <Video className="h-3 w-3" />
-                  Request Video Explanation →
-                </a>
-              }
-            >
-              <AnswerSummarySection text={answerSummary} theme={t} />
-            </RevealToggle>
-          )}
-
-          {/* 2. How to Solve This — per-instruction flowcharts */}
-          {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-            <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
-              {asset._flowcharts?.length > 1 ? (
-                <div className="space-y-2">
-                  {asset._flowcharts.map((fc: any) => {
-                    const instr = (asset._instructions || []).find(
-                      (ins: any) => ins.instruction_number === fc.instruction_number
-                    );
-                    const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
-                    const text = instr?.instruction_text || `Part ${letter}`;
-
-                    return (
-                      <FlowchartSubToggle
-                        key={fc.instruction_number}
-                        letter={letter}
-                        instructionText={text}
-                        imageUrl={fc.flowchart_image_url}
-                        theme={t}
-                      />
-                    );
-                  })}
-                </div>
-              ) : asset._flowcharts?.length === 1 ? (
-                <img
-                  src={asset._flowcharts[0].flowchart_image_url}
-                  alt="How to Solve This — step-by-step flowchart"
-                  className="w-full rounded-lg"
-                  loading="lazy"
-                />
-              ) : (
-                <img
-                  src={asset.flowchart_image_url}
-                  alt="How to Solve This — step-by-step flowchart"
-                  className="w-full rounded-lg"
-                  loading="lazy"
-                />
+                  <AnswerSummarySection text={answerSummary} theme={t} />
+                </RevealToggle>
               )}
-            </RevealToggle>
-          )}
 
-          {/* 3. Journal Entries */}
-          {hasJE && (
-            <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
-              {isPreview ? (
-                <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
-              ) : (
-                hasCanonicalJE ? (
-                  <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
-                ) : (
-                  <RawJEFallback text={jeBlock} theme={t} />
-                )
+              {/* 2. How to Solve This — per-instruction flowcharts */}
+              {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
+                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
+                  {asset._flowcharts?.length > 1 ? (
+                    <div className="space-y-2">
+                      {asset._flowcharts.map((fc: any) => {
+                        const instr = (asset._instructions || []).find(
+                          (ins: any) => ins.instruction_number === fc.instruction_number
+                        );
+                        const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
+                        const text = instr?.instruction_text || `Part ${letter}`;
+                        return (
+                          <FlowchartSubToggle
+                            key={fc.instruction_number}
+                            letter={letter}
+                            instructionText={text}
+                            imageUrl={fc.flowchart_image_url}
+                            theme={t}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : asset._flowcharts?.length === 1 ? (
+                    <img src={asset._flowcharts[0].flowchart_image_url} alt="How to Solve This — step-by-step flowchart" className="w-full rounded-lg" loading="lazy" />
+                  ) : (
+                    <img src={asset.flowchart_image_url} alt="How to Solve This — step-by-step flowchart" className="w-full rounded-lg" loading="lazy" />
+                  )}
+                </RevealToggle>
               )}
-            </RevealToggle>
-          )}
 
-          {/* 3b. Supplementary / Related Journal Entries */}
-          {asset.supplementary_je_json && (
-            <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
-              <SupplementaryJESection
-                data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
-                theme={t}
-              />
-            </RevealToggle>
-          )}
+              {/* 3. Journal Entries */}
+              {hasJE && (
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
+                  {isPreview ? (
+                    <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
+                  ) : (
+                    hasCanonicalJE ? (
+                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
+                    ) : (
+                      <RawJEFallback text={jeBlock} theme={t} />
+                    )
+                  )}
+                </RevealToggle>
+              )}
 
-          {formulas.trim() && (
-            <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
-              <GroupedFormulas text={formulas} theme={t} />
-            </RevealToggle>
-          )}
+              {/* 3b. Supplementary / Related Journal Entries */}
+              {asset.supplementary_je_json && (
+                <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
+                  <SupplementaryJESection
+                    data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
+                    theme={t}
+                  />
+                </RevealToggle>
+              )}
 
-          {/* 5. Key Concepts */}
-          {conceptNotes.trim() && (
-            <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
-              <ul className="space-y-3">
-                {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
-                    <span>{sentence}</span>
-                  </li>
-                ))}
-              </ul>
-            </RevealToggle>
-          )}
+              {formulas.trim() && (
+                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
+                  <GroupedFormulas text={formulas} theme={t} />
+                </RevealToggle>
+              )}
 
-          {/* 6. Exam Traps */}
-          {examTraps.trim() && (
-            <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
-              <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
-                <ul className="space-y-3">
-                  {parseExamTraps(examTraps).map((trap: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
-                      <span>{trap}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </RevealToggle>
+              {/* 5. Key Concepts */}
+              {conceptNotes.trim() && (
+                <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
+                  <ul className="space-y-3">
+                    {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
+                        <span>{sentence}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </RevealToggle>
+              )}
+
+              {/* 6. Exam Traps */}
+              {examTraps.trim() && (
+                <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
+                  <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
+                    <ul className="space-y-3">
+                      {parseExamTraps(examTraps).map((trap: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
+                          <span>{trap}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </RevealToggle>
+              )}
+            </>
           )}
         </div>
 
         {/* ── About Lee Card ── */}
         <div className="mt-12 rounded-xl p-6" style={{ background: t.cardBg, border: `1px solid ${t.border}`, boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.3)" : "0 4px 16px rgba(0,0,0,0.04)" }}>
-          <div className="flex flex-col sm:flex-row gap-6">
-            <div className="sm:w-[30%] flex flex-col items-center text-center shrink-0">
-              <img
-                src={LEE_HEADSHOT_URL}
-                alt="Lee Ingram"
-                className="w-full object-cover"
-                style={{ maxWidth: 220, borderRadius: 12 }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-              <p className="font-bold text-[14px] mt-3" style={{ color: t.text }}>Lee Ingram</p>
-              <p className="text-[12px]" style={{ color: t.textMuted }}>Ole Miss ACCY Tutor since 2015</p>
-            </div>
-            <div className="sm:w-[70%]">
-              <p className="font-bold text-[13px] mb-2" style={{ color: t.text }}>About Lee Ingram</p>
-              <p className="text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                Ole Miss Accounting alum · B.A. &amp; M.Acc. · 3.75 GPA
-              </p>
-              <p className="text-[13px] leading-[1.6] mt-3" style={{ color: t.text }}>
-                Tutoring entrepreneur since 2015, building exam prep from thousands of real Ole Miss tutoring sessions.
-              </p>
-              <p className="text-[12px] mt-3" style={{ color: t.textMuted }}>
-                Join 2,000+ Ole Miss students I've helped since 2015.
-              </p>
-              <a href="mailto:lee@surviveaccounting.com" className="text-[12px] mt-1 inline-block hover:underline" style={{ color: "#3B82F6" }}>
-                📨 lee@surviveaccounting.com
-              </a>
-            </div>
-          </div>
+          <AboutLeeContent theme={t} />
         </div>
+
+        {/* ── Testimonials ── */}
+        <TestimonialsSection theme={t} />
 
         {/* ── Footer ── */}
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
