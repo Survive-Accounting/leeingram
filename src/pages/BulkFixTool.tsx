@@ -195,7 +195,7 @@ export default function BulkFixTool() {
 
   // Build the scope query
   function buildScopeQuery() {
-    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json");
+    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json");
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
     if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
