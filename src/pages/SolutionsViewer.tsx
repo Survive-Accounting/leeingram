@@ -639,7 +639,7 @@ export default function SolutionsViewer() {
     : asset.problem_context || "";
   const problemParagraphs = splitLongText(rawProblemText);
 
-  const shareUrl = `${window.location.origin}/solutions/${asset.asset_name}${isPreview ? "?preview=true" : ""}`;
+  const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}${isPreview ? "?preview=true" : ""}`;
 
   return (
     <div className="min-h-screen" style={{ background: t.pageBg }}>
