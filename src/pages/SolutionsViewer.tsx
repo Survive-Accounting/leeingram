@@ -545,7 +545,7 @@ export default function SolutionsViewer() {
       const { data: assets, error: assetErr } = await (supabase
         .from("teaching_assets")
         .select(`
-          id, asset_name, source_ref, source_number,
+          id, asset_name, source_ref, source_number, base_raw_problem_id,
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
           important_formulas, concept_notes, exam_traps,
@@ -563,6 +563,17 @@ export default function SolutionsViewer() {
       const asset = assets?.[0];
       if (!asset) return null;
 
+      // Fetch problem title from chapter_problems
+      let problemTitle = "";
+      if (asset.base_raw_problem_id) {
+        const { data: cpData } = await supabase
+          .from("chapter_problems")
+          .select("title")
+          .eq("id", asset.base_raw_problem_id)
+          .single();
+        problemTitle = cpData?.title || "";
+      }
+
       // Fetch instructions from problem_instructions table
       const { data: instrData } = await supabase
         .from("problem_instructions")
@@ -570,7 +581,7 @@ export default function SolutionsViewer() {
         .eq("teaching_asset_id", asset.id)
         .order("instruction_number");
 
-      return { ...asset, _instructions: instrData || [] };
+      return { ...asset, _problemTitle: problemTitle, _instructions: instrData || [] };
     },
     enabled: !!assetCode,
   });
@@ -583,6 +594,15 @@ export default function SolutionsViewer() {
     sessionStorage.setItem(key, "1");
     supabase.rpc("increment_solutions_views", { asset_id: data.id }).then(() => {});
   }, [data?.id]);
+
+  // Page title
+  useEffect(() => {
+    if (!data) return;
+    const ref = data.source_ref || data.asset_name || "";
+    const pt = data._problemTitle || "";
+    document.title = pt ? `${ref} — ${pt} | Survive Accounting` : `${ref} | Survive Accounting`;
+    return () => { document.title = "Survive Accounting"; };
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -612,7 +632,10 @@ export default function SolutionsViewer() {
     : "";
   const courseCode = course?.code || "";
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
-  const titleLine = asset.source_ref || asset.asset_name;
+  const problemTitle = asset._problemTitle || "";
+  const titleLine = problemTitle
+    ? `${asset.source_ref || asset.asset_name} — ${problemTitle}`
+    : (asset.source_ref || asset.asset_name);
 
   // Instructions: priority 1 = problem_instructions table, 2 = instruction_1-5, 3 = instruction_list
   let instructions: string[] = (asset._instructions || [])
@@ -703,7 +726,11 @@ export default function SolutionsViewer() {
       <div style={{ background: t.cardBg, borderBottom: `1px solid ${t.border}` }} className="mt-3">
         <div className="max-w-[780px] mx-auto px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <p className="font-bold text-[14px]" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>{titleLine}</p>
+            <p className="text-[14px]" style={{ color: isDark ? "#FFFFFF" : "#131E35" }}>
+              <span className="font-bold">{asset.source_ref || asset.asset_name}</span>
+              {problemTitle && <span style={{ color: t.textMuted }}> — </span>}
+              {problemTitle && <span>{problemTitle}</span>}
+            </p>
             {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
             <a
               href={`mailto:lee@surviveaccounting.com?subject=Video Request: ${asset.asset_name}&body=I would like a video explanation for ${asset.source_ref || ""} (${asset.asset_name}).`}
