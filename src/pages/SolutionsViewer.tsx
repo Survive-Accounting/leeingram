@@ -1268,37 +1268,16 @@ export default function SolutionsViewer() {
         </div>
 
         {/* Identifier / Title Bar */}
-        <div className="mt-3" style={{ background: isDark ? "rgba(26,35,51,0.8)" : "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
-          <div className="max-w-[780px] mx-auto px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
+          <div className="mx-auto px-6 py-4" style={{ maxWidth: 1040 }}>
             <div>
-              {sourceRef && (
-                <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>
-                  Based on {sourceRef}
-                </p>
-              )}
               <h1
                 className="text-[18px] font-bold leading-tight"
-                style={{ color: isDark ? "#FFFFFF" : "#131E35" }}
+                style={{ color: "#131E35" }}
               >
                 {problemTitle || ""}
               </h1>
               {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — share with classmates!"); }}
-                className="flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97]"
-                style={{
-                  color: "#FFFFFF",
-                  background: "linear-gradient(135deg, #3B82F6, #2563EB)",
-                  border: "1px solid rgba(59,130,246,0.5)",
-                  boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
-                  animation: "share-glow 2s ease-in-out infinite alternate",
-                }}
-              >
-                <Copy className="h-4 w-4" /> Share This
-              </button>
-              <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
             </div>
           </div>
         </div>
