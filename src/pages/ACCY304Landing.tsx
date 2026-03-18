@@ -724,9 +724,9 @@ export default function ACCY304Landing() {
       <WaveDivider topColor="#14213D" bottomColor="#0D1528" />
       <section style={{ background: "#0D1528" }} className="px-6 py-16 md:py-20">
         <div className="max-w-[760px] mx-auto text-center">
-          <p className="text-white font-bold text-[26px] md:text-[30px] tracking-tight">Ready to stop guessing on exams?</p>
+          <p className="text-white font-bold text-[26px] md:text-[30px] tracking-tight">Ready to start studying?</p>
           <p className="text-white/60 text-[15px] mt-3">
-            Join ACCY 304 students getting full access to every Intermediate Accounting 2 problem.
+            Join ACCY 304 students getting full access to 500+ practice problems with full worked solutions.
           </p>
           <div className="mt-8">
             <a
@@ -744,13 +744,6 @@ export default function ACCY304Landing() {
           </p>
         </div>
       </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="px-6 py-6" style={{ background: "#0A0E1A" }}>
-        <p className="text-center text-white/30 text-[12px]">
-          Survive Accounting · Lee Ingram · surviveaccounting.com
-        </p>
-      </footer>
     </div>
   );
 }
