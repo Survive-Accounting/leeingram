@@ -86,7 +86,14 @@ function StyledSelect({
         }`}
         style={light ? { colorScheme: "dark" } : undefined}
       >
-        {children}
+        {React.Children.map(children, (child) => {
+          if (React.isValidElement<React.OptionHTMLAttributes<HTMLOptionElement>>(child) && child.type === 'option') {
+            return React.cloneElement(child, {
+              style: { ...((child.props as any).style || {}), color: '#1A1A1A', background: '#FFFFFF' },
+            });
+          }
+          return child;
+        })}
       </select>
       <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${light ? "text-white/50" : "text-gray-400"}`} />
     </div>
