@@ -1383,132 +1383,124 @@ export default function SolutionsViewer() {
             </>
           )}
 
-          {/* ── Reveal Toggles ── */}
-
-          {/* 1. Solution — with video request link in footer */}
-          {answerSummary.trim() && (
-            <RevealToggle
-              label="Reveal Solution"
-              theme={t}
-              isPreview={isPreview}
-              enrollUrl={enrollUrl}
-              sectionName="Solution"
-              assetCode={asset.asset_name}
-              extraFooterLeft={
-                <a
-                  href={videoMailto}
-                  className="flex items-center gap-1.5 text-[12px] hover:underline"
-                  style={{ color: "#3B82F6" }}
+          {/* ── Reveal Toggles (hidden in practice mode) ── */}
+          {!practiceMode && (
+            <>
+              {/* 1. Solution — with video request link in footer */}
+              {answerSummary.trim() && (
+                <RevealToggle
+                  label="Reveal Solution"
+                  theme={t}
+                  isPreview={isPreview}
+                  enrollUrl={enrollUrl}
+                  sectionName="Solution"
+                  assetCode={asset.asset_name}
+                  extraFooterLeft={
+                    <a
+                      href={videoMailto}
+                      className="flex items-center gap-1.5 text-[12px] hover:underline"
+                      style={{ color: "#3B82F6" }}
+                    >
+                      <Video className="h-3 w-3" />
+                      Request Video Explanation →
+                    </a>
+                  }
                 >
-                  <Video className="h-3 w-3" />
-                  Request Video Explanation →
-                </a>
-              }
-            >
-              <AnswerSummarySection text={answerSummary} theme={t} />
-            </RevealToggle>
-          )}
-
-          {/* 2. How to Solve This — per-instruction flowcharts */}
-          {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-            <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
-              {asset._flowcharts?.length > 1 ? (
-                <div className="space-y-2">
-                  {asset._flowcharts.map((fc: any) => {
-                    const instr = (asset._instructions || []).find(
-                      (ins: any) => ins.instruction_number === fc.instruction_number
-                    );
-                    const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
-                    const text = instr?.instruction_text || `Part ${letter}`;
-
-                    return (
-                      <FlowchartSubToggle
-                        key={fc.instruction_number}
-                        letter={letter}
-                        instructionText={text}
-                        imageUrl={fc.flowchart_image_url}
-                        theme={t}
-                      />
-                    );
-                  })}
-                </div>
-              ) : asset._flowcharts?.length === 1 ? (
-                <img
-                  src={asset._flowcharts[0].flowchart_image_url}
-                  alt="How to Solve This — step-by-step flowchart"
-                  className="w-full rounded-lg"
-                  loading="lazy"
-                />
-              ) : (
-                <img
-                  src={asset.flowchart_image_url}
-                  alt="How to Solve This — step-by-step flowchart"
-                  className="w-full rounded-lg"
-                  loading="lazy"
-                />
+                  <AnswerSummarySection text={answerSummary} theme={t} />
+                </RevealToggle>
               )}
-            </RevealToggle>
-          )}
 
-          {/* 3. Journal Entries */}
-          {hasJE && (
-            <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
-              {isPreview ? (
-                <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
-              ) : (
-                hasCanonicalJE ? (
-                  <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
-                ) : (
-                  <RawJEFallback text={jeBlock} theme={t} />
-                )
+              {/* 2. How to Solve This — per-instruction flowcharts */}
+              {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
+                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name}>
+                  {asset._flowcharts?.length > 1 ? (
+                    <div className="space-y-2">
+                      {asset._flowcharts.map((fc: any) => {
+                        const instr = (asset._instructions || []).find(
+                          (ins: any) => ins.instruction_number === fc.instruction_number
+                        );
+                        const letter = fc.instruction_label || String.fromCharCode(96 + fc.instruction_number);
+                        const text = instr?.instruction_text || `Part ${letter}`;
+                        return (
+                          <FlowchartSubToggle
+                            key={fc.instruction_number}
+                            letter={letter}
+                            instructionText={text}
+                            imageUrl={fc.flowchart_image_url}
+                            theme={t}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : asset._flowcharts?.length === 1 ? (
+                    <img src={asset._flowcharts[0].flowchart_image_url} alt="How to Solve This — step-by-step flowchart" className="w-full rounded-lg" loading="lazy" />
+                  ) : (
+                    <img src={asset.flowchart_image_url} alt="How to Solve This — step-by-step flowchart" className="w-full rounded-lg" loading="lazy" />
+                  )}
+                </RevealToggle>
               )}
-            </RevealToggle>
-          )}
 
-          {/* 3b. Supplementary / Related Journal Entries */}
-          {asset.supplementary_je_json && (
-            <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
-              <SupplementaryJESection
-                data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
-                theme={t}
-              />
-            </RevealToggle>
-          )}
+              {/* 3. Journal Entries */}
+              {hasJE && (
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name}>
+                  {isPreview ? (
+                    <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
+                  ) : (
+                    hasCanonicalJE ? (
+                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
+                    ) : (
+                      <RawJEFallback text={jeBlock} theme={t} />
+                    )
+                  )}
+                </RevealToggle>
+              )}
 
-          {formulas.trim() && (
-            <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
-              <GroupedFormulas text={formulas} theme={t} />
-            </RevealToggle>
-          )}
+              {/* 3b. Supplementary / Related Journal Entries */}
+              {asset.supplementary_je_json && (
+                <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
+                  <SupplementaryJESection
+                    data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
+                    theme={t}
+                  />
+                </RevealToggle>
+              )}
 
-          {/* 5. Key Concepts */}
-          {conceptNotes.trim() && (
-            <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
-              <ul className="space-y-3">
-                {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
-                    <span>{sentence}</span>
-                  </li>
-                ))}
-              </ul>
-            </RevealToggle>
-          )}
+              {formulas.trim() && (
+                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
+                  <GroupedFormulas text={formulas} theme={t} />
+                </RevealToggle>
+              )}
 
-          {/* 6. Exam Traps */}
-          {examTraps.trim() && (
-            <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
-              <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
-                <ul className="space-y-3">
-                  {parseExamTraps(examTraps).map((trap: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
-                      <span>{trap}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </RevealToggle>
+              {/* 5. Key Concepts */}
+              {conceptNotes.trim() && (
+                <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name}>
+                  <ul className="space-y-3">
+                    {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: isDark ? "#00BFFF" : "#131E35" }} />
+                        <span>{sentence}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </RevealToggle>
+              )}
+
+              {/* 6. Exam Traps */}
+              {examTraps.trim() && (
+                <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name}>
+                  <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
+                    <ul className="space-y-3">
+                      {parseExamTraps(examTraps).map((trap: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
+                          <span>{trap}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </RevealToggle>
+              )}
+            </>
           )}
         </div>
 
