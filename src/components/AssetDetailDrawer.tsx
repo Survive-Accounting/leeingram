@@ -684,6 +684,7 @@ export default function AssetDetailDrawer({
           <TabsList className="mx-6 mt-3 mb-0 w-fit">
             <TabsTrigger value="overview" className="text-xs gap-1"><BookOpen className="h-3 w-3" />Overview</TabsTrigger>
             <TabsTrigger value="links" className="text-xs gap-1"><Link2 className="h-3 w-3" />Links</TabsTrigger>
+            <TabsTrigger value="issues" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" />Issues{issueCount > 0 ? ` (${issueCount})` : ""}</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
