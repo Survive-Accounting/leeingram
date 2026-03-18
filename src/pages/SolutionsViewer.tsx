@@ -890,20 +890,19 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
         style={{ objectPosition: "top center" }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
-      <div className="space-y-3 max-w-[400px]">
+      <div className="max-w-[400px]">
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
           Founder of{" "}
           <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
             SurviveAccounting.com
           </a>.
-        </p>
-        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+          <br />
           Tutoring entrepreneur since 2015.
+          <br />
+          Hope this helps you feel more confident going into your exam.
+          <br />
+          <span className="italic">— Lee</span>
         </p>
-        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          I love helping students ace exams!
-        </p>
-        <p className="text-[13px] italic" style={{ color: theme.text }}>— Lee</p>
         <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted }}>
           Ole Miss Alum<br />
           B.A. &amp; M.Acc. in Accounting • 3.75 GPA
