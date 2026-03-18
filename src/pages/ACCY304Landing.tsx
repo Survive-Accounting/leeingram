@@ -691,7 +691,7 @@ export default function ACCY304Landing() {
                 Choose 3 Problems to Unlock
               </h2>
               <p className="text-center text-white/60 text-[15px] mt-3 mb-10 max-w-[520px] mx-auto">
-                Pick any 3 problems from Chapters 13–22. You'll get full access to their worked solutions for 24 hours.
+                Pick any 3 problems from Chapters 13–22. You'll get full access to their worked solutions for 2 hours.
               </p>
 
               <div className="space-y-6 mb-8">
