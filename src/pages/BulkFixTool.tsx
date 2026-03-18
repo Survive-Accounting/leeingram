@@ -189,6 +189,7 @@ export default function BulkFixTool() {
     if (operation === "fix_entity_perspective") return "Fix Entity Naming + Perspective (Full Correction)";
     if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
     if (operation === "custom_ai") return "Custom AI Rewrite";
+    if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
     return "";
   }, [operation, findText, replaceText]);
 
