@@ -1614,16 +1614,29 @@ export default function SolutionsViewer() {
 
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
           <div className="mx-auto px-6 py-4" style={{ maxWidth: 1200 }}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="min-w-0">
-                {sourceRef && <p className="text-[12px] mb-0.5" style={{ color: t.textMuted }}>Based on {sourceRef}</p>}
-                <h1 className="text-[18px] font-bold leading-tight" style={{ color: "#131E35" }}>
-                  {problemTitle || ""}
-                </h1>
-                {identifierLine && <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{identifierLine}</p>}
-              </div>
-              {isPreview && <BrowseProblemsBar currentAsset={asset} theme={t} />}
+            {/* Three-line header hierarchy */}
+            <div className="min-w-0">
+              <h1 className="text-[20px] font-bold leading-tight" style={{ color: "#131E35" }}>
+                {courseDisplayName}
+              </h1>
+              {chapterLabel && (
+                <p className="text-[15px] font-medium mt-0.5" style={{ color: t.textMuted }}>
+                  {chapterLabel}
+                </p>
+              )}
+              {problemTitle && (
+                <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
+                  Topic: {problemTitle}
+                </p>
+              )}
             </div>
+
+            {/* Browse problems bar — below header with top border */}
+            {isPreview && (
+              <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
+                <BrowseProblemsBar currentAsset={asset} theme={t} />
+              </div>
+            )}
           </div>
         </div>
       </div>
