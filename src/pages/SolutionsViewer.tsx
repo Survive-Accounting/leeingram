@@ -764,7 +764,7 @@ export default function SolutionsViewer() {
         {/* INSTRUCTIONS — always visible */}
         {instructions.length > 0 && (
           <>
-            <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
+            <SectionHeading theme={t}>REQUIRED</SectionHeading>
             <div className="space-y-4">
               {instructions.map((inst, idx) => {
                 const letter = String.fromCharCode(97 + idx);
