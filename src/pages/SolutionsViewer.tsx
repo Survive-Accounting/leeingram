@@ -1061,6 +1061,17 @@ export default function SolutionsViewer() {
             )}
           </RevealToggle>
         )}
+
+        {/* 3b. Supplementary / Related Journal Entries (accounts only) */}
+        {asset.supplementary_je_json && (
+          <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name}>
+            <SupplementaryJESection
+              data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
+              theme={t}
+            />
+          </RevealToggle>
+        )}
+
         {formulas.trim() && (
           <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name}>
             <div className="space-y-2">
