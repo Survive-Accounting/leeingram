@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je";
 
 interface HistoryEntry {
   label: string;
@@ -190,6 +190,7 @@ export default function BulkFixTool() {
     if (operation === "find_replace_simple") return `Find & Replace: "${findText}" → "${replaceText}"`;
     if (operation === "custom_ai") return "Custom AI Rewrite";
     if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
+    if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -347,6 +348,26 @@ export default function BulkFixTool() {
 
         setPreviewRows(rows);
         setIsAiPreview(true);
+      } else if (operation === "generate_supplementary_je") {
+        // Preview: count assets with main JE but no supplementary
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("journal_entry_completed_json", "is", null)
+          .is("supplementary_je_json", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: missingCount } = await countQ;
+        setTotalMatched(missingCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "supplementary_je_json",
+          before: `${missingCount ?? 0} assets have main JE but no supplementary JE`,
+          after: `Will generate supplementary JEs for ${missingCount ?? 0} assets via AI`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -382,7 +403,7 @@ export default function BulkFixTool() {
       let skipped = 0;
 
       // Process in batches — use smaller batch for AI-heavy JE enrichment
-      const batchSize = operation === "enrich_je_rows" ? 2 : BATCH_SIZE;
+      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je") ? 2 : BATCH_SIZE;
       for (let i = 0; i < total; i += batchSize) {
         const batch = assets.slice(i, i + batchSize);
         const updates: Promise<void>[] = [];
@@ -525,10 +546,27 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
               // If neither field had data, skip
               if (!changed) { skipped++; return; }
+            } else if (operation === "generate_supplementary_je") {
+              // Skip if already has supplementary JE or no main JE
+              const jeJson = (asset as any).journal_entry_completed_json;
+              const suppJson = (asset as any).supplementary_je_json;
+              if (!jeJson || suppJson) { skipped++; return; }
+
+              // Call the existing edge function
+              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-supplementary-je", {
+                body: { teaching_asset_id: asset.id },
+              });
+
+              if (fnErr || !result?.success) { skipped++; return; }
+              changed = true;
+              // No need to update here — edge function already writes to DB
             }
 
             if (changed) {
-              await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
+              // generate_supplementary_je writes via edge function; others need explicit update
+              if (operation !== "generate_supplementary_je") {
+                await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
+              }
               updated++;
             } else {
               skipped++;
@@ -657,6 +695,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="find_replace_simple">Simple Find &amp; Replace</SelectItem>
                 <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
                 <SelectItem value="enrich_je_rows">Enrich JE Rows (add debit_credit_reason + amount_source)</SelectItem>
+                <SelectItem value="generate_supplementary_je">Generate Supplementary JEs (backfill missing)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -675,6 +714,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             {operation === "enrich_je_rows" && (
               <p className="text-xs text-muted-foreground">
                 Reads each asset's <code className="text-foreground">journal_entry_completed_json</code> and <code className="text-foreground">supplementary_je_json</code>, then uses AI to add <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to every JE row. Only processes rows missing these fields. Powers hover tooltips in SolutionsViewer.
+              </p>
+            )}
+
+            {operation === "generate_supplementary_je" && (
+              <p className="text-xs text-muted-foreground">
+                Generates <code className="text-foreground">supplementary_je_json</code> for assets that have main journal entries but are missing the "Related Journal Entries" section. Calls the existing generation function per asset. Only targets assets where this field is currently null.
               </p>
             )}
 
