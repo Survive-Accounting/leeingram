@@ -1215,13 +1215,7 @@ export default function AssetsLibrary() {
                 </button>
               </TableHead>
               {!isContentCreationVa && (
-                <TableHead className="text-xs">
-                  <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "google_sheet_status") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("google_sheet_status"); setSortDir("asc"); } }}>
-                    Sheet Status
-                    {sortField === "google_sheet_status" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                    <InfoTip text="Shows whether a Google Sheet whiteboard has been created for this asset. Sheets are used for tutoring sessions and video recording." />
-                  </button>
-                </TableHead>
+                <TableHead className="text-xs">LW Tools</TableHead>
               )}
               <TableHead className="text-xs">
                 <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
