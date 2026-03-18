@@ -302,6 +302,50 @@ export default function BulkFixTool() {
 
         setPreviewRows(rows);
         setIsAiPreview(true);
+      } else if (operation === "enrich_je_rows") {
+        // JE enrichment preview: sample 2 assets that have JE data
+        const { data: assets, error } = await buildScopeQuery().not("journal_entry_completed_json", "is", null).limit(2);
+        if (error) throw error;
+
+        // Count total with JE data
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true }).not("journal_entry_completed_json", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: jeCount } = await countQ;
+        setTotalMatched(jeCount ?? 0);
+
+        const rows: PreviewRow[] = [];
+        for (const asset of assets ?? []) {
+          const jeJson = (asset as any).journal_entry_completed_json;
+          if (!jeJson?.scenario_sections) continue;
+
+          // Count rows that already have the fields vs those that don't
+          let missingCount = 0;
+          let totalRows = 0;
+          for (const section of jeJson.scenario_sections) {
+            for (const entry of section.entries_by_date || []) {
+              for (const row of entry.rows || []) {
+                totalRows++;
+                if (!row.debit_credit_reason || !row.amount_source) missingCount++;
+              }
+            }
+          }
+
+          if (missingCount > 0) {
+            rows.push({
+              id: asset.id,
+              asset_name: asset.asset_name,
+              field: "journal_entry_completed_json",
+              before: `${totalRows} JE rows, ${missingCount} missing enrichment fields`,
+              after: `Will add debit_credit_reason + amount_source to ${missingCount} rows via AI`,
+            });
+          }
+        }
+
+        setPreviewRows(rows);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
