@@ -863,6 +863,199 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
 }
 
 
+// ── About Lee Content (shared between card and left panel) ──────────
+
+function AboutLeeContent({ theme, compact = false }: { theme: Theme; compact?: boolean }) {
+  const imgSize = compact ? "w-20 h-20" : "w-28 h-28";
+  return (
+    <div className={`flex flex-col ${compact ? "items-center text-center gap-3" : "items-center text-center gap-4"}`}>
+      <img
+        src={LEE_HEADSHOT_URL}
+        alt="Lee Ingram"
+        className={`${imgSize} rounded-full object-cover`}
+        style={{ objectPosition: "top center" }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+      <div className={compact ? "space-y-2" : "space-y-3"}>
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`} style={{ color: theme.text }}>
+          Tutoring entrepreneur since 2015. Founder of Survive Accounting — exam prep built from thousands of real Ole Miss tutoring sessions.
+        </p>
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`} style={{ color: theme.text }}>
+          I love helping students ace exams with minimal effort. Thanks for stopping by.
+        </p>
+        <p className={`${compact ? "text-[12px]" : "text-[13px]"} italic`} style={{ color: theme.text }}>— Lee</p>
+      </div>
+      <div className={`flex flex-col gap-1.5 ${compact ? "text-[11px]" : "text-[12px]"}`}>
+        <a href="mailto:lee@surviveaccounting.com" className="hover:underline" style={{ color: "#3B82F6" }}>
+          lee@surviveaccounting.com
+        </a>
+        <a
+          href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1 hover:underline font-semibold"
+          style={{ color: "#3B82F6" }}
+        >
+          <Calendar className="h-3 w-3" /> Book 1-on-1 Virtual Tutoring →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Left Floating Panel — About Lee ─────────────────────────────────
+
+function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
+  const [open, setOpen] = useState(true);
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:flex"
+        style={{
+          writingMode: "vertical-rl",
+          textOrientation: "mixed",
+          background: isDark ? theme.cardBg : "#FFFFFF",
+          color: theme.textMuted,
+          border: `1px solid ${theme.border}`,
+          borderLeft: "none",
+          borderRadius: "0 8px 8px 0",
+          padding: "12px 8px",
+          fontSize: "12px",
+          fontWeight: 600,
+          boxShadow: isDark ? "2px 0 12px rgba(0,0,0,0.3)" : "2px 0 12px rgba(0,0,0,0.06)",
+          letterSpacing: "0.05em",
+        }}
+      >
+        About Lee
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      style={{
+        width: 220,
+        background: isDark ? theme.cardBg : "#FFFFFF",
+        border: `1px solid ${theme.border}`,
+        borderLeft: "none",
+        borderRadius: "0 12px 12px 0",
+        boxShadow: isDark ? "4px 0 24px rgba(0,0,0,0.3)" : "4px 0 24px rgba(0,0,0,0.08)",
+        padding: "16px 14px",
+      }}
+    >
+      <button
+        onClick={() => setOpen(false)}
+        className="absolute top-2 right-2 p-1 rounded-full hover:bg-black/5 transition-colors"
+        style={{ color: theme.textMuted }}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+      <AboutLeeContent theme={theme} compact />
+    </div>
+  );
+}
+
+// ── Right Floating Panel — Mode Switcher ────────────────────────────
+
+function RightPanel({
+  theme,
+  isDark,
+  practiceMode,
+  onSetPracticeMode,
+}: {
+  theme: Theme;
+  isDark: boolean;
+  practiceMode: boolean;
+  onSetPracticeMode: (v: boolean) => void;
+}) {
+  return (
+    <div
+      className="fixed right-0 top-1/2 -translate-y-1/2 z-30 hidden xl:block"
+      style={{
+        width: 180,
+        background: isDark ? theme.cardBg : "#FFFFFF",
+        border: `1px solid ${theme.border}`,
+        borderRight: "none",
+        borderRadius: "12px 0 0 12px",
+        boxShadow: isDark ? "-4px 0 24px rgba(0,0,0,0.3)" : "-4px 0 24px rgba(0,0,0,0.08)",
+        padding: "16px 14px",
+      }}
+    >
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={() => onSetPracticeMode(true)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all text-left"
+          style={{
+            background: practiceMode ? (isDark ? "#1A2E55" : "#EEF2FF") : "transparent",
+            color: practiceMode ? (isDark ? "#93C5FD" : "#3B52B5") : theme.textMuted,
+            border: `1px solid ${practiceMode ? (isDark ? "#3B52B5" : "#C7D2FE") : theme.border}`,
+          }}
+        >
+          <BookOpen className="h-3.5 w-3.5 shrink-0" /> Practice Mode
+        </button>
+        <button
+          onClick={() => onSetPracticeMode(false)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all text-left"
+          style={{
+            background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
+            color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
+            border: `1px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
+          }}
+        >
+          <CheckCircle className="h-3.5 w-3.5 shrink-0" /> View Solution
+        </button>
+      </div>
+      <div className="mt-4 pt-3 space-y-1.5" style={{ borderTop: `1px solid ${theme.border}` }}>
+        <p className="text-[11px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
+        <p className="text-[11px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Testimonials Section ────────────────────────────────────────────
+
+function TestimonialsSection({ theme }: { theme: Theme }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const scriptId = "testimonialto-resize-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://testimonial.to/js/iframeResizer.min.js";
+      script.onload = () => {
+        if ((window as any).iFrameResize && iframeRef.current) {
+          (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+        }
+      };
+      document.body.appendChild(script);
+    } else if ((window as any).iFrameResize && iframeRef.current) {
+      (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+    }
+  }, []);
+
+  return (
+    <div className="mt-10">
+      <h2 className="text-[13px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: theme.textMuted }}>
+        What Students Are Saying
+      </h2>
+      <iframe
+        ref={iframeRef}
+        id="testimonialto-317c8816-eefb-469f-8173-b79efef6c2fa"
+        src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=317c8816-eefb-469f-8173-b79efef6c2fa"
+        frameBorder="0"
+        scrolling="no"
+        width="100%"
+        style={{ minHeight: 300, border: "none" }}
+      />
+    </div>
+  );
+}
+
 export default function SolutionsViewer() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const [searchParams] = useSearchParams();
@@ -886,6 +1079,17 @@ export default function SolutionsViewer() {
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
+
+  // Practice mode — hides reveal toggles
+  const [practiceMode, setPracticeMode] = useState(isPreview);
+  const problemRef = useRef<HTMLDivElement>(null);
+
+  const handleSetPracticeMode = (v: boolean) => {
+    setPracticeMode(v);
+    if (v && problemRef.current) {
+      problemRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
