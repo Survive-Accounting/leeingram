@@ -65,9 +65,9 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
   const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
 
-  const [phase1Open, setPhase1Open] = useState(() => true);
-  const [phase2Open, setPhase2Open] = useState(() => true);
-  const [phase3Open, setPhase3Open] = useState(() => true);
+  const [phase1Open, setPhase1Open] = useState(() => isInPhase(PHASE_1_ITEMS.map(i => i.path)));
+  const [phase2Open, setPhase2Open] = useState(() => isInPhase(PHASE_2_ITEMS.map(i => i.path)));
+  const [phase3Open, setPhase3Open] = useState(false);
 
   // Auto-expand active phase section on route change
   useEffect(() => {
