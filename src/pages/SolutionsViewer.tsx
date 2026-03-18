@@ -1396,12 +1396,16 @@ export default function SolutionsViewer() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Countdown timer for preview token
+  const [countdown, setCountdown] = useState("");
+  const [previewExpired, setPreviewExpired] = useState(false);
+
   // Determine access mode based on token
   const tokenExpired = tokenSession && new Date(tokenSession.expires_at) < new Date();
   const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
     (tokenSession.asset_codes as string[])?.includes(assetCode);
   const isPreview = previewToken
-    ? (!tokenValidForAsset || previewExpired) // if token present but invalid/expired, fall back to preview mode
+    ? (!tokenValidForAsset || previewExpired)
     : rawIsPreview;
 
   // Highlight toggle
@@ -1409,10 +1413,6 @@ export default function SolutionsViewer() {
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
-
-  // Countdown timer for preview token
-  const [countdown, setCountdown] = useState("");
-  const [previewExpired, setPreviewExpired] = useState(false);
 
   useEffect(() => {
     if (!tokenSession?.expires_at || !previewToken) return;
