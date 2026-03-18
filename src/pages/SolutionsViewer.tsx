@@ -619,15 +619,7 @@ export default function SolutionsViewer() {
               </>
             )}
 
-            {/* HOW TO SOLVE THIS */}
-            {flowchartUrl && (
-              <>
-                <SectionHeading theme={t}>HOW TO SOLVE THIS</SectionHeading>
-                <div className="text-center">
-                  <img src={flowchartUrl} alt="Solution flowchart" className="max-w-[700px] w-full mx-auto rounded-lg" style={{ border: `1px solid ${t.border}` }} />
-                </div>
-              </>
-            )}
+            {/* Flowchart section removed — column doesn't exist */}
 
             {/* KEY CONCEPTS */}
             {conceptNotes.trim() && (
