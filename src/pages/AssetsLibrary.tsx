@@ -361,8 +361,7 @@ function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onU
     </Tip>
   );
 }
-
-
+export default function AssetsLibrary() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
