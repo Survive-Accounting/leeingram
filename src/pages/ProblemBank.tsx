@@ -28,7 +28,7 @@ type ChapterProblem = {
   id: string;
   course_id: string;
   chapter_id: string;
-  problem_type: "exercise" | "problem" | "custom";
+  problem_type: "exercise" | "problem" | "custom" | "quick_study";
   source_label: string;
   title: string;
   problem_text: string;
