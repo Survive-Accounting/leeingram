@@ -14,6 +14,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Copy, CheckCircle2, AlertTriangle } from "lucide-react";
+import { JETooltip } from "@/components/JETooltip";
 import { toast } from "sonner";
 import {
   type CanonicalJEPayload,
