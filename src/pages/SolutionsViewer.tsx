@@ -1530,7 +1530,14 @@ export default function SolutionsViewer() {
     ? `Ch ${chapter.chapter_number} — ${chapter.chapter_name}`
     : "";
   const courseCode = course?.code || "";
-  const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
+  const courseDisplayName = (() => {
+    const code = courseCode.toUpperCase();
+    if (code === "IA2") return "Intermediate Accounting 2";
+    if (code === "IA1") return "Intermediate Accounting 1";
+    if (code === "MA2") return "Managerial Accounting";
+    if (code === "FA1") return "Financial Accounting";
+    return course?.course_name || courseCode;
+  })();
   const problemTitle = asset._problemTitle || "";
   const sourceRef = asset.source_ref || "";
 
