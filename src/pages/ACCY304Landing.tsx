@@ -444,14 +444,15 @@ export default function ACCY304Landing() {
     <div className="min-h-screen" style={{ background: "#FAFBFC" }}>
 
       {/* ═══════════════════════════════════════════════════════════
-          HERO IMAGE — full image visible
+          HERO IMAGE — centered card on navy stage
          ═══════════════════════════════════════════════════════════ */}
-      <section className="px-6 pt-8 md:pt-10" style={{ background: "#FAFBFC" }}>
-        <div className="max-w-[1180px] mx-auto">
+      <section className="px-6 pt-10" style={{ background: "#14213D" }}>
+        <div className="max-w-[700px] mx-auto">
           <img
             src={HERO_IMG}
             alt="Survive Accounting ACCY 304 study guide cover art"
-            className="w-full h-auto object-contain"
+            className="w-full h-auto block"
+            style={{ borderRadius: 12 }}
           />
         </div>
       </section>
