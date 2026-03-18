@@ -785,7 +785,7 @@ export default function PracticeViewer() {
         {/* INSTRUCTIONS — always visible */}
         {instructions.length > 0 && (
           <>
-            <SectionHeading theme={t}>REQUIRED</SectionHeading>
+            <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
             <div className="space-y-4">
               {instructions.map((inst, idx) => {
                 const letter = String.fromCharCode(97 + idx);
