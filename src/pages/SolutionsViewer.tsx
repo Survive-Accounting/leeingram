@@ -1655,8 +1655,6 @@ export default function SolutionsViewer() {
                 border: `1px solid ${t.border}`,
               }}
             >
-              {/* Browse Problems Bar (preview only) */}
-              {isPreview && <BrowseProblemsBar currentAsset={asset} theme={t} />}
 
               {/* 1. Solution */}
               {answerSummary.trim() && (

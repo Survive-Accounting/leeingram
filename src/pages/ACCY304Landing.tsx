@@ -507,7 +507,7 @@ export default function ACCY304Landing() {
                 {!previewChapterId ? "Select chapter first…" : previewProblems?.length ? "Select problem…" : "No problems found"}
               </option>
               {previewProblems?.map((p: any) => (
-                <option key={p.source_code} value={p.source_code}>{p.source_label}</option>
+                <option key={p.asset_name} value={p.source_ref}>{p.chapter_problems?.source_label || p.source_ref}</option>
               ))}
             </StyledSelect>
           </div>
