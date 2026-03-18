@@ -957,9 +957,9 @@ function LeftPanel({ theme, isDark }: { theme: Theme; isDark: boolean }) {
   );
 }
 
-// ── Right Floating Panel — Mode Switcher ────────────────────────────
+// ── Right Panel — Mode Switcher (attached to content card) ──────────
 
-function RightPanel({
+function RightModePanel({
   theme,
   isDark,
   practiceMode,
@@ -971,45 +971,44 @@ function RightPanel({
   onSetPracticeMode: (v: boolean) => void;
 }) {
   return (
-    <div
-      className="fixed top-1/2 -translate-y-1/2 z-30 hidden xl:block"
-      style={{
-        right: 40,
-        width: 180,
-        background: isDark ? theme.cardBg : "#FFFFFF",
-        border: `1px solid ${theme.border}`,
-        borderRadius: "12px",
-        boxShadow: isDark ? "-4px 0 24px rgba(0,0,0,0.3)" : "-4px 0 24px rgba(0,0,0,0.08)",
-        padding: "16px 14px",
-      }}
-    >
-      <div className="flex flex-col gap-2">
-        <button
-          onClick={() => onSetPracticeMode(true)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all text-left"
-          style={{
-            background: practiceMode ? (isDark ? "#1A2E55" : "#EEF2FF") : "transparent",
-            color: practiceMode ? (isDark ? "#93C5FD" : "#3B52B5") : theme.textMuted,
-            border: `1px solid ${practiceMode ? (isDark ? "#3B52B5" : "#C7D2FE") : theme.border}`,
-          }}
-        >
-          <BookOpen className="h-3.5 w-3.5 shrink-0" /> Practice Mode
-        </button>
-        <button
-          onClick={() => onSetPracticeMode(false)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all text-left"
-          style={{
-            background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
-            color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
-            border: `1px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
-          }}
-        >
-          <CheckCircle className="h-3.5 w-3.5 shrink-0" /> View Solution
-        </button>
-      </div>
-      <div className="mt-4 pt-3 space-y-1.5" style={{ borderTop: `1px solid ${theme.border}` }}>
-        <p className="text-[11px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
-        <p className="text-[11px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
+    <div className="hidden xl:flex flex-col gap-2.5 shrink-0 self-start sticky top-[160px]" style={{ width: 200 }}>
+      <div
+        className="rounded-xl p-4"
+        style={{
+          background: isDark ? theme.cardBg : "#FFFFFF",
+          border: `1px solid ${theme.border}`,
+          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.08)",
+        }}
+      >
+        <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: theme.textMuted }}>Study Mode</p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => onSetPracticeMode(true)}
+            className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left"
+            style={{
+              background: practiceMode ? (isDark ? "#1A2E55" : "#EEF2FF") : "transparent",
+              color: practiceMode ? (isDark ? "#93C5FD" : "#3B52B5") : theme.textMuted,
+              border: `1.5px solid ${practiceMode ? (isDark ? "#3B52B5" : "#C7D2FE") : theme.border}`,
+            }}
+          >
+            <BookOpen className="h-4 w-4 shrink-0" /> Practice Mode
+          </button>
+          <button
+            onClick={() => onSetPracticeMode(false)}
+            className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-[13px] font-semibold transition-all text-left"
+            style={{
+              background: !practiceMode ? (isDark ? "#0D2B1A" : "#F0FFF4") : "transparent",
+              color: !practiceMode ? (isDark ? "#6EE7B7" : "#166534") : theme.textMuted,
+              border: `1.5px solid ${!practiceMode ? (isDark ? "#166534" : "#BBF7D0") : theme.border}`,
+            }}
+          >
+            <CheckCircle className="h-4 w-4 shrink-0" /> View Solution
+          </button>
+        </div>
+        <div className="mt-4 pt-3 space-y-2" style={{ borderTop: `1px solid ${theme.border}` }}>
+          <p className="text-[12px]" style={{ color: theme.textMuted }}>🎬 Video coming soon</p>
+          <p className="text-[12px]" style={{ color: theme.textMuted }}>📝 Quiz coming soon</p>
+        </div>
       </div>
     </div>
   );
@@ -1304,37 +1303,31 @@ export default function SolutionsViewer() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — recipients will need a Study Pass for full access"); }}
-                className="flex items-center gap-1.5 text-[12px] font-semibold px-4 py-2 rounded-lg transition-all hover:scale-[1.03]"
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — share with classmates!"); }}
+                className="flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97]"
                 style={{
                   color: "#FFFFFF",
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  boxShadow: "0 0 12px rgba(255,255,255,0.08), 0 0 4px rgba(255,255,255,0.05)",
+                  background: "linear-gradient(135deg, #3B82F6, #2563EB)",
+                  border: "1px solid rgba(59,130,246,0.5)",
+                  boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
+                  animation: "share-glow 2s ease-in-out infinite alternate",
                 }}
               >
-                <Copy className="h-3.5 w-3.5" /> Share
+                <Copy className="h-4 w-4" /> Share This
               </button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-8 border-amber-400 text-amber-600 hover:bg-amber-50"
-                onClick={() => setReportOpen(true)}
-              >
-                <AlertTriangle className="h-3 w-3 mr-1" /> Report Issue
-              </Button>
+              <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Floating Side Panels (desktop only) ── */}
+      {/* ── Floating Left Panel (desktop only) ── */}
       <LeftPanel theme={t} isDark={isDark} />
-      <RightPanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
 
-      {/* ── Content ── */}
-      <main className="relative max-w-[780px] mx-auto px-6 py-8" style={{ zIndex: 5 }}>
-        {/* Content card with drop shadow */}
+      {/* ── Content with side panel ── */}
+      <main className="relative mx-auto px-6 py-8 flex gap-4 justify-center" style={{ zIndex: 5, maxWidth: 1040 }}>
+        {/* Main content column */}
+        <div className="w-full" style={{ maxWidth: 780 }}>
         <div
           className="rounded-xl px-6 py-6 sm:px-8 sm:py-8"
           style={{
@@ -1533,6 +1526,9 @@ export default function SolutionsViewer() {
             </p>
           )}
         </div>
+        </div>
+        {/* ── Right Mode Panel (desktop) ── */}
+        <RightModePanel theme={t} isDark={isDark} practiceMode={practiceMode} onSetPracticeMode={handleSetPracticeMode} />
       </main>
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
