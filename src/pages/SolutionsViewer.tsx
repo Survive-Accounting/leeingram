@@ -1303,25 +1303,19 @@ export default function SolutionsViewer() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — recipients will need a Study Pass for full access"); }}
-                className="flex items-center gap-1.5 text-[12px] font-semibold px-4 py-2 rounded-lg transition-all hover:scale-[1.03]"
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Preview link copied — share with classmates!"); }}
+                className="flex items-center gap-1.5 text-[13px] font-bold px-5 py-2.5 rounded-lg transition-all hover:scale-[1.05] active:scale-[0.97]"
                 style={{
                   color: "#FFFFFF",
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  boxShadow: "0 0 12px rgba(255,255,255,0.08), 0 0 4px rgba(255,255,255,0.05)",
+                  background: "linear-gradient(135deg, #3B82F6, #2563EB)",
+                  border: "1px solid rgba(59,130,246,0.5)",
+                  boxShadow: "0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2), 0 2px 8px rgba(0,0,0,0.15)",
+                  animation: "share-glow 2s ease-in-out infinite alternate",
                 }}
               >
-                <Copy className="h-3.5 w-3.5" /> Share
+                <Copy className="h-4 w-4" /> Share This
               </button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-8 border-amber-400 text-amber-600 hover:bg-amber-50"
-                onClick={() => setReportOpen(true)}
-              >
-                <AlertTriangle className="h-3 w-3 mr-1" /> Report Issue
-              </Button>
+              <style>{`@keyframes share-glow { 0% { box-shadow: 0 0 16px rgba(59,130,246,0.35), 0 0 6px rgba(59,130,246,0.2); } 100% { box-shadow: 0 0 24px rgba(59,130,246,0.5), 0 0 10px rgba(59,130,246,0.3); } }`}</style>
             </div>
           </div>
         </div>
