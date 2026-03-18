@@ -1610,7 +1610,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionPanel theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-6 py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
