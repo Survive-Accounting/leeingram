@@ -456,40 +456,37 @@ export default function SolutionsViewer() {
   const courseCode = course?.code || "";
   const identifierLine = [courseCode, chapterLabel].filter(Boolean).join(" · ");
 
-  // Problem title line
-  const titleLine = asset.source_ref
-    ? asset.problem_title?.trim()
-      ? `${asset.source_ref} — ${asset.problem_title}`
-      : asset.source_ref
-    : asset.problem_title || asset.asset_name;
+  // Problem title line — no problem_title column, use source_ref + asset_name
+  const titleLine = asset.source_ref || asset.asset_name;
 
-  // Instructions from columns
-  const instructions = [asset.instruction_1, asset.instruction_2, asset.instruction_3, asset.instruction_4, asset.instruction_5]
-    .filter((v): v is string => !!v?.trim());
+  // Instructions from problem_instructions table
+  const instructions = (asset._instructions || [])
+    .sort((a, b) => a.instruction_number - b.instruction_number)
+    .filter(i => i.instruction_text?.trim())
+    .map(i => i.instruction_text);
 
   // JE data
   const jeData = asset.journal_entry_completed_json;
-  const jeRaw = (asset as any).journal_entry_raw || "";
+  const jeBlock = asset.journal_entry_block || "";
   const hasCanonicalJE = jeData && isCanonicalJE(typeof jeData === "string" ? JSON.parse(jeData) : jeData);
-  const hasJE = hasCanonicalJE || jeRaw.trim();
+  const hasJE = hasCanonicalJE || jeBlock.trim();
 
   const answerSummary = asset.survive_solution_text || "";
-  const formulas = (asset as any).important_formulas || "";
-  const conceptNotes = (asset as any).concept_notes || "";
-  const examTraps = (asset as any).exam_traps || "";
-  const flowchartUrl = (asset as any).flowchart_image_url || "";
-  const quizLink = (asset as any).lw_quiz_link || null;
-  const whiteboardLink = (asset as any).sheet_master_url || null;
-  const videoLink = (asset as any).lw_video_link || null;
+  const formulas = asset.important_formulas || "";
+  const conceptNotes = asset.concept_notes || "";
+  const examTraps = asset.exam_traps || "";
+  const quizLink = asset.lw_quiz_url || null;
+  const whiteboardLink = asset.sheet_master_url || null;
+  const videoLink = asset.lw_video_url || null;
   const hasFooterLinks = quizLink || whiteboardLink || videoLink;
 
-  // Highlight toggle visibility
-  const hasHighlights = !!asset.problem_text_ht?.trim();
+  // Highlight toggle visibility — use problem_text_ht_backup as the highlighted version
+  const hasHighlights = !!asset.problem_text_ht_backup?.trim();
 
   // Problem text to display
   const rawProblemText = showHighlights && hasHighlights
-    ? asset.problem_text_ht!
-    : (asset as any).problem_context || "";
+    ? asset.problem_text_ht_backup!
+    : asset.problem_context || "";
   const problemParagraphs = splitLongText(rawProblemText);
 
   const shareUrl = `${window.location.origin}/solutions/${asset.asset_name}?preview=true`;
