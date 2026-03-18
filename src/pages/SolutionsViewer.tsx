@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import leeHeadshot from "@/assets/lee-headshot-styled.png";
+const LEE_HEADSHOT_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
 
 // ── Theme colors ────────────────────────────────────────────────────
 
@@ -647,16 +647,17 @@ export default function SolutionsViewer() {
       <header style={{ borderBottom: `2px solid ${t.border}` }}>
         <div className="max-w-[780px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img
-              src={leeHeadshot}
-              alt="Lee Ingram"
-              className="h-8 w-8 rounded-full object-cover shrink-0"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-                (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
-              }}
-            />
-            <div className="h-8 w-8 rounded-full shrink-0 hidden items-center justify-center text-[11px] font-bold text-white" style={{ background: "#1A2E55" }}>LI</div>
+            <div className="h-8 w-8 rounded-full shrink-0 overflow-hidden" style={{ background: "#131E35" }}>
+              <img
+                src={LEE_HEADSHOT_URL}
+                alt="Lee Ingram"
+                className="h-8 w-8 object-cover"
+                style={{ objectPosition: "top center", borderRadius: "50%" }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
             <div>
               <p className="font-bold text-[15px] leading-tight" style={{ color: t.text }}>Survive Accounting</p>
               <p className="text-[11px]" style={{ color: t.textMuted }}>by Lee Ingram</p>
@@ -831,9 +832,10 @@ export default function SolutionsViewer() {
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="sm:w-[30%] flex flex-col items-center text-center shrink-0">
               <img
-                src={leeHeadshot}
+                src={LEE_HEADSHOT_URL}
                 alt="Lee Ingram"
-                className="h-20 w-20 rounded-full object-cover"
+                className="w-full object-cover"
+                style={{ maxWidth: 220, borderRadius: 12 }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
@@ -842,11 +844,14 @@ export default function SolutionsViewer() {
               <p className="text-[12px]" style={{ color: t.textMuted }}>Ole Miss ACCY Tutor since 2015</p>
             </div>
             <div className="sm:w-[70%]">
-              <p className="font-bold text-[13px] mb-2" style={{ color: t.text }}>About Your Instructor</p>
+              <p className="font-bold text-[13px] mb-2" style={{ color: t.text }}>About Lee Ingram</p>
               <p className="text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                I'm a proud Ole Miss Accounting alum and tutoring entrepreneur. B.A. &amp; M.Acc. in Accounting · 3.75 GPA. These study materials are built from 10+ years of real Ole Miss tutoring sessions — deeper than a solutions manual, designed to help you actually understand the material, not just memorize answers.
+                Ole Miss Accounting alum · B.A. &amp; M.Acc. · 3.75 GPA
               </p>
-              <p className="text-[12px] mt-2" style={{ color: t.textMuted }}>
+              <p className="text-[13px] leading-[1.6] mt-3" style={{ color: t.text }}>
+                Tutoring entrepreneur since 2015, building exam prep from thousands of real Ole Miss tutoring sessions.
+              </p>
+              <p className="text-[12px] mt-3" style={{ color: t.textMuted }}>
                 Join 2,000+ Ole Miss students I've helped since 2015.
               </p>
               <a href="mailto:lee@surviveaccounting.com" className="text-[12px] mt-1 inline-block hover:underline" style={{ color: "#3B82F6" }}>
