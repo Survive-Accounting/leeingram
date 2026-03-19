@@ -1717,7 +1717,7 @@ export default function SolutionsViewer() {
       <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} />
 
       {/* ── Two-Column Content ── */}
-      <main className="relative mx-auto px-6 py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
+      <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
         <div className="flex flex-col lg:flex-row gap-0">
 
           {/* ── LEFT COLUMN: Problem + Instructions (sticky on desktop) ── */}
