@@ -780,7 +780,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </p>
             )}
 
-
+            {operation === "find_replace_simple" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Find</Label>
