@@ -427,8 +427,9 @@ export default function BulkFixTool() {
     setRunComplete(null);
 
     try {
-      // Fetch all assets in scope
-      const { data: assets, error } = await buildScopeQuery();
+      // Fetch all assets in scope — use lightweight query for operations that only need id
+      const isLightweight = operation === "generate_flowcharts" || operation === "generate_supplementary_je";
+      const { data: assets, error } = await buildScopeQuery(isLightweight);
       if (error) throw error;
       if (!assets?.length) { toast.info("No assets in scope."); setRunning(false); return; }
 
