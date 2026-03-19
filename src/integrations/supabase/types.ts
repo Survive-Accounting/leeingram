@@ -3069,6 +3069,97 @@ export type Database = {
         }
         Relationships: []
       }
+      solutions_qa_assets: {
+        Row: {
+          asset_name: string
+          chapter_id: string
+          course_id: string
+          created_at: string
+          id: string
+          qa_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          teaching_asset_id: string
+        }
+        Insert: {
+          asset_name: string
+          chapter_id: string
+          course_id: string
+          created_at?: string
+          id?: string
+          qa_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          teaching_asset_id: string
+        }
+        Update: {
+          asset_name?: string
+          chapter_id?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          qa_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          teaching_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solutions_qa_assets_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solutions_qa_issues: {
+        Row: {
+          asset_name: string
+          created_at: string
+          fix_description: string | null
+          fix_status: string
+          id: string
+          issue_description: string
+          qa_asset_id: string
+          screenshot_url: string | null
+          section: string
+          suggested_fix: string | null
+        }
+        Insert: {
+          asset_name: string
+          created_at?: string
+          fix_description?: string | null
+          fix_status?: string
+          id?: string
+          issue_description: string
+          qa_asset_id: string
+          screenshot_url?: string | null
+          section: string
+          suggested_fix?: string | null
+        }
+        Update: {
+          asset_name?: string
+          created_at?: string
+          fix_description?: string | null
+          fix_status?: string
+          id?: string
+          issue_description?: string
+          qa_asset_id?: string
+          screenshot_url?: string | null
+          section?: string
+          suggested_fix?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solutions_qa_issues_qa_asset_id_fkey"
+            columns: ["qa_asset_id"]
+            isOneToOne: false
+            referencedRelation: "solutions_qa_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solutions_qa_reviews: {
         Row: {
           approved_at: string | null
