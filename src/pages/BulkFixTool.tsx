@@ -195,9 +195,12 @@ export default function BulkFixTool() {
     return "";
   }, [operation, findText, replaceText]);
 
-  // Build the scope query
-  function buildScopeQuery() {
-    let q = supabase.from("teaching_assets").select("id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json");
+  // Build the scope query — use lightweight select for operations that only need id
+  function buildScopeQuery(lightweight = false) {
+    const fields = lightweight
+      ? "id, asset_name"
+      : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json";
+    let q = supabase.from("teaching_assets").select(fields) as any;
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
     if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
@@ -424,8 +427,9 @@ export default function BulkFixTool() {
     setRunComplete(null);
 
     try {
-      // Fetch all assets in scope
-      const { data: assets, error } = await buildScopeQuery();
+      // Fetch all assets in scope — use lightweight query for operations that only need id
+      const isLightweight = operation === "generate_flowcharts" || operation === "generate_supplementary_je";
+      const { data: assets, error } = await buildScopeQuery(isLightweight);
       if (error) throw error;
       if (!assets?.length) { toast.info("No assets in scope."); setRunning(false); return; }
 
