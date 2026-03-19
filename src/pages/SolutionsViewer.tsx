@@ -1685,7 +1685,7 @@ export default function SolutionsViewer() {
         </div>
 
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
-          <div className="mx-auto px-6 py-4" style={{ maxWidth: 1200 }}>
+          <div className="mx-auto px-4 sm:px-6 py-4" style={{ maxWidth: 1200 }}>
             {/* Three-line header hierarchy */}
             <div className="min-w-0">
               <h1 className="text-[20px] font-bold leading-tight" style={{ color: "#131E35" }}>
