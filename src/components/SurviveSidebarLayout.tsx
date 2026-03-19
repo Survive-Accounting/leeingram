@@ -239,6 +239,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     if (path === "/content") return pipelineCounts.generated || null;
     if (path === "/assets-library") return pipelineCounts.approved || null;
     if (path === "/question-review") return pipelineCounts.banked || null;
+    if (path === "/solutions-qa") return qaPendingCount || null;
     return null;
   };
 
