@@ -1783,7 +1783,7 @@ export default function SolutionsViewer() {
           {/* ── RIGHT COLUMN: Reveal Toggles + About + Testimonials ── */}
           <div className="w-full lg:w-[60%] lg:pl-6 mt-6 lg:mt-0">
             <div
-              className="rounded-xl px-6 py-6"
+              className="rounded-xl px-4 sm:px-6 py-5 sm:py-6"
               style={{
                 background: t.pageBg,
                 boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)",
