@@ -865,7 +865,7 @@ export default function PracticeViewer() {
         {/* 1. Solution */}
         {answerSummary.trim() && (
           <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} revealed={!!revealed.solution} onToggle={() => toggle("solution")}>
-            <AnswerSummarySection text={answerSummary} theme={t} />
+            <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
           </RevealToggle>
         )}
 
