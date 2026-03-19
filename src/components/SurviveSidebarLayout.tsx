@@ -39,6 +39,7 @@ const PHASE_1_ITEMS = [
 
 const PHASE_2_ITEMS = [
   { label: "Phase 2 Review", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
+  { label: "Solutions QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
   { label: "MC Generator", path: "/question-review", icon: Package },
   { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
