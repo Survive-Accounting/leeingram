@@ -421,7 +421,7 @@ function RevealToggle({
     >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors"
+        className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 text-left transition-colors"
         style={{ color: theme.textMuted }}
         onMouseEnter={(e) => { e.currentTarget.style.background = theme.cardBg; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
