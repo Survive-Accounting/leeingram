@@ -668,6 +668,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   )}
                 >
                   <ClipboardCheck className="h-3.5 w-3.5" /> QA Admin
+                </Link>
                 <Link
                   to="/accy304-admin"
                   className={cn(
