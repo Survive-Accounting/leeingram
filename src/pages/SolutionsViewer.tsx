@@ -439,7 +439,7 @@ function RevealToggle({
         </span>
       </button>
       {open && (
-        <div className="px-5 pb-4 pt-3" style={{ borderTop: `1px solid ${theme.border}` }}>
+        <div className="px-4 sm:px-5 pb-4 pt-3" style={{ borderTop: `1px solid ${theme.border}` }}>
           {isPreview ? (
             <TieredPaywallCard
               theme={theme}
