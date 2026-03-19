@@ -727,7 +727,7 @@ function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
                 if (isYearLabel) {
                   return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
                 }
-                return <p key={line.idx} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
+                return <p key={line.idx} className="text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
               });
             })}
           </div>
