@@ -1675,7 +1675,7 @@ export default function SolutionsViewer() {
 
       {/* ── Hero Section ── */}
       <div className="relative" style={{ zIndex: 5 }}>
-        <div className="mx-auto px-6 mt-4" style={{ maxWidth: 1200 }}>
+        <div className="mx-auto px-4 sm:px-6 mt-4" style={{ maxWidth: 1200 }}>
           <span
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
