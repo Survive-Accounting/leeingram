@@ -666,7 +666,7 @@ function InlineJETable({ rows, heading, theme }: { rows: InlineJERow[]; heading?
 function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
   const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
   return (
-    <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
+    <div className="rounded-md p-4 pl-5 border-l-[3px] break-words overflow-hidden" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
       {subSections.map((section, si) => {
         const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
         const label = labelMatch ? `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}` : null;
