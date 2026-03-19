@@ -663,13 +663,20 @@ function InlineJETable({ rows, heading, theme }: { rows: InlineJERow[]; heading?
 
 // ── Answer Summary ──────────────────────────────────────────────────
 
-function AnswerSummarySection({ text, theme }: { text: string; theme: Theme }) {
+function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
   const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
   return (
     <div className="rounded-md p-4 pl-5 border-l-[3px] break-words overflow-hidden" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
       {subSections.map((section, si) => {
         const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
-        const label = labelMatch ? `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}` : null;
+        // Use instruction text from problem_instructions if available
+        const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
+        const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
+        const label = labelMatch
+          ? matchedInstruction
+            ? `(${labelMatch[1]}) ${matchedInstruction.instruction_text}`
+            : `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`
+          : null;
         const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
         const contentLines = content.split("\n").filter(l => l.trim());
 
