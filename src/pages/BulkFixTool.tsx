@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_flowcharts";
 
 interface HistoryEntry {
   label: string;
@@ -191,6 +191,7 @@ export default function BulkFixTool() {
     if (operation === "custom_ai") return "Custom AI Rewrite";
     if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
     if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
+    if (operation === "generate_flowcharts") return "Generate Flowcharts (backfill missing)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -379,6 +380,26 @@ export default function BulkFixTool() {
           after: `Will generate supplementary JEs for ${missingCount ?? 0} assets via AI`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "generate_flowcharts") {
+        // Preview: count approved assets with no flowchart records
+        // We check asset_flowcharts join — but simpler: check flowchart_image_url is null
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .is("flowchart_image_url", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: missingCount } = await countQ;
+        setTotalMatched(missingCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "flowchart_image_url",
+          before: `${missingCount ?? 0} assets have no flowchart generated`,
+          after: `Will generate flowcharts for ${missingCount ?? 0} assets via AI + HCTI`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -414,7 +435,7 @@ export default function BulkFixTool() {
       let skipped = 0;
 
       // Process in batches — use smaller batch for AI-heavy JE enrichment
-      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je") ? 2 : BATCH_SIZE;
+      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts") ? 2 : BATCH_SIZE;
       for (let i = 0; i < total; i += batchSize) {
         const batch = assets.slice(i, i + batchSize);
         const updates: Promise<void>[] = [];
@@ -571,11 +592,29 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (fnErr || !result?.success) { skipped++; return; }
               changed = true;
               // No need to update here — edge function already writes to DB
+            } else if (operation === "generate_flowcharts") {
+              // Skip if already has a flowchart
+              // Note: buildScopeQuery doesn't filter by flowchart_image_url, so check here
+              const { data: existing } = await supabase
+                .from("asset_flowcharts")
+                .select("id")
+                .eq("teaching_asset_id", asset.id)
+                .limit(1);
+              if (existing && existing.length > 0) { skipped++; return; }
+
+              // Call the flowchart generation edge function
+              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-flowchart", {
+                body: { teaching_asset_id: asset.id },
+              });
+
+              if (fnErr || !result?.success || result?.skipped) { skipped++; return; }
+              changed = true;
+              // Edge function already writes to DB
             }
 
             if (changed) {
-              // generate_supplementary_je writes via edge function; others need explicit update
-              if (operation !== "generate_supplementary_je") {
+              // generate_supplementary_je and generate_flowcharts write via edge function; others need explicit update
+              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts") {
                 await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
               }
               updated++;
@@ -707,6 +746,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="custom_ai">Custom AI Rewrite Instruction</SelectItem>
                 <SelectItem value="enrich_je_rows">Enrich JE Rows (add debit_credit_reason + amount_source)</SelectItem>
                 <SelectItem value="generate_supplementary_je">Generate Supplementary JEs (backfill missing)</SelectItem>
+                <SelectItem value="generate_flowcharts">Generate Flowcharts (backfill missing)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -731,6 +771,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             {operation === "generate_supplementary_je" && (
               <p className="text-xs text-muted-foreground">
                 Generates <code className="text-foreground">supplementary_je_json</code> for assets that have main journal entries but are missing the "Related Journal Entries" section. Calls the existing generation function per asset. Only targets assets where this field is currently null.
+              </p>
+            )}
+
+            {operation === "generate_flowcharts" && (
+              <p className="text-xs text-muted-foreground">
+                Generates "How to Solve This" flowchart images for assets that don't have one yet. Creates per-instruction flowcharts for multi-part problems. Uses AI + HCTI rendering. Batch size of 2 to manage rate limits.
               </p>
             )}
 

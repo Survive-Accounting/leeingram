@@ -859,6 +859,28 @@ serve(async (req) => {
         sourceProblemId: runMeta.source_problem_id,
       });
 
+      // ── Fire-and-forget post-approval enrichment ──
+      // Generate supplementary JEs and flowcharts asynchronously
+      if (newAsset?.id) {
+        const enrichUrl = `${supabaseUrl}/functions/v1`;
+        const enrichHeaders = {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+        };
+        const enrichBody = JSON.stringify({ teaching_asset_id: newAsset.id });
+
+        // Fire-and-forget: don't await, don't block the response
+        fetch(`${enrichUrl}/generate-supplementary-je`, {
+          method: "POST", headers: enrichHeaders, body: enrichBody,
+        }).catch((e) => console.error("Post-approval supplementary JE failed:", e));
+
+        fetch(`${enrichUrl}/generate-flowchart`, {
+          method: "POST", headers: enrichHeaders, body: enrichBody,
+        }).catch((e) => console.error("Post-approval flowchart failed:", e));
+
+        console.log(`Post-approval enrichment triggered for ${newAsset.asset_name}`);
+      }
+
       return new Response(JSON.stringify({ success: true, asset: newAsset }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
