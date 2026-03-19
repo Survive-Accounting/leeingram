@@ -1636,8 +1636,8 @@ export default function SolutionsViewer() {
         {/* ── Preview Countdown Banner ── */}
         {previewToken && tokenSession && tokenValidForAsset && (
           <div
-            className="w-full text-center text-white font-bold text-[13px] flex items-center justify-center gap-2 flex-wrap"
-            style={{ background: "#CE1126", height: 40 }}
+            className="w-full text-center text-white font-bold text-[11px] sm:text-[13px] flex items-center justify-center gap-1 sm:gap-2 flex-wrap px-3 py-1.5 sm:py-0"
+            style={{ background: "#CE1126", minHeight: 36 }}
           >
             {previewExpired ? (
               <>
@@ -1653,16 +1653,20 @@ export default function SolutionsViewer() {
               </>
             ) : (
               <>
-                🔓 Free preview for {tokenSession.email} — Expires in{" "}
-                <span className="font-mono">{countdown}</span> ·{" "}
-                <a
-                  href={enrollUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline font-bold hover:opacity-80"
-                >
-                  Get Full Access →
-                </a>
+                <span className="truncate max-w-[180px] sm:max-w-none inline-block align-middle">
+                  🔓 Preview for {tokenSession.email}
+                </span>
+                <span className="whitespace-nowrap">
+                  — <span className="font-mono">{countdown}</span> ·{" "}
+                  <a
+                    href={enrollUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-bold hover:opacity-80"
+                  >
+                    Get Full Access →
+                  </a>
+                </span>
               </>
             )}
           </div>
