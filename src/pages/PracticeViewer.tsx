@@ -407,8 +407,12 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
             {contentLines.map((line, li) => {
               const trimmed = line.trim();
               const isYearLabel = /^\d{4}\s*:/.test(trimmed);
+              const isNumberedStep = /^\d+\.\s/.test(trimmed);
               if (isYearLabel) {
                 return <p key={li} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
+              }
+              if (isNumberedStep) {
+                return <p key={li} className="font-semibold text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text, marginTop: 14 }}>{trimmed}</p>;
               }
               return <p key={li} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
             })}
