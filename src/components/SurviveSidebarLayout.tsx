@@ -5,7 +5,7 @@ import {
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
-  ChevronRight, CreditCard,
+  ChevronRight, CreditCard, ClipboardCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,7 @@ const PHASE_1_ITEMS = [
 
 const PHASE_2_ITEMS = [
   { label: "Phase 2 Review", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
+  { label: "Solutions QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
   { label: "MC Generator", path: "/question-review", icon: Package },
   { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
@@ -219,12 +220,26 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     },
   });
 
+  // QA pending count
+  const { data: qaPendingCount } = useQuery({
+    queryKey: ["qa-pending-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("solutions_qa_reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("qa_status", "pending");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const getBadge = (path: string) => {
     if (!pipelineCounts) return null;
     if (path === "/problem-bank") return pipelineCounts.imported || null;
     if (path === "/content") return pipelineCounts.generated || null;
     if (path === "/assets-library") return pipelineCounts.approved || null;
     if (path === "/question-review") return pipelineCounts.banked || null;
+    if (path === "/solutions-qa") return qaPendingCount || null;
     return null;
   };
 
@@ -274,6 +289,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         >
           <Icon className="h-4 w-4 shrink-0" />
           {!sidebarCollapsed && <span className="text-sm">{displayLabel}</span>}
+          {!sidebarCollapsed && badge && !issuesBadge && (
+            <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
+              {badge}
+            </span>
+          )}
           {!sidebarCollapsed && issuesBadge && (
             <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
               {issuesBadge}
@@ -656,6 +676,17 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   )}
                 >
                   <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
+                </Link>
+                <Link
+                  to="/solutions-qa-admin"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/solutions-qa-admin")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <ClipboardCheck className="h-3.5 w-3.5" /> QA Admin
                 </Link>
                 <Link
                   to="/accy304-admin"

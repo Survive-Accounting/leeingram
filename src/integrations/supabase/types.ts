@@ -3069,6 +3069,68 @@ export type Database = {
         }
         Relationships: []
       }
+      solutions_qa_reviews: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          asset_name: string
+          chapter_id: string
+          course_id: string
+          created_at: string
+          fix_description: string | null
+          id: string
+          issue_description: string | null
+          lovable_prompt_generated: boolean
+          qa_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screenshot_url: string | null
+          teaching_asset_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_name?: string
+          chapter_id: string
+          course_id: string
+          created_at?: string
+          fix_description?: string | null
+          id?: string
+          issue_description?: string | null
+          lovable_prompt_generated?: boolean
+          qa_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          teaching_asset_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_name?: string
+          chapter_id?: string
+          course_id?: string
+          created_at?: string
+          fix_description?: string | null
+          id?: string
+          issue_description?: string | null
+          lovable_prompt_generated?: boolean
+          qa_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          teaching_asset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solutions_qa_reviews_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprint_activity_log: {
         Row: {
           action_detail: string | null
