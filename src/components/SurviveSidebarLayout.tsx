@@ -289,6 +289,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         >
           <Icon className="h-4 w-4 shrink-0" />
           {!sidebarCollapsed && <span className="text-sm">{displayLabel}</span>}
+          {!sidebarCollapsed && badge && !issuesBadge && (
+            <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
+              {badge}
+            </span>
+          )}
           {!sidebarCollapsed && issuesBadge && (
             <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
               {issuesBadge}
