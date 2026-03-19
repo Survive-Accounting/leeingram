@@ -9,25 +9,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle2, AlertTriangle, Copy, FileText, Sparkles, Image } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-type QARecord = {
+type QAAsset = {
   id: string;
-  teaching_asset_id: string;
   asset_name: string;
   chapter_id: string;
-  course_id: string;
   qa_status: string;
-  issue_description: string | null;
+  reviewed_by: string | null;
+};
+
+type QAIssue = {
+  id: string;
+  qa_asset_id: string;
+  asset_name: string;
+  section: string;
+  issue_description: string;
+  suggested_fix: string | null;
   screenshot_url: string | null;
   fix_description: string | null;
-  lovable_prompt_generated: boolean;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  approved_by: string | null;
-  approved_at: string | null;
-  created_at: string;
+  fix_status: string;
 };
 
 export default function SolutionsQAAdmin() {
@@ -39,15 +41,23 @@ export default function SolutionsQAAdmin() {
   const [allAssetsFilter, setAllAssetsFilter] = useState<string>("all");
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
 
-  const { data: records, isLoading } = useQuery({
-    queryKey: ["qa-admin-reviews"],
+  // Fetch all QA assets
+  const { data: assets } = useQuery({
+    queryKey: ["qa-admin-assets"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("solutions_qa_reviews")
-        .select("*")
-        .order("asset_name");
+      const { data, error } = await supabase.from("solutions_qa_assets" as any).select("*").order("asset_name");
       if (error) throw error;
-      return data as QARecord[];
+      return (data as any[]) as QAAsset[];
+    },
+  });
+
+  // Fetch all issues
+  const { data: allIssues } = useQuery({
+    queryKey: ["qa-admin-issues"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("solutions_qa_issues" as any).select("*").order("created_at");
+      if (error) throw error;
+      return (data as any[]) as QAIssue[];
     },
   });
 
@@ -62,67 +72,65 @@ export default function SolutionsQAAdmin() {
   });
 
   const counts = useMemo(() => {
-    if (!records) return { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
+    if (!assets) return { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
     return {
-      total: records.length,
-      pending: records.filter(r => r.qa_status === "pending").length,
-      clean: records.filter(r => r.qa_status === "reviewed_clean").length,
-      issues: records.filter(r => r.qa_status === "reviewed_issues").length,
-      fixApproved: records.filter(r => r.qa_status === "fix_approved").length,
-      generated: records.filter(r => r.lovable_prompt_generated).length,
+      total: assets.length,
+      pending: assets.filter(r => r.qa_status === "pending").length,
+      clean: assets.filter(r => r.qa_status === "reviewed_clean").length,
+      issues: assets.filter(r => r.qa_status === "reviewed_issues").length,
+      fixApproved: assets.filter(r => r.qa_status === "fix_approved").length,
+      generated: assets.filter(r => r.qa_status === "fix_generated").length,
     };
-  }, [records]);
+  }, [assets]);
 
-  const issueRecords = useMemo(() => records?.filter(r => r.qa_status === "reviewed_issues") || [], [records]);
-  const fixReadyRecords = useMemo(() => records?.filter(r => r.qa_status === "fix_approved" && !r.lovable_prompt_generated) || [], [records]);
+  // Issues pending review (fix_status = 'pending')
+  const pendingIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "pending") || [], [allIssues]);
+  // Issues approved and ready for prompt
+  const approvedIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "approved") || [], [allIssues]);
 
   const allAssetsFiltered = useMemo(() => {
-    if (!records) return [];
-    let r = records;
+    if (!assets) return [];
+    let r = assets;
     if (allAssetsFilter !== "all") r = r.filter(rec => rec.qa_status === allAssetsFilter);
     if (allAssetsChapter !== "all") r = r.filter(rec => rec.chapter_id === allAssetsChapter);
     return r;
-  }, [records, allAssetsFilter, allAssetsChapter]);
+  }, [assets, allAssetsFilter, allAssetsChapter]);
 
+  // Approve an issue
   const approveMutation = useMutation({
     mutationFn: async ({ id, fixDesc }: { id: string; fixDesc: string }) => {
-      const { error } = await supabase
-        .from("solutions_qa_reviews")
-        .update({
-          qa_status: "fix_approved",
-          fix_description: fixDesc,
-          approved_by: "admin",
-          approved_at: new Date().toISOString(),
-        } as any)
-        .eq("id", id);
+      const { error } = await supabase.from("solutions_qa_issues" as any).update({
+        fix_status: "approved",
+        fix_description: fixDesc,
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["qa-admin-reviews"] });
+      qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
       toast.success("Fix approved");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const markCleanMutation = useMutation({
+  // Reject (mark clean) — delete the issue
+  const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("solutions_qa_reviews")
-        .update({ qa_status: "reviewed_clean" } as any)
-        .eq("id", id);
+      const { error } = await supabase.from("solutions_qa_issues" as any).update({
+        fix_status: "rejected",
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["qa-admin-reviews"] });
-      toast.success("Marked as clean");
+      qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
+      toast.success("Issue rejected");
     },
   });
 
   const generatePrompt = () => {
-    if (fixReadyRecords.length === 0) return;
-
-    const lines = fixReadyRecords.map((r, i) => `${i + 1}. **${r.asset_name}**: ${r.fix_description || r.issue_description || "No description"}`);
-
+    if (approvedIssues.length === 0) return;
+    const lines = approvedIssues.map((r, i) =>
+      `${i + 1}. **${r.asset_name}** — [${r.section}]: ${r.fix_description || r.issue_description}`
+    );
     const prompt = `Read src/pages/SolutionsViewer.tsx and src/components/SolutionTextRenderer.tsx fully before making any changes.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -134,23 +142,24 @@ ${lines.join("\n\n")}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.tsx, src/components/SolutionTextRenderer.tsx only.`;
-
     setGeneratedPrompt(prompt);
-    setPromptIds(fixReadyRecords.map(r => r.id));
+    setPromptIds(approvedIssues.map(r => r.id));
   };
 
   const markGeneratedMutation = useMutation({
     mutationFn: async () => {
       for (const id of promptIds) {
-        const { error } = await supabase
-          .from("solutions_qa_reviews")
-          .update({ lovable_prompt_generated: true, qa_status: "fix_generated" } as any)
-          .eq("id", id);
-        if (error) throw error;
+        await supabase.from("solutions_qa_issues" as any).update({ fix_status: "generated" }).eq("id", id);
+      }
+      // Also update parent assets to fix_generated
+      const assetIds = [...new Set(approvedIssues.filter(i => promptIds.includes(i.id)).map(i => i.qa_asset_id))];
+      for (const aid of assetIds) {
+        await supabase.from("solutions_qa_assets" as any).update({ qa_status: "fix_generated" }).eq("id", aid);
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["qa-admin-reviews"] });
+      qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
+      qc.invalidateQueries({ queryKey: ["qa-admin-assets"] });
       toast.success("All marked as generated");
       setGeneratedPrompt("");
       setPromptIds([]);
@@ -167,6 +176,12 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
     };
     return <Badge className={`text-[10px] ${colors[s] || colors.pending}`}>{s.replace(/_/g, " ")}</Badge>;
   };
+
+  const issueCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    allIssues?.forEach(i => { map[i.qa_asset_id] = (map[i.qa_asset_id] || 0) + 1; });
+    return map;
+  }, [allIssues]);
 
   return (
     <SurviveSidebarLayout>
@@ -194,46 +209,42 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
 
         <Tabs defaultValue="issues">
           <TabsList>
-            <TabsTrigger value="issues" className="text-xs">Issues to Review ({counts.issues})</TabsTrigger>
-            <TabsTrigger value="prompt" className="text-xs">Generate Prompt ({fixReadyRecords.length})</TabsTrigger>
+            <TabsTrigger value="issues" className="text-xs">Issues to Review ({pendingIssues.length})</TabsTrigger>
+            <TabsTrigger value="prompt" className="text-xs">Generate Prompt ({approvedIssues.length})</TabsTrigger>
             <TabsTrigger value="all" className="text-xs">All Assets ({counts.total})</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: Issues */}
           <TabsContent value="issues" className="space-y-3 mt-3">
-            {issueRecords.length === 0 ? (
+            {pendingIssues.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No issues to review.</p>
-            ) : issueRecords.map(rec => (
-              <Card key={rec.id} className="bg-card/50">
+            ) : pendingIssues.map(issue => (
+              <Card key={issue.id} className="bg-card/50">
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-mono font-bold text-sm text-foreground">{rec.asset_name}</span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        reviewed by {rec.reviewed_by}
-                      </span>
-                    </div>
-                    {statusBadge(rec.qa_status)}
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-foreground">{issue.asset_name}</span>
+                    <Badge variant="outline" className="text-[10px]">{issue.section}</Badge>
                   </div>
 
                   <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3">
-                    <p className="text-xs text-amber-300">{rec.issue_description}</p>
+                    <p className="text-xs text-amber-300">{issue.issue_description}</p>
+                    {issue.suggested_fix && (
+                      <p className="text-xs text-muted-foreground mt-1 italic">Suggested: {issue.suggested_fix}</p>
+                    )}
                   </div>
 
-                  {rec.screenshot_url && (
-                    <div>
-                      <img
-                        src={rec.screenshot_url}
-                        alt="Issue screenshot"
-                        className="max-h-32 rounded border border-border cursor-pointer hover:opacity-80"
-                        onClick={() => setExpandedImage(rec.screenshot_url)}
-                      />
-                    </div>
+                  {issue.screenshot_url && (
+                    <img
+                      src={issue.screenshot_url}
+                      alt="Issue screenshot"
+                      className="max-h-32 rounded border border-border cursor-pointer hover:opacity-80"
+                      onClick={() => setExpandedImage(issue.screenshot_url)}
+                    />
                   )}
 
                   <Textarea
-                    value={fixDescriptions[rec.id] ?? rec.issue_description ?? ""}
-                    onChange={e => setFixDescriptions(prev => ({ ...prev, [rec.id]: e.target.value }))}
+                    value={fixDescriptions[issue.id] ?? issue.issue_description ?? ""}
+                    onChange={e => setFixDescriptions(prev => ({ ...prev, [issue.id]: e.target.value }))}
                     placeholder="Edit fix description..."
                     className="text-xs min-h-[60px]"
                   />
@@ -243,21 +254,15 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
                       size="sm"
                       className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
                       onClick={() => approveMutation.mutate({
-                        id: rec.id,
-                        fixDesc: fixDescriptions[rec.id] ?? rec.issue_description ?? "",
+                        id: issue.id,
+                        fixDesc: fixDescriptions[issue.id] ?? issue.issue_description ?? "",
                       })}
                       disabled={approveMutation.isPending}
                     >
                       <CheckCircle2 className="h-3 w-3 mr-1" /> Approve Fix
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs"
-                      onClick={() => markCleanMutation.mutate(rec.id)}
-                      disabled={markCleanMutation.isPending}
-                    >
-                      Mark as Clean
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => rejectMutation.mutate(issue.id)}>
+                      Reject
                     </Button>
                   </div>
                 </CardContent>
@@ -268,56 +273,33 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
           {/* TAB 2: Generate Prompt */}
           <TabsContent value="prompt" className="space-y-3 mt-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {fixReadyRecords.length} fixes ready to compile
-              </p>
-              <Button
-                size="sm"
-                className="text-xs"
-                onClick={generatePrompt}
-                disabled={fixReadyRecords.length === 0}
-              >
+              <p className="text-sm text-muted-foreground">{approvedIssues.length} fixes ready to compile</p>
+              <Button size="sm" className="text-xs" onClick={generatePrompt} disabled={approvedIssues.length === 0}>
                 <Sparkles className="h-3 w-3 mr-1" /> Generate Lovable Prompt
               </Button>
             </div>
 
             {generatedPrompt && (
               <div className="space-y-3">
-                <Textarea
-                  value={generatedPrompt}
-                  readOnly
-                  className="text-xs font-mono min-h-[300px] bg-muted/30"
-                />
+                <Textarea value={generatedPrompt} readOnly className="text-xs font-mono min-h-[300px] bg-muted/30" />
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedPrompt);
-                      toast.success("Prompt copied to clipboard");
-                    }}
-                  >
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => { navigator.clipboard.writeText(generatedPrompt); toast.success("Copied"); }}>
                     <Copy className="h-3 w-3 mr-1" /> Copy Prompt
                   </Button>
-                  <Button
-                    size="sm"
-                    className="text-xs bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={() => markGeneratedMutation.mutate()}
-                    disabled={markGeneratedMutation.isPending}
-                  >
+                  <Button size="sm" className="text-xs bg-purple-600 hover:bg-purple-700 text-white" onClick={() => markGeneratedMutation.mutate()} disabled={markGeneratedMutation.isPending}>
                     <FileText className="h-3 w-3 mr-1" /> Mark All as Generated
                   </Button>
                 </div>
               </div>
             )}
 
-            {fixReadyRecords.length > 0 && !generatedPrompt && (
+            {approvedIssues.length > 0 && !generatedPrompt && (
               <div className="space-y-2">
-                {fixReadyRecords.map(r => (
+                {approvedIssues.map(r => (
                   <div key={r.id} className="flex items-center gap-2 text-xs text-muted-foreground border-b border-border pb-2">
                     <span className="font-mono font-medium text-foreground">{r.asset_name}</span>
-                    <span>— {r.fix_description}</span>
+                    <Badge variant="outline" className="text-[9px]">{r.section}</Badge>
+                    <span>— {r.fix_description || r.issue_description}</span>
                   </div>
                 ))}
               </div>
@@ -342,9 +324,7 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
                 <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All chapters</SelectItem>
-                  {chapters?.map(ch => (
-                    <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>
-                  ))}
+                  {chapters?.map(ch => <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>)}
                 </SelectContent>
               </Select>
               <span className="text-xs text-muted-foreground ml-auto">{allAssetsFiltered.length} results</span>
@@ -366,9 +346,7 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
                       <td className="px-3 py-2 font-mono">{r.asset_name}</td>
                       <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
                       <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">
-                        {r.issue_description || "—"}
-                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{issueCountMap[r.id] || 0}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -378,7 +356,6 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
         </Tabs>
       </div>
 
-      {/* Screenshot expand dialog */}
       <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
         <DialogContent className="max-w-3xl">
           {expandedImage && <img src={expandedImage} alt="Expanded screenshot" className="w-full rounded" />}

@@ -225,7 +225,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     queryKey: ["qa-pending-count"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("solutions_qa_reviews")
+        .from("solutions_qa_assets" as any)
         .select("id", { count: "exact", head: true })
         .eq("qa_status", "pending");
       if (error) throw error;
