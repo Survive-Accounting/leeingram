@@ -592,11 +592,29 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (fnErr || !result?.success) { skipped++; return; }
               changed = true;
               // No need to update here — edge function already writes to DB
+            } else if (operation === "generate_flowcharts") {
+              // Skip if already has a flowchart
+              // Note: buildScopeQuery doesn't filter by flowchart_image_url, so check here
+              const { data: existing } = await supabase
+                .from("asset_flowcharts")
+                .select("id")
+                .eq("teaching_asset_id", asset.id)
+                .limit(1);
+              if (existing && existing.length > 0) { skipped++; return; }
+
+              // Call the flowchart generation edge function
+              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-flowchart", {
+                body: { teaching_asset_id: asset.id },
+              });
+
+              if (fnErr || !result?.success || result?.skipped) { skipped++; return; }
+              changed = true;
+              // Edge function already writes to DB
             }
 
             if (changed) {
-              // generate_supplementary_je writes via edge function; others need explicit update
-              if (operation !== "generate_supplementary_je") {
+              // generate_supplementary_je and generate_flowcharts write via edge function; others need explicit update
+              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts") {
                 await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
               }
               updated++;
