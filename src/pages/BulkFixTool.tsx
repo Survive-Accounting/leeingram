@@ -200,7 +200,7 @@ export default function BulkFixTool() {
     const fields = lightweight
       ? "id, asset_name"
       : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json";
-    let q = supabase.from("teaching_assets").select(fields);
+    let q = supabase.from("teaching_assets").select(fields) as any;
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
     if (statusFilter === "approved") q = q.not("asset_approved_at", "is", null);
