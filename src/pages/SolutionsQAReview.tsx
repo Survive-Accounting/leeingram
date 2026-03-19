@@ -1,45 +1,77 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Upload, X, Image } from "lucide-react";
+import { CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Upload, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-type QARecord = {
+const SECTION_OPTIONS = [
+  "Problem Text",
+  "Instructions",
+  "Reveal Solution",
+  "Reveal How to Solve This",
+  "Reveal Journal Entries",
+  "Reveal Related Journal Entries",
+  "Reveal Important Formulas",
+  "Reveal Key Concepts",
+  "Reveal Exam Traps",
+  "General / Other",
+];
+
+type QAAsset = {
   id: string;
   teaching_asset_id: string;
   asset_name: string;
   chapter_id: string;
   course_id: string;
   qa_status: string;
-  issue_description: string | null;
-  screenshot_url: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+};
+
+type QAIssue = {
+  id: string;
+  qa_asset_id: string;
+  asset_name: string;
+  section: string;
+  issue_description: string;
+  suggested_fix: string | null;
+  screenshot_url: string | null;
+  fix_description: string | null;
+  fix_status: string;
 };
 
 export default function SolutionsQAReview() {
   const qc = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [issueText, setIssueText] = useState("");
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [filter, setFilter] = useState<"all" | "pending" | "reviewed_issues" | "reviewed_clean">("all");
+  const [panelExpanded, setPanelExpanded] = useState(false);
   const [chapterFilter, setChapterFilter] = useState<string>("all");
 
-  // Seed IA2 records if none exist
+  // Form state
+  const [section, setSection] = useState("");
+  const [issueDesc, setIssueDesc] = useState("");
+  const [suggestedFix, setSuggestedFix] = useState("");
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const clearForm = () => {
+    setSection("");
+    setIssueDesc("");
+    setSuggestedFix("");
+    setScreenshotUrl(null);
+  };
+
+  // Seed IA2 records
   const seedMutation = useMutation({
     mutationFn: async () => {
       const { count } = await supabase
-        .from("solutions_qa_reviews")
-        .select("id", { count: "exact", head: true })
-        .in("course_id", (await supabase.from("courses").select("id").ilike("course_name", "%Intermediate Accounting 2%")).data?.map(c => c.id) || []);
-
+        .from("solutions_qa_assets" as any)
+        .select("id", { count: "exact", head: true });
       if (count && count > 0) return;
 
       const { data: ia2Courses } = await supabase.from("courses").select("id").ilike("course_name", "%Intermediate Accounting 2%");
@@ -60,28 +92,27 @@ export default function SolutionsQAReview() {
         qa_status: "pending",
       }));
 
-      // Insert in batches of 100
       for (let i = 0; i < records.length; i += 100) {
         const batch = records.slice(i, i + 100);
-        const { error } = await supabase.from("solutions_qa_reviews").insert(batch as any);
+        const { error } = await supabase.from("solutions_qa_assets" as any).insert(batch);
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["qa-reviews"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["qa-assets"] }),
   });
 
   useEffect(() => { seedMutation.mutate(); }, []);
 
-  // Fetch all QA records
-  const { data: allRecords, isLoading } = useQuery({
-    queryKey: ["qa-reviews"],
+  // Fetch all QA asset records
+  const { data: allAssets, isLoading } = useQuery({
+    queryKey: ["qa-assets"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("solutions_qa_reviews")
+        .from("solutions_qa_assets" as any)
         .select("*")
         .order("asset_name");
       if (error) throw error;
-      return data as QARecord[];
+      return (data as any[]) as QAAsset[];
     },
   });
 
@@ -89,37 +120,47 @@ export default function SolutionsQAReview() {
   const { data: chapters } = useQuery({
     queryKey: ["qa-chapters"],
     queryFn: async () => {
-      const { data: ia2Courses } = await supabase.from("courses").select("id").ilike("course_name", "%Intermediate Accounting 2%");
-      if (!ia2Courses?.length) return [];
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("id, chapter_number, chapter_name")
-        .eq("course_id", ia2Courses[0].id)
-        .order("chapter_number");
-      if (error) throw error;
-      return data;
+      const { data: ia2 } = await supabase.from("courses").select("id").ilike("course_name", "%Intermediate Accounting 2%");
+      if (!ia2?.length) return [];
+      const { data } = await supabase.from("chapters").select("id, chapter_number, chapter_name").eq("course_id", ia2[0].id).order("chapter_number");
+      return data || [];
     },
   });
 
   const filtered = useMemo(() => {
-    if (!allRecords) return [];
-    let r = allRecords;
-    if (filter !== "all") r = r.filter(rec => rec.qa_status === filter);
+    if (!allAssets) return [];
+    let r = allAssets;
     if (chapterFilter !== "all") r = r.filter(rec => rec.chapter_id === chapterFilter);
     return r;
-  }, [allRecords, filter, chapterFilter]);
+  }, [allAssets, chapterFilter]);
 
   const current = filtered[currentIndex] ?? null;
-  const totalReviewed = allRecords?.filter(r => r.qa_status !== "pending").length ?? 0;
-  const totalAll = allRecords?.length ?? 0;
+  const totalReviewed = allAssets?.filter(r => r.qa_status !== "pending").length ?? 0;
+  const totalAll = allAssets?.length ?? 0;
   const progress = totalAll > 0 ? (totalReviewed / totalAll) * 100 : 0;
 
-  // Sync issue text when navigating
+  // Fetch issues for current asset
+  const { data: currentIssues } = useQuery({
+    queryKey: ["qa-issues", current?.id],
+    queryFn: async () => {
+      if (!current) return [];
+      const { data, error } = await supabase
+        .from("solutions_qa_issues" as any)
+        .select("*")
+        .eq("qa_asset_id", current.id)
+        .order("created_at");
+      if (error) throw error;
+      return (data as any[]) as QAIssue[];
+    },
+    enabled: !!current?.id,
+  });
+
+  // Close panel + clear form when navigating
   useEffect(() => {
-    setIssueText(current?.issue_description || "");
-    setScreenshotUrl(current?.screenshot_url || null);
+    clearForm();
   }, [current?.id]);
 
+  // Upload screenshot
   const handleUploadScreenshot = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -139,222 +180,343 @@ export default function SolutionsQAReview() {
     }
   }, []);
 
-  const markReviewedMutation = useMutation({
-    mutationFn: async (status: "reviewed_clean" | "reviewed_issues") => {
-      if (!current) return;
-      const update: any = {
-        qa_status: status,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: "VA",
-      };
-      if (status === "reviewed_issues") {
-        update.issue_description = issueText;
-        update.screenshot_url = screenshotUrl;
-      }
-      const { error } = await supabase
-        .from("solutions_qa_reviews")
-        .update(update)
-        .eq("id", current.id);
+  // Add issue mutation
+  const addIssueMutation = useMutation({
+    mutationFn: async () => {
+      if (!current || !section || !issueDesc.trim()) return;
+      const { error } = await supabase.from("solutions_qa_issues" as any).insert({
+        qa_asset_id: current.id,
+        asset_name: current.asset_name,
+        section,
+        issue_description: issueDesc.trim(),
+        suggested_fix: suggestedFix.trim() || null,
+        screenshot_url: screenshotUrl,
+        fix_status: "pending",
+      });
       if (error) throw error;
     },
-    onSuccess: (_, status) => {
-      qc.invalidateQueries({ queryKey: ["qa-reviews"] });
-      toast.success(status === "reviewed_clean" ? "Marked as clean ✓" : "Issue flagged ⚠");
-      setIssueText("");
-      setScreenshotUrl(null);
-      // Auto-advance to next pending
-      const nextPending = filtered.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
-      if (nextPending >= 0) setCurrentIndex(nextPending);
-      else if (currentIndex < filtered.length - 1) setCurrentIndex(i => i + 1);
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["qa-issues", current?.id] });
+      clearForm();
+      toast.success("Issue added");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const statusColor = (s: string) => {
-    if (s === "pending") return "bg-muted text-muted-foreground";
-    if (s === "reviewed_clean") return "bg-emerald-500/20 text-emerald-400";
-    if (s === "reviewed_issues") return "bg-amber-500/20 text-amber-400";
-    if (s === "fix_approved") return "bg-blue-500/20 text-blue-400";
-    return "bg-muted text-muted-foreground";
-  };
+  // Delete issue
+  const deleteIssueMutation = useMutation({
+    mutationFn: async (issueId: string) => {
+      const { error } = await supabase.from("solutions_qa_issues" as any).delete().eq("id", issueId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["qa-issues", current?.id] });
+      toast.success("Issue removed");
+    },
+  });
 
-  // Extract source_ref from asset_name (e.g. "IA2_E13.1_V1" → "E13.1")
-  const parseAssetName = (name: string) => {
-    const parts = name.split("_");
-    return { sourceRef: parts[1] || name, variant: parts[2] || "" };
-  };
+  // Mark reviewed + advance
+  const markAndAdvance = useCallback(async (status: "reviewed_clean" | "reviewed_issues") => {
+    if (!current) return;
+
+    // If form has content, save it first
+    if (section && issueDesc.trim()) {
+      await supabase.from("solutions_qa_issues" as any).insert({
+        qa_asset_id: current.id,
+        asset_name: current.asset_name,
+        section,
+        issue_description: issueDesc.trim(),
+        suggested_fix: suggestedFix.trim() || null,
+        screenshot_url: screenshotUrl,
+        fix_status: "pending",
+      });
+      qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
+    }
+
+    // Determine correct status
+    const { count } = await supabase
+      .from("solutions_qa_issues" as any)
+      .select("id", { count: "exact", head: true })
+      .eq("qa_asset_id", current.id);
+    const finalStatus = (count && count > 0) ? "reviewed_issues" : status;
+
+    const { error } = await supabase
+      .from("solutions_qa_assets" as any)
+      .update({
+        qa_status: finalStatus,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: "VA",
+      })
+      .eq("id", current.id);
+    if (error) { toast.error(error.message); return; }
+
+    qc.invalidateQueries({ queryKey: ["qa-assets"] });
+    qc.invalidateQueries({ queryKey: ["qa-pending-count"] });
+    toast.success(finalStatus === "reviewed_clean" ? "Marked clean ✓" : "Issues flagged ⚠");
+    clearForm();
+    setPanelExpanded(false);
+
+    // Advance to next pending
+    const nextPending = filtered.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
+    if (nextPending >= 0) setCurrentIndex(nextPending);
+    else if (currentIndex < filtered.length - 1) setCurrentIndex(i => i + 1);
+  }, [current, currentIndex, filtered, section, issueDesc, suggestedFix, screenshotUrl, qc]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+      if (e.key === "ArrowRight" || e.key === "n") {
+        e.preventDefault();
+        setCurrentIndex(i => Math.min(filtered.length - 1, i + 1));
+      } else if (e.key === "ArrowLeft" || e.key === "p") {
+        e.preventDefault();
+        setCurrentIndex(i => Math.max(0, i - 1));
+      } else if (e.key === "c") {
+        e.preventDefault();
+        markAndAdvance("reviewed_clean");
+      } else if (e.key === "i") {
+        e.preventDefault();
+        setPanelExpanded(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [filtered.length, markAndAdvance]);
+
+  const issueCount = currentIssues?.length ?? 0;
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading QA records...</div>;
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-3">
+        <p className="text-muted-foreground text-sm">No QA records found.</p>
+        <Select value={chapterFilter} onValueChange={v => { setChapterFilter(v); setCurrentIndex(0); }}>
+          <SelectTrigger className="h-7 text-xs w-40"><SelectValue placeholder="Filter chapter" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All chapters</SelectItem>
+            {chapters?.map(ch => <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
 
   return (
-    <SurviveSidebarLayout>
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold text-foreground">Solutions QA Review</h1>
-
-        {/* Progress bar */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
-            {totalReviewed} of {totalAll} reviewed
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* COLLAPSIBLE REVIEW PANEL */}
+      <div className="shrink-0 border-b border-border bg-card shadow-md z-10">
+        {/* Collapsed bar — always visible */}
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          {/* Asset info */}
+          <span className="font-mono font-bold text-foreground text-sm truncate max-w-[200px]">
+            {current?.asset_name}
           </span>
-          <Progress value={progress} className="flex-1 h-2" />
-          <span className="text-xs font-mono text-muted-foreground">{Math.round(progress)}%</span>
-        </div>
+          <Badge variant="outline" className="text-[10px] shrink-0">
+            {current?.qa_status.replace(/_/g, " ")}
+          </Badge>
+          {issueCount > 0 && (
+            <Badge className="bg-amber-500/20 text-amber-500 text-[10px] shrink-0">
+              {issueCount} issue{issueCount !== 1 ? "s" : ""}
+            </Badge>
+          )}
 
-        {/* Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {(["all", "pending", "reviewed_issues", "reviewed_clean"] as const).map(f => (
-            <Button
-              key={f}
-              size="sm"
-              variant={filter === f ? "default" : "outline"}
-              className="text-xs h-7"
-              onClick={() => { setFilter(f); setCurrentIndex(0); }}
-            >
-              {f === "all" ? "All" : f === "pending" ? "Pending" : f === "reviewed_issues" ? "Issues" : "Clean"}
-            </Button>
-          ))}
+          {/* Progress */}
+          <div className="hidden sm:flex items-center gap-2 ml-2">
+            <Progress value={progress} className="w-24 h-1.5" />
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+              {totalReviewed} / {totalAll}
+            </span>
+          </div>
+
+          {/* Chapter filter */}
           <Select value={chapterFilter} onValueChange={v => { setChapterFilter(v); setCurrentIndex(0); }}>
-            <SelectTrigger className="h-7 text-xs w-40">
-              <SelectValue placeholder="All chapters" />
+            <SelectTrigger className="h-6 text-[10px] w-24 shrink-0">
+              <SelectValue placeholder="Ch" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All chapters</SelectItem>
-              {chapters?.map(ch => (
-                <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>
-              ))}
+              <SelectItem value="all">All</SelectItem>
+              {chapters?.map(ch => <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>)}
             </SelectContent>
           </Select>
-          <span className="text-xs text-muted-foreground ml-auto">{filtered.length} assets</span>
+
+          <div className="flex-1" />
+
+          {/* Actions */}
+          <Button
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-3"
+            onClick={() => markAndAdvance("reviewed_clean")}
+          >
+            <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Clean
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 text-xs h-7 px-3"
+            onClick={() => setPanelExpanded(true)}
+          >
+            <AlertTriangle className="h-3 w-3 mr-1" /> Add Issue
+          </Button>
+
+          {/* Navigation */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            disabled={currentIndex <= 0}
+            onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+            {currentIndex + 1}/{filtered.length}
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            disabled={currentIndex >= filtered.length - 1}
+            onClick={() => setCurrentIndex(i => Math.min(filtered.length - 1, i + 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <button
+            onClick={() => setPanelExpanded(!panelExpanded)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {panelExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
         </div>
 
-        {isLoading ? (
-          <div className="text-sm text-muted-foreground text-center py-12">Loading QA records...</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-12">No records match this filter.</div>
-        ) : current ? (
-          <div className="flex gap-4" style={{ height: "calc(100vh - 280px)" }}>
-            {/* LEFT PANEL */}
-            <div className="w-[40%] shrink-0 space-y-3 overflow-y-auto pr-2">
-              {/* Asset info */}
+        {/* Expanded panel */}
+        {panelExpanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-border space-y-3 animate-in slide-in-from-top-2 duration-200">
+            {/* Existing issues */}
+            {issueCount > 0 && (
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-foreground text-sm">{current.asset_name}</span>
-                  <Badge className={`text-[10px] ${statusColor(current.qa_status)}`}>
-                    {current.qa_status.replace(/_/g, " ")}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {parseAssetName(current.asset_name).sourceRef} · {parseAssetName(current.asset_name).variant}
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Issues logged for this asset:
                 </p>
-              </div>
-
-              {/* Instructions */}
-              <div className="rounded-md bg-blue-500/10 border border-blue-500/20 p-3">
-                <p className="text-xs text-blue-300 leading-relaxed">
-                  Review the solutions page on the right. If everything looks correct, click "Mark as Reviewed ✓".
-                  If you spot a formatting issue, describe it below and optionally attach a screenshot.
-                </p>
-              </div>
-
-              {/* Issue description */}
-              <div>
-                <Textarea
-                  value={issueText}
-                  onChange={e => setIssueText(e.target.value)}
-                  placeholder="Describe the issue — e.g. 'Solution text has no line breaks between parts (a) and (b)' or 'Journal entry amounts are missing'"
-                  className="text-xs min-h-[80px] resize-y"
-                />
-              </div>
-
-              {/* Screenshot upload */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleUploadScreenshot}
-                      disabled={uploading}
-                    />
-                    <Button size="sm" variant="outline" className="text-xs h-7" asChild disabled={uploading}>
-                      <span>
-                        <Upload className="h-3 w-3 mr-1" />
-                        {uploading ? "Uploading..." : "Attach Screenshot"}
-                      </span>
-                    </Button>
-                  </label>
-                </div>
-                {screenshotUrl && (
-                  <div className="relative inline-block">
-                    <img src={screenshotUrl} alt="QA screenshot" className="max-h-24 rounded border border-border" />
+                {currentIssues?.map(issue => (
+                  <div key={issue.id} className="flex items-center gap-2 text-xs bg-muted/30 rounded px-2 py-1.5">
+                    <Badge variant="outline" className="text-[9px] shrink-0">{issue.section}</Badge>
+                    <span className="truncate text-foreground">{issue.issue_description}</span>
                     <button
-                      onClick={() => setScreenshotUrl(null)}
-                      className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                      onClick={() => deleteIssueMutation.mutate(issue.id)}
+                      className="ml-auto shrink-0 text-destructive hover:text-destructive/80"
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </div>
-                )}
+                ))}
               </div>
+            )}
 
-              {/* Action buttons */}
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs flex-1"
-                  onClick={() => markReviewedMutation.mutate("reviewed_clean")}
-                  disabled={markReviewedMutation.isPending}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark as Reviewed ✓
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs flex-1"
-                  onClick={() => markReviewedMutation.mutate("reviewed_issues")}
-                  disabled={markReviewedMutation.isPending || !issueText.trim()}
-                >
-                  <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Flag Issue
-                </Button>
+            {/* Add issue form */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-[10px]">Which section has the issue?</Label>
+                  <Select value={section} onValueChange={setSection}>
+                    <SelectTrigger className="h-8 text-xs mt-1">
+                      <SelectValue placeholder="Select section..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTION_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-[10px]">Describe the issue</Label>
+                  <Textarea
+                    value={issueDesc}
+                    onChange={e => setIssueDesc(e.target.value)}
+                    placeholder="e.g. No line breaks between parts (a) and (b) in the solution text"
+                    className="text-xs min-h-[60px] resize-y mt-1"
+                    rows={3}
+                  />
+                </div>
               </div>
-
-              {/* Navigation */}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs"
-                  disabled={currentIndex <= 0}
-                  onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  {currentIndex + 1} of {filtered.length}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs"
-                  disabled={currentIndex >= filtered.length - 1}
-                  onClick={() => setCurrentIndex(i => Math.min(filtered.length - 1, i + 1))}
-                >
-                  Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-[10px]">Suggest a fix (optional)</Label>
+                  <Textarea
+                    value={suggestedFix}
+                    onChange={e => setSuggestedFix(e.target.value)}
+                    placeholder="e.g. Add a blank line before each part header like (a), (b), (c)"
+                    className="text-xs min-h-[44px] resize-y mt-1"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Attach screenshot (optional)</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <label className="cursor-pointer">
+                      <input type="file" accept="image/*" className="hidden" onChange={handleUploadScreenshot} disabled={uploading} />
+                      <Button size="sm" variant="outline" className="text-xs h-7" asChild disabled={uploading}>
+                        <span><Upload className="h-3 w-3 mr-1" />{uploading ? "Uploading..." : "Upload"}</span>
+                      </Button>
+                    </label>
+                    {screenshotUrl && (
+                      <div className="relative inline-block">
+                        <img src={screenshotUrl} alt="QA screenshot" className="max-h-10 rounded border border-border" />
+                        <button onClick={() => setScreenshotUrl(null)} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* RIGHT PANEL — iframe */}
-            <div className="flex-1 rounded-lg overflow-hidden border border-border">
-              <iframe
-                key={current.asset_name}
-                src={`/solutions/${current.asset_name}`}
-                className="w-full h-full border-0"
-                title={`Solutions: ${current.asset_name}`}
-              />
+            {/* Buttons */}
+            <div className="flex gap-2 pt-1">
+              <Button
+                size="sm"
+                className="text-xs h-7"
+                disabled={!section || !issueDesc.trim() || addIssueMutation.isPending}
+                onClick={() => addIssueMutation.mutate()}
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add Issue →
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-7"
+                onClick={() => markAndAdvance("reviewed_issues")}
+              >
+                Done — Move to Next →
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs h-7"
+                onClick={() => { clearForm(); setPanelExpanded(false); }}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
-    </SurviveSidebarLayout>
+
+      {/* IFRAME */}
+      <div className="flex-1 min-h-0">
+        {current && (
+          <iframe
+            key={current.asset_name}
+            src={`https://learn.surviveaccounting.com/solutions/${current.asset_name}`}
+            className="w-full h-full border-0"
+            title={`Solutions: ${current.asset_name}`}
+          />
+        )}
+      </div>
+    </div>
   );
 }
