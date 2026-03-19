@@ -220,6 +220,19 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     },
   });
 
+  // QA pending count
+  const { data: qaPendingCount } = useQuery({
+    queryKey: ["qa-pending-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("solutions_qa_reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("qa_status", "pending");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const getBadge = (path: string) => {
     if (!pipelineCounts) return null;
     if (path === "/problem-bank") return pipelineCounts.imported || null;
