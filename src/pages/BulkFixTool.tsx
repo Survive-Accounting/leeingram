@@ -191,6 +191,7 @@ export default function BulkFixTool() {
     if (operation === "custom_ai") return "Custom AI Rewrite";
     if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
     if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
+    if (operation === "generate_flowcharts") return "Generate Flowcharts (backfill missing)";
     return "";
   }, [operation, findText, replaceText]);
 
