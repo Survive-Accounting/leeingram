@@ -380,6 +380,26 @@ export default function BulkFixTool() {
           after: `Will generate supplementary JEs for ${missingCount ?? 0} assets via AI`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "generate_flowcharts") {
+        // Preview: count approved assets with no flowchart records
+        // We check asset_flowcharts join — but simpler: check flowchart_image_url is null
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .is("flowchart_image_url", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: missingCount } = await countQ;
+        setTotalMatched(missingCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "flowchart_image_url",
+          before: `${missingCount ?? 0} assets have no flowchart generated`,
+          after: `Will generate flowcharts for ${missingCount ?? 0} assets via AI + HCTI`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
