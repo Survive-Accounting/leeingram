@@ -774,7 +774,13 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </p>
             )}
 
-            {operation === "find_replace_simple" && (
+            {operation === "generate_flowcharts" && (
+              <p className="text-xs text-muted-foreground">
+                Generates "How to Solve This" flowchart images for assets that don't have one yet. Creates per-instruction flowcharts for multi-part problems. Uses AI + HCTI rendering. Batch size of 2 to manage rate limits.
+              </p>
+            )}
+
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Find</Label>
