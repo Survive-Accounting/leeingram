@@ -3118,6 +3118,7 @@ export type Database = {
           asset_name: string
           created_at: string
           fix_description: string | null
+          fix_scope: string
           fix_status: string
           id: string
           issue_description: string
@@ -3130,6 +3131,7 @@ export type Database = {
           asset_name: string
           created_at?: string
           fix_description?: string | null
+          fix_scope?: string
           fix_status?: string
           id?: string
           issue_description: string
@@ -3142,6 +3144,7 @@ export type Database = {
           asset_name?: string
           created_at?: string
           fix_description?: string | null
+          fix_scope?: string
           fix_status?: string
           id?: string
           issue_description?: string

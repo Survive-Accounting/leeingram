@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle2, Copy, FileText, Sparkles } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Sparkles, Zap, Target } from "lucide-react";
 import { toast } from "sonner";
 
 type QAAsset = {
@@ -30,18 +30,19 @@ type QAIssue = {
   screenshot_url: string | null;
   fix_description: string | null;
   fix_status: string;
+  fix_scope: string;
 };
 
 export default function SolutionsQAAdmin() {
   const qc = useQueryClient();
   const [fixDescriptions, setFixDescriptions] = useState<Record<string, string>>({});
+  const [fixScopes, setFixScopes] = useState<Record<string, string>>({});
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [promptIds, setPromptIds] = useState<string[]>([]);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [allAssetsFilter, setAllAssetsFilter] = useState<string>("all");
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
 
-  // Fetch all QA assets
   const { data: assets } = useQuery({
     queryKey: ["qa-admin-assets"],
     queryFn: async () => {
@@ -51,7 +52,6 @@ export default function SolutionsQAAdmin() {
     },
   });
 
-  // Fetch all issues
   const { data: allIssues } = useQuery({
     queryKey: ["qa-admin-issues"],
     queryFn: async () => {
@@ -83,10 +83,19 @@ export default function SolutionsQAAdmin() {
     };
   }, [assets]);
 
-  // Issues pending review (fix_status = 'pending')
+  const bulkFixesReady = useMemo(() =>
+    allIssues?.filter(i => i.fix_scope === "bulk_pattern" && i.fix_status === "approved").length ?? 0,
+  [allIssues]);
+
   const pendingIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "pending") || [], [allIssues]);
-  // Issues approved and ready for prompt
   const approvedIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "approved") || [], [allIssues]);
+
+  // Track which assets have bulk_pattern issues
+  const bulkAssetIds = useMemo(() => {
+    const ids = new Set<string>();
+    allIssues?.forEach(i => { if (i.fix_scope === "bulk_pattern") ids.add(i.qa_asset_id); });
+    return ids;
+  }, [allIssues]);
 
   const allAssetsFiltered = useMemo(() => {
     if (!assets) return [];
@@ -96,12 +105,12 @@ export default function SolutionsQAAdmin() {
     return r;
   }, [assets, allAssetsFilter, allAssetsChapter]);
 
-  // Approve an issue
   const approveMutation = useMutation({
-    mutationFn: async ({ id, fixDesc }: { id: string; fixDesc: string }) => {
+    mutationFn: async ({ id, fixDesc, fixScope }: { id: string; fixDesc: string; fixScope: string }) => {
       const { error } = await supabase.from("solutions_qa_issues" as any).update({
         fix_status: "approved",
         fix_description: fixDesc,
+        fix_scope: fixScope,
       }).eq("id", id);
       if (error) throw error;
     },
@@ -112,7 +121,6 @@ export default function SolutionsQAAdmin() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Reject (mark clean) — delete the issue
   const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("solutions_qa_issues" as any).update({
@@ -128,21 +136,31 @@ export default function SolutionsQAAdmin() {
 
   const generatePrompt = () => {
     if (approvedIssues.length === 0) return;
-    const lines = approvedIssues.map((r, i) =>
-      `${i + 1}. **${r.asset_name}** — [${r.section}]: ${r.fix_description || r.issue_description}`
-    );
-    const prompt = `Read src/pages/SolutionsViewer.tsx and src/components/SolutionTextRenderer.tsx fully before making any changes.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FIXES REQUIRED
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const bulkIssues = approvedIssues.filter(i => i.fix_scope === "bulk_pattern");
+    const assetIssues = approvedIssues.filter(i => i.fix_scope !== "bulk_pattern");
 
-${lines.join("\n\n")}
+    const parts: string[] = [
+      `Read src/pages/SolutionsViewer.tsx and src/components/SolutionTextRenderer.tsx fully before making any changes.`,
+    ];
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (bulkIssues.length > 0) {
+      const lines = bulkIssues.map((r, i) =>
+        `${i + 1}. [${r.section}]: ${r.fix_description || r.issue_description}`
+      );
+      parts.push(`\n━━━ SYSTEM-WIDE FIXES ━━━\n\nApply these fixes globally across ALL assets. These are formatting pattern fixes that affect every asset where this pattern appears:\n\n${lines.join("\n\n")}`);
+    }
 
-Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.tsx, src/components/SolutionTextRenderer.tsx only.`;
-    setGeneratedPrompt(prompt);
+    if (assetIssues.length > 0) {
+      const lines = assetIssues.map((r, i) =>
+        `${i + 1}. **${r.asset_name}** — [${r.section}]: ${r.fix_description || r.issue_description}`
+      );
+      parts.push(`\n━━━ ASSET-SPECIFIC FIXES ━━━\n\nApply these fixes only to the listed asset:\n\n${lines.join("\n\n")}`);
+    }
+
+    parts.push(`\nDo not change any other behaviour. Files to modify: src/pages/SolutionsViewer.tsx, src/components/SolutionTextRenderer.tsx only.`);
+
+    setGeneratedPrompt(parts.join("\n"));
     setPromptIds(approvedIssues.map(r => r.id));
   };
 
@@ -151,7 +169,6 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
       for (const id of promptIds) {
         await supabase.from("solutions_qa_issues" as any).update({ fix_status: "generated" }).eq("id", id);
       }
-      // Also update parent assets to fix_generated
       const assetIds = [...new Set(approvedIssues.filter(i => promptIds.includes(i.id)).map(i => i.qa_asset_id))];
       for (const aid of assetIds) {
         await supabase.from("solutions_qa_assets" as any).update({ qa_status: "fix_generated" }).eq("id", aid);
@@ -183,22 +200,25 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
     return map;
   }, [allIssues]);
 
+  const getScope = (issue: QAIssue) => fixScopes[issue.id] ?? issue.fix_scope ?? "asset_specific";
+
   return (
     <SurviveSidebarLayout>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-7 gap-2">
           {[
-            { label: "Total", value: counts.total, color: "text-foreground" },
-            { label: "Pending", value: counts.pending, color: "text-muted-foreground" },
-            { label: "Clean", value: counts.clean, color: "text-emerald-400" },
-            { label: "Issues", value: counts.issues, color: "text-amber-400" },
-            { label: "Fix Approved", value: counts.fixApproved, color: "text-blue-400" },
-            { label: "Generated", value: counts.generated, color: "text-purple-400" },
+            { label: "Total", value: counts.total, color: "text-foreground", bg: "" },
+            { label: "Pending", value: counts.pending, color: "text-muted-foreground", bg: "" },
+            { label: "Clean", value: counts.clean, color: "text-emerald-400", bg: "" },
+            { label: "Issues", value: counts.issues, color: "text-amber-400", bg: "" },
+            { label: "Fix Approved", value: counts.fixApproved, color: "text-blue-400", bg: "" },
+            { label: "Generated", value: counts.generated, color: "text-purple-400", bg: "" },
+            { label: "⚡ Bulk Fixes", value: bulkFixesReady, color: "text-amber-900", bg: "bg-amber-400/30 border-amber-500/40" },
           ].map(c => (
-            <Card key={c.label} className="bg-card/50">
+            <Card key={c.label} className={`${c.bg || "bg-card/50"}`}>
               <CardContent className="p-3 text-center">
                 <p className={`text-xl font-bold ${c.color}`}>{c.value}</p>
                 <p className="text-[10px] text-muted-foreground">{c.label}</p>
@@ -218,56 +238,91 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
           <TabsContent value="issues" className="space-y-3 mt-3">
             {pendingIssues.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No issues to review.</p>
-            ) : pendingIssues.map(issue => (
-              <Card key={issue.id} className="bg-card/50">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-sm text-foreground">{issue.asset_name}</span>
-                    <Badge variant="outline" className="text-[10px]">{issue.section}</Badge>
-                  </div>
+            ) : pendingIssues.map(issue => {
+              const scope = getScope(issue);
+              return (
+                <Card key={issue.id} className="bg-card/50">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-sm text-foreground">{issue.asset_name}</span>
+                      <Badge variant="outline" className="text-[10px]">{issue.section}</Badge>
+                    </div>
 
-                  <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3">
-                    <p className="text-xs text-amber-300">{issue.issue_description}</p>
-                    {issue.suggested_fix && (
-                      <p className="text-xs text-muted-foreground mt-1 italic">Suggested: {issue.suggested_fix}</p>
+                    <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3">
+                      <p className="text-xs text-amber-300">{issue.issue_description}</p>
+                      {issue.suggested_fix && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">Suggested: {issue.suggested_fix}</p>
+                      )}
+                    </div>
+
+                    {issue.screenshot_url && (
+                      <img
+                        src={issue.screenshot_url}
+                        alt="Issue screenshot"
+                        className="max-h-32 rounded border border-border cursor-pointer hover:opacity-80"
+                        onClick={() => setExpandedImage(issue.screenshot_url)}
+                      />
                     )}
-                  </div>
 
-                  {issue.screenshot_url && (
-                    <img
-                      src={issue.screenshot_url}
-                      alt="Issue screenshot"
-                      className="max-h-32 rounded border border-border cursor-pointer hover:opacity-80"
-                      onClick={() => setExpandedImage(issue.screenshot_url)}
+                    <Textarea
+                      value={fixDescriptions[issue.id] ?? issue.issue_description ?? ""}
+                      onChange={e => setFixDescriptions(prev => ({ ...prev, [issue.id]: e.target.value }))}
+                      placeholder="Edit fix description..."
+                      className="text-xs min-h-[60px]"
                     />
-                  )}
 
-                  <Textarea
-                    value={fixDescriptions[issue.id] ?? issue.issue_description ?? ""}
-                    onChange={e => setFixDescriptions(prev => ({ ...prev, [issue.id]: e.target.value }))}
-                    placeholder="Edit fix description..."
-                    className="text-xs min-h-[60px]"
-                  />
+                    {/* Fix scope toggle */}
+                    <div className="space-y-1">
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setFixScopes(prev => ({ ...prev, [issue.id]: "asset_specific" }))}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+                            scope === "asset_specific"
+                              ? "bg-muted text-foreground border border-border"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Target className="h-3 w-3" /> This Asset Only
+                        </button>
+                        <button
+                          onClick={() => setFixScopes(prev => ({ ...prev, [issue.id]: "bulk_pattern" }))}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+                            scope === "bulk_pattern"
+                              ? "bg-amber-500/30 text-amber-200 border border-amber-500/40 font-bold"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Zap className="h-3 w-3" /> Apply System-Wide
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground pl-1">
+                        {scope === "asset_specific"
+                          ? `Fix will only be applied to ${issue.asset_name}`
+                          : "Fix will be applied across ALL assets with this pattern — use for formatting rules, not content-specific issues"}
+                      </p>
+                    </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                      onClick={() => approveMutation.mutate({
-                        id: issue.id,
-                        fixDesc: fixDescriptions[issue.id] ?? issue.issue_description ?? "",
-                      })}
-                      disabled={approveMutation.isPending}
-                    >
-                      <CheckCircle2 className="h-3 w-3 mr-1" /> Approve Fix
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => rejectMutation.mutate(issue.id)}>
-                      Reject
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                        onClick={() => approveMutation.mutate({
+                          id: issue.id,
+                          fixDesc: fixDescriptions[issue.id] ?? issue.issue_description ?? "",
+                          fixScope: scope,
+                        })}
+                        disabled={approveMutation.isPending}
+                      >
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Approve Fix
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => rejectMutation.mutate(issue.id)}>
+                        Reject
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </TabsContent>
 
           {/* TAB 2: Generate Prompt */}
@@ -299,6 +354,9 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
                   <div key={r.id} className="flex items-center gap-2 text-xs text-muted-foreground border-b border-border pb-2">
                     <span className="font-mono font-medium text-foreground">{r.asset_name}</span>
                     <Badge variant="outline" className="text-[9px]">{r.section}</Badge>
+                    {r.fix_scope === "bulk_pattern" && (
+                      <Badge className="bg-amber-500/20 text-amber-400 text-[8px]">⚡ Bulk</Badge>
+                    )}
                     <span>— {r.fix_description || r.issue_description}</span>
                   </div>
                 ))}
@@ -343,7 +401,12 @@ Do not change any other behaviour. Files to modify: src/pages/SolutionsViewer.ts
                 <tbody>
                   {allAssetsFiltered.map(r => (
                     <tr key={r.id} className="border-b border-border/50 hover:bg-muted/10">
-                      <td className="px-3 py-2 font-mono">{r.asset_name}</td>
+                      <td className="px-3 py-2 font-mono">
+                        {r.asset_name}
+                        {bulkAssetIds.has(r.id) && (
+                          <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
+                        )}
+                      </td>
                       <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
                       <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
                       <td className="px-3 py-2 text-muted-foreground">{issueCountMap[r.id] || 0}</td>

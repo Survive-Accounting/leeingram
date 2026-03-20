@@ -1,0 +1,1 @@
+ALTER TABLE public.solutions_qa_issues ADD COLUMN IF NOT EXISTS fix_scope text NOT NULL DEFAULT 'asset_specific';
