@@ -160,7 +160,8 @@ export default function ScreenshotCapture() {
     },
   });
 
-  const course = chapter?.courses as { course_name: string } | undefined;
+  const course = chapter?.courses as { course_name: string; code?: string } | undefined;
+  const isIntro = ["INTRO1", "INTRO2"].includes(course?.code || "");
 
   if (!chapter || !course) {
     return (
@@ -222,15 +223,17 @@ export default function ScreenshotCapture() {
                   {current.source_label || current.source_code}
                 </CardTitle>
                 <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => setShowSolution(!showSolution)}
-                  >
-                    {showSolution ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-                    {showSolution ? "Hide" : "Show"} Solution
-                  </Button>
+                  {!isIntro && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => setShowSolution(!showSolution)}
+                    >
+                      {showSolution ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                      {showSolution ? "Hide" : "Show"} Solution
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
