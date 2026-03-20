@@ -1830,6 +1830,7 @@ export default function SolutionsViewer() {
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
                   chapterNumber={chapterNum}
+                  forceOpen={allTogglesForceOpen}
                 >
                   <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
                 </RevealToggle>
