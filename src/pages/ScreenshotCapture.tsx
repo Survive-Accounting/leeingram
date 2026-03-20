@@ -223,15 +223,17 @@ export default function ScreenshotCapture() {
                   {current.source_label || current.source_code}
                 </CardTitle>
                 <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => setShowSolution(!showSolution)}
-                  >
-                    {showSolution ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-                    {showSolution ? "Hide" : "Show"} Solution
-                  </Button>
+                  {!isIntro && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => setShowSolution(!showSolution)}
+                    >
+                      {showSolution ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                      {showSolution ? "Hide" : "Show"} Solution
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
