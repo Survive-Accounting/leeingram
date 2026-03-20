@@ -1838,7 +1838,7 @@ export default function SolutionsViewer() {
 
               {/* 2. How to Solve This */}
               {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum}>
+                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
                   {asset._flowcharts?.length > 1 ? (
                     <div className="space-y-2">
                       {asset._flowcharts.map((fc: any) => {
