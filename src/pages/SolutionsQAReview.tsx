@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Upload, X, Plus } from "lucide-react";
+import { CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Upload, X, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const SECTION_OPTIONS = [
