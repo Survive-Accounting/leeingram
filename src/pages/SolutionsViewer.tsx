@@ -1893,7 +1893,7 @@ export default function SolutionsViewer() {
 
               {/* 4. Important Formulas */}
               {formulas.trim() && (
-                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum}>
+                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
                   <GroupedFormulas text={formulas} theme={t} />
                 </RevealToggle>
               )}
