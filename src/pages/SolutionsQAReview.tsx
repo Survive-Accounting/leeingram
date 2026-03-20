@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Upload, X, Plus } from "lucide-react";
+import { CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Upload, X, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const SECTION_OPTIONS = [
@@ -311,6 +312,11 @@ export default function SolutionsQAReview() {
       <div className="shrink-0 border-b border-border bg-card shadow-md z-10">
         {/* Collapsed bar — always visible */}
         <div className="flex items-center gap-3 px-4 py-2.5">
+          {/* Back to dashboard */}
+          <Link to="/domains" className="text-muted-foreground hover:text-foreground transition-colors shrink-0" title="Back to dashboard">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="w-px h-5 bg-border shrink-0" />
           {/* Asset info */}
           <span className="font-mono font-bold text-foreground text-sm truncate max-w-[200px]">
             {current?.asset_name}
