@@ -44,11 +44,13 @@ export default function ScreenshotCapture() {
   const { data: queue, isLoading } = useQuery({
     queryKey: ["screenshot-queue", chapterId],
     queryFn: async () => {
+      // Include both 'needs_problem_screenshot' and 'pending' (Intro courses skip PDF upload)
       const { data, error } = await supabase
         .from("chapter_problems")
         .select("id, source_label, source_code, solution_text, import_status")
         .eq("chapter_id", chapterId!)
-        .eq("import_status", "needs_problem_screenshot" as any);
+        .in("import_status", ["needs_problem_screenshot", "pending"] as any)
+        .is("problem_screenshot_url", null);
       if (error) throw error;
       return (data as QueueItem[]).sort((a, b) =>
         (a.source_label || "").localeCompare(b.source_label || "", undefined, { numeric: true, sensitivity: "base" })
