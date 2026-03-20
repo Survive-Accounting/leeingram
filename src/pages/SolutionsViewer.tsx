@@ -392,6 +392,7 @@ function RevealToggle({
   fullPassLink,
   chapterLink,
   chapterNumber,
+  forceOpen,
 }: {
   label: string;
   children: React.ReactNode;
@@ -404,8 +405,13 @@ function RevealToggle({
   fullPassLink?: any;
   chapterLink?: any;
   chapterNumber?: number | null;
+  forceOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
 
   const reportMailto = sectionName && assetCode
     ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
