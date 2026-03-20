@@ -312,6 +312,11 @@ export default function SolutionsQAReview() {
       <div className="shrink-0 border-b border-border bg-card shadow-md z-10">
         {/* Collapsed bar — always visible */}
         <div className="flex items-center gap-3 px-4 py-2.5">
+          {/* Back to dashboard */}
+          <Link to="/domains" className="text-muted-foreground hover:text-foreground transition-colors shrink-0" title="Back to dashboard">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="w-px h-5 bg-border shrink-0" />
           {/* Asset info */}
           <span className="font-mono font-bold text-foreground text-sm truncate max-w-[200px]">
             {current?.asset_name}
