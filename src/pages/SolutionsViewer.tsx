@@ -1433,6 +1433,16 @@ export default function SolutionsViewer() {
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
 
+  // QA: force open all toggles via postMessage
+  const [allTogglesForceOpen, setAllTogglesForceOpen] = useState(false);
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "QA_OPEN_ALL_TOGGLES") setAllTogglesForceOpen(true);
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   useEffect(() => {
     if (!tokenSession?.expires_at || !previewToken) return;
     const update = () => {
