@@ -160,7 +160,7 @@ export default function ScreenshotCapture() {
     },
   });
 
-  const course = chapter?.courses as { course_name: string } | undefined;
+  const isIntro = ["INTRO1", "INTRO2"].includes((course as any)?.code || "");
 
   if (!chapter || !course) {
     return (
