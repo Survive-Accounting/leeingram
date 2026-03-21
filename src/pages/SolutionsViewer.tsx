@@ -393,6 +393,7 @@ function RevealToggle({
   chapterLink,
   chapterNumber,
   forceOpen,
+  onReveal,
 }: {
   label: string;
   children: React.ReactNode;
@@ -406,6 +407,7 @@ function RevealToggle({
   chapterLink?: any;
   chapterNumber?: number | null;
   forceOpen?: boolean;
+  onReveal?: (sectionName: string) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -417,6 +419,14 @@ function RevealToggle({
     ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
     : null;
 
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && sectionName && onReveal) {
+      onReveal(sectionName);
+    }
+  };
+
   return (
     <div
       className="rounded-lg mt-4 overflow-hidden transition-all"
@@ -426,7 +436,7 @@ function RevealToggle({
       }}
     >
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 text-left transition-colors"
         style={{ color: theme.textMuted }}
         onMouseEnter={(e) => { e.currentTarget.style.background = theme.cardBg; }}
