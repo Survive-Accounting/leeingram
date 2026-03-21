@@ -454,7 +454,7 @@ export default function Phase2Review() {
         <div>
           <h1 className="text-lg font-bold text-foreground">Topic Generator</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Generate up to 10 core topics per chapter. Each topic powers a video, a quiz, and chapter-wide study tools.
+            Generate up to 8 core topics per chapter. Each topic powers a video, a quiz, and chapter-wide study tools.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {workspace?.courseName} · Ch {workspace?.chapterNumber} — {workspace?.chapterName}
