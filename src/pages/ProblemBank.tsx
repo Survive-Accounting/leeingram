@@ -79,6 +79,24 @@ export default function ProblemBank() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProblemId, setEditingProblemId] = useState<string | null>(null);
   const [previewProblemId, setPreviewProblemId] = useState<string | null>(null);
+
+  // Fetch full detail for edit/preview dialogs on demand
+  const activeDetailId = editingProblemId || previewProblemId;
+  const { data: detailProblem } = useQuery({
+    queryKey: ["chapter-problem-detail", activeDetailId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("chapter_problems").select("*").eq("id", activeDetailId!).single();
+      if (error) throw error;
+      return {
+        ...data,
+        problem_screenshot_urls: data.problem_screenshot_urls ?? [],
+        solution_screenshot_urls: data.solution_screenshot_urls ?? [],
+      } as ChapterProblem;
+    },
+    enabled: !!activeDetailId,
+  });
+  const editingProblem = editingProblemId ? detailProblem : null;
+  const previewProblem = previewProblemId ? detailProblem : null;
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
