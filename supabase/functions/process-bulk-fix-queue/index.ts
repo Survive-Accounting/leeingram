@@ -218,25 +218,31 @@ Deno.serve(async (req) => {
     }
 
     // 4. Update progress
-    const isComplete = processed >= total;
+    const isComplete = processed >= total || creditExhausted;
+    const finalStatus = creditExhausted ? "failed" : (isComplete ? "complete" : "running");
 
     await sb.from("bulk_fix_queue").update({
-      status: isComplete ? "complete" : "running",
+      status: finalStatus,
       completed_at: isComplete ? new Date().toISOString() : null,
       assets_processed: processed,
       assets_succeeded: succeeded,
       assets_errored: errored,
       assets_skipped: skipped,
+      error_summary: creditExhausted ? "Stopped: AI credits exhausted (402). Resume when credits are available." : null,
     }).eq("id", currentItem.id);
 
     // 5. If complete, send email and chain to next
-    if (isComplete) {
+    if (isComplete && !creditExhausted) {
       console.log(`✓ ${currentItem.operation_name} complete: ${succeeded} ok, ${errored} errors, ${skipped} skipped`);
       await sendOperationEmail(sb, supabaseUrl, serviceKey, currentItem, processed, succeeded, errored, skipped);
     }
 
-    // 6. Self-chain (either for remaining batches of this item, or next item)
-    selfChain(supabaseUrl, serviceKey);
+    // 6. Self-chain (unless credit exhausted — no point burning more calls)
+    if (!creditExhausted) {
+      selfChain(supabaseUrl, serviceKey);
+    } else {
+      console.log("Stopping self-chain due to credit exhaustion");
+    }
 
     return new Response(JSON.stringify({
       item: currentItem.operation_name,
@@ -246,6 +252,7 @@ Deno.serve(async (req) => {
       errored,
       skipped,
       complete: isComplete,
+      creditExhausted,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
