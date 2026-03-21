@@ -1306,7 +1306,7 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; shareUrl: string; assetCode: string }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
@@ -1363,6 +1363,20 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
               >
                 ⚠ Report Issue →
               </a>
+              {chapterId && (
+                <>
+                  <div className="w-px h-5" style={{ background: theme.border }} />
+                  <a
+                    href={`/cram/${chapterId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
+                    style={{ color: "#3B82F6" }}
+                  >
+                    📚 Chapter Cram Tool →
+                  </a>
+                </>
+              )}
               <div className="w-px h-5" style={{ background: theme.border }} />
             </>
           )}
@@ -1752,7 +1766,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>

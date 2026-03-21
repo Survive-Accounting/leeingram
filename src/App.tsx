@@ -76,6 +76,7 @@ import SolutionsQAAdmin from "./pages/SolutionsQAAdmin";
 import JEDebug from "./pages/JEDebug";
 import ShareLeaderboard from "./pages/ShareLeaderboard";
 import SolutionsViewerStaging from "./pages/SolutionsViewerStaging";
+import ChapterCramTool from "./pages/ChapterCramTool";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -117,6 +118,8 @@ const AppRoutes = () => {
       <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
       <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
       <Route path="/practice/:assetCode" element={<PracticeViewer />} />
+      <Route path="/cram/:chapterId" element={<ChapterCramTool />} />
+      <Route path="/cram" element={<ChapterCramTool />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
