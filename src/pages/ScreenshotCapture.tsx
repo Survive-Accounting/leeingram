@@ -113,9 +113,11 @@ export default function ScreenshotCapture() {
             v = v.replace(/\s+/g, "");
             return v;
           };
+          const numericPart = (s: string) => s.replace(/^[A-Z]+/, "");
           const detected = normalizeLabel(data.ocr.detected_label);
           const expected = normalizeLabel(sourceLabel || "");
-          if (detected && expected && detected !== expected) {
+          const isMismatch = detected && expected && detected !== expected && numericPart(detected) !== numericPart(expected);
+          if (isMismatch) {
             toast.warning(`Screenshot mismatch: pasted image is ${data.ocr.detected_label}, but this source is ${sourceLabel}. You may have pasted the wrong screenshot.`, { duration: 8000 });
             logActivity({
               actor_type: "system",
