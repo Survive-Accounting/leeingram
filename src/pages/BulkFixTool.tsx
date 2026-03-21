@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { resolveEffectiveRole } from "@/lib/rolePermissions";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -31,7 +31,37 @@ interface HistoryEntry {
   reverted: boolean;
 }
 
+interface QueueItem {
+  id: string;
+  operation_name: string;
+  operation_key: string;
+  queue_position: number;
+  status: string;
+  assets_processed: number;
+  assets_succeeded: number;
+  assets_errored: number;
+  assets_skipped: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_summary: string | null;
+  created_at: string;
+}
+
 const BATCH_SIZE = 10;
+
+const OPERATION_LABELS: Record<string, string> = {
+  fix_entity_naming: "Fix Entity Naming (Counterparty → Company A/B)",
+  fix_entity_perspective: "Fix Entity Naming + Perspective (Full Correction)",
+  find_replace_simple: "Simple Find & Replace",
+  custom_ai: "Custom AI Rewrite",
+  enrich_je_rows: "Enrich JE Rows (debit_credit_reason + amount_source)",
+  generate_supplementary_je: "Generate Supplementary JEs (backfill)",
+  generate_flowcharts: "Generate Flowcharts (backfill missing)",
+  generate_dissector_highlights: "Generate Dissector Highlights (backfill missing)",
+  enrich_je_tooltips: "Enrich JE Tooltips (fill gaps)",
+  rewrite_je_reasons: "Rewrite JE Reasons (YOU Format)",
+  rewrite_je_amounts: "Rewrite Amount Sources (Plain English)",
+};
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
 
@@ -98,11 +128,20 @@ function addHistory(entry: HistoryEntry) {
   localStorage.setItem("bulk-fix-history", JSON.stringify(h.slice(0, 50)));
 }
 
+// ── Recommended order shortcuts ──
+const RECOMMENDED_ORDER: { key: OperationType; label: string; desc: string }[] = [
+  { key: "enrich_je_tooltips", label: "Enrich JE Rows", desc: "safe, fills gaps only" },
+  { key: "rewrite_je_reasons", label: "Rewrite JE Reasons (YOU Format)", desc: "rewrites all reasons" },
+  { key: "rewrite_je_amounts", label: "Rewrite Amount Sources (Plain English)", desc: "rewrites all amounts" },
+  { key: "generate_dissector_highlights", label: "Generate Dissector Highlights", desc: "run after 1-3 are complete" },
+];
+
 export default function BulkFixTool() {
   const navigate = useNavigate();
   const { isVa, vaAccount } = useVaAccount();
   const { impersonating } = useImpersonation();
   const effectiveRole = resolveEffectiveRole(impersonating?.role, vaAccount?.role, isVa);
+  const queryClient = useQueryClient();
 
   // Admin gate
   useEffect(() => {
@@ -126,12 +165,18 @@ export default function BulkFixTool() {
 
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
-  const pauseRef = { current: false };
+  const pauseRef = useRef(false);
   const [runProgress, setRunProgress] = useState({ current: 0, total: 0, currentAsset: "" });
   const [runComplete, setRunComplete] = useState<{ updated: number; skipped: number; errors?: number } | null>(null);
 
   const [reverting, setReverting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Queue state
+  const [queueOp, setQueueOp] = useState<OperationType | "">("");
+  const [queueRunning, setQueueRunning] = useState(false);
+  const queueStopRef = useRef(false);
+  const [queueProgress, setQueueProgress] = useState({ current: 0, total: 0, currentAsset: "" });
 
   // Queries
   const { data: courses } = useQuery({
@@ -186,6 +231,30 @@ export default function BulkFixTool() {
     },
   });
 
+  // Queue items
+  const { data: queueItems, refetch: refetchQueue } = useQuery({
+    queryKey: ["bulk-fix-queue"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("bulk_fix_queue")
+        .select("*")
+        .order("queue_position", { ascending: true });
+      return (data ?? []) as QueueItem[];
+    },
+    refetchInterval: queueRunning ? 3000 : false,
+  });
+
+  // Resume detection on mount
+  useEffect(() => {
+    if (!queueItems) return;
+    const runningItem = queueItems.find(q => q.status === "running");
+    if (runningItem && !queueRunning) {
+      // Resume queue from the running item
+      resumeQueue(runningItem);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueItems?.length]);
+
   const operationLabel = useMemo(() => {
     if (operation === "fix_entity_naming") return "Fix Entity Naming (Counterparty → Company A/B)";
     if (operation === "fix_entity_perspective") return "Fix Entity Naming + Perspective (Full Correction)";
@@ -220,11 +289,8 @@ export default function BulkFixTool() {
   }
 
   function entityNamingReplace(text: string): string {
-    // Replace "Survive Counterparty" with "Survive Company B"
     let result = text.replace(/Survive\s+Counterparty/gi, "Survive Company B");
-    // Replace standalone "Counterparty" (not already preceded by "Survive")
     result = result.replace(/(?<!Survive\s+)Counterparty/gi, "Survive Company B");
-    // Replace "the other company" / "the second party" 
     result = result.replace(/the other company/gi, "Survive Company B");
     result = result.replace(/the second party/gi, "Survive Company B");
     return result;
@@ -266,7 +332,6 @@ export default function BulkFixTool() {
         setPreviewRows(rows);
         setIsAiPreview(false);
       } else if (operation === "custom_ai" || operation === "fix_entity_perspective") {
-        // AI preview: sample 3
         const { data: assets, error } = await buildScopeQuery().limit(3);
         if (error) throw error;
         setTotalMatched(estimatedCount ?? 0);
@@ -314,11 +379,9 @@ export default function BulkFixTool() {
         setPreviewRows(rows);
         setIsAiPreview(true);
       } else if (operation === "enrich_je_rows") {
-        // JE enrichment preview: sample more assets to find ones that actually need enrichment
         const { data: assets, error } = await buildScopeQuery().not("journal_entry_completed_json", "is", null).limit(20);
         if (error) throw error;
 
-        // Count total with JE data that need enrichment (we'll count client-side from larger sample)
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true }).not("journal_entry_completed_json", "is", null);
         if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
         if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
@@ -346,7 +409,6 @@ export default function BulkFixTool() {
 
             if (missingCount > 0) {
               assetsNeedingEnrichment++;
-              // Only show first 4 preview rows to keep UI clean
               if (rows.length < 4) {
                 rows.push({
                   id: asset.id,
@@ -360,7 +422,6 @@ export default function BulkFixTool() {
           }
         }
 
-        // Estimate total needing enrichment based on sample ratio
         const sampleSize = (assets ?? []).length;
         const estimatedNeedEnrichment = sampleSize > 0
           ? Math.round(((assetsNeedingEnrichment / sampleSize) * (jeCount ?? 0)))
@@ -370,7 +431,6 @@ export default function BulkFixTool() {
         setPreviewRows(rows);
         setIsAiPreview(true);
       } else if (operation === "generate_supplementary_je") {
-        // Preview: count assets with main JE but no supplementary
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
           .not("journal_entry_completed_json", "is", null)
           .is("supplementary_je_json", null);
@@ -390,8 +450,6 @@ export default function BulkFixTool() {
         }]);
         setIsAiPreview(true);
       } else if (operation === "generate_flowcharts") {
-        // Preview: count approved assets with no flowchart records
-        // We check asset_flowcharts join — but simpler: check flowchart_image_url is null
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
           .is("flowchart_image_url", null);
         if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
@@ -410,7 +468,6 @@ export default function BulkFixTool() {
         }]);
         setIsAiPreview(true);
       } else if (operation === "generate_dissector_highlights") {
-        // Preview: count assets without dissector_problems records
         const { data: scopeAssets } = await buildScopeQuery(true);
         if (!scopeAssets?.length) { setTotalMatched(0); setPreviewRows([]); setIsAiPreview(true); return; }
 
@@ -432,7 +489,6 @@ export default function BulkFixTool() {
         }]);
         setIsAiPreview(true);
       } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
-        // Count IA2 assets with JE data
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
           .not("journal_entry_completed_json", "is", null);
         if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
@@ -465,11 +521,243 @@ export default function BulkFixTool() {
     }
   }
 
-  // Run the actual operation
+  // ── Core operation runner (shared between single-run and queue) ──
+  async function executeOperation(
+    opKey: OperationType,
+    onProgress?: (current: number, total: number, assetName: string) => void,
+    onComplete?: (updated: number, skipped: number, errors: number) => void,
+    shouldStop?: () => boolean,
+    startOffset?: number,
+  ) {
+    const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+    let scopeQuery = buildScopeQuery(isLightweight);
+    if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
+      scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+    }
+    const { data: assets, error } = await scopeQuery;
+    if (error) throw error;
+    if (!assets?.length) return { updated: 0, skipped: 0, errors: 0 };
+
+    const total = assets.length;
+    let updated = 0, skipped = 0, errors = 0;
+    const offset = startOffset ?? 0;
+
+    const batchSize = ["enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey) ? 5 : BATCH_SIZE;
+
+    for (let i = offset; i < total; i += batchSize) {
+      if (shouldStop?.()) break;
+      const batch = assets.slice(i, i + batchSize);
+      const updates: Promise<void>[] = [];
+
+      for (const asset of batch) {
+        updates.push((async () => {
+          const backupUpdate: Record<string, any> = {
+            problem_context_backup: (asset as any).problem_context || "",
+            problem_text_backup: (asset as any).survive_problem_text || "",
+            last_bulk_fix_at: new Date().toISOString(),
+            last_bulk_fix_label: OPERATION_LABELS[opKey] || opKey,
+          };
+
+          const newValues: Record<string, any> = {};
+          let changed = false;
+
+          if (opKey === "find_replace_simple") {
+            for (const f of FIXABLE_FIELDS) {
+              if (!selectedFields.includes(f.key)) continue;
+              const original = (asset as any)[f.key] || "";
+              const replaced = simpleReplace(original);
+              if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
+            }
+          } else if (opKey === "fix_entity_naming") {
+            for (const f of FIXABLE_FIELDS) {
+              const original = (asset as any)[f.key] || "";
+              const replaced = entityNamingReplace(original);
+              if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
+            }
+          } else if (opKey === "custom_ai" || opKey === "fix_entity_perspective") {
+            const aiInstruction = opKey === "fix_entity_perspective" ? ENTITY_PERSPECTIVE_INSTRUCTION : customInstruction;
+            const targetFields = opKey === "fix_entity_perspective"
+              ? FIXABLE_FIELDS.filter(f => ["problem_context", "survive_problem_text"].includes(f.key))
+              : FIXABLE_FIELDS.filter(f => selectedFields.includes(f.key));
+            for (const f of targetFields) {
+              const original = (asset as any)[f.key] || "";
+              if (!original.trim()) continue;
+              const { data: aiResult } = await supabase.functions.invoke("generate-ai-output", {
+                body: {
+                  provider: "lovable",
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+                    { role: "user", content: `Instruction: ${aiInstruction}\n\nText to modify:\n${original}` },
+                  ],
+                  temperature: 0.1,
+                  max_output_tokens: 2000,
+                },
+              });
+              const after = aiResult?.raw || aiResult?.content || original;
+              if (after !== original) { newValues[f.key] = after; changed = true; }
+            }
+          } else if (opKey === "enrich_je_rows") {
+            for (const jsonField of ["journal_entry_completed_json", "supplementary_je_json"] as const) {
+              const jeJson = (asset as any)[jsonField];
+              if (!jeJson?.scenario_sections) continue;
+
+              let hasMissing = false;
+              for (const section of jeJson.scenario_sections) {
+                for (const entry of section.entries_by_date || []) {
+                  for (const row of entry.rows || []) {
+                    if (!row.debit_credit_reason || !row.amount_source) { hasMissing = true; break; }
+                  }
+                  if (hasMissing) break;
+                }
+                if (hasMissing) break;
+              }
+              if (!hasMissing) continue;
+
+              const jeSummary: string[] = [];
+              for (const section of jeJson.scenario_sections) {
+                for (const entry of section.entries_by_date || []) {
+                  for (const row of entry.rows || []) {
+                    const side = row.credit != null && row.credit !== 0 ? "Credit" : "Debit";
+                    const amount = row.credit != null && row.credit !== 0 ? row.credit : row.debit;
+                    jeSummary.push(`Account: ${row.account_name}, ${side}: $${amount}, Date: ${entry.date}, Section: ${section.label}`);
+                  }
+                }
+              }
+
+              const enrichSystemPrompt = `You are an accounting tutor. For each journal entry row below, provide two fields:
+1. debit_credit_reason: 1-2 sentences explaining why this account is debited or credited in this context. Written for an accounting student.
+2. amount_source: 1-2 sentences explaining where the dollar amount comes from, referencing the solution/problem when possible.
+
+Return JSON: { "rows": [ { "debit_credit_reason": "...", "amount_source": "..." } ] }
+Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given directly, say so. Return ONLY valid JSON.`;
+
+              const enrichUserPrompt = `Problem:\n${(asset as any).problem_context || (asset as any).survive_problem_text || "N/A"}\n\nSolution:\n${(asset as any).survive_solution_text || "N/A"}\n\nJE rows (${jeSummary.length}):\n${jeSummary.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}`;
+
+              const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+                body: {
+                  provider: "lovable",
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    { role: "system", content: enrichSystemPrompt },
+                    { role: "user", content: enrichUserPrompt },
+                  ],
+                  temperature: 0.1,
+                  max_output_tokens: 4000,
+                },
+              });
+
+              if (aiErr) continue;
+              const rawContent = aiResult?.raw || aiResult?.content || "";
+              let parsed: any;
+              try {
+                const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+                parsed = JSON.parse(cleaned);
+              } catch { continue; }
+
+              if (!parsed?.rows || !Array.isArray(parsed.rows)) continue;
+
+              const enriched = JSON.parse(JSON.stringify(jeJson));
+              let rowIdx = 0;
+              for (const section of enriched.scenario_sections) {
+                for (const entry of section.entries_by_date || []) {
+                  for (const row of entry.rows || []) {
+                    if (rowIdx < parsed.rows.length) {
+                      if (!row.debit_credit_reason && parsed.rows[rowIdx].debit_credit_reason) {
+                        row.debit_credit_reason = parsed.rows[rowIdx].debit_credit_reason;
+                      }
+                      if (!row.amount_source && parsed.rows[rowIdx].amount_source) {
+                        row.amount_source = parsed.rows[rowIdx].amount_source;
+                      }
+                    }
+                    rowIdx++;
+                  }
+                }
+              }
+
+              newValues[jsonField] = enriched;
+              changed = true;
+            }
+
+            if (!changed) { skipped++; return; }
+          } else if (opKey === "generate_supplementary_je") {
+            const jeJson = (asset as any).journal_entry_completed_json;
+            const suppJson = (asset as any).supplementary_je_json;
+            if (!jeJson || suppJson) { skipped++; return; }
+
+            const { data: result, error: fnErr } = await supabase.functions.invoke("generate-supplementary-je", {
+              body: { teaching_asset_id: asset.id },
+            });
+
+            if (fnErr || !result?.success) { skipped++; return; }
+            changed = true;
+          } else if (opKey === "generate_flowcharts") {
+            const { data: existing } = await supabase
+              .from("asset_flowcharts")
+              .select("id")
+              .eq("teaching_asset_id", asset.id)
+              .limit(1);
+            if (existing && existing.length > 0) { skipped++; return; }
+
+            const { data: result, error: fnErr } = await supabase.functions.invoke("generate-flowchart", {
+              body: { teaching_asset_id: asset.id },
+            });
+
+            if (fnErr || !result?.success || result?.skipped) { skipped++; return; }
+            changed = true;
+          } else if (opKey === "generate_dissector_highlights") {
+            const { data: existing } = await supabase
+              .from("dissector_problems")
+              .select("id")
+              .eq("teaching_asset_id", asset.id)
+              .limit(1);
+            if (existing && existing.length > 0) { skipped++; return; }
+
+            const { data: result, error: fnErr } = await supabase.functions.invoke("generate-dissector-highlights", {
+              body: { teaching_asset_id: asset.id },
+            });
+
+            if (fnErr || !result?.success) { skipped++; return; }
+            changed = true;
+          } else if (opKey === "enrich_je_tooltips" || opKey === "rewrite_je_reasons" || opKey === "rewrite_je_amounts") {
+            const mode = opKey === "enrich_je_tooltips" ? "enrich" : opKey === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
+            try {
+              const { data: result, error: fnErr } = await supabase.functions.invoke("rewrite-je-tooltips", {
+                body: { teaching_asset_id: asset.id, mode },
+              });
+              if (fnErr || !result?.success) { errors++; return; }
+              changed = true;
+            } catch { errors++; return; }
+          }
+
+          if (changed) {
+            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
+              await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
+            }
+            updated++;
+          } else {
+            skipped++;
+          }
+        })());
+      }
+
+      await Promise.all(updates);
+      onProgress?.(Math.min(i + batchSize, total), total, (batch[batch.length - 1] as any)?.asset_name || "");
+
+      // Delay for AI-heavy operations
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights"].includes(opKey)) {
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+
+    onComplete?.(updated, skipped, errors);
+    return { updated, skipped, errors };
+  }
+
+  // Run the actual operation (single-run mode)
   async function runOperation() {
     if (!operation) return;
 
-    // Check if there's an existing backup — warn
     if (lastOp) {
       const confirmed = window.confirm(
         "Running this will overwrite your existing backup. Make sure you don't need to revert the previous operation first. Continue?"
@@ -479,284 +767,45 @@ export default function BulkFixTool() {
 
     setRunning(true);
     setRunComplete(null);
+    pauseRef.current = false;
 
     try {
-      // Fetch all assets in scope — use lightweight query for operations that only need id
-      const isLightweight = operation === "generate_flowcharts" || operation === "generate_supplementary_je" || operation === "generate_dissector_highlights" || operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts";
-      let scopeQuery = buildScopeQuery(isLightweight);
-      if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
-        scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+      const result = await executeOperation(
+        operation as OperationType,
+        (current, total, assetName) => setRunProgress({ current, total, currentAsset: assetName }),
+        undefined,
+        () => pauseRef.current,
+      );
+
+      if (result) {
+        setRunComplete({ updated: result.updated, skipped: result.skipped, errors: result.errors });
+        addHistory({
+          label: operationLabel,
+          date: new Date().toISOString(),
+          count: result.updated,
+          scope: `${courseFilter === "all" ? "All courses" : courses?.find(c => c.id === courseFilter)?.course_name || courseFilter} / ${statusFilter}`,
+          reverted: false,
+        });
+        refetchLastOp();
+        toast.success(`Done — ${result.updated} assets updated.`);
       }
-      const { data: assets, error } = await scopeQuery;
-      if (error) throw error;
-      if (!assets?.length) { toast.info("No assets in scope."); setRunning(false); return; }
-
-      const total = assets.length;
-      setRunProgress({ current: 0, total, currentAsset: "" });
-      let updated = 0;
-      let skipped = 0;
-      let errors = 0;
-
-      // Process in batches — use smaller batch for AI-heavy JE enrichment
-      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts" || operation === "generate_dissector_highlights" || operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") ? 5 : BATCH_SIZE;
-      for (let i = 0; i < total; i += batchSize) {
-        // Check for pause
-        if (pauseRef.current) {
-          setRunComplete({ updated, skipped, errors });
-          toast.info(`Paused after ${updated + skipped + errors} of ${total} assets. ${updated} updated, ${skipped} skipped, ${errors} errors.`);
-          setRunning(false);
-          setPaused(false);
-          pauseRef.current = false;
-          return;
-        }
-        const batch = assets.slice(i, i + batchSize);
-        const updates: Promise<void>[] = [];
-
-        for (const asset of batch) {
-          updates.push((async () => {
-            // 1. Backup current values
-            const backupUpdate: Record<string, any> = {
-              problem_context_backup: (asset as any).problem_context || "",
-              problem_text_backup: (asset as any).survive_problem_text || "",
-              // problem_text_ht_backup and others go here if fields exist
-              last_bulk_fix_at: new Date().toISOString(),
-              last_bulk_fix_label: operationLabel,
-            };
-
-            // 2. Compute new values
-            const newValues: Record<string, any> = {};
-            let changed = false;
-
-            if (operation === "find_replace_simple") {
-              for (const f of FIXABLE_FIELDS) {
-                if (!selectedFields.includes(f.key)) continue;
-                const original = (asset as any)[f.key] || "";
-                const replaced = simpleReplace(original);
-                if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
-              }
-            } else if (operation === "fix_entity_naming") {
-              for (const f of FIXABLE_FIELDS) {
-                const original = (asset as any)[f.key] || "";
-                const replaced = entityNamingReplace(original);
-                if (replaced !== original) { newValues[f.key] = replaced; changed = true; }
-              }
-            } else if (operation === "custom_ai" || operation === "fix_entity_perspective") {
-              const aiInstruction = operation === "fix_entity_perspective"
-                ? ENTITY_PERSPECTIVE_INSTRUCTION
-                : customInstruction;
-              const targetFields = operation === "fix_entity_perspective"
-                ? FIXABLE_FIELDS.filter(f => ["problem_context", "survive_problem_text"].includes(f.key))
-                : FIXABLE_FIELDS.filter(f => selectedFields.includes(f.key));
-              for (const f of targetFields) {
-                const original = (asset as any)[f.key] || "";
-                if (!original.trim()) continue;
-                const { data: aiResult } = await supabase.functions.invoke("generate-ai-output", {
-                  body: {
-                    provider: "lovable",
-                    model: "google/gemini-2.5-flash",
-                    messages: [
-                      { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
-                      { role: "user", content: `Instruction: ${aiInstruction}\n\nText to modify:\n${original}` },
-                    ],
-                    temperature: 0.1,
-                    max_output_tokens: 2000,
-                  },
-                });
-                const after = aiResult?.raw || aiResult?.content || original;
-                if (after !== original) { newValues[f.key] = after; changed = true; }
-              }
-            } else if (operation === "enrich_je_rows") {
-              // Process both journal_entry_completed_json and supplementary_je_json
-              for (const jsonField of ["journal_entry_completed_json", "supplementary_je_json"] as const) {
-                const jeJson = (asset as any)[jsonField];
-                if (!jeJson?.scenario_sections) continue;
-
-                let hasMissing = false;
-                for (const section of jeJson.scenario_sections) {
-                  for (const entry of section.entries_by_date || []) {
-                    for (const row of entry.rows || []) {
-                      if (!row.debit_credit_reason || !row.amount_source) { hasMissing = true; break; }
-                    }
-                    if (hasMissing) break;
-                  }
-                  if (hasMissing) break;
-                }
-                if (!hasMissing) continue;
-
-                const jeSummary: string[] = [];
-                for (const section of jeJson.scenario_sections) {
-                  for (const entry of section.entries_by_date || []) {
-                    for (const row of entry.rows || []) {
-                      const side = row.credit != null && row.credit !== 0 ? "Credit" : "Debit";
-                      const amount = row.credit != null && row.credit !== 0 ? row.credit : row.debit;
-                      jeSummary.push(`Account: ${row.account_name}, ${side}: $${amount}, Date: ${entry.date}, Section: ${section.label}`);
-                    }
-                  }
-                }
-
-                const enrichSystemPrompt = `You are an accounting tutor. For each journal entry row below, provide two fields:
-1. debit_credit_reason: 1-2 sentences explaining why this account is debited or credited in this context. Written for an accounting student.
-2. amount_source: 1-2 sentences explaining where the dollar amount comes from, referencing the solution/problem when possible.
-
-Return JSON: { "rows": [ { "debit_credit_reason": "...", "amount_source": "..." } ] }
-Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given directly, say so. Return ONLY valid JSON.`;
-
-                const enrichUserPrompt = `Problem:\n${(asset as any).problem_context || (asset as any).survive_problem_text || "N/A"}\n\nSolution:\n${(asset as any).survive_solution_text || "N/A"}\n\nJE rows (${jeSummary.length}):\n${jeSummary.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}`;
-
-                const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
-                  body: {
-                    provider: "lovable",
-                    model: "google/gemini-2.5-flash",
-                    messages: [
-                      { role: "system", content: enrichSystemPrompt },
-                      { role: "user", content: enrichUserPrompt },
-                    ],
-                    temperature: 0.1,
-                    max_output_tokens: 4000,
-                  },
-                });
-
-                if (aiErr) continue;
-                const rawContent = aiResult?.raw || aiResult?.content || "";
-                let parsed: any;
-                try {
-                  const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-                  parsed = JSON.parse(cleaned);
-                } catch { continue; }
-
-                if (!parsed?.rows || !Array.isArray(parsed.rows)) continue;
-
-                const enriched = JSON.parse(JSON.stringify(jeJson));
-                let rowIdx = 0;
-                for (const section of enriched.scenario_sections) {
-                  for (const entry of section.entries_by_date || []) {
-                    for (const row of entry.rows || []) {
-                      if (rowIdx < parsed.rows.length) {
-                        if (!row.debit_credit_reason && parsed.rows[rowIdx].debit_credit_reason) {
-                          row.debit_credit_reason = parsed.rows[rowIdx].debit_credit_reason;
-                        }
-                        if (!row.amount_source && parsed.rows[rowIdx].amount_source) {
-                          row.amount_source = parsed.rows[rowIdx].amount_source;
-                        }
-                      }
-                      rowIdx++;
-                    }
-                  }
-                }
-
-                newValues[jsonField] = enriched;
-                changed = true;
-              }
-
-              // If neither field had data, skip
-              if (!changed) { skipped++; return; }
-            } else if (operation === "generate_supplementary_je") {
-              // Skip if already has supplementary JE or no main JE
-              const jeJson = (asset as any).journal_entry_completed_json;
-              const suppJson = (asset as any).supplementary_je_json;
-              if (!jeJson || suppJson) { skipped++; return; }
-
-              // Call the existing edge function
-              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-supplementary-je", {
-                body: { teaching_asset_id: asset.id },
-              });
-
-              if (fnErr || !result?.success) { skipped++; return; }
-              changed = true;
-              // No need to update here — edge function already writes to DB
-            } else if (operation === "generate_flowcharts") {
-              // Skip if already has a flowchart
-              // Note: buildScopeQuery doesn't filter by flowchart_image_url, so check here
-              const { data: existing } = await supabase
-                .from("asset_flowcharts")
-                .select("id")
-                .eq("teaching_asset_id", asset.id)
-                .limit(1);
-              if (existing && existing.length > 0) { skipped++; return; }
-
-              // Call the flowchart generation edge function
-              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-flowchart", {
-                body: { teaching_asset_id: asset.id },
-              });
-
-              if (fnErr || !result?.success || result?.skipped) { skipped++; return; }
-              changed = true;
-              // Edge function already writes to DB
-            } else if (operation === "generate_dissector_highlights") {
-              // Skip if already has a dissector_problems record
-              const { data: existing } = await supabase
-                .from("dissector_problems")
-                .select("id")
-                .eq("teaching_asset_id", asset.id)
-                .limit(1);
-              if (existing && existing.length > 0) { skipped++; return; }
-
-              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-dissector-highlights", {
-                body: { teaching_asset_id: asset.id },
-              });
-
-              if (fnErr || !result?.success) { skipped++; return; }
-              changed = true;
-            } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
-              const mode = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
-              setRunProgress(prev => ({ ...prev, currentAsset: (asset as any).asset_name || asset.id }));
-              try {
-                const { data: result, error: fnErr } = await supabase.functions.invoke("rewrite-je-tooltips", {
-                  body: { teaching_asset_id: asset.id, mode },
-                });
-                if (fnErr || !result?.success) { errors++; return; }
-                changed = true;
-              } catch { errors++; return; }
-            }
-
-            if (changed) {
-              // generate_supplementary_je and generate_flowcharts write via edge function; others need explicit update
-              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts" && operation !== "generate_dissector_highlights" && operation !== "enrich_je_tooltips" && operation !== "rewrite_je_reasons" && operation !== "rewrite_je_amounts") {
-                await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
-              }
-              updated++;
-            } else {
-              skipped++;
-            }
-          })());
-        }
-
-        await Promise.all(updates);
-        setRunProgress({ current: Math.min(i + batchSize, total), total, currentAsset: "" });
-        // Add delay for JE tooltip operations to avoid rate limits
-        if ((operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && i + batchSize < total) {
-          await new Promise(r => setTimeout(r, 500));
-        }
-      }
-
-      setRunComplete({ updated, skipped, errors });
-      addHistory({
-        label: operationLabel,
-        date: new Date().toISOString(),
-        count: updated,
-        scope: `${courseFilter === "all" ? "All courses" : "Filtered course"} / ${chapterFilter === "all" ? "All chapters" : "Filtered chapter"}`,
-        reverted: false,
-      });
-      refetchLastOp();
-      toast.success(`Bulk fix complete: ${updated} updated, ${skipped} skipped.`);
     } catch (e: any) {
-      toast.error("Bulk fix failed: " + e.message);
+      toast.error("Operation failed: " + e.message);
     } finally {
       setRunning(false);
+      setPaused(false);
+      pauseRef.current = false;
     }
   }
 
   // Revert
   async function runRevert() {
     if (!lastOp) return;
-    const confirmed = window.confirm(
-      "Revert is a one-time option. After reverting, the backup will be cleared. Continue?"
-    );
+    const confirmed = window.confirm(`Revert "${lastOp.label}" on ${lastOp.count} assets? This restores original text from backups.`);
     if (!confirmed) return;
 
     setReverting(true);
     try {
-      // Find all assets with this label
       const { data: assets, error } = await supabase
         .from("teaching_assets")
         .select("id, problem_context_backup, problem_text_backup")
@@ -765,37 +814,204 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       if (error) throw error;
 
       let reverted = 0;
-      for (let i = 0; i < (assets?.length ?? 0); i += BATCH_SIZE) {
-        const batch = assets!.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map(async (asset) => {
-          const revertUpdate: Record<string, any> = {
-            last_bulk_fix_at: null,
-            last_bulk_fix_label: null,
-            problem_context_backup: null,
-            problem_text_backup: null,
-            problem_text_ht_backup: null,
-            answer_summary_backup: null,
-            worked_steps_backup: null,
-          };
-          if ((asset as any).problem_context_backup != null) revertUpdate.problem_context = (asset as any).problem_context_backup;
-          if ((asset as any).problem_text_backup != null) revertUpdate.survive_problem_text = (asset as any).problem_text_backup;
-          await supabase.from("teaching_assets").update(revertUpdate).eq("id", asset.id);
-          reverted++;
-        }));
+      for (const asset of assets ?? []) {
+        const a = asset as any;
+        await supabase.from("teaching_assets").update({
+          problem_context: a.problem_context_backup || "",
+          survive_problem_text: a.problem_text_backup || "",
+          last_bulk_fix_at: null,
+          last_bulk_fix_label: null,
+        }).eq("id", asset.id);
+        reverted++;
       }
 
-      // Update history
       const h = getHistory();
-      const entry = h.find(e => e.label === lastOp.label && !e.reverted);
-      if (entry) entry.reverted = true;
-      localStorage.setItem("bulk-fix-history", JSON.stringify(h));
+      const idx = h.findIndex(x => x.label === lastOp.label);
+      if (idx >= 0) { h[idx].reverted = true; localStorage.setItem("bulk-fix-history", JSON.stringify(h)); }
 
+      toast.success(`Reverted ${reverted} assets.`);
       refetchLastOp();
-      toast.success(`Reverted ${reverted} assets to previous text.`);
     } catch (e: any) {
       toast.error("Revert failed: " + e.message);
     } finally {
       setReverting(false);
+    }
+  }
+
+  // ── Queue functions ──
+  async function addToQueue(opKey: OperationType) {
+    const maxPos = Math.max(0, ...(queueItems ?? []).filter(q => q.status === "pending").map(q => q.queue_position));
+    const { error } = await supabase.from("bulk_fix_queue").insert({
+      operation_name: OPERATION_LABELS[opKey] || opKey,
+      operation_key: opKey,
+      queue_position: maxPos + 1,
+      status: "pending",
+    } as any);
+    if (error) { toast.error("Failed to add to queue"); return; }
+    refetchQueue();
+    toast.success(`Added "${OPERATION_LABELS[opKey]}" to queue`);
+  }
+
+  async function removeFromQueue(id: string) {
+    await supabase.from("bulk_fix_queue").delete().eq("id", id);
+    refetchQueue();
+  }
+
+  async function clearCompleted() {
+    await supabase.from("bulk_fix_queue").delete().in("status", ["complete", "skipped", "failed"]);
+    refetchQueue();
+  }
+
+  async function sendSummaryEmail(type: "operation_complete" | "queue_complete", operation?: QueueItem, nextInQueue?: string | null, operations?: QueueItem[]) {
+    try {
+      await supabase.functions.invoke("send-bulk-fix-summary", {
+        body: type === "operation_complete"
+          ? { type, operation, next_in_queue: nextInQueue }
+          : { type, operations },
+      });
+    } catch (e) {
+      console.error("Failed to send summary email:", e);
+    }
+  }
+
+  const runQueue = useCallback(async () => {
+    setQueueRunning(true);
+    queueStopRef.current = false;
+
+    try {
+      const { data: pending } = await supabase
+        .from("bulk_fix_queue")
+        .select("*")
+        .eq("status", "pending")
+        .order("queue_position", { ascending: true });
+
+      if (!pending?.length) { toast.info("No pending items in queue."); setQueueRunning(false); return; }
+
+      const completedOps: QueueItem[] = [];
+
+      for (const item of pending) {
+        if (queueStopRef.current) break;
+
+        // Mark running
+        await supabase.from("bulk_fix_queue").update({
+          status: "running",
+          started_at: new Date().toISOString(),
+        } as any).eq("id", item.id);
+        refetchQueue();
+
+        try {
+          const result = await executeOperation(
+            item.operation_key as OperationType,
+            async (current, total, assetName) => {
+              setQueueProgress({ current, total, currentAsset: assetName });
+              // Persist progress periodically
+              if (current % 25 === 0 || current === total) {
+                await supabase.from("bulk_fix_queue").update({
+                  assets_processed: current,
+                } as any).eq("id", item.id);
+              }
+            },
+            undefined,
+            () => queueStopRef.current,
+          );
+
+          const updatedItem = {
+            ...item,
+            status: "complete" as const,
+            completed_at: new Date().toISOString(),
+            assets_processed: (result?.updated ?? 0) + (result?.skipped ?? 0) + (result?.errors ?? 0),
+            assets_succeeded: result?.updated ?? 0,
+            assets_errored: result?.errors ?? 0,
+            assets_skipped: result?.skipped ?? 0,
+          };
+
+          await supabase.from("bulk_fix_queue").update({
+            status: "complete",
+            completed_at: new Date().toISOString(),
+            assets_processed: updatedItem.assets_processed,
+            assets_succeeded: updatedItem.assets_succeeded,
+            assets_errored: updatedItem.assets_errored,
+            assets_skipped: updatedItem.assets_skipped,
+          } as any).eq("id", item.id);
+
+          completedOps.push(updatedItem);
+          refetchQueue();
+
+          // Find next pending
+          const remainingPending = pending.filter(p => p.id !== item.id && !completedOps.some(c => c.id === p.id));
+          const nextName = remainingPending.length > 0 ? remainingPending[0].operation_name : null;
+
+          // Send per-operation email
+          await sendSummaryEmail("operation_complete", updatedItem, nextName);
+
+        } catch (e: any) {
+          await supabase.from("bulk_fix_queue").update({
+            status: "failed",
+            completed_at: new Date().toISOString(),
+            error_summary: e.message?.slice(0, 500),
+          } as any).eq("id", item.id);
+          completedOps.push({ ...item, status: "failed" });
+          refetchQueue();
+        }
+      }
+
+      // Send queue-complete email
+      if (completedOps.length > 0) {
+        await sendSummaryEmail("queue_complete", undefined, undefined, completedOps);
+      }
+
+      toast.success("Queue complete!");
+    } catch (e: any) {
+      toast.error("Queue failed: " + e.message);
+    } finally {
+      setQueueRunning(false);
+      refetchQueue();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseFilter, chapterFilter, statusFilter]);
+
+  async function resumeQueue(runningItem: QueueItem) {
+    setQueueRunning(true);
+    queueStopRef.current = false;
+
+    try {
+      const offset = runningItem.assets_processed || 0;
+      const result = await executeOperation(
+        runningItem.operation_key as OperationType,
+        (current, total, assetName) => setQueueProgress({ current, total, currentAsset: assetName }),
+        undefined,
+        () => queueStopRef.current,
+        offset,
+      );
+
+      const totalProcessed = offset + ((result?.updated ?? 0) + (result?.skipped ?? 0) + (result?.errors ?? 0));
+      await supabase.from("bulk_fix_queue").update({
+        status: "complete",
+        completed_at: new Date().toISOString(),
+        assets_processed: totalProcessed,
+        assets_succeeded: (runningItem.assets_succeeded || 0) + (result?.updated ?? 0),
+        assets_errored: (runningItem.assets_errored || 0) + (result?.errors ?? 0),
+        assets_skipped: (runningItem.assets_skipped || 0) + (result?.skipped ?? 0),
+      } as any).eq("id", runningItem.id);
+
+      refetchQueue();
+
+      // Continue with remaining pending items
+      const { data: remaining } = await supabase
+        .from("bulk_fix_queue")
+        .select("*")
+        .eq("status", "pending")
+        .order("queue_position", { ascending: true });
+
+      if (remaining?.length) {
+        await runQueue();
+      } else {
+        setQueueRunning(false);
+        toast.success("Queue resumed and complete!");
+      }
+    } catch (e: any) {
+      toast.error("Resume failed: " + e.message);
+      setQueueRunning(false);
     }
   }
 
@@ -806,6 +1022,9 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
   }
 
   const history = getHistory();
+  const pendingQueueItems = (queueItems ?? []).filter(q => q.status === "pending");
+  const hasRunningQueueItem = (queueItems ?? []).some(q => q.status === "running");
+  const runningQueueItem = (queueItems ?? []).find(q => q.status === "running");
 
   if (effectiveRole !== "admin") return null;
 
@@ -920,7 +1139,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mt-2">
                   <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-200">
-                    ⚠ This overwrites all existing debit_credit_reason text across all assets in scope. Recommended to run overnight for large batches.
+                    ⚠ This overwrites all existing debit_credit_reason text across all assets in scope. Best run overnight.
                   </p>
                 </div>
               </>
@@ -934,7 +1153,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mt-2">
                   <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-200">
-                    ⚠ This overwrites all existing amount_source text across all assets in scope. Recommended to run overnight for large batches.
+                    ⚠ This overwrites all existing amount_source text across all assets in scope. Best run overnight.
                   </p>
                 </div>
               </>
@@ -1104,7 +1323,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                       <div className="flex gap-2 mt-4">
                         <Button onClick={runOperation} disabled={running}>
                           <Play className="h-4 w-4 mr-2" />
-                          Looks good — run on all {isAiPreview ? totalMatched : totalMatched} assets
+                          Looks good — run on all {totalMatched} assets
                         </Button>
                         <Button variant="outline" onClick={() => setPreviewRows(null)}>Cancel</Button>
                       </div>
@@ -1155,6 +1374,140 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             </CardContent>
           </Card>
         )}
+
+        {/* ── Overnight Queue Section ── */}
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ListOrdered className="h-4 w-4" /> Overnight Queue
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add operations in order. Hit Run Queue before bed — each operation runs automatically after the previous one completes.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Recommended order card */}
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+              <p className="text-xs font-medium text-blue-300 mb-2">Recommended overnight run order:</p>
+              <ol className="space-y-1.5">
+                {RECOMMENDED_ORDER.map((item, idx) => (
+                  <li key={item.key} className="flex items-center gap-2">
+                    <span className="text-xs text-blue-400 font-mono w-4">{idx + 1}.</span>
+                    <button
+                      onClick={() => addToQueue(item.key)}
+                      disabled={queueRunning}
+                      className="text-xs text-blue-200 hover:text-blue-100 hover:underline transition-colors text-left"
+                    >
+                      {item.label}
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">({item.desc})</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-[10px] text-muted-foreground mt-2">Click any item to add it to the queue.</p>
+            </div>
+
+            {/* Queue add controls */}
+            <div className="flex gap-2">
+              <Select value={queueOp} onValueChange={(v) => setQueueOp(v as OperationType)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select operation to queue…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(OPERATION_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!queueOp || queueRunning}
+                onClick={() => { if (queueOp) { addToQueue(queueOp as OperationType); setQueueOp(""); } }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add to Queue
+              </Button>
+            </div>
+
+            {/* Queue list */}
+            {(queueItems ?? []).length > 0 && (
+              <div className="space-y-1.5">
+                {(queueItems ?? []).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-md border border-border bg-muted/30 px-3 py-2"
+                  >
+                    <span className="text-xs font-mono text-muted-foreground w-5">#{item.queue_position}</span>
+                    <span className="text-xs text-foreground flex-1">{item.operation_name}</span>
+                    <Badge
+                      variant={item.status === "complete" ? "default" : item.status === "running" ? "secondary" : item.status === "failed" ? "destructive" : "outline"}
+                      className="text-[10px]"
+                    >
+                      {item.status === "running" && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                      {item.status}
+                    </Badge>
+                    {item.status === "complete" && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {item.assets_succeeded} ok, {item.assets_errored} err
+                      </span>
+                    )}
+                    {item.status === "running" && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {queueProgress.current} / {queueProgress.total}
+                      </span>
+                    )}
+                    {item.status === "failed" && item.error_summary && (
+                      <span className="text-[10px] text-destructive truncate max-w-32" title={item.error_summary}>
+                        {item.error_summary.slice(0, 40)}
+                      </span>
+                    )}
+                    {item.status === "pending" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => removeFromQueue(item.id)}
+                      >
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Queue running progress */}
+            {queueRunning && runningQueueItem && (
+              <div className="space-y-2">
+                <p className="text-xs text-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1.5" />
+                  Running: {runningQueueItem.operation_name} — {queueProgress.current} / {queueProgress.total}
+                </p>
+                {queueProgress.currentAsset && (
+                  <p className="text-[10px] text-muted-foreground">Current: {queueProgress.currentAsset}</p>
+                )}
+                <Progress value={(queueProgress.current / Math.max(queueProgress.total, 1)) * 100} className="h-1.5" />
+              </div>
+            )}
+
+            {/* Queue controls */}
+            <div className="flex gap-2">
+              <Button
+                onClick={runQueue}
+                disabled={pendingQueueItems.length === 0 || queueRunning || hasRunningQueueItem}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Play className="h-4 w-4 mr-1.5" />
+                Run Queue ({pendingQueueItems.length} pending)
+              </Button>
+              {(queueItems ?? []).some(q => ["complete", "skipped", "failed"].includes(q.status)) && (
+                <Button variant="outline" size="sm" onClick={clearCompleted} disabled={queueRunning}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Clear Completed
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Section 5: Revert */}
         {lastOp && (
