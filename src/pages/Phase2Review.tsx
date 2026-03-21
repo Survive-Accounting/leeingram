@@ -516,9 +516,37 @@ export default function Phase2Review() {
                 <label className="text-xs text-muted-foreground mb-1.5 block sm:hidden">Topics for this chapter</label>
                 <div className="flex items-center gap-3">
                   <label className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">Topics for this chapter</label>
-                  <div className="flex-1 flex items-center min-w-0">
-                    {/* Number line */}
-                    <div className="flex items-center gap-0 relative w-full">
+                  <div className="flex-1 min-w-0">
+                    <div className="sm:hidden flex flex-wrap gap-2">
+                      {Array.from({ length: maxTopicCount }, (_, i) => i + 1).map((n) => {
+                        const isSelected = n === sliderValue;
+                        const isDisabled = isLocked || sliderLoading;
+                        return (
+                          <Tooltip key={n}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => !isDisabled && handleTopicCountChange(n)}
+                                disabled={isDisabled}
+                                className={cn(
+                                  "min-w-[3rem] h-11 px-3 rounded-full border text-sm font-semibold transition-all duration-150",
+                                  isSelected
+                                    ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                                    : "border-border bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                                  isDisabled && !isSelected && "opacity-40",
+                                )}
+                              >
+                                {sliderLoading && isSelected ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : n}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              {isLocked ? "Unlock to change" : `Use ${n} topic${n !== 1 ? "s" : ""}`}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+
+                    <div className="hidden sm:flex items-center relative w-full">
                       {/* Connecting track */}
                       <div className="absolute top-1/2 left-3 right-3 h-0.5 bg-border -translate-y-1/2 rounded-full" />
                       <div
