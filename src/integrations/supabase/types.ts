@@ -187,6 +187,77 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_events: {
+        Row: {
+          asset_name: string
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          is_lw_embed: boolean
+          is_preview_mode: boolean
+          lw_course_id: string | null
+          lw_email: string | null
+          lw_name: string | null
+          lw_unit_id: string | null
+          lw_user_id: string | null
+          referrer: string | null
+          seconds_spent: number | null
+          section_name: string | null
+          teaching_asset_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          asset_name: string
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          is_lw_embed?: boolean
+          is_preview_mode?: boolean
+          lw_course_id?: string | null
+          lw_email?: string | null
+          lw_name?: string | null
+          lw_unit_id?: string | null
+          lw_user_id?: string | null
+          referrer?: string | null
+          seconds_spent?: number | null
+          section_name?: string | null
+          teaching_asset_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          asset_name?: string
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_lw_embed?: boolean
+          is_preview_mode?: boolean
+          lw_course_id?: string | null
+          lw_email?: string | null
+          lw_name?: string | null
+          lw_unit_id?: string | null
+          lw_user_id?: string | null
+          referrer?: string | null
+          seconds_spent?: number | null
+          section_name?: string | null
+          teaching_asset_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_events_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_flags: {
         Row: {
           created_at: string
