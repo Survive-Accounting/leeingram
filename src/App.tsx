@@ -75,6 +75,7 @@ import SolutionsQAReview from "./pages/SolutionsQAReview";
 import SolutionsQAAdmin from "./pages/SolutionsQAAdmin";
 import JEDebug from "./pages/JEDebug";
 import ShareLeaderboard from "./pages/ShareLeaderboard";
+import SolutionsViewerStaging from "./pages/SolutionsViewerStaging";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -114,6 +115,7 @@ const AppRoutes = () => {
       <Route path="/survive" element={<Navigate to="/" replace />} />
       {/* Public tools */}
       <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
+      <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
       <Route path="/practice/:assetCode" element={<PracticeViewer />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
