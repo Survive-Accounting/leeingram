@@ -35,28 +35,31 @@ export default function ContentFactory() {
   const { data: courses, isLoading } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("*").order("created_at");
+      const { data, error } = await supabase.from("courses").select("id, course_name, created_at").order("created_at");
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: chapters } = useQuery({
     queryKey: ["chapters"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("chapters").select("*").order("chapter_number");
+      const { data, error } = await supabase.from("chapters").select("id, chapter_number, chapter_name, course_id").order("chapter_number");
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: lessons } = useQuery({
     queryKey: ["lessons"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lessons").select("*");
+      const { data, error } = await supabase.from("lessons").select("id, chapter_id, lesson_title, status_filmed");
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: problemPairs } = useQuery({

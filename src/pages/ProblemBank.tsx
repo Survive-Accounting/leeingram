@@ -117,18 +117,14 @@ export default function ProblemBank() {
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", courseFilter, chapterFilter],
     queryFn: async () => {
-      let q = supabase.from("chapter_problems").select("*");
+      let q = supabase.from("chapter_problems").select("id, course_id, chapter_id, problem_type, source_label, title, status, pipeline_status, created_at, difficulty_internal, problem_screenshot_url, solution_screenshot_url, ocr_status, ocr_detected_label, contains_no_journal_entries");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
       const { data, error } = await q;
       if (error) throw error;
-      return (data as any[]).map((d) => ({
-        ...d,
-        problem_screenshot_urls: d.problem_screenshot_urls ?? [],
-        solution_screenshot_urls: d.solution_screenshot_urls ?? []
-      })).sort((a: any, b: any) =>
+      return (data as any[]).sort((a: any, b: any) =>
         (a.source_label || "").localeCompare(b.source_label || "", undefined, { numeric: true, sensitivity: "base" })
-      ) as ChapterProblem[];
+      ) as (ChapterProblemListItem & { ocr_status?: string; ocr_detected_label?: string; contains_no_journal_entries?: boolean })[];
     }
   });
 

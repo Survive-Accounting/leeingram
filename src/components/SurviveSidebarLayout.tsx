@@ -107,6 +107,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: allChapters } = useQuery({
@@ -116,6 +117,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   // Fetch assigned chapters for VA or impersonated VA
@@ -131,6 +133,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       return data;
     },
     enabled: !!activeVaId,
+    staleTime: 10 * 60 * 1000,
   });
 
   const isVaOrImpersonating = isVa || !!impersonating;
