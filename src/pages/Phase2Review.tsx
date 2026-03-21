@@ -103,7 +103,8 @@ export default function Phase2Review() {
   const [regenOpen, setRegenOpen] = useState(false);
   const [mergeConfirm, setMergeConfirm] = useState<{ sourceId: string; destId: string } | null>(null);
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
-  const [initialTopicCount, setInitialTopicCount] = useState(8);
+  const [initialTopicCount, setInitialTopicCount] = useState(6);
+  const [lockWarningOpen, setLockWarningOpen] = useState(false);
   const [renamingTopics, setRenamingTopics] = useState<Set<string>>(new Set());
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState("");
@@ -171,8 +172,13 @@ export default function Phase2Review() {
 
   const isLocked = chapterInfo?.topics_locked ?? false;
   const activeTopics = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-  const mergedTopics = topics.filter(t => !t.is_active || !!t.merged_into_topic_id);
+  const dragMergedTopics = topics.filter(t => !t.is_active && !!t.merged_into_topic_id);
+  const sliderCollapsedTopics = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
   const sliderValue = activeTopics.length;
+
+  // Unassigned = assets in slider-collapsed topics + assets not in any topic's codes
+  const allActiveTopicCodes = activeTopics.flatMap(t => t.asset_codes || []);
+  const unassignedAssets = chapterAssets.filter(a => !allActiveTopicCodes.includes(a.asset_name));
 
   // ── Mutations ────────────────────────────────────────────────
   const generateMutation = useMutation({
@@ -352,49 +358,42 @@ export default function Phase2Review() {
   const handleSliderChange = useCallback(async (newCount: number[]) => {
     const targetCount = newCount[0];
     const currentActive = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-    const currentInactive = topics.filter(t => !t.is_active || !!t.merged_into_topic_id);
+    // Only slider-collapsed topics can be reactivated (not drag-merged ones)
+    const sliderInactive = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
     const diff = targetCount - currentActive.length;
 
     if (diff < 0) {
-      // Need to deactivate the last N active topics
+      // Deactivate the last N active topics — assets go to unassigned (stay on topic row)
       const toDeactivate = currentActive
         .sort((a, b) => b.topic_number - a.topic_number)
         .slice(0, Math.abs(diff));
-      
+
       for (const topic of toDeactivate) {
-        // Find nearest active topic above
-        const nearestAbove = currentActive
-          .filter(t => t.topic_number < topic.topic_number && !toDeactivate.includes(t))
-          .sort((a, b) => b.topic_number - a.topic_number)[0];
-        
-        if (nearestAbove) {
-          const mergedCodes = [...new Set([...(nearestAbove.asset_codes || []), ...(topic.asset_codes || [])])];
-          await supabase.from("chapter_topics").update({ asset_codes: mergedCodes } as any).eq("id", nearestAbove.id);
-          await supabase.from("chapter_topics").update({
-            is_active: false,
-            merged_into_topic_id: nearestAbove.id,
-            asset_codes: [],
-          } as any).eq("id", topic.id);
-          // Rename
-          aiRename(nearestAbove.id, nearestAbove.topic_name, topic.topic_name);
-        }
+        // Keep asset_codes on the topic so they can be restored on slider-up
+        await supabase.from("chapter_topics").update({
+          is_active: false,
+          // Do NOT set merged_into_topic_id — this is slider collapse, not merge
+        } as any).eq("id", topic.id);
       }
     } else if (diff > 0) {
-      // Re-activate the first N inactive topics (by topic_number)
-      const toReactivate = currentInactive
+      // Reactivate slider-collapsed topics (lowest topic_number first)
+      const toReactivate = sliderInactive
         .sort((a, b) => a.topic_number - b.topic_number)
         .slice(0, diff);
-      
+
       for (const topic of toReactivate) {
+        // Remove any asset codes that were manually moved to another active topic
+        const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
+        const restoredCodes = (topic.asset_codes || []).filter(c => !currentActiveCodes.includes(c));
         await supabase.from("chapter_topics").update({
           is_active: true,
-          merged_into_topic_id: null,
+          asset_codes: restoredCodes,
         } as any).eq("id", topic.id);
       }
     }
 
     qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
-  }, [topics, chapterId, qc, aiRename]);
+  }, [topics, chapterId, qc]);
 
   // ── DnD handlers ─────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
@@ -439,10 +438,11 @@ export default function Phase2Review() {
     );
   }
 
-  // Sort all topics for display: active first by topic_number, then merged
+  // Sort all topics for display: active first, then slider-collapsed, then drag-merged
   const sortedForDisplay = [
     ...activeTopics.sort((a, b) => a.topic_number - b.topic_number),
-    ...mergedTopics.sort((a, b) => a.topic_number - b.topic_number),
+    ...sliderCollapsedTopics.sort((a, b) => a.topic_number - b.topic_number),
+    ...dragMergedTopics.sort((a, b) => a.topic_number - b.topic_number),
   ];
 
   const draggedTopic = dragActiveId ? topics.find(t => t.id === dragActiveId) : null;
@@ -454,7 +454,7 @@ export default function Phase2Review() {
         <div>
           <h1 className="text-lg font-bold text-foreground">Topic Generator</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Generate up to 10 core topics per chapter. Each topic powers a video, a quiz, and chapter-wide study tools.
+            Generate up to 8 core topics per chapter. Each topic powers a video, a quiz, and chapter-wide study tools.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {workspace?.courseName} · Ch {workspace?.chapterNumber} — {workspace?.chapterName}
@@ -471,16 +471,16 @@ export default function Phase2Review() {
             <Sparkles className="h-12 w-12 text-primary/60" />
             <h2 className="text-xl font-bold text-foreground">No topics generated yet</h2>
             <p className="text-muted-foreground text-sm max-w-md">
-              {assetCount} approved assets in Ch {workspace?.chapterNumber}. Generate 5-10 core exam topics using AI analysis of your teaching assets.
+              {assetCount} approved assets in Ch {workspace?.chapterNumber}. Generate 5-8 core exam topics using AI analysis of your teaching assets.
             </p>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Start with</span>
               <Input
                 type="number"
                 min={5}
-                max={10}
+                max={8}
                 value={initialTopicCount}
-                onChange={(e) => setInitialTopicCount(Math.min(10, Math.max(5, parseInt(e.target.value) || 8)))}
+                onChange={(e) => setInitialTopicCount(Math.min(8, Math.max(5, parseInt(e.target.value) || 6)))}
                 className="w-16 h-8 text-center text-sm"
               />
               <span className="text-muted-foreground">topics</span>
@@ -517,7 +517,7 @@ export default function Phase2Review() {
                   <div className="flex-1 relative">
                     <Slider
                       min={1}
-                      max={topics.length}
+                      max={Math.min(8, topics.filter(t => !t.merged_into_topic_id).length)}
                       step={1}
                       value={[sliderValue]}
                       onValueChange={isLocked ? undefined : handleSliderChange}
@@ -557,7 +557,13 @@ export default function Phase2Review() {
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
-                    onClick={() => lockMutation.mutate(true)}
+                    onClick={() => {
+                      if (unassignedAssets.length > 0) {
+                        setLockWarningOpen(true);
+                      } else {
+                        lockMutation.mutate(true);
+                      }
+                    }}
                     disabled={lockMutation.isPending || activeTopics.length === 0}
                   >
                     <Lock className="h-3 w-3 mr-1.5" />
@@ -576,7 +582,8 @@ export default function Phase2Review() {
             >
               <div className="space-y-2">
                 {sortedForDisplay.map((topic) => {
-                  const isMerged = !topic.is_active || !!topic.merged_into_topic_id;
+                  const isDragMerged = !topic.is_active && !!topic.merged_into_topic_id;
+                  const isSliderCollapsed = !topic.is_active && !topic.merged_into_topic_id;
                   const mergedIntoName = topic.merged_into_topic_id
                     ? topics.find(t => t.id === topic.merged_into_topic_id)?.topic_name || "Unknown"
                     : null;
@@ -585,7 +592,21 @@ export default function Phase2Review() {
                   const isOpen = openTopicId === topic.id;
                   const isRenaming = renamingTopics.has(topic.id);
 
-                  if (isMerged) {
+                  // Slider-collapsed topic
+                  if (isSliderCollapsed) {
+                    return (
+                      <div key={topic.id} className="rounded-lg border border-border/50 bg-muted/20 px-4 py-2 flex items-center gap-3">
+                        <Badge variant="outline" className="text-[10px] opacity-50">{topic.topic_number}</Badge>
+                        <span className="text-xs text-muted-foreground line-through">{topic.topic_name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          → Unassigned ({topicAssetCodes.length} assets)
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  // Drag-merged topic
+                  if (isDragMerged) {
                     return (
                       <div key={topic.id} className="rounded-lg border border-border/50 bg-muted/20 px-4 py-2 flex items-center gap-3">
                         <Badge variant="outline" className="text-[10px] opacity-50">{topic.topic_number}</Badge>
@@ -866,6 +887,62 @@ export default function Phase2Review() {
               </DragOverlay>
             </DndContext>
 
+            {/* Unassigned Assets Bucket */}
+            {unassignedAssets.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-foreground">Unassigned Assets</h3>
+                    <Badge variant="secondary" className="text-[10px]">{unassignedAssets.length} assets</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    These assets are not tagged to any topic. Drag them into a topic or leave them untagged.
+                  </p>
+                </div>
+                <div className="rounded-md border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="text-[10px] h-8">Asset Code</TableHead>
+                        <TableHead className="text-[10px] h-8">Source Ref</TableHead>
+                        <TableHead className="text-[10px] h-8">Problem Title</TableHead>
+                        <TableHead className="text-[10px] h-8 w-32">Move to Topic</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unassignedAssets.map(asset => (
+                        <TableRow key={asset.id}>
+                          <TableCell className="font-mono text-[10px] text-primary py-1.5">{asset.asset_name}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground py-1.5">{asset.source_ref || "—"}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground py-1.5 max-w-[200px] truncate" title={asset.problem_title || ""}>
+                            {asset.problem_title || "—"}
+                          </TableCell>
+                          <TableCell className="py-1.5">
+                            <Select
+                              onValueChange={(topicId) => {
+                                addAssetMutation.mutate({ topicId, asset });
+                              }}
+                            >
+                              <SelectTrigger className="h-6 text-[10px] w-28">
+                                <SelectValue placeholder="Select topic" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {activeTopics.map(t => (
+                                  <SelectItem key={t.id} value={t.id} className="text-xs">
+                                    {t.topic_number}. {t.topic_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
             {/* Regenerate button */}
             <Button
               variant="outline"
@@ -900,6 +977,32 @@ export default function Phase2Review() {
             <Button variant="outline" size="sm" onClick={() => setMergeConfirm(null)}>Cancel</Button>
             <Button size="sm" onClick={() => mergeConfirm && executeMerge(mergeConfirm.sourceId, mergeConfirm.destId)}>
               Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lock warning dialog for unassigned assets */}
+      <Dialog open={lockWarningOpen} onOpenChange={setLockWarningOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Unassigned Assets</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            <strong>{unassignedAssets.length}</strong> assets are unassigned and won't be tagged to any topic.
+            You can assign them later from the asset detail view.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setLockWarningOpen(false)}>Go Back</Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                setLockWarningOpen(false);
+                lockMutation.mutate(true);
+              }}
+            >
+              Lock Anyway
             </Button>
           </DialogFooter>
         </DialogContent>
