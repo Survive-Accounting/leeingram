@@ -653,7 +653,7 @@ export default function ProblemBank() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {hasMismatch ? (
-                          <button className="text-[11px] text-destructive hover:underline" onClick={() => resetScreenshot(p)} title="Clear wrong screenshot and re-queue for pasting">
+                          <button className="text-[11px] text-destructive hover:underline" onClick={() => resetScreenshot(p as any)} title="Clear wrong screenshot and re-queue for pasting">
                             Re-paste
                           </button>
                         ) : !hasScreenshot ? (
