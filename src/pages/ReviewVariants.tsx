@@ -61,6 +61,9 @@ export default function ReviewVariants() {
   const navigate = useNavigate();
   const chapterId = workspace?.chapterId;
   const courseId = workspace?.courseId;
+  const { isVa } = useVaAccount();
+  const { impersonating } = useImpersonation();
+  const isVaOrImpersonating = isVa || !!impersonating;
 
   const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewStarted, setReviewStarted] = useState(false);
