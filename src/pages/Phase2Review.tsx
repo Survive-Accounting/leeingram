@@ -379,7 +379,7 @@ export default function Phase2Review() {
         }
       } else if (diff > 0) {
         const toReactivate = sliderInactive
-          .sort((a, b) => a.topic_number - b.topic_number)
+          .sort((a, b) => (a.topic_number ?? 999) - (b.topic_number ?? 999))
           .slice(0, diff);
         for (const topic of toReactivate) {
           const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
