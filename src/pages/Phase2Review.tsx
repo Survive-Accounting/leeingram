@@ -17,6 +17,7 @@ import {
   Loader2, Sparkles, RefreshCw, ChevronRight, ChevronDown,
   GripVertical, ExternalLink, ArrowRightLeft, Lock, Unlock, Merge, Undo2, Plus
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   DndContext, closestCenter, DragOverlay, useSensor, useSensors, PointerSensor,
