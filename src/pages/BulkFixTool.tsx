@@ -175,8 +175,6 @@ export default function BulkFixTool() {
   // Queue state
   const [queueOp, setQueueOp] = useState<OperationType | "">("");
   const [queueRunning, setQueueRunning] = useState(false);
-  const queueStopRef = useRef(false);
-  const [queueProgress, setQueueProgress] = useState({ current: 0, total: 0, currentAsset: "" });
 
   // Queries
   const { data: courses } = useQuery({
