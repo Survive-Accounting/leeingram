@@ -176,7 +176,7 @@ export default function Phase2Review() {
   const activeTopics = topics.filter(t => t.is_active && !t.merged_into_topic_id);
   const dragMergedTopics = topics.filter(t => !t.is_active && !!t.merged_into_topic_id);
   const unmergedTopics = topics.filter(t => !t.merged_into_topic_id);
-  const maxTopicCount = Math.min(8, unmergedTopics.length);
+  const maxTopicCount = 8;
   const sliderCollapsedTopics = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
   const sliderValue = activeTopics.length;
 
@@ -361,40 +361,74 @@ export default function Phase2Review() {
   // ── Slider handler ───────────────────────────────────────────
   const handleTopicCountChange = useCallback(async (targetCount: number) => {
     if (sliderLoading || isLocked) return;
+
+    const clampedTargetCount = Math.min(maxTopicCount, Math.max(1, targetCount));
     const currentActive = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-    const sliderInactive = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
-    const diff = targetCount - currentActive.length;
+    const availableInactive = topics
+      .filter(t => !t.is_active)
+      .sort((a, b) => (a.topic_number ?? 999) - (b.topic_number ?? 999));
+    const diff = clampedTargetCount - currentActive.length;
+
     if (diff === 0) return;
 
     setSliderLoading(true);
     try {
       if (diff < 0) {
         const toDeactivate = currentActive
-          .sort((a, b) => b.topic_number - a.topic_number)
+          .sort((a, b) => (b.topic_number ?? 0) - (a.topic_number ?? 0))
           .slice(0, Math.abs(diff));
+
         for (const topic of toDeactivate) {
-          await supabase.from("chapter_topics").update({
+          const { error } = await supabase.from("chapter_topics").update({
             is_active: false,
           } as any).eq("id", topic.id);
+          if (error) throw error;
         }
-      } else if (diff > 0) {
-        const toReactivate = sliderInactive
-          .sort((a, b) => (a.topic_number ?? 999) - (b.topic_number ?? 999))
-          .slice(0, diff);
+      } else {
+        const reservedCodes = new Set(currentActive.flatMap(t => t.asset_codes || []));
+        const toReactivate = availableInactive.slice(0, diff);
+
         for (const topic of toReactivate) {
-          const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
-          const restoredCodes = (topic.asset_codes || []).filter(c => !currentActiveCodes.includes(c));
-          await supabase.from("chapter_topics").update({
+          const restoredCodes = (topic.asset_codes || []).filter(code => !reservedCodes.has(code));
+          restoredCodes.forEach(code => reservedCodes.add(code));
+
+          const { error } = await supabase.from("chapter_topics").update({
             is_active: true,
+            merged_into_topic_id: null,
             asset_codes: restoredCodes,
           } as any).eq("id", topic.id);
+          if (error) throw error;
+        }
+
+        const missingCount = diff - toReactivate.length;
+        if (missingCount > 0) {
+          const highestTopicNumber = topics.reduce((max, topic) => Math.max(max, topic.topic_number ?? 0), 0);
+          const newTopics = Array.from({ length: missingCount }, (_, index) => {
+            const topicNumber = highestTopicNumber + index + 1;
+            return {
+              chapter_id: chapterId!,
+              course_id: topics[0]?.course_id ?? null,
+              topic_name: `Topic ${topicNumber}`,
+              topic_number: topicNumber,
+              display_order: topicNumber,
+              is_active: true,
+              asset_codes: [],
+              generated_by_ai: false,
+            };
+          });
+
+          const { error } = await supabase.from("chapter_topics").insert(newTopics as any);
+          if (error) throw error;
         }
       }
+
       await qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update topic count");
     } finally {
       setSliderLoading(false);
     }
-  }, [topics, chapterId, qc, sliderLoading, isLocked]);
+  }, [topics, chapterId, qc, sliderLoading, isLocked, maxTopicCount]);
 
   // ── DnD handlers ─────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
