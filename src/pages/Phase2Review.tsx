@@ -510,12 +510,13 @@ export default function Phase2Review() {
           /* ── Main topic UI ────────────────────────────────────── */
           <div className="space-y-4">
             {/* Lock bar + topic count selector */}
-            <div className="flex items-center gap-4 bg-card border border-border rounded-lg p-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-card border border-border rounded-lg p-3">
               {/* Number-line stepper */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
+                <label className="text-xs text-muted-foreground mb-1.5 block sm:hidden">Topics for this chapter</label>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap">Topics for this chapter</label>
-                  <div className="flex-1 flex items-center">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">Topics for this chapter</label>
+                  <div className="flex-1 flex items-center min-w-0">
                     {/* Number line */}
                     <div className="flex items-center gap-0 relative w-full">
                       {/* Connecting track */}
