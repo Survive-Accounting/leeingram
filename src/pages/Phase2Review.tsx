@@ -172,8 +172,13 @@ export default function Phase2Review() {
 
   const isLocked = chapterInfo?.topics_locked ?? false;
   const activeTopics = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-  const mergedTopics = topics.filter(t => !t.is_active || !!t.merged_into_topic_id);
+  const dragMergedTopics = topics.filter(t => !t.is_active && !!t.merged_into_topic_id);
+  const sliderCollapsedTopics = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
   const sliderValue = activeTopics.length;
+
+  // Unassigned = assets in slider-collapsed topics + assets not in any topic's codes
+  const allActiveTopicCodes = activeTopics.flatMap(t => t.asset_codes || []);
+  const unassignedAssets = chapterAssets.filter(a => !allActiveTopicCodes.includes(a.asset_name));
 
   // ── Mutations ────────────────────────────────────────────────
   const generateMutation = useMutation({
