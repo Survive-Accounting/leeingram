@@ -619,7 +619,7 @@ export default function SolutionsQAReview() {
         {/* Drag handle + maximize */}
         <div
           onMouseDown={isMaximized ? undefined : onMouseDown}
-          className={`flex items-center justify-center py-1.5 border-b border-border bg-muted/30 shrink-0 ${isMaximized ? "" : "cursor-grab active:cursor-grabbing"}`}
+          className={`relative flex items-center justify-center py-1.5 border-b border-border bg-muted/30 shrink-0 ${isMaximized ? "" : "cursor-grab active:cursor-grabbing"}`}
         >
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground/50" />
           <button
