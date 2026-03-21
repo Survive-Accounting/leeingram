@@ -56,7 +56,7 @@ serve(async (req) => {
       asset_type: a.asset_type,
     }));
 
-    const systemPrompt = `You are an accounting curriculum designer. Your job is to identify the 5 most important exam topics from a set of accounting practice problems.
+    const systemPrompt = `You are an accounting curriculum designer. Generate exactly 10 topics ordered by exam importance — most critical first. Each topic should be genuinely distinct. Some topics may be narrower than others — that is fine. The user will decide how many to keep.
 
 For each topic:
 - Give it a short clear name (4-8 words)
@@ -77,7 +77,7 @@ Return ONLY valid JSON in this format:
   ]
 }
 
-Aim for 5 topics. Each asset code can appear in multiple topics if relevant. Focus on topics that would make good 10-15 minute instructional videos.`;
+Generate exactly 10 topics. Each asset code can appear in multiple topics if relevant. Focus on topics that would make good 10-15 minute instructional videos.`;
 
     const userPrompt = `Course: ${course?.course_name || "Unknown"}
 Chapter ${chapter.chapter_number}: ${chapter.chapter_name}
@@ -86,7 +86,7 @@ Here are the ${assets.length} approved teaching assets for this chapter:
 
 ${JSON.stringify(assetSummaries, null, 2)}
 
-Please identify the 5 most important exam topics from these assets.`;
+Please identify the 10 most important exam topics from these assets, ordered by importance.`;
 
     // Call Lovable AI Gateway
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -138,9 +138,16 @@ Please identify the 5 most important exam topics from these assets.`;
     // Also clear topic_id on teaching_assets for this chapter
     await sb.from("teaching_assets").update({ topic_id: null } as any).eq("chapter_id", chapter_id);
 
-    // Insert new topics
+    // Unlock chapter topics if locked
+    await sb.from("chapters").update({
+      topics_locked: false,
+      topics_locked_at: null,
+      topics_locked_count: null,
+    } as any).eq("id", chapter_id);
+
+    // Insert new topics (up to 10)
     const insertedTopics: Array<{ id: string; asset_codes: string[] }> = [];
-    for (const t of parsed.topics) {
+    for (const t of parsed.topics.slice(0, 10)) {
       const { data: inserted, error: insErr } = await sb
         .from("chapter_topics")
         .insert({
@@ -172,7 +179,6 @@ Please identify the 5 most important exam topics from these assets.`;
     // Update topic_id on teaching_assets (first matching topic wins)
     for (const topic of insertedTopics) {
       for (const assetCode of topic.asset_codes) {
-        // Only set if not already set by a prior topic
         await sb
           .from("teaching_assets")
           .update({ topic_id: topic.id } as any)
