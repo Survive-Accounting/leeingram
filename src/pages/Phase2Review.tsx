@@ -284,17 +284,19 @@ export default function Phase2Review() {
     try {
       const { data, error } = await supabase.functions.invoke("generate-ai-output", {
         body: {
-          system_prompt: "You combine two accounting topic names into a single concise topic name (4-8 words). Return ONLY the combined topic name, nothing else.",
-          user_prompt: `Given these two merged accounting topics, suggest a single combined topic name in 4-8 words:\nTopic A: ${nameA}\nTopic B: ${nameB}\nReturn only the topic name, nothing else.`,
+          provider: "lovable",
           model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "You combine two accounting topic names into a single concise topic name (4-8 words). Return ONLY the combined topic name, nothing else." },
+            { role: "user", content: `Given these two merged accounting topics, suggest a single combined topic name in 4-8 words:\nTopic A: ${nameA}\nTopic B: ${nameB}\nReturn only the topic name, nothing else.` },
+          ],
         },
       });
-      if (!error && data?.output) {
-        const newName = data.output.trim().replace(/^["']|["']$/g, "");
-        if (newName.length > 2 && newName.length < 80) {
-          await supabase.from("chapter_topics").update({ topic_name: newName } as any).eq("id", topicId);
-          qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
-        }
+      const rawText = data?.raw || data?.parsed || "";
+      const newName = String(rawText).trim().replace(/^["']|["']$/g, "");
+      if (!error && newName.length > 2 && newName.length < 80) {
+        await supabase.from("chapter_topics").update({ topic_name: newName } as any).eq("id", topicId);
+        qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
       }
     } catch { /* silent */ }
     setRenamingTopics(prev => {
