@@ -566,6 +566,54 @@ export type Database = {
           },
         ]
       }
+      bulk_fix_queue: {
+        Row: {
+          assets_errored: number
+          assets_processed: number
+          assets_skipped: number
+          assets_succeeded: number
+          completed_at: string | null
+          created_at: string
+          error_summary: string | null
+          id: string
+          operation_key: string
+          operation_name: string
+          queue_position: number
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          assets_errored?: number
+          assets_processed?: number
+          assets_skipped?: number
+          assets_succeeded?: number
+          completed_at?: string | null
+          created_at?: string
+          error_summary?: string | null
+          id?: string
+          operation_key: string
+          operation_name: string
+          queue_position: number
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          assets_errored?: number
+          assets_processed?: number
+          assets_skipped?: number
+          assets_succeeded?: number
+          completed_at?: string | null
+          created_at?: string
+          error_summary?: string | null
+          id?: string
+          operation_key?: string
+          operation_name?: string
+          queue_position?: number
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       changelog: {
         Row: {
           created_at: string
