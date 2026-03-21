@@ -431,12 +431,12 @@ export default function ProblemBank() {
     toast.success(`${p.source_label} returned to screenshot queue`);
   };
 
-  const openEdit = (p: ChapterProblem) => {
-    setEditingProblem(p);
+  const openEdit = (p: ChapterProblemListItem & { contains_no_journal_entries?: boolean }) => {
+    setEditingProblemId(p.id);
     setEditType(p.problem_type);
     setEditLabel(p.source_label);
     setEditTitle(p.title);
-    setEditNoJE(!!(p as any).contains_no_journal_entries);
+    setEditNoJE(!!p.contains_no_journal_entries);
     setEditProblemFiles([]);
     setEditSolutionFiles([]);
     setEditDialogOpen(true);
