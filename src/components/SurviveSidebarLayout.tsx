@@ -462,7 +462,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
             const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
             const isSheetPrepVa = effectiveRole === "sheet_prep_va";
-            const isLeadVaOrAdmin = effectiveRole === "lead_va" || effectiveRole === "admin" || !effectiveRole;
+            const isLeadVa = effectiveRole === "lead_va";
+            const isLeadVaOrAdmin = isLeadVa || effectiveRole === "admin" || !effectiveRole;
 
             // Content Creation VA: Import, Generate, Review, Teaching Assets
             const phase1Items = isSheetPrepVa
@@ -530,8 +531,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
 
 
-                {/* Phase 3 · Study Tools — admin only */}
-                {isLeadVaOrAdmin && !isVa && !impersonating && (
+                {/* Phase 3 · Study Tools — admin and lead_va */}
+                {isLeadVaOrAdmin && !(isContentCreationVa || isSheetPrepVa) && (
                   <>
                     <div className="border-t border-border my-3" />
                     {!sidebarCollapsed && (
