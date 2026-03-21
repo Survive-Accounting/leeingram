@@ -615,6 +615,21 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (fnErr || !result?.success || result?.skipped) { skipped++; return; }
               changed = true;
               // Edge function already writes to DB
+            } else if (operation === "generate_dissector_highlights") {
+              // Skip if already has a dissector_problems record
+              const { data: existing } = await supabase
+                .from("dissector_problems")
+                .select("id")
+                .eq("teaching_asset_id", asset.id)
+                .limit(1);
+              if (existing && existing.length > 0) { skipped++; return; }
+
+              const { data: result, error: fnErr } = await supabase.functions.invoke("generate-dissector-highlights", {
+                body: { teaching_asset_id: asset.id },
+              });
+
+              if (fnErr || !result?.success) { skipped++; return; }
+              changed = true;
             }
 
             if (changed) {
