@@ -471,16 +471,16 @@ export default function Phase2Review() {
             <Sparkles className="h-12 w-12 text-primary/60" />
             <h2 className="text-xl font-bold text-foreground">No topics generated yet</h2>
             <p className="text-muted-foreground text-sm max-w-md">
-              {assetCount} approved assets in Ch {workspace?.chapterNumber}. Generate 5-10 core exam topics using AI analysis of your teaching assets.
+              {assetCount} approved assets in Ch {workspace?.chapterNumber}. Generate 5-8 core exam topics using AI analysis of your teaching assets.
             </p>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Start with</span>
               <Input
                 type="number"
                 min={5}
-                max={10}
+                max={8}
                 value={initialTopicCount}
-                onChange={(e) => setInitialTopicCount(Math.min(10, Math.max(5, parseInt(e.target.value) || 8)))}
+                onChange={(e) => setInitialTopicCount(Math.min(8, Math.max(5, parseInt(e.target.value) || 6)))}
                 className="w-16 h-8 text-center text-sm"
               />
               <span className="text-muted-foreground">topics</span>
