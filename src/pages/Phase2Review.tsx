@@ -358,49 +358,42 @@ export default function Phase2Review() {
   const handleSliderChange = useCallback(async (newCount: number[]) => {
     const targetCount = newCount[0];
     const currentActive = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-    const currentInactive = topics.filter(t => !t.is_active || !!t.merged_into_topic_id);
+    // Only slider-collapsed topics can be reactivated (not drag-merged ones)
+    const sliderInactive = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
     const diff = targetCount - currentActive.length;
 
     if (diff < 0) {
-      // Need to deactivate the last N active topics
+      // Deactivate the last N active topics — assets go to unassigned (stay on topic row)
       const toDeactivate = currentActive
         .sort((a, b) => b.topic_number - a.topic_number)
         .slice(0, Math.abs(diff));
-      
+
       for (const topic of toDeactivate) {
-        // Find nearest active topic above
-        const nearestAbove = currentActive
-          .filter(t => t.topic_number < topic.topic_number && !toDeactivate.includes(t))
-          .sort((a, b) => b.topic_number - a.topic_number)[0];
-        
-        if (nearestAbove) {
-          const mergedCodes = [...new Set([...(nearestAbove.asset_codes || []), ...(topic.asset_codes || [])])];
-          await supabase.from("chapter_topics").update({ asset_codes: mergedCodes } as any).eq("id", nearestAbove.id);
-          await supabase.from("chapter_topics").update({
-            is_active: false,
-            merged_into_topic_id: nearestAbove.id,
-            asset_codes: [],
-          } as any).eq("id", topic.id);
-          // Rename
-          aiRename(nearestAbove.id, nearestAbove.topic_name, topic.topic_name);
-        }
+        // Keep asset_codes on the topic so they can be restored on slider-up
+        await supabase.from("chapter_topics").update({
+          is_active: false,
+          // Do NOT set merged_into_topic_id — this is slider collapse, not merge
+        } as any).eq("id", topic.id);
       }
     } else if (diff > 0) {
-      // Re-activate the first N inactive topics (by topic_number)
-      const toReactivate = currentInactive
+      // Reactivate slider-collapsed topics (lowest topic_number first)
+      const toReactivate = sliderInactive
         .sort((a, b) => a.topic_number - b.topic_number)
         .slice(0, diff);
-      
+
       for (const topic of toReactivate) {
+        // Remove any asset codes that were manually moved to another active topic
+        const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
+        const restoredCodes = (topic.asset_codes || []).filter(c => !currentActiveCodes.includes(c));
         await supabase.from("chapter_topics").update({
           is_active: true,
-          merged_into_topic_id: null,
+          asset_codes: restoredCodes,
         } as any).eq("id", topic.id);
       }
     }
 
     qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
-  }, [topics, chapterId, qc, aiRename]);
+  }, [topics, chapterId, qc]);
 
   // ── DnD handlers ─────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
