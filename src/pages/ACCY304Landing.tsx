@@ -621,10 +621,10 @@ export default function ACCY304Landing() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
-          EMAIL CAPTURE — dark navy
+          FREE PREVIEW — powder blue (moved below email capture)
          ═══════════════════════════════════════════════════════════ */}
-      <WaveDivider topColor="#006BA6" bottomColor="#14213D" />
-      <section style={{ background: "#14213D" }} className="px-6 py-16 md:py-20">
+      <WaveDivider topColor="#14213D" bottomColor="#006BA6" />
+      <section id="free-preview" style={{ background: "#006BA6" }} className="px-6 py-16 md:py-20">
         <div className="max-w-[760px] mx-auto">
 
           {/* ── STEP 1: Email ── */}
