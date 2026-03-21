@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
-  GripHorizontal, Upload, X, ChevronDown, ChevronUp, Search,
+  GripHorizontal, Upload, X, ChevronDown, ChevronUp, Search, Maximize2, Minimize2,
 } from "lucide-react";
 import { toast } from "sonner";
 
