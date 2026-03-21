@@ -71,6 +71,8 @@ export default function ProblemBank() {
   const { workspace } = useActiveWorkspace();
   const { activeRun, isRunning, registerImport } = useBuildRun();
   const { isVa } = useVaAccount();
+  const { impersonating } = useImpersonation();
+  const isVaOrImpersonating = isVa || !!impersonating;
 
   const courseFilter = workspace?.courseId || "all";
   const chapterFilter = workspace?.chapterId || "all";
