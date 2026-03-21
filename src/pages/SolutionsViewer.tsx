@@ -469,6 +469,7 @@ function RevealToggle({
               fullPassLink={fullPassLink}
               chapterLink={chapterLink}
               chapterNumber={chapterNumber}
+              onBuyClick={onBuyClick}
             />
           ) : (
             <>
