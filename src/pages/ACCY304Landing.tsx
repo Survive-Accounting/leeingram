@@ -524,106 +524,9 @@ export default function ACCY304Landing() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
-          FREE PREVIEW — powder blue
-         ═══════════════════════════════════════════════════════════ */}
-      <WaveDivider topColor="#F7F8FA" bottomColor="#006BA6" />
-      <section id="free-preview" style={{ background: "#006BA6" }} className="px-6 py-16 md:py-20">
-        <div className="max-w-[760px] mx-auto">
-          <h2 className="text-center text-white font-bold text-[26px] md:text-[30px] tracking-tight">
-            Try Any Problem — Free Preview
-          </h2>
-          <p className="text-center text-white/70 text-[15px] mt-3 mb-10 max-w-[580px] mx-auto leading-relaxed">
-            See exactly what you get. Pick any problem below and view the full page — solutions are locked until you buy a Study Pass.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            <StyledSelect
-              value={previewChapterId}
-              onChange={(e) => { setPreviewChapterId(e.target.value); setPreviewSourceCode(""); setIframeSrc(null); }}
-              light
-            >
-              <option value="">Select chapter…</option>
-              {(courseData?.chapters || []).map((ch) => (
-                <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
-              ))}
-            </StyledSelect>
-
-            <StyledSelect
-              value={previewType}
-              onChange={(e) => { setPreviewType(e.target.value); setPreviewSourceCode(""); }}
-              light
-            >
-              <option value="any">Any Type</option>
-              <option value="BE">Brief Exercise (BE)</option>
-              <option value="E">Exercise (E)</option>
-              <option value="P">Problem (P)</option>
-            </StyledSelect>
-
-            <StyledSelect
-              value={previewSourceCode}
-              onChange={(e) => setPreviewSourceCode(e.target.value)}
-              disabled={!previewProblems?.length}
-              light
-            >
-              <option value="">
-                {!previewChapterId ? "Select chapter first…" : previewProblems?.length ? "Select problem…" : "No problems found"}
-              </option>
-              {previewProblems?.map((p: any) => (
-                <option key={p.asset_name} value={p.source_ref}>{p.source_label}</option>
-              ))}
-            </StyledSelect>
-          </div>
-
-          <button
-            onClick={handleShowPreview}
-            disabled={!previewSourceCode}
-            className="px-8 py-3 rounded-md font-bold text-[14px] transition-all hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
-            style={{ background: "#FFFFFF", color: "#006BA6" }}
-          >
-            Show Me This Problem →
-          </button>
-
-          {iframeSrc && (
-            <>
-              <button
-                onClick={() => setIframeVisible(!iframeVisible)}
-                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-semibold border transition-all hover:opacity-90"
-                style={{ background: "transparent", color: "#FFFFFF", borderColor: "rgba(255,255,255,0.3)" }}
-              >
-                {iframeVisible ? (
-                  <><ChevronUp className="h-3.5 w-3.5" /> Hide Preview</>
-                ) : (
-                  <><ChevronDown className="h-3.5 w-3.5" /> Show Preview</>
-                )}
-              </button>
-              <div
-                className="mt-2 overflow-hidden"
-                style={{
-                  position: "relative",
-                  left: "50%",
-                  width: "100vw",
-                  transform: "translateX(-50%)",
-                  boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
-                  display: iframeVisible ? "block" : "none",
-                }}
-              >
-                <iframe
-                  src={iframeSrc}
-                  title="Problem Preview"
-                  className="w-full border-0"
-                  style={{ height: 1000, background: "#fff" }}
-                />
-                <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════
           EMAIL CAPTURE — dark navy
          ═══════════════════════════════════════════════════════════ */}
-      <WaveDivider topColor="#006BA6" bottomColor="#14213D" />
+      <WaveDivider topColor="#F7F8FA" bottomColor="#14213D" />
       <section style={{ background: "#14213D" }} className="px-6 py-16 md:py-20">
         <div className="max-w-[760px] mx-auto">
 
@@ -766,8 +669,105 @@ export default function ACCY304Landing() {
         </div>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════════
+          FREE PREVIEW — powder blue
+         ═══════════════════════════════════════════════════════════ */}
+      <WaveDivider topColor="#14213D" bottomColor="#006BA6" />
+      <section id="free-preview" style={{ background: "#006BA6" }} className="px-6 py-16 md:py-20">
+        <div className="max-w-[760px] mx-auto">
+          <h2 className="text-center text-white font-bold text-[26px] md:text-[30px] tracking-tight">
+            Browse 500+ Practice Problems
+          </h2>
+          <p className="text-center text-white/70 text-[15px] mt-3 mb-10 max-w-[580px] mx-auto leading-relaxed">
+            See exactly what you get. Pick any problem below and view the full page — solutions are locked until you buy a Study Pass.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <StyledSelect
+              value={previewChapterId}
+              onChange={(e) => { setPreviewChapterId(e.target.value); setPreviewSourceCode(""); setIframeSrc(null); }}
+              light
+            >
+              <option value="">Select chapter…</option>
+              {(courseData?.chapters || []).map((ch) => (
+                <option key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</option>
+              ))}
+            </StyledSelect>
+
+            <StyledSelect
+              value={previewType}
+              onChange={(e) => { setPreviewType(e.target.value); setPreviewSourceCode(""); }}
+              light
+            >
+              <option value="any">Any Type</option>
+              <option value="BE">Brief Exercise (BE)</option>
+              <option value="E">Exercise (E)</option>
+              <option value="P">Problem (P)</option>
+            </StyledSelect>
+
+            <StyledSelect
+              value={previewSourceCode}
+              onChange={(e) => setPreviewSourceCode(e.target.value)}
+              disabled={!previewProblems?.length}
+              light
+            >
+              <option value="">
+                {!previewChapterId ? "Select chapter first…" : previewProblems?.length ? "Select problem…" : "No problems found"}
+              </option>
+              {previewProblems?.map((p: any) => (
+                <option key={p.asset_name} value={p.source_ref}>{p.source_label}</option>
+              ))}
+            </StyledSelect>
+          </div>
+
+          <button
+            onClick={handleShowPreview}
+            disabled={!previewSourceCode}
+            className="px-8 py-3 rounded-md font-bold text-[14px] transition-all hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
+            style={{ background: "#FFFFFF", color: "#006BA6" }}
+          >
+            Show Me This Problem →
+          </button>
+
+          {iframeSrc && (
+            <>
+              <button
+                onClick={() => setIframeVisible(!iframeVisible)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-semibold border transition-all hover:opacity-90"
+                style={{ background: "transparent", color: "#FFFFFF", borderColor: "rgba(255,255,255,0.3)" }}
+              >
+                {iframeVisible ? (
+                  <><ChevronUp className="h-3.5 w-3.5" /> Hide Preview</>
+                ) : (
+                  <><ChevronDown className="h-3.5 w-3.5" /> Show Preview</>
+                )}
+              </button>
+              <div
+                className="mt-2 overflow-hidden"
+                style={{
+                  position: "relative",
+                  left: "50%",
+                  width: "100vw",
+                  transform: "translateX(-50%)",
+                  boxShadow: "0 -4px 20px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.15)",
+                  display: iframeVisible ? "block" : "none",
+                }}
+              >
+                <iframe
+                  src={iframeSrc}
+                  title="Problem Preview"
+                  className="w-full border-0"
+                  style={{ height: 1000, background: "#fff" }}
+                />
+                <style>{`@media (max-width: 768px) { iframe[title="Problem Preview"] { height: 1400px !important; } }`}</style>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
       {/* ── FINAL CTA ── */}
-      <WaveDivider topColor="#14213D" bottomColor="#0D1528" />
+      <WaveDivider topColor="#006BA6" bottomColor="#0D1528" />
       <section style={{ background: "#0D1528" }} className="px-6 py-16 md:py-20">
         <div className="max-w-[760px] mx-auto text-center">
           <p className="text-white font-bold text-[26px] md:text-[30px] tracking-tight">Ready to start studying?</p>
