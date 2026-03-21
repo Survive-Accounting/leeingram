@@ -676,9 +676,11 @@ export default function ProblemBank() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p as any)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {!isVaOrImpersonating && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
