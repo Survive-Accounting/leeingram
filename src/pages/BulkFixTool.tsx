@@ -867,17 +867,8 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     refetchQueue();
   }
 
-  async function sendSummaryEmail(type: "operation_complete" | "queue_complete", operation?: QueueItem, nextInQueue?: string | null, operations?: QueueItem[]) {
-    try {
-      await supabase.functions.invoke("send-bulk-fix-summary", {
-        body: type === "operation_complete"
-          ? { type, operation, next_in_queue: nextInQueue }
-          : { type, operations },
-      });
-    } catch (e) {
-      console.error("Failed to send summary email:", e);
-    }
-  }
+
+
 
   const runQueue = useCallback(async () => {
     setQueueRunning(true);
