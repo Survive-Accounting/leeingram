@@ -902,7 +902,40 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </p>
             )}
 
-            {operation === "find_replace_simple" && (
+            {operation === "enrich_je_tooltips" && (
+              <p className="text-xs text-muted-foreground">
+                Add missing <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to all JE rows. Skips rows that already have both fields. Safe and additive — won't overwrite existing content.
+              </p>
+            )}
+
+            {operation === "rewrite_je_reasons" && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Rewrites all <code className="text-foreground">debit_credit_reason</code> fields to use student-friendly "you" language and account type rules. Overwrites existing text.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mt-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ This overwrites all existing debit_credit_reason text across all assets in scope. Recommended to run overnight for large batches.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {operation === "rewrite_je_amounts" && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Rewrites all <code className="text-foreground">amount_source</code> fields to explain HOW to calculate each amount without mentioning specific dollar figures.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mt-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ This overwrites all existing amount_source text across all assets in scope. Recommended to run overnight for large batches.
+                  </p>
+                </div>
+              </>
+            )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Find</Label>
