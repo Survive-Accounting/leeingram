@@ -7,6 +7,7 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useBuildRun } from "@/hooks/useBuildRun";
 import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StartBuildRunModal } from "@/components/BuildTimerWidget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,8 @@ export default function ProblemBank() {
   const { workspace } = useActiveWorkspace();
   const { activeRun, isRunning, registerImport } = useBuildRun();
   const { isVa } = useVaAccount();
+  const { impersonating } = useImpersonation();
+  const isVaOrImpersonating = isVa || !!impersonating;
 
   const courseFilter = workspace?.courseId || "all";
   const chapterFilter = workspace?.chapterId || "all";
@@ -495,7 +498,7 @@ export default function ProblemBank() {
             {ocrRunning ? "Running OCR…" : "Re-run OCR"}
           </Button>
         )}
-        {canAdd && !isVa && problems && problems.length > 0 && (
+        {canAdd && !isVaOrImpersonating && problems && problems.length > 0 && (
           <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5 border-destructive/40 text-destructive hover:bg-destructive/10 ml-auto" onClick={() => setDeleteAllOpen(true)}>
             <Trash2 className="h-3 w-3 mr-1" /> Delete All Sources
           </Button>
@@ -673,9 +676,11 @@ export default function ProblemBank() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p as any)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {!isVaOrImpersonating && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

@@ -462,7 +462,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
             const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
             const isSheetPrepVa = effectiveRole === "sheet_prep_va";
-            const isLeadVaOrAdmin = effectiveRole === "lead_va" || effectiveRole === "admin" || !effectiveRole;
+            const isLeadVa = effectiveRole === "lead_va";
+            const isLeadVaOrAdmin = isLeadVa || effectiveRole === "admin" || !effectiveRole;
 
             // Content Creation VA: Import, Generate, Review, Teaching Assets
             const phase1Items = isSheetPrepVa
@@ -530,8 +531,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
 
 
 
-                {/* Phase 3 · Study Tools — admin only */}
-                {isLeadVaOrAdmin && !isVa && !impersonating && (
+                {/* Phase 3 · Study Tools — admin and lead_va */}
+                {isLeadVaOrAdmin && !(isContentCreationVa || isSheetPrepVa) && (
                   <>
                     <div className="border-t border-border my-3" />
                     {!sidebarCollapsed && (
@@ -684,7 +685,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
               </div>
             )}
 
-            {/* Admin: VA Admin link — hide during impersonation */}
+            {/* Admin: VA Admin, Bulk Fix, QA Admin — admin only (not lead_va) */}
             {!isVa && !impersonating && !sidebarCollapsed && (
               <>
                 <Link
@@ -731,6 +732,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 >
                   <Rocket className="h-3.5 w-3.5" /> ACCY 304 Beta
                 </Link>
+              </>
+            )}
+            {/* Settings — visible to admin and lead_va */}
+            {(!isVa || effectiveRole === "lead_va") && !sidebarCollapsed && !(impersonating && impersonating.role !== "lead_va") && (
+              <>
                 <div className="border-t border-border my-2" />
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40 px-3 pb-1">Settings</p>
                 <Link
