@@ -1306,7 +1306,7 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; shareUrl: string; assetCode: string }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
