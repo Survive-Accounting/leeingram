@@ -1363,6 +1363,20 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId }: { theme: T
               >
                 ⚠ Report Issue →
               </a>
+              {chapterId && (
+                <>
+                  <div className="w-px h-5" style={{ background: theme.border }} />
+                  <a
+                    href={`/cram/${chapterId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
+                    style={{ color: "#3B82F6" }}
+                  >
+                    📚 Chapter Cram Tool →
+                  </a>
+                </>
+              )}
               <div className="w-px h-5" style={{ background: theme.border }} />
             </>
           )}
