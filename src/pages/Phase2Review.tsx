@@ -506,32 +506,63 @@ export default function Phase2Review() {
         ) : (
           /* ── Main topic UI ────────────────────────────────────── */
           <div className="space-y-4">
-            {/* Lock bar + slider */}
+            {/* Lock bar + topic count selector */}
             <div className="flex items-center gap-4 bg-card border border-border rounded-lg p-3">
-              {/* Slider */}
+              {/* Number-line stepper */}
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <label className="text-xs text-muted-foreground whitespace-nowrap">Topics for this chapter</label>
-                  <div className="flex-1 relative">
-                    <Slider
-                      min={1}
-                      max={Math.min(8, topics.length)}
-                      step={1}
-                      value={[sliderValue]}
-                      onValueChange={isLocked ? undefined : handleSliderChange}
-                      disabled={isLocked}
-                      className={isLocked ? "opacity-50" : ""}
-                    />
-                    {isLocked && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="absolute inset-0 cursor-not-allowed" />
-                        </TooltipTrigger>
-                        <TooltipContent>Unlock to change topic count</TooltipContent>
-                      </Tooltip>
-                    )}
+                  <div className="flex-1 flex items-center">
+                    {/* Number line */}
+                    <div className="flex items-center gap-0 relative w-full">
+                      {/* Connecting track */}
+                      <div className="absolute top-1/2 left-3 right-3 h-0.5 bg-border -translate-y-1/2 rounded-full" />
+                      <div
+                        className="absolute top-1/2 left-3 h-0.5 bg-primary -translate-y-1/2 rounded-full transition-all duration-200"
+                        style={{ width: `calc(${((sliderValue - 1) / (maxTopicCount - 1)) * 100}% - 24px + ${((sliderValue - 1) / (maxTopicCount - 1)) * 24}px)` }}
+                      />
+                      {Array.from({ length: maxTopicCount }, (_, i) => i + 1).map(n => {
+                        const isSelected = n === sliderValue;
+                        const isBelow = n < sliderValue;
+                        const isDisabled = isLocked || sliderLoading;
+                        return (
+                          <Tooltip key={n}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => !isDisabled && handleTopicCountChange(n)}
+                                disabled={isDisabled}
+                                className={cn(
+                                  "relative z-10 flex-1 flex items-center justify-center transition-all duration-150",
+                                  isDisabled ? "cursor-not-allowed" : "cursor-pointer",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "flex items-center justify-center rounded-full text-xs font-semibold transition-all duration-200 select-none",
+                                    isSelected
+                                      ? "w-9 h-9 bg-primary text-primary-foreground shadow-md shadow-primary/25 ring-2 ring-primary/20 ring-offset-2 ring-offset-card scale-110"
+                                      : isBelow
+                                        ? "w-7 h-7 bg-primary/15 text-primary hover:bg-primary/25 hover:scale-105"
+                                        : "w-7 h-7 bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:scale-105",
+                                    isDisabled && !isSelected && "opacity-40 hover:scale-100 hover:bg-muted",
+                                  )}
+                                >
+                                  {sliderLoading && isSelected ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    n
+                                  )}
+                                </span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              {isLocked ? "Unlock to change" : `Use ${n} topic${n !== 1 ? "s" : ""}`}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <span className="text-2xl font-bold text-foreground tabular-nums w-8 text-center">{sliderValue}</span>
                 </div>
               </div>
 
