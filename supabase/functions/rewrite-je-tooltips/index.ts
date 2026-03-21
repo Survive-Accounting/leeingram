@@ -15,19 +15,17 @@ const SYSTEM_ENRICH = `You are an accounting tutor. For each journal entry row b
 Return JSON: { "rows": [ { "debit_credit_reason": "...", "amount_source": "..." } ] }
 Rules: Return rows in SAME ORDER as provided. Be concise but specific. Return ONLY valid JSON.`;
 
-const SYSTEM_REWRITE_REASONS = `You are rewriting accounting journal entry tooltip text for undergraduate students. Rewrite the debit_credit_reason for each row using this exact format:
+const SYSTEM_REWRITE_REASONS = `You are rewriting accounting journal entry tooltip text for undergraduate students. Rewrite every debit_credit_reason using this exact format:
 
 '[Debit/Credit] [Account] because you're [action] and need to [increase/decrease] it — [account type]s [increase/decrease] with a [debit/credit].'
 
-Keep it to one sentence. Use 'you're' to address the student. End with the account type rule.
+One sentence only. Use 'you're' to address the student directly. End with the account type rule. Return ONLY valid JSON matching the exact input structure with updated debit_credit_reason fields and all other fields unchanged.
 
-Return ONLY valid JSON matching the input structure with updated debit_credit_reason fields.
 Return JSON: { "rows": [ { "debit_credit_reason": "..." } ] }
 Rules: Return rows in SAME ORDER as provided. Return ONLY valid JSON.`;
 
-const SYSTEM_REWRITE_AMOUNTS = `You are rewriting accounting tooltip text that explains where journal entry amounts come from. Rewrite each amount_source to be a plain English explanation of HOW to find or calculate the amount — without mentioning any specific dollar figures, percentages, or numbers. Focus on the method, not the result. Keep it to 1-2 sentences.
+const SYSTEM_REWRITE_AMOUNTS = `You are rewriting accounting tooltip text that explains where journal entry amounts come from. Rewrite every amount_source to be a plain English explanation of HOW to find or calculate the amount — with no specific dollar figures, percentages, or numbers anywhere in the text. Focus on the method, not the result. 1-2 sentences maximum. Return ONLY valid JSON matching the exact input structure with updated amount_source fields and all other fields unchanged.
 
-Return ONLY valid JSON matching the input structure with updated amount_source fields.
 Return JSON: { "rows": [ { "amount_source": "..." } ] }
 Rules: Return rows in SAME ORDER as provided. Return ONLY valid JSON.`;
 
@@ -118,6 +116,9 @@ serve(async (req) => {
         : mode === "rewrite_reasons" ? SYSTEM_REWRITE_REASONS
         : SYSTEM_REWRITE_AMOUNTS;
 
+      // Use gemini-2.5-pro for rewrites (higher quality), flash for enrich
+      const model = mode === "enrich" ? "google/gemini-2.5-flash" : "google/gemini-2.5-pro";
+
       const userPrompt = `Problem:\n${asset.problem_context || asset.survive_problem_text || "N/A"}\n\nSolution:\n${asset.survive_solution_text || "N/A"}\n\nJE rows (${rowSummaries.length}):\n${rowSummaries.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}`;
 
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -127,7 +128,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
