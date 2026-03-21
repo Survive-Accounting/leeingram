@@ -24,6 +24,8 @@ import FilmingControlPanel from "./pages/FilmingControlPanel";
 import QuizzesReady from "./pages/QuizzesReady";
 import VideoPending from "./pages/VideoPending";
 import VideosReady from "./pages/VideosReady";
+import QuizQueue from "./pages/QuizQueue";
+import VideoQueue from "./pages/VideoQueue";
 import TutoringControlPanel from "./pages/TutoringControlPanel";
 import TutoringReview from "./pages/TutoringReview";
 import TutoringReviewDetail from "./pages/TutoringReviewDetail";

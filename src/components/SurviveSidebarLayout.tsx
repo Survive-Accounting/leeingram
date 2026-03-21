@@ -39,11 +39,9 @@ const PHASE_1_ITEMS = [
 
 const PHASE_2_ITEMS = [
   { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
-  { label: "MC Generator", path: "/question-review", icon: Package },
-  { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
-  { label: "Video Pending", path: "/video-pending", icon: VideoOff },
-  { label: "Videos Ready", path: "/videos-ready", icon: Video },
-  { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
+  { label: "Quiz Queue", path: "/quiz-queue", icon: Package },
+  { label: "Video Queue", path: "/video-queue", icon: Video },
+  { label: "Deployment Queue", path: "/deployment", icon: Rocket },
 ];
 
 const QC_ITEMS = [
