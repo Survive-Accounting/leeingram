@@ -33,6 +33,9 @@ export function RoleRouteGuard() {
   useEffect(() => {
     if (!isRestricted) return;
 
+    // Lead VA has full navigation access — never redirect
+    if (effectiveRole === "lead_va") return;
+
     const path = location.pathname;
 
     // Check always-allowed paths
