@@ -748,46 +748,78 @@ export default function Phase2Review() {
                     );
                   }
 
+                  const sortedActive = [...activeTopics].sort((a, b) => (a.display_order ?? a.topic_number ?? 0) - (b.display_order ?? b.topic_number ?? 0));
+                  const activeIdx = sortedActive.findIndex(t => t.id === topic.id);
+                  const isFirst = activeIdx === 0;
+                  const isLast = activeIdx === sortedActive.length - 1;
+
                   return (
                     <DraggableTopicCard key={topic.id} topic={topic} disabled={isLocked}>
                       <Collapsible open={isOpen} onOpenChange={(open) => setOpenTopicId(open ? topic.id : null)}>
-                        <CollapsibleTrigger asChild>
-                          <button className="w-full rounded-lg border border-border bg-card hover:border-primary/40 transition-colors p-3 text-left">
-                            <div className="flex items-center gap-2">
-                              {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
-                              <Badge variant="outline" className="text-[10px] shrink-0">{topic.topic_number}</Badge>
-                              <div className="flex-1 min-w-0">
-                                {editingNameId === topic.id ? (
-                                  <Input
-                                    ref={nameInputRef}
-                                    value={editingNameValue}
-                                    onChange={(e) => setEditingNameValue(e.target.value)}
-                                    onBlur={commitNameEdit}
-                                    onKeyDown={(e) => { if (e.key === "Enter") commitNameEdit(); if (e.key === "Escape") setEditingNameId(null); }}
-                                    className="h-6 text-sm font-medium"
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                ) : (
-                                  <span
-                                    className="text-sm font-medium text-foreground truncate block cursor-text"
-                                    onDoubleClick={(e) => { e.stopPropagation(); startNameEdit(topic); }}
-                                    title="Double-click to edit"
-                                  >
-                                    {topic.topic_name}
-                                    {isRenaming && <Sparkles className="h-3 w-3 inline ml-1.5 text-amber-400 animate-pulse" />}
-                                  </span>
+                        <div className="flex items-stretch gap-0">
+                          {/* Reorder arrows */}
+                          {!isLocked && (
+                            <div className="flex flex-col justify-center gap-0.5 pr-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); reorderMutation.mutate({ topicId: topic.id, direction: "up" }); }}
+                                disabled={isFirst || reorderMutation.isPending}
+                                className={cn(
+                                  "p-1 rounded transition-colors",
+                                  isFirst ? "text-muted-foreground/30 cursor-not-allowed" : "text-muted-foreground hover:text-foreground hover:bg-accent",
                                 )}
-                              </div>
-                              <Badge variant="secondary" className="text-[10px] shrink-0">{topicAssetCodes.length} assets</Badge>
-                              <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.video_status] || STATUS_COLORS.not_started}`}>
-                                Vid: {topic.video_status.replace("_", " ")}
-                              </Badge>
-                              <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.quiz_status] || STATUS_COLORS.not_started}`}>
-                                Quiz: {topic.quiz_status.replace("_", " ")}
-                              </Badge>
+                              >
+                                <ArrowUp className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); reorderMutation.mutate({ topicId: topic.id, direction: "down" }); }}
+                                disabled={isLast || reorderMutation.isPending}
+                                className={cn(
+                                  "p-1 rounded transition-colors",
+                                  isLast ? "text-muted-foreground/30 cursor-not-allowed" : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                                )}
+                              >
+                                <ArrowDown className="h-3.5 w-3.5" />
+                              </button>
                             </div>
-                          </button>
-                        </CollapsibleTrigger>
+                          )}
+                          <CollapsibleTrigger asChild>
+                            <button className="flex-1 rounded-lg border border-border bg-card hover:border-primary/40 transition-colors p-3 text-left">
+                              <div className="flex items-center gap-2">
+                                {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                                <Badge variant="outline" className="text-[10px] shrink-0">{topic.topic_number}</Badge>
+                                <div className="flex-1 min-w-0">
+                                  {editingNameId === topic.id ? (
+                                    <Input
+                                      ref={nameInputRef}
+                                      value={editingNameValue}
+                                      onChange={(e) => setEditingNameValue(e.target.value)}
+                                      onBlur={commitNameEdit}
+                                      onKeyDown={(e) => { if (e.key === "Enter") commitNameEdit(); if (e.key === "Escape") setEditingNameId(null); }}
+                                      className="h-6 text-sm font-medium"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  ) : (
+                                    <span
+                                      className="text-sm font-medium text-foreground truncate block cursor-text"
+                                      onDoubleClick={(e) => { e.stopPropagation(); startNameEdit(topic); }}
+                                      title="Double-click to edit"
+                                    >
+                                      {topic.topic_name}
+                                      {isRenaming && <Sparkles className="h-3 w-3 inline ml-1.5 text-amber-400 animate-pulse" />}
+                                    </span>
+                                  )}
+                                </div>
+                                <Badge variant="secondary" className="text-[10px] shrink-0">{topicAssetCodes.length} assets</Badge>
+                                <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.video_status] || STATUS_COLORS.not_started}`}>
+                                  Vid: {topic.video_status.replace("_", " ")}
+                                </Badge>
+                                <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.quiz_status] || STATUS_COLORS.not_started}`}>
+                                  Quiz: {topic.quiz_status.replace("_", " ")}
+                                </Badge>
+                              </div>
+                            </button>
+                          </CollapsibleTrigger>
+                        </div>
 
                         <CollapsibleContent>
                           <div className="border border-t-0 border-border rounded-b-lg bg-card px-4 py-4 space-y-5">
