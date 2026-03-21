@@ -693,6 +693,16 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
               if (fnErr || !result?.success) { skipped++; return; }
               changed = true;
+            } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+              const mode = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
+              setRunProgress(prev => ({ ...prev, currentAsset: (asset as any).asset_name || asset.id }));
+              try {
+                const { data: result, error: fnErr } = await supabase.functions.invoke("rewrite-je-tooltips", {
+                  body: { teaching_asset_id: asset.id, mode },
+                });
+                if (fnErr || !result?.success) { errors++; return; }
+                changed = true;
+              } catch { errors++; return; }
             }
 
             if (changed) {
