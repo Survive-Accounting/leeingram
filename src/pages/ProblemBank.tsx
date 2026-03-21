@@ -585,7 +585,14 @@ export default function ProblemBank() {
                 v = v.replace(/\s+/g, "");
                 return v;
               };
-              const hasMismatch = ocrLabel && p.source_label && normalizeLabel(ocrLabel) !== normalizeLabel(p.source_label);
+              const numericPart = (s: string) => s.replace(/^[A-Z]+/, "");
+              const hasMismatch = (() => {
+                if (!ocrLabel || !p.source_label) return false;
+                const nOcr = normalizeLabel(ocrLabel);
+                const nSrc = normalizeLabel(p.source_label);
+                if (nOcr === nSrc) return false;
+                return numericPart(nOcr) !== numericPart(nSrc);
+              })();
               const hasScreenshot = !!(p.problem_screenshot_url || p.problem_screenshot_urls.length > 0);
               return (
               <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
