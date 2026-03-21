@@ -77,8 +77,8 @@ export default function ProblemBank() {
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingProblem, setEditingProblem] = useState<ChapterProblem | null>(null);
-  const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
+  const [editingProblemId, setEditingProblemId] = useState<string | null>(null);
+  const [previewProblemId, setPreviewProblemId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
