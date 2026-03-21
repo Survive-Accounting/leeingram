@@ -187,6 +187,7 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
       <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
+      <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
