@@ -887,6 +887,62 @@ export default function Phase2Review() {
               </DragOverlay>
             </DndContext>
 
+            {/* Unassigned Assets Bucket */}
+            {unassignedAssets.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-foreground">Unassigned Assets</h3>
+                    <Badge variant="secondary" className="text-[10px]">{unassignedAssets.length} assets</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    These assets are not tagged to any topic. Drag them into a topic or leave them untagged.
+                  </p>
+                </div>
+                <div className="rounded-md border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="text-[10px] h-8">Asset Code</TableHead>
+                        <TableHead className="text-[10px] h-8">Source Ref</TableHead>
+                        <TableHead className="text-[10px] h-8">Problem Title</TableHead>
+                        <TableHead className="text-[10px] h-8 w-32">Move to Topic</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unassignedAssets.map(asset => (
+                        <TableRow key={asset.id}>
+                          <TableCell className="font-mono text-[10px] text-primary py-1.5">{asset.asset_name}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground py-1.5">{asset.source_ref || "—"}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground py-1.5 max-w-[200px] truncate" title={asset.problem_title || ""}>
+                            {asset.problem_title || "—"}
+                          </TableCell>
+                          <TableCell className="py-1.5">
+                            <Select
+                              onValueChange={(topicId) => {
+                                addAssetMutation.mutate({ topicId, asset });
+                              }}
+                            >
+                              <SelectTrigger className="h-6 text-[10px] w-28">
+                                <SelectValue placeholder="Select topic" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {activeTopics.map(t => (
+                                  <SelectItem key={t.id} value={t.id} className="text-xs">
+                                    {t.topic_number}. {t.topic_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
             {/* Regenerate button */}
             <Button
               variant="outline"
