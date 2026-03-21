@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
-  GripHorizontal, Upload, X, ChevronDown, ChevronUp, Search,
+  GripHorizontal, Upload, X, ChevronDown, ChevronUp, Search, Maximize2, Minimize2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -262,6 +262,7 @@ export default function SolutionsQAReview() {
   const [screenshotStep, setScreenshotStep] = useState<"pending" | "done">("pending");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [activeChecklistIdx, setActiveChecklistIdx] = useState(0);
 
   // Position modal on left side by default
@@ -608,15 +609,26 @@ export default function SolutionsQAReview() {
 
       {/* Floating QA Modal */}
       <div
-        className="fixed z-50 w-[320px] max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ left: pos.x, top: pos.y }}
+        className={`fixed z-50 bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
+          isMaximized
+            ? "inset-4 w-auto h-auto max-h-none"
+            : "w-[320px] max-h-[80vh]"
+        }`}
+        style={isMaximized ? undefined : { left: pos.x, top: pos.y }}
       >
-        {/* Drag handle */}
+        {/* Drag handle + maximize */}
         <div
-          onMouseDown={onMouseDown}
-          className="flex items-center justify-center py-1.5 cursor-grab active:cursor-grabbing border-b border-border bg-muted/30 shrink-0"
+          onMouseDown={isMaximized ? undefined : onMouseDown}
+          className={`relative flex items-center justify-center py-1.5 border-b border-border bg-muted/30 shrink-0 ${isMaximized ? "" : "cursor-grab active:cursor-grabbing"}`}
         >
           <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground/50" />
+          <button
+            onClick={() => setIsMaximized(prev => !prev)}
+            className="absolute right-2 top-1.5 p-0.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            title={isMaximized ? "Minimize" : "Maximize"}
+          >
+            {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </button>
         </div>
 
         {/* Scrollable content */}
