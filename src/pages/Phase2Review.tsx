@@ -982,6 +982,32 @@ export default function Phase2Review() {
         </DialogContent>
       </Dialog>
 
+      {/* Lock warning dialog for unassigned assets */}
+      <Dialog open={lockWarningOpen} onOpenChange={setLockWarningOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Unassigned Assets</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            <strong>{unassignedAssets.length}</strong> assets are unassigned and won't be tagged to any topic.
+            You can assign them later from the asset detail view.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setLockWarningOpen(false)}>Go Back</Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                setLockWarningOpen(false);
+                lockMutation.mutate(true);
+              }}
+            >
+              Lock Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Regenerate confirmation dialog */}
       <Dialog open={regenOpen} onOpenChange={setRegenOpen}>
         <DialogContent className="max-w-sm">
