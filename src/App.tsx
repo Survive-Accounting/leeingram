@@ -74,6 +74,7 @@ import StudyToolsProblemDissector from "./pages/StudyToolsProblemDissector";
 import SolutionsQAReview from "./pages/SolutionsQAReview";
 import SolutionsQAAdmin from "./pages/SolutionsQAAdmin";
 import JEDebug from "./pages/JEDebug";
+import ShareLeaderboard from "./pages/ShareLeaderboard";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
