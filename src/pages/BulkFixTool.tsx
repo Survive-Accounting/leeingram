@@ -440,7 +440,7 @@ export default function BulkFixTool() {
       let skipped = 0;
 
       // Process in batches — use smaller batch for AI-heavy JE enrichment
-      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts") ? 2 : BATCH_SIZE;
+      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts" || operation === "generate_dissector_highlights") ? 2 : BATCH_SIZE;
       for (let i = 0; i < total; i += batchSize) {
         const batch = assets.slice(i, i + batchSize);
         const updates: Promise<void>[] = [];
