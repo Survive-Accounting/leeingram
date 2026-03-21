@@ -662,7 +662,7 @@ export default function ProblemBank() {
                           </button>
                         ) : (p.status === "raw" || p.status === "tagged") ? (
                           <div className="flex items-center gap-2">
-                            <button className="text-[11px] text-muted-foreground hover:underline" onClick={() => resetScreenshot(p)} title="Clear current screenshot and re-paste">
+                            <button className="text-[11px] text-muted-foreground hover:underline" onClick={() => resetScreenshot(p as any)} title="Clear current screenshot and re-paste">
                               Replace
                             </button>
                             <button className="text-[11px] text-primary hover:underline" onClick={() => markReady(p.id)}>
