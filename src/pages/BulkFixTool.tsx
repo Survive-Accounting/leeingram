@@ -241,19 +241,23 @@ export default function BulkFixTool() {
         .order("queue_position", { ascending: true });
       return (data ?? []) as QueueItem[];
     },
-    refetchInterval: queueRunning ? 3000 : false,
+    refetchInterval: queueRunning ? 5000 : 15000,
   });
 
-  // Resume detection on mount
+  // Detect server-side running state
   useEffect(() => {
     if (!queueItems) return;
-    const runningItem = queueItems.find(q => q.status === "running");
-    if (runningItem && !queueRunning) {
-      // Resume queue from the running item
-      resumeQueue(runningItem);
+    const hasRunning = queueItems.some(q => q.status === "running");
+    const hasPending = queueItems.some(q => q.status === "pending");
+    // If server is processing, reflect that in UI
+    if ((hasRunning || hasPending) && !queueRunning) {
+      // Only set running if there's actually a running item (server is active)
+      if (hasRunning) setQueueRunning(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queueItems?.length]);
+    if (!hasRunning && !hasPending && queueRunning) {
+      setQueueRunning(false);
+    }
+  }, [queueItems, queueRunning]);
 
   const operationLabel = useMemo(() => {
     if (operation === "fix_entity_naming") return "Fix Entity Naming (Counterparty → Company A/B)";
