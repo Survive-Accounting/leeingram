@@ -582,7 +582,8 @@ export default function Phase2Review() {
             >
               <div className="space-y-2">
                 {sortedForDisplay.map((topic) => {
-                  const isMerged = !topic.is_active || !!topic.merged_into_topic_id;
+                  const isDragMerged = !topic.is_active && !!topic.merged_into_topic_id;
+                  const isSliderCollapsed = !topic.is_active && !topic.merged_into_topic_id;
                   const mergedIntoName = topic.merged_into_topic_id
                     ? topics.find(t => t.id === topic.merged_into_topic_id)?.topic_name || "Unknown"
                     : null;
@@ -591,7 +592,21 @@ export default function Phase2Review() {
                   const isOpen = openTopicId === topic.id;
                   const isRenaming = renamingTopics.has(topic.id);
 
-                  if (isMerged) {
+                  // Slider-collapsed topic
+                  if (isSliderCollapsed) {
+                    return (
+                      <div key={topic.id} className="rounded-lg border border-border/50 bg-muted/20 px-4 py-2 flex items-center gap-3">
+                        <Badge variant="outline" className="text-[10px] opacity-50">{topic.topic_number}</Badge>
+                        <span className="text-xs text-muted-foreground line-through">{topic.topic_name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          → Unassigned ({topicAssetCodes.length} assets)
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  // Drag-merged topic
+                  if (isDragMerged) {
                     return (
                       <div key={topic.id} className="rounded-lg border border-border/50 bg-muted/20 px-4 py-2 flex items-center gap-3">
                         <Badge variant="outline" className="text-[10px] opacity-50">{topic.topic_number}</Badge>
