@@ -1118,9 +1118,25 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             <CardContent className="pt-4 space-y-2">
               <p className="text-sm text-foreground">
                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                Fixing asset {runProgress.current} of {runProgress.total}…
+                Processing asset {runProgress.current} of {runProgress.total}…
               </p>
+              {runProgress.currentAsset && (
+                <p className="text-xs text-muted-foreground">Current: {runProgress.currentAsset}</p>
+              )}
               <Progress value={(runProgress.current / Math.max(runProgress.total, 1)) * 100} className="h-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => { pauseRef.current = true; setPaused(true); }}
+                disabled={paused}
+              >
+                {paused ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Pausing…</>
+                ) : (
+                  <><Pause className="h-3.5 w-3.5 mr-1.5" /> Pause</>
+                )}
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -1130,7 +1146,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           <Card className="bg-card border-border border-emerald-500/30">
             <CardContent className="pt-4">
               <p className="text-sm text-emerald-400">
-                Fix complete. {runComplete.updated} assets updated, {runComplete.skipped} skipped (no match found).
+                ✓ Done — {runComplete.updated} assets updated, {runComplete.skipped} skipped{runComplete.errors ? `, ${runComplete.errors} errors` : ""}.
               </p>
             </CardContent>
           </Card>
