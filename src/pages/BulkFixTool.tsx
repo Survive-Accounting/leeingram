@@ -195,6 +195,9 @@ export default function BulkFixTool() {
     if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
     if (operation === "generate_flowcharts") return "Generate Flowcharts (backfill missing)";
     if (operation === "generate_dissector_highlights") return "Generate Dissector Highlights (backfill missing)";
+    if (operation === "enrich_je_tooltips") return "Enrich JE Tooltips (fill gaps)";
+    if (operation === "rewrite_je_reasons") return "Rewrite JE Reasons (YOU Format)";
+    if (operation === "rewrite_je_amounts") return "Rewrite Amount Sources (Plain English)";
     return "";
   }, [operation, findText, replaceText]);
 
