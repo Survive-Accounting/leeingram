@@ -634,7 +634,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
             if (changed) {
               // generate_supplementary_je and generate_flowcharts write via edge function; others need explicit update
-              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts") {
+              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts" && operation !== "generate_dissector_highlights") {
                 await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
               }
               updated++;
