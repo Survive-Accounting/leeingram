@@ -268,7 +268,7 @@ export default function ProblemBank() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
       setEditDialogOpen(false);
-      setEditingProblem(null);
+      setEditingProblemId(null);
       toast.success("Problem updated");
     },
     onError: (e: Error) => toast.error(e.message)
