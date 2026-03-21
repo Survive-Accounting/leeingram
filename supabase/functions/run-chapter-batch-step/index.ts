@@ -160,16 +160,36 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
     return "failed";
   }
 
-  // Skip dependent problems that haven't been combined yet
+  // Skip dependent problems that haven't been combined yet —
+  // UNLESS the referenced problem is already approved (safe to generate independently)
   if (sourceProblem.dependency_type === "dependent_problem" && sourceProblem.dependency_status !== "combined") {
-    await sb.from("chapter_batch_run_items").update({
-      status: "failed",
-      last_error: "Skipped: dependent problem (needs review)",
-      ended_at: new Date().toISOString(),
-      duration_ms: Date.now() - itemStart,
-      updated_at: new Date().toISOString(),
-    }).eq("id", nextItem.id);
-    return "failed";
+    // Check if the dependency reference problem is already approved
+    let refApproved = false;
+    if (sourceProblem.detected_dependency_ref) {
+      // Build a source_label pattern from the ref (e.g. "1-18" → "E1.18", "1.18", etc.)
+      const ref = sourceProblem.detected_dependency_ref; // e.g. "1-18"
+      const refNormalized = ref.replace("-", "."); // "1.18"
+      const { data: refProblems } = await sb.from("chapter_problems")
+        .select("id, status")
+        .eq("chapter_id", sourceProblem.chapter_id)
+        .in("status", ["approved"])
+        .or(`source_label.ilike.%${refNormalized}%,source_label.ilike.%${ref}%`);
+      if (refProblems && refProblems.length > 0) {
+        refApproved = true;
+        console.log(`[dependency] Reference "${ref}" is approved — allowing dependent problem ${sourceProblem.source_label} to proceed`);
+      }
+    }
+
+    if (!refApproved) {
+      await sb.from("chapter_batch_run_items").update({
+        status: "failed",
+        last_error: "Skipped: dependent problem (needs review)",
+        ended_at: new Date().toISOString(),
+        duration_ms: Date.now() - itemStart,
+        updated_at: new Date().toISOString(),
+      }).eq("id", nextItem.id);
+      return "failed";
+    }
   }
 
   // For combined groups, only skip secondary if the primary is ALSO in this batch
