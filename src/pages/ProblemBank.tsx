@@ -406,7 +406,7 @@ export default function ProblemBank() {
     toast.success("Marked as Ready");
   };
 
-  const resetScreenshot = async (p: ChapterProblem) => {
+  const resetScreenshot = async (p: ChapterProblemListItem) => {
     const { error } = await supabase.from("chapter_problems").update({
       import_status: "needs_problem_screenshot",
       problem_screenshot_url: null,
