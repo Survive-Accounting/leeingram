@@ -271,12 +271,14 @@ function TieredPaywallCard({
   fullPassLink,
   chapterLink,
   chapterNumber,
+  onBuyClick,
 }: {
   theme: Theme;
   enrollUrl: string;
   fullPassLink?: { label: string; price_cents: number; original_price_cents?: number | null; sale_label?: string | null; sale_expires_at?: string | null; url: string } | null;
   chapterLink?: { label: string; price_cents: number; url: string } | null;
   chapterNumber?: number | null;
+  onBuyClick?: () => void;
 }) {
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at
