@@ -175,7 +175,8 @@ export default function Phase2Review() {
   const isLocked = chapterInfo?.topics_locked ?? false;
   const activeTopics = topics.filter(t => t.is_active && !t.merged_into_topic_id);
   const dragMergedTopics = topics.filter(t => !t.is_active && !!t.merged_into_topic_id);
-  const maxTopicCount = Math.min(8, topics.length);
+  const unmergedTopics = topics.filter(t => !t.merged_into_topic_id);
+  const maxTopicCount = Math.min(8, unmergedTopics.length);
   const sliderCollapsedTopics = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
   const sliderValue = activeTopics.length;
 
@@ -378,7 +379,7 @@ export default function Phase2Review() {
         }
       } else if (diff > 0) {
         const toReactivate = sliderInactive
-          .sort((a, b) => a.topic_number - b.topic_number)
+          .sort((a, b) => (a.topic_number ?? 999) - (b.topic_number ?? 999))
           .slice(0, diff);
         for (const topic of toReactivate) {
           const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
