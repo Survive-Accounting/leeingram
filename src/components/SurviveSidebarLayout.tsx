@@ -593,6 +593,25 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                     )}
                   </>
                 )}
+
+                {/* Quality Control section */}
+                {showPhase2 && (
+                  <>
+                    <div className="border-t border-border my-3" />
+                    {!sidebarCollapsed && (
+                      <button
+                        onClick={() => setQcOpen(p => !p)}
+                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
+                      >
+                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", qcOpen && "rotate-90")} />
+                        Quality Control
+                      </button>
+                    )}
+                    {(sidebarCollapsed || qcOpen) && (
+                      <div className="space-y-0.5">{renderNavItems(QC_ITEMS.filter(i => !i.adminOnly || isLeadVaOrAdmin))}</div>
+                    )}
+                  </>
+                )}
               </>
             );
           })()}
