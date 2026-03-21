@@ -496,6 +496,15 @@ export default function BulkFixTool() {
       // Process in batches — use smaller batch for AI-heavy JE enrichment
       const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts" || operation === "generate_dissector_highlights" || operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") ? 5 : BATCH_SIZE;
       for (let i = 0; i < total; i += batchSize) {
+        // Check for pause
+        if (pauseRef.current) {
+          setRunComplete({ updated, skipped, errors });
+          toast.info(`Paused after ${updated + skipped + errors} of ${total} assets. ${updated} updated, ${skipped} skipped, ${errors} errors.`);
+          setRunning(false);
+          setPaused(false);
+          pauseRef.current = false;
+          return;
+        }
         const batch = assets.slice(i, i + batchSize);
         const updates: Promise<void>[] = [];
 
