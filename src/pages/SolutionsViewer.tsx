@@ -367,6 +367,7 @@ function TieredPaywallCard({
             href={chapterUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => onBuyClick?.()}
             className="block w-full mt-3 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
             style={{ background: "#006BA6", height: 48, lineHeight: "24px" }}
           >
