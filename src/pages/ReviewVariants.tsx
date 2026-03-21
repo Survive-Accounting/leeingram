@@ -679,28 +679,30 @@ Return valid JSON only.`,
                   {speedMode ? "Speed" : "Full"}
                 </span>
               </div>
-              <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
-                    <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear all variants?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will delete all generated variants and teaching assets for this chapter's problems, resetting them back to the Generate stage. This cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={clearingVariants}>Cancel</AlertDialogCancel>
-                    <Button variant="destructive" onClick={handleClearVariants} disabled={clearingVariants}>
-                      {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                      {clearingVariants ? "Clearing…" : "Clear All"}
+              {!isVaOrImpersonating && (
+                <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" disabled={clearingVariants}>
+                      <Trash2 className="h-3 w-3 mr-1" /> Clear Variants
                     </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear all variants?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will delete all generated variants and teaching assets for this chapter's problems, resetting them back to the Generate stage. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={clearingVariants}>Cancel</AlertDialogCancel>
+                      <Button variant="destructive" onClick={handleClearVariants} disabled={clearingVariants}>
+                        {clearingVariants ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                        {clearingVariants ? "Clearing…" : "Clear All"}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               {/* Done / Finish Review button */}
               {reviewIndex >= generatedProblems.length - 1 ? (
                 <Button size="sm" onClick={() => setReviewComplete(true)} className="text-xs bg-green-600 hover:bg-green-700 text-white">
