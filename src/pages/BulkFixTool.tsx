@@ -725,7 +725,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         }
       }
 
-      setRunComplete({ updated, skipped });
+      setRunComplete({ updated, skipped, errors });
       addHistory({
         label: operationLabel,
         date: new Date().toISOString(),
