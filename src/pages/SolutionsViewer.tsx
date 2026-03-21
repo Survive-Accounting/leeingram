@@ -1997,6 +1997,7 @@ export default function SolutionsViewer() {
                   chapterLink={chapterLink}
                   chapterNumber={chapterNum}
                   forceOpen={allTogglesForceOpen}
+                  onReveal={handleReveal}
                 >
                   <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
                 </RevealToggle>
