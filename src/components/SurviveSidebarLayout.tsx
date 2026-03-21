@@ -107,6 +107,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: allChapters } = useQuery({
@@ -116,6 +117,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       if (error) throw error;
       return data;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   // Fetch assigned chapters for VA or impersonated VA
@@ -131,6 +133,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       return data;
     },
     enabled: !!activeVaId,
+    staleTime: 10 * 60 * 1000,
   });
 
   const isVaOrImpersonating = isVa || !!impersonating;
@@ -207,10 +210,11 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       const imported = problems?.filter(p => p.pipeline_status === "imported").length ?? 0;
       const generated = problems?.filter(p => ["generated"].includes(p.pipeline_status)).length ?? 0;
       const { count: approvedCount } = await supabase.from("teaching_assets").select("id", { count: "exact", head: true }).eq("chapter_id", chId);
-      const { count: bankedCount } = await supabase.from("banked_questions").select("id", { count: "exact", head: true });
+      const { count: bankedCount } = await supabase.from("teaching_assets").select("id", { count: "exact", head: true }).eq("chapter_id", chId).not("phase2_status", "is", null);
       return { imported, generated, approved: approvedCount ?? 0, banked: bankedCount ?? 0 };
     },
     enabled: !!workspace?.chapterId,
+    staleTime: 30 * 1000,
   });
 
   // Open issue reports count (global)
@@ -224,6 +228,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       if (error) throw error;
       return count ?? 0;
     },
+    staleTime: 60 * 1000,
   });
 
   // QA pending count
@@ -237,6 +242,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
       if (error) throw error;
       return count ?? 0;
     },
+    staleTime: 60 * 1000,
   });
 
   const getBadge = (path: string) => {

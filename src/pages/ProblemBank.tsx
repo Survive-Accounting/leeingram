@@ -24,21 +24,25 @@ import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
 
-type ChapterProblem = {
+type ChapterProblemListItem = {
   id: string;
   course_id: string;
   chapter_id: string;
   problem_type: "exercise" | "problem" | "custom" | "quick_study";
   source_label: string;
   title: string;
-  problem_text: string;
-  solution_text: string;
-  journal_entry_text: string | null;
   difficulty_internal: "easy" | "medium" | "hard" | "tricky" | null;
   status: string;
+  pipeline_status: string;
   created_at: string;
   problem_screenshot_url: string | null;
   solution_screenshot_url: string | null;
+};
+
+type ChapterProblem = ChapterProblemListItem & {
+  problem_text: string;
+  solution_text: string;
+  journal_entry_text: string | null;
   problem_screenshot_urls: string[];
   solution_screenshot_urls: string[];
 };
@@ -73,8 +77,26 @@ export default function ProblemBank() {
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingProblem, setEditingProblem] = useState<ChapterProblem | null>(null);
-  const [previewProblem, setPreviewProblem] = useState<ChapterProblem | null>(null);
+  const [editingProblemId, setEditingProblemId] = useState<string | null>(null);
+  const [previewProblemId, setPreviewProblemId] = useState<string | null>(null);
+
+  // Fetch full detail for edit/preview dialogs on demand
+  const activeDetailId = editingProblemId || previewProblemId;
+  const { data: detailProblem } = useQuery({
+    queryKey: ["chapter-problem-detail", activeDetailId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("chapter_problems").select("*").eq("id", activeDetailId!).single();
+      if (error) throw error;
+      return {
+        ...data,
+        problem_screenshot_urls: data.problem_screenshot_urls ?? [],
+        solution_screenshot_urls: data.solution_screenshot_urls ?? [],
+      } as ChapterProblem;
+    },
+    enabled: !!activeDetailId,
+  });
+  const editingProblem = editingProblemId ? detailProblem : null;
+  const previewProblem = previewProblemId ? detailProblem : null;
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [buildRunModalOpen, setBuildRunModalOpen] = useState(false);
@@ -113,18 +135,14 @@ export default function ProblemBank() {
   const { data: problems, isLoading } = useQuery({
     queryKey: ["chapter-problems", courseFilter, chapterFilter],
     queryFn: async () => {
-      let q = supabase.from("chapter_problems").select("*");
+      let q = supabase.from("chapter_problems").select("id, course_id, chapter_id, problem_type, source_label, title, status, pipeline_status, created_at, difficulty_internal, problem_screenshot_url, solution_screenshot_url, ocr_status, ocr_detected_label, contains_no_journal_entries");
       if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
       if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
       const { data, error } = await q;
       if (error) throw error;
-      return (data as any[]).map((d) => ({
-        ...d,
-        problem_screenshot_urls: d.problem_screenshot_urls ?? [],
-        solution_screenshot_urls: d.solution_screenshot_urls ?? []
-      })).sort((a: any, b: any) =>
+      return (data as any[]).sort((a: any, b: any) =>
         (a.source_label || "").localeCompare(b.source_label || "", undefined, { numeric: true, sensitivity: "base" })
-      ) as ChapterProblem[];
+      ) as (ChapterProblemListItem & { ocr_status?: string; ocr_detected_label?: string; contains_no_journal_entries?: boolean })[];
     }
   });
 
@@ -250,7 +268,7 @@ export default function ProblemBank() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-problems"] });
       setEditDialogOpen(false);
-      setEditingProblem(null);
+      setEditingProblemId(null);
       toast.success("Problem updated");
     },
     onError: (e: Error) => toast.error(e.message)
@@ -337,7 +355,7 @@ export default function ProblemBank() {
     if (!problems) return;
     const pending = problems.filter(
       (p) => {
-        const hasImages = p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url;
+        const hasImages = !!p.problem_screenshot_url;
         if (!hasImages) return false;
         const ocrStatus = (p as any).ocr_status;
         if (forceAll) return true;
@@ -352,10 +370,11 @@ export default function ProblemBank() {
     toast.info(`Running OCR on ${pending.length} problems…`);
     let success = 0;
     let failed = 0;
-    // Process sequentially to avoid rate limits
+    // Process sequentially to avoid rate limits — fetch full urls per problem
     for (const p of pending) {
-      const pUrls = p.problem_screenshot_urls.length > 0 ? p.problem_screenshot_urls : p.problem_screenshot_url ? [p.problem_screenshot_url] : [];
-      const sUrls = p.solution_screenshot_urls.length > 0 ? p.solution_screenshot_urls : p.solution_screenshot_url ? [p.solution_screenshot_url] : [];
+      const { data: full } = await supabase.from("chapter_problems").select("problem_screenshot_urls, solution_screenshot_urls").eq("id", p.id).single();
+      const pUrls = (full?.problem_screenshot_urls?.length ?? 0) > 0 ? full!.problem_screenshot_urls : p.problem_screenshot_url ? [p.problem_screenshot_url] : [];
+      const sUrls = (full?.solution_screenshot_urls?.length ?? 0) > 0 ? full!.solution_screenshot_urls : p.solution_screenshot_url ? [p.solution_screenshot_url] : [];
       try {
         const { error } = await supabase.functions.invoke("extract-ocr", {
           body: { problemId: p.id, problemImageUrls: pUrls, solutionImageUrls: sUrls },
@@ -378,7 +397,7 @@ export default function ProblemBank() {
     toast.success("Marked as Ready");
   };
 
-  const resetScreenshot = async (p: ChapterProblem) => {
+  const resetScreenshot = async (p: ChapterProblemListItem) => {
     const { error } = await supabase.from("chapter_problems").update({
       import_status: "needs_problem_screenshot",
       problem_screenshot_url: null,
@@ -403,12 +422,12 @@ export default function ProblemBank() {
     toast.success(`${p.source_label} returned to screenshot queue`);
   };
 
-  const openEdit = (p: ChapterProblem) => {
-    setEditingProblem(p);
+  const openEdit = (p: ChapterProblemListItem & { contains_no_journal_entries?: boolean }) => {
+    setEditingProblemId(p.id);
     setEditType(p.problem_type);
     setEditLabel(p.source_label);
     setEditTitle(p.title);
-    setEditNoJE(!!(p as any).contains_no_journal_entries);
+    setEditNoJE(!!p.contains_no_journal_entries);
     setEditProblemFiles([]);
     setEditSolutionFiles([]);
     setEditDialogOpen(true);
@@ -598,7 +617,7 @@ export default function ProblemBank() {
                 if (nOcr === nSrc) return false;
                 return numericPart(nOcr) !== numericPart(nSrc);
               })();
-              const hasScreenshot = !!(p.problem_screenshot_url || p.problem_screenshot_urls.length > 0);
+              const hasScreenshot = !!p.problem_screenshot_url;
               return (
               <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
                     <TableCell>
@@ -625,16 +644,16 @@ export default function ProblemBank() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {hasMismatch ? (
-                          <button className="text-[11px] text-destructive hover:underline" onClick={() => resetScreenshot(p)} title="Clear wrong screenshot and re-queue for pasting">
+                          <button className="text-[11px] text-destructive hover:underline" onClick={() => resetScreenshot(p as any)} title="Clear wrong screenshot and re-queue for pasting">
                             Re-paste
                           </button>
                         ) : !hasScreenshot ? (
-                          <button className="text-[11px] text-primary hover:underline" onClick={() => openEdit(p)} title="Add screenshot via edit dialog">
+                          <button className="text-[11px] text-primary hover:underline" onClick={() => openEdit(p as any)} title="Add screenshot via edit dialog">
                             Add
                           </button>
                         ) : (p.status === "raw" || p.status === "tagged") ? (
                           <div className="flex items-center gap-2">
-                            <button className="text-[11px] text-muted-foreground hover:underline" onClick={() => resetScreenshot(p)} title="Clear current screenshot and re-paste">
+                            <button className="text-[11px] text-muted-foreground hover:underline" onClick={() => resetScreenshot(p as any)} title="Clear current screenshot and re-paste">
                               Replace
                             </button>
                             <button className="text-[11px] text-primary hover:underline" onClick={() => markReady(p.id)}>
@@ -648,10 +667,10 @@ export default function ProblemBank() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblemId(p.id)}>
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p as any)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
@@ -835,9 +854,9 @@ export default function ProblemBank() {
 
       {/* Source Problem Preview */}
       <SourceProblemPreview
-        problem={previewProblem}
-        open={!!previewProblem}
-        onOpenChange={(open) => {if (!open) setPreviewProblem(null);}} />
+        problem={previewProblem ?? null}
+        open={!!previewProblemId}
+        onOpenChange={(open) => {if (!open) setPreviewProblemId(null);}} />
 
       {/* Build Run Start Modal */}
       <StartBuildRunModal
