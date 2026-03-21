@@ -789,6 +789,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="enrich_je_rows">Enrich JE Rows (add debit_credit_reason + amount_source)</SelectItem>
                 <SelectItem value="generate_supplementary_je">Generate Supplementary JEs (backfill missing)</SelectItem>
                 <SelectItem value="generate_flowcharts">Generate Flowcharts (backfill missing)</SelectItem>
+                <SelectItem value="generate_dissector_highlights">Generate Dissector Highlights (backfill missing)</SelectItem>
               </SelectContent>
             </Select>
 
