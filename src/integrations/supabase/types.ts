@@ -579,6 +579,9 @@ export type Database = {
           operation_key: string
           operation_name: string
           queue_position: number
+          scope_chapter_id: string | null
+          scope_course_id: string | null
+          scope_status_filter: string
           started_at: string | null
           status: string
         }
@@ -594,6 +597,9 @@ export type Database = {
           operation_key: string
           operation_name: string
           queue_position: number
+          scope_chapter_id?: string | null
+          scope_course_id?: string | null
+          scope_status_filter?: string
           started_at?: string | null
           status?: string
         }
@@ -609,10 +615,28 @@ export type Database = {
           operation_key?: string
           operation_name?: string
           queue_position?: number
+          scope_chapter_id?: string | null
+          scope_course_id?: string | null
+          scope_status_filter?: string
           started_at?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bulk_fix_queue_scope_chapter_id_fkey"
+            columns: ["scope_chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_fix_queue_scope_course_id_fkey"
+            columns: ["scope_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       changelog: {
         Row: {
