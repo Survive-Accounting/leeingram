@@ -434,7 +434,7 @@ export function CoreAssetsTab() {
                             Preview in App →
                           </DropdownMenuItem>
                           <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-full" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
-                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?ref=lw" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
                             setLastCopiedKey(a.id + "-full");
                             toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
                           }}>
