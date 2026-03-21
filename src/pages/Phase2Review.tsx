@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Loader2, Sparkles, RefreshCw, ChevronRight, ChevronDown,
-  GripVertical, ExternalLink, ArrowRightLeft, Lock, Unlock, Merge, Undo2, Plus
+  GripVertical, ExternalLink, ArrowRightLeft, Lock, Unlock, Merge, Undo2, Plus, ArrowUp, ArrowDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
