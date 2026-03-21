@@ -125,8 +125,10 @@ export default function BulkFixTool() {
   const [isAiPreview, setIsAiPreview] = useState(false);
 
   const [running, setRunning] = useState(false);
-  const [runProgress, setRunProgress] = useState({ current: 0, total: 0 });
-  const [runComplete, setRunComplete] = useState<{ updated: number; skipped: number } | null>(null);
+  const [paused, setPaused] = useState(false);
+  const pauseRef = { current: false };
+  const [runProgress, setRunProgress] = useState({ current: 0, total: 0, currentAsset: "" });
+  const [runComplete, setRunComplete] = useState<{ updated: number; skipped: number; errors?: number } | null>(null);
 
   const [reverting, setReverting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
