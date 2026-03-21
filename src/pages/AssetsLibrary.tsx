@@ -1113,38 +1113,22 @@ export default function AssetsLibrary() {
         <div className="flex items-center gap-3 mb-4">
           <TabsList className="bg-muted/50 border border-border">
             <TabsTrigger value="all" className="text-xs">All Assets</TabsTrigger>
-            {isAdmin && <TabsTrigger value="core" className="text-xs">Core Assets</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="core" className="text-xs" disabled>Core Topics</TabsTrigger>}
           </TabsList>
           {isAdmin && (
             <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => navigate("/bulk-fix-tool")}>
               <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
             </Button>
           )}
-          {isAdmin && chapterFilter !== "all" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1.5"
-                  disabled={!!activeBatch}
-                >
-                  {activeBatch ? (
-                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {activeBatch.jobType.replace(/_/g, " ")} {activeBatch.done}/{activeBatch.total}</>
-                  ) : (
-                    <><BookOpen className="h-3.5 w-3.5" /> Prep Docs <ChevronDown className="h-3 w-3" /></>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => { setBulkPrepDocMode("missing"); setBulkPrepDocOpen(true); }}>
-                  Generate Missing Prep Docs
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setBulkPrepDocMode("all"); setBulkPrepDocOpen(true); }} className="text-destructive">
-                  Force Regenerate All
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {chapterFilter !== "all" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => window.open(`/cram/${chapterFilter}`, "_blank")}
+            >
+              <BookOpen className="h-3.5 w-3.5" /> Chapter Cram Tool
+            </Button>
           )}
         </div>
 
