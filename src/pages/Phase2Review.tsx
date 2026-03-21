@@ -176,7 +176,7 @@ export default function Phase2Review() {
   const activeTopics = topics.filter(t => t.is_active && !t.merged_into_topic_id);
   const dragMergedTopics = topics.filter(t => !t.is_active && !!t.merged_into_topic_id);
   const unmergedTopics = topics.filter(t => !t.merged_into_topic_id);
-  const maxTopicCount = Math.min(8, unmergedTopics.length);
+  const maxTopicCount = 8;
   const sliderCollapsedTopics = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
   const sliderValue = activeTopics.length;
 
