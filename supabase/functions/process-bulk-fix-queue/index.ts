@@ -168,6 +168,7 @@ Deno.serve(async (req) => {
     let errored = currentItem.assets_errored || 0;
     let skipped = currentItem.assets_skipped || 0;
     let processed = offset;
+    let creditExhausted = false;
 
     const batchEnd = Math.min(offset + BATCH_SIZE, total);
     const batch = assets!.slice(offset, batchEnd);
@@ -175,6 +176,8 @@ Deno.serve(async (req) => {
     console.log(`[${currentItem.operation_name}] Processing batch ${offset + 1}-${batchEnd} of ${total}`);
 
     for (const asset of batch) {
+      if (creditExhausted) { skipped++; processed++; continue; }
+
       try {
         // Check skip condition
         if (handler.skipCheck && await handler.skipCheck(sb, asset.id)) {
@@ -194,7 +197,13 @@ Deno.serve(async (req) => {
 
         const result = await res.json();
         if (!res.ok || result.error) {
-          console.error(`✗ ${asset.asset_name}: ${result.error || `HTTP ${res.status}`}`);
+          const errMsg = result.error || `HTTP ${res.status}`;
+          console.error(`✗ ${asset.asset_name}: ${errMsg}`);
+          // Detect credit exhaustion — stop wasting calls
+          if (res.status === 500 && typeof errMsg === "string" && (errMsg.includes("402") || errMsg.includes("payment_required") || errMsg.includes("Not enough credits"))) {
+            creditExhausted = true;
+            console.error("Credit exhaustion detected — pausing queue");
+          }
           errored++;
         } else if (result.skipped) {
           skipped++;
