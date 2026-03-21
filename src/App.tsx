@@ -198,7 +198,8 @@ const AppRoutes = () => {
       <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
       <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
       <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
-      <Route path="/share-leaderboard" element={<ProtectedRoute><ShareLeaderboard /></ProtectedRoute>} />
+      <Route path="/share-leaderboard" element={<Navigate to="/asset-stats" replace />} />
+      <Route path="/asset-stats" element={<ProtectedRoute><AssetStatsDashboard /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
