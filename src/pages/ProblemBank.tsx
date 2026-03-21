@@ -863,9 +863,9 @@ export default function ProblemBank() {
 
       {/* Source Problem Preview */}
       <SourceProblemPreview
-        problem={previewProblem}
-        open={!!previewProblem}
-        onOpenChange={(open) => {if (!open) setPreviewProblem(null);}} />
+        problem={previewProblem ?? null}
+        open={!!previewProblemId}
+        onOpenChange={(open) => {if (!open) setPreviewProblemId(null);}} />
 
       {/* Build Run Start Modal */}
       <StartBuildRunModal
