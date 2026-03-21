@@ -38,13 +38,16 @@ const PHASE_1_ITEMS = [
 ];
 
 const PHASE_2_ITEMS = [
-  { label: "Phase 2 Review", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
-  { label: "Solutions QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
+  { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
   { label: "MC Generator", path: "/question-review", icon: Package },
   { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
   { label: "Videos Ready", path: "/videos-ready", icon: Video },
   { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
+];
+
+const QC_ITEMS = [
+  { label: "Asset Page QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
