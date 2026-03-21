@@ -24,6 +24,8 @@ import FilmingControlPanel from "./pages/FilmingControlPanel";
 import QuizzesReady from "./pages/QuizzesReady";
 import VideoPending from "./pages/VideoPending";
 import VideosReady from "./pages/VideosReady";
+import QuizQueue from "./pages/QuizQueue";
+import VideoQueue from "./pages/VideoQueue";
 import TutoringControlPanel from "./pages/TutoringControlPanel";
 import TutoringReview from "./pages/TutoringReview";
 import TutoringReviewDetail from "./pages/TutoringReviewDetail";
@@ -178,6 +180,8 @@ const AppRoutes = () => {
       <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
       <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
       <Route path="/phase2-review" element={<ProtectedRoute><Phase2Review /></ProtectedRoute>} />
+      <Route path="/quiz-queue" element={<ProtectedRoute><QuizQueue /></ProtectedRoute>} />
+      <Route path="/video-queue" element={<ProtectedRoute><VideoQueue /></ProtectedRoute>} />
       <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
       <Route path="/debug-session/:chapterId" element={<ProtectedRoute><DebugSession /></ProtectedRoute>} />
       <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />

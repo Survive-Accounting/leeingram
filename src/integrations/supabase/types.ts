@@ -1049,28 +1049,58 @@ export type Database = {
       }
       chapter_topics: {
         Row: {
+          asset_codes: string[] | null
           chapter_id: string
+          course_id: string | null
           created_at: string
           display_order: number
+          generated_by_ai: boolean | null
           id: string
           is_active: boolean
+          lw_quiz_link: string | null
+          lw_video_link: string | null
+          quiz_status: string | null
+          topic_description: string | null
           topic_name: string
+          topic_number: number | null
+          topic_rationale: string | null
+          video_status: string | null
         }
         Insert: {
+          asset_codes?: string[] | null
           chapter_id: string
+          course_id?: string | null
           created_at?: string
           display_order?: number
+          generated_by_ai?: boolean | null
           id?: string
           is_active?: boolean
+          lw_quiz_link?: string | null
+          lw_video_link?: string | null
+          quiz_status?: string | null
+          topic_description?: string | null
           topic_name: string
+          topic_number?: number | null
+          topic_rationale?: string | null
+          video_status?: string | null
         }
         Update: {
+          asset_codes?: string[] | null
           chapter_id?: string
+          course_id?: string | null
           created_at?: string
           display_order?: number
+          generated_by_ai?: boolean | null
           id?: string
           is_active?: boolean
+          lw_quiz_link?: string | null
+          lw_video_link?: string | null
+          quiz_status?: string | null
+          topic_description?: string | null
           topic_name?: string
+          topic_number?: number | null
+          topic_rationale?: string | null
+          video_status?: string | null
         }
         Relationships: [
           {
@@ -1078,6 +1108,13 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_topics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
@@ -3456,6 +3493,7 @@ export type Database = {
           test_slide_id: string | null
           test_slide_url: string | null
           times_used: number
+          topic_id: string | null
           updated_at: string
           uses_financial_statements: boolean
           uses_t_accounts: boolean
@@ -3551,6 +3589,7 @@ export type Database = {
           test_slide_id?: string | null
           test_slide_url?: string | null
           times_used?: number
+          topic_id?: string | null
           updated_at?: string
           uses_financial_statements?: boolean
           uses_t_accounts?: boolean
@@ -3646,6 +3685,7 @@ export type Database = {
           test_slide_id?: string | null
           test_slide_url?: string | null
           times_used?: number
+          topic_id?: string | null
           updated_at?: string
           uses_financial_statements?: boolean
           uses_t_accounts?: boolean
@@ -3676,6 +3716,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_assets_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_topics"
             referencedColumns: ["id"]
           },
         ]

@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
-  Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
-  Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
+  Inbox, Factory, Library, FileCheck, Package, Video,
+  Rocket, Users, CheckCircle2, Loader2, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
   ChevronRight, CreditCard, ClipboardCheck, TrendingUp,
 } from "lucide-react";
@@ -39,11 +39,9 @@ const PHASE_1_ITEMS = [
 
 const PHASE_2_ITEMS = [
   { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
-  { label: "MC Generator", path: "/question-review", icon: Package },
-  { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
-  { label: "Video Pending", path: "/video-pending", icon: VideoOff },
-  { label: "Videos Ready", path: "/videos-ready", icon: Video },
-  { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
+  { label: "Quiz Queue", path: "/quiz-queue", icon: Package },
+  { label: "Video Queue", path: "/video-queue", icon: Video },
+  { label: "Deployment Queue", path: "/deployment", icon: Rocket },
 ];
 
 const QC_ITEMS = [
