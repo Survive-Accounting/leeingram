@@ -581,8 +581,11 @@ export default function ProblemBank() {
                 v = v.replace(/^EXERCISE\s*/i, "E");
                 v = v.replace(/^PROBLEM\s*/i, "P");
                 v = v.replace(/^QUICK\s*STUDY\s*/i, "QS");
-                v = v.replace(/[\s-]+/g, ".");
+                v = v.replace(/[\s\-]+/g, ".");
+                v = v.replace(/\.+/g, ".");
                 v = v.replace(/\s+/g, "");
+                // Ensure prefix-number boundary is consistent: "QS.1.1" → "QS1.1"
+                v = v.replace(/^([A-Z]+)\./, "$1");
                 return v;
               };
               const numericPart = (s: string) => s.replace(/^[A-Z]+/, "");
