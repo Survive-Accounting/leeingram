@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_flowcharts";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_flowcharts" | "generate_dissector_highlights";
 
 interface HistoryEntry {
   label: string;
