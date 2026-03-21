@@ -1746,6 +1746,7 @@ export default function SolutionsViewer() {
   }
 
   const asset = data;
+  assetRef.current = asset;
   const chapter = (asset as any).chapters;
   const course = (asset as any).courses;
 
