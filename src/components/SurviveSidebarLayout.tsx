@@ -432,6 +432,85 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
         </div>
       </header>
 
+      {/* Mobile workspace selector — visible only on small screens */}
+      <div
+        className="relative z-10 sm:hidden border-b border-border px-3 py-2 flex items-center gap-2"
+        style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.92)" }}
+      >
+        {!isVaOrImpersonating ? (
+          <>
+            <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
+              <SelectTrigger className="h-8 text-xs flex-1 bg-muted/50 border-border text-foreground">
+                <SelectValue placeholder="Course…" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses?.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">{c.course_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange} disabled={!workspace?.courseId}>
+              <SelectTrigger className="h-8 text-xs flex-[1.3] bg-muted/50 border-border text-foreground">
+                <SelectValue placeholder="Chapter…" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredChapters.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">
+                    Ch {c.chapter_number} — {c.chapter_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        ) : (
+          <>
+            {(() => {
+              const assignedCourseIds = [...new Set(vaAssignments?.map(a => a.course_id) ?? [])];
+              const vaCourses = courses?.filter(c => assignedCourseIds.includes(c.id)) ?? [];
+              return vaCourses.length > 1 ? (
+                <Select value={workspace?.courseId || ""} onValueChange={(courseId) => {
+                  const course = courses?.find(c => c.id === courseId);
+                  if (!course) return;
+                  const firstChapter = vaFilteredChapters.find(ch => ch.course_id === courseId);
+                  if (firstChapter) {
+                    setWorkspace({
+                      courseId: course.id,
+                      courseName: course.course_name,
+                      chapterId: firstChapter.id,
+                      chapterName: firstChapter.chapter_name,
+                      chapterNumber: firstChapter.chapter_number,
+                    });
+                  }
+                }}>
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-muted/50 border-border text-foreground">
+                    <SelectValue placeholder="Course…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vaCourses.map((c) => (
+                      <SelectItem key={c.id} value={c.id} className="text-xs">{c.course_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null;
+            })()}
+            <Select value={workspace?.chapterId || ""} onValueChange={handleChapterChange}>
+              <SelectTrigger className="h-8 text-xs flex-[1.3] bg-muted/50 border-border text-foreground">
+                <SelectValue placeholder="Chapter…" />
+              </SelectTrigger>
+              <SelectContent>
+                {vaFilteredChapters
+                  .filter(ch => !workspace?.courseId || ch.course_id === workspace.courseId)
+                  .map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">
+                      Ch {c.chapter_number} — {c.chapter_name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+      </div>
+
       <div className="relative z-10 flex min-h-[calc(100vh-3rem)]">
         {/* Sidebar */}
         <nav
