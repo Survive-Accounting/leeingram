@@ -22,7 +22,7 @@ serve(async (req) => {
     // 1. Fetch teaching asset
     const { data: asset, error: aErr } = await sb
       .from("teaching_assets")
-      .select("id, asset_name, problem_context, highlight_tags, worked_steps, important_formulas, chapter_id, course_id")
+      .select("id, asset_name, problem_context, worked_steps, important_formulas, chapter_id, course_id")
       .eq("id", teaching_asset_id)
       .single();
     if (aErr || !asset) throw new Error("Teaching asset not found: " + (aErr?.message ?? ""));
