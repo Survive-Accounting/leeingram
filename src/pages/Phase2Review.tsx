@@ -356,45 +356,42 @@ export default function Phase2Review() {
   }, [topics, chapterId, qc]);
 
   // ── Slider handler ───────────────────────────────────────────
-  const handleSliderChange = useCallback(async (newCount: number[]) => {
-    const targetCount = newCount[0];
+  const handleTopicCountChange = useCallback(async (targetCount: number) => {
+    if (sliderLoading || isLocked) return;
     const currentActive = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-    // Only slider-collapsed topics can be reactivated (not drag-merged ones)
     const sliderInactive = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
     const diff = targetCount - currentActive.length;
+    if (diff === 0) return;
 
-    if (diff < 0) {
-      // Deactivate the last N active topics — assets go to unassigned (stay on topic row)
-      const toDeactivate = currentActive
-        .sort((a, b) => b.topic_number - a.topic_number)
-        .slice(0, Math.abs(diff));
-
-      for (const topic of toDeactivate) {
-        // Keep asset_codes on the topic so they can be restored on slider-up
-        await supabase.from("chapter_topics").update({
-          is_active: false,
-          // Do NOT set merged_into_topic_id — this is slider collapse, not merge
-        } as any).eq("id", topic.id);
+    setSliderLoading(true);
+    try {
+      if (diff < 0) {
+        const toDeactivate = currentActive
+          .sort((a, b) => b.topic_number - a.topic_number)
+          .slice(0, Math.abs(diff));
+        for (const topic of toDeactivate) {
+          await supabase.from("chapter_topics").update({
+            is_active: false,
+          } as any).eq("id", topic.id);
+        }
+      } else if (diff > 0) {
+        const toReactivate = sliderInactive
+          .sort((a, b) => a.topic_number - b.topic_number)
+          .slice(0, diff);
+        for (const topic of toReactivate) {
+          const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
+          const restoredCodes = (topic.asset_codes || []).filter(c => !currentActiveCodes.includes(c));
+          await supabase.from("chapter_topics").update({
+            is_active: true,
+            asset_codes: restoredCodes,
+          } as any).eq("id", topic.id);
+        }
       }
-    } else if (diff > 0) {
-      // Reactivate slider-collapsed topics (lowest topic_number first)
-      const toReactivate = sliderInactive
-        .sort((a, b) => a.topic_number - b.topic_number)
-        .slice(0, diff);
-
-      for (const topic of toReactivate) {
-        // Remove any asset codes that were manually moved to another active topic
-        const currentActiveCodes = currentActive.flatMap(t => t.asset_codes || []);
-        const restoredCodes = (topic.asset_codes || []).filter(c => !currentActiveCodes.includes(c));
-        await supabase.from("chapter_topics").update({
-          is_active: true,
-          asset_codes: restoredCodes,
-        } as any).eq("id", topic.id);
-      }
+      await qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
+    } finally {
+      setSliderLoading(false);
     }
-
-    qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
-  }, [topics, chapterId, qc]);
+  }, [topics, chapterId, qc, sliderLoading, isLocked]);
 
   // ── DnD handlers ─────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
