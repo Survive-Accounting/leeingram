@@ -22,13 +22,13 @@ serve(async (req) => {
     // 1. Fetch teaching asset
     const { data: asset, error: aErr } = await sb
       .from("teaching_assets")
-      .select("id, asset_name, problem_context, worked_steps, important_formulas, chapter_id, course_id")
+      .select("id, asset_name, problem_context, survive_problem_text, worked_steps, important_formulas, chapter_id, course_id")
       .eq("id", teaching_asset_id)
       .single();
     if (aErr || !asset) throw new Error("Teaching asset not found: " + (aErr?.message ?? ""));
 
-    const problemText = asset.problem_context || "";
-    if (!problemText.trim()) throw new Error("Teaching asset has no problem_context text");
+    const problemText = (asset.problem_context || asset.survive_problem_text || "").trim();
+    if (!problemText) throw new Error("Teaching asset has no problem text in problem_context or survive_problem_text");
 
     // 2. Use AI to analyze and extract highlights
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
