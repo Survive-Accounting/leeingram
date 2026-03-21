@@ -2005,6 +2005,7 @@ export default function SolutionsViewer() {
                   chapterNumber={chapterNum}
                   forceOpen={allTogglesForceOpen}
                   onReveal={handleReveal}
+                  onBuyClick={handleBuyClick}
                 >
                   <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
                 </RevealToggle>
