@@ -65,12 +65,14 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   // Phase section collapse state — auto-expand if current route is inside that phase
   const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
   const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
+  const qcPaths = QC_ITEMS.map(i => i.path);
   const phase3Paths = ["/study-tools/flashcards", "/study-tools/formula-recall", "/study-tools/entry-builder", "/study-tools/problem-dissector"];
 
   const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
 
   const [phase1Open, setPhase1Open] = useState(() => isInPhase(PHASE_1_ITEMS.map(i => i.path)));
   const [phase2Open, setPhase2Open] = useState(() => isInPhase(PHASE_2_ITEMS.map(i => i.path)));
+  const [qcOpen, setQcOpen] = useState(() => isInPhase(qcPaths));
   const [phase3Open, setPhase3Open] = useState(false);
 
   // Auto-expand active phase section on route change
