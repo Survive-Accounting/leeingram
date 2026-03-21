@@ -978,20 +978,37 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       const offset = runningItem.assets_processed || 0;
       const result = await executeOperation(
         runningItem.operation_key as OperationType,
-        (current, total, assetName) => setQueueProgress({ current, total, currentAsset: assetName }),
+        async (current, total, assetName) => {
+          setQueueProgress({ current, total, currentAsset: assetName });
+          if (current % 25 === 0 || current === total) {
+            await supabase.from("bulk_fix_queue").update({
+              assets_processed: offset + current,
+            } as any).eq("id", runningItem.id);
+          }
+        },
         undefined,
         () => queueStopRef.current,
         offset,
       );
 
       const totalProcessed = offset + ((result?.updated ?? 0) + (result?.skipped ?? 0) + (result?.errors ?? 0));
-      await supabase.from("bulk_fix_queue").update({
+      const completedItem: QueueItem = {
+        ...runningItem,
         status: "complete",
         completed_at: new Date().toISOString(),
         assets_processed: totalProcessed,
         assets_succeeded: (runningItem.assets_succeeded || 0) + (result?.updated ?? 0),
         assets_errored: (runningItem.assets_errored || 0) + (result?.errors ?? 0),
         assets_skipped: (runningItem.assets_skipped || 0) + (result?.skipped ?? 0),
+      };
+
+      await supabase.from("bulk_fix_queue").update({
+        status: "complete",
+        completed_at: completedItem.completed_at,
+        assets_processed: completedItem.assets_processed,
+        assets_succeeded: completedItem.assets_succeeded,
+        assets_errored: completedItem.assets_errored,
+        assets_skipped: completedItem.assets_skipped,
       } as any).eq("id", runningItem.id);
 
       refetchQueue();
@@ -1003,9 +1020,23 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         .eq("status", "pending")
         .order("queue_position", { ascending: true });
 
+      const nextName = remaining?.length ? remaining[0].operation_name : null;
+
+      // Send per-operation email for the resumed item
+      await sendSummaryEmail("operation_complete", completedItem, nextName);
+
       if (remaining?.length) {
         await runQueue();
       } else {
+        // Send queue-complete email with all completed items
+        const { data: allCompleted } = await supabase
+          .from("bulk_fix_queue")
+          .select("*")
+          .eq("status", "complete")
+          .order("queue_position", { ascending: true });
+        if (allCompleted?.length) {
+          await sendSummaryEmail("queue_complete", undefined, undefined, allCompleted as QueueItem[]);
+        }
         setQueueRunning(false);
         toast.success("Queue resumed and complete!");
       }
