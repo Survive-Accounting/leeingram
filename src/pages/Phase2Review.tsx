@@ -447,6 +447,31 @@ export default function Phase2Review() {
     setMergeConfirm({ sourceId, destId });
   };
 
+  // ── Reorder topics ────────────────────────────────────────────
+  const reorderMutation = useMutation({
+    mutationFn: async ({ topicId, direction }: { topicId: string; direction: "up" | "down" }) => {
+      const sorted = [...activeTopics].sort((a, b) => (a.display_order ?? a.topic_number ?? 0) - (b.display_order ?? b.topic_number ?? 0));
+      const idx = sorted.findIndex(t => t.id === topicId);
+      if (idx < 0) return;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+      const current = sorted[idx];
+      const swap = sorted[swapIdx];
+      const currentOrder = current.display_order ?? current.topic_number ?? idx + 1;
+      const swapOrder = swap.display_order ?? swap.topic_number ?? swapIdx + 1;
+
+      await Promise.all([
+        supabase.from("chapter_topics").update({ display_order: swapOrder, topic_number: swapOrder } as any).eq("id", current.id),
+        supabase.from("chapter_topics").update({ display_order: currentOrder, topic_number: currentOrder } as any).eq("id", swap.id),
+      ]);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   // ── Inline name editing ──────────────────────────────────────
   const startNameEdit = (topic: Topic) => {
     setEditingNameId(topic.id);
