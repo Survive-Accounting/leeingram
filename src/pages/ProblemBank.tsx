@@ -355,7 +355,7 @@ export default function ProblemBank() {
     if (!problems) return;
     const pending = problems.filter(
       (p) => {
-        const hasImages = p.problem_screenshot_urls.length > 0 || p.problem_screenshot_url;
+        const hasImages = !!p.problem_screenshot_url;
         if (!hasImages) return false;
         const ocrStatus = (p as any).ocr_status;
         if (forceAll) return true;
@@ -370,10 +370,20 @@ export default function ProblemBank() {
     toast.info(`Running OCR on ${pending.length} problems…`);
     let success = 0;
     let failed = 0;
-    // Process sequentially to avoid rate limits
+    // Process sequentially to avoid rate limits — fetch full urls per problem
     for (const p of pending) {
-      const pUrls = p.problem_screenshot_urls.length > 0 ? p.problem_screenshot_urls : p.problem_screenshot_url ? [p.problem_screenshot_url] : [];
-      const sUrls = p.solution_screenshot_urls.length > 0 ? p.solution_screenshot_urls : p.solution_screenshot_url ? [p.solution_screenshot_url] : [];
+      const { data: full } = await supabase.from("chapter_problems").select("problem_screenshot_urls, solution_screenshot_urls").eq("id", p.id).single();
+      const pUrls = (full?.problem_screenshot_urls?.length ?? 0) > 0 ? full!.problem_screenshot_urls : p.problem_screenshot_url ? [p.problem_screenshot_url] : [];
+      const sUrls = (full?.solution_screenshot_urls?.length ?? 0) > 0 ? full!.solution_screenshot_urls : p.solution_screenshot_url ? [p.solution_screenshot_url] : [];
+      try {
+        const { error } = await supabase.functions.invoke("extract-ocr", {
+          body: { problemId: p.id, problemImageUrls: pUrls, solutionImageUrls: sUrls },
+        });
+        if (error) { failed++; } else { success++; }
+      } catch {
+        failed++;
+      }
+    }
       try {
         const { error } = await supabase.functions.invoke("extract-ocr", {
           body: { problemId: p.id, problemImageUrls: pUrls, solutionImageUrls: sUrls },
