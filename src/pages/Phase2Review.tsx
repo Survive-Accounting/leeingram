@@ -106,6 +106,7 @@ export default function Phase2Review() {
   const [initialTopicCount, setInitialTopicCount] = useState(6);
   const [lockWarningOpen, setLockWarningOpen] = useState(false);
   const [renamingTopics, setRenamingTopics] = useState<Set<string>>(new Set());
+  const [sliderLoading, setSliderLoading] = useState(false);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
