@@ -298,9 +298,6 @@ export default function Phase2Review() {
         await supabase.from("chapter_topics").update({ topic_name: newName } as any).eq("id", topicId);
         qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
       }
-          qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
-        }
-      }
     } catch { /* silent */ }
     setRenamingTopics(prev => {
       const next = new Set(prev);
