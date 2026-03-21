@@ -823,6 +823,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </p>
             )}
 
+            {operation === "generate_dissector_highlights" && (
+              <p className="text-xs text-muted-foreground">
+                Generates problem dissector highlights for assets that don't have them yet. Creates a <code className="text-foreground">dissector_problems</code> record per asset with AI-identified key inputs, amounts, dates, and concepts. Powers the highlight overlay on SolutionsViewer staging page.
+              </p>
+            )}
+
             {operation === "find_replace_simple" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>

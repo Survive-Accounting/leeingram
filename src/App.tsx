@@ -115,6 +115,7 @@ const AppRoutes = () => {
       <Route path="/survive" element={<Navigate to="/" replace />} />
       {/* Public tools */}
       <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
+      <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
       <Route path="/practice/:assetCode" element={<PracticeViewer />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
