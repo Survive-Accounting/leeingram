@@ -1443,6 +1443,17 @@ export default function SolutionsViewer() {
     return () => window.removeEventListener("message", handler);
   }, []);
 
+  // ── Track page visit (fire-and-forget) ──
+  useEffect(() => {
+    if (!assetCode) return;
+    supabase.from("asset_share_events").insert({
+      asset_name: assetCode,
+      event_type: "page_visit",
+      referrer: document.referrer || null,
+      user_agent: navigator.userAgent || null,
+    } as any).then(() => {});
+  }, [assetCode]);
+
   useEffect(() => {
     if (!tokenSession?.expires_at || !previewToken) return;
     const update = () => {
