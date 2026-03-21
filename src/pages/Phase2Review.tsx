@@ -103,7 +103,8 @@ export default function Phase2Review() {
   const [regenOpen, setRegenOpen] = useState(false);
   const [mergeConfirm, setMergeConfirm] = useState<{ sourceId: string; destId: string } | null>(null);
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
-  const [initialTopicCount, setInitialTopicCount] = useState(8);
+  const [initialTopicCount, setInitialTopicCount] = useState(6);
+  const [lockWarningOpen, setLockWarningOpen] = useState(false);
   const [renamingTopics, setRenamingTopics] = useState<Set<string>>(new Set());
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState("");
