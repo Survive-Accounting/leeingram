@@ -79,6 +79,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (isInPhase(phase1Paths)) setPhase1Open(true);
     if (isInPhase(phase2Paths)) setPhase2Open(true);
+    if (isInPhase(qcPaths)) setQcOpen(true);
     if (isInPhase(phase3Paths)) setPhase3Open(true);
   }, [location.pathname]);
 
