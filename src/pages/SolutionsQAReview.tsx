@@ -262,6 +262,7 @@ export default function SolutionsQAReview() {
   const [screenshotStep, setScreenshotStep] = useState<"pending" | "done">("pending");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [activeChecklistIdx, setActiveChecklistIdx] = useState(0);
 
   // Position modal on left side by default
