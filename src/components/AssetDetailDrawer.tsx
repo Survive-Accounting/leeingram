@@ -1229,9 +1229,11 @@ export default function AssetDetailDrawer({
                   <Button size="sm" variant="outline" className="text-xs w-full justify-start border-border" onClick={onRevert}>
                     <Undo2 className="h-3 w-3 mr-2" /> Revert to Generated
                   </Button>
-                  <Button size="sm" variant="destructive" className="text-xs w-full justify-start" onClick={onDelete}>
-                    <Trash2 className="h-3 w-3 mr-2" /> Delete Asset
-                  </Button>
+                  {onDelete && (
+                    <Button size="sm" variant="destructive" className="text-xs w-full justify-start" onClick={onDelete}>
+                      <Trash2 className="h-3 w-3 mr-2" /> Delete Asset
+                    </Button>
+                  )}
                 </div>
               </div>
             </TabsContent>
