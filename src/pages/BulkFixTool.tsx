@@ -431,6 +431,32 @@ export default function BulkFixTool() {
           after: `Will generate highlights for ${missing.length} assets via AI`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+        // Count IA2 assets with JE data
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("journal_entry_completed_json", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: jeCount } = await countQ;
+        setTotalMatched(jeCount ?? 0);
+
+        const modeLabel = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
+        const actionDesc = operation === "enrich_je_tooltips"
+          ? "Will fill missing debit_credit_reason + amount_source fields"
+          : operation === "rewrite_je_reasons"
+          ? "Will rewrite ALL debit_credit_reason fields to student-friendly format"
+          : "Will rewrite ALL amount_source fields to plain English (no dollar figures)";
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "journal_entry_completed_json",
+          before: `${jeCount ?? 0} assets with JE data`,
+          after: `${actionDesc} via AI (mode: ${modeLabel})`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
