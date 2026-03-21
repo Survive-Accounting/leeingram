@@ -36,12 +36,14 @@ type Topic = {
   topic_description: string;
   topic_rationale: string;
   asset_codes: string[];
+  original_asset_codes: string[] | null;
   lw_video_link: string | null;
   lw_quiz_link: string | null;
   video_status: string;
   quiz_status: string;
   generated_by_ai: boolean;
   is_active: boolean;
+  is_supplementary: boolean;
   display_order: number;
   merged_into_topic_id: string | null;
   created_at: string;
@@ -173,16 +175,23 @@ export default function Phase2Review() {
   });
 
   const isLocked = chapterInfo?.topics_locked ?? false;
-  const activeTopics = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-  const dragMergedTopics = topics.filter(t => !t.is_active && !!t.merged_into_topic_id);
-  const unmergedTopics = topics.filter(t => !t.merged_into_topic_id);
+
+  // Separate supplementary from core topics
+  const supplementaryTopic = topics.find(t => t.is_supplementary);
+  const coreTopics = topics.filter(t => !t.is_supplementary);
+
+  const activeTopics = coreTopics.filter(t => t.is_active && !t.merged_into_topic_id);
+  const dragMergedTopics = coreTopics.filter(t => !t.is_active && !!t.merged_into_topic_id);
   const maxTopicCount = 8;
-  const sliderCollapsedTopics = topics.filter(t => !t.is_active && !t.merged_into_topic_id);
+  const sliderCollapsedTopics = coreTopics.filter(t => !t.is_active && !t.merged_into_topic_id);
   const sliderValue = activeTopics.length;
 
-  // Unassigned = assets in slider-collapsed topics + assets not in any topic's codes
-  const allActiveTopicCodes = activeTopics.flatMap(t => t.asset_codes || []);
-  const unassignedAssets = chapterAssets.filter(a => !allActiveTopicCodes.includes(a.asset_name));
+  // All displayable topics (for move dropdowns) = active core + supplementary
+  const allMoveTargets = [...activeTopics, ...(supplementaryTopic ? [supplementaryTopic] : [])];
+
+  // Total assets tagged
+  const totalTaggedAssets = [...activeTopics, ...(supplementaryTopic ? [supplementaryTopic] : [])]
+    .reduce((sum, t) => sum + (t.asset_codes?.length || 0), 0);
 
   // ── Mutations ────────────────────────────────────────────────
   const generateMutation = useMutation({
@@ -240,7 +249,14 @@ export default function Phase2Review() {
       if (!topic) return;
       const newCodes = (topic.asset_codes || []).filter((c) => c !== assetCode);
       await supabase.from("chapter_topics").update({ asset_codes: newCodes } as any).eq("id", topicId);
-      await supabase.from("teaching_assets").update({ topic_id: null } as any).eq("asset_name", assetCode).eq("chapter_id", chapterId!);
+      // Move to supplementary instead of untagging
+      if (supplementaryTopic) {
+        const suppCodes = [...(supplementaryTopic.asset_codes || []), assetCode];
+        await supabase.from("chapter_topics").update({ asset_codes: suppCodes } as any).eq("id", supplementaryTopic.id);
+        await supabase.from("teaching_assets").update({ topic_id: supplementaryTopic.id } as any).eq("asset_name", assetCode).eq("chapter_id", chapterId!);
+      } else {
+        await supabase.from("teaching_assets").update({ topic_id: null } as any).eq("asset_name", assetCode).eq("chapter_id", chapterId!);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
@@ -253,11 +269,15 @@ export default function Phase2Review() {
     mutationFn: async ({ topicId, asset }: { topicId: string; asset: ChapterAsset }) => {
       const topic = topics.find((t) => t.id === topicId);
       if (!topic) return;
+      // Remove from current topic if it's in one
+      const currentTopic = topics.find(t => (t.asset_codes || []).includes(asset.asset_name) && t.id !== topicId);
+      if (currentTopic) {
+        const updatedCodes = (currentTopic.asset_codes || []).filter(c => c !== asset.asset_name);
+        await supabase.from("chapter_topics").update({ asset_codes: updatedCodes } as any).eq("id", currentTopic.id);
+      }
       const newCodes = [...(topic.asset_codes || []), asset.asset_name];
       await supabase.from("chapter_topics").update({ asset_codes: newCodes } as any).eq("id", topicId);
-      if (!asset.topic_id) {
-        await supabase.from("teaching_assets").update({ topic_id: topicId } as any).eq("id", asset.id);
-      }
+      await supabase.from("teaching_assets").update({ topic_id: topicId } as any).eq("id", asset.id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
@@ -273,13 +293,10 @@ export default function Phase2Review() {
       const fromTopic = topics.find(t => t.id === fromTopicId);
       const toTopic = topics.find(t => t.id === toTopicId);
       if (!fromTopic || !toTopic) return;
-      // Remove from source
       const newFromCodes = (fromTopic.asset_codes || []).filter(c => c !== assetCode);
       await supabase.from("chapter_topics").update({ asset_codes: newFromCodes } as any).eq("id", fromTopicId);
-      // Add to dest
       const newToCodes = [...(toTopic.asset_codes || []), assetCode];
       await supabase.from("chapter_topics").update({ asset_codes: newToCodes } as any).eq("id", toTopicId);
-      // Update teaching_assets topic_id
       await supabase.from("teaching_assets").update({ topic_id: toTopicId } as any).eq("asset_name", assetCode).eq("chapter_id", chapterId!);
     },
     onSuccess: () => {
@@ -321,8 +338,12 @@ export default function Phase2Review() {
     const source = topics.find(t => t.id === sourceId);
     const dest = topics.find(t => t.id === destId);
     if (!source || !dest) return;
+    // Don't allow merging supplementary
+    if (source.is_supplementary || dest.is_supplementary) {
+      toast.error("Cannot merge the Supplementary Problems topic");
+      return;
+    }
 
-    // Move assets from source to dest
     const mergedCodes = [...(dest.asset_codes || []), ...(source.asset_codes || [])];
     const uniqueCodes = [...new Set(mergedCodes)];
 
@@ -340,7 +361,6 @@ export default function Phase2Review() {
     toast.success(`Merged "${source.topic_name}" into "${dest.topic_name}"`);
     setMergeConfirm(null);
 
-    // AI rename destination
     aiRename(destId, dest.topic_name, source.topic_name);
   }, [topics, chapterId, qc, aiRename]);
 
@@ -348,7 +368,6 @@ export default function Phase2Review() {
     const mergedTopic = topics.find(t => t.id === mergedTopicId);
     if (!mergedTopic || !mergedTopic.merged_into_topic_id) return;
 
-    // Restore: re-activate the merged topic (assets stay as-is, user can re-tag)
     await supabase.from("chapter_topics").update({
       is_active: true,
       merged_into_topic_id: null,
@@ -358,14 +377,14 @@ export default function Phase2Review() {
     toast.success("Merge undone");
   }, [topics, chapterId, qc]);
 
-  // ── Slider handler ───────────────────────────────────────────
+  // ── Slider handler (with supplementary restore logic) ────────
   const handleTopicCountChange = useCallback(async (targetCount: number) => {
     if (sliderLoading || isLocked) return;
 
     const clampedTargetCount = Math.min(maxTopicCount, Math.max(1, targetCount));
-    const currentActive = topics.filter(t => t.is_active && !t.merged_into_topic_id);
-    const availableInactive = topics
-      .filter(t => !t.is_active)
+    const currentActive = coreTopics.filter(t => t.is_active && !t.merged_into_topic_id);
+    const availableInactive = coreTopics
+      .filter(t => !t.is_active && !t.merged_into_topic_id)
       .sort((a, b) => (a.topic_number ?? 999) - (b.topic_number ?? 999));
     const diff = clampedTargetCount - currentActive.length;
 
@@ -374,45 +393,86 @@ export default function Phase2Review() {
     setSliderLoading(true);
     try {
       if (diff < 0) {
+        // Collapsing: move assets from deactivated topics to supplementary
         const toDeactivate = currentActive
           .sort((a, b) => (b.topic_number ?? 0) - (a.topic_number ?? 0))
           .slice(0, Math.abs(diff));
 
         for (const topic of toDeactivate) {
-          const { error } = await supabase.from("chapter_topics").update({
+          const topicAssets = topic.asset_codes || [];
+          // Move assets to supplementary
+          if (supplementaryTopic && topicAssets.length > 0) {
+            const currentSuppCodes = supplementaryTopic.asset_codes || [];
+            const newSuppCodes = [...new Set([...currentSuppCodes, ...topicAssets])];
+            await supabase.from("chapter_topics").update({ asset_codes: newSuppCodes } as any).eq("id", supplementaryTopic.id);
+            // Update topic_id on teaching_assets
+            for (const code of topicAssets) {
+              await supabase.from("teaching_assets").update({ topic_id: supplementaryTopic.id } as any)
+                .eq("asset_name", code).eq("chapter_id", chapterId!);
+            }
+            // Update local ref for subsequent iterations
+            supplementaryTopic.asset_codes = newSuppCodes;
+          }
+          // Deactivate but keep asset_codes for reference (original_asset_codes is the restore source)
+          await supabase.from("chapter_topics").update({
             is_active: false,
+            asset_codes: [],
           } as any).eq("id", topic.id);
-          if (error) throw error;
         }
       } else {
-        const reservedCodes = new Set(currentActive.flatMap(t => t.asset_codes || []));
+        // Expanding: restore assets from supplementary back to reactivated topics
         const toReactivate = availableInactive.slice(0, diff);
+        const coreAssignedCodes = new Set(currentActive.flatMap(t => t.asset_codes || []));
+        const suppCodes = new Set(supplementaryTopic?.asset_codes || []);
 
         for (const topic of toReactivate) {
-          const restoredCodes = (topic.asset_codes || []).filter(code => !reservedCodes.has(code));
-          restoredCodes.forEach(code => reservedCodes.add(code));
+          // Use original_asset_codes to find which assets should come back
+          const originalCodes = topic.original_asset_codes || [];
+          const restoreCodes: string[] = [];
+          
+          for (const code of originalCodes) {
+            // Only restore if: in supplementary AND not manually assigned to a different core topic
+            if (suppCodes.has(code) && !coreAssignedCodes.has(code)) {
+              restoreCodes.push(code);
+              suppCodes.delete(code);
+              coreAssignedCodes.add(code);
+            }
+          }
 
-          const { error } = await supabase.from("chapter_topics").update({
+          await supabase.from("chapter_topics").update({
             is_active: true,
             merged_into_topic_id: null,
-            asset_codes: restoredCodes,
+            asset_codes: restoreCodes,
           } as any).eq("id", topic.id);
-          if (error) throw error;
+
+          // Update topic_id on teaching_assets for restored codes
+          for (const code of restoreCodes) {
+            await supabase.from("teaching_assets").update({ topic_id: topic.id } as any)
+              .eq("asset_name", code).eq("chapter_id", chapterId!);
+          }
         }
 
+        // Update supplementary to remove restored codes
+        if (supplementaryTopic) {
+          await supabase.from("chapter_topics").update({ asset_codes: [...suppCodes] } as any).eq("id", supplementaryTopic.id);
+        }
+
+        // Create new topics if needed
         const missingCount = diff - toReactivate.length;
         if (missingCount > 0) {
-          const highestTopicNumber = topics.reduce((max, topic) => Math.max(max, topic.topic_number ?? 0), 0);
+          const highestTopicNumber = coreTopics.reduce((max, topic) => Math.max(max, topic.topic_number ?? 0), 0);
           const newTopics = Array.from({ length: missingCount }, (_, index) => {
             const topicNumber = highestTopicNumber + index + 1;
             return {
               chapter_id: chapterId!,
-              course_id: topics[0]?.course_id ?? null,
+              course_id: coreTopics[0]?.course_id ?? null,
               topic_name: `Topic ${topicNumber}`,
               topic_number: topicNumber,
               display_order: topicNumber,
               is_active: true,
+              is_supplementary: false,
               asset_codes: [],
+              original_asset_codes: [],
               generated_by_ai: false,
             };
           });
@@ -428,7 +488,7 @@ export default function Phase2Review() {
     } finally {
       setSliderLoading(false);
     }
-  }, [topics, chapterId, qc, sliderLoading, isLocked, maxTopicCount]);
+  }, [coreTopics, supplementaryTopic, chapterId, qc, sliderLoading, isLocked, maxTopicCount]);
 
   // ── DnD handlers ─────────────────────────────────────────────
   const handleDragStart = (event: DragStartEvent) => {
@@ -444,6 +504,10 @@ export default function Phase2Review() {
     const source = topics.find(t => t.id === sourceId);
     const dest = topics.find(t => t.id === destId);
     if (!source || !dest || !source.is_active || !dest.is_active) return;
+    if (source.is_supplementary) {
+      toast.error("Cannot merge the Supplementary Problems topic");
+      return;
+    }
     setMergeConfirm({ sourceId, destId });
   };
 
@@ -486,6 +550,305 @@ export default function Phase2Review() {
     setEditingNameId(null);
   };
 
+  // ── Render helpers ───────────────────────────────────────────
+  const renderTopicCard = (topic: Topic, opts: { isSupplementary?: boolean } = {}) => {
+    const topicAssetCodes = topic.asset_codes || [];
+    const taggedAssets = chapterAssets.filter(a => topicAssetCodes.includes(a.asset_name));
+    const isOpen = openTopicId === topic.id;
+    const isRenaming = renamingTopics.has(topic.id);
+    const isSup = opts.isSupplementary || topic.is_supplementary;
+
+    const sortedActive = [...activeTopics].sort((a, b) => (a.display_order ?? a.topic_number ?? 0) - (b.display_order ?? b.topic_number ?? 0));
+    const activeIdx = isSup ? -1 : sortedActive.findIndex(t => t.id === topic.id);
+    const isFirst = activeIdx === 0;
+    const isLast = activeIdx === sortedActive.length - 1;
+
+    return (
+      <Collapsible open={isOpen} onOpenChange={() => setOpenTopicId(isOpen ? null : topic.id)}>
+        <div className="flex items-center gap-1">
+          {/* Reorder arrows - not for supplementary */}
+          {!isLocked && !isSup && (
+            <div className="flex flex-col gap-0.5">
+              <button
+                className="p-0.5 rounded hover:bg-muted disabled:opacity-20"
+                disabled={isFirst || reorderMutation.isPending}
+                onClick={(e) => { e.stopPropagation(); reorderMutation.mutate({ topicId: topic.id, direction: "up" }); }}
+              >
+                <ArrowUp className="h-3 w-3 text-muted-foreground" />
+              </button>
+              <button
+                className="p-0.5 rounded hover:bg-muted disabled:opacity-20"
+                disabled={isLast || reorderMutation.isPending}
+                onClick={(e) => { e.stopPropagation(); reorderMutation.mutate({ topicId: topic.id, direction: "down" }); }}
+              >
+                <ArrowDown className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </div>
+          )}
+
+          <CollapsibleTrigger asChild>
+            <button
+              className={cn(
+                "flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors text-left",
+                isSup
+                  ? "border-l-4 border-l-muted-foreground/30 border-border bg-muted/30 hover:bg-muted/50"
+                  : "border-border bg-card hover:bg-muted/30"
+              )}
+            >
+              {isOpen ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              
+              {/* Badge */}
+              {isSup ? (
+                <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground border-muted-foreground/30 shrink-0">S</Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] shrink-0">{activeIdx + 1}</Badge>
+              )}
+
+              <div className="flex-1 min-w-0">
+                {editingNameId === topic.id ? (
+                  <Input
+                    ref={nameInputRef}
+                    value={editingNameValue}
+                    onChange={(e) => setEditingNameValue(e.target.value)}
+                    onBlur={commitNameEdit}
+                    onKeyDown={(e) => { if (e.key === "Enter") commitNameEdit(); if (e.key === "Escape") setEditingNameId(null); }}
+                    className="h-6 text-sm font-medium px-1 py-0"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span
+                    className={cn(
+                      "text-sm font-medium truncate block cursor-text",
+                      isSup ? "text-muted-foreground" : "text-foreground"
+                    )}
+                    onDoubleClick={(e) => { e.stopPropagation(); startNameEdit(topic); }}
+                    title="Double-click to edit"
+                  >
+                    {topic.topic_name}
+                    {isRenaming && <Sparkles className="h-3 w-3 inline ml-1.5 text-amber-400 animate-pulse" />}
+                  </span>
+                )}
+                {isSup && (
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    Lower-priority problems that don't fit a core topic. Great for extra practice.
+                  </span>
+                )}
+              </div>
+              <Badge variant="secondary" className="text-[10px] shrink-0">{topicAssetCodes.length} assets</Badge>
+              <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.video_status] || STATUS_COLORS.not_started}`}>
+                Vid: {topic.video_status.replace("_", " ")}
+              </Badge>
+              <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.quiz_status] || STATUS_COLORS.not_started}`}>
+                Quiz: {topic.quiz_status.replace("_", " ")}
+              </Badge>
+            </button>
+          </CollapsibleTrigger>
+        </div>
+
+        <CollapsibleContent>
+          <div className="border border-t-0 border-border rounded-b-lg bg-card px-4 py-4 space-y-5">
+            {/* SUB-SECTION A: Topic Info */}
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Topic Info</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Description</label>
+                  <Textarea
+                    defaultValue={topic.topic_description || ""}
+                    onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { topic_description: e.target.value } })}
+                    className="text-xs mt-1 min-h-[60px]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Rationale</label>
+                  <Textarea
+                    defaultValue={topic.topic_rationale || ""}
+                    onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { topic_rationale: e.target.value } })}
+                    className="text-xs mt-1 min-h-[60px]"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Video URL</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Select
+                      value={topic.video_status}
+                      onValueChange={(v) => saveMutation.mutate({ id: topic.id, updates: { video_status: v } })}
+                    >
+                      <SelectTrigger className="h-7 text-xs w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(s => (
+                          <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      defaultValue={topic.lw_video_link || ""}
+                      placeholder="LearnWorlds video URL"
+                      className="h-7 text-xs flex-1"
+                      onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { lw_video_link: e.target.value } })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Quiz URL</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Select
+                      value={topic.quiz_status}
+                      onValueChange={(v) => saveMutation.mutate({ id: topic.id, updates: { quiz_status: v } })}
+                    >
+                      <SelectTrigger className="h-7 text-xs w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(s => (
+                          <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      defaultValue={topic.lw_quiz_link || ""}
+                      placeholder="LearnWorlds quiz URL"
+                      className="h-7 text-xs flex-1"
+                      onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { lw_quiz_link: e.target.value } })}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SUB-SECTION B: Assets Table */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Assets ({taggedAssets.length})
+                </h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-[10px]"
+                  onClick={() => setShowAddAssetForTopic(showAddAssetForTopic === topic.id ? null : topic.id)}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Asset
+                </Button>
+              </div>
+
+              {showAddAssetForTopic === topic.id && (
+                <div className="border border-border rounded-md p-2 space-y-1">
+                  <Input
+                    value={addAssetSearch}
+                    onChange={(e) => setAddAssetSearch(e.target.value)}
+                    placeholder="Search assets…"
+                    className="h-7 text-xs"
+                  />
+                  <div className="max-h-32 overflow-y-auto space-y-0.5">
+                    {(() => {
+                      const allTaggedCodes = topics.flatMap(t => t.asset_codes || []);
+                      const untagged = chapterAssets.filter(a => !allTaggedCodes.includes(a.asset_name));
+                      const filtered = addAssetSearch
+                        ? untagged.filter(a =>
+                          a.asset_name.toLowerCase().includes(addAssetSearch.toLowerCase()) ||
+                          (a.problem_title || "").toLowerCase().includes(addAssetSearch.toLowerCase())
+                        )
+                        : untagged;
+                      return filtered.length === 0 ? (
+                        <p className="text-[10px] text-muted-foreground py-2 text-center">No untagged assets found</p>
+                      ) : filtered.slice(0, 20).map(a => (
+                        <button
+                          key={a.id}
+                          className="w-full text-left px-2 py-1 rounded text-xs hover:bg-muted/30 transition-colors"
+                          onClick={() => addAssetMutation.mutate({ topicId: topic.id, asset: a })}
+                        >
+                          <span className="font-mono text-[10px] text-primary">{a.asset_name}</span>
+                          {a.problem_title && <span className="text-muted-foreground ml-2">{a.problem_title}</span>}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {taggedAssets.length > 0 ? (
+                <div className="rounded-md border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="text-[10px] h-8">Asset Code</TableHead>
+                        <TableHead className="text-[10px] h-8">Source Ref</TableHead>
+                        <TableHead className="text-[10px] h-8">Problem Title</TableHead>
+                        <TableHead className="text-[10px] h-8 w-24">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {taggedAssets.map(asset => (
+                        <TableRow key={asset.id}>
+                          <TableCell className="font-mono text-[10px] text-primary py-1.5">{asset.asset_name}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground py-1.5">{asset.source_ref || "—"}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground py-1.5 max-w-[200px] truncate" title={asset.problem_title || ""}>
+                            {asset.problem_title || "—"}
+                          </TableCell>
+                          <TableCell className="py-1.5">
+                            <div className="flex items-center gap-1">
+                              <a
+                                href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline"
+                              >
+                                <ExternalLink className="h-3 w-3" /> View
+                              </a>
+                              <Select
+                                onValueChange={(destTopicId) => {
+                                  moveAssetMutation.mutate({
+                                    fromTopicId: topic.id,
+                                    toTopicId: destTopicId,
+                                    assetCode: asset.asset_name,
+                                  });
+                                }}
+                              >
+                                <SelectTrigger className="h-5 text-[10px] w-16 border-0 bg-transparent hover:bg-muted/30">
+                                  <ArrowRightLeft className="h-3 w-3" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {allMoveTargets
+                                    .filter(t => t.id !== topic.id)
+                                    .map(t => (
+                                      <SelectItem key={t.id} value={t.id} className="text-xs">
+                                        {t.is_supplementary ? "S" : (activeTopics.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)).findIndex(at => at.id === t.id) + 1)}. {t.topic_name}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground text-center py-3">No assets tagged to this topic yet</p>
+              )}
+            </div>
+
+            {/* SUB-SECTION C: Merge zone (unlocked only, not supplementary) */}
+            {!isLocked && !isSup && (
+              <div className="border border-dashed border-border/50 rounded-md p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">
+                  <Merge className="h-3 w-3 inline mr-1" />
+                  Drag another topic here to merge it into this one
+                </p>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
   // ── Render ───────────────────────────────────────────────────
   if (!chapterId) {
     return (
@@ -498,7 +861,7 @@ export default function Phase2Review() {
     );
   }
 
-  // Sort all topics for display: active first, then slider-collapsed, then drag-merged
+  // Sort core topics for display: active first, then slider-collapsed, then drag-merged
   const sortedForDisplay = [
     ...activeTopics.sort((a, b) => (a.display_order ?? a.topic_number ?? 0) - (b.display_order ?? b.topic_number ?? 0)),
     ...sliderCollapsedTopics.sort((a, b) => (a.display_order ?? a.topic_number ?? 0) - (b.display_order ?? b.topic_number ?? 0)),
@@ -572,9 +935,9 @@ export default function Phase2Review() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-card border border-border rounded-lg p-3">
               {/* Number-line stepper */}
               <div className="flex-1 min-w-0">
-                <label className="text-xs text-muted-foreground mb-1.5 block sm:hidden">Topics for this chapter</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block sm:hidden">Core topics for this chapter</label>
                 <div className="flex items-center gap-3">
-                  <label className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">Topics for this chapter</label>
+                  <label className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">Core topics</label>
                   <div className="flex-1 min-w-0">
                     <div className="sm:hidden flex flex-wrap gap-2">
                       {Array.from({ length: maxTopicCount }, (_, i) => i + 1).map((n) => {
@@ -598,7 +961,7 @@ export default function Phase2Review() {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              {isLocked ? "Unlock to change" : `Use ${n} topic${n !== 1 ? "s" : ""}`}
+                              {isLocked ? "Unlock to change" : `Use ${n} core topic${n !== 1 ? "s" : ""} + Supplementary`}
                             </TooltipContent>
                           </Tooltip>
                         );
@@ -606,7 +969,6 @@ export default function Phase2Review() {
                     </div>
 
                     <div className="hidden sm:flex items-center relative w-full">
-                      {/* Connecting track */}
                       <div className="absolute top-1/2 left-3 right-3 h-0.5 bg-border -translate-y-1/2 rounded-full" />
                       <div
                         className="absolute top-1/2 left-3 h-0.5 bg-primary -translate-y-1/2 rounded-full transition-all duration-200"
@@ -647,7 +1009,7 @@ export default function Phase2Review() {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              {isLocked ? "Unlock to change" : `Use ${n} topic${n !== 1 ? "s" : ""}`}
+                              {isLocked ? "Unlock to change" : `Use ${n} core topic${n !== 1 ? "s" : ""} + Supplementary`}
                             </TooltipContent>
                           </Tooltip>
                         );
@@ -663,7 +1025,7 @@ export default function Phase2Review() {
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
                       <Lock className="h-3 w-3 mr-1" />
-                      Topics Locked — {chapterInfo?.topics_locked_count} topics
+                      Locked — {chapterInfo?.topics_locked_count} core + Supplementary
                     </Badge>
                     <button
                       onClick={() => lockMutation.mutate(false)}
@@ -677,13 +1039,7 @@ export default function Phase2Review() {
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
-                    onClick={() => {
-                      if (unassignedAssets.length > 0) {
-                        setLockWarningOpen(true);
-                      } else {
-                        lockMutation.mutate(true);
-                      }
-                    }}
+                    onClick={() => setLockWarningOpen(true)}
                     disabled={lockMutation.isPending || activeTopics.length === 0}
                   >
                     <Lock className="h-3 w-3 mr-1.5" />
@@ -708,9 +1064,6 @@ export default function Phase2Review() {
                     ? topics.find(t => t.id === topic.merged_into_topic_id)?.topic_name || "Unknown"
                     : null;
                   const topicAssetCodes = topic.asset_codes || [];
-                  const taggedAssets = chapterAssets.filter(a => topicAssetCodes.includes(a.asset_name));
-                  const isOpen = openTopicId === topic.id;
-                  const isRenaming = renamingTopics.has(topic.id);
 
                   // Slider-collapsed topic
                   if (isSliderCollapsed) {
@@ -719,7 +1072,7 @@ export default function Phase2Review() {
                         <Badge variant="outline" className="text-[10px] opacity-50">{topic.topic_number}</Badge>
                         <span className="text-xs text-muted-foreground line-through">{topic.topic_name}</span>
                         <span className="text-[10px] text-muted-foreground">
-                          → Unassigned ({topicAssetCodes.length} assets)
+                          → Supplementary ({topicAssetCodes.length} original assets)
                         </span>
                       </div>
                     );
@@ -748,280 +1101,10 @@ export default function Phase2Review() {
                     );
                   }
 
-                  const sortedActive = [...activeTopics].sort((a, b) => (a.display_order ?? a.topic_number ?? 0) - (b.display_order ?? b.topic_number ?? 0));
-                  const activeIdx = sortedActive.findIndex(t => t.id === topic.id);
-                  const isFirst = activeIdx === 0;
-                  const isLast = activeIdx === sortedActive.length - 1;
-
+                  // Active core topic card
                   return (
                     <DraggableTopicCard key={topic.id} topic={topic} disabled={isLocked}>
-                      <Collapsible open={isOpen} onOpenChange={(open) => setOpenTopicId(open ? topic.id : null)}>
-                        <div className="flex items-stretch gap-0">
-                          {/* Reorder arrows */}
-                          {!isLocked && (
-                            <div className="flex flex-col justify-center gap-0.5 pr-1">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); reorderMutation.mutate({ topicId: topic.id, direction: "up" }); }}
-                                disabled={isFirst || reorderMutation.isPending}
-                                className={cn(
-                                  "p-1 rounded transition-colors",
-                                  isFirst ? "text-muted-foreground/30 cursor-not-allowed" : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                                )}
-                              >
-                                <ArrowUp className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); reorderMutation.mutate({ topicId: topic.id, direction: "down" }); }}
-                                disabled={isLast || reorderMutation.isPending}
-                                className={cn(
-                                  "p-1 rounded transition-colors",
-                                  isLast ? "text-muted-foreground/30 cursor-not-allowed" : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                                )}
-                              >
-                                <ArrowDown className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          )}
-                          <CollapsibleTrigger asChild>
-                            <button className="flex-1 rounded-lg border border-border bg-card hover:border-primary/40 transition-colors p-3 text-left">
-                              <div className="flex items-center gap-2">
-                                {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                <Badge variant="outline" className="text-[10px] shrink-0">{topic.topic_number}</Badge>
-                                <div className="flex-1 min-w-0">
-                                  {editingNameId === topic.id ? (
-                                    <Input
-                                      ref={nameInputRef}
-                                      value={editingNameValue}
-                                      onChange={(e) => setEditingNameValue(e.target.value)}
-                                      onBlur={commitNameEdit}
-                                      onKeyDown={(e) => { if (e.key === "Enter") commitNameEdit(); if (e.key === "Escape") setEditingNameId(null); }}
-                                      className="h-6 text-sm font-medium"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                  ) : (
-                                    <span
-                                      className="text-sm font-medium text-foreground truncate block cursor-text"
-                                      onDoubleClick={(e) => { e.stopPropagation(); startNameEdit(topic); }}
-                                      title="Double-click to edit"
-                                    >
-                                      {topic.topic_name}
-                                      {isRenaming && <Sparkles className="h-3 w-3 inline ml-1.5 text-amber-400 animate-pulse" />}
-                                    </span>
-                                  )}
-                                </div>
-                                <Badge variant="secondary" className="text-[10px] shrink-0">{topicAssetCodes.length} assets</Badge>
-                                <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.video_status] || STATUS_COLORS.not_started}`}>
-                                  Vid: {topic.video_status.replace("_", " ")}
-                                </Badge>
-                                <Badge className={`text-[9px] h-5 ${STATUS_COLORS[topic.quiz_status] || STATUS_COLORS.not_started}`}>
-                                  Quiz: {topic.quiz_status.replace("_", " ")}
-                                </Badge>
-                              </div>
-                            </button>
-                          </CollapsibleTrigger>
-                        </div>
-
-                        <CollapsibleContent>
-                          <div className="border border-t-0 border-border rounded-b-lg bg-card px-4 py-4 space-y-5">
-                            {/* SUB-SECTION A: Topic Info */}
-                            <div className="space-y-3">
-                              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Topic Info</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="text-[10px] text-muted-foreground">Description</label>
-                                  <Textarea
-                                    defaultValue={topic.topic_description || ""}
-                                    onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { topic_description: e.target.value } })}
-                                    className="text-xs mt-1 min-h-[60px]"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[10px] text-muted-foreground">Rationale</label>
-                                  <Textarea
-                                    defaultValue={topic.topic_rationale || ""}
-                                    onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { topic_rationale: e.target.value } })}
-                                    className="text-xs mt-1 min-h-[60px]"
-                                  />
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="text-[10px] text-muted-foreground">Video URL</label>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Select
-                                      value={topic.video_status}
-                                      onValueChange={(v) => saveMutation.mutate({ id: topic.id, updates: { video_status: v } })}
-                                    >
-                                      <SelectTrigger className="h-7 text-xs w-28">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {STATUS_OPTIONS.map(s => (
-                                          <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Input
-                                      defaultValue={topic.lw_video_link || ""}
-                                      placeholder="LearnWorlds video URL"
-                                      className="h-7 text-xs flex-1"
-                                      onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { lw_video_link: e.target.value } })}
-                                    />
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="text-[10px] text-muted-foreground">Quiz URL</label>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Select
-                                      value={topic.quiz_status}
-                                      onValueChange={(v) => saveMutation.mutate({ id: topic.id, updates: { quiz_status: v } })}
-                                    >
-                                      <SelectTrigger className="h-7 text-xs w-28">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {STATUS_OPTIONS.map(s => (
-                                          <SelectItem key={s} value={s} className="text-xs">{s.replace("_", " ")}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Input
-                                      defaultValue={topic.lw_quiz_link || ""}
-                                      placeholder="LearnWorlds quiz URL"
-                                      className="h-7 text-xs flex-1"
-                                      onBlur={(e) => saveMutation.mutate({ id: topic.id, updates: { lw_quiz_link: e.target.value } })}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* SUB-SECTION B: Assets Table */}
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                  Assets ({taggedAssets.length})
-                                </h4>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 text-[10px]"
-                                  onClick={() => setShowAddAssetForTopic(showAddAssetForTopic === topic.id ? null : topic.id)}
-                                >
-                                  <Plus className="h-3 w-3 mr-1" /> Add Asset
-                                </Button>
-                              </div>
-
-                              {showAddAssetForTopic === topic.id && (
-                                <div className="border border-border rounded-md p-2 space-y-1">
-                                  <Input
-                                    value={addAssetSearch}
-                                    onChange={(e) => setAddAssetSearch(e.target.value)}
-                                    placeholder="Search untagged assets…"
-                                    className="h-7 text-xs"
-                                  />
-                                  <div className="max-h-32 overflow-y-auto space-y-0.5">
-                                    {(() => {
-                                      const allTaggedCodes = topics.flatMap(t => t.asset_codes || []);
-                                      const untagged = chapterAssets.filter(a => !allTaggedCodes.includes(a.asset_name));
-                                      const filtered = addAssetSearch
-                                        ? untagged.filter(a =>
-                                          a.asset_name.toLowerCase().includes(addAssetSearch.toLowerCase()) ||
-                                          (a.problem_title || "").toLowerCase().includes(addAssetSearch.toLowerCase())
-                                        )
-                                        : untagged;
-                                      return filtered.length === 0 ? (
-                                        <p className="text-[10px] text-muted-foreground py-2 text-center">No untagged assets found</p>
-                                      ) : filtered.slice(0, 20).map(a => (
-                                        <button
-                                          key={a.id}
-                                          className="w-full text-left px-2 py-1 rounded text-xs hover:bg-muted/30 transition-colors"
-                                          onClick={() => addAssetMutation.mutate({ topicId: topic.id, asset: a })}
-                                        >
-                                          <span className="font-mono text-[10px] text-primary">{a.asset_name}</span>
-                                          {a.problem_title && <span className="text-muted-foreground ml-2">{a.problem_title}</span>}
-                                        </button>
-                                      ));
-                                    })()}
-                                  </div>
-                                </div>
-                              )}
-
-                              {taggedAssets.length > 0 ? (
-                                <div className="rounded-md border border-border overflow-hidden">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow className="hover:bg-transparent">
-                                        <TableHead className="text-[10px] h-8">Asset Code</TableHead>
-                                        <TableHead className="text-[10px] h-8">Source Ref</TableHead>
-                                        <TableHead className="text-[10px] h-8">Problem Title</TableHead>
-                                        <TableHead className="text-[10px] h-8 w-24">Actions</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {taggedAssets.map(asset => (
-                                        <TableRow key={asset.id}>
-                                          <TableCell className="font-mono text-[10px] text-primary py-1.5">{asset.asset_name}</TableCell>
-                                          <TableCell className="text-[10px] text-muted-foreground py-1.5">{asset.source_ref || "—"}</TableCell>
-                                          <TableCell className="text-[10px] text-muted-foreground py-1.5 max-w-[200px] truncate" title={asset.problem_title || ""}>
-                                            {asset.problem_title || "—"}
-                                          </TableCell>
-                                          <TableCell className="py-1.5">
-                                            <div className="flex items-center gap-1">
-                                              <a
-                                                href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline"
-                                              >
-                                                <ExternalLink className="h-3 w-3" /> View
-                                              </a>
-                                              <Select
-                                                onValueChange={(destTopicId) => {
-                                                  moveAssetMutation.mutate({
-                                                    fromTopicId: topic.id,
-                                                    toTopicId: destTopicId,
-                                                    assetCode: asset.asset_name,
-                                                  });
-                                                }}
-                                              >
-                                                <SelectTrigger className="h-5 text-[10px] w-16 border-0 bg-transparent hover:bg-muted/30">
-                                                  <ArrowRightLeft className="h-3 w-3" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  {activeTopics
-                                                    .filter(t => t.id !== topic.id)
-                                                    .map(t => (
-                                                      <SelectItem key={t.id} value={t.id} className="text-xs">
-                                                        {t.topic_number}. {t.topic_name}
-                                                      </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              ) : (
-                                <p className="text-[10px] text-muted-foreground text-center py-3">No assets tagged to this topic yet</p>
-                              )}
-                            </div>
-
-                            {/* SUB-SECTION C: Merge zone (unlocked only) */}
-                            {!isLocked && (
-                              <div className="border border-dashed border-border/50 rounded-md p-3 text-center">
-                                <p className="text-[10px] text-muted-foreground">
-                                  <Merge className="h-3 w-3 inline mr-1" />
-                                  Drag another topic here to merge it into this one
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
+                      {renderTopicCard(topic)}
                     </DraggableTopicCard>
                   );
                 })}
@@ -1039,59 +1122,10 @@ export default function Phase2Review() {
               </DragOverlay>
             </DndContext>
 
-            {/* Unassigned Assets Bucket */}
-            {unassignedAssets.length > 0 && (
-              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-foreground">Unassigned Assets</h3>
-                    <Badge variant="secondary" className="text-[10px]">{unassignedAssets.length} assets</Badge>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    These assets are not tagged to any topic. Drag them into a topic or leave them untagged.
-                  </p>
-                </div>
-                <div className="rounded-md border border-border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="text-[10px] h-8">Asset Code</TableHead>
-                        <TableHead className="text-[10px] h-8">Source Ref</TableHead>
-                        <TableHead className="text-[10px] h-8">Problem Title</TableHead>
-                        <TableHead className="text-[10px] h-8 w-32">Move to Topic</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {unassignedAssets.map(asset => (
-                        <TableRow key={asset.id}>
-                          <TableCell className="font-mono text-[10px] text-primary py-1.5">{asset.asset_name}</TableCell>
-                          <TableCell className="text-[10px] text-muted-foreground py-1.5">{asset.source_ref || "—"}</TableCell>
-                          <TableCell className="text-[10px] text-muted-foreground py-1.5 max-w-[200px] truncate" title={asset.problem_title || ""}>
-                            {asset.problem_title || "—"}
-                          </TableCell>
-                          <TableCell className="py-1.5">
-                            <Select
-                              onValueChange={(topicId) => {
-                                addAssetMutation.mutate({ topicId, asset });
-                              }}
-                            >
-                              <SelectTrigger className="h-6 text-[10px] w-28">
-                                <SelectValue placeholder="Select topic" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {activeTopics.map(t => (
-                                  <SelectItem key={t.id} value={t.id} className="text-xs">
-                                    {t.topic_number}. {t.topic_name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+            {/* Supplementary Problems topic — always shown last */}
+            {supplementaryTopic && (
+              <div className="mt-2">
+                {renderTopicCard(supplementaryTopic, { isSupplementary: true })}
               </div>
             )}
 
@@ -1134,18 +1168,17 @@ export default function Phase2Review() {
         </DialogContent>
       </Dialog>
 
-      {/* Lock warning dialog for unassigned assets */}
+      {/* Lock confirmation dialog */}
       <Dialog open={lockWarningOpen} onOpenChange={setLockWarningOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-sm">Unassigned Assets</DialogTitle>
+            <DialogTitle className="text-sm">Lock Topics?</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground">
-            <strong>{unassignedAssets.length}</strong> assets are unassigned and won't be tagged to any topic.
-            You can assign them later from the asset detail view.
+            Locking <strong>{activeTopics.length}</strong> core topics + Supplementary Problems ({totalTaggedAssets} total assets tagged).
           </p>
           <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" onClick={() => setLockWarningOpen(false)}>Go Back</Button>
+            <Button variant="outline" size="sm" onClick={() => setLockWarningOpen(false)}>Cancel</Button>
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -1154,7 +1187,7 @@ export default function Phase2Review() {
                 lockMutation.mutate(true);
               }}
             >
-              Lock Anyway
+              Lock Topics
             </Button>
           </DialogFooter>
         </DialogContent>
