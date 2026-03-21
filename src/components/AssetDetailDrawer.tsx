@@ -82,7 +82,7 @@ interface AssetDetailDrawerProps {
   courseLabel: string;
   sheetUrl?: string;
   onRevert: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onAssetUpdated?: () => void;
   isAdmin?: boolean;
 }
