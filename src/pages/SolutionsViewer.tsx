@@ -398,6 +398,7 @@ function RevealToggle({
   chapterNumber,
   forceOpen,
   onReveal,
+  onBuyClick,
 }: {
   label: string;
   children: React.ReactNode;
@@ -412,6 +413,7 @@ function RevealToggle({
   chapterNumber?: number | null;
   forceOpen?: boolean;
   onReveal?: (sectionName: string) => void;
+  onBuyClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
