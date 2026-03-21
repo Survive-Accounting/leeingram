@@ -676,7 +676,7 @@ export default function ProblemBank() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblem(p)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewProblemId(p.id)}>
                           <Eye className="h-3 w-3" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}>
