@@ -1361,12 +1361,9 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               <div className="space-y-2">
                 <p className="text-xs text-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1.5" />
-                  Running: {runningQueueItem.operation_name} — {queueProgress.current} / {queueProgress.total}
+                  Running server-side: {runningQueueItem.operation_name} — {runningQueueItem.assets_processed} processed ({runningQueueItem.assets_succeeded} ok, {runningQueueItem.assets_errored} err, {runningQueueItem.assets_skipped} skipped)
                 </p>
-                {queueProgress.currentAsset && (
-                  <p className="text-[10px] text-muted-foreground">Current: {queueProgress.currentAsset}</p>
-                )}
-                <Progress value={(queueProgress.current / Math.max(queueProgress.total, 1)) * 100} className="h-1.5" />
+                <p className="text-[10px] text-muted-foreground">Processing continues even if you close this page.</p>
               </div>
             )}
 
