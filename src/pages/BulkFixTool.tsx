@@ -483,7 +483,11 @@ export default function BulkFixTool() {
     try {
       // Fetch all assets in scope — use lightweight query for operations that only need id
       const isLightweight = operation === "generate_flowcharts" || operation === "generate_supplementary_je" || operation === "generate_dissector_highlights" || operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts";
-      const { data: assets, error } = await buildScopeQuery(isLightweight);
+      let scopeQuery = buildScopeQuery(isLightweight);
+      if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+        scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+      }
+      const { data: assets, error } = await scopeQuery;
       if (error) throw error;
       if (!assets?.length) { toast.info("No assets in scope."); setRunning(false); return; }
 
