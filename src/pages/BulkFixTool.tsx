@@ -846,6 +846,9 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       operation_key: opKey,
       queue_position: maxPos + 1,
       status: "pending",
+      scope_course_id: courseFilter === "all" ? null : courseFilter,
+      scope_chapter_id: chapterFilter === "all" ? null : chapterFilter,
+      scope_status_filter: statusFilter,
     } as any);
     if (error) { toast.error("Failed to add to queue"); return; }
     refetchQueue();
