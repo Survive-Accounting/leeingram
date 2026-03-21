@@ -1,0 +1,1 @@
+UPDATE public.bulk_fix_queue SET status = 'pending', started_at = NULL, assets_processed = 0 WHERE status = 'running';
