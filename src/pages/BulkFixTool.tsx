@@ -718,7 +718,11 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         }
 
         await Promise.all(updates);
-        setRunProgress({ current: Math.min(i + batchSize, total), total });
+        setRunProgress({ current: Math.min(i + batchSize, total), total, currentAsset: "" });
+        // Add delay for JE tooltip operations to avoid rate limits
+        if ((operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && i + batchSize < total) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
 
       setRunComplete({ updated, skipped });
