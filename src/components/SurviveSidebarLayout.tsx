@@ -5,7 +5,7 @@ import {
   Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
   Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
-  ChevronRight, CreditCard, ClipboardCheck,
+  ChevronRight, CreditCard, ClipboardCheck, TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -711,6 +711,17 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   )}
                 >
                   <CreditCard className="h-3.5 w-3.5" /> Payment Links
+                </Link>
+                <Link
+                  to="/share-leaderboard"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/share-leaderboard")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <TrendingUp className="h-3.5 w-3.5" /> Share Leaderboard
                 </Link>
               </>
             )}

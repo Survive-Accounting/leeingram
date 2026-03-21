@@ -329,6 +329,44 @@ export type Database = {
           },
         ]
       }
+      asset_share_events: {
+        Row: {
+          asset_name: string
+          created_at: string
+          event_type: string
+          id: string
+          referrer: string | null
+          teaching_asset_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          asset_name: string
+          created_at?: string
+          event_type: string
+          id?: string
+          referrer?: string | null
+          teaching_asset_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          asset_name?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          referrer?: string | null
+          teaching_asset_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_share_events_teaching_asset_id_fkey"
+            columns: ["teaching_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           asset_code: string

@@ -74,6 +74,7 @@ import StudyToolsProblemDissector from "./pages/StudyToolsProblemDissector";
 import SolutionsQAReview from "./pages/SolutionsQAReview";
 import SolutionsQAAdmin from "./pages/SolutionsQAAdmin";
 import JEDebug from "./pages/JEDebug";
+import ShareLeaderboard from "./pages/ShareLeaderboard";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -188,6 +189,7 @@ const AppRoutes = () => {
       <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
       <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
       <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
+      <Route path="/share-leaderboard" element={<ProtectedRoute><ShareLeaderboard /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

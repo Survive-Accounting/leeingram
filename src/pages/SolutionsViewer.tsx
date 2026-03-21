@@ -1317,7 +1317,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
       {/* Mobile: compact floating share button bottom-right */}
       <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
         <button
-          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); supabase.from("asset_share_events").insert({ asset_name: assetCode, event_type: "share_click", referrer: window.location.href } as any).then(() => {}); }}
           className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
           style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
         >
@@ -1341,7 +1341,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
           {!collapsed && (
             <>
               <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); }}
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); supabase.from("asset_share_events").insert({ asset_name: assetCode, event_type: "share_click", referrer: window.location.href } as any).then(() => {}); }}
                 className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
                 style={{ color: "#3B82F6" }}
               >
@@ -1442,6 +1442,17 @@ export default function SolutionsViewer() {
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, []);
+
+  // ── Track page visit (fire-and-forget) ──
+  useEffect(() => {
+    if (!assetCode) return;
+    supabase.from("asset_share_events").insert({
+      asset_name: assetCode,
+      event_type: "page_visit",
+      referrer: document.referrer || null,
+      user_agent: navigator.userAgent || null,
+    } as any).then(() => {});
+  }, [assetCode]);
 
   useEffect(() => {
     if (!tokenSession?.expires_at || !previewToken) return;
