@@ -76,7 +76,7 @@ import StudyToolsProblemDissector from "./pages/StudyToolsProblemDissector";
 import SolutionsQAReview from "./pages/SolutionsQAReview";
 import SolutionsQAAdmin from "./pages/SolutionsQAAdmin";
 import JEDebug from "./pages/JEDebug";
-import ShareLeaderboard from "./pages/ShareLeaderboard";
+import AssetStatsDashboard from "./pages/AssetStatsDashboard";
 import SolutionsViewerStaging from "./pages/SolutionsViewerStaging";
 import ChapterCramTool from "./pages/ChapterCramTool";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
