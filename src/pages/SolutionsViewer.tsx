@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -271,12 +271,14 @@ function TieredPaywallCard({
   fullPassLink,
   chapterLink,
   chapterNumber,
+  onBuyClick,
 }: {
   theme: Theme;
   enrollUrl: string;
   fullPassLink?: { label: string; price_cents: number; original_price_cents?: number | null; sale_label?: string | null; sale_expires_at?: string | null; url: string } | null;
   chapterLink?: { label: string; price_cents: number; url: string } | null;
   chapterNumber?: number | null;
+  onBuyClick?: () => void;
 }) {
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at
@@ -335,6 +337,7 @@ function TieredPaywallCard({
           href={fullPassUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => onBuyClick?.()}
           className="block w-full mt-4 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
           style={{ background: "#CE1126", height: 48, lineHeight: "24px" }}
         >
@@ -364,6 +367,7 @@ function TieredPaywallCard({
             href={chapterUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => onBuyClick?.()}
             className="block w-full mt-3 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
             style={{ background: "#006BA6", height: 48, lineHeight: "24px" }}
           >
@@ -393,6 +397,8 @@ function RevealToggle({
   chapterLink,
   chapterNumber,
   forceOpen,
+  onReveal,
+  onBuyClick,
 }: {
   label: string;
   children: React.ReactNode;
@@ -406,6 +412,8 @@ function RevealToggle({
   chapterLink?: any;
   chapterNumber?: number | null;
   forceOpen?: boolean;
+  onReveal?: (sectionName: string) => void;
+  onBuyClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -417,6 +425,14 @@ function RevealToggle({
     ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
     : null;
 
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && sectionName && onReveal) {
+      onReveal(sectionName);
+    }
+  };
+
   return (
     <div
       className="rounded-lg mt-4 overflow-hidden transition-all"
@@ -426,7 +442,7 @@ function RevealToggle({
       }}
     >
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 text-left transition-colors"
         style={{ color: theme.textMuted }}
         onMouseEnter={(e) => { e.currentTarget.style.background = theme.cardBg; }}
@@ -453,6 +469,7 @@ function RevealToggle({
               fullPassLink={fullPassLink}
               chapterLink={chapterLink}
               chapterNumber={chapterNumber}
+              onBuyClick={onBuyClick}
             />
           ) : (
             <>
@@ -1306,7 +1323,7 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
@@ -1317,7 +1334,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId }: { theme: T
       {/* Mobile: compact floating share button bottom-right */}
       <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
         <button
-          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); supabase.from("asset_share_events").insert({ asset_name: assetCode, event_type: "share_click", referrer: window.location.href } as any).then(() => {}); }}
+          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); onShareClick?.(); }}
           className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
           style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
         >
@@ -1341,7 +1358,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId }: { theme: T
           {!collapsed && (
             <>
               <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); supabase.from("asset_share_events").insert({ asset_name: assetCode, event_type: "share_click", referrer: window.location.href } as any).then(() => {}); }}
+                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); onShareClick?.(); }}
                 className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
                 style={{ color: "#3B82F6" }}
               >
@@ -1410,6 +1427,20 @@ export default function SolutionsViewer() {
   const previewToken = searchParams.get("preview_token") || "";
   const hasRefLw = searchParams.get("ref") === "lw";
   const enrollUrl = useEnrollUrl();
+
+  // ── LW params ref (stable across renders) ──
+  const lwParams = useRef({
+    ref: searchParams.get("ref") || "",
+    lw_user_id: searchParams.get("lw_user_id") || "",
+    lw_email: searchParams.get("lw_email") || "",
+    lw_name: searchParams.get("lw_name") || "",
+    lw_course: searchParams.get("lw_course") || "",
+    lw_unit: searchParams.get("lw_unit") || "",
+    preview: searchParams.get("preview") || "",
+  });
+
+  // ── Page start time for time_on_page ──
+  const startTimeRef = useRef(Date.now());
 
   // Theme — light only
   const t = lightTheme;
@@ -1504,16 +1535,85 @@ export default function SolutionsViewer() {
     return () => window.removeEventListener("message", handler);
   }, []);
 
-  // ── Track page visit (fire-and-forget) ──
-  useEffect(() => {
-    if (!assetCode) return;
-    supabase.from("asset_share_events").insert({
-      asset_name: assetCode,
-      event_type: "page_visit",
+  // ── Event logging helper (fire-and-forget) ──
+  // We store the resolved asset in a ref so logEvent can always access it
+  const assetRef = useRef<any>(null);
+
+  const logEvent = useCallback((eventType: string, extra?: Record<string, any>) => {
+    const lw = lwParams.current;
+    const a = assetRef.current;
+    supabase.from("asset_events" as any).insert({
+      asset_name: assetCode || "",
+      teaching_asset_id: a?.id || null,
+      chapter_id: a?.chapter_id || null,
+      course_id: a?.course_id || null,
+      event_type: eventType,
+      is_lw_embed: lw.ref === "lw",
+      is_preview_mode: lw.preview === "true",
+      lw_user_id: lw.lw_user_id || null,
+      lw_email: lw.lw_email || null,
+      lw_name: lw.lw_name || null,
+      lw_course_id: lw.lw_course || null,
+      lw_unit_id: lw.lw_unit || null,
       referrer: document.referrer || null,
       user_agent: navigator.userAgent || null,
+      ...extra,
     } as any).then(() => {});
   }, [assetCode]);
+
+  // ── Track page visit / LW embed load (fire-and-forget) ──
+  const pageVisitFired = useRef(false);
+  useEffect(() => {
+    if (!assetCode || pageVisitFired.current) return;
+    pageVisitFired.current = true;
+    const lw = lwParams.current;
+    logEvent(lw.ref === "lw" ? "lw_embed_load" : "page_visit");
+  }, [assetCode, logEvent]);
+
+  // ── Heartbeat every 60s ──
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (!document.hidden) {
+        logEvent("heartbeat", { seconds_spent: 60 });
+      }
+    }, 60000);
+    return () => clearInterval(iv);
+  }, [logEvent]);
+
+  // ── Time on page (beforeunload) ──
+  useEffect(() => {
+    const handler = () => {
+      const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
+      logEvent("time_on_page", { seconds_spent: elapsed });
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [logEvent]);
+
+  // ── Reveal toggle callback ──
+  const sectionNameMap: Record<string, string> = {
+    "Solution": "solution",
+    "How to Solve This": "how_to_solve",
+    "Journal Entries": "journal_entries",
+    "Related Journal Entries": "related_je",
+    "Important Formulas": "formulas",
+    "Key Concepts": "key_concepts",
+    "Exam Traps": "exam_traps",
+  };
+
+  const handleReveal = useCallback((sectionName: string) => {
+    logEvent("reveal_toggle", { section_name: sectionNameMap[sectionName] || sectionName });
+  }, [logEvent]);
+
+  // ── Share click handler ──
+  const handleShareClick = useCallback(() => {
+    logEvent("share_click");
+  }, [logEvent]);
+
+  // ── Buy click handler ──
+  const handleBuyClick = useCallback(() => {
+    logEvent("buy_click");
+  }, [logEvent]);
 
   useEffect(() => {
     if (!tokenSession?.expires_at || !previewToken) return;
@@ -1653,6 +1753,7 @@ export default function SolutionsViewer() {
   }
 
   const asset = data;
+  assetRef.current = asset;
   const chapter = (asset as any).chapters;
   const course = (asset as any).courses;
 
@@ -1813,7 +1914,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} onShareClick={handleShareClick} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
@@ -1903,6 +2004,8 @@ export default function SolutionsViewer() {
                   chapterLink={chapterLink}
                   chapterNumber={chapterNum}
                   forceOpen={allTogglesForceOpen}
+                  onReveal={handleReveal}
+                  onBuyClick={handleBuyClick}
                 >
                   <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
                 </RevealToggle>
