@@ -27,7 +27,7 @@ const STAGE_ORDER: Record<string, number> = {
 const ROLE_ACTIVE_STAGES: Record<EffectiveRole, string[]> = {
   content_creation_va: ["/problem-bank", "/content", "/review", "/assets-library"],
   sheet_prep_va: ["/assets-library", "/deployment"],
-  lead_va: ["/problem-bank", "/content", "/review", "/assets-library", "/quizzes-ready", "/video-pending", "/videos-ready", "/deployment"],
+  lead_va: ["/problem-bank", "/content", "/review", "/assets-library", "/quiz-queue", "/video-queue", "/deployment"],
   admin: STAGES.map(s => s.path),
 };
 
