@@ -522,7 +522,7 @@ export default function Phase2Review() {
                       <div className="absolute top-1/2 left-3 right-3 h-0.5 bg-border -translate-y-1/2 rounded-full" />
                       <div
                         className="absolute top-1/2 left-3 h-0.5 bg-primary -translate-y-1/2 rounded-full transition-all duration-200"
-                        style={{ width: `calc(${((sliderValue - 1) / (maxTopicCount - 1)) * 100}% - 24px + ${((sliderValue - 1) / (maxTopicCount - 1)) * 24}px)` }}
+                        style={{ width: maxTopicCount > 1 ? `calc(${((sliderValue - 1) / (maxTopicCount - 1)) * 100}% - 24px + ${((sliderValue - 1) / (maxTopicCount - 1)) * 24}px)` : '0px' }}
                       />
                       {Array.from({ length: maxTopicCount }, (_, i) => i + 1).map(n => {
                         const isSelected = n === sliderValue;
