@@ -292,10 +292,12 @@ export default function Phase2Review() {
           ],
         },
       });
-      if (!error && data?.output) {
-        const newName = data.output.trim().replace(/^["']|["']$/g, "");
-        if (newName.length > 2 && newName.length < 80) {
-          await supabase.from("chapter_topics").update({ topic_name: newName } as any).eq("id", topicId);
+      const rawText = data?.raw || data?.parsed || "";
+      const newName = String(rawText).trim().replace(/^["']|["']$/g, "");
+      if (!error && newName.length > 2 && newName.length < 80) {
+        await supabase.from("chapter_topics").update({ topic_name: newName } as any).eq("id", topicId);
+        qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
+      }
           qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
         }
       }
