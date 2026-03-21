@@ -7,6 +7,7 @@ import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { StageCompletePanel } from "@/components/StageCompletePanel";
 import { useBuildRun } from "@/hooks/useBuildRun";
 import { useVaAccount } from "@/hooks/useVaAccount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StartBuildRunModal } from "@/components/BuildTimerWidget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
