@@ -180,6 +180,8 @@ const AppRoutes = () => {
       <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
       <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
       <Route path="/phase2-review" element={<ProtectedRoute><Phase2Review /></ProtectedRoute>} />
+      <Route path="/quiz-queue" element={<ProtectedRoute><QuizQueue /></ProtectedRoute>} />
+      <Route path="/video-queue" element={<ProtectedRoute><VideoQueue /></ProtectedRoute>} />
       <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
       <Route path="/debug-session/:chapterId" element={<ProtectedRoute><DebugSession /></ProtectedRoute>} />
       <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />
