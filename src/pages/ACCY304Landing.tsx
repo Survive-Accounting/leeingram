@@ -524,10 +524,10 @@ export default function ACCY304Landing() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
-          FREE PREVIEW — powder blue
+          EMAIL CAPTURE — dark navy (moved above preview)
          ═══════════════════════════════════════════════════════════ */}
-      <WaveDivider topColor="#F7F8FA" bottomColor="#006BA6" />
-      <section id="free-preview" style={{ background: "#006BA6" }} className="px-6 py-16 md:py-20">
+      <WaveDivider topColor="#F7F8FA" bottomColor="#14213D" />
+      <section style={{ background: "#14213D" }} className="px-6 py-16 md:py-20">
         <div className="max-w-[760px] mx-auto">
           <h2 className="text-center text-white font-bold text-[26px] md:text-[30px] tracking-tight">
             Try Any Problem — Free Preview
