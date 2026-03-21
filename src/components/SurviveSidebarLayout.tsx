@@ -38,13 +38,16 @@ const PHASE_1_ITEMS = [
 ];
 
 const PHASE_2_ITEMS = [
-  { label: "Phase 2 Review", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
-  { label: "Solutions QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
+  { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
   { label: "MC Generator", path: "/question-review", icon: Package },
   { label: "Quizzes Ready", path: "/quizzes-ready", icon: Download },
   { label: "Video Pending", path: "/video-pending", icon: VideoOff },
   { label: "Videos Ready", path: "/videos-ready", icon: Video },
   { label: "Deploy Checklist", path: "/deployment", icon: ClipboardList },
+];
+
+const QC_ITEMS = [
+  { label: "Asset Page QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
@@ -62,18 +65,21 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   // Phase section collapse state — auto-expand if current route is inside that phase
   const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
   const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
+  const qcPaths = QC_ITEMS.map(i => i.path);
   const phase3Paths = ["/study-tools/flashcards", "/study-tools/formula-recall", "/study-tools/entry-builder", "/study-tools/problem-dissector"];
 
   const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
 
   const [phase1Open, setPhase1Open] = useState(() => isInPhase(PHASE_1_ITEMS.map(i => i.path)));
   const [phase2Open, setPhase2Open] = useState(() => isInPhase(PHASE_2_ITEMS.map(i => i.path)));
+  const [qcOpen, setQcOpen] = useState(() => isInPhase(qcPaths));
   const [phase3Open, setPhase3Open] = useState(false);
 
   // Auto-expand active phase section on route change
   useEffect(() => {
     if (isInPhase(phase1Paths)) setPhase1Open(true);
     if (isInPhase(phase2Paths)) setPhase2Open(true);
+    if (isInPhase(qcPaths)) setQcOpen(true);
     if (isInPhase(phase3Paths)) setPhase3Open(true);
   }, [location.pathname]);
 
@@ -513,6 +519,25 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                     )}
                     {(sidebarCollapsed || phase2Open) && (
                       <div className="space-y-0.5">{renderNavItems(phase2Items, true)}</div>
+                    )}
+                  </>
+                )}
+
+                {/* Quality Control section */}
+                {showPhase2 && (
+                  <>
+                    <div className="border-t border-border my-3" />
+                    {!sidebarCollapsed && (
+                      <button
+                        onClick={() => setQcOpen(p => !p)}
+                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
+                      >
+                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", qcOpen && "rotate-90")} />
+                        Quality Control
+                      </button>
+                    )}
+                    {(sidebarCollapsed || qcOpen) && (
+                      <div className="space-y-0.5">{renderNavItems(QC_ITEMS.filter(i => !i.adminOnly || isLeadVaOrAdmin))}</div>
                     )}
                   </>
                 )}
