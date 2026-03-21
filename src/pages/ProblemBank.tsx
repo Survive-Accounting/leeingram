@@ -508,9 +508,22 @@ export default function ProblemBank() {
       {/* Mismatch warning banner */}
       {problems && (() => {
         const mismatchCount = problems.filter((p) => {
-          const ocr = ((p as any).ocr_detected_label || "").replace(/\s+/g, "").toUpperCase();
-          const src = (p.source_label || "").replace(/\s+/g, "").toUpperCase();
-          return ocr && src && ocr !== src;
+          const ocr = ((p as any).ocr_detected_label || "").trim();
+          const src = (p.source_label || "").trim();
+          if (!ocr || !src) return false;
+          // Normalize both to a canonical form: strip prefixes like "Exercise ", "Problem ", "Brief Exercise "
+          // then unify separators so "Exercise 1-1" → "E1.1" and "E1.1" → "E1.1"
+          const normalize = (s: string) => {
+            let v = s.replace(/\s+/g, " ").trim().toUpperCase();
+            v = v.replace(/^BRIEF\s*EXERCISE\s*/i, "BE");
+            v = v.replace(/^EXERCISE\s*/i, "E");
+            v = v.replace(/^PROBLEM\s*/i, "P");
+            v = v.replace(/^QUICK\s*STUDY\s*/i, "QS");
+            v = v.replace(/[\s-]+/g, "."); // unify separators to dots
+            v = v.replace(/\s+/g, "");
+            return v;
+          };
+          return normalize(ocr) !== normalize(src);
         }).length;
         return mismatchCount > 0 ? (
           <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
