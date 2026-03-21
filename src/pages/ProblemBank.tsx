@@ -569,7 +569,17 @@ export default function ProblemBank() {
 
             problems.map((p) => {
               const ocrLabel = (p as any).ocr_detected_label || "";
-              const hasMismatch = ocrLabel && p.source_label && ocrLabel.replace(/\s+/g, "").toUpperCase() !== p.source_label.replace(/\s+/g, "").toUpperCase();
+              const normalizeLabel = (s: string) => {
+                let v = s.replace(/\s+/g, " ").trim().toUpperCase();
+                v = v.replace(/^BRIEF\s*EXERCISE\s*/i, "BE");
+                v = v.replace(/^EXERCISE\s*/i, "E");
+                v = v.replace(/^PROBLEM\s*/i, "P");
+                v = v.replace(/^QUICK\s*STUDY\s*/i, "QS");
+                v = v.replace(/[\s-]+/g, ".");
+                v = v.replace(/\s+/g, "");
+                return v;
+              };
+              const hasMismatch = ocrLabel && p.source_label && normalizeLabel(ocrLabel) !== normalizeLabel(p.source_label);
               const hasScreenshot = !!(p.problem_screenshot_url || p.problem_screenshot_urls.length > 0);
               return (
               <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
