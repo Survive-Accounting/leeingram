@@ -101,7 +101,11 @@ function useDraggable(initialPos: { x: number; y: number }) {
     };
   }, []);
 
-  return { pos, onMouseDown };
+  const resetPos = useCallback((newPos: { x: number; y: number }) => {
+    setPos(newPos);
+  }, []);
+
+  return { pos, onMouseDown, resetPos };
 }
 
 // ── Inline Issue Form ────────────────────────────────────────────────
@@ -231,6 +235,20 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
   );
 }
 
+// ── Scroll Down Reminder ─────────────────────────────────────────────
+
+function ScrollDownReminder() {
+  return (
+    <div className="fixed z-[45] left-1/2 -translate-x-1/2 bottom-24 pointer-events-none animate-bounce">
+      <div className="bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-semibold">
+        <ChevronDown className="h-4 w-4" />
+        Scroll Down to Check All Sections
+        <ChevronDown className="h-4 w-4" />
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────────
 
 export default function SolutionsQAReview() {
@@ -244,10 +262,12 @@ export default function SolutionsQAReview() {
   const [screenshotStep, setScreenshotStep] = useState<"pending" | "done">("pending");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [activeChecklistIdx, setActiveChecklistIdx] = useState(0);
 
-  const { pos, onMouseDown } = useDraggable({
-    x: typeof window !== "undefined" ? window.innerWidth - 344 : 600,
-    y: 180,
+  // Position modal on left side by default
+  const { pos, onMouseDown, resetPos } = useDraggable({
+    x: 16,
+    y: 80,
   });
 
   // ── Seed IA2 records ────────────────────────────────────────────
@@ -366,17 +386,36 @@ export default function SolutionsQAReview() {
     return map;
   }, [currentIssues]);
 
+  // Determine which section is "active" — the first unchecked one
+  const activeSection = useMemo(() => {
+    if (screenshotStep !== "done") return null;
+    for (let i = 0; i < sections.length; i++) {
+      if (!checkedSections.has(sections[i].key)) return i;
+    }
+    return null; // all checked
+  }, [sections, checkedSections, screenshotStep]);
+
+  // Show scroll reminder when there's an active section beyond the first
+  const showScrollReminder = activeSection !== null && activeSection > 0 && checkedSections.size > 0;
+
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
     setCheckedSections(new Set());
     setOpenIssueSection(null);
     setScreenshotStep(hasScreenshot ? "pending" : "done");
+    setActiveChecklistIdx(0);
   }, [current?.id, hasScreenshot]);
+
+  // Auto-move modal to left when entering checklist step
+  useEffect(() => {
+    if (screenshotStep === "done" && reviewerName) {
+      resetPos({ x: 16, y: 80 });
+    }
+  }, [screenshotStep, current?.id]);
 
   // ── Post message to iframe to open all toggles ──────────────────
   useEffect(() => {
     if (screenshotStep === "done" && iframeRef.current) {
-      // Small delay to let iframe load
       const timer = setTimeout(() => {
         iframeRef.current?.contentWindow?.postMessage({ type: "QA_OPEN_ALL_TOGGLES" }, "*");
       }, 1500);
@@ -519,6 +558,40 @@ export default function SolutionsQAReview() {
         <ArrowLeft className="h-3 w-3" /> Back to Admin
       </Link>
 
+      {/* Red border overlay on problem text area during Step 1 */}
+      {screenshotStep === "pending" && hasScreenshot && (
+        <div
+          className="fixed z-[42] pointer-events-none"
+          style={{
+            left: 0,
+            top: 60,
+            width: "45%",
+            bottom: 60,
+          }}
+        >
+          <div className="w-full h-full border-4 border-destructive rounded-lg animate-pulse opacity-70" />
+        </div>
+      )}
+
+      {/* Red border overlay on active section toggle during checklist */}
+      {screenshotStep === "done" && activeSection !== null && (
+        <div
+          className="fixed z-[42] pointer-events-none"
+          style={{
+            // Target the right-side content area where toggles live
+            right: 0,
+            left: "40%",
+            top: 60,
+            bottom: 60,
+          }}
+        >
+          <div className="w-full h-full border-4 border-destructive/60 rounded-lg animate-pulse" />
+        </div>
+      )}
+
+      {/* Scroll Down reminder when checking sections beyond the first */}
+      {showScrollReminder && <ScrollDownReminder />}
+
       {/* Full-screen iframe */}
       {current && (
         <iframe
@@ -635,6 +708,9 @@ export default function SolutionsQAReview() {
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Step 1: Screenshot Comparison
                   </p>
+                  <div className="text-[9px] text-destructive font-semibold flex items-center gap-1 animate-pulse">
+                    <ChevronLeft className="h-3 w-3" /> Check the problem text area (red border)
+                  </div>
                   <div
                     className="w-full max-h-[160px] rounded-lg border border-border overflow-hidden cursor-pointer bg-muted/20"
                     onClick={() => setLightboxUrl(screenshotUrl!)}
@@ -671,7 +747,7 @@ export default function SolutionsQAReview() {
                 </div>
               )}
 
-              {/* Step 2: Section checklist */}
+              {/* Step 2: Section checklist — sequential guided review */}
               {screenshotStep === "done" && (
                 <div className="px-3 py-2 space-y-1">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
@@ -680,9 +756,19 @@ export default function SolutionsQAReview() {
                   {sections.map((sec, idx) => {
                     const checked = checkedSections.has(sec.key);
                     const sectionIssueCount = issueSectionCounts[sec.label] || 0;
+                    const isActive = activeSection === idx;
+                    const isPast = checked;
+                    const isFuture = !checked && activeSection !== null && idx > activeSection;
+
                     return (
                       <div key={sec.key}>
-                        <div className="flex items-center gap-2 py-1 group">
+                        <div
+                          className={`flex items-center gap-2 py-1.5 px-1.5 rounded-md group transition-all ${
+                            isActive
+                              ? "bg-destructive/10 border border-destructive/40 shadow-sm"
+                              : ""
+                          } ${isFuture ? "opacity-40" : ""}`}
+                        >
                           <button
                             onClick={() => {
                               setCheckedSections(prev => {
@@ -693,15 +779,20 @@ export default function SolutionsQAReview() {
                               });
                             }}
                             className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              checked ? "bg-emerald-600 border-emerald-600" : "border-border hover:border-foreground/50"
+                              checked ? "bg-emerald-600 border-emerald-600" : isActive ? "border-destructive ring-1 ring-destructive/30" : "border-border hover:border-foreground/50"
                             }`}
                           >
                             {checked && <CheckCircle2 className="h-3 w-3 text-white" />}
                           </button>
-                          <span className={`text-xs flex-1 truncate ${checked ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                          <span className={`text-xs flex-1 truncate ${
+                            checked ? "text-muted-foreground line-through" : isActive ? "text-foreground font-medium" : "text-foreground"
+                          }`}>
                             {sec.label.replace("Reveal ", "")}
                           </span>
                           <span className="text-[9px] text-muted-foreground/50 font-mono">[{idx + 1}]</span>
+                          {isActive && !checked && (
+                            <span className="text-[8px] text-destructive font-semibold animate-pulse">◀ CHECK</span>
+                          )}
                           {sectionIssueCount > 0 && (
                             <Badge className="bg-destructive/20 text-destructive text-[8px] h-4 px-1">
                               {sectionIssueCount}
@@ -730,6 +821,14 @@ export default function SolutionsQAReview() {
                       </div>
                     );
                   })}
+
+                  {/* All sections checked indicator */}
+                  {activeSection === null && sections.length > 0 && (
+                    <div className="flex items-center gap-1.5 pt-1 text-emerald-600">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span className="text-[10px] font-semibold">All sections reviewed</span>
+                    </div>
+                  )}
 
                   {/* Existing issues summary */}
                   {issueCount > 0 && (
@@ -779,16 +878,18 @@ export default function SolutionsQAReview() {
         {/* Sticky bottom buttons */}
         {reviewerName && screenshotStep === "done" && (
           <div className="shrink-0 border-t border-border bg-card px-3 py-2 space-y-1.5">
-            <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
-              onClick={() => markAndAdvance()}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> All Good — Next Asset →
-            </Button>
+            {/* Only show "All Good" when there are NO issues */}
+            {issueCount === 0 && (
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                onClick={() => markAndAdvance()}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> All Good — Next Asset →
+              </Button>
+            )}
             {issueCount > 0 && (
               <Button
-                variant="outline"
-                className="w-full border-amber-500/30 text-amber-600 hover:bg-amber-500/10 text-xs h-7"
+                className="w-full border-amber-500/30 bg-amber-600 hover:bg-amber-700 text-white text-xs h-8"
                 onClick={() => markAndAdvance("reviewed_issues")}
               >
                 <AlertTriangle className="h-3 w-3 mr-1.5" /> Save Issues & Next →
