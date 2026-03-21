@@ -1421,6 +1421,20 @@ export default function SolutionsViewer() {
   const hasRefLw = searchParams.get("ref") === "lw";
   const enrollUrl = useEnrollUrl();
 
+  // ── LW params ref (stable across renders) ──
+  const lwParams = useRef({
+    ref: searchParams.get("ref") || "",
+    lw_user_id: searchParams.get("lw_user_id") || "",
+    lw_email: searchParams.get("lw_email") || "",
+    lw_name: searchParams.get("lw_name") || "",
+    lw_course: searchParams.get("lw_course") || "",
+    lw_unit: searchParams.get("lw_unit") || "",
+    preview: searchParams.get("preview") || "",
+  });
+
+  // ── Page start time for time_on_page ──
+  const startTimeRef = useRef(Date.now());
+
   // Theme — light only
   const t = lightTheme;
 
@@ -1514,16 +1528,85 @@ export default function SolutionsViewer() {
     return () => window.removeEventListener("message", handler);
   }, []);
 
-  // ── Track page visit (fire-and-forget) ──
-  useEffect(() => {
-    if (!assetCode) return;
-    supabase.from("asset_share_events").insert({
-      asset_name: assetCode,
-      event_type: "page_visit",
+  // ── Event logging helper (fire-and-forget) ──
+  // We store the resolved asset in a ref so logEvent can always access it
+  const assetRef = useRef<any>(null);
+
+  const logEvent = useCallback((eventType: string, extra?: Record<string, any>) => {
+    const lw = lwParams.current;
+    const a = assetRef.current;
+    supabase.from("asset_events" as any).insert({
+      asset_name: assetCode || "",
+      teaching_asset_id: a?.id || null,
+      chapter_id: a?.chapter_id || null,
+      course_id: a?.course_id || null,
+      event_type: eventType,
+      is_lw_embed: lw.ref === "lw",
+      is_preview_mode: lw.preview === "true",
+      lw_user_id: lw.lw_user_id || null,
+      lw_email: lw.lw_email || null,
+      lw_name: lw.lw_name || null,
+      lw_course_id: lw.lw_course || null,
+      lw_unit_id: lw.lw_unit || null,
       referrer: document.referrer || null,
       user_agent: navigator.userAgent || null,
+      ...extra,
     } as any).then(() => {});
   }, [assetCode]);
+
+  // ── Track page visit / LW embed load (fire-and-forget) ──
+  const pageVisitFired = useRef(false);
+  useEffect(() => {
+    if (!assetCode || pageVisitFired.current) return;
+    pageVisitFired.current = true;
+    const lw = lwParams.current;
+    logEvent(lw.ref === "lw" ? "lw_embed_load" : "page_visit");
+  }, [assetCode, logEvent]);
+
+  // ── Heartbeat every 60s ──
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (!document.hidden) {
+        logEvent("heartbeat", { seconds_spent: 60 });
+      }
+    }, 60000);
+    return () => clearInterval(iv);
+  }, [logEvent]);
+
+  // ── Time on page (beforeunload) ──
+  useEffect(() => {
+    const handler = () => {
+      const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000);
+      logEvent("time_on_page", { seconds_spent: elapsed });
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [logEvent]);
+
+  // ── Reveal toggle callback ──
+  const sectionNameMap: Record<string, string> = {
+    "Solution": "solution",
+    "How to Solve This": "how_to_solve",
+    "Journal Entries": "journal_entries",
+    "Related Journal Entries": "related_je",
+    "Important Formulas": "formulas",
+    "Key Concepts": "key_concepts",
+    "Exam Traps": "exam_traps",
+  };
+
+  const handleReveal = useCallback((sectionName: string) => {
+    logEvent("reveal_toggle", { section_name: sectionNameMap[sectionName] || sectionName });
+  }, [logEvent]);
+
+  // ── Share click handler ──
+  const handleShareClick = useCallback(() => {
+    logEvent("share_click");
+  }, [logEvent]);
+
+  // ── Buy click handler ──
+  const handleBuyClick = useCallback(() => {
+    logEvent("buy_click");
+  }, [logEvent]);
 
   useEffect(() => {
     if (!tokenSession?.expires_at || !previewToken) return;

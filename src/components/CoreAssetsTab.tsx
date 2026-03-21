@@ -431,11 +431,11 @@ export function CoreAssetsTab() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-full" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
-                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?ref=lw" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
+                            navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?ref=lw&lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}&lw_name={{USER_NAME}}&lw_course={{COURSE_ID}}&lw_unit={{UNIT_ID}}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
                             setLastCopiedKey(a.id + "-full");
-                            toast.success("Study Pass embed code copied — paste into LearnWorlds");
+                            toast.success("LW embed code copied — paste into LearnWorlds");
                           }}>
-                            Copy Study Pass Embed Code
+                            Copy LW Embed Code (with user tracking)
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => window.open(`${STUDENT_BASE_URL}/solutions/${a.asset_name}?ref=lw`, "_blank")}>

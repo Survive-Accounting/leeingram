@@ -751,15 +751,15 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   <CreditCard className="h-3.5 w-3.5" /> Payment Links
                 </Link>
                 <Link
-                  to="/share-leaderboard"
+                  to="/asset-stats"
                   className={cn(
                     "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/share-leaderboard")
+                    isActive("/asset-stats")
                       ? "bg-primary/20 text-foreground font-medium border border-primary/30"
                       : "text-white/70 hover:text-white hover:bg-muted/30"
                   )}
                 >
-                  <TrendingUp className="h-3.5 w-3.5" /> Share Leaderboard
+                  <BarChart3 className="h-3.5 w-3.5" /> Asset Stats
                 </Link>
               </>
             )}
