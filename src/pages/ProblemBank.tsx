@@ -384,15 +384,6 @@ export default function ProblemBank() {
         failed++;
       }
     }
-      try {
-        const { error } = await supabase.functions.invoke("extract-ocr", {
-          body: { problemId: p.id, problemImageUrls: pUrls, solutionImageUrls: sUrls },
-        });
-        if (error) { failed++; } else { success++; }
-      } catch {
-        failed++;
-      }
-    }
     setOcrRunning(false);
     setOcrHasRun(true);
     qc.invalidateQueries({ queryKey: ["chapter-problems"] });
