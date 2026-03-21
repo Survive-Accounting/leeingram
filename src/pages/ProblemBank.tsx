@@ -523,7 +523,13 @@ export default function ProblemBank() {
             v = v.replace(/\s+/g, "");
             return v;
           };
-          return normalize(ocr) !== normalize(src);
+          // Strip all leading letter prefixes to get just the numeric ID (e.g. "P1.6B" → "1.6B")
+          const numericPart = (s: string) => s.replace(/^[A-Z]+/, "");
+          const nOcr = normalize(ocr);
+          const nSrc = normalize(src);
+          if (nOcr === nSrc) return false;
+          // Fallback: if OCR dropped the prefix (e.g. "1-6B" vs "P1.6B"), compare numeric parts only
+          return numericPart(nOcr) !== numericPart(nSrc);
         }).length;
         return mismatchCount > 0 ? (
           <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -579,7 +585,14 @@ export default function ProblemBank() {
                 v = v.replace(/\s+/g, "");
                 return v;
               };
-              const hasMismatch = ocrLabel && p.source_label && normalizeLabel(ocrLabel) !== normalizeLabel(p.source_label);
+              const numericPart = (s: string) => s.replace(/^[A-Z]+/, "");
+              const hasMismatch = (() => {
+                if (!ocrLabel || !p.source_label) return false;
+                const nOcr = normalizeLabel(ocrLabel);
+                const nSrc = normalizeLabel(p.source_label);
+                if (nOcr === nSrc) return false;
+                return numericPart(nOcr) !== numericPart(nSrc);
+              })();
               const hasScreenshot = !!(p.problem_screenshot_url || p.problem_screenshot_urls.length > 0);
               return (
               <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
