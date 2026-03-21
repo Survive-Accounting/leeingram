@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
-  Inbox, Factory, Library, FileCheck, Package, Video, VideoOff,
-  Rocket, Users, CheckCircle2, Loader2, ClipboardList, Download, BarChart3,
+  Inbox, Factory, Library, FileCheck, Package, Video,
+  Rocket, Users, CheckCircle2, Loader2, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
   ChevronRight, CreditCard, ClipboardCheck, TrendingUp,
 } from "lucide-react";
