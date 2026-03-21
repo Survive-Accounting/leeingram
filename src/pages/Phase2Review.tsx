@@ -438,10 +438,11 @@ export default function Phase2Review() {
     );
   }
 
-  // Sort all topics for display: active first by topic_number, then merged
+  // Sort all topics for display: active first, then slider-collapsed, then drag-merged
   const sortedForDisplay = [
     ...activeTopics.sort((a, b) => a.topic_number - b.topic_number),
-    ...mergedTopics.sort((a, b) => a.topic_number - b.topic_number),
+    ...sliderCollapsedTopics.sort((a, b) => a.topic_number - b.topic_number),
+    ...dragMergedTopics.sort((a, b) => a.topic_number - b.topic_number),
   ];
 
   const draggedTopic = dragActiveId ? topics.find(t => t.id === dragActiveId) : null;
