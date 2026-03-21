@@ -100,11 +100,29 @@ const SHEET_PREP_CHECKLIST = [
 ];
 
 export default function DeploymentChecklist() {
-  const { vaAccount } = useVaAccount();
+  const { vaAccount, isVa } = useVaAccount();
   const { impersonating } = useImpersonation();
 
   const effectiveRole = impersonating?.role || vaAccount?.role || null;
   const isSheetPrep = effectiveRole === "sheet_prep_va";
+  
+  // VA placeholder (non-sheet-prep VAs)
+  const showPlaceholder = (isVa || !!impersonating) && !isSheetPrep;
+  if (showPlaceholder) {
+    return (
+      <SurviveSidebarLayout>
+        <div className="flex items-center justify-center min-h-[70vh]">
+          <div className="max-w-md w-full rounded-xl p-8 text-center space-y-4" style={{ backgroundColor: "#14213D" }}>
+            <h2 className="text-xl font-bold text-white">Deployment Queue</h2>
+            <p className="text-sm text-white/70 leading-relaxed">
+              This Phase 2 step is where completed content is published to LearnWorlds for students. Tasks related to this step are coming soon! Thank you for your help building Survive Accounting.
+            </p>
+            <p className="text-xs text-white/40 mt-4">— Lee Ingram</p>
+          </div>
+        </div>
+      </SurviveSidebarLayout>
+    );
+  }
 
   const checklist = isSheetPrep ? SHEET_PREP_CHECKLIST : DEFAULT_CHECKLIST;
   const heading = isSheetPrep ? "Sheet Prep Deployment Checklist" : "Deployment Checklist";
