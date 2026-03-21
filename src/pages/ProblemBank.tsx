@@ -626,7 +626,7 @@ export default function ProblemBank() {
                 if (nOcr === nSrc) return false;
                 return numericPart(nOcr) !== numericPart(nSrc);
               })();
-              const hasScreenshot = !!(p.problem_screenshot_url || p.problem_screenshot_urls.length > 0);
+              const hasScreenshot = !!p.problem_screenshot_url;
               return (
               <TableRow key={p.id} className={`border-border ${hasMismatch ? "bg-destructive/10" : ""}`}>
                     <TableCell>
