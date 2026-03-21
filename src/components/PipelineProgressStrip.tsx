@@ -44,10 +44,9 @@ const STAGE_INSTRUCTIONS: Record<string, string> = {
   "/content": "Generate variants from imported source problems.",
   "/review": "Review generated variants — approve or send back.",
   "/assets-library": "Finalized assets ready for production.",
-  "/question-review": "Review MC questions generated from teaching assets.",
-  "/quizzes-ready": "Download quiz CSV files ready for LearnWorlds import.",
-  "/video-pending": "Assets waiting for walkthrough video recording.",
-  "/videos-ready": "Assets with completed videos ready for deployment.",
+  "/phase2-review": "Generate and manage core exam topics from teaching assets.",
+  "/quiz-queue": "Generate and review quiz questions for each topic.",
+  "/video-queue": "Record walkthrough videos for each topic.",
   "/deployment": "Deploy quizzes and videos to LearnWorlds.",
 };
 
