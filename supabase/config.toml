@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.create-preview-session]
 verify_jwt = false
+
+[functions.rewrite-je-tooltips]
+verify_jwt = false

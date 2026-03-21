@@ -17,11 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_flowcharts" | "generate_dissector_highlights";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts";
 
 interface HistoryEntry {
   label: string;
@@ -125,8 +125,10 @@ export default function BulkFixTool() {
   const [isAiPreview, setIsAiPreview] = useState(false);
 
   const [running, setRunning] = useState(false);
-  const [runProgress, setRunProgress] = useState({ current: 0, total: 0 });
-  const [runComplete, setRunComplete] = useState<{ updated: number; skipped: number } | null>(null);
+  const [paused, setPaused] = useState(false);
+  const pauseRef = { current: false };
+  const [runProgress, setRunProgress] = useState({ current: 0, total: 0, currentAsset: "" });
+  const [runComplete, setRunComplete] = useState<{ updated: number; skipped: number; errors?: number } | null>(null);
 
   const [reverting, setReverting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -193,6 +195,9 @@ export default function BulkFixTool() {
     if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
     if (operation === "generate_flowcharts") return "Generate Flowcharts (backfill missing)";
     if (operation === "generate_dissector_highlights") return "Generate Dissector Highlights (backfill missing)";
+    if (operation === "enrich_je_tooltips") return "Enrich JE Tooltips (fill gaps)";
+    if (operation === "rewrite_je_reasons") return "Rewrite JE Reasons (YOU Format)";
+    if (operation === "rewrite_je_amounts") return "Rewrite Amount Sources (Plain English)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -426,6 +431,32 @@ export default function BulkFixTool() {
           after: `Will generate highlights for ${missing.length} assets via AI`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+        // Count IA2 assets with JE data
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("journal_entry_completed_json", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: jeCount } = await countQ;
+        setTotalMatched(jeCount ?? 0);
+
+        const modeLabel = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
+        const actionDesc = operation === "enrich_je_tooltips"
+          ? "Will fill missing debit_credit_reason + amount_source fields"
+          : operation === "rewrite_je_reasons"
+          ? "Will rewrite ALL debit_credit_reason fields to student-friendly format"
+          : "Will rewrite ALL amount_source fields to plain English (no dollar figures)";
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "journal_entry_completed_json",
+          before: `${jeCount ?? 0} assets with JE data`,
+          after: `${actionDesc} via AI (mode: ${modeLabel})`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -451,19 +482,33 @@ export default function BulkFixTool() {
 
     try {
       // Fetch all assets in scope — use lightweight query for operations that only need id
-      const isLightweight = operation === "generate_flowcharts" || operation === "generate_supplementary_je" || operation === "generate_dissector_highlights";
-      const { data: assets, error } = await buildScopeQuery(isLightweight);
+      const isLightweight = operation === "generate_flowcharts" || operation === "generate_supplementary_je" || operation === "generate_dissector_highlights" || operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts";
+      let scopeQuery = buildScopeQuery(isLightweight);
+      if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+        scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+      }
+      const { data: assets, error } = await scopeQuery;
       if (error) throw error;
       if (!assets?.length) { toast.info("No assets in scope."); setRunning(false); return; }
 
       const total = assets.length;
-      setRunProgress({ current: 0, total });
+      setRunProgress({ current: 0, total, currentAsset: "" });
       let updated = 0;
       let skipped = 0;
+      let errors = 0;
 
       // Process in batches — use smaller batch for AI-heavy JE enrichment
-      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts" || operation === "generate_dissector_highlights") ? 2 : BATCH_SIZE;
+      const batchSize = (operation === "enrich_je_rows" || operation === "generate_supplementary_je" || operation === "generate_flowcharts" || operation === "generate_dissector_highlights" || operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") ? 5 : BATCH_SIZE;
       for (let i = 0; i < total; i += batchSize) {
+        // Check for pause
+        if (pauseRef.current) {
+          setRunComplete({ updated, skipped, errors });
+          toast.info(`Paused after ${updated + skipped + errors} of ${total} assets. ${updated} updated, ${skipped} skipped, ${errors} errors.`);
+          setRunning(false);
+          setPaused(false);
+          pauseRef.current = false;
+          return;
+        }
         const batch = assets.slice(i, i + batchSize);
         const updates: Promise<void>[] = [];
 
@@ -652,11 +697,21 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
               if (fnErr || !result?.success) { skipped++; return; }
               changed = true;
+            } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+              const mode = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
+              setRunProgress(prev => ({ ...prev, currentAsset: (asset as any).asset_name || asset.id }));
+              try {
+                const { data: result, error: fnErr } = await supabase.functions.invoke("rewrite-je-tooltips", {
+                  body: { teaching_asset_id: asset.id, mode },
+                });
+                if (fnErr || !result?.success) { errors++; return; }
+                changed = true;
+              } catch { errors++; return; }
             }
 
             if (changed) {
               // generate_supplementary_je and generate_flowcharts write via edge function; others need explicit update
-              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts" && operation !== "generate_dissector_highlights") {
+              if (operation !== "generate_supplementary_je" && operation !== "generate_flowcharts" && operation !== "generate_dissector_highlights" && operation !== "enrich_je_tooltips" && operation !== "rewrite_je_reasons" && operation !== "rewrite_je_amounts") {
                 await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
               }
               updated++;
@@ -667,10 +722,14 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         }
 
         await Promise.all(updates);
-        setRunProgress({ current: Math.min(i + batchSize, total), total });
+        setRunProgress({ current: Math.min(i + batchSize, total), total, currentAsset: "" });
+        // Add delay for JE tooltip operations to avoid rate limits
+        if ((operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && i + batchSize < total) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
 
-      setRunComplete({ updated, skipped });
+      setRunComplete({ updated, skipped, errors });
       addHistory({
         label: operationLabel,
         date: new Date().toISOString(),
@@ -790,8 +849,26 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="generate_supplementary_je">Generate Supplementary JEs (backfill missing)</SelectItem>
                 <SelectItem value="generate_flowcharts">Generate Flowcharts (backfill missing)</SelectItem>
                 <SelectItem value="generate_dissector_highlights">Generate Dissector Highlights (backfill missing)</SelectItem>
+                <SelectItem value="enrich_je_tooltips">Enrich JE Tooltips (fill gaps)</SelectItem>
+                <SelectItem value="rewrite_je_reasons">Rewrite JE Reasons (YOU Format)</SelectItem>
+                <SelectItem value="rewrite_je_amounts">Rewrite Amount Sources (Plain English)</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Info card for JE tooltip operations */}
+            {(operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && (
+              <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+                <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-200 space-y-1">
+                  <p className="font-medium">Recommended run order:</p>
+                  <ol className="list-decimal ml-4 space-y-0.5">
+                    <li className={operation === "enrich_je_tooltips" ? "font-semibold text-blue-100" : ""}>Enrich JE Tooltips first (fills gaps, safe to run anytime)</li>
+                    <li className={operation === "rewrite_je_reasons" ? "font-semibold text-blue-100" : ""}>Rewrite JE Reasons overnight</li>
+                    <li className={operation === "rewrite_je_amounts" ? "font-semibold text-blue-100" : ""}>Rewrite Amount Sources overnight</li>
+                  </ol>
+                </div>
+              </div>
+            )}
 
             {operation === "fix_entity_naming" && (
               <p className="text-xs text-muted-foreground">
@@ -827,6 +904,40 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               <p className="text-xs text-muted-foreground">
                 Generates problem dissector highlights for assets that don't have them yet. Creates a <code className="text-foreground">dissector_problems</code> record per asset with AI-identified key inputs, amounts, dates, and concepts. Powers the highlight overlay on SolutionsViewer staging page.
               </p>
+            )}
+
+            {operation === "enrich_je_tooltips" && (
+              <p className="text-xs text-muted-foreground">
+                Add missing <code className="text-foreground">debit_credit_reason</code> and <code className="text-foreground">amount_source</code> fields to all JE rows. Skips rows that already have both fields. Safe and additive — won't overwrite existing content.
+              </p>
+            )}
+
+            {operation === "rewrite_je_reasons" && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Rewrites all <code className="text-foreground">debit_credit_reason</code> fields to use student-friendly "you" language and account type rules. Overwrites existing text.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mt-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ This overwrites all existing debit_credit_reason text across all assets in scope. Recommended to run overnight for large batches.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {operation === "rewrite_je_amounts" && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Rewrites all <code className="text-foreground">amount_source</code> fields to explain HOW to calculate each amount without mentioning specific dollar figures.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mt-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ This overwrites all existing amount_source text across all assets in scope. Recommended to run overnight for large batches.
+                  </p>
+                </div>
+              </>
             )}
 
             {operation === "find_replace_simple" && (
@@ -1011,9 +1122,25 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             <CardContent className="pt-4 space-y-2">
               <p className="text-sm text-foreground">
                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                Fixing asset {runProgress.current} of {runProgress.total}…
+                Processing asset {runProgress.current} of {runProgress.total}…
               </p>
+              {runProgress.currentAsset && (
+                <p className="text-xs text-muted-foreground">Current: {runProgress.currentAsset}</p>
+              )}
               <Progress value={(runProgress.current / Math.max(runProgress.total, 1)) * 100} className="h-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => { pauseRef.current = true; setPaused(true); }}
+                disabled={paused}
+              >
+                {paused ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Pausing…</>
+                ) : (
+                  <><Pause className="h-3.5 w-3.5 mr-1.5" /> Pause</>
+                )}
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -1023,7 +1150,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           <Card className="bg-card border-border border-emerald-500/30">
             <CardContent className="pt-4">
               <p className="text-sm text-emerald-400">
-                Fix complete. {runComplete.updated} assets updated, {runComplete.skipped} skipped (no match found).
+                ✓ Done — {runComplete.updated} assets updated, {runComplete.skipped} skipped{runComplete.errors ? `, ${runComplete.errors} errors` : ""}.
               </p>
             </CardContent>
           </Card>
