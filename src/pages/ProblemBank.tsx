@@ -24,21 +24,25 @@ import { useNavigate, Link } from "react-router-dom";
 import { ImagePasteArea } from "@/components/content-factory/ImagePasteArea";
 import { SourceProblemPreview, SourceProblemPreviewData } from "@/components/content-factory/SourceProblemPreview";
 
-type ChapterProblem = {
+type ChapterProblemListItem = {
   id: string;
   course_id: string;
   chapter_id: string;
   problem_type: "exercise" | "problem" | "custom" | "quick_study";
   source_label: string;
   title: string;
-  problem_text: string;
-  solution_text: string;
-  journal_entry_text: string | null;
   difficulty_internal: "easy" | "medium" | "hard" | "tricky" | null;
   status: string;
+  pipeline_status: string;
   created_at: string;
   problem_screenshot_url: string | null;
   solution_screenshot_url: string | null;
+};
+
+type ChapterProblem = ChapterProblemListItem & {
+  problem_text: string;
+  solution_text: string;
+  journal_entry_text: string | null;
   problem_screenshot_urls: string[];
   solution_screenshot_urls: string[];
 };
