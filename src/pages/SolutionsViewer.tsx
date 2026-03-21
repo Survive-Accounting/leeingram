@@ -1408,10 +1408,49 @@ export default function SolutionsViewer() {
   const [searchParams] = useSearchParams();
   const rawIsPreview = searchParams.get("preview") === "true";
   const previewToken = searchParams.get("preview_token") || "";
+  const hasRefLw = searchParams.get("ref") === "lw";
   const enrollUrl = useEnrollUrl();
 
   // Theme — light only
   const t = lightTheme;
+
+  // ── Admin bypass: authenticated user always gets full access ──
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setIsAdmin(true);
+    });
+  }, []);
+
+  // ── LearnWorlds referrer DRM check ──
+  const VALID_REFERRER_DOMAINS = [
+    "learnworlds.com",
+    "surviveaccounting.learnworlds.com",
+    "learn.surviveaccounting.com",
+    "surviveaccounting.com",
+  ];
+
+  const lwVerified = useMemo(() => {
+    // Check sessionStorage first (handles in-iframe navigation)
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sa-lw-verified") === "true") {
+      return true;
+    }
+    // Check referrer against allowed domains
+    if (hasRefLw && document.referrer) {
+      try {
+        const refHost = new URL(document.referrer).hostname;
+        return VALID_REFERRER_DOMAINS.some(d => refHost === d || refHost.endsWith("." + d));
+      } catch { return false; }
+    }
+    return false;
+  }, [hasRefLw]);
+
+  // Store LW verification in sessionStorage for subsequent navigations
+  useEffect(() => {
+    if (lwVerified && hasRefLw) {
+      try { sessionStorage.setItem("sa-lw-verified", "true"); } catch {}
+    }
+  }, [lwVerified, hasRefLw]);
 
   // ── Preview token validation ──
   const { data: tokenSession, isLoading: tokenLoading } = useQuery({
@@ -1433,13 +1472,21 @@ export default function SolutionsViewer() {
   const [countdown, setCountdown] = useState("");
   const [previewExpired, setPreviewExpired] = useState(false);
 
-  // Determine access mode based on token
+  // Determine access mode:
+  // 1. Admin bypass → full access
+  // 2. Valid preview_token → full access
+  // 3. ?ref=lw with valid referrer → full access
+  // 4. Everything else → preview mode
   const tokenExpired = tokenSession && new Date(tokenSession.expires_at) < new Date();
   const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
     (tokenSession.asset_codes as string[])?.includes(assetCode);
-  const isPreview = previewToken
-    ? (!tokenValidForAsset || previewExpired)
-    : rawIsPreview;
+
+  const isPreview = (() => {
+    if (isAdmin) return false;
+    if (previewToken) return !tokenValidForAsset || previewExpired;
+    if (lwVerified) return false;
+    return true; // Default: preview mode (no valid access method)
+  })();
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
