@@ -404,6 +404,28 @@ export default function BulkFixTool() {
           after: `Will generate flowcharts for ${missingCount ?? 0} assets via AI + HCTI`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "generate_dissector_highlights") {
+        // Preview: count assets without dissector_problems records
+        const { data: scopeAssets } = await buildScopeQuery(true);
+        if (!scopeAssets?.length) { setTotalMatched(0); setPreviewRows([]); setIsAiPreview(true); return; }
+
+        const assetIds = scopeAssets.map((a: any) => a.id);
+        const { data: existingDissectors } = await supabase
+          .from("dissector_problems")
+          .select("teaching_asset_id")
+          .in("teaching_asset_id", assetIds.slice(0, 500));
+        const existingSet = new Set((existingDissectors || []).map((d: any) => d.teaching_asset_id));
+        const missing = scopeAssets.filter((a: any) => !existingSet.has(a.id));
+        setTotalMatched(missing.length);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "dissector_problems",
+          before: `${missing.length} assets have no dissector highlights`,
+          after: `Will generate highlights for ${missing.length} assets via AI`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
