@@ -1333,7 +1333,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                     )}
                     {item.status === "running" && (
                       <span className="text-[10px] text-muted-foreground">
-                        {queueProgress.current} / {queueProgress.total}
+                        {item.assets_processed} processed
                       </span>
                     )}
                     {item.status === "failed" && item.error_summary && (
