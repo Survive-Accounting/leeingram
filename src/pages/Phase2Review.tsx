@@ -512,24 +512,25 @@ export default function Phase2Review() {
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <label className="text-xs text-muted-foreground whitespace-nowrap">Topics for this chapter</label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex-1">
-                        <Slider
-                          min={Math.max(1, topics.length - mergedTopics.length > 1 ? 1 : 1)}
-                          max={topics.length}
-                          step={1}
-                          value={[sliderValue]}
-                          onValueCommit={isLocked ? undefined : handleSliderChange}
-                          disabled={isLocked}
-                          className={isLocked ? "opacity-50" : ""}
-                        />
-                      </div>
-                    </TooltipTrigger>
+                  <div className="flex-1 relative">
+                    <Slider
+                      min={1}
+                      max={topics.length}
+                      step={1}
+                      value={[sliderValue]}
+                      onValueChange={isLocked ? undefined : handleSliderChange}
+                      disabled={isLocked}
+                      className={isLocked ? "opacity-50" : ""}
+                    />
                     {isLocked && (
-                      <TooltipContent>Unlock to change topic count</TooltipContent>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="absolute inset-0 cursor-not-allowed" />
+                        </TooltipTrigger>
+                        <TooltipContent>Unlock to change topic count</TooltipContent>
+                      </Tooltip>
                     )}
-                  </Tooltip>
+                  </div>
                   <span className="text-2xl font-bold text-foreground tabular-nums w-8 text-center">{sliderValue}</span>
                 </div>
               </div>
