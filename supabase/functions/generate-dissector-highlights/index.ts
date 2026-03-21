@@ -56,8 +56,7 @@ Return a JSON array only. Every "text" value MUST be an exact substring found in
 
 ${problemText}
 
-${asset.highlight_tags ? `Existing highlight tags for reference: ${asset.highlight_tags}` : ""}
-${asset.worked_steps ? `Worked steps for context: ${asset.worked_steps}` : ""}
+    ${asset.worked_steps ? `Worked steps for context: ${asset.worked_steps}` : ""}
 ${asset.important_formulas ? `Important formulas: ${asset.important_formulas}` : ""}`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
