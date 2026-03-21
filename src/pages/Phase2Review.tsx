@@ -557,7 +557,13 @@ export default function Phase2Review() {
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
-                    onClick={() => lockMutation.mutate(true)}
+                    onClick={() => {
+                      if (unassignedAssets.length > 0) {
+                        setLockWarningOpen(true);
+                      } else {
+                        lockMutation.mutate(true);
+                      }
+                    }}
                     disabled={lockMutation.isPending || activeTopics.length === 0}
                   >
                     <Lock className="h-3 w-3 mr-1.5" />
