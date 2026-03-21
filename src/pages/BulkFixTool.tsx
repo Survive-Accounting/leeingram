@@ -883,175 +883,19 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
   const runQueue = useCallback(async () => {
     setQueueRunning(true);
-    queueStopRef.current = false;
 
     try {
-      const { data: pending } = await supabase
-        .from("bulk_fix_queue")
-        .select("*")
-        .eq("status", "pending")
-        .order("queue_position", { ascending: true });
-
-      if (!pending?.length) { toast.info("No pending items in queue."); setQueueRunning(false); return; }
-
-      const completedOps: QueueItem[] = [];
-
-      for (const item of pending) {
-        if (queueStopRef.current) break;
-
-        // Mark running
-        await supabase.from("bulk_fix_queue").update({
-          status: "running",
-          started_at: new Date().toISOString(),
-        } as any).eq("id", item.id);
-        refetchQueue();
-
-        try {
-          const result = await executeOperation(
-            item.operation_key as OperationType,
-            async (current, total, assetName) => {
-              setQueueProgress({ current, total, currentAsset: assetName });
-              // Persist progress periodically
-              if (current % 25 === 0 || current === total) {
-                await supabase.from("bulk_fix_queue").update({
-                  assets_processed: current,
-                } as any).eq("id", item.id);
-              }
-            },
-            undefined,
-            () => queueStopRef.current,
-          );
-
-          const updatedItem = {
-            ...item,
-            status: "complete" as const,
-            completed_at: new Date().toISOString(),
-            assets_processed: (result?.updated ?? 0) + (result?.skipped ?? 0) + (result?.errors ?? 0),
-            assets_succeeded: result?.updated ?? 0,
-            assets_errored: result?.errors ?? 0,
-            assets_skipped: result?.skipped ?? 0,
-          };
-
-          await supabase.from("bulk_fix_queue").update({
-            status: "complete",
-            completed_at: new Date().toISOString(),
-            assets_processed: updatedItem.assets_processed,
-            assets_succeeded: updatedItem.assets_succeeded,
-            assets_errored: updatedItem.assets_errored,
-            assets_skipped: updatedItem.assets_skipped,
-          } as any).eq("id", item.id);
-
-          completedOps.push(updatedItem);
-          refetchQueue();
-
-          // Find next pending
-          const remainingPending = pending.filter(p => p.id !== item.id && !completedOps.some(c => c.id === p.id));
-          const nextName = remainingPending.length > 0 ? remainingPending[0].operation_name : null;
-
-          // Send per-operation email
-          await sendSummaryEmail("operation_complete", updatedItem, nextName);
-
-        } catch (e: any) {
-          await supabase.from("bulk_fix_queue").update({
-            status: "failed",
-            completed_at: new Date().toISOString(),
-            error_summary: e.message?.slice(0, 500),
-          } as any).eq("id", item.id);
-          completedOps.push({ ...item, status: "failed" });
-          refetchQueue();
-        }
-      }
-
-      // Send queue-complete email
-      if (completedOps.length > 0) {
-        await sendSummaryEmail("queue_complete", undefined, undefined, completedOps);
-      }
-
-      toast.success("Queue complete!");
-    } catch (e: any) {
-      toast.error("Queue failed: " + e.message);
-    } finally {
-      setQueueRunning(false);
+      // Just invoke the server-side processor — it self-chains
+      const { error } = await supabase.functions.invoke("process-bulk-fix-queue");
+      if (error) throw error;
+      toast.success("Queue started — processing server-side. You can close this page.");
       refetchQueue();
+    } catch (e: any) {
+      toast.error("Failed to start queue: " + e.message);
+      setQueueRunning(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseFilter, chapterFilter, statusFilter]);
-
-  async function resumeQueue(runningItem: QueueItem) {
-    setQueueRunning(true);
-    queueStopRef.current = false;
-
-    try {
-      const offset = runningItem.assets_processed || 0;
-      const result = await executeOperation(
-        runningItem.operation_key as OperationType,
-        async (current, total, assetName) => {
-          setQueueProgress({ current, total, currentAsset: assetName });
-          if (current % 25 === 0 || current === total) {
-            await supabase.from("bulk_fix_queue").update({
-              assets_processed: offset + current,
-            } as any).eq("id", runningItem.id);
-          }
-        },
-        undefined,
-        () => queueStopRef.current,
-        offset,
-      );
-
-      const totalProcessed = offset + ((result?.updated ?? 0) + (result?.skipped ?? 0) + (result?.errors ?? 0));
-      const completedItem: QueueItem = {
-        ...runningItem,
-        status: "complete",
-        completed_at: new Date().toISOString(),
-        assets_processed: totalProcessed,
-        assets_succeeded: (runningItem.assets_succeeded || 0) + (result?.updated ?? 0),
-        assets_errored: (runningItem.assets_errored || 0) + (result?.errors ?? 0),
-        assets_skipped: (runningItem.assets_skipped || 0) + (result?.skipped ?? 0),
-      };
-
-      await supabase.from("bulk_fix_queue").update({
-        status: "complete",
-        completed_at: completedItem.completed_at,
-        assets_processed: completedItem.assets_processed,
-        assets_succeeded: completedItem.assets_succeeded,
-        assets_errored: completedItem.assets_errored,
-        assets_skipped: completedItem.assets_skipped,
-      } as any).eq("id", runningItem.id);
-
-      refetchQueue();
-
-      // Continue with remaining pending items
-      const { data: remaining } = await supabase
-        .from("bulk_fix_queue")
-        .select("*")
-        .eq("status", "pending")
-        .order("queue_position", { ascending: true });
-
-      const nextName = remaining?.length ? remaining[0].operation_name : null;
-
-      // Send per-operation email for the resumed item
-      await sendSummaryEmail("operation_complete", completedItem, nextName);
-
-      if (remaining?.length) {
-        await runQueue();
-      } else {
-        // Send queue-complete email with all completed items
-        const { data: allCompleted } = await supabase
-          .from("bulk_fix_queue")
-          .select("*")
-          .eq("status", "complete")
-          .order("queue_position", { ascending: true });
-        if (allCompleted?.length) {
-          await sendSummaryEmail("queue_complete", undefined, undefined, allCompleted as QueueItem[]);
-        }
-        setQueueRunning(false);
-        toast.success("Queue resumed and complete!");
-      }
-    } catch (e: any) {
-      toast.error("Resume failed: " + e.message);
-      setQueueRunning(false);
-    }
-  }
+  }, []);
 
   function toggleField(field: FixableField) {
     setSelectedFields(prev =>
