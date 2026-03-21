@@ -103,8 +103,18 @@ export default function ScreenshotCapture() {
         body: { problemId: current.id, problemImageUrls: urls, solutionImageUrls: [] },
       }).then(({ data }) => {
         if (data?.ocr?.detected_label) {
-          const detected = data.ocr.detected_label.replace(/\s+/g, "").toUpperCase();
-          const expected = (sourceLabel || "").replace(/\s+/g, "").toUpperCase();
+          const normalizeLabel = (s: string) => {
+            let v = s.replace(/\s+/g, " ").trim().toUpperCase();
+            v = v.replace(/^BRIEF\s*EXERCISE\s*/i, "BE");
+            v = v.replace(/^EXERCISE\s*/i, "E");
+            v = v.replace(/^PROBLEM\s*/i, "P");
+            v = v.replace(/^QUICK\s*STUDY\s*/i, "QS");
+            v = v.replace(/[\s-]+/g, ".");
+            v = v.replace(/\s+/g, "");
+            return v;
+          };
+          const detected = normalizeLabel(data.ocr.detected_label);
+          const expected = normalizeLabel(sourceLabel || "");
           if (detected && expected && detected !== expected) {
             toast.warning(`Screenshot mismatch: pasted image is ${data.ocr.detected_label}, but this source is ${sourceLabel}. You may have pasted the wrong screenshot.`, { duration: 8000 });
             logActivity({
