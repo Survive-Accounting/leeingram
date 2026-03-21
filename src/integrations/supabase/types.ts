@@ -1107,6 +1107,7 @@ export type Database = {
           is_active: boolean
           lw_quiz_link: string | null
           lw_video_link: string | null
+          merged_into_topic_id: string | null
           quiz_status: string | null
           topic_description: string | null
           topic_name: string
@@ -1125,6 +1126,7 @@ export type Database = {
           is_active?: boolean
           lw_quiz_link?: string | null
           lw_video_link?: string | null
+          merged_into_topic_id?: string | null
           quiz_status?: string | null
           topic_description?: string | null
           topic_name: string
@@ -1143,6 +1145,7 @@ export type Database = {
           is_active?: boolean
           lw_quiz_link?: string | null
           lw_video_link?: string | null
+          merged_into_topic_id?: string | null
           quiz_status?: string | null
           topic_description?: string | null
           topic_name?: string
@@ -1165,6 +1168,13 @@ export type Database = {
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chapter_topics_merged_into_topic_id_fkey"
+            columns: ["merged_into_topic_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_topics"
+            referencedColumns: ["id"]
+          },
         ]
       }
       chapters: {
@@ -1176,6 +1186,9 @@ export type Database = {
           id: string
           je_only_mode: boolean
           target_lessons: number | null
+          topics_locked: boolean
+          topics_locked_at: string | null
+          topics_locked_count: number | null
         }
         Insert: {
           chapter_name: string
@@ -1185,6 +1198,9 @@ export type Database = {
           id?: string
           je_only_mode?: boolean
           target_lessons?: number | null
+          topics_locked?: boolean
+          topics_locked_at?: string | null
+          topics_locked_count?: number | null
         }
         Update: {
           chapter_name?: string
@@ -1194,6 +1210,9 @@ export type Database = {
           id?: string
           je_only_mode?: boolean
           target_lessons?: number | null
+          topics_locked?: boolean
+          topics_locked_at?: string | null
+          topics_locked_count?: number | null
         }
         Relationships: [
           {
