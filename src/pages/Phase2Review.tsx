@@ -517,7 +517,7 @@ export default function Phase2Review() {
                   <div className="flex-1 relative">
                     <Slider
                       min={1}
-                      max={Math.min(8, topics.filter(t => !t.merged_into_topic_id).length)}
+                      max={Math.min(8, topics.length)}
                       step={1}
                       value={[sliderValue]}
                       onValueChange={isLocked ? undefined : handleSliderChange}
