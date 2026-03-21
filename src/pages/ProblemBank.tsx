@@ -657,7 +657,7 @@ export default function ProblemBank() {
                             Re-paste
                           </button>
                         ) : !hasScreenshot ? (
-                          <button className="text-[11px] text-primary hover:underline" onClick={() => openEdit(p)} title="Add screenshot via edit dialog">
+                          <button className="text-[11px] text-primary hover:underline" onClick={() => openEdit(p as any)} title="Add screenshot via edit dialog">
                             Add
                           </button>
                         ) : (p.status === "raw" || p.status === "tagged") ? (
