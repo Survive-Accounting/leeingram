@@ -1200,9 +1200,11 @@ export type Database = {
           generated_by_ai: boolean | null
           id: string
           is_active: boolean
+          is_supplementary: boolean
           lw_quiz_link: string | null
           lw_video_link: string | null
           merged_into_topic_id: string | null
+          original_asset_codes: string[] | null
           quiz_status: string | null
           topic_description: string | null
           topic_name: string
@@ -1219,9 +1221,11 @@ export type Database = {
           generated_by_ai?: boolean | null
           id?: string
           is_active?: boolean
+          is_supplementary?: boolean
           lw_quiz_link?: string | null
           lw_video_link?: string | null
           merged_into_topic_id?: string | null
+          original_asset_codes?: string[] | null
           quiz_status?: string | null
           topic_description?: string | null
           topic_name: string
@@ -1238,9 +1242,11 @@ export type Database = {
           generated_by_ai?: boolean | null
           id?: string
           is_active?: boolean
+          is_supplementary?: boolean
           lw_quiz_link?: string | null
           lw_video_link?: string | null
           merged_into_topic_id?: string | null
+          original_asset_codes?: string[] | null
           quiz_status?: string | null
           topic_description?: string | null
           topic_name?: string

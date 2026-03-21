@@ -148,6 +148,7 @@ Please identify the 10 most important exam topics from these assets, ordered by 
     // Insert new topics (up to 10)
     const insertedTopics: Array<{ id: string; asset_codes: string[] }> = [];
     for (const t of parsed.topics.slice(0, 10)) {
+      const assetCodes = t.asset_codes || [];
       const { data: inserted, error: insErr } = await sb
         .from("chapter_topics")
         .insert({
@@ -157,10 +158,12 @@ Please identify the 10 most important exam topics from these assets, ordered by 
           topic_number: t.topic_number,
           topic_description: t.topic_description || "",
           topic_rationale: t.topic_rationale || "",
-          asset_codes: t.asset_codes || [],
+          asset_codes: assetCodes,
+          original_asset_codes: assetCodes,
           display_order: t.topic_number,
           is_active: true,
           generated_by_ai: true,
+          is_supplementary: false,
           video_status: "not_started",
           quiz_status: "not_started",
         } as any)
@@ -172,7 +175,46 @@ Please identify the 10 most important exam topics from these assets, ordered by 
         continue;
       }
       if (inserted) {
-        insertedTopics.push({ id: inserted.id, asset_codes: t.asset_codes || [] });
+        insertedTopics.push({ id: inserted.id, asset_codes: assetCodes });
+      }
+    }
+
+    // Create the Supplementary Problems topic (always last, not counted in slider)
+    const { data: suppInserted } = await sb
+      .from("chapter_topics")
+      .insert({
+        chapter_id,
+        course_id: chapter.course_id,
+        topic_name: "Supplementary Problems",
+        topic_number: 99,
+        topic_description: "Lower-priority problems that don't fit a core topic. Great for extra practice.",
+        topic_rationale: "",
+        asset_codes: [],
+        original_asset_codes: [],
+        display_order: 99,
+        is_active: true,
+        generated_by_ai: true,
+        is_supplementary: true,
+        video_status: "not_started",
+        quiz_status: "not_started",
+      } as any)
+      .select("id")
+      .single();
+
+    // Collect all assigned asset codes
+    const allAssignedCodes = new Set(insertedTopics.flatMap(t => t.asset_codes));
+
+    // Find unassigned approved assets and put them in supplementary
+    if (suppInserted) {
+      const unassignedAssets = (assets || []).filter(a => !allAssignedCodes.has(a.asset_name));
+      if (unassignedAssets.length > 0) {
+        const suppCodes = unassignedAssets.map(a => a.asset_name);
+        await sb.from("chapter_topics").update({ asset_codes: suppCodes } as any).eq("id", suppInserted.id);
+        // Tag those assets
+        for (const code of suppCodes) {
+          await sb.from("teaching_assets").update({ topic_id: suppInserted.id } as any)
+            .eq("chapter_id", chapter_id).eq("asset_name", code);
+        }
       }
     }
 
