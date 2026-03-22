@@ -1701,14 +1701,34 @@ export default function SolutionsViewer() {
     supabase.rpc("increment_solutions_views", { asset_id: data.id }).then(() => {});
   }, [data?.id]);
 
-  // Page title
-  useEffect(() => {
-    if (!data) return;
-    const ref = data.source_ref || data.asset_name || "";
-    const pt = data._problemTitle || "";
-    document.title = pt ? `${ref} — ${pt} | Survive Accounting` : `${ref} | Survive Accounting`;
-    return () => { document.title = "Survive Accounting"; };
-  }, [data]);
+  // SEO meta — computed values
+  const seoRef = data?.source_ref || data?.asset_name || "";
+  const seoProblemTitle = data?._problemTitle || "";
+  const seoTitle = seoProblemTitle
+    ? `${seoRef} — ${seoProblemTitle} | Survive Accounting`
+    : seoRef
+      ? `${seoRef} | Survive Accounting`
+      : "Survive Accounting — Accounting Problem Solutions by Lee Ingram";
+  const seoDescription = seoProblemTitle
+    ? `Step-by-step solution for ${seoRef}: ${seoProblemTitle}. Journal entries, key concepts, exam traps, and formulas — built by Lee Ingram from 10+ years of Ole Miss tutoring.`
+    : "Step-by-step accounting solutions with journal entries, exam traps, and key concepts. Built by Lee Ingram from 10+ years of Ole Miss tutoring.";
+  const seoCanonical = `https://learn.surviveaccounting.com/solutions/${assetCode}`;
+  const seoImage = LEE_HERO_URL;
+  const seoJsonLd = data ? JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: seoProblemTitle ? `${seoRef} — ${seoProblemTitle}` : seoRef,
+    description: seoDescription,
+    author: { "@type": "Person", name: "Lee Ingram", url: "https://surviveaccounting.com" },
+    publisher: {
+      "@type": "Organization",
+      name: "Survive Accounting",
+      url: "https://learn.surviveaccounting.com",
+      logo: { "@type": "ImageObject", url: LOGO_URL },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": seoCanonical },
+    image: seoImage,
+  }) : null;
 
   if (isLoading || tokenLoading) {
     return (
