@@ -1,14 +1,13 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
-Allow: /
+Allow: /solutions/
+Allow: /cram/
+Allow: /accy304
+Disallow: /admin/
+Disallow: /phase2-review
+Disallow: /quiz-queue
+Disallow: /video-queue
+Disallow: /solutions-qa
+Disallow: /bulk-fix
+Disallow: /asset-stats
+
+Sitemap: https://learn.surviveaccounting.com/sitemap.xml

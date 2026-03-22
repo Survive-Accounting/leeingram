@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2 } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
@@ -1701,14 +1702,34 @@ export default function SolutionsViewer() {
     supabase.rpc("increment_solutions_views", { asset_id: data.id }).then(() => {});
   }, [data?.id]);
 
-  // Page title
-  useEffect(() => {
-    if (!data) return;
-    const ref = data.source_ref || data.asset_name || "";
-    const pt = data._problemTitle || "";
-    document.title = pt ? `${ref} — ${pt} | Survive Accounting` : `${ref} | Survive Accounting`;
-    return () => { document.title = "Survive Accounting"; };
-  }, [data]);
+  // SEO meta — computed values
+  const seoRef = data?.source_ref || data?.asset_name || "";
+  const seoProblemTitle = data?._problemTitle || "";
+  const seoTitle = seoProblemTitle
+    ? `${seoRef} — ${seoProblemTitle} | Survive Accounting`
+    : seoRef
+      ? `${seoRef} | Survive Accounting`
+      : "Survive Accounting — Accounting Problem Solutions by Lee Ingram";
+  const seoDescription = seoProblemTitle
+    ? `Step-by-step solution for ${seoRef}: ${seoProblemTitle}. Journal entries, key concepts, exam traps, and formulas — built by Lee Ingram from 10+ years of Ole Miss tutoring.`
+    : "Step-by-step accounting solutions with journal entries, exam traps, and key concepts. Built by Lee Ingram from 10+ years of Ole Miss tutoring.";
+  const seoCanonical = `https://learn.surviveaccounting.com/solutions/${assetCode}`;
+  const seoImage = LEE_HERO_URL;
+  const seoJsonLd = data ? JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: seoProblemTitle ? `${seoRef} — ${seoProblemTitle}` : seoRef,
+    description: seoDescription,
+    author: { "@type": "Person", name: "Lee Ingram", url: "https://surviveaccounting.com" },
+    publisher: {
+      "@type": "Organization",
+      name: "Survive Accounting",
+      url: "https://learn.surviveaccounting.com",
+      logo: { "@type": "ImageObject", url: LOGO_URL },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": seoCanonical },
+    image: seoImage,
+  }) : null;
 
   if (isLoading || tokenLoading) {
     return (
@@ -1816,7 +1837,24 @@ export default function SolutionsViewer() {
 
   return (
     <div className="min-h-screen relative" style={{ background: t.pageBg }}>
-      {/* ── Watermark Background ── */}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={seoCanonical} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={`Step-by-step accounting solution for ${seoRef}. Journal entries, exam traps, and key concepts — from Lee Ingram.`} />
+        <meta property="og:image" content={seoImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content={seoCanonical} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Survive Accounting" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={`Step-by-step accounting solution for ${seoRef}. From Lee Ingram.`} />
+        <meta name="twitter:image" content={seoImage} />
+        {seoJsonLd && <script type="application/ld+json">{seoJsonLd}</script>}
+      </Helmet>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${AORAKI_URL})`, opacity: 0.06 }} />
         <div className="absolute inset-0" style={{ background: t.watermarkOverlay }} />
