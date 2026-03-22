@@ -1836,7 +1836,24 @@ export default function SolutionsViewer() {
 
   return (
     <div className="min-h-screen relative" style={{ background: t.pageBg }}>
-      {/* ── Watermark Background ── */}
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={seoCanonical} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={`Step-by-step accounting solution for ${seoRef}. Journal entries, exam traps, and key concepts — from Lee Ingram.`} />
+        <meta property="og:image" content={seoImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content={seoCanonical} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Survive Accounting" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={`Step-by-step accounting solution for ${seoRef}. From Lee Ingram.`} />
+        <meta name="twitter:image" content={seoImage} />
+        {seoJsonLd && <script type="application/ld+json">{seoJsonLd}</script>}
+      </Helmet>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${AORAKI_URL})`, opacity: 0.06 }} />
         <div className="absolute inset-0" style={{ background: t.watermarkOverlay }} />
