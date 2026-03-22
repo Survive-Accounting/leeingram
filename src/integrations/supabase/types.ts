@@ -3922,6 +3922,99 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_quiz_questions: {
+        Row: {
+          chapter_id: string
+          correct_answer: string
+          created_at: string
+          explanation_a: string | null
+          explanation_b: string | null
+          explanation_c: string | null
+          explanation_correct: string
+          explanation_d: string | null
+          generated_at: string
+          id: string
+          je_accounts: Json | null
+          je_description: string | null
+          lee_notes: string | null
+          option_a: string | null
+          option_b: string | null
+          option_c: string | null
+          option_d: string | null
+          question_number: number
+          question_text: string
+          question_type: string
+          review_status: string
+          reviewed_at: string | null
+          topic_id: string
+        }
+        Insert: {
+          chapter_id: string
+          correct_answer?: string
+          created_at?: string
+          explanation_a?: string | null
+          explanation_b?: string | null
+          explanation_c?: string | null
+          explanation_correct?: string
+          explanation_d?: string | null
+          generated_at?: string
+          id?: string
+          je_accounts?: Json | null
+          je_description?: string | null
+          lee_notes?: string | null
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string
+          review_status?: string
+          reviewed_at?: string | null
+          topic_id: string
+        }
+        Update: {
+          chapter_id?: string
+          correct_answer?: string
+          created_at?: string
+          explanation_a?: string | null
+          explanation_b?: string | null
+          explanation_c?: string | null
+          explanation_correct?: string
+          explanation_d?: string | null
+          generated_at?: string
+          id?: string
+          je_accounts?: Json | null
+          je_description?: string | null
+          lee_notes?: string | null
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string
+          review_status?: string
+          reviewed_at?: string | null
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_quiz_questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_quiz_questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       topic_rules: {
         Row: {
           chapter_number: number
