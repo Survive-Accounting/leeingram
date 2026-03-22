@@ -207,26 +207,28 @@ const AppRoutes = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ImpersonationProvider>
-            <SprintProvider>
-              <RoutedAppBoundary>
-                <ImpersonationBanner />
-                <SprintTimerBar />
-                <RoleRouteGuard />
-                <AppRoutes />
-              </RoutedAppBoundary>
-            </SprintProvider>
-          </ImpersonationProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <ImpersonationProvider>
+              <SprintProvider>
+                <RoutedAppBoundary>
+                  <ImpersonationBanner />
+                  <SprintTimerBar />
+                  <RoleRouteGuard />
+                  <AppRoutes />
+                </RoutedAppBoundary>
+              </SprintProvider>
+            </ImpersonationProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
