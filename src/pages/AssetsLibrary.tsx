@@ -1378,34 +1378,13 @@ export default function AssetsLibrary() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
-                                Preview — Paid (Full Solutions) →
+                                Preview Study Pass Page →
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?preview=true`, "_blank")}>
-                                Preview — Free (Paywall) →
+                                Preview Free Page →
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.open(`/practice/${a.asset_name}`, "_blank")}>
-                                Practice Mode →
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-full" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
-                                navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
-                                setLastCopiedKey(a.id + "-full");
-                                toast.success("iFrame code copied — paste into LearnWorlds iFrame activity");
-                              }}>
-                                Copy Full Solutions iFrame
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-preview" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
-                                navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}?preview=true" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
-                                setLastCopiedKey(a.id + "-preview");
-                                toast.success("Preview iFrame copied — students will see paywall after problem");
-                              }}>
-                                Copy Preview iFrame
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className={cn(lastCopiedKey === a.id + "-practice" && "bg-yellow-400/20 text-yellow-300")} onClick={() => {
-                                navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/practice/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
-                                setLastCopiedKey(a.id + "-practice");
-                                toast.success("Practice iFrame copied");
-                              }}>
-                                Copy Practice iFrame
+                              <DropdownMenuItem className="border-t mt-1 pt-1" onClick={() => window.open(`/solutions-staging/${a.asset_name}`, "_blank")}>
+                                Preview Staging Page →
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
