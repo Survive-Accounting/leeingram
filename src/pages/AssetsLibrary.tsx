@@ -1265,7 +1265,7 @@ export default function AssetsLibrary() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
+                            <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?ref=lw`, "_blank")}>
                               Preview Study Pass Page →
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?preview=true`, "_blank")}>
