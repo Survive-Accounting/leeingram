@@ -166,7 +166,7 @@ export default function VaDashboard() {
 
     const generateRawDone = ch.generated === 0;
     const reviewRawDone = ch.in_review === 0;
-    const assetsCount = ch.approved;
+    const assetsCount = assetCounts?.[activeChapterId] ?? 0;
     const assetsDoneRaw = ch.total > 0 && ch.approved === ch.total;
 
     // Sequential: each stage needs previous to be Done
@@ -315,50 +315,58 @@ export default function VaDashboard() {
                 <div className="border-t border-border pt-4">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Your Chapters</h3>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {chapterDetails
-                    .sort((a, b) => a.chapter_number - b.chapter_number)
-                    .map(ch => {
-                      const co = getCourse(ch.course_id);
-                      const isActiveChapter = ch.id === activeChapterId;
-                      const counts = perChapterCounts?.[ch.id];
-                      const pct = counts && counts.total > 0 ? Math.round((counts.approved / counts.total) * 100) : 0;
-                      return (
-                        <Card
-                          key={ch.id}
-                          className={`cursor-pointer transition-all ${
-                            isActiveChapter
-                              ? "border-2 border-primary/60 bg-primary/5 shadow-sm shadow-primary/10"
-                              : "border-border hover:border-primary/30"
-                          }`}
-                          onClick={() => handleSelectChapter(ch)}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <p className={`text-sm font-semibold ${isActiveChapter ? "text-foreground" : "text-foreground/80"}`}>
-                                  Ch {ch.chapter_number}: {ch.chapter_name}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">{co?.code} — {co?.course_name}</p>
-                              </div>
-                              {isActiveChapter && (
-                                <Badge className="text-[8px] bg-primary/15 text-primary border-0">Active</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Progress value={pct} className="h-1.5 flex-1" />
-                              <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>
-                            </div>
-                            {counts && (
-                              <p className="text-[9px] text-muted-foreground mt-1">
-                                {counts.approved} of {counts.total} approved
-                              </p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                </div>
+                {(() => {
+                  // Group chapters by course
+                  const grouped: Record<string, typeof chapterDetails> = {};
+                  chapterDetails.sort((a, b) => a.chapter_number - b.chapter_number).forEach(ch => {
+                    const courseId = ch.course_id;
+                    if (!grouped[courseId]) grouped[courseId] = [];
+                    grouped[courseId].push(ch);
+                  });
+                  return Object.entries(grouped).map(([courseId, chapters]) => {
+                    const co = getCourse(courseId);
+                    return (
+                      <div key={courseId} className="space-y-2">
+                        <p className="text-[11px] font-semibold text-primary/80 tracking-wide">
+                          {co?.code} — {co?.course_name}
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {chapters.map(ch => {
+                            const isActiveChapter = ch.id === activeChapterId;
+                            const taCount = assetCounts?.[ch.id] ?? 0;
+                            return (
+                              <Card
+                                key={ch.id}
+                                className={`cursor-pointer transition-all ${
+                                  isActiveChapter
+                                    ? "border-2 border-primary/60 bg-primary/5 shadow-sm shadow-primary/10"
+                                    : "border-border hover:border-primary/30"
+                                }`}
+                                onClick={() => handleSelectChapter(ch)}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                      <p className={`text-sm font-semibold ${isActiveChapter ? "text-foreground" : "text-foreground/80"}`}>
+                                        Ch {ch.chapter_number}: {ch.chapter_name}
+                                      </p>
+                                    </div>
+                                    {isActiveChapter && (
+                                      <Badge className="text-[8px] bg-primary/15 text-primary border-0">Active</Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {taCount} teaching asset{taCount !== 1 ? "s" : ""}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
           </TabsContent>
