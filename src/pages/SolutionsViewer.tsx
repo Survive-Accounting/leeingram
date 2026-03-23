@@ -1460,6 +1460,7 @@ export default function SolutionsViewer() {
     "surviveaccounting.learnworlds.com",
     "learn.surviveaccounting.com",
     "surviveaccounting.com",
+    "lovable.app",
   ];
 
   const lwVerified = useMemo(() => {
