@@ -166,7 +166,7 @@ export default function VaDashboard() {
 
     const generateRawDone = ch.generated === 0;
     const reviewRawDone = ch.in_review === 0;
-    const assetsCount = ch.approved;
+    const assetsCount = assetCounts?.[activeChapterId] ?? 0;
     const assetsDoneRaw = ch.total > 0 && ch.approved === ch.total;
 
     // Sequential: each stage needs previous to be Done
