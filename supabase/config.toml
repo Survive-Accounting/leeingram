@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.send-bulk-fix-summary]
 verify_jwt = false
+
+[functions.generate-topic-quiz]
+verify_jwt = false
