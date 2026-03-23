@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SheetPrepLog } from "@/components/admin-dashboard/SheetPrepLog";
@@ -1200,26 +1200,20 @@ export default function AssetsLibrary() {
                   {sortField === "source_ref" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                 </button>
               </TableHead>
-              {!isContentCreationVa && (
-                <TableHead className="text-xs">LW Tools</TableHead>
-              )}
               <TableHead className="text-xs">
                 <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
                   Created
                   {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                 </button>
               </TableHead>
-              {!isContentCreationVa && (
-                <TableHead className="text-xs w-16 text-right">Tools</TableHead>
-              )}
               <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={isContentCreationVa ? 4 : 6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={isContentCreationVa ? 4 : 6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               paginatedAssets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
@@ -1254,147 +1248,39 @@ export default function AssetsLibrary() {
                     <TableCell className="text-xs font-mono text-muted-foreground">
                       {a.source_ref || "—"}
                     </TableCell>
-                    {!isContentCreationVa && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-1 items-center">
-                          <Tip label="Copy title: Source Ref — Problem Title">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={cn("h-6 text-[10px] px-1.5 transition-all duration-300", lastCopiedKey === a.id + "-title" && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}
-                              onClick={() => {
-                                const title = (a as any).problem_title
-                                  ? `${a.source_ref} — ${(a as any).problem_title}`
-                                  : (a.source_ref || a.asset_name);
-                                navigator.clipboard.writeText(title);
-                                setLastCopiedKey(a.id + "-title");
-                                toast.success("Title copied");
-                              }}
-                            >
-                              <Copy className="h-3 w-3" />
-                              Title
-                            </Button>
-                          </Tip>
-                          <Tip label="Copy full solutions iFrame embed">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={cn("h-6 text-[10px] px-1.5 transition-all duration-300", lastCopiedKey === a.id + "-iframe-inline" && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")}
-                              onClick={() => {
-                                navigator.clipboard.writeText(`<iframe src="${STUDENT_BASE_URL}/solutions/${a.asset_name}" width="100%" height="900" frameborder="0" style="border:none;border-radius:8px"></iframe>`);
-                                setLastCopiedKey(a.id + "-iframe-inline");
-                                toast.success("iFrame copied");
-                              }}
-                            >
-                              <Copy className="h-3 w-3" />
-                              iFrame
-                            </Button>
-                          </Tip>
-                        </div>
-                      </TableCell>
-                    )}
                     <TableCell className="text-xs text-muted-foreground">
                       {format(new Date(a.created_at), "MMM d")}
                     </TableCell>
-                    {!isContentCreationVa && (
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-0.5 justify-end items-center">
-                          {a.sheet_master_url ? (
-                            <>
-                              <Tip label="Push asset data to Hidden_Data tab on the Google Sheet">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 text-[10px] px-1.5"
-                                  disabled={syncingAssetId === a.id}
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    setSyncingAssetId(a.id);
-                                    try {
-                                      const { data, error } = await supabase.functions.invoke("sync-hidden-data", {
-                                        body: { teaching_asset_id: a.id },
-                                      });
-                                      if (error) throw error;
-                                      if (data?.error) throw new Error(data.error);
-                                      toast.success(`Synced ${data.fields_written?.length || 0} fields to Hidden_Data`, {
-                                        description: `${data.fields_skipped?.length || 0} fields already had data — skipped`,
-                                      });
-                                    } catch (err: any) {
-                                      toast.error(err.message || "Sync failed");
-                                    } finally {
-                                      setSyncingAssetId(null);
-                                    }
-                                  }}
-                                >
-                                  {syncingAssetId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                                </Button>
-                              </Tip>
-                              <Tip label="Add MC questions to Hidden_Data tab">
-                                <span><AddMCButton assetId={a.id} hasSheet={true} /></span>
-                              </Tip>
-                              <Tip label="Go to Whiteboard (Google Sheets)">
-                                <a href={a.sheet_master_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
-                              </Tip>
-                              {a.test_slide_url && (
-                                <Tip label="Go to Filming Slides (Google Slides)">
-                                  <a href={a.test_slide_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">🎞️</a>
-                                </Tip>
-                              )}
-                            </>
-                          ) : sheetUrls?.[a.asset_name] ? (
-                            <Tip label="Open Google Sheet">
-                              <a href={sheetUrls[a.asset_name]} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">📋</a>
-                            </Tip>
-                          ) : !(a as any).prep_doc_url ? (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          ) : null}
-                          {(a as any).prep_doc_url && (
-                            <Tip label="View Prep Doc">
-                              <a href={(a as any).prep_doc_url} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
-                                <BookOpen className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-                              </a>
-                            </Tip>
-                          )}
-                          {isAdmin && (
-                            <FlowchartButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
-                          )}
-                          {isAdmin && (
-                            <SupplementaryJEButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
-                          )}
-                          {isAdmin && (
-                            <EnrichJEMemosButton asset={a} onUpdated={() => qc.invalidateQueries({ queryKey: ["teaching-assets"] })} />
-                          )}
-                          {/* Solutions embed dropdown */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" className={cn("h-6 text-[10px] px-1.5 relative transition-all duration-300", lastCopiedKey?.startsWith(a.id + "-") && "ring-2 ring-yellow-400 shadow-[0_0_8px_hsl(45,90%,50%,0.5)]")} onClick={(e) => e.stopPropagation()}>
-                                <ExternalLink className="h-3 w-3" />
-                                {(a as any).solutions_page_views > 0 && (
-                                  <span className="absolute -top-1.5 -right-1.5 bg-muted text-muted-foreground text-[8px] rounded-full h-3.5 min-w-[14px] flex items-center justify-center px-0.5">
-                                    {(a as any).solutions_page_views}
-                                  </span>
-                                )}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
-                                Preview Study Pass Page →
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?preview=true`, "_blank")}>
-                                Preview Free Page →
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="border-t mt-1 pt-1" onClick={() => window.open(`/solutions-staging/${a.asset_name}`, "_blank")}>
-                                Preview Staging Page →
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => openDrawer(a)}>
-                        <Eye className="h-3 w-3 mr-1" /> View
-                      </Button>
+                      <div className="flex gap-1 justify-end items-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-6 text-[10px] px-1.5 relative" onClick={(e) => e.stopPropagation()}>
+                              <ExternalLink className="h-3 w-3" />
+                              {(a as any).solutions_page_views > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 bg-muted text-muted-foreground text-[8px] rounded-full h-3.5 min-w-[14px] flex items-center justify-center px-0.5">
+                                  {(a as any).solutions_page_views}
+                                </span>
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}`, "_blank")}>
+                              Preview Study Pass Page →
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.open(`/solutions/${a.asset_name}?preview=true`, "_blank")}>
+                              Preview Free Page →
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => window.open(`/solutions-staging/${a.asset_name}`, "_blank")}>
+                              Preview Staging Page →
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => openDrawer(a)}>
+                          <Eye className="h-3 w-3 mr-1" /> View
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
