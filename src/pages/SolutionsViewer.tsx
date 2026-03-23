@@ -1468,6 +1468,10 @@ export default function SolutionsViewer() {
     if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sa-lw-verified") === "true") {
       return true;
     }
+    // Allow if current host is a lovable.app preview domain (admin preview)
+    if (hasRefLw && window.location.hostname.endsWith("lovable.app")) {
+      return true;
+    }
     // Check referrer against allowed domains
     if (hasRefLw && document.referrer) {
       try {
