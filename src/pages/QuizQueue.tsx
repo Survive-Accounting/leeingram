@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -8,15 +8,29 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Package, Download, ExternalLink, ClipboardList, ListChecks,
-  Sparkles, Eye, FileDown, AlertCircle,
+  Sparkles, Eye, FileDown, AlertCircle, Loader2,
+  Check, X, Pencil, CheckCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /* ──────── Types ──────── */
 
@@ -29,6 +43,29 @@ interface TopicRow {
   questionCount: number;
   approvedCount: number;
   status: "not_generated" | "needs_review" | "ready";
+}
+
+interface QuizQuestion {
+  id: string;
+  topic_id: string;
+  chapter_id: string;
+  question_number: number;
+  question_type: string;
+  question_text: string;
+  correct_answer: string;
+  explanation_correct: string;
+  option_a: string | null;
+  option_b: string | null;
+  option_c: string | null;
+  option_d: string | null;
+  explanation_a: string | null;
+  explanation_b: string | null;
+  explanation_c: string | null;
+  explanation_d: string | null;
+  je_accounts: any;
+  je_description: string | null;
+  review_status: string;
+  lee_notes: string | null;
 }
 
 /* ──────── VA Placeholder ──────── */
@@ -59,82 +96,691 @@ function QuizStatusBadge({ status }: { status: TopicRow["status"] }) {
   return <Badge variant="outline" className={cls}>{label}</Badge>;
 }
 
+/* ──────── Question Type Badge ──────── */
+
+function QuestionTypeBadge({ type }: { type: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    mc: { label: "MC", cls: "bg-blue-500/15 text-blue-600 border-blue-500/30" },
+    true_false: { label: "T/F", cls: "bg-purple-500/15 text-purple-600 border-purple-500/30" },
+    je_recall: { label: "JE", cls: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
+  };
+  const { label, cls } = map[type] ?? { label: type, cls: "bg-muted text-muted-foreground" };
+  return <Badge variant="outline" className={`text-[10px] ${cls}`}>{label}</Badge>;
+}
+
+/* ──────── Review Status Badge ──────── */
+
+function ReviewStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
+    pending: { label: "Pending", icon: null, cls: "bg-muted text-muted-foreground" },
+    approved: { label: "Approved", icon: <Check className="h-3 w-3" />, cls: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" },
+    rejected: { label: "Rejected", icon: <X className="h-3 w-3" />, cls: "bg-destructive/15 text-destructive border-destructive/30" },
+    edited: { label: "Edited", icon: <Pencil className="h-3 w-3" />, cls: "bg-blue-500/15 text-blue-600 border-blue-500/30" },
+  };
+  const { label, icon, cls } = map[status] ?? map.pending;
+  return (
+    <Badge variant="outline" className={`text-[10px] gap-1 ${cls}`}>
+      {icon}{label}
+    </Badge>
+  );
+}
+
+/* ──────── CSV Export Helper ──────── */
+
+function buildLwCsv(questions: QuizQuestion[], topicName: string): string {
+  const headers = [
+    "Group", "Type", "Question", "CorAns",
+    "Answer1", "Answer2", "Answer3", "Answer4",
+    "CorrectExplanation", "IncorrectExplanation",
+  ];
+
+  const esc = (v: string) => {
+    if (!v) return "";
+    if (v.includes('"') || v.includes(",") || v.includes("\n")) {
+      return `"${v.replace(/"/g, '""')}"`;
+    }
+    return v;
+  };
+
+  const rows = questions.map((q) => {
+    if (q.question_type === "true_false") {
+      const corAns = q.correct_answer === "a" ? "True" : "False";
+      const wrongExps = [
+        q.correct_answer !== "a" ? q.explanation_a : q.explanation_b,
+      ].filter(Boolean).join(" | ");
+      return [
+        topicName, "True/False", q.question_text, corAns,
+        "True", "False", "", "",
+        q.explanation_correct, wrongExps,
+      ].map(esc).join(",");
+    }
+
+    if (q.question_type === "je_recall") {
+      const accounts = Array.isArray(q.je_accounts) ? q.je_accounts : [];
+      const correctText = q.correct_answer || accounts.map(
+        (a: any) => `${a.side === "debit" ? "DR" : "CR"} ${a.account_name}`
+      ).join(" / ");
+
+      // Build plausible wrong answers by swapping sides
+      const wrong1 = accounts.map(
+        (a: any) => `${a.side === "debit" ? "CR" : "DR"} ${a.account_name}`
+      ).join(" / ");
+      const wrong2 = accounts.length > 1
+        ? `DR ${accounts[0]?.account_name} / DR ${accounts[1]?.account_name}`
+        : "DR " + (accounts[0]?.account_name ?? "Unknown");
+      const wrong3 = accounts.length > 1
+        ? `CR ${accounts[0]?.account_name} / CR ${accounts[1]?.account_name}`
+        : "CR " + (accounts[0]?.account_name ?? "Unknown");
+
+      const qText = (q.je_description || q.question_text) +
+        " — Which of the following correctly records this journal entry?";
+
+      return [
+        topicName, "Multiple Choice", qText, correctText,
+        correctText, wrong1, wrong2, wrong3,
+        q.explanation_correct,
+        "Review the debit/credit rules for each account type in this transaction.",
+      ].map(esc).join(",");
+    }
+
+    // MC
+    const optMap: Record<string, string | null> = {
+      a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d,
+    };
+    const corAns = optMap[q.correct_answer] ?? q.correct_answer;
+    const wrongExps = ["a", "b", "c", "d"]
+      .filter((k) => k !== q.correct_answer)
+      .map((k) => {
+        const expMap: Record<string, string | null> = {
+          a: q.explanation_a, b: q.explanation_b,
+          c: q.explanation_c, d: q.explanation_d,
+        };
+        return expMap[k];
+      })
+      .filter(Boolean)
+      .join(" | ");
+
+    return [
+      topicName, "Multiple Choice", q.question_text, corAns,
+      q.option_a ?? "", q.option_b ?? "", q.option_c ?? "", q.option_d ?? "",
+      q.explanation_correct, wrongExps,
+    ].map(esc).join(",");
+  });
+
+  return [headers.join(","), ...rows].join("\n");
+}
+
+function downloadCsv(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ──────── Review Drawer ──────── */
+
+function QuizReviewDrawer({
+  open,
+  onOpenChange,
+  topicId,
+  topicName,
+  onUpdated,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  topicId: string;
+  topicName: string;
+  onUpdated: () => void;
+}) {
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [focusIdx, setFocusIdx] = useState(0);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectNotes, setRejectNotes] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<QuizQuestion>>({});
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const loadQuestions = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("topic_quiz_questions")
+      .select("*")
+      .eq("topic_id", topicId)
+      .order("question_number", { ascending: true });
+    setQuestions((data as unknown as QuizQuestion[]) ?? []);
+    setLoading(false);
+  }, [topicId]);
+
+  useEffect(() => {
+    if (open && topicId) loadQuestions();
+  }, [open, topicId, loadQuestions]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (editingId || rejectingId) return;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusIdx((prev) => {
+          const next = Math.min(prev + 1, questions.length - 1);
+          cardRefs.current[next]?.scrollIntoView({ behavior: "smooth", block: "center" });
+          return next;
+        });
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusIdx((prev) => {
+          const next = Math.max(prev - 1, 0);
+          cardRefs.current[next]?.scrollIntoView({ behavior: "smooth", block: "center" });
+          return next;
+        });
+      } else if (e.key === "a" || e.key === "A") {
+        e.preventDefault();
+        const q = questions[focusIdx];
+        if (q) handleApprove(q.id);
+      } else if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        const q = questions[focusIdx];
+        if (q) setRejectingId(q.id);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, questions, focusIdx, editingId, rejectingId]);
+
+  async function handleApprove(questionId: string) {
+    await supabase
+      .from("topic_quiz_questions")
+      .update({ review_status: "approved", reviewed_at: new Date().toISOString() } as any)
+      .eq("id", questionId);
+    setQuestions((prev) =>
+      prev.map((q) => q.id === questionId ? { ...q, review_status: "approved" } : q)
+    );
+    onUpdated();
+  }
+
+  async function handleApproveAll() {
+    const pending = questions.filter((q) => q.review_status === "pending" || q.review_status === "rejected");
+    for (const q of pending) {
+      await supabase
+        .from("topic_quiz_questions")
+        .update({ review_status: "approved", reviewed_at: new Date().toISOString() } as any)
+        .eq("id", q.id);
+    }
+    setQuestions((prev) =>
+      prev.map((q) => ({ ...q, review_status: "approved" }))
+    );
+    toast.success(`${pending.length} questions approved`);
+    onUpdated();
+  }
+
+  async function handleRejectSubmit() {
+    if (!rejectingId) return;
+    await supabase
+      .from("topic_quiz_questions")
+      .update({
+        review_status: "rejected",
+        lee_notes: rejectNotes,
+        reviewed_at: new Date().toISOString(),
+      } as any)
+      .eq("id", rejectingId);
+    setQuestions((prev) =>
+      prev.map((q) => q.id === rejectingId ? { ...q, review_status: "rejected", lee_notes: rejectNotes } : q)
+    );
+    setRejectingId(null);
+    setRejectNotes("");
+    onUpdated();
+  }
+
+  function startEdit(q: QuizQuestion) {
+    setEditingId(q.id);
+    setEditForm({
+      question_text: q.question_text,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      option_d: q.option_d,
+      correct_answer: q.correct_answer,
+      explanation_correct: q.explanation_correct,
+      explanation_a: q.explanation_a,
+      explanation_b: q.explanation_b,
+      explanation_c: q.explanation_c,
+      explanation_d: q.explanation_d,
+      je_description: q.je_description,
+    });
+  }
+
+  async function handleEditSave() {
+    if (!editingId) return;
+    await supabase
+      .from("topic_quiz_questions")
+      .update({
+        ...editForm,
+        review_status: "edited",
+        reviewed_at: new Date().toISOString(),
+      } as any)
+      .eq("id", editingId);
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === editingId ? { ...q, ...editForm, review_status: "edited" } as QuizQuestion : q
+      )
+    );
+    setEditingId(null);
+    setEditForm({});
+    onUpdated();
+  }
+
+  const approvedCount = questions.filter(
+    (q) => q.review_status === "approved" || q.review_status === "edited"
+  ).length;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="text-sm font-bold">{topicName} — Quiz Review</SheetTitle>
+          <SheetDescription className="text-xs">
+            {approvedCount} / {questions.length} approved
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-3 space-y-4">
+          <Progress value={questions.length ? (approvedCount / questions.length) * 100 : 0} className="h-2" />
+
+          <div className="flex justify-end">
+            <Button size="sm" className="h-7 text-xs" onClick={handleApproveAll}>
+              <CheckCheck className="h-3 w-3 mr-1" /> Approve All
+            </Button>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-muted-foreground animate-pulse text-center py-8">Loading questions…</p>
+          ) : (
+            questions.map((q, idx) => (
+              <div
+                key={q.id}
+                ref={(el) => { cardRefs.current[idx] = el; }}
+                className={`rounded-lg border p-4 space-y-3 transition-colors ${
+                  idx === focusIdx ? "border-primary ring-1 ring-primary/30" : "border-border"
+                }`}
+                onClick={() => setFocusIdx(idx)}
+              >
+                {/* Header */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-muted-foreground">Q{q.question_number}</span>
+                  <QuestionTypeBadge type={q.question_type} />
+                  <ReviewStatusBadge status={q.review_status} />
+                </div>
+
+                {/* ── Editing mode ── */}
+                {editingId === q.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editForm.question_text ?? ""}
+                      onChange={(e) => setEditForm({ ...editForm, question_text: e.target.value })}
+                      rows={2}
+                      className="text-sm"
+                      placeholder="Question text"
+                    />
+                    {q.question_type === "mc" && (
+                      <>
+                        {(["a", "b", "c", "d"] as const).map((k) => {
+                          const optKey = `option_${k}` as keyof typeof editForm;
+                          const expKey = `explanation_${k}` as keyof typeof editForm;
+                          return (
+                            <div key={k} className="space-y-1">
+                              <Input
+                                value={(editForm[optKey] as string) ?? ""}
+                                onChange={(e) => setEditForm({ ...editForm, [optKey]: e.target.value })}
+                                placeholder={`Option ${k.toUpperCase()}`}
+                                className="text-xs"
+                              />
+                              <Input
+                                value={(editForm[expKey] as string) ?? ""}
+                                onChange={(e) => setEditForm({ ...editForm, [expKey]: e.target.value })}
+                                placeholder={`Explanation ${k.toUpperCase()}`}
+                                className="text-xs"
+                              />
+                            </div>
+                          );
+                        })}
+                        <Input
+                          value={editForm.correct_answer ?? ""}
+                          onChange={(e) => setEditForm({ ...editForm, correct_answer: e.target.value })}
+                          placeholder="Correct answer (a/b/c/d)"
+                          className="text-xs"
+                        />
+                      </>
+                    )}
+                    {q.question_type === "je_recall" && (
+                      <Textarea
+                        value={editForm.je_description ?? ""}
+                        onChange={(e) => setEditForm({ ...editForm, je_description: e.target.value })}
+                        rows={2}
+                        className="text-xs"
+                        placeholder="JE description"
+                      />
+                    )}
+                    <Textarea
+                      value={editForm.explanation_correct ?? ""}
+                      onChange={(e) => setEditForm({ ...editForm, explanation_correct: e.target.value })}
+                      rows={2}
+                      className="text-xs"
+                      placeholder="Correct explanation"
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" className="h-7 text-xs" onClick={handleEditSave}>
+                        Save Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => { setEditingId(null); setEditForm({}); }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Question text */}
+                    <p className="text-sm font-medium leading-relaxed">{q.question_text}</p>
+
+                    {/* MC options */}
+                    {q.question_type === "mc" && (
+                      <div className="space-y-1.5">
+                        {(["a", "b", "c", "d"] as const).map((k) => {
+                          const optMap: Record<string, string | null> = {
+                            a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d,
+                          };
+                          const expMap: Record<string, string | null> = {
+                            a: q.explanation_a, b: q.explanation_b,
+                            c: q.explanation_c, d: q.explanation_d,
+                          };
+                          const isCorrect = q.correct_answer === k;
+                          return (
+                            <div key={k}>
+                              <div
+                                className={`px-3 py-1.5 rounded text-xs ${
+                                  isCorrect
+                                    ? "bg-emerald-500/10 text-emerald-700 font-medium"
+                                    : "bg-muted/50 text-foreground"
+                                }`}
+                              >
+                                <span className="font-bold mr-1.5">{k.toUpperCase()}.</span>
+                                {optMap[k]}
+                              </div>
+                              {expMap[k] && (
+                                <p className="text-[11px] text-muted-foreground pl-6 mt-0.5">{expMap[k]}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* True/False */}
+                    {q.question_type === "true_false" && (
+                      <div className="space-y-1.5">
+                        {(["a", "b"] as const).map((k) => {
+                          const label = k === "a" ? "True" : "False";
+                          const isCorrect = q.correct_answer === k;
+                          const exp = k === "a" ? q.explanation_a : q.explanation_b;
+                          return (
+                            <div key={k}>
+                              <div
+                                className={`px-3 py-1.5 rounded text-xs ${
+                                  isCorrect
+                                    ? "bg-emerald-500/10 text-emerald-700 font-medium"
+                                    : "bg-muted/50 text-foreground"
+                                }`}
+                              >
+                                {label}
+                              </div>
+                              {exp && (
+                                <p className="text-[11px] text-muted-foreground pl-4 mt-0.5">{exp}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* JE Recall */}
+                    {q.question_type === "je_recall" && (
+                      <div className="space-y-2">
+                        {q.je_description && (
+                          <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
+                        )}
+                        {Array.isArray(q.je_accounts) && q.je_accounts.length > 0 && (
+                          <table className="text-xs w-full border-collapse">
+                            <thead>
+                              <tr className="border-b border-border">
+                                <th className="text-left py-1 font-semibold text-muted-foreground">Account</th>
+                                <th className="text-left py-1 font-semibold text-muted-foreground">Side</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {q.je_accounts.map((a: any, i: number) => (
+                                <tr key={i} className="border-b border-border/50">
+                                  <td className="py-1">{a.account_name}</td>
+                                  <td className="py-1 font-medium">
+                                    {a.side === "debit" ? "DR" : "CR"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                        {q.explanation_correct && (
+                          <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Rejection notes */}
+                    {rejectingId === q.id ? (
+                      <div className="space-y-2 pt-1">
+                        <Textarea
+                          value={rejectNotes}
+                          onChange={(e) => setRejectNotes(e.target.value)}
+                          placeholder="Reason for rejection..."
+                          rows={2}
+                          className="text-xs"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-xs"
+                            onClick={handleRejectSubmit}
+                          >
+                            Save Rejection
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs"
+                            onClick={() => { setRejectingId(null); setRejectNotes(""); }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      q.review_status === "rejected" && q.lee_notes && (
+                        <p className="text-[11px] text-destructive bg-destructive/5 px-2 py-1 rounded">
+                          Notes: {q.lee_notes}
+                        </p>
+                      )
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <Button
+                        size="sm"
+                        variant={q.review_status === "approved" ? "default" : "outline"}
+                        className="h-6 text-[11px] px-2"
+                        onClick={() => handleApprove(q.id)}
+                        disabled={q.review_status === "approved"}
+                      >
+                        <Check className="h-3 w-3 mr-0.5" /> Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[11px] px-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                        onClick={() => { setRejectingId(q.id); setRejectNotes(q.lee_notes ?? ""); }}
+                      >
+                        <X className="h-3 w-3 mr-0.5" /> Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[11px] px-2"
+                        onClick={() => startEdit(q)}
+                      >
+                        <Pencil className="h-3 w-3 mr-0.5" /> Edit
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))
+          )}
+
+          <p className="text-[10px] text-muted-foreground text-center pb-2">
+            Keyboard: A = Approve · R = Reject · ←→ = Navigate
+          </p>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 /* ──────── Topic Quizzes Tab ──────── */
 
-function TopicQuizzesTab({ chapterId }: { chapterId: string | undefined }) {
+function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | undefined; chapterNumber: number | undefined }) {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [confirmRegen, setConfirmRegen] = useState<TopicRow | null>(null);
+  const [reviewTopic, setReviewTopic] = useState<{ id: string; name: string } | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadTopics = useCallback(async () => {
     if (!chapterId) { setLoading(false); return; }
+    setLoading(true);
 
-    async function load() {
-      setLoading(true);
+    const { data: ch } = await supabase
+      .from("chapters")
+      .select("topics_locked")
+      .eq("id", chapterId)
+      .single();
 
-      // 1. Check if topics are locked
-      const { data: ch } = await supabase
-        .from("chapters")
-        .select("topics_locked")
-        .eq("id", chapterId!)
-        .single();
+    const isLocked = ch?.topics_locked ?? false;
+    setLocked(isLocked);
+    if (!isLocked) { setTopics([]); setLoading(false); return; }
 
-      const isLocked = ch?.topics_locked ?? false;
-      setLocked(isLocked);
+    const { data: topicsData } = await supabase
+      .from("chapter_topics")
+      .select("id, topic_name, topic_number, is_supplementary, is_active")
+      .eq("chapter_id", chapterId)
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
 
-      if (!isLocked) { setTopics([]); setLoading(false); return; }
+    if (!topicsData?.length) { setTopics([]); setLoading(false); return; }
 
-      // 2. Load active topics
-      const { data: topicsData } = await supabase
-        .from("chapter_topics")
-        .select("id, topic_name, topic_number, is_supplementary, is_active")
-        .eq("chapter_id", chapterId!)
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
+    const topicIds = topicsData.map((t) => t.id);
+    const { data: questions } = await supabase
+      .from("topic_quiz_questions")
+      .select("topic_id, review_status")
+      .in("topic_id", topicIds);
 
-      if (!topicsData?.length) { setTopics([]); setLoading(false); return; }
+    const countMap: Record<string, { total: number; approved: number }> = {};
+    (questions ?? []).forEach((q) => {
+      if (!countMap[q.topic_id]) countMap[q.topic_id] = { total: 0, approved: 0 };
+      countMap[q.topic_id].total++;
+      if (q.review_status === "approved" || q.review_status === "edited") countMap[q.topic_id].approved++;
+    });
 
-      // 3. Load question counts per topic
-      const topicIds = topicsData.map((t) => t.id);
+    const rows: TopicRow[] = topicsData.map((t) => {
+      const c = countMap[t.id] ?? { total: 0, approved: 0 };
+      let status: TopicRow["status"] = "not_generated";
+      if (c.total > 0 && c.approved === c.total) status = "ready";
+      else if (c.total > 0) status = "needs_review";
+      return { ...t, questionCount: c.total, approvedCount: c.approved, status };
+    });
+
+    rows.sort((a, b) => {
+      if (a.is_supplementary && !b.is_supplementary) return 1;
+      if (!a.is_supplementary && b.is_supplementary) return -1;
+      return (a.topic_number ?? 0) - (b.topic_number ?? 0);
+    });
+
+    setTopics(rows);
+    setLoading(false);
+  }, [chapterId]);
+
+  useEffect(() => { loadTopics(); }, [loadTopics]);
+
+  async function handleGenerate(topic: TopicRow) {
+    if (topic.questionCount > 0) {
+      setConfirmRegen(topic);
+      return;
+    }
+    await runGenerate(topic.id);
+  }
+
+  async function runGenerate(topicId: string) {
+    setGeneratingId(topicId);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-topic-quiz", {
+        body: { topic_id: topicId },
+      });
+      if (error) throw new Error(error.message ?? "Generation failed");
+      if (data?.error) throw new Error(data.error);
+      toast.success(`${data.questions_generated} questions generated — ready for review`);
+      await loadTopics();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to generate quiz");
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  async function handleExport(topic: TopicRow) {
+    setExportingId(topic.id);
+    try {
       const { data: questions } = await supabase
         .from("topic_quiz_questions")
-        .select("topic_id, review_status")
-        .in("topic_id", topicIds);
+        .select("*")
+        .eq("topic_id", topic.id)
+        .order("question_number", { ascending: true });
 
-      const countMap: Record<string, { total: number; approved: number }> = {};
-      (questions ?? []).forEach((q) => {
-        if (!countMap[q.topic_id]) countMap[q.topic_id] = { total: 0, approved: 0 };
-        countMap[q.topic_id].total++;
-        if (q.review_status === "approved") countMap[q.topic_id].approved++;
-      });
+      if (!questions?.length) {
+        toast.error("No questions to export");
+        return;
+      }
 
-      const rows: TopicRow[] = topicsData.map((t) => {
-        const c = countMap[t.id] ?? { total: 0, approved: 0 };
-        let status: TopicRow["status"] = "not_generated";
-        if (c.total > 0 && c.approved === c.total) status = "ready";
-        else if (c.total > 0) status = "needs_review";
-        return {
-          ...t,
-          questionCount: c.total,
-          approvedCount: c.approved,
-          status,
-        };
-      });
-
-      // Sort: core topics first (by topic_number), supplementary last
-      rows.sort((a, b) => {
-        if (a.is_supplementary && !b.is_supplementary) return 1;
-        if (!a.is_supplementary && b.is_supplementary) return -1;
-        return (a.topic_number ?? 0) - (b.topic_number ?? 0);
-      });
-
-      setTopics(rows);
-      setLoading(false);
+      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name);
+      const slug = topic.topic_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const filename = `ch${chapterNumber ?? 0}-${slug}-quiz.csv`;
+      downloadCsv(csv, filename);
+      toast.success("CSV exported — ready for LearnWorlds import");
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setExportingId(null);
     }
-
-    load();
-  }, [chapterId]);
+  }
 
   if (loading) {
     return (
@@ -175,85 +821,181 @@ function TopicQuizzesTab({ chapterId }: { chapterId: string | undefined }) {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold">
-          Topic Quizzes · {topics.filter((t) => !t.is_supplementary).length} core topics
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="pl-6">Topic</TableHead>
-              <TableHead className="w-[100px] text-center">Questions</TableHead>
-              <TableHead className="w-[130px] text-center">Status</TableHead>
-              <TableHead className="w-[200px] text-right pr-6">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {topics.map((t) => (
-              <TableRow
-                key={t.id}
-                className={t.is_supplementary ? "opacity-60" : ""}
-              >
-                <TableCell className="pl-6">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className={
-                        t.is_supplementary
-                          ? "bg-muted text-muted-foreground text-[10px] w-5 h-5 flex items-center justify-center p-0"
-                          : "bg-primary/10 text-primary text-[10px] w-5 h-5 flex items-center justify-center p-0"
-                      }
-                    >
-                      {t.is_supplementary ? "S" : t.topic_number}
-                    </Badge>
-                    <span className="font-medium text-sm">{t.topic_name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center text-xs text-muted-foreground">
-                  {t.approvedCount} / {t.questionCount || "—"}
-                </TableCell>
-                <TableCell className="text-center">
-                  <QuizStatusBadge status={t.status} />
-                </TableCell>
-                <TableCell className="text-right pr-6">
-                  <div className="flex items-center justify-end gap-1.5">
-                    {t.status === "not_generated" && (
-                      <Button size="sm" className="h-7 text-xs">
-                        <Sparkles className="h-3 w-3 mr-1" /> Generate
-                      </Button>
-                    )}
-                    {t.status === "needs_review" && (
-                      <Button variant="outline" size="sm" className="h-7 text-xs">
-                        <Eye className="h-3 w-3 mr-1" /> Review
-                      </Button>
-                    )}
-                    {t.status === "ready" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-                      >
-                        <FileDown className="h-3 w-3 mr-1" /> Export CSV
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {topics.length === 0 && (
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold">
+            Topic Quizzes · {topics.filter((t) => !t.is_supplementary).length} core topics
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-8">
-                  No active topics found for this chapter.
-                </TableCell>
+                <TableHead className="pl-6">Topic</TableHead>
+                <TableHead className="w-[100px] text-center">Questions</TableHead>
+                <TableHead className="w-[130px] text-center">Status</TableHead>
+                <TableHead className="w-[250px] text-right pr-6">Actions</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {topics.map((t) => {
+                const isGenerating = generatingId === t.id;
+                const isExporting = exportingId === t.id;
+                return (
+                  <TableRow key={t.id} className={t.is_supplementary ? "opacity-60" : ""}>
+                    <TableCell className="pl-6">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            t.is_supplementary
+                              ? "bg-muted text-muted-foreground text-[10px] w-5 h-5 flex items-center justify-center p-0"
+                              : "bg-primary/10 text-primary text-[10px] w-5 h-5 flex items-center justify-center p-0"
+                          }
+                        >
+                          {t.is_supplementary ? "S" : t.topic_number}
+                        </Badge>
+                        <span className="font-medium text-sm">{t.topic_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">
+                      {t.approvedCount} / {t.questionCount || "—"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <QuizStatusBadge status={t.status} />
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {t.status === "not_generated" && (
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs"
+                            disabled={isGenerating}
+                            onClick={() => handleGenerate(t)}
+                          >
+                            {isGenerating ? (
+                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</>
+                            ) : (
+                              <><Sparkles className="h-3 w-3 mr-1" /> Generate</>
+                            )}
+                          </Button>
+                        )}
+                        {t.status === "needs_review" && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
+                            >
+                              <Eye className="h-3 w-3 mr-1" /> Review
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              disabled={isGenerating}
+                              onClick={() => handleGenerate(t)}
+                            >
+                              {isGenerating ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </>
+                        )}
+                        {t.status === "ready" && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
+                              disabled={isExporting}
+                              onClick={() => handleExport(t)}
+                            >
+                              {isExporting ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : (
+                                <FileDown className="h-3 w-3 mr-1" />
+                              )}
+                              Export CSV
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
+                            >
+                              <Eye className="h-3 w-3 mr-1" /> Review
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              disabled={isGenerating}
+                              onClick={() => handleGenerate(t)}
+                            >
+                              {isGenerating ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {topics.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-8">
+                    No active topics found for this chapter.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Regeneration confirmation */}
+      <AlertDialog open={!!confirmRegen} onOpenChange={(o) => !o && setConfirmRegen(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate quiz for {confirmRegen?.topic_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete all existing questions. Any approvals will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmRegen) runGenerate(confirmRegen.id);
+                setConfirmRegen(null);
+              }}
+            >
+              Regenerate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Review drawer */}
+      {reviewTopic && (
+        <QuizReviewDrawer
+          open={!!reviewTopic}
+          onOpenChange={(o) => !o && setReviewTopic(null)}
+          topicId={reviewTopic.id}
+          topicName={reviewTopic.name}
+          onUpdated={loadTopics}
+        />
+      )}
+    </>
   );
 }
 
@@ -278,7 +1020,6 @@ export default function QuizQueue() {
   return (
     <SurviveSidebarLayout>
       <div className="max-w-6xl mx-auto space-y-4">
-        {/* Workspace header */}
         {workspace && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{workspace.courseName}</span>
@@ -306,7 +1047,7 @@ export default function QuizQueue() {
           </TabsList>
 
           <TabsContent value="topic-quizzes" className="mt-4">
-            <TopicQuizzesTab chapterId={workspace?.chapterId} />
+            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} />
           </TabsContent>
 
           <TabsContent value="mc-generator" className="mt-4">
