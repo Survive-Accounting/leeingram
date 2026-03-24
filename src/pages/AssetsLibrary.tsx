@@ -560,13 +560,26 @@ export default function AssetsLibrary() {
       }
       const { data, error } = await q;
       if (error) throw error;
+      const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
+      const parseRef = (ref: string | null) => {
+        if (!ref) return { prefix: "ZZZ", num: Infinity };
+        const match = ref.match(/^([A-Za-z]+)([\d.]+)$/);
+        if (!match) return { prefix: "ZZZ", num: Infinity };
+        return { prefix: match[1].toUpperCase(), num: parseFloat(match[2]) };
+      };
       const sorted = (data as TeachingAsset[]).sort((a, b) => {
         const dir = sortDir === "asc" ? 1 : -1;
         switch (sortField) {
           case "asset_name":
             return dir * (a.asset_name || "").localeCompare(b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
-          case "source_ref":
-            return dir * (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
+          case "source_ref": {
+            const ra = parseRef(a.source_ref);
+            const rb = parseRef(b.source_ref);
+            const pa = PREFIX_ORDER[ra.prefix] ?? 99;
+            const pb = PREFIX_ORDER[rb.prefix] ?? 99;
+            if (pa !== pb) return dir * (pa - pb);
+            return dir * (ra.num - rb.num);
+          }
           case "google_sheet_status":
             return dir * (a.google_sheet_status || "").localeCompare(b.google_sheet_status || "");
           case "created_at":
