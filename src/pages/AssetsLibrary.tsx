@@ -427,7 +427,7 @@ export default function AssetsLibrary() {
   const [courseFilter, setCourseFilter] = useState<string>(workspace?.courseId || "all");
   const [chapterFilter, setChapterFilter] = useState<string>(workspace?.chapterId || "all");
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("asset_name");
+  const [sortField, setSortField] = useState<"asset_name" | "source_ref" | "google_sheet_status" | "created_at">("source_ref");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [verifyAssetId, setVerifyAssetId] = useState<string | null>(null);
@@ -560,13 +560,26 @@ export default function AssetsLibrary() {
       }
       const { data, error } = await q;
       if (error) throw error;
+      const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
+      const parseRef = (ref: string | null) => {
+        if (!ref) return { prefix: "ZZZ", num: Infinity };
+        const match = ref.match(/^([A-Za-z]+)([\d.]+)$/);
+        if (!match) return { prefix: "ZZZ", num: Infinity };
+        return { prefix: match[1].toUpperCase(), num: parseFloat(match[2]) };
+      };
       const sorted = (data as TeachingAsset[]).sort((a, b) => {
         const dir = sortDir === "asc" ? 1 : -1;
         switch (sortField) {
           case "asset_name":
             return dir * (a.asset_name || "").localeCompare(b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
-          case "source_ref":
-            return dir * (a.source_ref || a.asset_name || "").localeCompare(b.source_ref || b.asset_name || "", undefined, { numeric: true, sensitivity: "base" });
+          case "source_ref": {
+            const ra = parseRef(a.source_ref);
+            const rb = parseRef(b.source_ref);
+            const pa = PREFIX_ORDER[ra.prefix] ?? 99;
+            const pb = PREFIX_ORDER[rb.prefix] ?? 99;
+            if (pa !== pb) return dir * (pa - pb);
+            return dir * (ra.num - rb.num);
+          }
           case "google_sheet_status":
             return dir * (a.google_sheet_status || "").localeCompare(b.google_sheet_status || "");
           case "created_at":
@@ -1206,14 +1219,15 @@ export default function AssetsLibrary() {
                   {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                 </button>
               </TableHead>
+              <TableHead className="text-xs">LW Tools</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               paginatedAssets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
@@ -1250,6 +1264,45 @@ export default function AssetsLibrary() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {format(new Date(a.created_at), "MMM d")}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1 items-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn(
+                            "h-6 text-[10px] px-1.5 transition-all",
+                            lastCopiedKey === `title-${a.id}` && "ring-2 ring-yellow-400/60 bg-yellow-400/10"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const title = `${a.source_ref || a.asset_name} — ${a.problem_title || ""}`.trim();
+                            navigator.clipboard.writeText(title);
+                            setLastCopiedKey(`title-${a.id}`);
+                            toast.success("Title copied");
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-0.5" /> Title
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn(
+                            "h-6 text-[10px] px-1.5 transition-all",
+                            lastCopiedKey === `embed-${a.id}` && "ring-2 ring-yellow-400/60 bg-yellow-400/10"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const embedUrl = `${STUDENT_BASE_URL}/solutions/${a.asset_name}?ref=lw&lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}&lw_name={{USER_NAME}}&lw_course_id={{COURSE_ID}}&lw_unit_id={{UNIT_ID}}`;
+                            const embed = `<iframe src="${embedUrl}" width="100%" height="800" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+                            navigator.clipboard.writeText(embed);
+                            setLastCopiedKey(`embed-${a.id}`);
+                            toast.success("LW Embed copied");
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-0.5" /> Embed
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 justify-end items-center">
