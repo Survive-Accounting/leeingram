@@ -124,6 +124,7 @@ const AppRoutes = () => {
       <Route path="/practice/:assetCode" element={<PracticeViewer />} />
       <Route path="/cram/:chapterId" element={<ChapterCramTool />} />
       <Route path="/cram" element={<ChapterCramTool />} />
+      <Route path="/quiz-explanation/:questionId" element={<QuizExplanation />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
