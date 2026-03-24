@@ -935,7 +935,7 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName }: { chapterId:
         return;
       }
 
-      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name);
+      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name, chapterName);
       const slug = topic.topic_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
       const filename = `ch${chapterNumber ?? 0}-${slug}-quiz.csv`;
       downloadCsv(csv, filename);
