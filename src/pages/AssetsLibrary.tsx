@@ -1265,6 +1265,45 @@ export default function AssetsLibrary() {
                       {format(new Date(a.created_at), "MMM d")}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1 items-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn(
+                            "h-6 text-[10px] px-1.5 transition-all",
+                            lastCopiedKey === `title-${a.id}` && "ring-2 ring-yellow-400/60 bg-yellow-400/10"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const title = `${a.source_ref || a.asset_name} — ${a.problem_title || ""}`.trim();
+                            navigator.clipboard.writeText(title);
+                            setLastCopiedKey(`title-${a.id}`);
+                            toast.success("Title copied");
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-0.5" /> Title
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn(
+                            "h-6 text-[10px] px-1.5 transition-all",
+                            lastCopiedKey === `embed-${a.id}` && "ring-2 ring-yellow-400/60 bg-yellow-400/10"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const embedUrl = `${STUDENT_BASE_URL}/solutions/${a.asset_name}?ref=lw&lw_user_id={{USER_ID}}&lw_email={{USER_EMAIL}}&lw_name={{USER_NAME}}&lw_course_id={{COURSE_ID}}&lw_unit_id={{UNIT_ID}}`;
+                            const embed = `<iframe src="${embedUrl}" width="100%" height="800" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+                            navigator.clipboard.writeText(embed);
+                            setLastCopiedKey(`embed-${a.id}`);
+                            toast.success("LW Embed copied");
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-0.5" /> Embed
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 justify-end items-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
