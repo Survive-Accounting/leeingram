@@ -1281,7 +1281,7 @@ export default function QuizQueue() {
           </TabsList>
 
           <TabsContent value="topic-quizzes" className="mt-4">
-            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} />
+            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} isAdmin={!isVa && !impersonating} />
           </TabsContent>
 
           <TabsContent value="export" className="mt-4">
