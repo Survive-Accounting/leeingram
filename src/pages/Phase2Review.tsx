@@ -106,6 +106,7 @@ export default function Phase2Review() {
   const [showAddAssetForTopic, setShowAddAssetForTopic] = useState<string | null>(null);
   const [regenOpen, setRegenOpen] = useState(false);
   const [mergeConfirm, setMergeConfirm] = useState<{ sourceId: string; destId: string } | null>(null);
+  const [moveToSuppConfirm, setMoveToSuppConfirm] = useState<string | null>(null);
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
   const [initialTopicCount, setInitialTopicCount] = useState(6);
   const [lockWarningOpen, setLockWarningOpen] = useState(false);
