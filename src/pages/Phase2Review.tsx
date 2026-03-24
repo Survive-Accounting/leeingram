@@ -588,7 +588,23 @@ export default function Phase2Review() {
   // ── Render helpers ───────────────────────────────────────────
   const renderTopicCard = (topic: Topic, opts: { isSupplementary?: boolean } = {}) => {
     const topicAssetCodes = topic.asset_codes || [];
-    const taggedAssets = chapterAssets.filter(a => topicAssetCodes.includes(a.asset_name));
+    const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
+    const parseRef = (ref: string | null) => {
+      if (!ref) return { prefix: "ZZZ", num: Infinity };
+      const match = ref.match(/^([A-Za-z]+)([\d.]+)$/);
+      if (!match) return { prefix: "ZZZ", num: Infinity };
+      return { prefix: match[1].toUpperCase(), num: parseFloat(match[2]) };
+    };
+    const taggedAssets = chapterAssets
+      .filter(a => topicAssetCodes.includes(a.asset_name))
+      .sort((a, b) => {
+        const ra = parseRef(a.source_ref);
+        const rb = parseRef(b.source_ref);
+        const oa = PREFIX_ORDER[ra.prefix] ?? 99;
+        const ob = PREFIX_ORDER[rb.prefix] ?? 99;
+        if (oa !== ob) return oa - ob;
+        return ra.num - rb.num;
+      });
     const isOpen = openTopicId === topic.id;
     const isRenaming = renamingTopics.has(topic.id);
     const isSup = opts.isSupplementary || topic.is_supplementary;
