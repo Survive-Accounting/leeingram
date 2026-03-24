@@ -27,7 +27,7 @@ import {
 import {
   Package, Download, ExternalLink, ClipboardList, ListChecks,
   Sparkles, Eye, FileDown, AlertCircle, Loader2,
-  Check, X, Pencil, CheckCheck,
+  Check, X, Pencil, CheckCheck, Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -391,7 +391,21 @@ function QuizReviewDrawer({
         <div className="mt-3 space-y-4">
           <Progress value={questions.length ? (approvedCount / questions.length) * 100 : 0} className="h-2" />
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => {
+                const embedList = questions.map((q, i) =>
+                  `Q${i + 1}: <iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`
+                ).join("\n");
+                navigator.clipboard.writeText(embedList);
+                toast.success("All embeds copied");
+              }}
+            >
+              <Copy className="h-3 w-3 mr-1" /> Copy All Embeds
+            </Button>
             <Button size="sm" className="h-7 text-xs" onClick={handleApproveAll}>
               <CheckCheck className="h-3 w-3 mr-1" /> Approve All
             </Button>
@@ -621,7 +635,7 @@ function QuizReviewDrawer({
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex items-center gap-1.5 pt-1 flex-wrap">
                       <Button
                         size="sm"
                         variant={q.review_status === "approved" ? "default" : "outline"}
@@ -647,6 +661,20 @@ function QuizReviewDrawer({
                       >
                         <Pencil className="h-3 w-3 mr-0.5" /> Edit
                       </Button>
+                      {(q.review_status === "approved" || q.review_status === "edited") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[11px] px-2"
+                          onClick={() => {
+                            const embed = `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+                            navigator.clipboard.writeText(embed);
+                            toast.success("Embed copied — paste into LW question feedback field");
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-0.5" /> Embed
+                        </Button>
+                      )}
                     </div>
                   </>
                 )}
