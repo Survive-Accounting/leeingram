@@ -96,6 +96,31 @@ function DraggableTopicCard({ topic, children, disabled }: { topic: Topic; child
   );
 }
 
+// ── Droppable supplementary zone ────────────────────────────────
+function SupplementaryDropZone({ children, isDragging }: { children: React.ReactNode; isDragging: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "supplementary-drop-zone" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "rounded-lg transition-all duration-200",
+        isDragging && "ring-2 ring-dashed ring-muted-foreground/40 p-1",
+        isOver && "ring-primary/60 bg-primary/5",
+      )}
+    >
+      {isDragging && (
+        <p className={cn(
+          "text-center text-[10px] py-1 transition-colors",
+          isOver ? "text-primary font-medium" : "text-muted-foreground"
+        )}>
+          ↓ Drop here to move to Supplementary
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export default function Phase2Review() {
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
