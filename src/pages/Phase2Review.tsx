@@ -1204,6 +1204,55 @@ export default function Phase2Review() {
         </DialogContent>
       </Dialog>
 
+      {/* Move to Supplementary confirmation dialog */}
+      <Dialog open={!!moveToSuppConfirm} onOpenChange={() => setMoveToSuppConfirm(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Move to Supplementary?</DialogTitle>
+          </DialogHeader>
+          {moveToSuppConfirm && (() => {
+            const t = topics.find(t => t.id === moveToSuppConfirm);
+            return (
+              <p className="text-xs text-muted-foreground">
+                Move <strong>{t?.topic_name}</strong> to Supplementary Problems? Its {(t?.asset_codes || []).length} assets will transfer and the topic will be deactivated.
+              </p>
+            );
+          })()}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setMoveToSuppConfirm(null)}>Cancel</Button>
+            <Button size="sm" onClick={async () => {
+              if (!moveToSuppConfirm || !supplementaryTopic) return;
+              const source = topics.find(t => t.id === moveToSuppConfirm);
+              if (!source) return;
+              const topicAssets = source.asset_codes || [];
+
+              // Move assets to supplementary
+              if (topicAssets.length > 0) {
+                const currentSuppCodes = supplementaryTopic.asset_codes || [];
+                const newSuppCodes = [...new Set([...currentSuppCodes, ...topicAssets])];
+                await supabase.from("chapter_topics").update({ asset_codes: newSuppCodes } as any).eq("id", supplementaryTopic.id);
+                for (const code of topicAssets) {
+                  await supabase.from("teaching_assets").update({ topic_id: supplementaryTopic.id } as any)
+                    .eq("asset_name", code).eq("chapter_id", chapterId!);
+                }
+              }
+
+              // Deactivate the source topic
+              await supabase.from("chapter_topics").update({
+                is_active: false,
+                asset_codes: [],
+              } as any).eq("id", moveToSuppConfirm);
+
+              qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
+              setMoveToSuppConfirm(null);
+              toast.success(`${source.topic_name} moved to Supplementary`);
+            }}>
+              Move to Supplementary
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Lock confirmation dialog */}
       <Dialog open={lockWarningOpen} onOpenChange={setLockWarningOpen}>
         <DialogContent className="max-w-sm">
