@@ -1219,8 +1219,8 @@ export default function AssetsLibrary() {
                   {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                 </button>
               </TableHead>
+              <TableHead className="text-xs">LW Tools</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
-            </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
