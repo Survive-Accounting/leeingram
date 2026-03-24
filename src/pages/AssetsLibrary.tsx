@@ -1251,6 +1251,7 @@ export default function AssetsLibrary() {
                 </button>
               </TableHead>
               <TableHead className="text-xs">LW Tools</TableHead>
+              <TableHead className="text-xs">LW URL</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
