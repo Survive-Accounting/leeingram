@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   DndContext, closestCenter, DragOverlay, useSensor, useSensors, PointerSensor,
+  useDroppable,
   type DragStartEvent, type DragEndEvent
 } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
@@ -95,6 +96,31 @@ function DraggableTopicCard({ topic, children, disabled }: { topic: Topic; child
   );
 }
 
+// ── Droppable supplementary zone ────────────────────────────────
+function SupplementaryDropZone({ children, isDragging }: { children: React.ReactNode; isDragging: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "supplementary-drop-zone" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "rounded-lg transition-all duration-200",
+        isDragging && "ring-2 ring-dashed ring-muted-foreground/40 p-1",
+        isOver && "ring-primary/60 bg-primary/5",
+      )}
+    >
+      {isDragging && (
+        <p className={cn(
+          "text-center text-[10px] py-1 transition-colors",
+          isOver ? "text-primary font-medium" : "text-muted-foreground"
+        )}>
+          ↓ Drop here to move to Supplementary
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export default function Phase2Review() {
   const { workspace } = useActiveWorkspace();
   const qc = useQueryClient();
@@ -105,6 +131,7 @@ export default function Phase2Review() {
   const [showAddAssetForTopic, setShowAddAssetForTopic] = useState<string | null>(null);
   const [regenOpen, setRegenOpen] = useState(false);
   const [mergeConfirm, setMergeConfirm] = useState<{ sourceId: string; destId: string } | null>(null);
+  const [moveToSuppConfirm, setMoveToSuppConfirm] = useState<string | null>(null);
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
   const [initialTopicCount, setInitialTopicCount] = useState(6);
   const [lockWarningOpen, setLockWarningOpen] = useState(false);
@@ -502,6 +529,14 @@ export default function Phase2Review() {
     const sourceId = active.id as string;
     const destId = over.id as string;
     const source = topics.find(t => t.id === sourceId);
+
+    // Dropping onto supplementary drop zone
+    if (destId === "supplementary-drop-zone") {
+      if (!source || !source.is_active || source.is_supplementary) return;
+      setMoveToSuppConfirm(sourceId);
+      return;
+    }
+
     const dest = topics.find(t => t.id === destId);
     if (!source || !dest || !source.is_active || !dest.is_active) return;
     if (source.is_supplementary) {
@@ -1120,14 +1155,15 @@ export default function Phase2Review() {
                   </div>
                 )}
               </DragOverlay>
+              {/* Supplementary drop zone — inside DndContext */}
+              {supplementaryTopic && (
+                <SupplementaryDropZone isDragging={!!dragActiveId}>
+                  <div className="mt-2">
+                    {renderTopicCard(supplementaryTopic, { isSupplementary: true })}
+                  </div>
+                </SupplementaryDropZone>
+              )}
             </DndContext>
-
-            {/* Supplementary Problems topic — always shown last */}
-            {supplementaryTopic && (
-              <div className="mt-2">
-                {renderTopicCard(supplementaryTopic, { isSupplementary: true })}
-              </div>
-            )}
 
             {/* Regenerate button */}
             <Button
@@ -1163,6 +1199,55 @@ export default function Phase2Review() {
             <Button variant="outline" size="sm" onClick={() => setMergeConfirm(null)}>Cancel</Button>
             <Button size="sm" onClick={() => mergeConfirm && executeMerge(mergeConfirm.sourceId, mergeConfirm.destId)}>
               Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move to Supplementary confirmation dialog */}
+      <Dialog open={!!moveToSuppConfirm} onOpenChange={() => setMoveToSuppConfirm(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Move to Supplementary?</DialogTitle>
+          </DialogHeader>
+          {moveToSuppConfirm && (() => {
+            const t = topics.find(t => t.id === moveToSuppConfirm);
+            return (
+              <p className="text-xs text-muted-foreground">
+                Move <strong>{t?.topic_name}</strong> to Supplementary Problems? Its {(t?.asset_codes || []).length} assets will transfer and the topic will be deactivated.
+              </p>
+            );
+          })()}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setMoveToSuppConfirm(null)}>Cancel</Button>
+            <Button size="sm" onClick={async () => {
+              if (!moveToSuppConfirm || !supplementaryTopic) return;
+              const source = topics.find(t => t.id === moveToSuppConfirm);
+              if (!source) return;
+              const topicAssets = source.asset_codes || [];
+
+              // Move assets to supplementary
+              if (topicAssets.length > 0) {
+                const currentSuppCodes = supplementaryTopic.asset_codes || [];
+                const newSuppCodes = [...new Set([...currentSuppCodes, ...topicAssets])];
+                await supabase.from("chapter_topics").update({ asset_codes: newSuppCodes } as any).eq("id", supplementaryTopic.id);
+                for (const code of topicAssets) {
+                  await supabase.from("teaching_assets").update({ topic_id: supplementaryTopic.id } as any)
+                    .eq("asset_name", code).eq("chapter_id", chapterId!);
+                }
+              }
+
+              // Deactivate the source topic
+              await supabase.from("chapter_topics").update({
+                is_active: false,
+                asset_codes: [],
+              } as any).eq("id", moveToSuppConfirm);
+
+              qc.invalidateQueries({ queryKey: ["chapter-topics-gen", chapterId] });
+              setMoveToSuppConfirm(null);
+              toast.success(`${source.topic_name} moved to Supplementary`);
+            }}>
+              Move to Supplementary
             </Button>
           </DialogFooter>
         </DialogContent>
