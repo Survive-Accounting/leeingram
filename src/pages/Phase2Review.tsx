@@ -1130,14 +1130,15 @@ export default function Phase2Review() {
                   </div>
                 )}
               </DragOverlay>
+              {/* Supplementary drop zone — inside DndContext */}
+              {supplementaryTopic && (
+                <SupplementaryDropZone isDragging={!!dragActiveId}>
+                  <div className="mt-2">
+                    {renderTopicCard(supplementaryTopic, { isSupplementary: true })}
+                  </div>
+                </SupplementaryDropZone>
+              )}
             </DndContext>
-
-            {/* Supplementary Problems topic — always shown last */}
-            {supplementaryTopic && (
-              <div className="mt-2">
-                {renderTopicCard(supplementaryTopic, { isSupplementary: true })}
-              </div>
-            )}
 
             {/* Regenerate button */}
             <Button
