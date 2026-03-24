@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   DndContext, closestCenter, DragOverlay, useSensor, useSensors, PointerSensor,
+  useDroppable,
   type DragStartEvent, type DragEndEvent
 } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
