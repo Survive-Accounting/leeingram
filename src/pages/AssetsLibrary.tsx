@@ -1337,6 +1337,9 @@ export default function AssetsLibrary() {
                       </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
+                      <LwActivityUrlField assetId={a.id} initialUrl={(a as any).lw_activity_url || null} />
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 justify-end items-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
