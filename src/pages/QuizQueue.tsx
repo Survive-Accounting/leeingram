@@ -1190,6 +1190,9 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
         </CardContent>
       </Card>
 
+      {/* Danger Zone — Admin only */}
+      {isAdmin && <StartOverSection chapterId={chapterId} chapterName={chapterName} totalQuestionCount={topics.reduce((s, t) => s + t.questionCount, 0)} onReset={loadTopics} />}
+
       {/* Batch regeneration confirmation */}
       <AlertDialog open={!!confirmBatchRegen} onOpenChange={(o) => !o && setConfirmBatchRegen(null)}>
         <AlertDialogContent>
