@@ -504,6 +504,14 @@ export default function Phase2Review() {
     const sourceId = active.id as string;
     const destId = over.id as string;
     const source = topics.find(t => t.id === sourceId);
+
+    // Dropping onto supplementary drop zone
+    if (destId === "supplementary-drop-zone") {
+      if (!source || !source.is_active || source.is_supplementary) return;
+      setMoveToSuppConfirm(sourceId);
+      return;
+    }
+
     const dest = topics.find(t => t.id === destId);
     if (!source || !dest || !source.is_active || !dest.is_active) return;
     if (source.is_supplementary) {
