@@ -31,7 +31,7 @@ serve(async (req) => {
 
     const { data: assets, error: assetErr } = await sb
       .from("teaching_assets")
-      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json, key_concepts")
+      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json")
       .eq("topic_id", topic_id);
     if (assetErr) throw assetErr;
 
@@ -63,7 +63,7 @@ serve(async (req) => {
       if (a.important_formulas) parts.push(`Formulas: ${JSON.stringify(a.important_formulas).substring(0, 500)}`);
       if (a.concept_notes) parts.push(`Concepts: ${(a.concept_notes as string).substring(0, 500)}`);
       if (a.exam_traps) parts.push(`Exam Traps: ${JSON.stringify(a.exam_traps).substring(0, 500)}`);
-      if (a.key_concepts) parts.push(`Key Concepts: ${JSON.stringify(a.key_concepts).substring(0, 500)}`);
+      
       if (a.supplementary_je_json) parts.push(`Journal Entries: ${JSON.stringify(a.supplementary_je_json).substring(0, 600)}`);
       return `--- Asset ${i + 1} ---\n${parts.join("\n")}`;
     }).join("\n\n");
