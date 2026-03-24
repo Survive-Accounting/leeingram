@@ -710,7 +710,7 @@ function QuizReviewDrawer({
 
 /* ──────── Topic Quizzes Tab ──────── */
 
-function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | undefined; chapterNumber: number | undefined }) {
+function TopicQuizzesTab({ chapterId, chapterNumber, chapterName }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string }) {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
