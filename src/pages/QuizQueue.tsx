@@ -3,6 +3,7 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
