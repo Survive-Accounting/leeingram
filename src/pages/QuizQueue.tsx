@@ -698,10 +698,14 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [confirmRegen, setConfirmRegen] = useState<TopicRow | null>(null);
+  const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBatchRegen, setConfirmBatchRegen] = useState<TopicRow[] | null>(null);
   const [reviewTopic, setReviewTopic] = useState<{ id: string; name: string } | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingStartRef = useRef<number>(0);
 
   const loadTopics = useCallback(async () => {
     if (!chapterId) { setLoading(false); return; }
@@ -759,29 +763,145 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
 
   useEffect(() => { loadTopics(); }, [loadTopics]);
 
-  async function handleGenerate(topic: TopicRow) {
-    if (topic.questionCount > 0) {
-      setConfirmRegen(topic);
+  // ── Polling for generation completion ──
+  useEffect(() => {
+    if (generatingIds.size === 0) {
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       return;
     }
-    await runGenerate(topic.id);
-  }
 
-  async function runGenerate(topicId: string) {
-    setGeneratingId(topicId);
+    pollingStartRef.current = Date.now();
+
+    const poll = async () => {
+      // Timeout after 3 minutes
+      if (Date.now() - pollingStartRef.current > 180_000) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setGeneratingIds(new Set());
+        toast.error("Generation timed out — some topics may not have completed");
+        loadTopics();
+        return;
+      }
+
+      if (!chapterId) return;
+
+      const { data } = await supabase
+        .from("topic_quiz_questions")
+        .select("topic_id")
+        .eq("chapter_id", chapterId);
+
+      if (!data) return;
+
+      const countByTopic: Record<string, number> = {};
+      data.forEach((q) => {
+        countByTopic[q.topic_id] = (countByTopic[q.topic_id] ?? 0) + 1;
+      });
+
+      const completed: string[] = [];
+      generatingIds.forEach((id) => {
+        if ((countByTopic[id] ?? 0) >= 10) {
+          completed.push(id);
+        }
+      });
+
+      if (completed.length > 0) {
+        setGeneratingIds((prev) => {
+          const next = new Set(prev);
+          completed.forEach((id) => next.delete(id));
+          return next;
+        });
+
+        for (const id of completed) {
+          const topic = topics.find((t) => t.id === id);
+          if (topic) toast.success(`${topic.topic_name} — 10 questions ready for review`);
+        }
+
+        loadTopics();
+      }
+    };
+
+    pollingRef.current = setInterval(poll, 30_000);
+    // Also poll immediately after a short delay
+    const immediate = setTimeout(poll, 5_000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      clearTimeout(immediate);
+    };
+  }, [generatingIds.size, chapterId, topics, loadTopics]);
+
+  // ── Single topic generate (fire & background) ──
+  async function fireGenerate(topicId: string) {
+    setGeneratingIds((prev) => new Set(prev).add(topicId));
+    setFailedIds((prev) => { const n = new Set(prev); n.delete(topicId); return n; });
     try {
       const { data, error } = await supabase.functions.invoke("generate-topic-quiz", {
         body: { topic_id: topicId },
       });
       if (error) throw new Error(error.message ?? "Generation failed");
       if (data?.error) throw new Error(data.error);
-      toast.success(`${data.questions_generated} questions generated — ready for review`);
-      await loadTopics();
+      // Don't remove from generatingIds here — polling will handle it
+      // But if we got instant success, update immediately
+      if (data?.questions_generated) {
+        setGeneratingIds((prev) => { const n = new Set(prev); n.delete(topicId); return n; });
+        const topic = topics.find((t) => t.id === topicId);
+        toast.success(`${topic?.topic_name ?? "Topic"} — ${data.questions_generated} questions ready for review`);
+        loadTopics();
+      }
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to generate quiz");
-    } finally {
-      setGeneratingId(null);
+      setGeneratingIds((prev) => { const n = new Set(prev); n.delete(topicId); return n; });
+      setFailedIds((prev) => new Set(prev).add(topicId));
+      const topic = topics.find((t) => t.id === topicId);
+      toast.error(`${topic?.topic_name ?? "Topic"}: ${e.message ?? "Failed to generate quiz"}`);
     }
+  }
+
+  // ── Batch generate ──
+  function handleBatchGenerate() {
+    const selected = topics.filter((t) => selectedIds.has(t.id));
+    const withExisting = selected.filter((t) => t.questionCount > 0);
+
+    if (withExisting.length > 0) {
+      setConfirmBatchRegen(selected);
+      return;
+    }
+
+    runBatch(selected);
+  }
+
+  function runBatch(batch: TopicRow[]) {
+    setSelectedIds(new Set());
+    // Fire all in parallel
+    Promise.all(batch.map((t) => fireGenerate(t.id)));
+  }
+
+  // ── Single row generate ──
+  function handleGenerate(topic: TopicRow) {
+    if (topic.questionCount > 0) {
+      setConfirmBatchRegen([topic]);
+      return;
+    }
+    fireGenerate(topic.id);
+  }
+
+  // ── Selection logic ──
+  const selectableTopics = topics.filter((t) => t.status !== "ready");
+  const allSelectableSelected = selectableTopics.length > 0 && selectableTopics.every((t) => selectedIds.has(t.id));
+
+  function toggleSelectAll() {
+    if (allSelectableSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableTopics.map((t) => t.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   }
 
   async function handleExport(topic: TopicRow) {
@@ -848,6 +968,8 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
     );
   }
 
+  const anyGenerating = [...generatingIds].some((id) => selectedIds.has(id));
+
   return (
     <>
       <Card>
@@ -857,10 +979,39 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          {/* Sticky batch action bar */}
+          {selectedIds.size > 0 && (
+            <div
+              className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 rounded-t-lg"
+              style={{ backgroundColor: "#14213D" }}
+            >
+              <span className="text-white text-[13px]">
+                {selectedIds.size} topic{selectedIds.size !== 1 ? "s" : ""} selected
+              </span>
+              <Button
+                size="sm"
+                className="h-7 text-xs bg-white text-[#14213D] hover:bg-white/90 font-bold"
+                disabled={anyGenerating}
+                onClick={handleBatchGenerate}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Generate Selected ({selectedIds.size})
+              </Button>
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="pl-6">Topic</TableHead>
+                <TableHead className="w-[40px] pl-4">
+                  <input
+                    type="checkbox"
+                    checked={allSelectableSelected && selectableTopics.length > 0}
+                    onChange={toggleSelectAll}
+                    className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+                  />
+                </TableHead>
+                <TableHead>Topic</TableHead>
                 <TableHead className="w-[100px] text-center">Questions</TableHead>
                 <TableHead className="w-[130px] text-center">Status</TableHead>
                 <TableHead className="w-[250px] text-right pr-6">Actions</TableHead>
@@ -868,11 +1019,26 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
             </TableHeader>
             <TableBody>
               {topics.map((t) => {
-                const isGenerating = generatingId === t.id;
+                const isGenerating = generatingIds.has(t.id);
+                const isFailed = failedIds.has(t.id);
                 const isExporting = exportingId === t.id;
+                const isSelected = selectedIds.has(t.id);
+                const isReady = t.status === "ready";
                 return (
-                  <TableRow key={t.id} className={t.is_supplementary ? "opacity-60" : ""}>
-                    <TableCell className="pl-6">
+                  <TableRow
+                    key={t.id}
+                    className={`${t.is_supplementary ? "opacity-60" : ""} ${isSelected ? "bg-blue-500/5" : ""}`}
+                  >
+                    <TableCell className="pl-4">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={isReady && !isFailed}
+                        onChange={() => toggleSelect(t.id)}
+                        className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      />
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
@@ -888,89 +1054,105 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
                       </div>
                     </TableCell>
                     <TableCell className="text-center text-xs text-muted-foreground">
-                      {t.approvedCount} / {t.questionCount || "—"}
+                      {isGenerating ? (
+                        <span className="flex items-center justify-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        </span>
+                      ) : (
+                        <>{t.approvedCount} / {t.questionCount || "—"}</>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <QuizStatusBadge status={t.status} />
+                      {isGenerating ? (
+                        <Badge variant="outline" className="bg-blue-500/15 text-blue-600 border-blue-500/30 text-[10px]">
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…
+                        </Badge>
+                      ) : isFailed ? (
+                        <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]">
+                          Failed
+                        </Badge>
+                      ) : (
+                        <QuizStatusBadge status={t.status} />
+                      )}
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-1.5">
-                        {t.status === "not_generated" && (
+                        {isGenerating ? (
+                          <span className="text-[11px] text-muted-foreground">Processing…</span>
+                        ) : isFailed ? (
                           <Button
                             size="sm"
-                            className="h-7 text-xs"
-                            disabled={isGenerating}
-                            onClick={() => handleGenerate(t)}
+                            variant="outline"
+                            className="h-7 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                            onClick={() => fireGenerate(t.id)}
                           >
-                            {isGenerating ? (
-                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</>
-                            ) : (
-                              <><Sparkles className="h-3 w-3 mr-1" /> Generate</>
-                            )}
+                            <Sparkles className="h-3 w-3 mr-1" /> Retry
                           </Button>
-                        )}
-                        {t.status === "needs_review" && (
+                        ) : (
                           <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
-                            >
-                              <Eye className="h-3 w-3 mr-1" /> Review
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-xs"
-                              disabled={isGenerating}
-                              onClick={() => handleGenerate(t)}
-                            >
-                              {isGenerating ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Sparkles className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </>
-                        )}
-                        {t.status === "ready" && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-                              disabled={isExporting}
-                              onClick={() => handleExport(t)}
-                            >
-                              {isExporting ? (
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              ) : (
-                                <FileDown className="h-3 w-3 mr-1" />
-                              )}
-                              Export CSV
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
-                            >
-                              <Eye className="h-3 w-3 mr-1" /> Review
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-xs"
-                              disabled={isGenerating}
-                              onClick={() => handleGenerate(t)}
-                            >
-                              {isGenerating ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Sparkles className="h-3 w-3" />
-                              )}
-                            </Button>
+                            {t.status === "not_generated" && (
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => handleGenerate(t)}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" /> Generate
+                              </Button>
+                            )}
+                            {t.status === "needs_review" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" /> Review
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => handleGenerate(t)}
+                                >
+                                  <Sparkles className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                            {t.status === "ready" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
+                                  disabled={isExporting}
+                                  onClick={() => handleExport(t)}
+                                >
+                                  {isExporting ? (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <FileDown className="h-3 w-3 mr-1" />
+                                  )}
+                                  Export CSV
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" /> Review
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => handleGenerate(t)}
+                                >
+                                  <Sparkles className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
                           </>
                         )}
                       </div>
@@ -980,7 +1162,7 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
               })}
               {topics.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-xs text-muted-foreground py-8">
                     No active topics found for this chapter.
                   </TableCell>
                 </TableRow>
@@ -990,24 +1172,30 @@ function TopicQuizzesTab({ chapterId, chapterNumber }: { chapterId: string | und
         </CardContent>
       </Card>
 
-      {/* Regeneration confirmation */}
-      <AlertDialog open={!!confirmRegen} onOpenChange={(o) => !o && setConfirmRegen(null)}>
+      {/* Batch regeneration confirmation */}
+      <AlertDialog open={!!confirmBatchRegen} onOpenChange={(o) => !o && setConfirmBatchRegen(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Regenerate quiz for {confirmRegen?.topic_name}?</AlertDialogTitle>
+            <AlertDialogTitle>Regenerate quizzes?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete all existing questions. Any approvals will be lost.
+              {(() => {
+                const withExisting = (confirmBatchRegen ?? []).filter((t) => t.questionCount > 0);
+                if (withExisting.length === 1 && (confirmBatchRegen ?? []).length === 1) {
+                  return `This will delete all existing questions for "${withExisting[0].topic_name}". Any approvals will be lost.`;
+                }
+                return `${withExisting.length} of your selected topics already have questions. Regenerating will delete existing questions and any approvals.`;
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (confirmRegen) runGenerate(confirmRegen.id);
-                setConfirmRegen(null);
+                if (confirmBatchRegen) runBatch(confirmBatchRegen);
+                setConfirmBatchRegen(null);
               }}
             >
-              Regenerate
+              Regenerate{(confirmBatchRegen?.length ?? 0) > 1 ? ` All Selected` : ""}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
