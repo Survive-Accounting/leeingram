@@ -1221,6 +1221,7 @@ export default function AssetsLibrary() {
               </TableHead>
               <TableHead className="text-xs">LW Tools</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
