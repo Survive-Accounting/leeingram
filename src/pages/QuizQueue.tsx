@@ -127,7 +127,9 @@ function ReviewStatusBadge({ status }: { status: string }) {
 
 /* ──────── CSV Export Helper ──────── */
 
-function buildLwCsv(questions: QuizQuestion[], topicName: string): string {
+function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: string): string {
+  const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
+
   const headers = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
@@ -142,16 +144,36 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string): string {
     return v;
   };
 
+  const paste = (url: string) => `\n---\n📋 PASTE HTML: ${url}`;
+
+  // Setup instructions row
+  const setupRow = [
+    "== SETUP INSTRUCTIONS ==",
+    "— Step 1: Import this CSV into LW to create quiz structure",
+    "— Step 2: For each question, click Edit in LW → click </> in each field → paste the iframe HTML shown below that field",
+    "— Step 3: Paste the quiz URL back into the Quiz Queue once live",
+    `— Questions: ${questions.length} | Topic: ${topicName} | Chapter: ${chapterName ?? ""}`,
+    "", "", "", "", "",
+  ].map(esc).join(",");
+
   const rows = questions.map((q) => {
+    const qUrl = `${STUDENT_BASE_URL}/quiz-question/${q.id}`;
+    const expUrl = `${STUDENT_BASE_URL}/quiz-explanation/${q.id}`;
+    const ansUrl = (key: string) => `${STUDENT_BASE_URL}/quiz-answer/${q.id}/${key}`;
+
+    const correctExp = (q.explanation_correct || "") + paste(expUrl);
+    const incorrectExp = `Same HTML works for both:${paste(expUrl)}`;
+
     if (q.question_type === "true_false") {
       const corAns = q.correct_answer === "a" ? "True" : "False";
-      const wrongExps = [
-        q.correct_answer !== "a" ? q.explanation_a : q.explanation_b,
-      ].filter(Boolean).join(" | ");
       return [
-        topicName, "True/False", q.question_text, corAns,
-        "True", "False", "", "",
-        q.explanation_correct, wrongExps,
+        topicName, "True/False",
+        q.question_text + paste(qUrl),
+        corAns,
+        `True${paste(ansUrl("true"))}`,
+        `False${paste(ansUrl("false"))}`,
+        "", "",
+        correctExp, incorrectExp,
       ].map(esc).join(",");
     }
 
@@ -161,7 +183,6 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string): string {
         (a: any) => `${a.side === "debit" ? "DR" : "CR"} ${a.account_name}`
       ).join(" / ");
 
-      // Build plausible wrong answers by swapping sides
       const wrong1 = accounts.map(
         (a: any) => `${a.side === "debit" ? "CR" : "DR"} ${a.account_name}`
       ).join(" / ");
@@ -173,13 +194,15 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string): string {
         : "CR " + (accounts[0]?.account_name ?? "Unknown");
 
       const qText = (q.je_description || q.question_text) +
-        " — Which of the following correctly records this journal entry?";
+        " — Which of the following correctly records this journal entry?" + paste(qUrl);
 
       return [
         topicName, "Multiple Choice", qText, correctText,
-        correctText, wrong1, wrong2, wrong3,
-        q.explanation_correct,
-        "Review the debit/credit rules for each account type in this transaction.",
+        `Correct Answer: ${correctText}${paste(ansUrl("a"))}`,
+        `${wrong1}${paste(ansUrl("b"))}`,
+        `${wrong2}${paste(ansUrl("c"))}`,
+        `${wrong3}${paste(ansUrl("d"))}`,
+        correctExp, incorrectExp,
       ].map(esc).join(",");
     }
 
@@ -188,26 +211,20 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string): string {
       a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d,
     };
     const corAns = optMap[q.correct_answer] ?? q.correct_answer;
-    const wrongExps = ["a", "b", "c", "d"]
-      .filter((k) => k !== q.correct_answer)
-      .map((k) => {
-        const expMap: Record<string, string | null> = {
-          a: q.explanation_a, b: q.explanation_b,
-          c: q.explanation_c, d: q.explanation_d,
-        };
-        return expMap[k];
-      })
-      .filter(Boolean)
-      .join(" | ");
 
     return [
-      topicName, "Multiple Choice", q.question_text, corAns,
-      q.option_a ?? "", q.option_b ?? "", q.option_c ?? "", q.option_d ?? "",
-      q.explanation_correct, wrongExps,
+      topicName, "Multiple Choice",
+      q.question_text + paste(qUrl),
+      corAns,
+      `${q.option_a ?? ""}${paste(ansUrl("a"))}`,
+      `${q.option_b ?? ""}${paste(ansUrl("b"))}`,
+      `${q.option_c ?? ""}${paste(ansUrl("c"))}`,
+      `${q.option_d ?? ""}${paste(ansUrl("d"))}`,
+      correctExp, incorrectExp,
     ].map(esc).join(",");
   });
 
-  return [headers.join(","), ...rows].join("\n");
+  return [headers.join(","), setupRow, ...rows].join("\n");
 }
 
 function downloadCsv(content: string, filename: string) {
