@@ -80,6 +80,7 @@ import JEDebug from "./pages/JEDebug";
 import AssetStatsDashboard from "./pages/AssetStatsDashboard";
 import SolutionsViewerStaging from "./pages/SolutionsViewerStaging";
 import ChapterCramTool from "./pages/ChapterCramTool";
+import QuizExplanation from "./pages/QuizExplanation";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
