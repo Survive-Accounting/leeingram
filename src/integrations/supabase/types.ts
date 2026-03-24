@@ -3621,6 +3621,7 @@ export type Database = {
           last_bulk_fix_at: string | null
           last_bulk_fix_label: string | null
           last_tutored_at: string | null
+          lw_activity_url: string | null
           lw_csv_exported_at: string | null
           lw_ebook_url: string | null
           lw_html_added: boolean | null
@@ -3717,6 +3718,7 @@ export type Database = {
           last_bulk_fix_at?: string | null
           last_bulk_fix_label?: string | null
           last_tutored_at?: string | null
+          lw_activity_url?: string | null
           lw_csv_exported_at?: string | null
           lw_ebook_url?: string | null
           lw_html_added?: boolean | null
@@ -3813,6 +3815,7 @@ export type Database = {
           last_bulk_fix_at?: string | null
           last_bulk_fix_label?: string | null
           last_tutored_at?: string | null
+          lw_activity_url?: string | null
           lw_csv_exported_at?: string | null
           lw_ebook_url?: string | null
           lw_html_added?: boolean | null
