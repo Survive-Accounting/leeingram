@@ -1257,7 +1257,7 @@ export default function AssetsLibrary() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
               <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
