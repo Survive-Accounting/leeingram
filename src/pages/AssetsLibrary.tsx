@@ -364,6 +364,37 @@ function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onU
   );
 }
 
+/* ── LW Activity URL inline field ── */
+function LwActivityUrlField({ assetId, initialUrl }: { assetId: string; initialUrl: string | null }) {
+  const [value, setValue] = useState(initialUrl || "");
+  const [saved, setSaved] = useState(false);
+  const original = initialUrl || "";
+
+  const save = async () => {
+    const trimmed = value.trim();
+    if (trimmed === original) return;
+    if (!trimmed) return;
+    const { error } = await supabase.from("teaching_assets").update({ lw_activity_url: trimmed } as any).eq("id", assetId);
+    if (error) { toast.error("Failed to save URL"); return; }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      {!!original && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        placeholder="Paste LW activity URL..."
+        className="h-7 text-[11px] w-[240px] bg-background/95 border-border"
+      />
+      {saved && <span className="text-[10px] text-emerald-500 font-medium whitespace-nowrap animate-in fade-in">✓ Saved</span>}
+    </div>
+  );
+}
+
 /* ── Enrich JE Memos button ── */
 function EnrichJEMemosButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
   const [generating, setGenerating] = useState(false);
@@ -1220,14 +1251,15 @@ export default function AssetsLibrary() {
                 </button>
               </TableHead>
               <TableHead className="text-xs">LW Tools</TableHead>
+              <TableHead className="text-xs">LW URL</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               paginatedAssets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
@@ -1303,6 +1335,9 @@ export default function AssetsLibrary() {
                           <Copy className="h-3 w-3 mr-0.5" /> Embed
                         </Button>
                       </div>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <LwActivityUrlField assetId={a.id} initialUrl={(a as any).lw_activity_url || null} />
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 justify-end items-center">

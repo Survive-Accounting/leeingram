@@ -1,0 +1,1 @@
+ALTER TABLE public.teaching_assets ADD COLUMN IF NOT EXISTS lw_activity_url text;
