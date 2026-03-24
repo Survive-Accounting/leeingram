@@ -27,7 +27,7 @@ import {
 import {
   Package, Download, ExternalLink, ClipboardList, ListChecks,
   Sparkles, Eye, FileDown, AlertCircle, Loader2,
-  Check, X, Pencil, CheckCheck,
+  Check, X, Pencil, CheckCheck, Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
