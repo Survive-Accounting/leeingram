@@ -3,6 +3,7 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -708,9 +709,106 @@ function QuizReviewDrawer({
   );
 }
 
+/* ──────── Start Over (Danger Zone) ──────── */
+
+function StartOverSection({ chapterId, chapterName, totalQuestionCount, onReset }: {
+  chapterId: string | undefined;
+  chapterName?: string;
+  totalQuestionCount: number;
+  onReset: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const canDelete = confirmed && typed === "DELETE";
+
+  async function handleDelete() {
+    if (!chapterId || !canDelete) return;
+    setDeleting(true);
+    try {
+      await supabase.from("topic_quiz_questions").delete().eq("chapter_id", chapterId);
+      await supabase.from("chapter_topics").update({ quiz_url: null } as any).eq("chapter_id", chapterId);
+      toast.success(`All quiz questions deleted for ${chapterName ?? "this chapter"}`);
+      onReset();
+      setOpen(false);
+    } catch {
+      toast.error("Failed to delete questions");
+    } finally {
+      setDeleting(false);
+      setConfirmed(false);
+      setTyped("");
+    }
+  }
+
+  if (totalQuestionCount === 0) return null;
+
+  return (
+    <div className="mt-6 pt-4 border-t border-border">
+      <p className="text-[9px] font-bold uppercase tracking-wider text-destructive mb-2">Danger Zone</p>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+        onClick={() => { setOpen(true); setConfirmed(false); setTyped(""); }}
+      >
+        ↺ Start Over — Delete All Quiz Questions
+      </Button>
+
+      <AlertDialog open={open} onOpenChange={(o) => { if (!o) { setOpen(false); setConfirmed(false); setTyped(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Quiz Questions?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This will permanently delete all <strong>{totalQuestionCount}</strong> generated questions
+                  for <strong>{chapterName ?? "this chapter"}</strong>. This cannot be undone.
+                </p>
+                <p>
+                  Topic quiz URLs already pasted into LearnWorlds will not be affected — only the questions
+                  in this system will be deleted.
+                </p>
+                <div className="flex items-center gap-2 pt-2">
+                  <Checkbox
+                    id="confirm-delete"
+                    checked={confirmed}
+                    onCheckedChange={(v) => setConfirmed(v === true)}
+                  />
+                  <label htmlFor="confirm-delete" className="text-xs cursor-pointer">
+                    I understand this cannot be undone
+                  </label>
+                </div>
+                <Input
+                  placeholder="Type DELETE to confirm"
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!canDelete || deleting}
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              Delete All Questions
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 /* ──────── Topic Quizzes Tab ──────── */
 
-function TopicQuizzesTab({ chapterId, chapterNumber, chapterName }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string }) {
+function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string; isAdmin?: boolean }) {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1189,6 +1287,9 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName }: { chapterId:
         </CardContent>
       </Card>
 
+      {/* Danger Zone — Admin only */}
+      {isAdmin && <StartOverSection chapterId={chapterId} chapterName={chapterName} totalQuestionCount={topics.reduce((s, t) => s + t.questionCount, 0)} onReset={loadTopics} />}
+
       {/* Batch regeneration confirmation */}
       <AlertDialog open={!!confirmBatchRegen} onOpenChange={(o) => !o && setConfirmBatchRegen(null)}>
         <AlertDialogContent>
@@ -1277,7 +1378,7 @@ export default function QuizQueue() {
           </TabsList>
 
           <TabsContent value="topic-quizzes" className="mt-4">
-            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} />
+            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} isAdmin={!isVa && !impersonating} />
           </TabsContent>
 
           <TabsContent value="export" className="mt-4">
