@@ -364,6 +364,37 @@ function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onU
   );
 }
 
+/* ── LW Activity URL inline field ── */
+function LwActivityUrlField({ assetId, initialUrl }: { assetId: string; initialUrl: string | null }) {
+  const [value, setValue] = useState(initialUrl || "");
+  const [saved, setSaved] = useState(false);
+  const original = initialUrl || "";
+
+  const save = async () => {
+    const trimmed = value.trim();
+    if (trimmed === original) return;
+    if (!trimmed) return;
+    const { error } = await supabase.from("teaching_assets").update({ lw_activity_url: trimmed } as any).eq("id", assetId);
+    if (error) { toast.error("Failed to save URL"); return; }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      {!!original && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        placeholder="Paste LW activity URL..."
+        className="h-7 text-[11px] w-[240px] bg-background/95 border-border"
+      />
+      {saved && <span className="text-[10px] text-emerald-500 font-medium whitespace-nowrap animate-in fade-in">✓ Saved</span>}
+    </div>
+  );
+}
+
 /* ── Enrich JE Memos button ── */
 function EnrichJEMemosButton({ asset, onUpdated }: { asset: TeachingAsset; onUpdated: () => void }) {
   const [generating, setGenerating] = useState(false);
