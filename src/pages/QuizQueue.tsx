@@ -1254,9 +1254,6 @@ export default function QuizQueue() {
             <TabsTrigger value="topic-quizzes" className="text-xs">
               <ListChecks className="h-3.5 w-3.5 mr-1.5" /> Topic Quizzes
             </TabsTrigger>
-            <TabsTrigger value="mc-generator" className="text-xs">
-              <Package className="h-3.5 w-3.5 mr-1.5" /> MC Generator
-            </TabsTrigger>
             <TabsTrigger value="export" className="text-xs">
               <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSVs
             </TabsTrigger>
@@ -1264,15 +1261,6 @@ export default function QuizQueue() {
 
           <TabsContent value="topic-quizzes" className="mt-4">
             <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} />
-          </TabsContent>
-
-          <TabsContent value="mc-generator" className="mt-4">
-            <div className="rounded-lg border border-border bg-card p-6 text-center space-y-3">
-              <p className="text-sm text-muted-foreground">MC Generator content lives at its dedicated page.</p>
-              <Button variant="outline" size="sm" onClick={() => navigate("/question-review")}>
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Open MC Generator
-              </Button>
-            </div>
           </TabsContent>
 
           <TabsContent value="export" className="mt-4">
