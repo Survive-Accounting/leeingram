@@ -31,7 +31,7 @@ serve(async (req) => {
 
     const { data: assets, error: assetErr } = await sb
       .from("teaching_assets")
-      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json, key_concepts")
+      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json")
       .eq("topic_id", topic_id);
     if (assetErr) throw assetErr;
 
