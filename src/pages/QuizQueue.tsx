@@ -635,7 +635,7 @@ function QuizReviewDrawer({
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex items-center gap-1.5 pt-1 flex-wrap">
                       <Button
                         size="sm"
                         variant={q.review_status === "approved" ? "default" : "outline"}
@@ -661,6 +661,20 @@ function QuizReviewDrawer({
                       >
                         <Pencil className="h-3 w-3 mr-0.5" /> Edit
                       </Button>
+                      {(q.review_status === "approved" || q.review_status === "edited") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[11px] px-2"
+                          onClick={() => {
+                            const embed = `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+                            navigator.clipboard.writeText(embed);
+                            toast.success("Embed copied — paste into LW question feedback field");
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-0.5" /> Embed
+                        </Button>
+                      )}
                     </div>
                   </>
                 )}
