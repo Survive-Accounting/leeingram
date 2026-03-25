@@ -1308,7 +1308,8 @@ export default function AssetsLibrary() {
                           )}
                           onClick={(e) => {
                             e.stopPropagation();
-                            const title = `${a.source_ref || a.asset_name} — ${a.problem_title || ""}`.trim();
+                            const ref = a.source_ref || a.asset_name || "";
+                            const title = a.problem_title ? `${ref} — ${a.problem_title}` : ref;
                             navigator.clipboard.writeText(title);
                             setLastCopiedKey(`title-${a.id}`);
                             toast.success("Title copied");
