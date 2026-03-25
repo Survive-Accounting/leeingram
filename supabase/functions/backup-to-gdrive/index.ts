@@ -132,7 +132,7 @@ async function runBackup(sb: any) {
       fetchAll(sb, "chapter_topics", "*"),
       fetchAll(sb, "teaching_assets", "id, course_id, chapter_id, asset_name, source_ref, problem_title, problem_type, difficulty, google_sheet_url, google_sheet_status, deployment_status, asset_approved_at, source_type, source_number, topic_id, lw_activity_url"),
       fetchAll(sb, "topic_quiz_questions", "*"),
-      fetchAll(sb, "va_accounts", "id, name, email, role, created_at, status"),
+      fetchAll(sb, "va_accounts", "id, full_name, email, role, created_at, account_status"),
       sb.from("asset_events").select("asset_name").order("created_at", { ascending: false }).limit(1000).then((r: any) => r.data || []),
     ]);
 
