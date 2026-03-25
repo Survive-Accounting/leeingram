@@ -135,7 +135,7 @@ async function runBackup(sb: any) {
   const parentFolderId = Deno.env.get("GDRIVE_BACKUP_FOLDER_ID");
   if (!parentFolderId) throw new Error("Missing secret: GDRIVE_BACKUP_FOLDER_ID — add the Google Drive folder ID in Lovable Cloud secrets.");
 
-  console.log("GDRIVE_BACKUP_FOLDER_ID value:", parentFolderId);
+  console.log("GDRIVE_BACKUP_FOLDER_ID:", parentFolderId);
 
   const token = await getGoogleAccessToken();
   const today = new Date().toISOString().slice(0, 10);
