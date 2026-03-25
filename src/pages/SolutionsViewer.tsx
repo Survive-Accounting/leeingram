@@ -1336,7 +1336,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
       {/* Mobile: compact floating share button bottom-right */}
       <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
         <button
-          onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); onShareClick?.(); }}
+          onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
           className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
           style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
         >
