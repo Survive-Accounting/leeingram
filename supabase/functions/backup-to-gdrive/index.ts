@@ -59,7 +59,7 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
 }
 
 async function createDriveFolder(token: string, name: string, parentId: string): Promise<string> {
-  const resp = await fetch("https://www.googleapis.com/drive/v3/files", {
+  const resp = await fetch("https://www.googleapis.com/drive/v3/files?supportsAllDrives=true", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ name, mimeType: "application/vnd.google-apps.folder", parents: [parentId] }),
@@ -75,7 +75,7 @@ async function uploadFile(token: string, name: string, parentId: string, content
   const body =
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n` +
     `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n${content}\r\n--${boundary}--`;
-  const resp = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+  const resp = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
