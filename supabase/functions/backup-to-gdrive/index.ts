@@ -282,9 +282,10 @@ serve(async (req) => {
   const sb = createClient(supabaseUrl, serviceKey);
 
   // Quick validation — fail fast if secrets are missing
-  const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!saJson) {
-    return new Response(JSON.stringify({ error: "Missing secret: GOOGLE_SERVICE_ACCOUNT_JSON" }), {
+  const hasRefreshToken = Deno.env.get("GDRIVE_REFRESH_TOKEN") && Deno.env.get("GDRIVE_CLIENT_ID") && Deno.env.get("GDRIVE_CLIENT_SECRET");
+  const hasSA = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!hasRefreshToken && !hasSA) {
+    return new Response(JSON.stringify({ error: "Missing Google auth secrets. Set GDRIVE_REFRESH_TOKEN + GDRIVE_CLIENT_ID + GDRIVE_CLIENT_SECRET, or GOOGLE_SERVICE_ACCOUNT_JSON." }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
