@@ -106,28 +106,24 @@ async function fetchAll(sb: any, table: string, select: string, filters?: (q: an
   return all;
 }
 
-// ── Main ───────────────────────────────────────────────────────
+// ── Background backup runner ───────────────────────────────────
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+async function runBackup(sb: any) {
+  const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJson) throw new Error("Missing secret: GOOGLE_SERVICE_ACCOUNT_JSON — add it in Lovable Cloud secrets.");
+  const parentFolderId = Deno.env.get("GDRIVE_BACKUP_FOLDER_ID");
+  if (!parentFolderId) throw new Error("Missing secret: GDRIVE_BACKUP_FOLDER_ID — add the Google Drive folder ID in Lovable Cloud secrets.");
 
-  try {
-    const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (!saJson) throw new Error("Missing secret: GOOGLE_SERVICE_ACCOUNT_JSON — add it in Lovable Cloud secrets.");
-    const parentFolderId = Deno.env.get("GDRIVE_BACKUP_FOLDER_ID");
-    if (!parentFolderId) throw new Error("Missing secret: GDRIVE_BACKUP_FOLDER_ID — add the Google Drive folder ID in Lovable Cloud secrets.");
+  console.log("GDRIVE_BACKUP_FOLDER_ID value:", parentFolderId);
+  console.log("Folder ID length:", parentFolderId.length);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, serviceKey);
+  const token = await getGoogleAccessToken(saJson);
+  const today = new Date().toISOString().slice(0, 10);
+  const ts = new Date().toISOString();
 
-    const token = await getGoogleAccessToken(saJson);
-    const today = new Date().toISOString().slice(0, 10);
-    const ts = new Date().toISOString();
-
-    // Create root backup folder
-    const rootName = `Survive Accounting — Backup ${today}`;
-    const rootId = await createDriveFolder(token, rootName, parentFolderId);
+  // Create root backup folder
+  const rootName = `Survive Accounting — Backup ${today}`;
+  const rootId = await createDriveFolder(token, rootName, parentFolderId.trim());
 
     // ── Fetch all data ─────────────────────────────────────────
     const [courses, chapters, topics, assets, quizQuestions, vaAccounts, assetEvents] = await Promise.all([
