@@ -176,7 +176,9 @@ Return results using the provided tool.`,
     // that's a strong signal this problem depends on another
     const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
     if (detectedLabel && dependencyType === "standalone") {
-      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
+      // Word-boundary \b prevents matching "are 6.2%" as "E6.2"
+      // Strict ref format: 1-2 digit chapter + separator + 1-2 digit problem
+      const labelPattern = /\b(?:E|P|BE)\s*\d{1,2}[\.\-]\d{1,2}[A-Za-z]?\b/gi;
       const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
       const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
       if (otherLabels.length > 0) {
