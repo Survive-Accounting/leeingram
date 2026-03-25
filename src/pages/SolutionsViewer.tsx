@@ -1360,7 +1360,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
           {!collapsed && (
             <>
               <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied — share with classmates!"); onShareClick?.(); }}
+                onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
                 className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
                 style={{ color: "#3B82F6" }}
               >

@@ -880,7 +880,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
         <div className="flex items-center rounded-full overflow-hidden" style={{ background: "#FFFFFF", border: `1px solid ${theme.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
           {!collapsed && (
             <>
-              <button onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); }} className="text-[11px] font-bold px-3 py-2 whitespace-nowrap flex items-center gap-1.5" style={{ color: "#3B82F6" }}><Share2 className="h-3 w-3" /> Share This</button>
+              <button onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied!")); }} className="text-[11px] font-bold px-3 py-2 whitespace-nowrap flex items-center gap-1.5" style={{ color: "#3B82F6" }}><Share2 className="h-3 w-3" /> Share This</button>
               <div className="w-px h-5" style={{ background: theme.border }} />
               <button onClick={() => setAboutOpen(true)} className="text-[11px] font-semibold px-3 py-2 whitespace-nowrap" style={{ color: theme.text }}>About Lee Ingram</button>
               <div className="w-px h-5" style={{ background: theme.border }} />
