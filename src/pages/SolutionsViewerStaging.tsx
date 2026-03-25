@@ -872,7 +872,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
   return (
     <>
       <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
-        <button onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); }} className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg" style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}>
+        <button onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied!")); }} className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg" style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}>
           <Share2 className="h-3.5 w-3.5" /> Share
         </button>
       </div>
