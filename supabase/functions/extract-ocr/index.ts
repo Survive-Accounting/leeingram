@@ -143,16 +143,18 @@ Return results using the provided tool.`,
     const ocrResult = JSON.parse(toolCall.function.arguments);
 
     // ── Dependency Detection ──
+    // Ref format: 1-2 digit chapter number, separator, 1-2 digit problem number (optionally with A/B suffix)
+    const REF_NUM = "\\d{1,2}[\\-\\.]\\d{1,2}[A-Za-z]?";
     const DEPENDENCY_PATTERNS = [
-      { regex: /assume the same (?:information|facts|data) as in\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
-      { regex: /assume the same (?:information|facts|data) as in\s+(?:Exercise|Problem|BE|Brief Exercise)\s*(\d+[\-\.]\d+)/i, extractRef: true },
-      { regex: /using the (?:information|data|facts) (?:from|in)\s+([A-Z]{1,2}\s*\d+[\-\.]\d+)/i, extractRef: true },
-      { regex: /using the (?:information|data|facts) (?:from|in)\s+(?:Exercise|Problem|BE|Brief Exercise)\s*(\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: new RegExp(`assume the same (?:information|facts|data) as in\\s+([A-Z]{1,2}\\s*${REF_NUM})`, "i"), extractRef: true },
+      { regex: new RegExp(`assume the same (?:information|facts|data) as in\\s+(?:Exercise|Problem|BE|Brief Exercise)\\s*(${REF_NUM})`, "i"), extractRef: true },
+      { regex: new RegExp(`using the (?:information|data|facts) (?:from|in)\\s+([A-Z]{1,2}\\s*${REF_NUM})`, "i"), extractRef: true },
+      { regex: new RegExp(`using the (?:information|data|facts) (?:from|in)\\s+(?:Exercise|Problem|BE|Brief Exercise)\\s*(${REF_NUM})`, "i"), extractRef: true },
       { regex: /based on the previous (?:problem|exercise)/i, extractRef: false },
-      { regex: /refer(?:ring)? to\s+(?:the data in\s+)?(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
-      { regex: /using the data (?:from|in)\s+(?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
-      { regex: /in (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
-      { regex: /see (?:Exercise|Problem|BE|E|P)\s*(\d+[\-\.]\d+)/i, extractRef: true },
+      { regex: new RegExp(`refer(?:ring)? to\\s+(?:the (?:data|information) in\\s+)?(?:Exercise|Problem|BE)\\s*(${REF_NUM})`, "i"), extractRef: true },
+      { regex: new RegExp(`using the data (?:from|in)\\s+(?:Exercise|Problem|BE)\\s*(${REF_NUM})`, "i"), extractRef: true },
+      { regex: new RegExp(`\\bin (?:Exercise|Problem|Brief Exercise)\\s*(${REF_NUM})`, "i"), extractRef: true },
+      { regex: new RegExp(`\\bsee (?:Exercise|Problem|Brief Exercise)\\s*(${REF_NUM})`, "i"), extractRef: true },
     ];
 
     let dependencyType = "standalone";
@@ -174,7 +176,9 @@ Return results using the provided tool.`,
     // that's a strong signal this problem depends on another
     const detectedLabel = (ocrResult.detected_label || "").replace(/\s+/g, "");
     if (detectedLabel && dependencyType === "standalone") {
-      const labelPattern = /(?:E|P|BE)\s*\d+[\.\-]\d+/gi;
+      // Word-boundary \b prevents matching "are 6.2%" as "E6.2"
+      // Strict ref format: 1-2 digit chapter + separator + 1-2 digit problem
+      const labelPattern = /\b(?:E|P|BE)\s*\d{1,2}[\.\-]\d{1,2}[A-Za-z]?\b/gi;
       const allLabels = [...textToCheck.matchAll(labelPattern)].map(m => m[0].replace(/\s+/g, ""));
       const otherLabels = allLabels.filter(l => l.toUpperCase() !== detectedLabel.toUpperCase());
       if (otherLabels.length > 0) {
