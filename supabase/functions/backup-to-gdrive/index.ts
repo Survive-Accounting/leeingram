@@ -239,23 +239,66 @@ To Restore:
     // ── Update app_settings ────────────────────────────────────
     await sb.from("app_settings").upsert({ key: "last_backup_at", value: ts }, { onConflict: "key" });
     await sb.from("app_settings").upsert({ key: "last_backup_folder_name", value: rootName }, { onConflict: "key" });
+    await sb.from("app_settings").upsert({ key: "last_backup_folder_id", value: rootId }, { onConflict: "key" });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        backup_folder: rootName,
-        timestamp: ts,
-        chapters_backed_up: chapters.length,
-        quiz_questions: quizQuestions.length,
-        google_drive_folder_id: rootId,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (e) {
-    console.error("backup-to-gdrive error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.log("Backup complete:", rootName, "folders:", chapters.length);
+    return {
+      success: true,
+      backup_folder: rootName,
+      timestamp: ts,
+      chapters_backed_up: chapters.length,
+      quiz_questions: quizQuestions.length,
+      google_drive_folder_id: rootId,
+    };
   }
+
+// ── Main serve handler ─────────────────────────────────────────
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  // Quick validation — fail fast if secrets are missing
+  const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJson) {
+    return new Response(JSON.stringify({ error: "Missing secret: GOOGLE_SERVICE_ACCOUNT_JSON" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const folderId = Deno.env.get("GDRIVE_BACKUP_FOLDER_ID");
+  if (!folderId) {
+    return new Response(JSON.stringify({ error: "Missing secret: GDRIVE_BACKUP_FOLDER_ID" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Mark backup as started
+  await sb.from("app_settings").upsert({ key: "backup_status", value: "running" }, { onConflict: "key" });
+
+  // Run backup in background so we don't hit the response timeout
+  const backupPromise = runBackup(sb)
+    .then(async (result) => {
+      await sb.from("app_settings").upsert({ key: "backup_status", value: "complete" }, { onConflict: "key" });
+      console.log("Background backup finished:", result.backup_folder);
+    })
+    .catch(async (err) => {
+      console.error("Background backup failed:", err);
+      await sb.from("app_settings").upsert({ key: "backup_status", value: `failed: ${err.message}` }, { onConflict: "key" });
+    });
+
+  // @ts-ignore — EdgeRuntime.waitUntil keeps the worker alive after response
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+    EdgeRuntime.waitUntil(backupPromise);
+  } else {
+    // Fallback: await directly (may timeout on large backups)
+    await backupPromise;
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, message: "Backup started — check dashboard for status." }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
 });
