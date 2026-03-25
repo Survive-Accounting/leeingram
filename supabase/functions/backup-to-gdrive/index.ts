@@ -15,8 +15,33 @@ function base64url(input: Uint8Array): string {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function getGoogleAccessToken(serviceAccountJson: string): Promise<string> {
-  const sa = JSON.parse(serviceAccountJson);
+async function getGoogleAccessToken(): Promise<string> {
+  // Method 1: Refresh token (works with personal Google accounts)
+  const refreshToken = Deno.env.get("GDRIVE_REFRESH_TOKEN");
+  const clientId = Deno.env.get("GDRIVE_CLIENT_ID");
+  const clientSecret = Deno.env.get("GDRIVE_CLIENT_SECRET");
+
+  if (refreshToken && clientId && clientSecret) {
+    const resp = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+    if (!resp.ok) throw new Error(`Google refresh token error: ${await resp.text()}`);
+    const data = await resp.json();
+    return data.access_token;
+  }
+
+  // Method 2: Service account JWT (works with Google Workspace / Shared Drives)
+  const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJson) throw new Error("Missing Google auth secrets. Set either GDRIVE_REFRESH_TOKEN + GDRIVE_CLIENT_ID + GDRIVE_CLIENT_SECRET, or GOOGLE_SERVICE_ACCOUNT_JSON.");
+
+  const sa = JSON.parse(saJson);
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
   const payload = base64url(
@@ -31,8 +56,6 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
     )
   );
   const signingInput = `${header}.${payload}`;
-
-  // Import RSA private key
   const pemBody = sa.private_key
     .replace(/-----BEGIN PRIVATE KEY-----/, "")
     .replace(/-----END PRIVATE KEY-----/, "")
