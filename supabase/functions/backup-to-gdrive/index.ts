@@ -132,15 +132,12 @@ async function fetchAll(sb: any, table: string, select: string, filters?: (q: an
 // ── Background backup runner ───────────────────────────────────
 
 async function runBackup(sb: any) {
-  const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!saJson) throw new Error("Missing secret: GOOGLE_SERVICE_ACCOUNT_JSON — add it in Lovable Cloud secrets.");
   const parentFolderId = Deno.env.get("GDRIVE_BACKUP_FOLDER_ID");
   if (!parentFolderId) throw new Error("Missing secret: GDRIVE_BACKUP_FOLDER_ID — add the Google Drive folder ID in Lovable Cloud secrets.");
 
   console.log("GDRIVE_BACKUP_FOLDER_ID value:", parentFolderId);
-  console.log("Folder ID length:", parentFolderId.length);
 
-  const token = await getGoogleAccessToken(saJson);
+  const token = await getGoogleAccessToken();
   const today = new Date().toISOString().slice(0, 10);
   const ts = new Date().toISOString();
 
