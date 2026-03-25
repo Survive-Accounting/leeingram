@@ -5,6 +5,7 @@ import { BarChart3, Users } from "lucide-react";
 import { ProductionOverview } from "@/components/admin-dashboard/ProductionOverview";
 import { VaManagement } from "@/components/admin-dashboard/VaManagement";
 import { PipelineResetDialog } from "@/components/admin-dashboard/PipelineResetDialog";
+import { BackupSection } from "@/components/admin-dashboard/BackupSection";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState("production");
@@ -34,6 +35,8 @@ export default function AdminDashboard() {
             <VaManagement />
           </TabsContent>
         </Tabs>
+
+        <BackupSection />
       </div>
     </SurviveSidebarLayout>
   );
