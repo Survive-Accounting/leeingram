@@ -135,12 +135,22 @@ export default function VaDashboard() {
     queryKey: ["va-asset-counts", effectiveChapterIds],
     queryFn: async () => {
       if (!effectiveChapterIds.length) return {};
-      const { data } = await supabase
-        .from("teaching_assets")
-        .select("chapter_id")
-        .in("chapter_id", effectiveChapterIds);
+      const PAGE = 1000;
+      let allData: { chapter_id: string }[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("chapter_id")
+          .in("chapter_id", effectiveChapterIds)
+          .range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
       const counts: Record<string, number> = {};
-      data?.forEach(a => {
+      allData.forEach(a => {
         counts[a.chapter_id] = (counts[a.chapter_id] || 0) + 1;
       });
       return counts;
