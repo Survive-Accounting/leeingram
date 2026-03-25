@@ -15,6 +15,7 @@ import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
 import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboardFallback";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
