@@ -192,7 +192,7 @@ async function runBackup(sb: any) {
 
     // ── FOLDER 5: va_accounts ──────────────────────────────────
     const vaDir = await createDriveFolder(token, "👥 va_accounts", rootId);
-    const vaLines = vaAccounts.map((v: any) => `${v.name} | ${v.email} | ${v.role} | joined ${v.created_at?.slice(0, 10)}`).join("\n");
+    const vaLines = vaAccounts.map((v: any) => `${v.full_name} | ${v.email} | ${v.role} | joined ${v.created_at?.slice(0, 10)}`).join("\n");
     await uploadFile(token, "va_roster.txt", vaDir, `VA Roster (${vaAccounts.length}):\n${vaLines}\n`);
 
     // ── FOLDER 6: greek_orgs — skipped (tables don't exist yet) ──
