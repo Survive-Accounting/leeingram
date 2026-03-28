@@ -304,7 +304,7 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
           <br />
           Tutoring entrepreneur since 2015.
           <br />
-          Hope this helps you feel more confident going into your exam.
+          Hope my study tools give you more confidence going into your exam 👍
           <br />
           <span className="italic">— Lee</span>
         </p>
