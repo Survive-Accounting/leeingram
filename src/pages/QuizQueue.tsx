@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -589,7 +590,12 @@ function QuizReviewDrawer({
                         {q.je_description && (
                           <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
                         )}
-                        {Array.isArray(q.je_accounts) && q.je_accounts.length > 0 && (
+                        {(() => {
+                          let accounts = q.je_accounts;
+                          if (typeof accounts === "string") {
+                            try { accounts = JSON.parse(accounts); } catch { accounts = null; }
+                          }
+                          return Array.isArray(accounts) && accounts.length > 0 ? (
                           <table className="text-xs w-full border-collapse">
                             <thead>
                               <tr className="border-b border-border">
@@ -598,17 +604,18 @@ function QuizReviewDrawer({
                               </tr>
                             </thead>
                             <tbody>
-                              {q.je_accounts.map((a: any, i: number) => (
+                              {accounts.map((a: any, i: number) => (
                                 <tr key={i} className="border-b border-border/50">
-                                  <td className="py-1">{a.account_name}</td>
+                                  <td className="py-1">{a?.account_name ?? "—"}</td>
                                   <td className="py-1 font-medium">
-                                    {a.side === "debit" ? "DR" : "CR"}
+                                    {a?.side === "debit" ? "DR" : "CR"}
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                        )}
+                          ) : null;
+                        })()}
                         {q.explanation_correct && (
                           <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
                         )}
@@ -1321,13 +1328,19 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
 
       {/* Review drawer */}
       {reviewTopic && (
-        <QuizReviewDrawer
-          open={!!reviewTopic}
-          onOpenChange={(o) => !o && setReviewTopic(null)}
-          topicId={reviewTopic.id}
-          topicName={reviewTopic.name}
-          onUpdated={loadTopics}
-        />
+        <ErrorBoundary
+          title="Quiz review hit an error"
+          description="Close and reopen the drawer to try again."
+          onReset={() => setReviewTopic(null)}
+        >
+          <QuizReviewDrawer
+            open={!!reviewTopic}
+            onOpenChange={(o) => !o && setReviewTopic(null)}
+            topicId={reviewTopic.id}
+            topicName={reviewTopic.name}
+            onUpdated={loadTopics}
+          />
+        </ErrorBoundary>
       )}
     </>
   );
