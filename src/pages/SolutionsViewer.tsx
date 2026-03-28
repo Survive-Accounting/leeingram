@@ -2033,6 +2033,7 @@ export default function SolutionsViewer() {
     ? asset.problem_text_ht_backup!
     : asset.problem_context || "";
   // Don't split problem text — splitLongText can break KV blocks across paragraphs
+  const dissectorHighlights: DissectorHighlight[] = (!isPreview && asset._dissectorHighlights) || [];
 
   const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
 
