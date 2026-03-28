@@ -215,7 +215,8 @@ Deno.serve(async (req) => {
         errored++;
       }
       processed++;
-    }
+      // Small delay between assets to avoid rate limiting
+      if (processed < batchEnd) await new Promise(r => setTimeout(r, 500));
 
     // 4. Update progress
     const isComplete = processed >= total || creditExhausted;
