@@ -35,6 +35,11 @@ interface ChapterInfo {
   chapter_name: string;
 }
 
+interface CourseInfo {
+  course_name: string;
+  code: string;
+}
+
 interface AssetInfo {
   id: string;
   asset_name: string;
@@ -75,18 +80,37 @@ function getAccountCategory(name: string): "asset_expense" | "liability_equity_r
   return "asset_expense";
 }
 
+/* ── Source ref sorting ── */
+const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
+
+function parseSourceRef(ref: string): { prefix: string; num: number } {
+  const m = ref.match(/^([A-Z]+)\s*(\d+(?:\.\d+)?)/);
+  if (!m) return { prefix: "ZZZ", num: 9999 };
+  return { prefix: m[1], num: parseFloat(m[2]) };
+}
+
+function sortBySourceRef(a: AssetInfo, b: AssetInfo): number {
+  const pa = parseSourceRef(a.source_ref);
+  const pb = parseSourceRef(b.source_ref);
+  const oa = PREFIX_ORDER[pa.prefix] ?? 99;
+  const ob = PREFIX_ORDER[pb.prefix] ?? 99;
+  if (oa !== ob) return oa - ob;
+  return pa.num - pb.num;
+}
+
 /* ── Tabs ── */
-type TabKey = "why" | "je" | "concepts" | "traps" | "example";
+type TabKey = "solution" | "je" | "concepts" | "traps" | "example";
 
 export default function QuizExplanation() {
   const { questionId } = useParams<{ questionId: string }>();
   const [question, setQuestion] = useState<Question | null>(null);
   const [topic, setTopic] = useState<TopicInfo | null>(null);
   const [chapter, setChapter] = useState<ChapterInfo | null>(null);
+  const [course, setCourse] = useState<CourseInfo | null>(null);
   const [assets, setAssets] = useState<AssetInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>("why");
+  const [activeTab, setActiveTab] = useState<TabKey>("solution");
 
   useEffect(() => {
     if (!questionId) { setError(true); setLoading(false); return; }
@@ -103,10 +127,10 @@ export default function QuizExplanation() {
 
         const [topicRes, chapterRes, assetsRes] = await Promise.all([
           supabase.from("chapter_topics")
-            .select("topic_name, topic_description")
+            .select("topic_name, topic_description, course_id")
             .eq("id", q.topic_id).single(),
           supabase.from("chapters")
-            .select("chapter_number, chapter_name")
+            .select("chapter_number, chapter_name, course_id")
             .eq("id", q.chapter_id).single(),
           supabase.from("teaching_assets")
             .select("id, asset_name, source_ref, problem_title, concept_notes, exam_traps, important_formulas, supplementary_je_json")
@@ -117,6 +141,15 @@ export default function QuizExplanation() {
         if (topicRes.data) setTopic(topicRes.data as unknown as TopicInfo);
         if (chapterRes.data) setChapter(chapterRes.data as unknown as ChapterInfo);
         if (assetsRes.data) setAssets(assetsRes.data as unknown as AssetInfo[]);
+
+        // Fetch course info
+        const courseId = (chapterRes.data as any)?.course_id || (topicRes.data as any)?.course_id;
+        if (courseId) {
+          const { data: c } = await supabase.from("courses")
+            .select("course_name, code")
+            .eq("id", courseId).single();
+          if (c) setCourse(c as unknown as CourseInfo);
+        }
       } catch {
         setError(true);
       } finally {
@@ -141,18 +174,40 @@ export default function QuizExplanation() {
 
   // Determine available tabs
   const availableTabs = useMemo(() => {
-    const tabs: { key: TabKey; label: string }[] = [{ key: "why", label: "Why" }];
+    const tabs: { key: TabKey; label: string }[] = [{ key: "solution", label: "Solution" }];
 
     const hasJe = question?.question_type === "je_recall" ||
       assets.some((a) => a.supplementary_je_json);
     if (hasJe) tabs.push({ key: "je", label: "Journal Entry" });
 
-    if (assets.some((a) => a.concept_notes)) tabs.push({ key: "concepts", label: "Concepts" });
+    if (assets.some((a) => a.concept_notes || a.important_formulas))
+      tabs.push({ key: "concepts", label: "Concepts" });
     if (assets.some((a) => a.exam_traps)) tabs.push({ key: "traps", label: "Exam Traps" });
     if (assets.length > 0) tabs.push({ key: "example", label: "Example" });
 
     return tabs;
   }, [question, assets]);
+
+  // Report issue mailto
+  const reportMailto = useMemo(() => {
+    if (!question) return "";
+    const subject = encodeURIComponent(
+      `Quiz Issue — ${course?.code || ""} Ch ${chapter?.chapter_number ?? "?"} — Q${question.question_number}`
+    );
+    const body = encodeURIComponent(
+      [
+        `Course: ${course?.course_name || "Unknown"} (${course?.code || ""})`,
+        `Chapter: ${chapter?.chapter_number ?? "?"} — ${chapter?.chapter_name || ""}`,
+        `Topic: ${topic?.topic_name || "Unknown"}`,
+        `Question #: ${question.question_number}`,
+        `Question ID: ${question.id}`,
+        ``,
+        `Issue:`,
+        ``,
+      ].join("\n")
+    );
+    return `mailto:lee@surviveaccounting.com?subject=${subject}&body=${body}`;
+  }, [question, course, chapter, topic]);
 
   if (loading) {
     return (
@@ -205,15 +260,22 @@ export default function QuizExplanation() {
 
       {/* Tab content */}
       <div className="px-4 py-4">
-        {activeTab === "why" && <WhyTab question={question} />}
+        {activeTab === "solution" && <SolutionTab question={question} />}
         {activeTab === "je" && <JeTab question={question} assets={assets} />}
         {activeTab === "concepts" && <ConceptsTab assets={assets} />}
         {activeTab === "traps" && <TrapsTab assets={assets} />}
         {activeTab === "example" && <ExampleTab assets={assets} />}
       </div>
 
-      {/* Footer */}
-      <div className="text-center py-3" style={{ backgroundColor: "#f8fafc" }}>
+      {/* Footer with report issue */}
+      <div className="text-center py-3 space-y-1" style={{ backgroundColor: "#f8fafc" }}>
+        <a
+          href={reportMailto}
+          className="inline-block text-xs font-medium hover:underline"
+          style={{ color: "#64748b" }}
+        >
+          🐛 Report an issue with this question
+        </a>
         <p style={{ fontSize: 11, color: "#cbd5e1" }}>
           Survive Accounting · by Lee Ingram
         </p>
@@ -226,7 +288,7 @@ export default function QuizExplanation() {
 /*  TAB COMPONENTS                         */
 /* ════════════════════════════════════════ */
 
-function WhyTab({ question }: { question: Question }) {
+function SolutionTab({ question }: { question: Question }) {
   const optMap: Record<string, string | null> = {
     a: question.option_a, b: question.option_b,
     c: question.option_c, d: question.option_d,
@@ -387,24 +449,32 @@ function JeTab({ question, assets }: { question: Question; assets: AssetInfo[] }
             📝 {showSupp ? "Hide" : "Show"} related journal entries ({suppEntries.length})
           </button>
           {showSupp && (
-            <div className="mt-2 space-y-2">
+            <div className="mt-2 space-y-3">
               {suppEntries.map((entry: any, idx: number) => (
                 <div key={idx} className="rounded border border-slate-200 p-3">
                   {entry.description && (
-                    <p className="text-xs font-medium mb-1" style={{ color: "#374151" }}>
+                    <p className="text-xs font-medium mb-2" style={{ color: "#374151" }}>
                       {entry.description}
                     </p>
                   )}
                   {Array.isArray(entry.accounts || entry.lines) && (
-                    <div className="text-xs space-y-0.5" style={{ color: "#64748b" }}>
-                      {(entry.accounts || entry.lines).map((line: any, li: number) => (
-                        <p key={li}>
-                          <span className="font-bold" style={{ color: line.side === "debit" ? "#2563eb" : "#7c3aed" }}>
-                            {line.side === "debit" ? "DR" : "CR"}
-                          </span>{" "}
-                          {line.account_name || line.account}
-                        </p>
-                      ))}
+                    <div className="text-xs space-y-1" style={{ color: "#475569" }}>
+                      {(entry.accounts || entry.lines).map((line: any, li: number) => {
+                        const isDebit = line.side === "debit";
+                        return (
+                          <p key={li} style={{ paddingLeft: isDebit ? 0 : 16 }}>
+                            <span className="font-bold" style={{ color: isDebit ? "#2563eb" : "#7c3aed" }}>
+                              {isDebit ? "DR" : "CR"}
+                            </span>{" "}
+                            {line.account_name || line.account}
+                            {line.amount && (
+                              <span className="ml-2" style={{ color: "#94a3b8" }}>
+                                {typeof line.amount === "number" ? `$${line.amount.toLocaleString()}` : line.amount}
+                              </span>
+                            )}
+                          </p>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -413,13 +483,51 @@ function JeTab({ question, assets }: { question: Question; assets: AssetInfo[] }
           )}
         </div>
       )}
+
+      {accounts.length === 0 && suppEntries.length === 0 && (
+        <p className="text-xs text-center py-4" style={{ color: "#94a3b8" }}>
+          No journal entries available for this question.
+        </p>
+      )}
     </div>
+  );
+}
+
+/** Render text as bulleted list — splits on newlines/sentences */
+function BulletedText({ text }: { text: string }) {
+  // Split on newlines, periods followed by capital letters, or bullet chars
+  const bullets = text
+    .split(/\n|(?<=\.)\s+(?=[A-Z])/)
+    .map((s) => s.replace(/^[•\-–—]\s*/, "").trim())
+    .filter((s) => s.length > 0);
+
+  if (bullets.length <= 1) {
+    return <p className="text-sm leading-relaxed">{text}</p>;
+  }
+
+  return (
+    <ul className="space-y-3">
+      {bullets.map((b, i) => (
+        <li key={i} className="flex gap-2 text-sm leading-relaxed">
+          <span className="shrink-0 mt-1" style={{ color: "#d97706" }}>•</span>
+          <span>{b}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 function ConceptsTab({ assets }: { assets: AssetInfo[] }) {
   const conceptAsset = assets.find((a) => a.concept_notes);
   const formulaAsset = assets.find((a) => a.important_formulas);
+
+  const formulaText = useMemo(() => {
+    if (!formulaAsset?.important_formulas) return null;
+    const f = formulaAsset.important_formulas;
+    if (typeof f === "string") return f;
+    if (Array.isArray(f)) return f.join("\n\n");
+    return JSON.stringify(f, null, 2);
+  }, [formulaAsset]);
 
   return (
     <div className="space-y-5">
@@ -429,26 +537,24 @@ function ConceptsTab({ assets }: { assets: AssetInfo[] }) {
             KEY CONCEPTS
           </p>
           <div
-            className="rounded-md p-4 text-sm leading-relaxed whitespace-pre-wrap"
+            className="rounded-md p-4"
             style={{ backgroundColor: "#fffbeb", borderLeft: "3px solid #d97706" }}
           >
-            {conceptAsset.concept_notes}
+            <BulletedText text={conceptAsset.concept_notes} />
           </div>
         </div>
       )}
 
-      {formulaAsset?.important_formulas && (
+      {formulaText && (
         <div>
           <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
             IMPORTANT FORMULAS
           </p>
           <div
-            className="rounded-md p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap"
+            className="rounded-md p-4"
             style={{ backgroundColor: "#f1f5f9", borderLeft: "3px solid #14213D" }}
           >
-            {typeof formulaAsset.important_formulas === "string"
-              ? formulaAsset.important_formulas
-              : JSON.stringify(formulaAsset.important_formulas, null, 2)}
+            <BulletedText text={formulaText} />
           </div>
         </div>
       )}
@@ -457,36 +563,59 @@ function ConceptsTab({ assets }: { assets: AssetInfo[] }) {
 }
 
 function TrapsTab({ assets }: { assets: AssetInfo[] }) {
-  const traps = assets.filter((a) => a.exam_traps);
+  // Gather all trap strings across assets
+  const allTraps: string[] = [];
+  for (const a of assets) {
+    if (!a.exam_traps) continue;
+    if (typeof a.exam_traps === "string") {
+      // Split long text into individual traps
+      a.exam_traps
+        .split(/\n|(?<=\.)\s+(?=[A-Z])/)
+        .map((s: string) => s.replace(/^[•\-–—]\s*/, "").trim())
+        .filter((s: string) => s.length > 0)
+        .forEach((t: string) => allTraps.push(t));
+    } else if (Array.isArray(a.exam_traps)) {
+      for (const t of a.exam_traps) {
+        if (typeof t === "string" && t.trim()) allTraps.push(t.trim());
+      }
+    }
+  }
 
   return (
     <div className="space-y-3">
       <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#dc2626" }}>
         ⚠ EXAM TRAPS
       </p>
-      {traps.map((a) => (
+      {allTraps.length > 0 ? (
         <div
-          key={a.id}
-          className="rounded-md p-4 text-sm leading-relaxed whitespace-pre-wrap"
+          className="rounded-md p-4"
           style={{ backgroundColor: "#fef2f2", borderLeft: "3px solid #dc2626" }}
         >
-          {typeof a.exam_traps === "string"
-            ? a.exam_traps
-            : Array.isArray(a.exam_traps)
-              ? (a.exam_traps as string[]).map((t, i) => <p key={i} className="mb-1">• {t}</p>)
-              : JSON.stringify(a.exam_traps, null, 2)}
+          <ul className="space-y-3">
+            {allTraps.map((t, i) => (
+              <li key={i} className="flex gap-2 text-sm leading-relaxed">
+                <span className="shrink-0 mt-0.5" style={{ color: "#dc2626" }}>⚠</span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      ))}
+      ) : (
+        <p className="text-xs text-center py-4" style={{ color: "#94a3b8" }}>
+          No exam traps available.
+        </p>
+      )}
     </div>
   );
 }
 
 function ExampleTab({ assets }: { assets: AssetInfo[] }) {
+  const sorted = [...assets].sort(sortBySourceRef).slice(0, 2);
+
   return (
     <div className="space-y-3">
-      {assets.slice(0, 2).map((a) => (
+      {sorted.map((a) => (
         <div key={a.id} className="rounded-lg border border-slate-200 p-4 space-y-2">
-          <p className="font-mono text-xs text-slate-400">{a.asset_name}</p>
           <p className="text-sm font-medium text-slate-700">
             {a.source_ref} — {a.problem_title}
           </p>
