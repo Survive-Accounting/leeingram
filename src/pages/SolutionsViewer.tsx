@@ -2273,9 +2273,9 @@ export default function SolutionsViewer() {
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
                       </div>
                     )}
-                    {/* Dissector key info toggle — paid mode only, when highlights exist */}
+                    {/* Dissector key info toggle + Practice PDF — paid mode only */}
                     {!isPreview && (asset._dissectorHighlights?.length > 0) && (
-                      <div className="mb-3">
+                      <div className="mb-3 flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => setShowDissectorHighlights(v => !v)}
                           style={{
@@ -2291,6 +2291,29 @@ export default function SolutionsViewer() {
                         >
                           ✦ Key Info: {showDissectorHighlights ? "On" : "Off"}
                         </button>
+                        {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
+                        <PracticePdfButton
+                          sourceRef={sourceRef}
+                          problemTitle={problemTitle}
+                          courseName={courseDisplayName}
+                          chapterLabel={chapterLabel}
+                          problemText={rawProblemText}
+                          instructions={instructions}
+                        />
+                      </div>
+                    )}
+                    {/* Practice PDF button fallback when no dissector highlights */}
+                    {!isPreview && !(asset._dissectorHighlights?.length > 0) && (
+                      <div className="mb-3">
+                        {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
+                        <PracticePdfButton
+                          sourceRef={sourceRef}
+                          problemTitle={problemTitle}
+                          courseName={courseDisplayName}
+                          chapterLabel={chapterLabel}
+                          problemText={rawProblemText}
+                          instructions={instructions}
+                        />
                       </div>
                     )}
                     {dissectorHighlights.length > 0 ? (
