@@ -1223,6 +1223,11 @@ export default function AssetsLibrary() {
 
         return (
           <>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[10px] text-muted-foreground">Show:</span>
+        <Button variant={showAssetCode ? "secondary" : "ghost"} size="sm" className="h-6 text-[10px] px-2" onClick={() => setShowAssetCode(v => !v)}>Asset Code</Button>
+        <Button variant={showCreated ? "secondary" : "ghost"} size="sm" className="h-6 text-[10px] px-2" onClick={() => setShowCreated(v => !v)}>Date Created</Button>
+      </div>
       <div className="rounded-lg overflow-hidden border border-border bg-background/95">
         <Table>
           <TableHeader>
