@@ -604,17 +604,18 @@ function QuizReviewDrawer({
                               </tr>
                             </thead>
                             <tbody>
-                              {q.je_accounts.map((a: any, i: number) => (
+                              {accounts.map((a: any, i: number) => (
                                 <tr key={i} className="border-b border-border/50">
-                                  <td className="py-1">{a.account_name}</td>
+                                  <td className="py-1">{a?.account_name ?? "—"}</td>
                                   <td className="py-1 font-medium">
-                                    {a.side === "debit" ? "DR" : "CR"}
+                                    {a?.side === "debit" ? "DR" : "CR"}
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                        )}
+                          ) : null;
+                        })()}
                         {q.explanation_correct && (
                           <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
                         )}
