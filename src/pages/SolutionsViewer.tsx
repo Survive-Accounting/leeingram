@@ -303,13 +303,27 @@ function DissectorHighlightedText({ text, highlights, theme }: { text: string; h
 
 function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: DissectorHighlight }) {
   const [show, setShow] = useState(false);
-  const [above, setAbove] = useState(true);
   const spanRef = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; showBelow: boolean; arrowLeft: number } | null>(null);
 
   const handleEnter = useCallback(() => {
     if (spanRef.current) {
       const rect = spanRef.current.getBoundingClientRect();
-      setAbove(rect.top > 120);
+      const tooltipWidth = 260;
+      const viewportWidth = window.innerWidth;
+      const showBelow = rect.top < 120;
+
+      let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+      left = Math.max(12, Math.min(left, viewportWidth - tooltipWidth - 12));
+
+      let arrowLeft = rect.left + rect.width / 2 - left;
+      arrowLeft = Math.max(12, Math.min(arrowLeft, tooltipWidth - 12));
+
+      const top = showBelow
+        ? rect.bottom + 8
+        : rect.top - 8;
+
+      setPos({ left, top, showBelow, arrowLeft });
     }
     setShow(true);
   }, []);
@@ -325,28 +339,25 @@ function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: Di
         borderRadius: 2,
         padding: "0 2px",
         cursor: "help",
-        position: "relative",
         display: "inline",
       }}
     >
       {text}
-      {show && (
+      {show && pos && (
         <span
           style={{
-            position: "absolute",
-            left: "50%",
-            transform: above ? "translateX(-50%)" : "translateX(-50%)",
-            ...(above ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
+            position: "fixed",
+            left: pos.left,
+            ...(pos.showBelow ? { top: pos.top } : { bottom: window.innerHeight - pos.top }),
             background: "#1e293b",
             color: "#ffffff",
             fontSize: 12,
             lineHeight: 1.5,
             padding: "8px 12px",
             borderRadius: 6,
-            maxWidth: 260,
-            width: "max-content",
+            width: 260,
             boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            zIndex: 50,
+            zIndex: 9999,
             pointerEvents: "none" as const,
             textAlign: "left" as const,
             whiteSpace: "normal" as const,
@@ -361,11 +372,11 @@ function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: Di
           <span
             style={{
               position: "absolute",
-              left: "50%",
+              left: pos.arrowLeft,
               transform: "translateX(-50%)",
-              ...(above
-                ? { top: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1e293b" }
-                : { bottom: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #1e293b" }),
+              ...(pos.showBelow
+                ? { bottom: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #1e293b" }
+                : { top: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1e293b" }),
               width: 0,
               height: 0,
             }}
@@ -1636,6 +1647,8 @@ export default function SolutionsViewer() {
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
+  // Dissector highlight toggle (default ON, resets each page load)
+  const [showDissectorHighlights, setShowDissectorHighlights] = useState(true);
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
@@ -2041,7 +2054,7 @@ export default function SolutionsViewer() {
     ? asset.problem_text_ht_backup!
     : asset.problem_context || "";
   // Don't split problem text — splitLongText can break KV blocks across paragraphs
-  const dissectorHighlights: DissectorHighlight[] = (!isPreview && asset._dissectorHighlights) || [];
+  const dissectorHighlights: DissectorHighlight[] = (!isPreview && showDissectorHighlights && asset._dissectorHighlights) || [];
 
   const shareUrl = `https://learn.surviveaccounting.com/solutions/${asset.asset_name}?preview=true`;
 
@@ -2209,6 +2222,26 @@ export default function SolutionsViewer() {
                       <div className="flex items-center gap-2 mb-3">
                         <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
+                      </div>
+                    )}
+                    {/* Dissector key info toggle — paid mode only, when highlights exist */}
+                    {!isPreview && (asset._dissectorHighlights?.length > 0) && (
+                      <div className="mb-3">
+                        <button
+                          onClick={() => setShowDissectorHighlights(v => !v)}
+                          style={{
+                            background: showDissectorHighlights ? "#fef9c3" : "#f1f5f9",
+                            border: `1px solid ${showDissectorHighlights ? "#ca8a04" : "#e2e8f0"}`,
+                            borderRadius: 20,
+                            padding: "4px 12px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: showDissectorHighlights ? "#92400e" : "#94a3b8",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✦ Key Info: {showDissectorHighlights ? "On" : "Off"}
+                        </button>
                       </div>
                     )}
                     {dissectorHighlights.length > 0 ? (
