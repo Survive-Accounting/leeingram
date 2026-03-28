@@ -2203,7 +2203,13 @@ export default function SolutionsViewer() {
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
                       </div>
                     )}
-                    <SmartContent text={rawProblemText} className="text-[14px] leading-[1.7] space-y-4" theme={t} />
+                    {dissectorHighlights.length > 0 ? (
+                      <div className="text-[14px] leading-[1.7] space-y-4">
+                        <DissectorHighlightedText text={rawProblemText} highlights={dissectorHighlights} theme={t} />
+                      </div>
+                    ) : (
+                      <SmartContent text={rawProblemText} className="text-[14px] leading-[1.7] space-y-4" theme={t} />
+                    )}
                   </div>
                 )}
 
