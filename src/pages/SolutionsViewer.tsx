@@ -1393,14 +1393,14 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
       />
       <div className="max-w-[400px]">
         <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Founder of{" "}
+          Creator of{" "}
           <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
             SurviveAccounting.com
           </a>.
           <br />
-          Tutoring entrepreneur since 2015.
-          <br />
-          Hope my study tools give you more confidence going into your exam 👍
+          Accounting tutor since 2015.
+          <br /><br />
+          Best of luck studying!
           <br />
           <span className="italic">— Lee</span>
         </p>
