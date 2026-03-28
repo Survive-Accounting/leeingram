@@ -7,9 +7,25 @@ const corsHeaders = {
 };
 
 const BATCH_SIZE = 5;
+const ASSET_REQUEST_TIMEOUT_MS = 35000;
+const MAX_INVOCATION_MS = 50000;
+const INTER_ASSET_DELAY_MS = 500;
+
+type QueueHandler = {
+  fn: string;
+  bodyFn: (assetId: string) => Record<string, unknown>;
+  skipCheck?: (sb: any, assetId: string) => Promise<boolean>;
+};
+
+type DelegatedOperationResult = {
+  ok: boolean;
+  status: number;
+  skipped?: boolean;
+  error?: string;
+};
 
 /** Operations that delegate to existing edge functions (need only asset id) */
-const DELEGATED_OPS: Record<string, { fn: string; bodyFn: (assetId: string) => any; skipCheck?: (sb: any, assetId: string) => Promise<boolean> }> = {
+const DELEGATED_OPS: Record<string, QueueHandler> = {
   rewrite_je_reasons: {
     fn: "rewrite-je-tooltips",
     bodyFn: (id) => ({ teaching_asset_id: id, mode: "rewrite_reasons" }),
@@ -31,7 +47,7 @@ const DELEGATED_OPS: Record<string, { fn: string; bodyFn: (assetId: string) => a
     bodyFn: (id) => ({ teaching_asset_id: id }),
     skipCheck: async (sb, id) => {
       const { data } = await sb.from("asset_flowcharts").select("id").eq("teaching_asset_id", id).limit(1);
-      return (data && data.length > 0);
+      return !!(data && data.length > 0);
     },
   },
   generate_dissector_highlights: {
@@ -39,7 +55,7 @@ const DELEGATED_OPS: Record<string, { fn: string; bodyFn: (assetId: string) => a
     bodyFn: (id) => ({ teaching_asset_id: id }),
     skipCheck: async (sb, id) => {
       const { data } = await sb.from("dissector_problems").select("id").eq("teaching_asset_id", id).limit(1);
-      return (data && data.length > 0);
+      return !!(data && data.length > 0);
     },
   },
   enrich_je_rows: {
@@ -51,14 +67,6 @@ const DELEGATED_OPS: Record<string, { fn: string; bodyFn: (assetId: string) => a
 /**
  * Server-side bulk fix queue processor.
  * Self-chains to process all queue items without needing a browser open.
- * 
- * Flow:
- * 1. Find current running item OR pick next pending item
- * 2. Query teaching_assets matching the item's scope
- * 3. Process assets in batches, calling the relevant edge function
- * 4. Update progress in bulk_fix_queue
- * 5. On completion, send summary email
- * 6. Self-chain to process next item
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -66,9 +74,9 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(supabaseUrl, serviceKey);
+  const invocationStartedAt = Date.now();
 
   try {
-    // 1. Find the current item to process
     let { data: currentItems } = await sb
       .from("bulk_fix_queue")
       .select("*")
@@ -77,10 +85,8 @@ Deno.serve(async (req) => {
       .limit(1);
 
     let currentItem = currentItems?.[0];
-    let isNewItem = false;
 
     if (!currentItem) {
-      // Pick next pending
       const { data: pendingItems } = await sb
         .from("bulk_fix_queue")
         .select("*")
@@ -95,12 +101,12 @@ Deno.serve(async (req) => {
       }
 
       currentItem = pendingItems[0];
-      isNewItem = true;
 
-      // Mark as running
       await sb.from("bulk_fix_queue").update({
         status: "running",
         started_at: new Date().toISOString(),
+        completed_at: null,
+        error_summary: null,
       }).eq("id", currentItem.id);
     }
 
@@ -113,23 +119,18 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
         error_summary: `Unsupported server-side operation: ${opKey}`,
       }).eq("id", currentItem.id);
-      // Self-chain for remaining
       selfChain(supabaseUrl, serviceKey);
       return new Response(JSON.stringify({ error: `Unsupported operation: ${opKey}` }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 2. Query assets matching scope
     const needsJeJson = ["rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_tooltips", "enrich_je_rows"].includes(opKey);
     let query = sb.from("teaching_assets").select("id, asset_name");
 
-    if (currentItem.scope_course_id) {
-      query = query.eq("course_id", currentItem.scope_course_id);
-    }
-    if (currentItem.scope_chapter_id) {
-      query = query.eq("chapter_id", currentItem.scope_chapter_id);
-    }
+    if (currentItem.scope_course_id) query = query.eq("course_id", currentItem.scope_course_id);
+    if (currentItem.scope_chapter_id) query = query.eq("chapter_id", currentItem.scope_chapter_id);
+
     const scopeStatus = currentItem.scope_status_filter || "approved";
     if (scopeStatus === "approved") {
       query = query.not("asset_approved_at", "is", null);
@@ -141,13 +142,12 @@ Deno.serve(async (req) => {
     }
 
     const { data: assets, error: queryErr } = await query.order("asset_name", { ascending: true });
-    if (queryErr) throw new Error("Failed to query assets: " + queryErr.message);
+    if (queryErr) throw new Error(`Failed to query assets: ${queryErr.message}`);
 
     const total = assets?.length || 0;
     const offset = currentItem.assets_processed || 0;
 
     if (total === 0 || offset >= total) {
-      // Nothing to process — mark complete
       await sb.from("bulk_fix_queue").update({
         status: "complete",
         completed_at: new Date().toISOString(),
@@ -163,12 +163,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Process one batch from offset
     let succeeded = currentItem.assets_succeeded || 0;
     let errored = currentItem.assets_errored || 0;
     let skipped = currentItem.assets_skipped || 0;
     let processed = offset;
     let creditExhausted = false;
+    let stoppedForTime = false;
 
     const batchEnd = Math.min(offset + BATCH_SIZE, total);
     const batch = assets!.slice(offset, batchEnd);
@@ -176,50 +176,62 @@ Deno.serve(async (req) => {
     console.log(`[${currentItem.operation_name}] Processing batch ${offset + 1}-${batchEnd} of ${total}`);
 
     for (const asset of batch) {
-      if (creditExhausted) { skipped++; processed++; continue; }
+      if (Date.now() - invocationStartedAt >= MAX_INVOCATION_MS) {
+        stoppedForTime = true;
+        console.log(`[${currentItem.operation_name}] Stopping early to avoid runtime timeout at ${processed}/${total}`);
+        break;
+      }
+
+      if (creditExhausted) {
+        skipped++;
+        processed++;
+        await persistQueueProgress(sb, currentItem.id, processed, succeeded, errored, skipped);
+        continue;
+      }
 
       try {
-        // Check skip condition
         if (handler.skipCheck && await handler.skipCheck(sb, asset.id)) {
           skipped++;
-          processed++;
-          continue;
-        }
-
-        const res = await fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(handler.bodyFn(asset.id)),
-        });
-
-        const result = await res.json();
-        if (!res.ok || result.error) {
-          const errMsg = result.error || `HTTP ${res.status}`;
-          console.error(`✗ ${asset.asset_name}: ${errMsg}`);
-          // Detect credit exhaustion — stop wasting calls
-          if (res.status === 500 && typeof errMsg === "string" && (errMsg.includes("402") || errMsg.includes("payment_required") || errMsg.includes("Not enough credits"))) {
-            creditExhausted = true;
-            console.error("Credit exhaustion detected — pausing queue");
-          }
-          errored++;
-        } else if (result.skipped) {
-          skipped++;
         } else {
-          succeeded++;
+          const result = await invokeDelegatedOperation(
+            supabaseUrl,
+            serviceKey,
+            handler.fn,
+            handler.bodyFn(asset.id),
+          );
+
+          if (!result.ok || result.error) {
+            const errMsg = result.error || `HTTP ${result.status}`;
+            console.error(`✗ ${asset.asset_name}: ${errMsg}`);
+
+            if (
+              result.status === 500 &&
+              (errMsg.includes("402") || errMsg.includes("payment_required") || errMsg.includes("Not enough credits"))
+            ) {
+              creditExhausted = true;
+              console.error("Credit exhaustion detected — pausing queue");
+            }
+
+            errored++;
+          } else if (result.skipped) {
+            skipped++;
+          } else {
+            succeeded++;
+          }
         }
       } catch (e: any) {
         console.error(`✗ ${asset.asset_name}: ${e.message}`);
         errored++;
       }
+
       processed++;
-      // Small delay between assets to avoid rate limiting
-      if (processed < batchEnd) await new Promise(r => setTimeout(r, 500));
+      await persistQueueProgress(sb, currentItem.id, processed, succeeded, errored, skipped);
+
+      if (!creditExhausted && processed < batchEnd) {
+        await delay(INTER_ASSET_DELAY_MS);
+      }
     }
 
-    // 4. Update progress
     const isComplete = processed >= total || creditExhausted;
     const finalStatus = creditExhausted ? "failed" : (isComplete ? "complete" : "running");
 
@@ -233,13 +245,11 @@ Deno.serve(async (req) => {
       error_summary: creditExhausted ? "Stopped: AI credits exhausted (402). Resume when credits are available." : null,
     }).eq("id", currentItem.id);
 
-    // 5. If complete, send email and chain to next
     if (isComplete && !creditExhausted) {
       console.log(`✓ ${currentItem.operation_name} complete: ${succeeded} ok, ${errored} errors, ${skipped} skipped`);
       await sendOperationEmail(sb, supabaseUrl, serviceKey, currentItem, processed, succeeded, errored, skipped);
     }
 
-    // 6. Self-chain (unless credit exhausted — no point burning more calls)
     if (!creditExhausted) {
       selfChain(supabaseUrl, serviceKey);
     } else {
@@ -255,22 +265,21 @@ Deno.serve(async (req) => {
       skipped,
       complete: isComplete,
       creditExhausted,
+      stoppedForTime,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (err: any) {
     console.error("process-bulk-fix-queue error:", err);
-    // Still self-chain on error so the queue doesn't permanently stall
     selfChain(supabaseUrl, serviceKey);
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
 
 function selfChain(supabaseUrl: string, serviceKey: string) {
-  // Fire immediately — no setTimeout; Deno runtime may terminate before delayed callbacks fire
   fetch(`${supabaseUrl}/functions/v1/process-bulk-fix-queue`, {
     method: "POST",
     headers: {
@@ -278,7 +287,81 @@ function selfChain(supabaseUrl: string, serviceKey: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({}),
-  }).catch(e => console.error("Self-chain failed:", e));
+  }).catch((e) => console.error("Self-chain failed:", e));
+}
+
+async function invokeDelegatedOperation(
+  supabaseUrl: string,
+  serviceKey: string,
+  functionName: string,
+  body: Record<string, unknown>,
+): Promise<DelegatedOperationResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ASSET_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    const rawBody = await response.text();
+    let parsedBody: any = null;
+
+    if (rawBody) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = { error: rawBody };
+      }
+    }
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      skipped: parsedBody?.skipped,
+      error: parsedBody?.error,
+    };
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      return {
+        ok: false,
+        status: 408,
+        error: `Timed out after ${ASSET_REQUEST_TIMEOUT_MS}ms`,
+      };
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function persistQueueProgress(
+  sb: any,
+  itemId: string,
+  processed: number,
+  succeeded: number,
+  errored: number,
+  skipped: number,
+) {
+  await sb.from("bulk_fix_queue").update({
+    status: "running",
+    completed_at: null,
+    assets_processed: processed,
+    assets_succeeded: succeeded,
+    assets_errored: errored,
+    assets_skipped: skipped,
+  }).eq("id", itemId);
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function sendOperationEmail(
