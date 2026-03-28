@@ -365,24 +365,31 @@ function SupplementaryJEButton({ asset, onUpdated }: { asset: TeachingAsset; onU
 }
 
 /* ── LW Activity URL inline field ── */
-function LwActivityUrlField({ assetId, initialUrl }: { assetId: string; initialUrl: string | null }) {
+function LwActivityUrlField({ assetId, initialUrl, onSaved }: { assetId: string; initialUrl: string | null; onSaved?: () => void }) {
   const [value, setValue] = useState(initialUrl || "");
   const [saved, setSaved] = useState(false);
-  const original = initialUrl || "";
+  const [hasUrl, setHasUrl] = useState(!!initialUrl);
+
+  useEffect(() => {
+    setValue(initialUrl || "");
+    setHasUrl(!!initialUrl);
+  }, [initialUrl]);
 
   const save = async () => {
     const trimmed = value.trim();
-    if (trimmed === original) return;
+    if (trimmed === (initialUrl || "")) return;
     if (!trimmed) return;
     const { error } = await supabase.from("teaching_assets").update({ lw_activity_url: trimmed } as any).eq("id", assetId);
     if (error) { toast.error("Failed to save URL"); return; }
+    setHasUrl(true);
     setSaved(true);
+    onSaved?.();
     setTimeout(() => setSaved(false), 2000);
   };
 
   return (
     <div className="flex items-center gap-1">
-      {!!original && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
+      {hasUrl && <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />}
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
