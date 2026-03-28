@@ -1802,7 +1802,7 @@ export default function SolutionsViewer() {
         .select("highlights")
         .eq("teaching_asset_id", asset.id)
         .limit(1);
-      const dissectorHighlights = (dissectorData?.[0]?.highlights as DissectorHighlight[] | null) || [];
+      const dissectorHighlights = (dissectorData?.[0]?.highlights as unknown as DissectorHighlight[] | null) || [];
 
       return { ...asset, _problemTitle: asset.problem_title || "", _instructions: instrData || [], _flowcharts: flowchartsData || [], _dissectorHighlights: dissectorHighlights };
     },
