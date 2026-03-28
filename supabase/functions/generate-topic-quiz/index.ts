@@ -81,6 +81,10 @@ QUALITY RULES:
 - MC distractors must be plausible but not tricky.
 - JE recall: max 3–4 accounts per entry.
 - T/F statements must be crystal clear with no ambiguity.
+- Every question MUST include a explanation_correct field that explains WHY the correct answer is right. This is required — never leave it null or empty.
+  For MC questions: explain the calculation or reasoning that leads to the correct answer.
+  For JE recall: explain why those specific accounts are debited/credited.
+  For T/F: explain the accounting principle that makes the statement true or false.
 
 RULES FOR EACH TYPE:
 
