@@ -268,17 +268,15 @@ Deno.serve(async (req) => {
 });
 
 function selfChain(supabaseUrl: string, serviceKey: string) {
-  // Small delay to avoid hammering
-  setTimeout(() => {
-    fetch(`${supabaseUrl}/functions/v1/process-bulk-fix-queue`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    }).catch(e => console.error("Self-chain failed:", e));
-  }, 1000);
+  // Fire immediately — no setTimeout; Deno runtime may terminate before delayed callbacks fire
+  fetch(`${supabaseUrl}/functions/v1/process-bulk-fix-queue`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }).catch(e => console.error("Self-chain failed:", e));
 }
 
 async function sendOperationEmail(
