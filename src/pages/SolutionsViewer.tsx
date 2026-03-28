@@ -1192,6 +1192,59 @@ function JEPreviewTeaser({ jeData, jeBlock, hasCanonicalJE, theme, enrollUrl }: 
   );
 }
 
+// ── Flowchart Image with Loading State ──────────────────────────────
+
+function FlowchartImage({ src, alt }: { src: string; alt: string }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+
+  return (
+    <div className="relative mt-3">
+      {status === "loading" && (
+        <div
+          className="flex flex-col items-center justify-center"
+          style={{ background: "#f8fafc", borderRadius: 6, minHeight: 200 }}
+        >
+          <div className="flex flex-col items-center gap-[10px]">
+            <div style={{ width: "60%", height: 16, background: "#e2e8f0", borderRadius: 4, animation: "flowchartPulse 1.4s ease-in-out infinite" }} />
+            <div style={{ width: "80%", height: 12, background: "#e2e8f0", borderRadius: 4, animation: "flowchartPulse 1.4s ease-in-out infinite", animationDelay: "0.15s" }} />
+            <div style={{ width: "45%", height: 12, background: "#e2e8f0", borderRadius: 4, animation: "flowchartPulse 1.4s ease-in-out infinite", animationDelay: "0.3s" }} />
+          </div>
+          <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 16 }}>
+            Generating flowchart...
+          </p>
+        </div>
+      )}
+      {status === "error" && (
+        <div
+          className="flex items-center justify-center"
+          style={{ background: "#f8fafc", borderRadius: 6, minHeight: 200 }}
+        >
+          <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center" }}>
+            Unable to load flowchart.<br />Try refreshing the page.
+          </p>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className="w-full rounded-lg"
+        loading="lazy"
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
+        style={{
+          opacity: status === "loaded" ? 1 : 0,
+          transition: "opacity 0.3s ease",
+          position: status === "loaded" ? "relative" : "absolute",
+          top: 0,
+          left: 0,
+          pointerEvents: status === "loaded" ? "auto" : "none",
+        }}
+      />
+      <style>{`@keyframes flowchartPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }`}</style>
+    </div>
+  );
+}
+
 // ── Flowchart Sub-Toggle (per instruction) ──────────────────────────
 
 function FlowchartSubToggle({
@@ -1242,12 +1295,7 @@ function FlowchartSubToggle({
       </button>
       {open && (
         <div className="px-4 pb-4" style={{ borderTop: `1px solid ${theme.border}` }}>
-          <img
-            src={imageUrl}
-            alt={`How to solve ${letter}`}
-            className="w-full rounded-lg mt-3"
-            loading="lazy"
-          />
+          <FlowchartImage src={imageUrl} alt={`How to solve ${letter}`} />
         </div>
       )}
     </div>
