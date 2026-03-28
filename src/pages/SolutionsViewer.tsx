@@ -1919,26 +1919,32 @@ export default function SolutionsViewer() {
         </>
       ) : (
         <>
-          <p style={{ fontSize: 20, color: "rgba(255,255,255,0.85)", textAlign: "center", maxWidth: 320, lineHeight: 1.7, margin: "20px auto 24px", fontWeight: 500 }}>
-            Thanks for using my study tools.
-            <br />
-            Best of luck studying!
-            <br />
-            <span style={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }}>– Lee</span>
+          <p style={{ fontSize: 20, color: "rgba(255,255,255,0.9)", textAlign: "center", maxWidth: 380, lineHeight: 1.7, margin: "20px auto 0", fontWeight: 500 }}>
+            Your practice problem is loading<span className="loading-dots" />
           </p>
           <div
             style={{
-              width: 20,
-              height: 20,
-              border: "2px solid transparent",
+              width: 36,
+              height: 36,
+              border: "3px solid rgba(255,255,255,0.15)",
               borderTopColor: "#CE1126",
               borderRadius: "50%",
               animation: "spin 0.8s linear infinite",
+              margin: "24px auto",
             }}
           />
+          <p style={{ fontSize: 18, color: "rgba(255,255,255,0.7)", textAlign: "center", maxWidth: 320, lineHeight: 1.7, margin: "0 auto", fontWeight: 400 }}>
+            Best of luck studying!
+            <br />
+            <span style={{ fontSize: 15, color: "rgba(255,255,255,0.45)" }}>– Lee</span>
+          </p>
         </>
       )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes dotPulse { 0%, 20% { content: ''; } 25%, 45% { content: '.'; } 50%, 70% { content: '..'; } 75%, 100% { content: '...'; } }
+        .loading-dots::after { content: ''; animation: dotPulse 1.5s infinite steps(1); }
+      `}</style>
     </div>
   ) : null;
 
