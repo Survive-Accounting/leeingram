@@ -239,6 +239,163 @@ function downloadCsv(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+/* ──────── Student Preview Section ──────── */
+
+function PreviewIframe({ src, height, greenBorder }: { src: string; height: number; greenBorder?: boolean }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative" style={{ height }}>
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-md" style={{ background: "#f8fafc" }}>
+          <span className="text-[11px] text-muted-foreground animate-pulse">Loading preview…</span>
+        </div>
+      )}
+      <iframe
+        src={src}
+        width="100%"
+        height={height}
+        scrolling="no"
+        onLoad={() => setLoaded(true)}
+        className="rounded-md"
+        style={{
+          border: greenBorder ? "2px solid #16a34a" : "1px solid #e2e8f0",
+          borderRadius: 6,
+          display: loaded ? "block" : "hidden",
+        }}
+      />
+    </div>
+  );
+}
+
+function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
+  const [expanded, setExpanded] = useState(false);
+  const BASE = "https://learn.surviveaccounting.com";
+
+  return (
+    <div className="pt-2 space-y-2">
+      <div className="border-t border-border pt-2">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full text-left text-[10px] font-medium px-2 py-1.5 rounded border border-border hover:bg-muted/50 transition-colors"
+          style={{ color: "#64748b" }}
+        >
+          {expanded ? "▼ Hide Student Preview" : "▶ Show Student Preview"}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="space-y-4 pl-1">
+          <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "#94a3b8" }}>
+            STUDENT PREVIEW
+          </p>
+
+          {/* Part 1 — Question Preview */}
+          <div className="space-y-1">
+            <p className="text-[9px] text-muted-foreground">Question</p>
+            <PreviewIframe
+              src={`${BASE}/quiz-question/${q.id}`}
+              height={q.question_type === "je_recall" ? 320 : 220}
+            />
+            <a
+              href={`/quiz-question/${q.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-muted-foreground hover:underline"
+            >
+              ↗ Open in new tab
+            </a>
+          </div>
+
+          {/* Part 2 — Answer Choice Previews */}
+          <div className="space-y-1.5">
+            <p className="text-[9px] text-muted-foreground">Answer Choices</p>
+
+            {q.question_type === "mc" && (
+              <div className="grid grid-cols-2 gap-2">
+                {(["a", "b", "c", "d"] as const).map((k) => {
+                  const isCorrect = q.correct_answer === k;
+                  return (
+                    <div key={k} className="space-y-0.5">
+                      <p className={`text-[9px] font-medium ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
+                        {k.toUpperCase()}{isCorrect ? " ✓" : ""}
+                      </p>
+                      <PreviewIframe
+                        src={`${BASE}/quiz-answer/${q.id}/${k}`}
+                        height={80}
+                        greenBorder={isCorrect}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {q.question_type === "true_false" && (
+              <div className="grid grid-cols-2 gap-2">
+                {(["true", "false"] as const).map((k) => {
+                  const isCorrect = (q.correct_answer === "a" && k === "true") || (q.correct_answer === "b" && k === "false");
+                  return (
+                    <div key={k} className="space-y-0.5">
+                      <p className={`text-[9px] font-medium ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
+                        {k.charAt(0).toUpperCase() + k.slice(1)}{isCorrect ? " ✓" : ""}
+                      </p>
+                      <PreviewIframe
+                        src={`${BASE}/quiz-answer/${q.id}/${k}`}
+                        height={80}
+                        greenBorder={isCorrect}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {q.question_type === "je_recall" && (
+              <div className="space-y-2">
+                {(["a", "b", "c", "d"] as const).map((k, i) => {
+                  const isCorrect = q.correct_answer === k;
+                  return (
+                    <div key={k} className="space-y-0.5">
+                      <p className={`text-[9px] font-medium ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
+                        Choice {i + 1}{isCorrect ? " ✓" : ""}
+                      </p>
+                      <PreviewIframe
+                        src={`${BASE}/quiz-answer/${q.id}/${k}`}
+                        height={140}
+                        greenBorder={isCorrect}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Part 3 — Feedback Preview */}
+          <div className="space-y-1">
+            <p className="text-[9px] text-muted-foreground">Feedback (shown after any answer)</p>
+            <PreviewIframe
+              src={`${BASE}/quiz-explanation/${q.id}`}
+              height={400}
+            />
+            <p className="text-[10px] text-muted-foreground italic">
+              This same feedback appears for both correct and incorrect answers.
+            </p>
+            <a
+              href={`/quiz-explanation/${q.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-muted-foreground hover:underline"
+            >
+              ↗ Open in new tab
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ──────── Review Drawer ──────── */
 
 function QuizReviewDrawer({
@@ -701,6 +858,9 @@ function QuizReviewDrawer({
                         </Button>
                       )}
                     </div>
+
+                    {/* ── Student Preview (collapsible) ── */}
+                    <StudentPreviewSection question={q} />
                   </>
                 )}
               </div>
