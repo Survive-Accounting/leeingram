@@ -1763,46 +1763,49 @@ export default function SolutionsViewer() {
       <img
         src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png"
         alt="Survive Accounting"
-        style={{ width: 180, borderRadius: 8, opacity: 0.85, marginBottom: 24, objectFit: "cover" }}
+        style={{ width: 180, borderRadius: 8, opacity: 0.85, marginBottom: 12, objectFit: "cover" }}
       />
-      <p style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.18em", color: "#ffffff", marginBottom: 6 }}>
-        SURVIVE ACCOUNTING
-      </p>
-      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>
-        {dataError ? "Having trouble loading. Please refresh the page." : "Your study tool is loading..."}
+      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em", marginBottom: 16 }}>
+        by Lee Ingram
       </p>
       {dataError ? (
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            background: "transparent",
-            border: "1px solid rgba(255,255,255,0.4)",
-            color: "#ffffff",
-            borderRadius: 6,
-            padding: "6px 16px",
-            fontSize: 12,
-            cursor: "pointer",
-            marginBottom: 20,
-          }}
-        >
-          ↺ Refresh
-        </button>
+        <>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: 20 }}>
+            Having trouble loading. Please refresh the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.4)",
+              color: "#ffffff",
+              borderRadius: 6,
+              padding: "6px 16px",
+              fontSize: 12,
+              cursor: "pointer",
+              marginBottom: 20,
+            }}
+          >
+            ↺ Refresh
+          </button>
+        </>
       ) : (
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            border: "2px solid transparent",
-            borderTopColor: "#CE1126",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-            marginBottom: 20,
-          }}
-        />
+        <>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", textAlign: "center", maxWidth: 220, lineHeight: 1.6, margin: "0 auto 20px" }}>
+            Thanks for using my study tools. Best of luck studying. — Lee
+          </p>
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              border: "2px solid transparent",
+              borderTopColor: "#CE1126",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
+        </>
       )}
-      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>
-        Created by Lee Ingram
-      </p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   ) : null;
