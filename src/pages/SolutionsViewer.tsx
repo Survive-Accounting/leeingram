@@ -1910,7 +1910,7 @@ export default function SolutionsViewer() {
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
           >
-            ✦ Deeper than a solutions manual — built from 10+ years of Ole Miss tutoring
+            ✦ Deeper than a solutions manual — built from 10+ years of accounting tutoring experience
           </span>
         </div>
 

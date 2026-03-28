@@ -777,7 +777,7 @@ export default function PracticeViewer() {
             color: t.badgeColor,
           }}
         >
-          ✦ Deeper than a solutions manual — built from 10+ years of Ole Miss tutoring
+          ✦ Deeper than a solutions manual — built from 10+ years of accounting tutoring experience
         </span>
       </div>
 
