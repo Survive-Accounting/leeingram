@@ -701,6 +701,9 @@ function QuizReviewDrawer({
                         </Button>
                       )}
                     </div>
+
+                    {/* ── Student Preview (collapsible) ── */}
+                    <StudentPreviewSection question={q} />
                   </>
                 )}
               </div>
