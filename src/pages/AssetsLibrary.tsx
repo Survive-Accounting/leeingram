@@ -602,10 +602,11 @@ export default function AssetsLibrary() {
       if (error) throw error;
       const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
       const parseRef = (ref: string | null) => {
-        if (!ref) return { prefix: "ZZZ", num: Infinity };
+        if (!ref) return { prefix: "ZZZ", major: Infinity, minor: Infinity };
         const match = ref.match(/^([A-Za-z]+)([\d.]+)$/);
-        if (!match) return { prefix: "ZZZ", num: Infinity };
-        return { prefix: match[1].toUpperCase(), num: parseFloat(match[2]) };
+        if (!match) return { prefix: "ZZZ", major: Infinity, minor: Infinity };
+        const parts = match[2].split(".");
+        return { prefix: match[1].toUpperCase(), major: parseInt(parts[0], 10) || 0, minor: parseInt(parts[1], 10) || 0 };
       };
       const sorted = (data as TeachingAsset[]).sort((a, b) => {
         const dir = sortDir === "asc" ? 1 : -1;
@@ -618,7 +619,8 @@ export default function AssetsLibrary() {
             const pa = PREFIX_ORDER[ra.prefix] ?? 99;
             const pb = PREFIX_ORDER[rb.prefix] ?? 99;
             if (pa !== pb) return dir * (pa - pb);
-            return dir * (ra.num - rb.num);
+            if (ra.major !== rb.major) return dir * (ra.major - rb.major);
+            return dir * (ra.minor - rb.minor);
           }
           case "google_sheet_status":
             return dir * (a.google_sheet_status || "").localeCompare(b.google_sheet_status || "");
