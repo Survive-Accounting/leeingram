@@ -303,13 +303,27 @@ function DissectorHighlightedText({ text, highlights, theme }: { text: string; h
 
 function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: DissectorHighlight }) {
   const [show, setShow] = useState(false);
-  const [above, setAbove] = useState(true);
   const spanRef = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; showBelow: boolean; arrowLeft: number } | null>(null);
 
   const handleEnter = useCallback(() => {
     if (spanRef.current) {
       const rect = spanRef.current.getBoundingClientRect();
-      setAbove(rect.top > 120);
+      const tooltipWidth = 260;
+      const viewportWidth = window.innerWidth;
+      const showBelow = rect.top < 120;
+
+      let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+      left = Math.max(12, Math.min(left, viewportWidth - tooltipWidth - 12));
+
+      let arrowLeft = rect.left + rect.width / 2 - left;
+      arrowLeft = Math.max(12, Math.min(arrowLeft, tooltipWidth - 12));
+
+      const top = showBelow
+        ? rect.bottom + 8
+        : rect.top - 8;
+
+      setPos({ left, top, showBelow, arrowLeft });
     }
     setShow(true);
   }, []);
@@ -325,28 +339,25 @@ function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: Di
         borderRadius: 2,
         padding: "0 2px",
         cursor: "help",
-        position: "relative",
         display: "inline",
       }}
     >
       {text}
-      {show && (
+      {show && pos && (
         <span
           style={{
-            position: "absolute",
-            left: "50%",
-            transform: above ? "translateX(-50%)" : "translateX(-50%)",
-            ...(above ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
+            position: "fixed",
+            left: pos.left,
+            ...(pos.showBelow ? { top: pos.top } : { bottom: window.innerHeight - pos.top }),
             background: "#1e293b",
             color: "#ffffff",
             fontSize: 12,
             lineHeight: 1.5,
             padding: "8px 12px",
             borderRadius: 6,
-            maxWidth: 260,
-            width: "max-content",
+            width: 260,
             boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            zIndex: 50,
+            zIndex: 9999,
             pointerEvents: "none" as const,
             textAlign: "left" as const,
             whiteSpace: "normal" as const,
@@ -361,11 +372,11 @@ function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: Di
           <span
             style={{
               position: "absolute",
-              left: "50%",
+              left: pos.arrowLeft,
               transform: "translateX(-50%)",
-              ...(above
-                ? { top: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1e293b" }
-                : { bottom: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #1e293b" }),
+              ...(pos.showBelow
+                ? { bottom: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #1e293b" }
+                : { top: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1e293b" }),
               width: 0,
               height: 0,
             }}
