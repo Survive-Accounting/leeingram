@@ -2367,8 +2367,8 @@ export default function SolutionsViewer() {
                         />
                       </div>
                     )}
-                    {/* Practice PDF button fallback when no dissector highlights */}
-                    {!isPreview && !(asset._dissectorHighlights?.length > 0) && (
+                    {/* Practice PDF button fallback when no dissector highlights or preview mode */}
+                    {(isPreview || !(asset._dissectorHighlights?.length > 0)) && (
                       <div className="mb-3">
                         {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
                         <PracticePdfButton
