@@ -205,15 +205,15 @@ ${assetContext || "No teaching assets available for this topic."}`;
       questions = parsed.questions ?? [];
     }
 
-    if (!questions.length) {
-      throw new Error("AI returned no questions — please try again");
+    if (questions.length !== 5) {
+      throw new Error(`Expected 5 questions, got ${questions.length}. Please try regenerating.`);
     }
 
     // ── STEP 4: Store results ──
     await sb.from("topic_quiz_questions").delete().eq("topic_id", topic_id);
 
     let insertedCount = 0;
-    for (const q of questions.slice(0, 10)) {
+    for (const q of questions) {
       const { error: insErr } = await sb.from("topic_quiz_questions").insert({
         topic_id,
         chapter_id: topic.chapter_id,
