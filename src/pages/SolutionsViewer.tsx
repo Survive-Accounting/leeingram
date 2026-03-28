@@ -2338,7 +2338,7 @@ export default function SolutionsViewer() {
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
                       </div>
                     )}
-                    {/* Dissector key info toggle + Practice PDF — paid mode only */}
+                    {/* Dissector key info toggle + Practice PDF */}
                     {!isPreview && (asset._dissectorHighlights?.length > 0) && (
                       <div className="mb-3 flex items-center gap-2 flex-wrap">
                         <button
