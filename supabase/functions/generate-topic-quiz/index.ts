@@ -46,12 +46,12 @@ serve(async (req) => {
     }
 
     let mix: { mc: number; true_false: number; je_recall: number };
-    if (totalJeEntries >= 8) {
-      mix = { mc: 4, true_false: 2, je_recall: 4 };
+    if (totalJeEntries >= 5) {
+      mix = { mc: 2, true_false: 1, je_recall: 2 };
     } else if (totalJeEntries >= 1) {
-      mix = { mc: 6, true_false: 2, je_recall: 2 };
+      mix = { mc: 3, true_false: 1, je_recall: 1 };
     } else {
-      mix = { mc: 7, true_false: 3, je_recall: 0 };
+      mix = { mc: 4, true_false: 1, je_recall: 0 };
     }
 
     // ── Build asset context for prompt ──
@@ -69,24 +69,28 @@ serve(async (req) => {
     // ── STEP 3: Call Lovable AI with tool calling ──
     const mixDescription = `- ${mix.mc} multiple choice (mc)\n- ${mix.true_false} true/false (true_false)\n- ${mix.je_recall} journal entry recall (je_recall)`;
 
-    const systemPrompt = `You are an expert accounting professor generating quiz questions for undergraduate exam preparation.
+    const systemPrompt = `You are an expert accounting professor generating a quick knowledge-check quiz for undergraduate exam preparation.
 
-Generate exactly 10 questions for this accounting topic. Questions must test DEEP understanding — not surface memorization.
+Generate exactly 5 questions for this accounting topic. This is a quick knowledge check, not a full exam.
 
 QUESTION MIX:
 ${mixDescription}
+
+QUALITY RULES:
+- Questions must be concise. Question text must be under 3 sentences.
+- MC distractors must be plausible but not tricky.
+- JE recall: max 3–4 accounts per entry.
+- T/F statements must be crystal clear with no ambiguity.
 
 RULES FOR EACH TYPE:
 
 Multiple Choice (mc):
 - 4 options (a/b/c/d)
 - Distractors must be plausible — common student mistakes
-- Mix conceptual and computational
 - Explain why each wrong answer is wrong
 
 True/False (true_false):
 - Statement must be clear and unambiguous
-- Avoid trick questions
 - Explain why the false option is wrong
 
 JE Recall (je_recall):
@@ -126,6 +130,8 @@ ${assetContext || "No teaching assets available for this topic."}`;
                 properties: {
                   questions: {
                     type: "array",
+                    minItems: 5,
+                    maxItems: 5,
                     items: {
                       type: "object",
                       properties: {
@@ -199,15 +205,15 @@ ${assetContext || "No teaching assets available for this topic."}`;
       questions = parsed.questions ?? [];
     }
 
-    if (!questions.length) {
-      throw new Error("AI returned no questions — please try again");
+    if (questions.length !== 5) {
+      throw new Error(`Expected 5 questions, got ${questions.length}. Please try regenerating.`);
     }
 
     // ── STEP 4: Store results ──
     await sb.from("topic_quiz_questions").delete().eq("topic_id", topic_id);
 
     let insertedCount = 0;
-    for (const q of questions.slice(0, 10)) {
+    for (const q of questions) {
       const { error: insErr } = await sb.from("topic_quiz_questions").insert({
         topic_id,
         chapter_id: topic.chapter_id,
