@@ -147,7 +147,7 @@ ${assetContext || "No teaching assets available for this topic."}`;
                         option_c: { type: "string" },
                         option_d: { type: "string" },
                         correct_answer: { type: "string" },
-                        explanation_correct: { type: "string" },
+                        explanation_correct: { type: "string", minLength: 20, description: "Required. Explains why the correct answer is right. Never empty or null." },
                         explanation_a: { type: "string" },
                         explanation_b: { type: "string" },
                         explanation_c: { type: "string" },
