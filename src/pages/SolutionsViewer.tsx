@@ -1892,7 +1892,7 @@ export default function SolutionsViewer() {
       <img
         src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png"
         alt="Survive Accounting"
-        style={{ width: 180, borderRadius: 8, opacity: 0.85, marginBottom: 12, objectFit: "cover" }}
+        style={{ width: 360, maxWidth: "80vw", borderRadius: 12, opacity: 0.9, marginBottom: 20, objectFit: "cover" }}
       />
       {dataError ? (
         <>
