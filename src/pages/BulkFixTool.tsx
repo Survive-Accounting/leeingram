@@ -867,6 +867,15 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     refetchQueue();
   }
 
+  async function retryFailed(itemId: string) {
+    await supabase.from("bulk_fix_queue").update({
+      status: "pending",
+      error_summary: null,
+    }).eq("id", itemId);
+    refetchQueue();
+    toast.success("Reset to pending — hit Run Queue to resume");
+  }
+
 
 
 
@@ -1331,6 +1340,16 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                       <span className="text-[10px] text-destructive truncate max-w-32" title={item.error_summary}>
                         {item.error_summary.slice(0, 40)}
                       </span>
+                    )}
+                    {item.status === "failed" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => retryFailed(item.id)}
+                      >
+                        ↻ Retry
+                      </Button>
                     )}
                     {item.status === "pending" && (
                       <Button
