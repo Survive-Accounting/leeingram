@@ -271,6 +271,10 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
   const [expanded, setExpanded] = useState(false);
   const BASE = window.location.origin;
 
+  const optMap: Record<string, string | null> = {
+    a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d,
+  };
+
   return (
     <div className="pt-2 space-y-2">
       <div className="border-t border-border pt-2">
@@ -289,24 +293,15 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
             STUDENT PREVIEW
           </p>
 
-          {/* Part 1 — Question Preview */}
+          {/* Part 1 — Question Preview (inline) */}
           <div className="space-y-1">
             <p className="text-[9px] text-muted-foreground">Question</p>
-            <PreviewIframe
-              src={`${BASE}/quiz-question/${q.id}`}
-              height={q.question_type === "je_recall" ? 320 : 220}
-            />
-            <a
-              href={`/quiz-question/${q.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-muted-foreground hover:underline"
-            >
-              ↗ Open in new tab
-            </a>
+            <div className="rounded border border-border p-3 bg-white text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+              {q.question_text}
+            </div>
           </div>
 
-          {/* Part 2 — Answer Choice Previews */}
+          {/* Part 2 — Answer Choice Previews (inline) */}
           <div className="space-y-1.5">
             <p className="text-[9px] text-muted-foreground">Answer Choices</p>
 
@@ -315,15 +310,18 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
                 {(["a", "b", "c", "d"] as const).map((k) => {
                   const isCorrect = q.correct_answer === k;
                   return (
-                    <div key={k} className="space-y-0.5">
-                      <p className={`text-[9px] font-medium ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
+                    <div
+                      key={k}
+                      className="rounded border p-2 bg-white text-xs text-slate-700"
+                      style={{
+                        borderColor: isCorrect ? "#16a34a" : "#e2e8f0",
+                        borderWidth: isCorrect ? 2 : 1,
+                      }}
+                    >
+                      <span className={`font-bold mr-1 ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
                         {k.toUpperCase()}{isCorrect ? " ✓" : ""}
-                      </p>
-                      <PreviewIframe
-                        src={`${BASE}/quiz-answer/${q.id}/${k}`}
-                        height={80}
-                        greenBorder={isCorrect}
-                      />
+                      </span>
+                      {optMap[k] || "—"}
                     </div>
                   );
                 })}
@@ -332,18 +330,19 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
 
             {q.question_type === "true_false" && (
               <div className="grid grid-cols-2 gap-2">
-                {(["true", "false"] as const).map((k) => {
-                  const isCorrect = (q.correct_answer === "a" && k === "true") || (q.correct_answer === "b" && k === "false");
+                {(["a", "b"] as const).map((k) => {
+                  const label = k === "a" ? "True" : "False";
+                  const isCorrect = q.correct_answer === k;
                   return (
-                    <div key={k} className="space-y-0.5">
-                      <p className={`text-[9px] font-medium ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
-                        {k.charAt(0).toUpperCase() + k.slice(1)}{isCorrect ? " ✓" : ""}
-                      </p>
-                      <PreviewIframe
-                        src={`${BASE}/quiz-answer/${q.id}/${k}`}
-                        height={80}
-                        greenBorder={isCorrect}
-                      />
+                    <div
+                      key={k}
+                      className="rounded border p-2 bg-white text-xs text-slate-700 text-center font-medium"
+                      style={{
+                        borderColor: isCorrect ? "#16a34a" : "#e2e8f0",
+                        borderWidth: isCorrect ? 2 : 1,
+                      }}
+                    >
+                      {label}{isCorrect ? " ✓" : ""}
                     </div>
                   );
                 })}
@@ -355,15 +354,18 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
                 {(["a", "b", "c", "d"] as const).map((k, i) => {
                   const isCorrect = q.correct_answer === k;
                   return (
-                    <div key={k} className="space-y-0.5">
-                      <p className={`text-[9px] font-medium ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
+                    <div
+                      key={k}
+                      className="rounded border p-2 bg-white text-xs text-slate-700"
+                      style={{
+                        borderColor: isCorrect ? "#16a34a" : "#e2e8f0",
+                        borderWidth: isCorrect ? 2 : 1,
+                      }}
+                    >
+                      <span className={`font-bold mr-1 ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
                         Choice {i + 1}{isCorrect ? " ✓" : ""}
-                      </p>
-                      <PreviewIframe
-                        src={`${BASE}/quiz-answer/${q.id}/${k}`}
-                        height={140}
-                        greenBorder={isCorrect}
-                      />
+                      </span>
+                      {optMap[k] || "—"}
                     </div>
                   );
                 })}
@@ -371,7 +373,7 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
             )}
           </div>
 
-          {/* Part 3 — Feedback Preview */}
+          {/* Part 3 — Feedback Preview (iframe — this route exists) */}
           <div className="space-y-1">
             <p className="text-[9px] text-muted-foreground">Feedback (shown after any answer)</p>
             <PreviewIframe
