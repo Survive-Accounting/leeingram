@@ -253,7 +253,128 @@ function splitLongText(text: string): string[] {
   return [text];
 }
 
-// ── Section heading ─────────────────────────────────────────────────
+// ── Dissector Highlight Types ───────────────────────────────────────
+
+interface DissectorHighlight {
+  text: string;
+  label: string;
+  category: string;
+  color: string;
+}
+
+function DissectorHighlightedText({ text, highlights, theme }: { text: string; highlights: DissectorHighlight[]; theme: Theme }) {
+  // Build segments by finding highlight matches in text
+  const segments = useMemo(() => {
+    if (!highlights.length) return [{ text, highlight: null as DissectorHighlight | null }];
+    const matches: { start: number; end: number; highlight: DissectorHighlight }[] = [];
+    for (const h of highlights) {
+      const idx = text.indexOf(h.text);
+      if (idx !== -1) matches.push({ start: idx, end: idx + h.text.length, highlight: h });
+    }
+    matches.sort((a, b) => a.start - b.start);
+    // Remove overlaps
+    const clean: typeof matches = [];
+    for (const m of matches) {
+      if (!clean.length || m.start >= clean[clean.length - 1].end) clean.push(m);
+    }
+    const result: { text: string; highlight: DissectorHighlight | null }[] = [];
+    let pos = 0;
+    for (const m of clean) {
+      if (m.start > pos) result.push({ text: text.slice(pos, m.start), highlight: null });
+      result.push({ text: text.slice(m.start, m.end), highlight: m.highlight });
+      pos = m.end;
+    }
+    if (pos < text.length) result.push({ text: text.slice(pos), highlight: null });
+    return result;
+  }, [text, highlights]);
+
+  return (
+    <p className="whitespace-pre-wrap">
+      {segments.map((seg, i) =>
+        seg.highlight ? (
+          <DissectorTooltipSpan key={i} text={seg.text} highlight={seg.highlight} />
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </p>
+  );
+}
+
+function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: DissectorHighlight }) {
+  const [show, setShow] = useState(false);
+  const [above, setAbove] = useState(true);
+  const spanRef = useRef<HTMLSpanElement>(null);
+
+  const handleEnter = useCallback(() => {
+    if (spanRef.current) {
+      const rect = spanRef.current.getBoundingClientRect();
+      setAbove(rect.top > 120);
+    }
+    setShow(true);
+  }, []);
+
+  return (
+    <span
+      ref={spanRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setShow(false)}
+      style={{
+        background: "#fef9c3",
+        borderBottom: "2px solid #ca8a04",
+        borderRadius: 2,
+        padding: "0 2px",
+        cursor: "help",
+        position: "relative",
+        display: "inline",
+      }}
+    >
+      {text}
+      {show && (
+        <span
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: above ? "translateX(-50%)" : "translateX(-50%)",
+            ...(above ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
+            background: "#1e293b",
+            color: "#ffffff",
+            fontSize: 12,
+            lineHeight: 1.5,
+            padding: "8px 12px",
+            borderRadius: 6,
+            maxWidth: 260,
+            width: "max-content",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            zIndex: 50,
+            pointerEvents: "none" as const,
+            textAlign: "left" as const,
+            whiteSpace: "normal" as const,
+            fontWeight: "normal" as const,
+          }}
+        >
+          <span style={{ display: "block", fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, color: "rgba(255,255,255,0.5)", marginBottom: 4, letterSpacing: "0.08em" }}>
+            WHY THIS MATTERS
+          </span>
+          <span style={{ display: "block" }}>{highlight.label}</span>
+          {/* Arrow */}
+          <span
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              ...(above
+                ? { top: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1e293b" }
+                : { bottom: "100%", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #1e293b" }),
+              width: 0,
+              height: 0,
+            }}
+          />
+        </span>
+      )}
+    </span>
+  );
+}
 
 function SectionHeading({ children, theme }: { children: React.ReactNode; theme: Theme }) {
   return (
