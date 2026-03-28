@@ -1626,8 +1626,10 @@ export default function SolutionsViewer() {
   const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
     (tokenSession.asset_codes as string[])?.includes(assetCode);
 
+  const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
   const isPreview = (() => {
     if (isAdmin) return false;
+    if (isLovablePreviewDomain) return false; // Allow full access on Lovable preview domains for testing
     if (previewToken) return !tokenValidForAsset || previewExpired;
     if (lwVerified) return false;
     return true; // Default: preview mode (no valid access method)
