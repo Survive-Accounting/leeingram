@@ -1796,7 +1796,15 @@ export default function SolutionsViewer() {
         .eq("teaching_asset_id", asset.id)
         .order("instruction_number");
 
-      return { ...asset, _problemTitle: asset.problem_title || "", _instructions: instrData || [], _flowcharts: flowchartsData || [] };
+      // Fetch dissector highlights
+      const { data: dissectorData } = await supabase
+        .from("dissector_problems")
+        .select("highlights")
+        .eq("teaching_asset_id", asset.id)
+        .limit(1);
+      const dissectorHighlights = (dissectorData?.[0]?.highlights as DissectorHighlight[] | null) || [];
+
+      return { ...asset, _problemTitle: asset.problem_title || "", _instructions: instrData || [], _flowcharts: flowchartsData || [], _dissectorHighlights: dissectorHighlights };
     },
     enabled: !!assetCode,
   });
