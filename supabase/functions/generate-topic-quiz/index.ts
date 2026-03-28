@@ -130,6 +130,8 @@ ${assetContext || "No teaching assets available for this topic."}`;
                 properties: {
                   questions: {
                     type: "array",
+                    minItems: 5,
+                    maxItems: 5,
                     items: {
                       type: "object",
                       properties: {
