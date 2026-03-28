@@ -590,7 +590,12 @@ function QuizReviewDrawer({
                         {q.je_description && (
                           <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
                         )}
-                        {Array.isArray(q.je_accounts) && q.je_accounts.length > 0 && (
+                        {(() => {
+                          let accounts = q.je_accounts;
+                          if (typeof accounts === "string") {
+                            try { accounts = JSON.parse(accounts); } catch { accounts = null; }
+                          }
+                          return Array.isArray(accounts) && accounts.length > 0 ? (
                           <table className="text-xs w-full border-collapse">
                             <thead>
                               <tr className="border-b border-border">
