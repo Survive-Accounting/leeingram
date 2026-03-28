@@ -1193,7 +1193,7 @@ export default function SolutionsViewerStaging() {
       {/* Hero Section */}
       <div className="relative" style={{ zIndex: 5 }}>
         <div className="mx-auto px-4 sm:px-6 mt-4" style={{ maxWidth: 1200 }}>
-          <span className="inline-block text-[11px] px-3 py-1 rounded-full" style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}>✦ Deeper than a solutions manual — built from 10+ years of Ole Miss tutoring</span>
+          <span className="inline-block text-[11px] px-3 py-1 rounded-full" style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}>✦ Deeper than a solutions manual — built from 10+ years of accounting tutoring experience</span>
         </div>
         <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
           <div className="mx-auto px-4 sm:px-6 py-4" style={{ maxWidth: 1200 }}>
