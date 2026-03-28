@@ -619,7 +619,8 @@ export default function AssetsLibrary() {
             const pa = PREFIX_ORDER[ra.prefix] ?? 99;
             const pb = PREFIX_ORDER[rb.prefix] ?? 99;
             if (pa !== pb) return dir * (pa - pb);
-            return dir * (ra.num - rb.num);
+            if (ra.major !== rb.major) return dir * (ra.major - rb.major);
+            return dir * (ra.minor - rb.minor);
           }
           case "google_sheet_status":
             return dir * (a.google_sheet_status || "").localeCompare(b.google_sheet_status || "");
