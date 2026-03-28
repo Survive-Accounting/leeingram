@@ -534,6 +534,8 @@ export default function AssetsLibrary() {
   const [lastCopiedKey, setLastCopiedKey] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
   const [bulkPrepDocMode, setBulkPrepDocMode] = useState<"missing" | "all">("missing");
+  const [showAssetCode, setShowAssetCode] = useState(false);
+  const [showCreated, setShowCreated] = useState(false);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
@@ -1221,6 +1223,11 @@ export default function AssetsLibrary() {
 
         return (
           <>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[10px] text-muted-foreground">Show:</span>
+        <Button variant={showAssetCode ? "secondary" : "ghost"} size="sm" className="h-6 text-[10px] px-2" onClick={() => setShowAssetCode(v => !v)}>Asset Code</Button>
+        <Button variant={showCreated ? "secondary" : "ghost"} size="sm" className="h-6 text-[10px] px-2" onClick={() => setShowCreated(v => !v)}>Date Created</Button>
+      </div>
       <div className="rounded-lg overflow-hidden border border-border bg-background/95">
         <Table>
           <TableHeader>
@@ -1231,25 +1238,29 @@ export default function AssetsLibrary() {
                   onCheckedChange={toggleAll}
                 />
               </TableHead>
-              <TableHead className="text-xs">
-                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "asset_name") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("asset_name"); setSortDir("asc"); } }}>
-                  Asset Code
-                  {sortField === "asset_name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                  <InfoTip text="A unique code for each teaching asset. Format: [Course]_[Chapter]_[Seq]_[Variant]. Used to identify assets across all systems." />
-                </button>
-              </TableHead>
+              {showAssetCode && (
+                <TableHead className="text-xs">
+                  <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "asset_name") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("asset_name"); setSortDir("asc"); } }}>
+                    Asset Code
+                    {sortField === "asset_name" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    <InfoTip text="A unique code for each teaching asset. Format: [Course]_[Chapter]_[Seq]_[Variant]. Used to identify assets across all systems." />
+                  </button>
+                </TableHead>
+              )}
               <TableHead className="text-xs">
                 <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "source_ref") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("source_ref"); setSortDir("asc"); } }}>
                   Textbook Ref
                   {sortField === "source_ref" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
                 </button>
               </TableHead>
-              <TableHead className="text-xs">
-                <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
-                  Created
-                  {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                </button>
-              </TableHead>
+              {showCreated && (
+                <TableHead className="text-xs">
+                  <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => { if (sortField === "created_at") setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortField("created_at"); setSortDir("desc"); } }}>
+                    Created
+                    {sortField === "created_at" ? (sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                  </button>
+                </TableHead>
+              )}
               <TableHead className="text-xs">LW Tools</TableHead>
               <TableHead className="text-xs">LW URL</TableHead>
               <TableHead className="text-xs w-16"></TableHead>
@@ -1257,9 +1268,9 @@ export default function AssetsLibrary() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5 + (showAssetCode ? 1 : 0) + (showCreated ? 1 : 0)} className="text-center text-foreground/80 text-xs py-8"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading…</TableCell></TableRow>
             ) : !assets?.length ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5 + (showAssetCode ? 1 : 0) + (showCreated ? 1 : 0)} className="text-center text-muted-foreground text-xs py-8">No assets found</TableCell></TableRow>
             ) : (
               paginatedAssets.map((a) => {
                 const sheetStatus = (a as any).google_sheet_status || "none";
@@ -1290,13 +1301,15 @@ export default function AssetsLibrary() {
                         onCheckedChange={() => toggleSelect(a.id)}
                       />
                     </TableCell>
-                    <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>
+                    {showAssetCode && <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>}
                     <TableCell className="text-xs font-mono text-muted-foreground">
                       {a.source_ref || "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {format(new Date(a.created_at), "MMM d")}
-                    </TableCell>
+                    {showCreated && (
+                      <TableCell className="text-xs text-muted-foreground">
+                        {format(new Date(a.created_at), "MMM d")}
+                      </TableCell>
+                    )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 items-center">
                         <Button
