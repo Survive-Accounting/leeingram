@@ -1577,7 +1577,7 @@ export default function SolutionsViewer() {
       return true;
     }
     // Allow if current host is a lovable.app preview domain (admin preview)
-    if (hasRefLw && window.location.hostname.endsWith("lovable.app")) {
+    if (hasRefLw && (window.location.hostname.endsWith("lovable.app") || window.location.hostname.endsWith("lovableproject.com"))) {
       return true;
     }
     // Check referrer against allowed domains
