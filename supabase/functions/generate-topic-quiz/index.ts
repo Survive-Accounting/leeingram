@@ -16,8 +16,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not configured");
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
 
     const sb = createClient(supabaseUrl, serviceKey);
 
@@ -63,12 +62,11 @@ serve(async (req) => {
       if (a.important_formulas) parts.push(`Formulas: ${JSON.stringify(a.important_formulas).substring(0, 500)}`);
       if (a.concept_notes) parts.push(`Concepts: ${(a.concept_notes as string).substring(0, 500)}`);
       if (a.exam_traps) parts.push(`Exam Traps: ${JSON.stringify(a.exam_traps).substring(0, 500)}`);
-      
       if (a.supplementary_je_json) parts.push(`Journal Entries: ${JSON.stringify(a.supplementary_je_json).substring(0, 600)}`);
       return `--- Asset ${i + 1} ---\n${parts.join("\n")}`;
     }).join("\n\n");
 
-    // ── STEP 3: Call Anthropic API ──
+    // ── STEP 3: Call Lovable AI with tool calling ──
     const mixDescription = `- ${mix.mc} multiple choice (mc)\n- ${mix.true_false} true/false (true_false)\n- ${mix.je_recall} journal entry recall (je_recall)`;
 
     const systemPrompt = `You are an expert accounting professor generating quiz questions for undergraduate exam preparation.
@@ -94,54 +92,9 @@ True/False (true_false):
 JE Recall (je_recall):
 - Give a transaction description
 - Student identifies which accounts to debit and credit
-- No amounts required (amounts are always hidden)
+- No amounts required
 - List 2–4 accounts with their correct debit/credit side
-- Explain the reasoning
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-{
-  "questions": [
-    {
-      "question_number": 1,
-      "question_type": "mc",
-      "question_text": "...",
-      "option_a": "...",
-      "option_b": "...",
-      "option_c": "...",
-      "option_d": "...",
-      "correct_answer": "b",
-      "explanation_correct": "...",
-      "explanation_a": "Incorrect — ...",
-      "explanation_b": "Correct — ...",
-      "explanation_c": "Incorrect — ...",
-      "explanation_d": "Incorrect — ..."
-    },
-    {
-      "question_number": 2,
-      "question_type": "true_false",
-      "question_text": "...",
-      "option_a": "True",
-      "option_b": "False",
-      "correct_answer": "a",
-      "explanation_correct": "...",
-      "explanation_a": "Correct — ...",
-      "explanation_b": "Incorrect — ..."
-    },
-    {
-      "question_number": 3,
-      "question_type": "je_recall",
-      "question_text": "Record the journal entry for...",
-      "je_description": "...",
-      "je_accounts": [
-        { "account_name": "Cash", "side": "debit" },
-        { "account_name": "Notes Payable", "side": "credit" }
-      ],
-      "correct_answer": "Debit Cash / Credit Notes Payable",
-      "explanation_correct": "..."
-    }
-  ]
-}`;
+- Explain the reasoning`;
 
     const userPrompt = `Topic: ${topic.topic_name}
 Description: ${topic.topic_description || "N/A"}
@@ -150,55 +103,111 @@ Total JE entries in this topic: ${totalJeEntries}
 
 ${assetContext || "No teaching assets available for this topic."}`;
 
-    const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${lovableKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_quiz_questions",
+              description: "Return the generated quiz questions",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question_number: { type: "number" },
+                        question_type: { type: "string", enum: ["mc", "true_false", "je_recall"] },
+                        question_text: { type: "string" },
+                        option_a: { type: "string" },
+                        option_b: { type: "string" },
+                        option_c: { type: "string" },
+                        option_d: { type: "string" },
+                        correct_answer: { type: "string" },
+                        explanation_correct: { type: "string" },
+                        explanation_a: { type: "string" },
+                        explanation_b: { type: "string" },
+                        explanation_c: { type: "string" },
+                        explanation_d: { type: "string" },
+                        je_description: { type: "string" },
+                        je_accounts: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              account_name: { type: "string" },
+                              side: { type: "string", enum: ["debit", "credit"] },
+                            },
+                            required: ["account_name", "side"],
+                          },
+                        },
+                      },
+                      required: ["question_number", "question_type", "question_text", "correct_answer", "explanation_correct"],
+                    },
+                  },
+                },
+                required: ["questions"],
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_quiz_questions" } },
       }),
     });
 
     if (!aiResp.ok) {
+      if (aiResp.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded, please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (aiResp.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Payment required, please add credits." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const errText = await aiResp.text();
-      console.error("Anthropic API error:", aiResp.status, errText);
-      if (aiResp.status === 429) throw new Error("Rate limited — please try again in a moment");
-      if (aiResp.status === 402 || aiResp.status === 400) throw new Error(`Anthropic API error: ${aiResp.status}`);
-      throw new Error(`Anthropic API error: ${aiResp.status}`);
+      console.error("AI gateway error:", aiResp.status, errText);
+      throw new Error("AI gateway error");
     }
 
     const aiData = await aiResp.json();
-    const rawContent = aiData.content?.[0]?.text || "";
+    let questions: any[] = [];
 
-    // Parse JSON (handle possible markdown fences)
-    let jsonStr = rawContent;
-    const fenceMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (fenceMatch) jsonStr = fenceMatch[1];
-
-    let parsed: { questions: any[] };
-    try {
-      parsed = JSON.parse(jsonStr.trim());
-    } catch {
-      console.error("Failed to parse AI response:", rawContent.substring(0, 500));
-      throw new Error("AI returned invalid JSON — please try again");
+    // Extract from tool call
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      const parsed =
+        typeof toolCall.function.arguments === "string"
+          ? JSON.parse(toolCall.function.arguments)
+          : toolCall.function.arguments;
+      questions = parsed.questions ?? [];
     }
 
-    if (!parsed.questions || !Array.isArray(parsed.questions)) {
-      throw new Error("AI response missing questions array");
+    if (!questions.length) {
+      throw new Error("AI returned no questions — please try again");
     }
 
     // ── STEP 4: Store results ──
-    // Delete existing questions for this topic
     await sb.from("topic_quiz_questions").delete().eq("topic_id", topic_id);
 
     let insertedCount = 0;
-    for (const q of parsed.questions.slice(0, 10)) {
+    for (const q of questions.slice(0, 10)) {
       const { error: insErr } = await sb.from("topic_quiz_questions").insert({
         topic_id,
         chapter_id: topic.chapter_id,
@@ -227,13 +236,8 @@ ${assetContext || "No teaching assets available for this topic."}`;
       insertedCount++;
     }
 
-    // ── STEP 5: Return ──
     return new Response(
-      JSON.stringify({
-        success: true,
-        questions_generated: insertedCount,
-        mix,
-      }),
+      JSON.stringify({ success: true, questions_generated: insertedCount, mix }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
