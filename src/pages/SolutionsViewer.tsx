@@ -1647,6 +1647,8 @@ export default function SolutionsViewer() {
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
+  // Dissector highlight toggle (default ON, resets each page load)
+  const [showDissectorHighlights, setShowDissectorHighlights] = useState(true);
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
