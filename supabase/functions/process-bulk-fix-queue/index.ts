@@ -215,7 +215,8 @@ Deno.serve(async (req) => {
         errored++;
       }
       processed++;
-    }
+      // Small delay between assets to avoid rate limiting
+      if (processed < batchEnd) await new Promise(r => setTimeout(r, 500));
 
     // 4. Update progress
     const isComplete = processed >= total || creditExhausted;
@@ -259,6 +260,8 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("process-bulk-fix-queue error:", err);
+    // Still self-chain on error so the queue doesn't permanently stall
+    selfChain(supabaseUrl, serviceKey);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -266,17 +269,15 @@ Deno.serve(async (req) => {
 });
 
 function selfChain(supabaseUrl: string, serviceKey: string) {
-  // Small delay to avoid hammering
-  setTimeout(() => {
-    fetch(`${supabaseUrl}/functions/v1/process-bulk-fix-queue`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    }).catch(e => console.error("Self-chain failed:", e));
-  }, 1000);
+  // Fire immediately — no setTimeout; Deno runtime may terminate before delayed callbacks fire
+  fetch(`${supabaseUrl}/functions/v1/process-bulk-fix-queue`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }).catch(e => console.error("Self-chain failed:", e));
 }
 
 async function sendOperationEmail(
