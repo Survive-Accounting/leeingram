@@ -602,10 +602,11 @@ export default function AssetsLibrary() {
       if (error) throw error;
       const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
       const parseRef = (ref: string | null) => {
-        if (!ref) return { prefix: "ZZZ", num: Infinity };
+        if (!ref) return { prefix: "ZZZ", major: Infinity, minor: Infinity };
         const match = ref.match(/^([A-Za-z]+)([\d.]+)$/);
-        if (!match) return { prefix: "ZZZ", num: Infinity };
-        return { prefix: match[1].toUpperCase(), num: parseFloat(match[2]) };
+        if (!match) return { prefix: "ZZZ", major: Infinity, minor: Infinity };
+        const parts = match[2].split(".");
+        return { prefix: match[1].toUpperCase(), major: parseInt(parts[0], 10) || 0, minor: parseInt(parts[1], 10) || 0 };
       };
       const sorted = (data as TeachingAsset[]).sort((a, b) => {
         const dir = sortDir === "asc" ? 1 : -1;
