@@ -1,0 +1,1 @@
+UPDATE bulk_fix_queue SET status = 'pending', started_at = NULL, assets_processed = 0, assets_succeeded = 0, assets_errored = 0, assets_skipped = 0 WHERE id = 'db0ac79c-f335-4f86-9341-7894785f832f' AND status = 'running';
