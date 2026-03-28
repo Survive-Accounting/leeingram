@@ -1577,7 +1577,7 @@ export default function SolutionsViewer() {
       return true;
     }
     // Allow if current host is a lovable.app preview domain (admin preview)
-    if (hasRefLw && window.location.hostname.endsWith("lovable.app")) {
+    if (hasRefLw && (window.location.hostname.endsWith("lovable.app") || window.location.hostname.endsWith("lovableproject.com"))) {
       return true;
     }
     // Check referrer against allowed domains
@@ -1626,8 +1626,10 @@ export default function SolutionsViewer() {
   const tokenValidForAsset = tokenSession && !tokenExpired && assetCode &&
     (tokenSession.asset_codes as string[])?.includes(assetCode);
 
+  const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
   const isPreview = (() => {
     if (isAdmin) return false;
+    if (isLovablePreviewDomain) return false; // Allow full access on Lovable preview domains for testing
     if (previewToken) return !tokenValidForAsset || previewExpired;
     if (lwVerified) return false;
     return true; // Default: preview mode (no valid access method)
