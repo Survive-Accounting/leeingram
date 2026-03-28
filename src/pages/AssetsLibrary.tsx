@@ -1296,13 +1296,15 @@ export default function AssetsLibrary() {
                         onCheckedChange={() => toggleSelect(a.id)}
                       />
                     </TableCell>
-                    <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>
+                    {showAssetCode && <TableCell className="text-xs font-mono font-medium text-foreground">{a.asset_name}</TableCell>}
                     <TableCell className="text-xs font-mono text-muted-foreground">
                       {a.source_ref || "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {format(new Date(a.created_at), "MMM d")}
-                    </TableCell>
+                    {showCreated && (
+                      <TableCell className="text-xs text-muted-foreground">
+                        {format(new Date(a.created_at), "MMM d")}
+                      </TableCell>
+                    )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 items-center">
                         <Button
