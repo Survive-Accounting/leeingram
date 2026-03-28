@@ -269,7 +269,7 @@ function PreviewIframe({ src, height, greenBorder }: { src: string; height: numb
 
 function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
   const [expanded, setExpanded] = useState(false);
-  const BASE = "https://learn.surviveaccounting.com";
+  const BASE = window.location.origin;
 
   return (
     <div className="pt-2 space-y-2">
