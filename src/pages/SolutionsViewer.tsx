@@ -556,35 +556,34 @@ function RevealToggle({
     }
   };
 
+  const shortLabel = label.replace("Reveal ", "");
+
   return (
     <div
       className="rounded-lg mt-4 overflow-hidden transition-all"
       style={{
-        background: theme.toggleBg,
-        border: `1px solid ${theme.border}`,
+        background: isPreview ? theme.toggleBg : (open ? "#ffffff" : "#f8fafc"),
+        border: `1px solid ${isPreview ? theme.border : "#e2e8f0"}`,
       }}
     >
       <button
         onClick={handleToggle}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 text-left transition-colors"
-        style={{ color: theme.textMuted }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = theme.cardBg; }}
+        style={{ color: isPreview ? theme.textMuted : "#14213D" }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = isPreview ? theme.cardBg : "#f1f5f9"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
-        <span className="flex items-center gap-2 text-[13px]">
-          {open ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-          {label}
+        <span className="flex items-center gap-2" style={{ fontSize: isPreview ? 13 : 14, fontWeight: isPreview ? 400 : 600 }}>
+          {isPreview && (open ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />)}
+          {isPreview ? label : shortLabel}
         </span>
-        <span className="flex items-center gap-1.5 text-[12px]">
-          {open ? `Hide ${label.replace("Reveal ", "")}` : label}
-          <ChevronDown
-            className="h-3.5 w-3.5 transition-transform"
-            style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
-          />
-        </span>
+        <ChevronDown
+          className="h-4 w-4 transition-transform"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0)", color: isPreview ? theme.textMuted : "#94a3b8" }}
+        />
       </button>
       {open && (
-        <div className="px-4 sm:px-5 pb-4 pt-3" style={{ borderTop: `1px solid ${theme.border}` }}>
+        <div className="px-4 sm:px-5 pb-4 pt-3" style={{ borderTop: `1px solid ${isPreview ? theme.border : "#e2e8f0"}` }}>
           {isPreview ? (
             <TieredPaywallCard
               theme={theme}
