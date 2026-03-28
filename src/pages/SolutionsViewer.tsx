@@ -5,6 +5,7 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2 } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { generatePracticePdf } from "@/lib/generatePracticePdf";
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
 import { toast } from "sonner";
@@ -1585,6 +1586,71 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
 
 
 
+// ── Practice PDF Button ──────────────────────────────────────────────
+
+function PracticePdfButton({
+  sourceRef,
+  problemTitle,
+  courseName,
+  chapterLabel,
+  problemText,
+  instructions,
+}: {
+  sourceRef: string;
+  problemTitle: string;
+  courseName: string;
+  chapterLabel: string;
+  problemText: string;
+  instructions: string[];
+}) {
+  const [generating, setGenerating] = useState(false);
+
+  // PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref
+  // check after template approval to enable across all assets
+  if (sourceRef !== "BE13.3") return null;
+
+  const handleClick = () => {
+    setGenerating(true);
+    try {
+      generatePracticePdf({
+        sourceRef,
+        problemTitle,
+        courseName,
+        chapterLabel,
+        problemText,
+        instructions,
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={generating}
+      style={{
+        background: generating ? "#f1f5f9" : "#ffffff",
+        border: `1px solid ${BORDER}`,
+        borderRadius: 20,
+        padding: "4px 12px",
+        fontSize: 11,
+        fontWeight: 600,
+        color: generating ? "#94a3b8" : NAVY,
+        cursor: generating ? "default" : "pointer",
+        opacity: generating ? 0.6 : 1,
+      }}
+      onMouseEnter={(e) => { if (!generating) (e.currentTarget.style.background = "#f8fafc"); }}
+      onMouseLeave={(e) => { if (!generating) (e.currentTarget.style.background = "#ffffff"); }}
+    >
+      {generating ? "Generating..." : "⬇ Practice PDF"}
+    </button>
+  );
+}
+
+const BORDER = "#e2e8f0";
+const NAVY = "#14213D";
+
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
@@ -2272,9 +2338,9 @@ export default function SolutionsViewer() {
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
                       </div>
                     )}
-                    {/* Dissector key info toggle — paid mode only, when highlights exist */}
+                    {/* Dissector key info toggle + Practice PDF */}
                     {!isPreview && (asset._dissectorHighlights?.length > 0) && (
-                      <div className="mb-3">
+                      <div className="mb-3 flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => setShowDissectorHighlights(v => !v)}
                           style={{
@@ -2290,6 +2356,29 @@ export default function SolutionsViewer() {
                         >
                           ✦ Key Info: {showDissectorHighlights ? "On" : "Off"}
                         </button>
+                        {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
+                        <PracticePdfButton
+                          sourceRef={sourceRef}
+                          problemTitle={problemTitle}
+                          courseName={courseDisplayName}
+                          chapterLabel={chapterLabel}
+                          problemText={rawProblemText}
+                          instructions={instructions}
+                        />
+                      </div>
+                    )}
+                    {/* Practice PDF button fallback when no dissector highlights or preview mode */}
+                    {(isPreview || !(asset._dissectorHighlights?.length > 0)) && (
+                      <div className="mb-3">
+                        {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
+                        <PracticePdfButton
+                          sourceRef={sourceRef}
+                          problemTitle={problemTitle}
+                          courseName={courseDisplayName}
+                          chapterLabel={chapterLabel}
+                          problemText={rawProblemText}
+                          instructions={instructions}
+                        />
                       </div>
                     )}
                     {dissectorHighlights.length > 0 ? (
