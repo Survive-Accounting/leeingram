@@ -381,14 +381,6 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
             <p className="text-[10px] text-muted-foreground italic">
               This same feedback appears for both correct and incorrect answers.
             </p>
-            <a
-              href={`/quiz-explanation/${q.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-muted-foreground hover:underline"
-            >
-              ↗ Open in new tab
-            </a>
           </div>
         </div>
       )}
