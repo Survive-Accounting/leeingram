@@ -867,6 +867,15 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     refetchQueue();
   }
 
+  async function retryFailed(itemId: string) {
+    await supabase.from("bulk_fix_queue").update({
+      status: "pending",
+      error_summary: null,
+    }).eq("id", itemId);
+    refetchQueue();
+    toast.success("Reset to pending — hit Run Queue to resume");
+  }
+
 
 
 
