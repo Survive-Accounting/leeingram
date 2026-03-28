@@ -1629,8 +1629,17 @@ export default function SolutionsViewer() {
     return () => clearInterval(iv);
   }, [tokenSession?.expires_at, previewToken]);
 
+  // Minimum display time for loading screen
+  const [minTimePassed, setMinTimePassed] = useState(false);
+  const [showLoadingDOM, setShowLoadingDOM] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimePassed(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Fetch asset
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: dataLoading, isError: dataError } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
     queryFn: async () => {
       const { data: assets, error: assetErr } = await (supabase
@@ -1723,12 +1732,88 @@ export default function SolutionsViewer() {
     image: seoImage,
   }) : null;
 
-  if (isLoading || tokenLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
-        <div className="animate-spin h-8 w-8 border-4 rounded-full" style={{ borderColor: t.border, borderTopColor: t.text }} />
-      </div>
-    );
+  const isLoading = dataLoading || !minTimePassed;
+  const isLoadingScreenVisible = isLoading || tokenLoading;
+
+  // Remove loading DOM after fade completes
+  useEffect(() => {
+    if (!isLoadingScreenVisible && showLoadingDOM) {
+      const t2 = setTimeout(() => setShowLoadingDOM(false), 400);
+      return () => clearTimeout(t2);
+    }
+  }, [isLoadingScreenVisible, showLoadingDOM]);
+
+  // Branded loading screen
+  const loadingScreen = showLoadingDOM ? (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        background: "#14213D",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: isLoadingScreenVisible ? 1 : 0,
+        pointerEvents: isLoadingScreenVisible ? "all" as const : "none" as const,
+        transition: "opacity 0.4s ease",
+      }}
+    >
+      <img
+        src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png"
+        alt="Survive Accounting"
+        style={{ width: 180, borderRadius: 8, opacity: 0.85, marginBottom: 24, objectFit: "cover" }}
+      />
+      <p style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.18em", color: "#ffffff", marginBottom: 6 }}>
+        SURVIVE ACCOUNTING
+      </p>
+      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 20 }}>
+        {dataError ? "Having trouble loading. Please refresh the page." : "Your study tool is loading..."}
+      </p>
+      {dataError ? (
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.4)",
+            color: "#ffffff",
+            borderRadius: 6,
+            padding: "6px 16px",
+            fontSize: 12,
+            cursor: "pointer",
+            marginBottom: 20,
+          }}
+        >
+          ↺ Refresh
+        </button>
+      ) : (
+        <div
+          style={{
+            width: 20,
+            height: 20,
+            border: "2px solid transparent",
+            borderTopColor: "#CE1126",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            marginBottom: 20,
+          }}
+        />
+      )}
+      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>
+        Created by Lee Ingram
+      </p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  ) : null;
+
+  if ((dataLoading || tokenLoading) && !minTimePassed) {
+    return <>{loadingScreen}</>;
+  }
+
+  if (isLoadingScreenVisible) {
+    // Still fading — render loading screen only
+    return <>{loadingScreen}</>;
   }
 
   // Show expired token full-page message
@@ -1828,7 +1913,9 @@ export default function SolutionsViewer() {
   const HEADER_HEIGHT = 48;
 
   return (
-    <div className="min-h-screen relative" style={{ background: t.pageBg }}>
+    <>
+    {loadingScreen}
+    <div className="min-h-screen relative" style={{ background: t.pageBg, opacity: isLoadingScreenVisible ? 0 : 1, transition: "opacity 0.4s ease" }}>
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
@@ -2145,5 +2232,6 @@ export default function SolutionsViewer() {
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
     </div>
+    </>
   );
 }
