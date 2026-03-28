@@ -81,6 +81,10 @@ QUALITY RULES:
 - MC distractors must be plausible but not tricky.
 - JE recall: max 3–4 accounts per entry.
 - T/F statements must be crystal clear with no ambiguity.
+- Every question MUST include a explanation_correct field that explains WHY the correct answer is right. This is required — never leave it null or empty.
+  For MC questions: explain the calculation or reasoning that leads to the correct answer.
+  For JE recall: explain why those specific accounts are debited/credited.
+  For T/F: explain the accounting principle that makes the statement true or false.
 
 RULES FOR EACH TYPE:
 
@@ -143,7 +147,7 @@ ${assetContext || "No teaching assets available for this topic."}`;
                         option_c: { type: "string" },
                         option_d: { type: "string" },
                         correct_answer: { type: "string" },
-                        explanation_correct: { type: "string" },
+                        explanation_correct: { type: "string", minLength: 20, description: "Required. Explains why the correct answer is right. Never empty or null." },
                         explanation_a: { type: "string" },
                         explanation_b: { type: "string" },
                         explanation_c: { type: "string" },
@@ -207,6 +211,12 @@ ${assetContext || "No teaching assets available for this topic."}`;
 
     if (questions.length !== 5) {
       throw new Error(`Expected 5 questions, got ${questions.length}. Please try regenerating.`);
+    }
+
+    for (const q of questions) {
+      if (!q.explanation_correct || q.explanation_correct.trim().length < 10) {
+        throw new Error(`Question ${q.question_number} is missing explanation_correct. Please try regenerating.`);
+      }
     }
 
     // ── STEP 4: Store results ──
