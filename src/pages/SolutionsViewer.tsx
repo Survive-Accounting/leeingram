@@ -1629,8 +1629,17 @@ export default function SolutionsViewer() {
     return () => clearInterval(iv);
   }, [tokenSession?.expires_at, previewToken]);
 
+  // Minimum display time for loading screen
+  const [minTimePassed, setMinTimePassed] = useState(false);
+  const [showLoadingDOM, setShowLoadingDOM] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimePassed(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Fetch asset
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: dataLoading, isError: dataError } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
     queryFn: async () => {
       const { data: assets, error: assetErr } = await (supabase
