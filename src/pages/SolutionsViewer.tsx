@@ -2224,6 +2224,26 @@ export default function SolutionsViewer() {
                         <span className="text-[12px]" style={{ color: t.textMuted }}>Show Highlights</span>
                       </div>
                     )}
+                    {/* Dissector key info toggle — paid mode only, when highlights exist */}
+                    {!isPreview && (asset._dissectorHighlights?.length > 0) && (
+                      <div className="mb-3">
+                        <button
+                          onClick={() => setShowDissectorHighlights(v => !v)}
+                          style={{
+                            background: showDissectorHighlights ? "#fef9c3" : "#f1f5f9",
+                            border: `1px solid ${showDissectorHighlights ? "#ca8a04" : "#e2e8f0"}`,
+                            borderRadius: 20,
+                            padding: "4px 12px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: showDissectorHighlights ? "#92400e" : "#94a3b8",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✦ Key Info: {showDissectorHighlights ? "On" : "Off"}
+                        </button>
+                      </div>
+                    )}
                     {dissectorHighlights.length > 0 ? (
                       <div className="text-[14px] leading-[1.7] space-y-4">
                         <DissectorHighlightedText text={rawProblemText} highlights={dissectorHighlights} theme={t} />
