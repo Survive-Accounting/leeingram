@@ -2379,9 +2379,9 @@ export default function SolutionsViewer() {
                       })}
                     </div>
                   ) : asset._flowcharts?.length === 1 ? (
-                    <img src={asset._flowcharts[0].flowchart_image_url} alt="How to Solve This — step-by-step flowchart" className="w-full rounded-lg" loading="lazy" />
+                    <FlowchartImage src={asset._flowcharts[0].flowchart_image_url} alt="How to Solve This — step-by-step flowchart" />
                   ) : (
-                    <img src={asset.flowchart_image_url} alt="How to Solve This — step-by-step flowchart" className="w-full rounded-lg" loading="lazy" />
+                    <FlowchartImage src={asset.flowchart_image_url} alt="How to Solve This — step-by-step flowchart" />
                   )}
                 </RevealToggle>
               )}
