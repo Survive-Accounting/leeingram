@@ -1913,7 +1913,9 @@ export default function SolutionsViewer() {
   const HEADER_HEIGHT = 48;
 
   return (
-    <div className="min-h-screen relative" style={{ background: t.pageBg }}>
+    <>
+    {loadingScreen}
+    <div className="min-h-screen relative" style={{ background: t.pageBg, opacity: isLoadingScreenVisible ? 0 : 1, transition: "opacity 0.4s ease" }}>
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
