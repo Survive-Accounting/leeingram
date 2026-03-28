@@ -1321,13 +1321,19 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
 
       {/* Review drawer */}
       {reviewTopic && (
-        <QuizReviewDrawer
-          open={!!reviewTopic}
-          onOpenChange={(o) => !o && setReviewTopic(null)}
-          topicId={reviewTopic.id}
-          topicName={reviewTopic.name}
-          onUpdated={loadTopics}
-        />
+        <ErrorBoundary
+          title="Quiz review hit an error"
+          description="Close and reopen the drawer to try again."
+          onReset={() => setReviewTopic(null)}
+        >
+          <QuizReviewDrawer
+            open={!!reviewTopic}
+            onOpenChange={(o) => !o && setReviewTopic(null)}
+            topicId={reviewTopic.id}
+            topicName={reviewTopic.name}
+            onUpdated={loadTopics}
+          />
+        </ErrorBoundary>
       )}
     </>
   );
