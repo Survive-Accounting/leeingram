@@ -1894,12 +1894,9 @@ export default function SolutionsViewer() {
         alt="Survive Accounting"
         style={{ width: 180, borderRadius: 8, opacity: 0.85, marginBottom: 12, objectFit: "cover" }}
       />
-      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em", marginBottom: 16 }}>
-        by Lee Ingram
-      </p>
       {dataError ? (
         <>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: 20 }}>
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", marginTop: 20, marginBottom: 20 }}>
             Having trouble loading. Please refresh the page.
           </p>
           <button
@@ -1910,7 +1907,7 @@ export default function SolutionsViewer() {
               color: "#ffffff",
               borderRadius: 6,
               padding: "6px 16px",
-              fontSize: 12,
+              fontSize: 14,
               cursor: "pointer",
               marginBottom: 20,
             }}
@@ -1920,8 +1917,12 @@ export default function SolutionsViewer() {
         </>
       ) : (
         <>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", textAlign: "center", maxWidth: 220, lineHeight: 1.6, margin: "0 auto 20px" }}>
-            Thanks for using my study tools. Best of luck studying. — Lee
+          <p style={{ fontSize: 20, color: "rgba(255,255,255,0.85)", textAlign: "center", maxWidth: 320, lineHeight: 1.7, margin: "20px auto 24px", fontWeight: 500 }}>
+            Thanks for using my study tools.
+            <br />
+            Best of luck studying!
+            <br />
+            <span style={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }}>– Lee</span>
           </p>
           <div
             style={{
