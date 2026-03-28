@@ -2232,5 +2232,6 @@ export default function SolutionsViewer() {
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
     </div>
+    </>
   );
 }
