@@ -46,12 +46,12 @@ serve(async (req) => {
     }
 
     let mix: { mc: number; true_false: number; je_recall: number };
-    if (totalJeEntries >= 8) {
-      mix = { mc: 4, true_false: 2, je_recall: 4 };
+    if (totalJeEntries >= 5) {
+      mix = { mc: 2, true_false: 1, je_recall: 2 };
     } else if (totalJeEntries >= 1) {
-      mix = { mc: 6, true_false: 2, je_recall: 2 };
+      mix = { mc: 3, true_false: 1, je_recall: 1 };
     } else {
-      mix = { mc: 7, true_false: 3, je_recall: 0 };
+      mix = { mc: 4, true_false: 1, je_recall: 0 };
     }
 
     // ── Build asset context for prompt ──
