@@ -534,6 +534,8 @@ export default function AssetsLibrary() {
   const [lastCopiedKey, setLastCopiedKey] = useState<string | null>(null);
   const [bulkPrepDocOpen, setBulkPrepDocOpen] = useState(false);
   const [bulkPrepDocMode, setBulkPrepDocMode] = useState<"missing" | "all">("missing");
+  const [showAssetCode, setShowAssetCode] = useState(false);
+  const [showCreated, setShowCreated] = useState(false);
 
   // Total source problems + approved count for chapter complete check
   const { data: chapterPipelineCounts } = useQuery({
