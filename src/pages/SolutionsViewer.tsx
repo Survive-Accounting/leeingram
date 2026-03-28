@@ -1586,6 +1586,71 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
 
 
 
+// ── Practice PDF Button ──────────────────────────────────────────────
+
+function PracticePdfButton({
+  sourceRef,
+  problemTitle,
+  courseName,
+  chapterLabel,
+  problemText,
+  instructions,
+}: {
+  sourceRef: string;
+  problemTitle: string;
+  courseName: string;
+  chapterLabel: string;
+  problemText: string;
+  instructions: string[];
+}) {
+  const [generating, setGenerating] = useState(false);
+
+  // PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref
+  // check after template approval to enable across all assets
+  if (sourceRef !== "BE13.3") return null;
+
+  const handleClick = async () => {
+    setGenerating(true);
+    try {
+      generatePracticePdf({
+        sourceRef,
+        problemTitle,
+        courseName,
+        chapterLabel,
+        problemText,
+        instructions,
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={generating}
+      style={{
+        background: generating ? "#f1f5f9" : "#ffffff",
+        border: `1px solid ${BORDER}`,
+        borderRadius: 20,
+        padding: "4px 12px",
+        fontSize: 11,
+        fontWeight: 600,
+        color: generating ? "#94a3b8" : NAVY,
+        cursor: generating ? "default" : "pointer",
+        opacity: generating ? 0.6 : 1,
+      }}
+      onMouseEnter={(e) => { if (!generating) (e.currentTarget.style.background = "#f8fafc"); }}
+      onMouseLeave={(e) => { if (!generating) (e.currentTarget.style.background = "#ffffff"); }}
+    >
+      {generating ? "Generating..." : "⬇ Practice PDF"}
+    </button>
+  );
+}
+
+const BORDER = "#e2e8f0";
+const NAVY = "#14213D";
+
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
