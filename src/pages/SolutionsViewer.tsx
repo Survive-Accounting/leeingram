@@ -1609,7 +1609,7 @@ function PracticePdfButton({
   // check after template approval to enable across all assets
   if (sourceRef !== "BE13.3") return null;
 
-  const handleClick = async () => {
+  const handleClick = () => {
     setGenerating(true);
     try {
       generatePracticePdf({
