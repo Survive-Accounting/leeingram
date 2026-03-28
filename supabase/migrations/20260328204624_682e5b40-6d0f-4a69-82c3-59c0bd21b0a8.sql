@@ -1,0 +1,1 @@
+UPDATE public.dissector_problems SET status = 'published' WHERE teaching_asset_id = '5a3949be-e3cd-43f2-90da-5807cfb112c6';
