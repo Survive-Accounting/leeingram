@@ -259,6 +259,8 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("process-bulk-fix-queue error:", err);
+    // Still self-chain on error so the queue doesn't permanently stall
+    selfChain(supabaseUrl, serviceKey);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
