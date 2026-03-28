@@ -213,6 +213,12 @@ ${assetContext || "No teaching assets available for this topic."}`;
       throw new Error(`Expected 5 questions, got ${questions.length}. Please try regenerating.`);
     }
 
+    for (const q of questions) {
+      if (!q.explanation_correct || q.explanation_correct.trim().length < 10) {
+        throw new Error(`Question ${q.question_number} is missing explanation_correct. Please try regenerating.`);
+      }
+    }
+
     // ── STEP 4: Store results ──
     await sb.from("topic_quiz_questions").delete().eq("topic_id", topic_id);
 
