@@ -55,7 +55,10 @@ serve(async (req) => {
       throw new Error("Missing required fields: provider, messages");
     }
 
-    const selectedModel = model || (provider === "openai" ? "gpt-4.1" : "google/gemini-2.5-flash");
+    // For the "lovable" provider, always use Anthropic's claude-sonnet-4
+    const selectedModel = provider === "openai"
+      ? (model || "gpt-4.1")
+      : "claude-sonnet-4-20250514";
 
     // ── Log: FETCH_SOURCE (context about what we received) ──
     await logEvent(run_id, "backend", "info", "FETCH_SOURCE", "Source data received", {
@@ -145,19 +148,31 @@ serve(async (req) => {
       tokenUsage = data.usage || {};
 
     } else if (provider === "lovable") {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+      // Now routes to Anthropic API directly
+      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+
+      // Extract system prompt from messages for Anthropic
+      const systemMessages = messages.filter((m: any) => m.role === "system");
+      const nonSystemMessages = messages.filter((m: any) => m.role !== "system");
+      const systemPrompt = systemMessages.map((m: any) => m.content).join("\n") || undefined;
 
       const body: any = {
         model: selectedModel,
-        messages,
+        messages: nonSystemMessages,
+        max_tokens: max_output_tokens,
         temperature,
       };
 
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      if (systemPrompt) {
+        body.system = systemPrompt;
+      }
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
@@ -165,11 +180,11 @@ serve(async (req) => {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`Lovable AI error: ${res.status} ${errText}`);
+        throw new Error(`Anthropic API error: ${res.status} ${errText}`);
       }
 
       const data = await res.json();
-      aiResponse = data.choices?.[0]?.message?.content ?? "";
+      aiResponse = data.content?.[0]?.text ?? "";
       tokenUsage = data.usage || {};
 
     } else {
