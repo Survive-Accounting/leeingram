@@ -2362,11 +2362,7 @@ export default function SolutionsViewer() {
                         {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
                         <PracticePdfButton
                           sourceRef={sourceRef}
-                          problemTitle={problemTitle}
-                          courseName={courseDisplayName}
-                          chapterLabel={chapterLabel}
-                          problemText={rawProblemText}
-                          instructions={instructions}
+                          assetName={asset.asset_name}
                         />
                       </div>
                     )}
