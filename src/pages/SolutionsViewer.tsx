@@ -1590,18 +1590,10 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
 
 function PracticePdfButton({
   sourceRef,
-  problemTitle,
-  courseName,
-  chapterLabel,
-  problemText,
-  instructions,
+  assetName,
 }: {
   sourceRef: string;
-  problemTitle: string;
-  courseName: string;
-  chapterLabel: string;
-  problemText: string;
-  instructions: string[];
+  assetName: string;
 }) {
   const [generating, setGenerating] = useState(false);
 
@@ -1609,17 +1601,28 @@ function PracticePdfButton({
   // check after template approval to enable across all assets
   if (sourceRef !== "BE13.3") return null;
 
-  const handleClick = () => {
+  const handleClick = async () => {
     setGenerating(true);
     try {
-      generatePracticePdf({
-        sourceRef,
-        problemTitle,
-        courseName,
-        chapterLabel,
-        problemText,
-        instructions,
+      const res = await supabase.functions.invoke("generate-practice-pdf", {
+        body: { asset_name: assetName },
+        headers: { Accept: "application/pdf" },
       });
+
+      if (res.error) {
+        throw new Error(res.error.message || "Edge function error");
+      }
+
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SurviveAccounting-${sourceRef.replace(/\s+/g, "-")}-Practice.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      console.error("Practice PDF error:", e);
+      toast.error("Could not generate PDF — try again");
     } finally {
       setGenerating(false);
     }
