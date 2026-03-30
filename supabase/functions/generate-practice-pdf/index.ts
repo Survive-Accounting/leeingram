@@ -356,8 +356,9 @@ serve(async (req) => {
       throw new Error("HCTI returned no URL");
     }
 
-    // Fetch the image as PDF by appending .pdf
-    const pdfUrl = imageUrl.replace(/\.(png|jpg|jpeg)$/i, "") + ".pdf";
+    // HCTI: append .pdf to the image URL to get a PDF render
+    const pdfUrl = imageUrl + ".pdf";
+    console.log("Fetching PDF from:", pdfUrl);
     const pdfResp = await fetch(pdfUrl);
 
     if (!pdfResp.ok) {
