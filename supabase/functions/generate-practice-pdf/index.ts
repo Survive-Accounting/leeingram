@@ -335,6 +335,7 @@ serve(async (req) => {
         css: "",
         google_fonts: "Inter",
         viewport_width: 816,
+        viewport_height: 1056,
         device_scale: 2,
       }),
     });
