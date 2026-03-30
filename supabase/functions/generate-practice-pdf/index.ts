@@ -186,22 +186,25 @@ function buildHtml(data: {
 </style>
 </head>
 <body>
-<div class="header">
-  <img class="logo" src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png" alt="Survive Accounting" />
-  <span class="byline">Created by Lee Ingram</span>
+<div style="background:#14213D;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;width:100%;">
+  <img src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png" style="height:28px;width:auto;" alt="Survive Accounting" />
+  <span style="color:rgba(255,255,255,0.6);font-size:10px;">Created by Lee Ingram</span>
 </div>
-<div class="cta">
-  <span class="cta-left">Get full solution + more study tools at</span>
-  <span class="cta-right">SurviveAccounting.com →</span>
+<div style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:9px 24px;font-size:10px;color:#14213D;">
+  Get full solution + more study tools at&nbsp;<a href="https://SurviveAccounting.com" style="font-weight:700;color:#14213D;text-decoration:underline;">SurviveAccounting.com →</a>
 </div>
 <div class="content">
+  <div class="course-label">${escHtml(data.courseName)} · ${escHtml(data.chapterName)}</div>
   <div class="based-on">Practice problem based on ${escHtml(data.sourceRef)}</div>
   ${data.problemTitle ? `<div class="problem-title">${escHtml(data.problemTitle)}</div>` : ""}
-  <div class="course-label">${escHtml(data.courseName)} · ${escHtml(data.chapterName)}</div>
   <hr class="divider" />
   <div class="section-label">Problem</div>
   <div class="problem-text">${data.problemTextHtml}</div>
   ${data.instructionsHtml ? `<div class="section-label">Instructions</div><div class="instructions-wrap">${data.instructionsHtml}</div>` : ""}
+</div>
+<div style="margin-top:32px;border-top:1px solid #e2e8f0;padding:12px 24px;background:#f0fdf4;display:flex;justify-content:space-between;align-items:center;">
+  <span style="font-size:10px;color:#14213D;">Get the full solution + worked steps, key concepts, and exam traps at</span>
+  <a href="https://SurviveAccounting.com" style="font-size:10px;font-weight:700;color:#14213D;text-decoration:underline;">SurviveAccounting.com →</a>
 </div>
 </body>
 </html>`;
