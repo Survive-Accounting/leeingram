@@ -16,7 +16,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
     const sb = createClient(supabaseUrl, serviceKey);
 
@@ -66,7 +66,7 @@ serve(async (req) => {
       return `--- Asset ${i + 1} ---\n${parts.join("\n")}`;
     }).join("\n\n");
 
-    // ── STEP 3: Call Lovable AI with tool calling ──
+    // ── STEP 3: Call Anthropic AI with tool calling ──
     const mixDescription = `- ${mix.mc} multiple choice (mc)\n- ${mix.true_false} true/false (true_false)\n- ${mix.je_recall} journal entry recall (je_recall)`;
 
     const systemPrompt = `You are an expert accounting professor generating a quick knowledge-check quiz for undergraduate exam preparation.
@@ -111,70 +111,67 @@ Total JE entries in this topic: ${totalJeEntries}
 
 ${assetContext || "No teaching assets available for this topic."}`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableKey}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "claude-sonnet-4-20250514",
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        max_tokens: 4096,
         tools: [
           {
-            type: "function",
-            function: {
-              name: "return_quiz_questions",
-              description: "Return the generated quiz questions",
-              parameters: {
-                type: "object",
-                properties: {
-                  questions: {
-                    type: "array",
-                    minItems: 5,
-                    maxItems: 5,
-                    items: {
-                      type: "object",
-                      properties: {
-                        question_number: { type: "number" },
-                        question_type: { type: "string", enum: ["mc", "true_false", "je_recall"] },
-                        question_text: { type: "string" },
-                        option_a: { type: "string" },
-                        option_b: { type: "string" },
-                        option_c: { type: "string" },
-                        option_d: { type: "string" },
-                        correct_answer: { type: "string" },
-                        explanation_correct: { type: "string", minLength: 20, description: "Required. Explains why the correct answer is right. Never empty or null." },
-                        explanation_a: { type: "string" },
-                        explanation_b: { type: "string" },
-                        explanation_c: { type: "string" },
-                        explanation_d: { type: "string" },
-                        je_description: { type: "string" },
-                        je_accounts: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              account_name: { type: "string" },
-                              side: { type: "string", enum: ["debit", "credit"] },
-                            },
-                            required: ["account_name", "side"],
+            name: "return_quiz_questions",
+            description: "Return the generated quiz questions",
+            input_schema: {
+              type: "object",
+              properties: {
+                questions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      question_number: { type: "number" },
+                      question_type: { type: "string", enum: ["mc", "true_false", "je_recall"] },
+                      question_text: { type: "string" },
+                      option_a: { type: "string" },
+                      option_b: { type: "string" },
+                      option_c: { type: "string" },
+                      option_d: { type: "string" },
+                      correct_answer: { type: "string" },
+                      explanation_correct: { type: "string", description: "Required. Explains why the correct answer is right. Never empty or null." },
+                      explanation_a: { type: "string" },
+                      explanation_b: { type: "string" },
+                      explanation_c: { type: "string" },
+                      explanation_d: { type: "string" },
+                      je_description: { type: "string" },
+                      je_accounts: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
                           },
+                          required: ["account_name", "side"],
                         },
                       },
-                      required: ["question_number", "question_type", "question_text", "correct_answer", "explanation_correct"],
                     },
+                    required: ["question_number", "question_type", "question_text", "correct_answer", "explanation_correct"],
                   },
                 },
-                required: ["questions"],
               },
+              required: ["questions"],
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "return_quiz_questions" } },
+        tool_choice: { type: "tool", name: "return_quiz_questions" },
       }),
     });
 
@@ -185,28 +182,18 @@ ${assetContext || "No teaching assets available for this topic."}`;
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResp.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errText = await aiResp.text();
-      console.error("AI gateway error:", aiResp.status, errText);
-      throw new Error("AI gateway error");
+      console.error("Anthropic API error:", aiResp.status, errText);
+      throw new Error(`Anthropic API error ${aiResp.status}: ${errText}`);
     }
 
     const aiData = await aiResp.json();
     let questions: any[] = [];
 
-    // Extract from tool call
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall?.function?.arguments) {
-      const parsed =
-        typeof toolCall.function.arguments === "string"
-          ? JSON.parse(toolCall.function.arguments)
-          : toolCall.function.arguments;
-      questions = parsed.questions ?? [];
+    // Extract from Anthropic tool use response
+    const toolBlock = aiData.content?.find((b: any) => b.type === "tool_use");
+    if (toolBlock?.input) {
+      questions = toolBlock.input.questions ?? [];
     }
 
     if (questions.length !== 5) {

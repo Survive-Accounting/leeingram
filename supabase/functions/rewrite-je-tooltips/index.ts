@@ -34,9 +34,9 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) {
+    return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -116,34 +116,36 @@ serve(async (req) => {
         : mode === "rewrite_reasons" ? SYSTEM_REWRITE_REASONS
         : SYSTEM_REWRITE_AMOUNTS;
 
-      // Use gemini-2.5-pro for rewrites (higher quality), flash for enrich
-      const model = mode === "enrich" ? "google/gemini-2.5-flash" : "google/gemini-2.5-pro";
-
       const userPrompt = `Problem:\n${asset.problem_context || asset.survive_problem_text || "N/A"}\n\nSolution:\n${asset.survive_solution_text || "N/A"}\n\nJE rows (${rowSummaries.length}):\n${rowSummaries.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}`;
 
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
+          model: "claude-sonnet-4-20250514",
+          system: systemPrompt,
           messages: [
-            { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
+          max_tokens: 4096,
           temperature: 0.1,
         }),
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`AI error: ${res.status} ${errText}`);
+        throw new Error(`Anthropic API error: ${res.status} ${errText}`);
       }
 
       const data = await res.json();
-      const content = data.choices?.[0]?.message?.content ?? "";
+      if (!data.content || !data.content[0]?.text) {
+        throw new Error("Empty response from Anthropic API");
+      }
+      const content = data.content[0].text;
       const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       let parsed: any;
       try {

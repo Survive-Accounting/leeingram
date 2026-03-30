@@ -36,8 +36,8 @@ serve(async (req) => {
 
     const { lessonId, topic, conceptExplanation, mustMemorize, shortcuts, traps, problems } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const problemContext = (problems || [])
       .map((p: any, i: number) => `${i + 1}. ${p.code}: ${p.description || "No description"}${p.notes ? ` (Notes: ${p.notes})` : ""}`)
@@ -105,18 +105,20 @@ ${problemContext || "None assigned"}
 
 Generate all 6 sections.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "claude-sonnet-4-20250514",
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        max_tokens: 4096,
       }),
     });
 
@@ -127,19 +129,16 @@ Generate all 6 sections.`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const t = await response.text();
-      console.error("AI error:", response.status, t);
+      console.error("Anthropic API error:", response.status, t);
       throw new Error("AI generation failed");
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    if (!data.content || !data.content[0]?.text) {
+      throw new Error("Empty response from Anthropic API");
+    }
+    const content = data.content[0].text;
 
     // Parse sections split by ---
     const sections = content.split(/\n---\n/);

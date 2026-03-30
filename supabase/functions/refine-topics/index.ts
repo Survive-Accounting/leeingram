@@ -16,7 +16,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
     const sb = createClient(supabaseUrl, serviceKey);
 
@@ -92,58 +92,57 @@ Analyze the topic organization and suggest improvements. Consider:
 5. Would renaming any topic improve clarity?`;
 
     const aiResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      "https://api.anthropic.com/v1/messages",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${lovableKey}`,
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "claude-sonnet-4-20250514",
+          system: systemPrompt,
           messages: [
-            { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
+          max_tokens: 4096,
           tools: [
             {
-              type: "function",
-              function: {
-                name: "return_suggestions",
-                description: "Return topic refinement suggestions",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    suggestions: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          type: {
-                            type: "string",
-                            enum: [
-                              "rename",
-                              "merge",
-                              "split",
-                              "create",
-                              "rule_add",
-                            ],
-                          },
-                          description: { type: "string" },
-                          details: { type: "object" },
+              name: "return_suggestions",
+              description: "Return topic refinement suggestions",
+              input_schema: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        type: {
+                          type: "string",
+                          enum: [
+                            "rename",
+                            "merge",
+                            "split",
+                            "create",
+                            "rule_add",
+                          ],
                         },
-                        required: ["type", "description", "details"],
+                        description: { type: "string" },
+                        details: { type: "object" },
                       },
+                      required: ["type", "description", "details"],
                     },
                   },
-                  required: ["suggestions"],
                 },
+                required: ["suggestions"],
               },
             },
           ],
           tool_choice: {
-            type: "function",
-            function: { name: "return_suggestions" },
+            type: "tool",
+            name: "return_suggestions",
           },
         }),
       }
@@ -156,28 +155,18 @@ Analyze the topic organization and suggest improvements. Consider:
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errText = await aiResponse.text();
-      console.error("AI error:", aiResponse.status, errText);
-      throw new Error("AI gateway error");
+      console.error("Anthropic API error:", aiResponse.status, errText);
+      throw new Error(`Anthropic API error ${aiResponse.status}: ${errText}`);
     }
 
     const aiData = await aiResponse.json();
     let suggestions = [];
 
-    // Extract from tool call
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall?.function?.arguments) {
-      const parsed =
-        typeof toolCall.function.arguments === "string"
-          ? JSON.parse(toolCall.function.arguments)
-          : toolCall.function.arguments;
-      suggestions = parsed.suggestions ?? [];
+    // Extract from Anthropic tool use response
+    const toolBlock = aiData.content?.find((b: any) => b.type === "tool_use");
+    if (toolBlock?.input) {
+      suggestions = toolBlock.input.suggestions ?? [];
     }
 
     return new Response(JSON.stringify({ suggestions }), {

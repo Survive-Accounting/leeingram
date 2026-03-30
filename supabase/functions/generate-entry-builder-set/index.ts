@@ -177,8 +177,8 @@ async function parseAssetWithAI(
   asset: any,
   coaMap: Map<string, { account_type: string; normal_balance: string }>
 ): Promise<any> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
   const coaList = Array.from(coaMap.keys()).slice(0, 50).join(", ");
 
@@ -216,29 +216,34 @@ ${asset.journal_entry_raw}
 
 ${asset.problem_context ? `Context: ${asset.problem_context}` : ""}`;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "claude-sonnet-4-20250514",
+      system: systemPrompt,
       messages: [
-        { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
+      max_tokens: 4096,
       temperature: 0.1,
     }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`AI error: ${res.status} ${errText}`);
+    throw new Error(`Anthropic API error: ${res.status} ${errText}`);
   }
 
   const data = await res.json();
-  const content = data.choices?.[0]?.message?.content ?? "";
+  if (!data.content || !data.content[0]?.text) {
+    throw new Error("Empty response from Anthropic API");
+  }
+  const content = data.content[0].text;
 
   // Parse JSON from response
   const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
