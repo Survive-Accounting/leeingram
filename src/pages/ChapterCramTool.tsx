@@ -1212,6 +1212,13 @@ export default function ChapterCramTool() {
               <button
                 disabled={askSending || !askEmail.trim() || !askQuestion.trim()}
                 onClick={async () => {
+                  // .edu validation
+                  if (!askEmail.trim().toLowerCase().endsWith(".edu")) {
+                    setAskEmailError("Please use your .edu school email address to submit a question.");
+                    document.getElementById("ask-lee-email")?.focus();
+                    return;
+                  }
+                  setAskEmailError("");
                   setAskSending(true);
                   setAskError("");
                   try {
