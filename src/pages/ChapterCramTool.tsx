@@ -398,6 +398,8 @@ export default function ChapterCramTool() {
   const chapterId = paramChapterId || queryChapterId;
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const t = lightTheme;
 
   const [reviewedSet, setReviewedSet] = useState<Set<string>>(new Set());
@@ -408,6 +410,36 @@ export default function ChapterCramTool() {
   const [openTopicId, setOpenTopicId] = useState<string | null>(null);
   const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p">("be");
   const [requestedTopics, setRequestedTopics] = useState<Set<string>>(new Set());
+
+  // Ask Lee form state
+  const [askEmail, setAskEmail] = useState("");
+  const [askQuestion, setAskQuestion] = useState("");
+  const [askSending, setAskSending] = useState(false);
+  const [askSent, setAskSent] = useState(false);
+  const [askError, setAskError] = useState("");
+
+  // Admin video manager state
+  const [vmType, setVmType] = useState<"intro" | "topic" | "legacy">("intro");
+  const [vmTopicId, setVmTopicId] = useState<string>("");
+  const [vmVimeoUrl, setVmVimeoUrl] = useState("");
+  const [vmThumbUrl, setVmThumbUrl] = useState("");
+  const [vmTitle, setVmTitle] = useState("");
+  const [vmDate, setVmDate] = useState("");
+  const [vmSaving, setVmSaving] = useState(false);
+  const [vmDeleteConfirm, setVmDeleteConfirm] = useState<string | null>(null);
+
+  // Check if admin
+  const { data: isAdmin } = useQuery({
+    queryKey: ["cram-admin-check", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase.from("va_accounts").select("role").eq("user_id", user.id).maybeSingle();
+      if (data?.role === "admin" || data?.role === "lead_va") return true;
+      // Fallback: check if user email is admin
+      return user.email === "lee@surviveaccounting.com";
+    },
+    enabled: !!user?.id,
+  });
 
   // Fetch chapter info
   const { data: chapter } = useQuery({
