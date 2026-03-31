@@ -122,7 +122,11 @@ function buildHtml(data: {
 <head>
 <meta charset="UTF-8">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+  }
   body {
     margin: 0;
     padding: 0;
