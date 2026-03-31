@@ -13,7 +13,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
-import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp } from "lucide-react";
+import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
