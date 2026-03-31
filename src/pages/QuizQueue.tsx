@@ -916,19 +916,110 @@ function QuizReviewDrawer({
                         <Pencil className="h-3 w-3 mr-0.5" /> Edit
                       </Button>
                       {(q.review_status === "approved" || q.review_status === "edited") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 text-[11px] px-2"
-                          onClick={() => {
-                            const embed = `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
-                            navigator.clipboard.writeText(embed);
-                            toast.success("Embed copied — paste into LW question feedback field");
-                          }}
-                        >
-                          <Copy className="h-3 w-3 mr-0.5" /> Embed
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const embed = `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+                              navigator.clipboard.writeText(embed);
+                              toast.success("Embed copied — paste into LW question feedback field");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> Embed
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const isJE = q.question_type === "je_recall";
+                              const html = isJE
+                                ? `<p>${q.question_text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>`
+                                : `<p>${q.question_text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>`;
+                              navigator.clipboard.writeText(html);
+                              toast.success("Question text copied — paste into LW question field");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> Question
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const isJE = q.question_type === "je_recall";
+                              const jeOpts = isJE ? {
+                                a: parseJEOption(q.option_a),
+                                b: parseJEOption(q.option_b),
+                                c: parseJEOption(q.option_c),
+                                d: parseJEOption(q.option_d),
+                              } : null;
+                              const correctRows = jeOpts?.[q.correct_answer as 'a'|'b'|'c'|'d'] ?? undefined;
+                              const html = renderFeedbackHtml(true, q.explanation_correct, correctRows ?? undefined);
+                              navigator.clipboard.writeText(html);
+                              toast.success("Correct feedback HTML copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> ✓ Feedback
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const html = renderFeedbackHtml(false, q.explanation_correct);
+                              navigator.clipboard.writeText(html);
+                              toast.success("Incorrect feedback HTML copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> ✗ Feedback
+                          </Button>
+                        </>
                       )}
+
+                      {/* JE Recall per-choice copy grid */}
+                      {(q.review_status === "approved" || q.review_status === "edited") && q.question_type === "je_recall" && (() => {
+                        const jeOpts = {
+                          a: parseJEOption(q.option_a),
+                          b: parseJEOption(q.option_b),
+                          c: parseJEOption(q.option_c),
+                          d: parseJEOption(q.option_d),
+                        };
+                        const hasAny = jeOpts.a || jeOpts.b || jeOpts.c || jeOpts.d;
+                        if (!hasAny) return null;
+                        return (
+                          <div className="w-full pt-1">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Answer Choices</p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {(["a","b","c","d"] as const).map((k) => {
+                                const rows = jeOpts[k];
+                                if (!rows) return null;
+                                const isCorrect = q.correct_answer === k;
+                                return (
+                                  <button
+                                    key={k}
+                                    className="text-[11px] rounded-md px-2.5 py-1.5 text-left"
+                                    style={{
+                                      background: "#f8fafc",
+                                      border: `1px solid ${isCorrect ? "#22c55e" : "#e2e8f0"}`,
+                                      borderRadius: 6,
+                                      color: isCorrect ? "#166534" : undefined,
+                                    }}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(renderJEOptionHtml(rows));
+                                      toast.success(`Choice ${k.toUpperCase()} copied — paste into LW answer ${k.toUpperCase()}`);
+                                    }}
+                                  >
+                                    Copy {k.toUpperCase()} HTML{isCorrect ? " ✓" : ""}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* ── Student Preview (collapsible) ── */}
