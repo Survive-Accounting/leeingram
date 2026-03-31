@@ -404,6 +404,9 @@ export default function ChapterCramTool() {
   const [formulasOpen, setFormulasOpen] = useState(false);
   const [trapsOpen, setTrapsOpen] = useState(false);
   const [videoElapsed, setVideoElapsed] = useState(0);
+  const [openTopicId, setOpenTopicId] = useState<string | null>(null);
+  const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p">("be");
+  const [requestedTopics, setRequestedTopics] = useState<Set<string>>(new Set());
 
   // Fetch chapter info
   const { data: chapter } = useQuery({
