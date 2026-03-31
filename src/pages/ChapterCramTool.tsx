@@ -368,73 +368,24 @@ function ChapterToolCard({ icon, title, subtitle, bg, borderColor, buttonLabel, 
   );
 }
 
-// ── Topic Card ──────────────────────────────────────────────────────
+// ── Source ref sorting helper ────────────────────────────────────────
 
-function TopicCard({ topic, assetCount, firstAssetName, theme }: {
-  topic: any; assetCount: number; firstAssetName: string | null; theme: Theme;
-}) {
-  const [requested, setRequested] = useState(false);
+const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, EX: 2, P: 3 };
 
-  const handleRequestVideo = async () => {
-    try {
-      await supabase.from("topic_video_requests").insert({
-        topic_id: topic.id,
-        user_agent: navigator.userAgent,
-      });
-      setRequested(true);
-    } catch {
-      setRequested(true);
-    }
-  };
+function parseSourceRef(ref: string): { prefix: string; num: number; sub: number } {
+  const m = ref.match(/^([A-Z]+)(\d+)(?:\.(\d+))?/i);
+  if (!m) return { prefix: "ZZ", num: 9999, sub: 0 };
+  return { prefix: m[1].toUpperCase(), num: parseInt(m[2], 10), sub: m[3] ? parseInt(m[3], 10) : 0 };
+}
 
-  const hasQuiz = !!topic.lw_quiz_link;
-  const hasVideo = !!topic.lw_video_link;
-
-  return (
-    <div className="rounded-xl overflow-hidden" style={{ background: theme.pageBg, border: `1px solid ${theme.border}` }}>
-      <div className="px-4 py-3 flex items-center gap-3">
-        <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white" style={{ background: "#14213D" }}>
-          {topic.topic_number || "—"}
-        </span>
-        <p className="text-[14px] font-bold" style={{ color: "#14213D" }}>{topic.topic_name}</p>
-      </div>
-      <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {/* Quiz */}
-        <div className="rounded-lg p-3" style={{ background: hasQuiz ? "#f0fdf4" : "#f8fafc" }}>
-          <p className="text-[12px] font-semibold" style={{ color: hasQuiz ? "#14213D" : "#94A3B8" }}>📝 {hasQuiz ? "Topic Quiz" : "Quiz"}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: hasQuiz ? "#64748B" : "#CBD5E1" }}>{hasQuiz ? "5 questions" : "Not yet available"}</p>
-          {hasQuiz && (
-            <a href={topic.lw_quiz_link} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[11px] font-semibold px-3 py-1 rounded-md text-white" style={{ background: "#14213D" }}>Take Quiz →</a>
-          )}
-        </div>
-        {/* Video */}
-        <div className="rounded-lg p-3" style={{ background: hasVideo ? "#eff6ff" : "#f8fafc" }}>
-          <p className="text-[12px] font-semibold" style={{ color: hasVideo ? "#14213D" : "#94A3B8" }}>🎬 Video</p>
-          {hasVideo ? (
-            <a href={topic.lw_video_link} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[11px] font-semibold px-3 py-1 rounded-md text-white" style={{ background: "#2563EB" }}>Watch →</a>
-          ) : (
-            <>
-              <p className="text-[11px] mt-0.5" style={{ color: "#CBD5E1" }}>In production</p>
-              <p className="text-[10px] mt-0.5" style={{ color: "#CBD5E1" }}>Lee is filming this topic</p>
-              {!requested ? (
-                <button onClick={handleRequestVideo} className="mt-1.5 text-[10px] font-semibold hover:underline" style={{ color: "#3B82F6" }}>🙋 Request priority</button>
-              ) : (
-                <p className="mt-1.5 text-[10px] font-semibold" style={{ color: "#22C55E" }}>✓ Requested!</p>
-              )}
-            </>
-          )}
-        </div>
-        {/* Problems */}
-        <div className="rounded-lg p-3" style={{ background: "#f8fafc" }}>
-          <p className="text-[12px] font-semibold" style={{ color: "#14213D" }}>📄 Problems</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "#64748B" }}>{assetCount} practice problem{assetCount !== 1 ? "s" : ""}</p>
-          {firstAssetName && (
-            <a href={`/solutions/${firstAssetName}`} className="inline-block mt-2 text-[11px] font-semibold px-3 py-1 rounded-md text-white" style={{ background: "#14213D" }}>Browse →</a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+function sortBySourceRef(a: any, b: any): number {
+  const pa = parseSourceRef(a.source_ref || "");
+  const pb = parseSourceRef(b.source_ref || "");
+  const oa = PREFIX_ORDER[pa.prefix] ?? 99;
+  const ob = PREFIX_ORDER[pb.prefix] ?? 99;
+  if (oa !== ob) return oa - ob;
+  if (pa.num !== pb.num) return pa.num - pb.num;
+  return pa.sub - pb.sub;
 }
 
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
