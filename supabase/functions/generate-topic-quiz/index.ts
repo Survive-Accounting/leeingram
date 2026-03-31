@@ -98,18 +98,28 @@ True/False (true_false):
 - Explain why the false option is wrong
 
 JE Recall (je_recall):
-- Give a transaction description
-- Student identifies which accounts to debit and credit
-- No amounts required
-- List 2–4 accounts with their correct debit/credit side
-- Explain the reasoning`;
+- question_text: describe the transaction in 1-2 sentences. Do NOT ask "which journal entry is correct" — just describe the transaction. Example: "Survive Company A issues $500,000 of 10% bonds at par on January 1."
+- Generate EXACTLY 4 choices using je_option_a through je_option_d.
+- Each choice is an array of JE rows: account_name and side only. NO dollar amounts.
+- Debits listed before credits. Max 4 accounts per choice.
+- Exactly ONE choice is correct. Set correct_answer to the letter of the correct choice.
+- The 3 distractors must use these specific patterns:
+  PATTERN 1 — Reversed: Same accounts, all debits and credits swapped.
+  PATTERN 2 — Wrong account: Replace one account with a plausible wrong account (e.g. Notes Payable instead of Bonds Payable).
+  PATTERN 3 — Wrong structure: Add an extra wrong account, or merge two accounts into one incorrect account.
+- Randomize which pattern maps to which letter so the correct answer is not always the same position.
+- explanation_correct: explain WHY each account is debited or credited. Reference the specific accounts by name. Minimum 30 words.`;
+
+    const jeRecallAddendum = totalJeEntries >= 1
+      ? `\n\nFor je_recall questions: Base the correct JE on the actual accounts in the supplementary_je_json entries for assets assigned to this topic. Use those exact account names. Build distractors by modifying those same accounts using the three distractor patterns. Do not invent unrelated accounts.`
+      : "";
 
     const userPrompt = `Topic: ${topic.topic_name}
 Description: ${topic.topic_description || "N/A"}
 Rationale: ${topic.topic_rationale || "N/A"}
 Total JE entries in this topic: ${totalJeEntries}
 
-${assetContext || "No teaching assets available for this topic."}`;
+${assetContext || "No teaching assets available for this topic."}${jeRecallAddendum}`;
 
     const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -153,6 +163,54 @@ ${assetContext || "No teaching assets available for this topic."}`;
                       je_description: { type: "string" },
                       je_accounts: {
                         type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_a: {
+                        type: "array",
+                        description: "JE rows for choice A. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_b: {
+                        type: "array",
+                        description: "JE rows for choice B. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_c: {
+                        type: "array",
+                        description: "JE rows for choice C. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_d: {
+                        type: "array",
+                        description: "JE rows for choice D. Required for je_recall.",
                         items: {
                           type: "object",
                           properties: {
@@ -211,6 +269,8 @@ ${assetContext || "No teaching assets available for this topic."}`;
 
     let insertedCount = 0;
     for (const q of questions) {
+      const isJeRecall = q.question_type === "je_recall";
+
       const { error: insErr } = await sb.from("topic_quiz_questions").insert({
         topic_id,
         chapter_id: topic.chapter_id,
@@ -219,10 +279,10 @@ ${assetContext || "No teaching assets available for this topic."}`;
         question_text: q.question_text || "",
         correct_answer: q.correct_answer || "",
         explanation_correct: q.explanation_correct || "",
-        option_a: q.option_a || null,
-        option_b: q.option_b || null,
-        option_c: q.option_c || null,
-        option_d: q.option_d || null,
+        option_a: isJeRecall ? JSON.stringify(q.je_option_a || []) : (q.option_a || null),
+        option_b: isJeRecall ? JSON.stringify(q.je_option_b || []) : (q.option_b || null),
+        option_c: isJeRecall ? JSON.stringify(q.je_option_c || []) : (q.option_c || null),
+        option_d: isJeRecall ? JSON.stringify(q.je_option_d || []) : (q.option_d || null),
         explanation_a: q.explanation_a || null,
         explanation_b: q.explanation_b || null,
         explanation_c: q.explanation_c || null,
