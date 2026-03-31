@@ -743,15 +743,15 @@ export default function ChapterCramTool() {
         {/* Page Header */}
         <div className="mb-6">
           {courseDisplayName && (
-            <p className="text-[11px] font-bold tracking-[0.15em] uppercase" style={{ color: t.textMuted }}>
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: "#94a3b8" }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="text-[22px] font-bold mt-1" style={{ color: t.heading }}>
+          <h1 className="text-[24px] font-bold mt-1" style={{ color: "#14213D" }}>
             Survive This Chapter
           </h1>
           <p className="text-[14px] font-bold mt-0.5" style={{ color: "#14213D" }}>
-            {chapterNum ? `Chapter ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
+            {chapterNum ? `Ch ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
           </p>
         </div>
 
