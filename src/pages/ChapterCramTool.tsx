@@ -1,6 +1,11 @@
 /**
- * ChapterCramTool — public standalone page for practicing all JEs in a chapter.
+ * ChapterCramTool — "Survive This Chapter" hub page.
  * Route: /cram/:chapterId or /cram?chapter_id=[uuid]
+ *
+ * Sections:
+ *   1. Chapter Tools (Cram Tool card, Key Formulas, Exam Traps)
+ *   2. Topic Breakdown (if topics are locked)
+ *   3. JE Cram Tool (existing card deck)
  */
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -8,15 +13,9 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
-import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
@@ -56,7 +55,6 @@ interface CramCard {
   sourceRef: string;
   label: string;
   rows: SupplementaryRow[];
-  // Matched completed entry rows (with amounts)
   completedRows: { account_name: string; debit: number | null; credit: number | null; debit_credit_reason?: string; amount_source?: string }[] | null;
 }
 
@@ -72,7 +70,6 @@ function matchCompletedEntry(
 
   const suppAccounts = new Set(suppEntry.rows.map(r => r.account_name.toLowerCase().trim()));
 
-  // Find the entry_by_date with the best account overlap
   let bestMatch: any[] | null = null;
   let bestScore = 0;
 
@@ -92,6 +89,16 @@ function matchCompletedEntry(
 
   if (bestScore === 0) return null;
   return bestMatch;
+}
+
+// ── Section Label ───────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[9px] font-bold tracking-[0.15em] uppercase mb-3" style={{ color: "#94A3B8" }}>
+      {children}
+    </p>
+  );
 }
 
 // ── Tiered Paywall Card ─────────────────────────────────────────────
@@ -135,6 +142,18 @@ function TieredPaywallCard({ enrollUrl, fullPassLink, chapterLink, chapterNumber
   );
 }
 
+// ── Mini Paywall (for formulas / exam traps) ────────────────────────
+
+function MiniPaywall({ enrollUrl, theme }: { enrollUrl: string; theme: Theme }) {
+  return (
+    <div className="rounded-lg p-4 text-center" style={{ background: "#FFFBF0", border: "1px solid #FDE68A" }}>
+      <Lock className="h-5 w-5 mx-auto mb-2" style={{ color: "#14213D" }} />
+      <p className="text-[13px] font-bold" style={{ color: "#14213D" }}>Unlock all content with a Study Pass</p>
+      <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 px-5 py-2 rounded-lg font-bold text-[13px] text-white transition-all hover:brightness-90" style={{ background: "#14213D" }}>Get Access →</a>
+    </div>
+  );
+}
+
 // ── JE Cram Card ────────────────────────────────────────────────────
 
 function CramCardComponent({
@@ -158,7 +177,6 @@ function CramCardComponent({
     setTimeout(() => setFlashGreen(false), 600);
   };
 
-  // Build display rows — merge supplementary structure with completed amounts
   const displayRows = card.rows.map((suppRow) => {
     const matchedRow = card.completedRows?.find(
       (cr) => cr.account_name.toLowerCase().trim() === suppRow.account_name.toLowerCase().trim()
@@ -187,7 +205,6 @@ function CramCardComponent({
           : "0 2px 12px rgba(0,0,0,0.04)",
       }}
     >
-      {/* Header */}
       <div className="px-4 sm:px-5 pt-4 pb-2">
         <p className="text-[11px] font-mono" style={{ color: theme.textMuted }}>
           From {card.sourceRef || card.assetName}
@@ -197,7 +214,6 @@ function CramCardComponent({
         </p>
       </div>
 
-      {/* JE Table */}
       <div className="px-4 sm:px-5 pb-3">
         <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
           <table className="w-full text-sm">
@@ -251,7 +267,6 @@ function CramCardComponent({
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="px-4 sm:px-5 pb-4 flex items-center gap-3">
         <button
           onClick={() => setRevealed(!revealed)}
@@ -331,6 +346,97 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
   );
 }
 
+// ── Chapter Tool Card ───────────────────────────────────────────────
+
+function ChapterToolCard({ icon, title, subtitle, bg, borderColor, buttonLabel, onClick, disabled }: {
+  icon: string; title: string; subtitle: string; bg: string; borderColor: string; buttonLabel: string; onClick: () => void; disabled?: boolean;
+}) {
+  return (
+    <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: bg, border: `1px solid ${borderColor}`, opacity: disabled ? 0.5 : 1 }}>
+      <span className="text-[20px]">{icon}</span>
+      <p className="text-[14px] font-bold" style={{ color: "#14213D" }}>{title}</p>
+      <p className="text-[12px]" style={{ color: "#64748B" }}>{subtitle}</p>
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className="mt-auto text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all hover:brightness-95 active:scale-[0.98]"
+        style={{ background: disabled ? "#E2E8F0" : "#14213D", color: disabled ? "#94A3B8" : "#FFFFFF", cursor: disabled ? "default" : "pointer" }}
+      >
+        {buttonLabel}
+      </button>
+    </div>
+  );
+}
+
+// ── Topic Card ──────────────────────────────────────────────────────
+
+function TopicCard({ topic, assetCount, firstAssetName, theme }: {
+  topic: any; assetCount: number; firstAssetName: string | null; theme: Theme;
+}) {
+  const [requested, setRequested] = useState(false);
+
+  const handleRequestVideo = async () => {
+    try {
+      await supabase.from("topic_video_requests").insert({
+        topic_id: topic.id,
+        user_agent: navigator.userAgent,
+      });
+      setRequested(true);
+    } catch {
+      setRequested(true);
+    }
+  };
+
+  const hasQuiz = !!topic.lw_quiz_link;
+  const hasVideo = !!topic.lw_video_link;
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ background: theme.pageBg, border: `1px solid ${theme.border}` }}>
+      <div className="px-4 py-3 flex items-center gap-3">
+        <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white" style={{ background: "#14213D" }}>
+          {topic.topic_number || "—"}
+        </span>
+        <p className="text-[14px] font-bold" style={{ color: "#14213D" }}>{topic.topic_name}</p>
+      </div>
+      <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {/* Quiz */}
+        <div className="rounded-lg p-3" style={{ background: hasQuiz ? "#f0fdf4" : "#f8fafc" }}>
+          <p className="text-[12px] font-semibold" style={{ color: hasQuiz ? "#14213D" : "#94A3B8" }}>📝 {hasQuiz ? "Topic Quiz" : "Quiz"}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: hasQuiz ? "#64748B" : "#CBD5E1" }}>{hasQuiz ? "5 questions" : "Not yet available"}</p>
+          {hasQuiz && (
+            <a href={topic.lw_quiz_link} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[11px] font-semibold px-3 py-1 rounded-md text-white" style={{ background: "#14213D" }}>Take Quiz →</a>
+          )}
+        </div>
+        {/* Video */}
+        <div className="rounded-lg p-3" style={{ background: hasVideo ? "#eff6ff" : "#f8fafc" }}>
+          <p className="text-[12px] font-semibold" style={{ color: hasVideo ? "#14213D" : "#94A3B8" }}>🎬 Video</p>
+          {hasVideo ? (
+            <a href={topic.lw_video_link} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[11px] font-semibold px-3 py-1 rounded-md text-white" style={{ background: "#2563EB" }}>Watch →</a>
+          ) : (
+            <>
+              <p className="text-[11px] mt-0.5" style={{ color: "#CBD5E1" }}>In production</p>
+              <p className="text-[10px] mt-0.5" style={{ color: "#CBD5E1" }}>Lee is filming this topic</p>
+              {!requested ? (
+                <button onClick={handleRequestVideo} className="mt-1.5 text-[10px] font-semibold hover:underline" style={{ color: "#3B82F6" }}>🙋 Request priority</button>
+              ) : (
+                <p className="mt-1.5 text-[10px] font-semibold" style={{ color: "#22C55E" }}>✓ Requested!</p>
+              )}
+            </>
+          )}
+        </div>
+        {/* Problems */}
+        <div className="rounded-lg p-3" style={{ background: "#f8fafc" }}>
+          <p className="text-[12px] font-semibold" style={{ color: "#14213D" }}>📄 Problems</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "#64748B" }}>{assetCount} practice problem{assetCount !== 1 ? "s" : ""}</p>
+          {firstAssetName && (
+            <a href={`/solutions/${firstAssetName}`} className="inline-block mt-2 text-[11px] font-semibold px-3 py-1 rounded-md text-white" style={{ background: "#14213D" }}>Browse →</a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
 
 export default function ChapterCramTool() {
@@ -344,6 +450,8 @@ export default function ChapterCramTool() {
 
   const [reviewedSet, setReviewedSet] = useState<Set<string>>(new Set());
   const [shuffledOrder, setShuffledOrder] = useState<number[] | null>(null);
+  const [formulasOpen, setFormulasOpen] = useState(false);
+  const [trapsOpen, setTrapsOpen] = useState(false);
 
   // Fetch chapter info
   const { data: chapter } = useQuery({
@@ -351,7 +459,7 @@ export default function ChapterCramTool() {
     queryFn: async () => {
       const { data } = await supabase
         .from("chapters")
-        .select("id, chapter_number, chapter_name, course_id, courses!chapters_course_id_fkey(code, course_name)")
+        .select("id, chapter_number, chapter_name, course_id, topics_locked, courses!chapters_course_id_fkey(code, course_name)")
         .eq("id", chapterId)
         .single();
       return data;
@@ -374,6 +482,68 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
   });
 
+  // Fetch chapter topics
+  const { data: topics } = useQuery({
+    queryKey: ["cram-topics", chapterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("chapter_topics")
+        .select("id, topic_name, topic_number, topic_description, lw_quiz_link, lw_video_link, is_supplementary, is_active")
+        .eq("chapter_id", chapterId)
+        .eq("is_active", true)
+        .order("topic_number");
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch formulas
+  const { data: formulasData } = useQuery({
+    queryKey: ["cram-formulas", chapterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("important_formulas")
+        .eq("chapter_id", chapterId)
+        .not("important_formulas", "is", null)
+        .neq("important_formulas", "")
+        .limit(10);
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch exam traps
+  const { data: trapsData } = useQuery({
+    queryKey: ["cram-traps", chapterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("exam_traps")
+        .eq("chapter_id", chapterId)
+        .not("exam_traps", "is", null)
+        .neq("exam_traps", "")
+        .limit(10);
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch topic asset counts
+  const { data: topicAssets } = useQuery({
+    queryKey: ["cram-topic-assets", chapterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, topic_id")
+        .eq("chapter_id", chapterId)
+        .not("topic_id", "is", null)
+        .order("source_ref");
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
   // Fetch payment links for paywall
   const { data: paymentLinks } = useQuery({
     queryKey: ["payment-links-cram"],
@@ -384,6 +554,49 @@ export default function ChapterCramTool() {
     staleTime: 5 * 60 * 1000,
     enabled: isPreview,
   });
+
+  // Deduplicate formulas and traps
+  const formulas = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const row of formulasData || []) {
+      const text = (row as any).important_formulas?.trim();
+      if (text && !seen.has(text)) { seen.add(text); result.push(text); }
+    }
+    return result;
+  }, [formulasData]);
+
+  const traps = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const row of trapsData || []) {
+      const text = (row as any).exam_traps?.trim();
+      if (text && !seen.has(text)) { seen.add(text); result.push(text); }
+    }
+    return result;
+  }, [trapsData]);
+
+  // Topic asset counts + first asset
+  const topicCountMap = useMemo(() => {
+    const map: Record<string, { count: number; firstName: string | null }> = {};
+    for (const a of topicAssets || []) {
+      const tid = (a as any).topic_id;
+      if (!tid) continue;
+      if (!map[tid]) map[tid] = { count: 0, firstName: null };
+      map[tid].count++;
+      if (!map[tid].firstName) map[tid].firstName = (a as any).asset_name;
+    }
+    return map;
+  }, [topicAssets]);
+
+  // Non-supplementary topics
+  const displayTopics = useMemo(() => {
+    return (topics || []).filter((t: any) => !t.is_supplementary);
+  }, [topics]);
+
+  const anyTopicMissingVideo = useMemo(() => {
+    return displayTopics.some((t: any) => !t.lw_video_link);
+  }, [displayTopics]);
 
   // Build cram cards
   const cramCards: CramCard[] = useMemo(() => {
@@ -438,7 +651,7 @@ export default function ChapterCramTool() {
   // Page title
   useEffect(() => {
     if (!chapter) return;
-    document.title = `Chapter ${(chapter as any).chapter_number} Cram Tool — Survive Accounting`;
+    document.title = `Survive This Chapter — Ch ${(chapter as any).chapter_number} — Survive Accounting`;
     return () => { document.title = "Survive Accounting"; };
   }, [chapter]);
 
@@ -454,6 +667,7 @@ export default function ChapterCramTool() {
 
   const chapterNum = (chapter as any)?.chapter_number || null;
   const chapterName = (chapter as any)?.chapter_name || "";
+  const topicsLocked = (chapter as any)?.topics_locked === true;
   const fullPassLink = (paymentLinks || []).find((l: any) => l.link_type === "full_pass" && l.course_id === (chapter as any)?.course_id);
   const chapterLink = (paymentLinks || []).find((l: any) => l.link_type === "chapter" && l.chapter_id === chapterId);
 
@@ -496,7 +710,7 @@ export default function ChapterCramTool() {
       {/* Content */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 680 }}>
 
-        {/* Chapter Header */}
+        {/* Page Header */}
         <div className="mb-6">
           {courseDisplayName && (
             <p className="text-[11px] font-bold tracking-[0.15em] uppercase" style={{ color: t.textMuted }}>
@@ -504,20 +718,109 @@ export default function ChapterCramTool() {
             </p>
           )}
           <h1 className="text-[22px] font-bold mt-1" style={{ color: t.heading }}>
-            {chapterNum ? `Chapter ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
+            Survive This Chapter
           </h1>
-          <p className="text-[14px] mt-0.5" style={{ color: t.textMuted }}>Chapter Cram Tool</p>
-          <p className="text-[13px] mt-1" style={{ color: t.textMuted }}>
-            {totalCards} journal {totalCards === 1 ? "entry" : "entries"} to practice
+          <p className="text-[14px] font-bold mt-0.5" style={{ color: "#14213D" }}>
+            {chapterNum ? `Chapter ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
           </p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-4 rounded-xl px-4 py-3" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[13px] font-semibold" style={{ color: t.text }}>
-              {reviewedCount} of {totalCards} reviewed
-            </p>
+        {/* ─── SECTION 1: CHAPTER TOOLS ─── */}
+        <div className="mb-8">
+          <SectionLabel>Chapter Tools</SectionLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ChapterToolCard
+              icon="📚"
+              title="Chapter Cram Tool"
+              subtitle={`${totalCards} journal ${totalCards === 1 ? "entry" : "entries"} to drill`}
+              bg="#f0fdf4"
+              borderColor="#bbf7d0"
+              buttonLabel="Start Drilling →"
+              onClick={() => document.getElementById("je-cram-tool")?.scrollIntoView({ behavior: "smooth" })}
+            />
+            <ChapterToolCard
+              icon="⚡"
+              title="Key Formulas"
+              subtitle={formulas.length > 0 ? `${formulas.length} formula${formulas.length !== 1 ? "s" : ""} for this chapter` : "No formulas for this chapter"}
+              bg={formulas.length > 0 ? "#fffbeb" : "#f8fafc"}
+              borderColor={formulas.length > 0 ? "#fde68a" : "#e2e8f0"}
+              buttonLabel={formulasOpen ? "Hide Formulas" : "View Formulas →"}
+              onClick={() => setFormulasOpen(!formulasOpen)}
+              disabled={formulas.length === 0}
+            />
+            <ChapterToolCard
+              icon="⚠️"
+              title="Exam Traps"
+              subtitle={traps.length > 0 ? `${traps.length} common mistake${traps.length !== 1 ? "s" : ""}` : "No traps for this chapter"}
+              bg={traps.length > 0 ? "#fef2f2" : "#f8fafc"}
+              borderColor={traps.length > 0 ? "#fecaca" : "#e2e8f0"}
+              buttonLabel={trapsOpen ? "Hide Traps" : "View Traps →"}
+              onClick={() => setTrapsOpen(!trapsOpen)}
+              disabled={traps.length === 0}
+            />
+          </div>
+
+          {/* Formulas accordion */}
+          {formulasOpen && formulas.length > 0 && (
+            <div className="mt-3 rounded-xl p-4 space-y-2" style={{ background: "#fffbeb", border: "1px solid #fde68a" }}>
+              {formulas.map((f, idx) => {
+                if (isPreview && idx >= 1) return null;
+                return (
+                  <div key={idx} className="rounded-lg px-3 py-2 font-mono text-[12px] leading-[1.6]" style={{ background: t.pageBg, color: t.text, border: `1px solid ${t.border}` }}>
+                    {f}
+                  </div>
+                );
+              })}
+              {isPreview && formulas.length > 1 && <MiniPaywall enrollUrl={enrollUrl} theme={t} />}
+            </div>
+          )}
+
+          {/* Traps accordion */}
+          {trapsOpen && traps.length > 0 && (
+            <div className="mt-3 rounded-xl p-4 space-y-2" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
+              {traps.map((trap, idx) => {
+                if (isPreview && idx >= 1) return null;
+                return (
+                  <div key={idx} className="rounded-lg px-3 py-2 text-[12px] leading-[1.6]" style={{ background: t.pageBg, color: t.text, border: `1px solid ${t.border}`, borderLeft: "3px solid #EF4444" }}>
+                    {trap}
+                  </div>
+                );
+              })}
+              {isPreview && traps.length > 1 && <MiniPaywall enrollUrl={enrollUrl} theme={t} />}
+            </div>
+          )}
+        </div>
+
+        {/* ─── SECTION 2: TOPIC BREAKDOWN ─── */}
+        {topicsLocked && displayTopics.length > 0 && (
+          <div className="mb-8">
+            <SectionLabel>Topics</SectionLabel>
+            {anyTopicMissingVideo && (
+              <p className="text-[10px] italic mb-3" style={{ color: t.textMuted }}>
+                🎬 Videos are being added throughout Spring 2026. Topics with quizzes and solutions are fully ready now.
+              </p>
+            )}
+            <div className="space-y-3">
+              {displayTopics.map((topic: any) => {
+                const info = topicCountMap[topic.id] || { count: 0, firstName: null };
+                return (
+                  <TopicCard
+                    key={topic.id}
+                    topic={topic}
+                    assetCount={info.count}
+                    firstAssetName={info.firstName}
+                    theme={t}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECTION 3: JE CRAM TOOL ─── */}
+        <div id="je-cram-tool" className="scroll-mt-16">
+          <div className="flex items-center justify-between mb-3">
+            <SectionLabel>Journal Entries · {totalCards}</SectionLabel>
             <button
               onClick={handleShuffle}
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all hover:brightness-95 active:scale-[0.97]"
@@ -526,48 +829,57 @@ export default function ChapterCramTool() {
               <Shuffle className="h-3 w-3" /> Shuffle
             </button>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${progressPercent}%`,
-                background: progressPercent === 100 ? "#22C55E" : "#3B82F6",
-              }}
-            />
-          </div>
-        </div>
 
-        {totalCards === 0 && (
-          <div className="rounded-xl px-5 py-8 text-center" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
-            <p className="text-[14px]" style={{ color: t.textMuted }}>No journal entry data available for this chapter yet.</p>
-          </div>
-        )}
-
-        {/* Cards */}
-        <div className="space-y-4">
-          {displayCards.map((card, idx) => {
-            if (isPreview && idx >= PREVIEW_LIMIT) return null;
-            return (
-              <CramCardComponent
-                key={card.id}
-                card={card}
-                theme={t}
-                isReviewed={reviewedSet.has(card.id)}
-                onReview={() => handleReview(card.id)}
+          {/* Progress Bar */}
+          <div className="mb-4 rounded-xl px-4 py-3" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[13px] font-semibold" style={{ color: t.text }}>
+                {reviewedCount} of {totalCards} reviewed
+              </p>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: progressPercent === 100 ? "#22C55E" : "#3B82F6",
+                }}
               />
-            );
-          })}
+            </div>
+          </div>
 
-          {/* Paywall after 3 cards in preview mode */}
-          {isPreview && totalCards > PREVIEW_LIMIT && (
-            <TieredPaywallCard
-              enrollUrl={enrollUrl}
-              fullPassLink={fullPassLink}
-              chapterLink={chapterLink}
-              chapterNumber={chapterNum}
-              theme={t}
-            />
+          {totalCards === 0 && (
+            <div className="rounded-xl px-5 py-8 text-center" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
+              <p className="text-[14px]" style={{ color: t.textMuted }}>No journal entry data available for this chapter yet.</p>
+            </div>
           )}
+
+          {/* Cards */}
+          <div className="space-y-4">
+            {displayCards.map((card, idx) => {
+              if (isPreview && idx >= PREVIEW_LIMIT) return null;
+              return (
+                <CramCardComponent
+                  key={card.id}
+                  card={card}
+                  theme={t}
+                  isReviewed={reviewedSet.has(card.id)}
+                  onReview={() => handleReview(card.id)}
+                />
+              );
+            })}
+
+            {/* Paywall after 3 cards in preview mode */}
+            {isPreview && totalCards > PREVIEW_LIMIT && (
+              <TieredPaywallCard
+                enrollUrl={enrollUrl}
+                fullPassLink={fullPassLink}
+                chapterLink={chapterLink}
+                chapterNumber={chapterNum}
+                theme={t}
+              />
+            )}
+          </div>
         </div>
 
         {/* About Lee (at bottom) */}
