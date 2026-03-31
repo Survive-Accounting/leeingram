@@ -646,11 +646,15 @@ export default function ChapterCramTool() {
   const solutionsFiltered = useMemo(() => {
     const all = (approvedAssets as any[] || []).slice().sort(sortBySourceRef);
     return all.filter((a: any) => {
+      const at = (a.asset_type || "").toLowerCase();
       const ref = (a.source_ref || "").toUpperCase();
       const parsed = parseSourceRef(ref);
-      if (solutionsTab === "be") return parsed.prefix === "BE" || parsed.prefix === "QS";
-      if (solutionsTab === "ex") return parsed.prefix === "E" || parsed.prefix === "EX";
-      if (solutionsTab === "p") return parsed.prefix === "P";
+      const isBE = at === "be" || at === "qs" || at === "brief_exercise" || at === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+      const isEX = at === "e" || at === "ex" || at === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+      const isP = at === "p" || at === "problem" || parsed.prefix === "P";
+      if (solutionsTab === "be") return isBE || (!isEX && !isP); // fallback to BE
+      if (solutionsTab === "ex") return isEX;
+      if (solutionsTab === "p") return isP;
       return false;
     });
   }, [approvedAssets, solutionsTab]);
