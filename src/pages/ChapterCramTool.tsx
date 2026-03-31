@@ -1252,7 +1252,7 @@ export default function ChapterCramTool() {
           ) : (
             <div className="text-center py-6">
               <CheckCircle2 className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
-              <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>✓ Question sent!</p>
+              <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>Thanks for reaching out!</p>
               <p className="text-[13px] mt-1.5" style={{ color: "#64748b" }}>I'll reply to {askEmail} within 2 business days.</p>
               <p className="text-[13px] italic mt-1" style={{ color: "#14213D" }}>— Lee</p>
             </div>
