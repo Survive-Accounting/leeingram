@@ -544,6 +544,36 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
   });
 
+  // Fetch chapter videos
+  const { data: chapterVideos } = useQuery({
+    queryKey: ["cram-chapter-videos", chapterId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("chapter_videos")
+        .select("*")
+        .eq("chapter_id", chapterId)
+        .eq("is_active", true)
+        .order("recorded_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch approved teaching assets for this chapter
+  const { data: approvedAssets } = useQuery({
+    queryKey: ["cram-approved-assets", chapterId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title")
+        .eq("chapter_id", chapterId)
+        .eq("status", "approved")
+        .order("source_ref");
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
   // Fetch payment links for paywall
   const { data: paymentLinks } = useQuery({
     queryKey: ["payment-links-cram"],
@@ -713,15 +743,15 @@ export default function ChapterCramTool() {
         {/* Page Header */}
         <div className="mb-6">
           {courseDisplayName && (
-            <p className="text-[11px] font-bold tracking-[0.15em] uppercase" style={{ color: t.textMuted }}>
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: "#94a3b8" }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="text-[22px] font-bold mt-1" style={{ color: t.heading }}>
+          <h1 className="text-[24px] font-bold mt-1" style={{ color: "#14213D" }}>
             Survive This Chapter
           </h1>
           <p className="text-[14px] font-bold mt-0.5" style={{ color: "#14213D" }}>
-            {chapterNum ? `Chapter ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
+            {chapterNum ? `Ch ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
           </p>
         </div>
 
