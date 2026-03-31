@@ -417,6 +417,7 @@ export default function ChapterCramTool() {
   const [askSending, setAskSending] = useState(false);
   const [askSent, setAskSent] = useState(false);
   const [askError, setAskError] = useState("");
+  const [askEmailError, setAskEmailError] = useState("");
 
   // Admin video manager state
   const [vmType, setVmType] = useState<"intro" | "topic" | "legacy">("intro");
