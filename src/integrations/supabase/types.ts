@@ -1145,6 +1145,53 @@ export type Database = {
           },
         ]
       }
+      chapter_questions: {
+        Row: {
+          asset_name: string | null
+          chapter_id: string
+          created_at: string
+          id: string
+          issue_type: string
+          question: string
+          reply_text: string | null
+          source_ref: string | null
+          status: string
+          student_email: string
+        }
+        Insert: {
+          asset_name?: string | null
+          chapter_id: string
+          created_at?: string
+          id?: string
+          issue_type?: string
+          question?: string
+          reply_text?: string | null
+          source_ref?: string | null
+          status?: string
+          student_email: string
+        }
+        Update: {
+          asset_name?: string | null
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          issue_type?: string
+          question?: string
+          reply_text?: string | null
+          source_ref?: string | null
+          status?: string
+          student_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_resources: {
         Row: {
           chapter_id: string
