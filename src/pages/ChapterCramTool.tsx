@@ -417,6 +417,7 @@ export default function ChapterCramTool() {
   const [askSending, setAskSending] = useState(false);
   const [askSent, setAskSent] = useState(false);
   const [askError, setAskError] = useState("");
+  const [askEmailError, setAskEmailError] = useState("");
 
   // Admin video manager state
   const [vmType, setVmType] = useState<"intro" | "topic" | "legacy">("intro");
@@ -645,11 +646,15 @@ export default function ChapterCramTool() {
   const solutionsFiltered = useMemo(() => {
     const all = (approvedAssets as any[] || []).slice().sort(sortBySourceRef);
     return all.filter((a: any) => {
+      const at = (a.asset_type || "").toLowerCase();
       const ref = (a.source_ref || "").toUpperCase();
       const parsed = parseSourceRef(ref);
-      if (solutionsTab === "be") return parsed.prefix === "BE" || parsed.prefix === "QS";
-      if (solutionsTab === "ex") return parsed.prefix === "E" || parsed.prefix === "EX";
-      if (solutionsTab === "p") return parsed.prefix === "P";
+      const isBE = at === "be" || at === "qs" || at === "brief_exercise" || at === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+      const isEX = at === "e" || at === "ex" || at === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+      const isP = at === "p" || at === "problem" || parsed.prefix === "P";
+      if (solutionsTab === "be") return isBE || (!isEX && !isP); // fallback to BE
+      if (solutionsTab === "ex") return isEX;
+      if (solutionsTab === "p") return isP;
       return false;
     });
   }, [approvedAssets, solutionsTab]);
@@ -1182,16 +1187,21 @@ export default function ChapterCramTool() {
                 Have a question about Ch {chapterNum || "?"} — {chapterName}? Send it over — I typically reply within 2 business days.
               </p>
               <input
+                id="ask-lee-email"
                 type="email"
                 value={askEmail}
-                onChange={e => { setAskEmail(e.target.value); setAskError(""); }}
+                onChange={e => { setAskEmail(e.target.value); setAskError(""); setAskEmailError(""); }}
                 placeholder="your@email.com"
                 required
-                className="w-full mb-2.5 outline-none transition-colors"
-                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
-                onFocus={e => e.target.style.borderColor = "#14213D"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+                className="w-full outline-none transition-colors"
+                style={{ border: `1px solid ${askEmailError ? "#dc2626" : "#e2e8f0"}`, borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
+                onFocus={e => e.target.style.borderColor = askEmailError ? "#dc2626" : "#14213D"}
+                onBlur={e => e.target.style.borderColor = askEmailError ? "#dc2626" : "#e2e8f0"}
               />
+              {askEmailError && (
+                <p className="text-[12px] mt-1" style={{ color: "#dc2626" }}>{askEmailError}</p>
+              )}
+              <div className="mb-2.5" />
               <textarea
                 value={askQuestion}
                 onChange={e => { setAskQuestion(e.target.value); setAskError(""); }}
@@ -1206,6 +1216,13 @@ export default function ChapterCramTool() {
               <button
                 disabled={askSending || !askEmail.trim() || !askQuestion.trim()}
                 onClick={async () => {
+                  // .edu validation
+                  if (!askEmail.trim().toLowerCase().endsWith(".edu")) {
+                    setAskEmailError("Please use your .edu school email address to submit a question.");
+                    document.getElementById("ask-lee-email")?.focus();
+                    return;
+                  }
+                  setAskEmailError("");
                   setAskSending(true);
                   setAskError("");
                   try {
@@ -1252,7 +1269,7 @@ export default function ChapterCramTool() {
           ) : (
             <div className="text-center py-6">
               <CheckCircle2 className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
-              <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>✓ Question sent!</p>
+              <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>Thanks for reaching out!</p>
               <p className="text-[13px] mt-1.5" style={{ color: "#64748b" }}>I'll reply to {askEmail} within 2 business days.</p>
               <p className="text-[13px] italic mt-1" style={{ color: "#14213D" }}>— Lee</p>
             </div>
