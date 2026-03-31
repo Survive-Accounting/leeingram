@@ -1336,9 +1336,10 @@ export default function ChapterCramTool() {
                   className="w-full text-[13px] outline-none"
                   style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", background: "#fff" }}
                 >
-                  <option value="intro">intro</option>
-                  <option value="topic">topic</option>
-                  <option value="legacy">legacy</option>
+                  <option value="intro">intro — Chapter intro clip</option>
+                  <option value="showcase">showcase — Legacy video showcase</option>
+                  <option value="topic">topic — Topic walkthrough</option>
+                  <option value="legacy">legacy — Individual legacy video</option>
                 </select>
               </div>
 
