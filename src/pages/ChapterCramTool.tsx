@@ -1409,7 +1409,7 @@ export default function ChapterCramTool() {
                   try {
                     await (supabase as any).from("chapter_videos").insert({
                       chapter_id: chapterId,
-                      topic_id: (vmType === "topic" || vmType === "legacy") && vmTopicId ? vmTopicId : null,
+                      topic_id: (vmType === "topic" || vmType === "legacy" || vmType === "showcase") && vmTopicId ? vmTopicId : null,
                       video_type: vmType,
                       vimeo_embed_url: vmVimeoUrl.trim(),
                       thumbnail_url: vmThumbUrl.trim() || null,
