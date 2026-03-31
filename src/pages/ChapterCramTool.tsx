@@ -420,7 +420,7 @@ export default function ChapterCramTool() {
   const [askEmailError, setAskEmailError] = useState("");
 
   // Admin video manager state
-  const [vmType, setVmType] = useState<"intro" | "topic" | "legacy">("intro");
+  const [vmType, setVmType] = useState<"intro" | "showcase" | "topic" | "legacy">("intro");
   const [vmTopicId, setVmTopicId] = useState<string>("");
   const [vmVimeoUrl, setVmVimeoUrl] = useState("");
   const [vmThumbUrl, setVmThumbUrl] = useState("");
@@ -922,6 +922,46 @@ export default function ChapterCramTool() {
           )}
         </div>
 
+        {/* ─── CHAPTER VIDEOS (Showcases) ─── */}
+        {(() => {
+          const showcaseVideos = (chapterVideos as any[] || [])
+            .filter((v: any) => v.video_type === "showcase")
+            .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          if (showcaseVideos.length === 0) return null;
+          return (
+            <div style={{ marginTop: 32 }} className="mb-8">
+              <SectionLabel>Chapter Videos</SectionLabel>
+              <div className="space-y-6">
+                {showcaseVideos.map((vid: any) => (
+                  <div key={vid.id}>
+                    {vid.title && (
+                      <p className="text-[13px] font-bold mb-2" style={{ color: "#14213D" }}>{vid.title}</p>
+                    )}
+                    {isPreview ? (
+                      <div className="flex flex-col items-center justify-center" style={{ background: "#1e293b", borderRadius: 12, aspectRatio: "16/9" }}>
+                        <Lock className="h-6 w-6 text-white" />
+                        <p className="text-[14px] font-bold text-white mt-2">Unlock with Study Pass</p>
+                        <div className="mt-4 w-full px-4">
+                          <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative" style={{ borderRadius: 12, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
+                        <iframe
+                          src={vid.vimeo_embed_url}
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ─── SECTION 3: TOPIC ACCORDION ─── */}
         {topicsLocked && displayTopics.length > 0 && (
           <div style={{ marginTop: 32 }} className="mb-8">
@@ -1296,13 +1336,14 @@ export default function ChapterCramTool() {
                   className="w-full text-[13px] outline-none"
                   style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", background: "#fff" }}
                 >
-                  <option value="intro">intro</option>
-                  <option value="topic">topic</option>
-                  <option value="legacy">legacy</option>
+                  <option value="intro">intro — Chapter intro clip</option>
+                  <option value="showcase">showcase — Legacy video showcase</option>
+                  <option value="topic">topic — Topic walkthrough</option>
+                  <option value="legacy">legacy — Individual legacy video</option>
                 </select>
               </div>
 
-              {(vmType === "topic" || vmType === "legacy") && (
+              {(vmType === "topic" || vmType === "legacy" || vmType === "showcase") && (
                 <div>
                   <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Topic</label>
                   <select
@@ -1368,7 +1409,7 @@ export default function ChapterCramTool() {
                   try {
                     await (supabase as any).from("chapter_videos").insert({
                       chapter_id: chapterId,
-                      topic_id: (vmType === "topic" || vmType === "legacy") && vmTopicId ? vmTopicId : null,
+                      topic_id: (vmType === "topic" || vmType === "legacy" || vmType === "showcase") && vmTopicId ? vmTopicId : null,
                       video_type: vmType,
                       vimeo_embed_url: vmVimeoUrl.trim(),
                       thumbnail_url: vmThumbUrl.trim() || null,
@@ -1400,7 +1441,7 @@ export default function ChapterCramTool() {
                     <span
                       className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
                       style={{
-                        background: vid.video_type === "intro" ? "#14213D" : vid.video_type === "topic" ? "#2563eb" : "#94a3b8",
+                        background: vid.video_type === "intro" ? "#14213D" : vid.video_type === "showcase" ? "#7c3aed" : vid.video_type === "topic" ? "#1d4ed8" : "#64748b",
                       }}
                     >
                       {vid.video_type}
