@@ -883,95 +883,260 @@ export default function ChapterCramTool() {
           )}
         </div>
 
-        {/* ─── SECTION 2: TOPIC BREAKDOWN ─── */}
+        {/* ─── SECTION 3: TOPIC ACCORDION ─── */}
         {topicsLocked && displayTopics.length > 0 && (
-          <div className="mb-8">
+          <div style={{ marginTop: 32 }} className="mb-8">
             <SectionLabel>Topics</SectionLabel>
             {anyTopicMissingVideo && (
-              <p className="text-[10px] italic mb-3" style={{ color: t.textMuted }}>
+              <p className="text-[11px] italic mb-3" style={{ color: "#94a3b8" }}>
                 🎬 Videos are being added throughout Spring 2026. Topics with quizzes and solutions are fully ready now.
               </p>
             )}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {displayTopics.map((topic: any) => {
-                const info = topicCountMap[topic.id] || { count: 0, firstName: null };
+                const isOpen = openTopicId === topic.id;
+                const topicVids = topicVideosMap[topic.id] || [];
+                const topicProblems = topicAssetsMap[topic.id] || [];
+                const problemCount = topicCountMap[topic.id]?.count || 0;
+                const hasQuiz = !!topic.lw_quiz_link;
+                const hasTopicVideo = topicVids.length > 0;
+
                 return (
-                  <TopicCard
-                    key={topic.id}
-                    topic={topic}
-                    assetCount={info.count}
-                    firstAssetName={info.firstName}
-                    theme={t}
-                  />
+                  <div key={topic.id}>
+                    {/* Accordion Header */}
+                    <button
+                      onClick={() => setOpenTopicId(isOpen ? null : topic.id)}
+                      className="w-full flex items-center justify-between transition-colors"
+                      style={{
+                        height: 52,
+                        background: isOpen ? "#f8fafc" : "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: isOpen ? "8px 8px 0 0" : 8,
+                        padding: "0 16px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="shrink-0 text-[10px] font-bold text-white" style={{ background: "#14213D", borderRadius: 20, padding: "2px 8px" }}>
+                          {topic.topic_number || "—"}
+                        </span>
+                        <span className="text-[14px] font-bold truncate" style={{ color: "#14213D" }}>{topic.topic_name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {hasQuiz && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}>Quiz</span>
+                        )}
+                        {hasTopicVideo && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }}>Video</span>
+                        )}
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
+                          {problemCount} Problem{problemCount !== 1 ? "s" : ""}
+                        </span>
+                        <ChevronRight
+                          className="h-4 w-4 transition-transform duration-200"
+                          style={{ color: "#94a3b8", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Accordion Body */}
+                    {isOpen && (
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", padding: 16 }}>
+                        {/* ── VIDEO ── */}
+                        <p className="text-[8px] font-bold tracking-[0.15em] uppercase mb-2.5" style={{ color: "#94a3b8" }}>VIDEO</p>
+                        {hasTopicVideo ? (
+                          isPreview ? (
+                            <div className="flex items-center justify-center" style={{ background: "#1e293b", borderRadius: 8, aspectRatio: "16/9" }}>
+                              <div className="text-center">
+                                <Lock className="h-5 w-5 mx-auto text-white" />
+                                <p className="text-[12px] text-white mt-2">Unlock with Study Pass</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="relative" style={{ borderRadius: 8, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
+                                <iframe
+                                  src={`${topicVids[0].vimeo_embed_url}?autoplay=0&title=0&byline=0&portrait=0`}
+                                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                                  allow="autoplay; fullscreen; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                              {topicVids[0].title && <p className="text-[12px] mt-2" style={{ color: "#14213D" }}>{topicVids[0].title}</p>}
+                            </div>
+                          )
+                        ) : (
+                          <div style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px 14px" }}>
+                            <p className="text-[12px]" style={{ color: "#64748b" }}>🎬 In production — Lee is filming this topic</p>
+                            {!requestedTopics.has(topic.id) ? (
+                              <button onClick={() => handleRequestTopicVideo(topic.id)} className="mt-1.5 text-[11px] font-semibold hover:underline" style={{ color: "#3b82f6", cursor: "pointer", background: "none", border: "none", padding: 0 }}>🙋 Request priority →</button>
+                            ) : (
+                              <p className="mt-1.5 text-[11px] font-semibold" style={{ color: "#22c55e" }}>✓ Requested!</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── QUIZ ── */}
+                        <p className="text-[8px] font-bold tracking-[0.15em] uppercase mt-4 mb-2.5" style={{ color: "#94a3b8" }}>QUIZ</p>
+                        {hasQuiz ? (
+                          <div className="flex items-center justify-between" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 14px" }}>
+                            <p className="text-[13px] font-bold" style={{ color: "#14213D" }}>📝 Topic Quiz — 5 questions</p>
+                            <a href={topic.lw_quiz_link} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-white shrink-0" style={{ background: "#14213D", borderRadius: 6, padding: "6px 14px" }}>Take Quiz →</a>
+                          </div>
+                        ) : (
+                          <div style={{ background: "#f1f5f9", borderRadius: 8, padding: "12px 14px" }}>
+                            <p className="text-[12px]" style={{ color: "#94a3b8" }}>Quiz not yet available</p>
+                          </div>
+                        )}
+
+                        {/* ── PRACTICE PROBLEMS ── */}
+                        <p className="text-[8px] font-bold tracking-[0.15em] uppercase mt-4 mb-2.5" style={{ color: "#94a3b8" }}>PRACTICE PROBLEMS</p>
+                        {topicProblems.length > 0 ? (
+                          <div>
+                            {topicProblems.map((asset: any, idx: number) => {
+                              if (isPreview && idx >= 3) return null;
+                              return (
+                                <div key={asset.id} className="flex items-center" style={{ padding: "8px 0", borderBottom: idx < topicProblems.length - 1 ? "1px solid #e2e8f0" : "none" }}>
+                                  <span className="font-mono text-[11px] shrink-0" style={{ color: "#14213D", minWidth: 60 }}>{asset.source_ref}</span>
+                                  <span className="text-[12px] flex-1 truncate mx-3" style={{ color: "#1e293b" }}>{asset.problem_title || asset.asset_name}</span>
+                                  <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="text-[12px] shrink-0 whitespace-nowrap" style={{ color: "#3b82f6" }}>View →</a>
+                                </div>
+                              );
+                            })}
+                            {isPreview && topicProblems.length > 3 && (
+                              <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="block mt-2 text-[12px] font-semibold" style={{ background: "#fffbf0", borderRadius: 6, padding: "8px 12px", color: "#14213D", cursor: "pointer" }}>
+                                🔒 Unlock all {topicProblems.length} problems with a Study Pass →
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[12px]" style={{ color: "#94a3b8", padding: "8px 0" }}>No practice problems for this topic yet.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* ─── SECTION 3: JE CRAM TOOL ─── */}
-        <div id="je-cram-tool" className="scroll-mt-16">
-          <div className="flex items-center justify-between mb-3">
-            <SectionLabel>Journal Entries · {totalCards}</SectionLabel>
-            <button
-              onClick={handleShuffle}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all hover:brightness-95 active:scale-[0.97]"
-              style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}
-            >
-              <Shuffle className="h-3 w-3" /> Shuffle
-            </button>
+        {/* ─── SECTION 4: JE CRAM TOOL (only if cards exist) ─── */}
+        {totalCards > 0 && (
+          <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32 }}>
+            <div className="flex items-center justify-between mb-3">
+              <SectionLabel>Journal Entries</SectionLabel>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-semibold" style={{ color: "#94a3b8" }}>{totalCards} entries</span>
+                <button
+                  onClick={handleShuffle}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all hover:brightness-95 active:scale-[0.97]"
+                  style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}
+                >
+                  <Shuffle className="h-3 w-3" /> Shuffle
+                </button>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4 rounded-xl px-4 py-3" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[13px] font-semibold" style={{ color: t.text }}>
+                  {reviewedCount} of {totalCards} reviewed
+                </p>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${progressPercent}%`,
+                    background: progressPercent === 100 ? "#22C55E" : "#3B82F6",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Cards */}
+            <div className="space-y-4">
+              {displayCards.map((card, idx) => {
+                if (isPreview && idx >= PREVIEW_LIMIT) return null;
+                return (
+                  <CramCardComponent
+                    key={card.id}
+                    card={card}
+                    theme={t}
+                    isReviewed={reviewedSet.has(card.id)}
+                    onReview={() => handleReview(card.id)}
+                  />
+                );
+              })}
+
+              {/* Paywall after 3 cards in preview mode */}
+              {isPreview && totalCards > PREVIEW_LIMIT && (
+                <TieredPaywallCard
+                  enrollUrl={enrollUrl}
+                  fullPassLink={fullPassLink}
+                  chapterLink={chapterLink}
+                  chapterNumber={chapterNum}
+                  theme={t}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECTION 5: SOLUTIONS LIBRARY ─── */}
+        <div style={{ marginTop: 32 }} className="mb-8">
+          <SectionLabel>Solutions Library</SectionLabel>
+          <p className="text-[12px] mb-3" style={{ color: "#64748b" }}>Browse all practice problems for this chapter.</p>
+
+          {/* Tab buttons */}
+          <div className="flex gap-2 mb-4">
+            {([["be", "Brief Exercises"], ["ex", "Exercises"], ["p", "Problems"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSolutionsTab(key)}
+                className="text-[12px] font-semibold transition-colors"
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: 20,
+                  background: solutionsTab === key ? "#14213D" : "#f1f5f9",
+                  color: solutionsTab === key ? "#ffffff" : "#64748b",
+                  cursor: "pointer",
+                  border: "none",
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-4 rounded-xl px-4 py-3" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[13px] font-semibold" style={{ color: t.text }}>
-                {reviewedCount} of {totalCards} reviewed
+          {/* Asset rows */}
+          {solutionsFiltered.length > 0 ? (
+            <div>
+              {solutionsFiltered.map((asset: any, idx: number) => {
+                if (isPreview && idx >= 3) return null;
+                return (
+                  <div key={asset.id} className="flex items-center" style={{ padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
+                    <span className="font-mono text-[11px] shrink-0" style={{ color: "#14213D", minWidth: 60 }}>{asset.source_ref}</span>
+                    <span className="text-[12px] flex-1 truncate mx-3" style={{ color: "#1e293b" }}>{asset.problem_title || asset.asset_name}</span>
+                    <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="text-[12px] shrink-0 whitespace-nowrap" style={{ color: "#3b82f6" }}>View →</a>
+                  </div>
+                );
+              })}
+              {isPreview && solutionsFiltered.length > 3 && (
+                <div className="mt-3">
+                  <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: 16 }}>
+              <p className="text-[12px]" style={{ color: "#94a3b8" }}>
+                No {solutionsTab === "be" ? "brief exercises" : solutionsTab === "ex" ? "exercises" : "problems"} for this chapter yet.
               </p>
             </div>
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${progressPercent}%`,
-                  background: progressPercent === 100 ? "#22C55E" : "#3B82F6",
-                }}
-              />
-            </div>
-          </div>
-
-          {totalCards === 0 && (
-            <div className="rounded-xl px-5 py-8 text-center" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
-              <p className="text-[14px]" style={{ color: t.textMuted }}>No journal entry data available for this chapter yet.</p>
-            </div>
           )}
-
-          {/* Cards */}
-          <div className="space-y-4">
-            {displayCards.map((card, idx) => {
-              if (isPreview && idx >= PREVIEW_LIMIT) return null;
-              return (
-                <CramCardComponent
-                  key={card.id}
-                  card={card}
-                  theme={t}
-                  isReviewed={reviewedSet.has(card.id)}
-                  onReview={() => handleReview(card.id)}
-                />
-              );
-            })}
-
-            {/* Paywall after 3 cards in preview mode */}
-            {isPreview && totalCards > PREVIEW_LIMIT && (
-              <TieredPaywallCard
-                enrollUrl={enrollUrl}
-                fullPassLink={fullPassLink}
-                chapterLink={chapterLink}
-                chapterNumber={chapterNum}
-                theme={t}
-              />
-            )}
-          </div>
         </div>
 
         {/* About Lee (at bottom) */}
