@@ -1183,16 +1183,21 @@ export default function ChapterCramTool() {
                 Have a question about Ch {chapterNum || "?"} — {chapterName}? Send it over — I typically reply within 2 business days.
               </p>
               <input
+                id="ask-lee-email"
                 type="email"
                 value={askEmail}
-                onChange={e => { setAskEmail(e.target.value); setAskError(""); }}
+                onChange={e => { setAskEmail(e.target.value); setAskError(""); setAskEmailError(""); }}
                 placeholder="your@email.com"
                 required
-                className="w-full mb-2.5 outline-none transition-colors"
-                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
-                onFocus={e => e.target.style.borderColor = "#14213D"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+                className="w-full outline-none transition-colors"
+                style={{ border: `1px solid ${askEmailError ? "#dc2626" : "#e2e8f0"}`, borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
+                onFocus={e => e.target.style.borderColor = askEmailError ? "#dc2626" : "#14213D"}
+                onBlur={e => e.target.style.borderColor = askEmailError ? "#dc2626" : "#e2e8f0"}
               />
+              {askEmailError && (
+                <p className="text-[12px] mt-1" style={{ color: "#dc2626" }}>{askEmailError}</p>
+              )}
+              <div className="mb-2.5" />
               <textarea
                 value={askQuestion}
                 onChange={e => { setAskQuestion(e.target.value); setAskError(""); }}
