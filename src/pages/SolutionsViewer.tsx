@@ -2359,7 +2359,6 @@ export default function SolutionsViewer() {
                         >
                           ✦ Key Info: {showDissectorHighlights ? "On" : "Off"}
                         </button>
-                        {/* PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref check after template approval to enable across all assets */}
                         <PracticePdfButton
                           sourceRef={sourceRef}
                           assetName={asset.asset_name}
