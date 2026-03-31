@@ -10,10 +10,11 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
-import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp, ChevronRight, Trash2, CheckCircle2 } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
@@ -397,6 +398,8 @@ export default function ChapterCramTool() {
   const chapterId = paramChapterId || queryChapterId;
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const t = lightTheme;
 
   const [reviewedSet, setReviewedSet] = useState<Set<string>>(new Set());
@@ -407,6 +410,36 @@ export default function ChapterCramTool() {
   const [openTopicId, setOpenTopicId] = useState<string | null>(null);
   const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p">("be");
   const [requestedTopics, setRequestedTopics] = useState<Set<string>>(new Set());
+
+  // Ask Lee form state
+  const [askEmail, setAskEmail] = useState("");
+  const [askQuestion, setAskQuestion] = useState("");
+  const [askSending, setAskSending] = useState(false);
+  const [askSent, setAskSent] = useState(false);
+  const [askError, setAskError] = useState("");
+
+  // Admin video manager state
+  const [vmType, setVmType] = useState<"intro" | "topic" | "legacy">("intro");
+  const [vmTopicId, setVmTopicId] = useState<string>("");
+  const [vmVimeoUrl, setVmVimeoUrl] = useState("");
+  const [vmThumbUrl, setVmThumbUrl] = useState("");
+  const [vmTitle, setVmTitle] = useState("");
+  const [vmDate, setVmDate] = useState("");
+  const [vmSaving, setVmSaving] = useState(false);
+  const [vmDeleteConfirm, setVmDeleteConfirm] = useState<string | null>(null);
+
+  // Check if admin
+  const { data: isAdmin } = useQuery({
+    queryKey: ["cram-admin-check", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase.from("va_accounts").select("role").eq("user_id", user.id).maybeSingle();
+      if (data?.role === "admin" || data?.role === "lead_va") return true;
+      // Fallback: check if user email is admin
+      return user.email === "lee@surviveaccounting.com";
+    },
+    enabled: !!user?.id,
+  });
 
   // Fetch chapter info
   const { data: chapter } = useQuery({
@@ -1140,10 +1173,267 @@ export default function ChapterCramTool() {
           )}
         </div>
 
+        {/* ─── SECTION 6: ASK LEE ─── */}
+        <div style={{ marginTop: 32 }} className="mb-8">
+          <SectionLabel>Ask Lee</SectionLabel>
+          {!askSent ? (
+            <>
+              <p className="text-[13px] mb-4" style={{ color: "#64748b" }}>
+                Have a question about Ch {chapterNum || "?"} — {chapterName}? Send it over — I typically reply within 2 business days.
+              </p>
+              <input
+                type="email"
+                value={askEmail}
+                onChange={e => { setAskEmail(e.target.value); setAskError(""); }}
+                placeholder="your@email.com"
+                required
+                className="w-full mb-2.5 outline-none transition-colors"
+                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
+                onFocus={e => e.target.style.borderColor = "#14213D"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+              <textarea
+                value={askQuestion}
+                onChange={e => { setAskQuestion(e.target.value); setAskError(""); }}
+                placeholder={`What's your question about Ch ${chapterNum || "?"} — ${chapterName}?`}
+                rows={4}
+                required
+                className="w-full mb-3 outline-none transition-colors"
+                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14, resize: "vertical" }}
+                onFocus={e => e.target.style.borderColor = "#14213D"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+              <button
+                disabled={askSending || !askEmail.trim() || !askQuestion.trim()}
+                onClick={async () => {
+                  setAskSending(true);
+                  setAskError("");
+                  try {
+                    // Insert into chapter_questions
+                    await (supabase as any).from("chapter_questions").insert({
+                      chapter_id: chapterId,
+                      student_email: askEmail.trim(),
+                      question: askQuestion.trim(),
+                      status: "new",
+                    });
+                    // Send email notification
+                    await supabase.functions.invoke("send-chapter-question", {
+                      body: {
+                        student_email: askEmail.trim(),
+                        question: askQuestion.trim(),
+                        course_name: courseDisplayName,
+                        chapter_number: chapterNum,
+                        chapter_name: chapterName,
+                      },
+                    });
+                    setAskSent(true);
+                  } catch {
+                    setAskError("Something went wrong — email lee@surviveaccounting.com directly");
+                  } finally {
+                    setAskSending(false);
+                  }
+                }}
+                className="w-full font-semibold text-[14px] text-white transition-all hover:brightness-95 active:scale-[0.98]"
+                style={{
+                  background: "#14213D",
+                  borderRadius: 8,
+                  padding: 12,
+                  cursor: askSending ? "wait" : "pointer",
+                  opacity: (askSending || !askEmail.trim() || !askQuestion.trim()) ? 0.6 : 1,
+                  border: "none",
+                }}
+              >
+                {askSending ? "Sending..." : "Send Question →"}
+              </button>
+              {askError && (
+                <p className="text-[12px] mt-2" style={{ color: "#dc2626" }}>{askError}</p>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-6">
+              <CheckCircle2 className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
+              <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>✓ Question sent!</p>
+              <p className="text-[13px] mt-1.5" style={{ color: "#64748b" }}>I'll reply to {askEmail} within 2 business days.</p>
+              <p className="text-[13px] italic mt-1" style={{ color: "#14213D" }}>— Lee</p>
+            </div>
+          )}
+        </div>
+
         {/* About Lee (at bottom) */}
         <div className="mt-10 mb-8">
           <AboutLeeSection theme={t} />
         </div>
+
+        {/* ─── ADMIN VIDEO MANAGER ─── */}
+        {isAdmin && (
+          <div className="mb-8" style={{ borderLeft: "3px solid #f59e0b", background: "#fffbeb", borderRadius: 8, padding: 16, marginTop: 32 }}>
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase mb-3" style={{ color: "#92400e" }}>Video Manager</p>
+
+            {/* Add Video Form */}
+            <div className="space-y-2.5">
+              <div>
+                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Type</label>
+                <select
+                  value={vmType}
+                  onChange={e => setVmType(e.target.value as any)}
+                  className="w-full text-[13px] outline-none"
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", background: "#fff" }}
+                >
+                  <option value="intro">intro</option>
+                  <option value="topic">topic</option>
+                  <option value="legacy">legacy</option>
+                </select>
+              </div>
+
+              {(vmType === "topic" || vmType === "legacy") && (
+                <div>
+                  <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Topic</label>
+                  <select
+                    value={vmTopicId}
+                    onChange={e => setVmTopicId(e.target.value)}
+                    className="w-full text-[13px] outline-none"
+                    style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", background: "#fff" }}
+                  >
+                    <option value="">Select topic...</option>
+                    {(topics || []).filter((t: any) => t.is_active).map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.topic_number ? `${t.topic_number}. ` : ""}{t.topic_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Vimeo Embed URL</label>
+                <input
+                  value={vmVimeoUrl}
+                  onChange={e => setVmVimeoUrl(e.target.value)}
+                  placeholder="https://player.vimeo.com/video/[VIDEO_ID]"
+                  className="w-full text-[13px] outline-none"
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Thumbnail URL (optional)</label>
+                <input
+                  value={vmThumbUrl}
+                  onChange={e => setVmThumbUrl(e.target.value)}
+                  className="w-full text-[13px] outline-none"
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Title (optional)</label>
+                <input
+                  value={vmTitle}
+                  onChange={e => setVmTitle(e.target.value)}
+                  className="w-full text-[13px] outline-none"
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Recorded date (optional)</label>
+                <input
+                  type="date"
+                  value={vmDate}
+                  onChange={e => setVmDate(e.target.value)}
+                  className="w-full text-[13px] outline-none"
+                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
+                />
+              </div>
+
+              <button
+                disabled={vmSaving || !vmVimeoUrl.trim()}
+                onClick={async () => {
+                  setVmSaving(true);
+                  try {
+                    await (supabase as any).from("chapter_videos").insert({
+                      chapter_id: chapterId,
+                      topic_id: (vmType === "topic" || vmType === "legacy") && vmTopicId ? vmTopicId : null,
+                      video_type: vmType,
+                      vimeo_embed_url: vmVimeoUrl.trim(),
+                      thumbnail_url: vmThumbUrl.trim() || null,
+                      title: vmTitle.trim() || null,
+                      recorded_at: vmDate || null,
+                      is_active: true,
+                    });
+                    queryClient.invalidateQueries({ queryKey: ["cram-chapter-videos", chapterId] });
+                    setVmVimeoUrl(""); setVmThumbUrl(""); setVmTitle(""); setVmDate(""); setVmTopicId("");
+                  } catch (e) {
+                    console.error("Failed to add video:", e);
+                  } finally {
+                    setVmSaving(false);
+                  }
+                }}
+                className="w-full text-[13px] font-semibold text-white transition-all hover:brightness-95"
+                style={{ background: "#14213D", borderRadius: 6, padding: "8px 16px", cursor: vmSaving ? "wait" : "pointer", opacity: (!vmVimeoUrl.trim() || vmSaving) ? 0.6 : 1, border: "none" }}
+              >
+                {vmSaving ? "Saving..." : "Add Video"}
+              </button>
+            </div>
+
+            {/* Existing Videos List */}
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase mt-5 mb-2" style={{ color: "#92400e" }}>Existing Videos for this Chapter</p>
+            {(chapterVideos as any[] || []).length > 0 ? (
+              <div className="space-y-2">
+                {(chapterVideos as any[]).map((vid: any) => (
+                  <div key={vid.id} className="flex items-center gap-2 text-[12px]" style={{ padding: "6px 0", borderBottom: "1px solid #fde68a" }}>
+                    <span
+                      className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                      style={{
+                        background: vid.video_type === "intro" ? "#14213D" : vid.video_type === "topic" ? "#2563eb" : "#94a3b8",
+                      }}
+                    >
+                      {vid.video_type}
+                    </span>
+                    <span className="flex-1 truncate" style={{ color: "#14213D" }}>
+                      {(vid.title || vid.vimeo_embed_url || "").slice(0, 40)}
+                    </span>
+                    {vid.recorded_at && (
+                      <span className="text-[10px] shrink-0" style={{ color: "#92400e" }}>
+                        {new Date(vid.recorded_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                    {vmDeleteConfirm === vid.id ? (
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={async () => {
+                            await (supabase as any).from("chapter_videos").delete().eq("id", vid.id);
+                            queryClient.invalidateQueries({ queryKey: ["cram-chapter-videos", chapterId] });
+                            setVmDeleteConfirm(null);
+                          }}
+                          className="text-[11px] font-bold px-2 py-0.5 rounded"
+                          style={{ background: "#dc2626", color: "#fff", border: "none", cursor: "pointer" }}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setVmDeleteConfirm(null)}
+                          className="text-[11px] px-2 py-0.5 rounded"
+                          style={{ background: "#e2e8f0", color: "#64748b", border: "none", cursor: "pointer" }}
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setVmDeleteConfirm(vid.id)}
+                        className="shrink-0"
+                        style={{ color: "#dc2626", background: "none", border: "none", cursor: "pointer" }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12px]" style={{ color: "rgba(146,64,14,0.6)" }}>No videos added yet for this chapter.</p>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
