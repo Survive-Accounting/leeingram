@@ -702,6 +702,20 @@ export default function ChapterCramTool() {
   const fullPassLink = (paymentLinks || []).find((l: any) => l.link_type === "full_pass" && l.course_id === (chapter as any)?.course_id);
   const chapterLink = (paymentLinks || []).find((l: any) => l.link_type === "chapter" && l.chapter_id === chapterId);
 
+  // Find intro video
+  const introVideo = useMemo(() => {
+    return (chapterVideos as any[] || []).find((v: any) => v.video_type === "intro") || null;
+  }, [chapterVideos]);
+
+  // 30-second paywall timer for intro video
+  useEffect(() => {
+    if (!introVideo || !isPreview) return;
+    const interval = setInterval(() => {
+      setVideoElapsed(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [introVideo, isPreview]);
+
   const PREVIEW_LIMIT = 3;
 
   if (!chapterId) {
