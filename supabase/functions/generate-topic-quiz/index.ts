@@ -172,6 +172,54 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
                           required: ["account_name", "side"],
                         },
                       },
+                      je_option_a: {
+                        type: "array",
+                        description: "JE rows for choice A. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_b: {
+                        type: "array",
+                        description: "JE rows for choice B. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_c: {
+                        type: "array",
+                        description: "JE rows for choice C. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
+                      je_option_d: {
+                        type: "array",
+                        description: "JE rows for choice D. Required for je_recall.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            account_name: { type: "string" },
+                            side: { type: "string", enum: ["debit", "credit"] },
+                          },
+                          required: ["account_name", "side"],
+                        },
+                      },
                     },
                     required: ["question_number", "question_type", "question_text", "correct_answer", "explanation_correct"],
                   },
