@@ -200,3 +200,62 @@ export async function copyHtmlToClipboard(html: string): Promise<boolean> {
     return true;
   }
 }
+
+// ── JE Option types and renderers ────────────────────────────────────
+
+export interface JEOptionRow {
+  account_name: string;
+  side: "debit" | "credit";
+}
+
+export function parseJEOption(value: string | null | undefined): JEOptionRow[] | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (
+      Array.isArray(parsed) &&
+      parsed.length > 0 &&
+      typeof parsed[0].account_name === "string" &&
+      typeof parsed[0].side === "string"
+    ) {
+      return parsed as JEOptionRow[];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function renderJEOptionHtml(rows: JEOptionRow[]): string {
+  if (!rows || rows.length === 0) return "<p>(empty)</p>";
+
+  const debits = rows.filter(r => r.side === "debit");
+  const credits = rows.filter(r => r.side === "credit");
+  const ordered = [...debits, ...credits];
+
+  const headerRow = `<tr><th style="${HEADER_STYLE}">Account</th><th style="${HEADER_STYLE}width:80px;text-align:center;">Debit</th><th style="${HEADER_STYLE}width:80px;text-align:center;">Credit</th></tr>`;
+
+  const dataRows = ordered.map(r => {
+    const isCredit = r.side === "credit";
+    const tdStyle = isCredit ? INDENT_STYLE : CELL_STYLE;
+    return `<tr><td style="${tdStyle}">${escHtml(r.account_name)}</td><td style="${CELL_STYLE}text-align:center;">${isCredit ? "" : "&#10003;"}</td><td style="${CELL_STYLE}text-align:center;">${isCredit ? "&#10003;" : ""}</td></tr>`;
+  }).join("\n");
+
+  return `<table style="${TABLE_STYLE}">${headerRow}\n${dataRows}</table>`;
+}
+
+export function renderFeedbackHtml(
+  isCorrect: boolean,
+  explanationCorrect: string,
+  correctJERows?: JEOptionRow[]
+): string {
+  if (isCorrect) {
+    const jeSection = correctJERows
+      ? `<div style="margin-top:10px;"><p style="font-size:0.85em;color:#555;margin:0 0 6px;"><strong>Correct journal entry:</strong></p>${renderJEOptionHtml(correctJERows)}</div>`
+      : "";
+
+    return `<div style="padding:12px;background:#f0fdf4;border-left:4px solid #22c55e;border-radius:4px;"><p style="color:#166534;font-weight:bold;margin:0 0 8px;">&#10003; Correct!</p><p style="margin:0;">${escHtml(explanationCorrect)}</p>${jeSection}</div>`;
+  }
+
+  return `<div style="padding:12px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:4px;"><p style="color:#991b1b;font-weight:bold;margin:0 0 8px;">&#10007; Not quite.</p><p style="margin:0;">Review which accounts are involved in this transaction and which side each one goes on. Check the correct answer feedback for the full explanation.</p></div>`;
+}
