@@ -1693,13 +1693,13 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
                 About Lee Ingram
               </button>
               <div className="w-px h-5" style={{ background: theme.border }} />
-              <a
-                href={reportMailto}
+              <button
+                onClick={onReportClick}
                 className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
-                style={{ color: theme.textMuted }}
+                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
               >
                 ⚠ Report Issue →
-              </a>
+              </button>
               <div className="w-px h-5" style={{ background: theme.border }} />
             </>
           )}
