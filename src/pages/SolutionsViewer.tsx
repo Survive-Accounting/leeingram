@@ -608,18 +608,18 @@ function RevealToggle({
           ) : (
             <>
               {children}
-              {(reportMailto || extraFooterLeft) && (
+              {(hasReportLink || extraFooterLeft) && (
                 <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: `1px solid ${theme.border}` }}>
                   <div>{extraFooterLeft || null}</div>
-                  {reportMailto ? (
-                    <a
-                      href={reportMailto}
+                  {hasReportLink ? (
+                    <button
+                      onClick={onReportClick}
                       className="flex items-center gap-1.5 text-[12px] hover:underline"
-                      style={{ color: theme.textMuted }}
+                      style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}
                     >
                       <AlertTriangle className="h-3 w-3" />
                       Report an issue with this section →
-                    </a>
+                    </button>
                   ) : <div />}
                 </div>
               )}
