@@ -1343,7 +1343,7 @@ export default function ChapterCramTool() {
                 </select>
               </div>
 
-              {(vmType === "topic" || vmType === "legacy") && (
+              {(vmType === "topic" || vmType === "legacy" || vmType === "showcase") && (
                 <div>
                   <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Topic</label>
                   <select
