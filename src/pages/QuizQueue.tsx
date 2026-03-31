@@ -742,42 +742,114 @@ function QuizReviewDrawer({
                     )}
 
                     {/* JE Recall */}
-                    {q.question_type === "je_recall" && (
-                      <div className="space-y-2">
-                        {q.je_description && (
-                          <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
-                        )}
-                        {(() => {
-                          let accounts = q.je_accounts;
-                          if (typeof accounts === "string") {
-                            try { accounts = JSON.parse(accounts); } catch { accounts = null; }
-                          }
-                          return Array.isArray(accounts) && accounts.length > 0 ? (
-                          <table className="text-xs w-full border-collapse">
-                            <thead>
-                              <tr className="border-b border-border">
-                                <th className="text-left py-1 font-semibold text-muted-foreground">Account</th>
-                                <th className="text-left py-1 font-semibold text-muted-foreground">Side</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {accounts.map((a: any, i: number) => (
-                                <tr key={i} className="border-b border-border/50">
-                                  <td className="py-1">{a?.account_name ?? "—"}</td>
-                                  <td className="py-1 font-medium">
-                                    {a?.side === "debit" ? "DR" : "CR"}
-                                  </td>
+                    {q.question_type === "je_recall" && (() => {
+                      const jeOpts = {
+                        a: parseJEOption(q.option_a),
+                        b: parseJEOption(q.option_b),
+                        c: parseJEOption(q.option_c),
+                        d: parseJEOption(q.option_d),
+                      };
+                      const hasStructured = jeOpts.a || jeOpts.b || jeOpts.c || jeOpts.d;
+
+                      if (hasStructured) {
+                        return (
+                          <div className="space-y-2">
+                            {q.je_description && (
+                              <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
+                            )}
+                            {(["a", "b", "c", "d"] as const).map((k) => {
+                              const rows = jeOpts[k];
+                              if (!rows) return null;
+                              const isCorrect = q.correct_answer === k;
+                              return (
+                                <div
+                                  key={k}
+                                  className="rounded-md p-2.5"
+                                  style={{
+                                    borderLeft: `3px solid ${isCorrect ? "#22c55e" : "#e2e8f0"}`,
+                                    borderRadius: 6,
+                                    background: isCorrect ? "#f0fdf4" : "white",
+                                    border: `1px solid ${isCorrect ? "#22c55e" : "#e2e8f0"}`,
+                                    borderLeftWidth: 3,
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[12px] font-bold">
+                                      Choice {k.toUpperCase()}
+                                      {isCorrect && <span className="text-emerald-600 ml-1">✓ Correct</span>}
+                                    </span>
+                                    <button
+                                      className="text-[12px] text-blue-400 hover:text-blue-600"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(renderJEOptionHtml(rows));
+                                        toast.success(`Choice ${k.toUpperCase()} HTML copied — paste into LW answer field ${k.toUpperCase()}`);
+                                      }}
+                                    >
+                                      Copy →
+                                    </button>
+                                  </div>
+                                  <table className="text-[11px] w-full border-collapse">
+                                    <thead>
+                                      <tr className="border-b border-border">
+                                        <th className="text-left py-0.5 font-semibold text-muted-foreground">Account</th>
+                                        <th className="text-center py-0.5 font-semibold text-muted-foreground w-[50px]">Debit</th>
+                                        <th className="text-center py-0.5 font-semibold text-muted-foreground w-[50px]">Credit</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {[...rows.filter(r => r.side === "debit"), ...rows.filter(r => r.side === "credit")].map((r, i) => (
+                                        <tr key={i} className="border-b border-border/50">
+                                          <td className={`py-0.5 ${r.side === "credit" ? "pl-4" : ""}`}>{r.account_name}</td>
+                                          <td className="py-0.5 text-center">{r.side === "debit" ? "✓" : ""}</td>
+                                          <td className="py-0.5 text-center">{r.side === "credit" ? "✓" : ""}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              );
+                            })}
+                            {q.explanation_correct && (
+                              <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // Fallback: legacy je_accounts display
+                      let accounts = q.je_accounts;
+                      if (typeof accounts === "string") {
+                        try { accounts = JSON.parse(accounts); } catch { accounts = null; }
+                      }
+                      return (
+                        <div className="space-y-2">
+                          {q.je_description && (
+                            <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
+                          )}
+                          {Array.isArray(accounts) && accounts.length > 0 && (
+                            <table className="text-xs w-full border-collapse">
+                              <thead>
+                                <tr className="border-b border-border">
+                                  <th className="text-left py-1 font-semibold text-muted-foreground">Account</th>
+                                  <th className="text-left py-1 font-semibold text-muted-foreground">Side</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          ) : null;
-                        })()}
-                        {q.explanation_correct && (
-                          <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
-                        )}
-                      </div>
-                    )}
+                              </thead>
+                              <tbody>
+                                {accounts.map((a: any, i: number) => (
+                                  <tr key={i} className="border-b border-border/50">
+                                    <td className="py-1">{a?.account_name ?? "—"}</td>
+                                    <td className="py-1 font-medium">{a?.side === "debit" ? "DR" : "CR"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                          {q.explanation_correct && (
+                            <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Rejection notes */}
                     {rejectingId === q.id ? (
