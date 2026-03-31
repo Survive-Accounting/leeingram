@@ -344,9 +344,11 @@ serve(async (req) => {
         html,
         css: "",
         google_fonts: "Inter",
-        viewport_width: 816,
+        viewport_width: 1200,
         viewport_height: 1056,
         device_scale: 2,
+        ms_delay: 500,
+        omit_background: false,
       }),
     });
 
