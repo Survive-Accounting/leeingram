@@ -352,15 +352,15 @@ function ChapterToolCard({ icon, title, subtitle, bg, borderColor, buttonLabel, 
   icon: string; title: string; subtitle: string; bg: string; borderColor: string; buttonLabel: string; onClick: () => void; disabled?: boolean;
 }) {
   return (
-    <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: bg, border: `1px solid ${borderColor}`, opacity: disabled ? 0.5 : 1 }}>
+    <div className="flex flex-col gap-2" style={{ background: bg, border: `1px solid ${borderColor}`, borderRadius: 10, padding: 16, opacity: disabled ? 0.5 : 1 }}>
       <span className="text-[20px]">{icon}</span>
       <p className="text-[14px] font-bold" style={{ color: "#14213D" }}>{title}</p>
       <p className="text-[12px]" style={{ color: "#64748B" }}>{subtitle}</p>
       <button
         onClick={onClick}
         disabled={disabled}
-        className="mt-auto text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all hover:brightness-95 active:scale-[0.98]"
-        style={{ background: disabled ? "#E2E8F0" : "#14213D", color: disabled ? "#94A3B8" : "#FFFFFF", cursor: disabled ? "default" : "pointer" }}
+        className="w-full text-[13px] font-semibold transition-all hover:brightness-95 active:scale-[0.98]"
+        style={{ background: disabled ? "#E2E8F0" : "#14213D", color: disabled ? "#94A3B8" : "#FFFFFF", cursor: disabled ? "default" : "pointer", borderRadius: 8, padding: "8px 16px", marginTop: 12 }}
       >
         {buttonLabel}
       </button>
@@ -452,6 +452,7 @@ export default function ChapterCramTool() {
   const [shuffledOrder, setShuffledOrder] = useState<number[] | null>(null);
   const [formulasOpen, setFormulasOpen] = useState(false);
   const [trapsOpen, setTrapsOpen] = useState(false);
+  const [videoElapsed, setVideoElapsed] = useState(0);
 
   // Fetch chapter info
   const { data: chapter } = useQuery({
@@ -701,6 +702,20 @@ export default function ChapterCramTool() {
   const fullPassLink = (paymentLinks || []).find((l: any) => l.link_type === "full_pass" && l.course_id === (chapter as any)?.course_id);
   const chapterLink = (paymentLinks || []).find((l: any) => l.link_type === "chapter" && l.chapter_id === chapterId);
 
+  // Find intro video
+  const introVideo = useMemo(() => {
+    return (chapterVideos as any[] || []).find((v: any) => v.video_type === "intro") || null;
+  }, [chapterVideos]);
+
+  // 30-second paywall timer for intro video
+  useEffect(() => {
+    if (!introVideo || !isPreview) return;
+    const interval = setInterval(() => {
+      setVideoElapsed(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [introVideo, isPreview]);
+
   const PREVIEW_LIMIT = 3;
 
   if (!chapterId) {
@@ -755,68 +770,117 @@ export default function ChapterCramTool() {
           </p>
         </div>
 
-        {/* ─── SECTION 1: CHAPTER TOOLS ─── */}
-        <div className="mb-8">
+        {/* ─── CHAPTER INTRO VIDEO ─── */}
+        {introVideo && (
+          <div className="mb-8">
+            <div className="relative" style={{ borderRadius: 12, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
+              <iframe
+                src={`${introVideo.vimeo_embed_url}?autoplay=0&title=0&byline=0&portrait=0`}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+              {/* 30-second paywall overlay for free users */}
+              {isPreview && videoElapsed >= 30 && (
+                <div
+                  className="flex flex-col items-center justify-end"
+                  style={{
+                    position: "absolute",
+                    top: "35%",
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "linear-gradient(transparent, rgba(20,33,61,0.97) 40%)",
+                    paddingBottom: 24,
+                    zIndex: 10,
+                  }}
+                >
+                  <Lock className="h-5 w-5 text-white" />
+                  <p className="text-[13px] font-bold text-white mt-2">Continue watching with a Study Pass</p>
+                  <div className="mt-4 w-full px-4">
+                    <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
+                  </div>
+                </div>
+              )}
+            </div>
+            {introVideo.recorded_at && (
+              <p className="text-[10px] mt-2" style={{ color: "#94a3b8" }}>
+                Recorded {new Date(introVideo.recorded_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </p>
+            )}
+            {introVideo.title && (
+              <p className="text-[13px] font-medium mt-1" style={{ color: "#14213D" }}>{introVideo.title}</p>
+            )}
+          </div>
+        )}
+
+        {/* ─── CHAPTER TOOLS ─── */}
+        <div className="mb-8" style={{ marginTop: 32 }}>
           <SectionLabel>Chapter Tools</SectionLabel>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ChapterToolCard
               icon="📚"
               title="Chapter Cram Tool"
-              subtitle={`${totalCards} journal ${totalCards === 1 ? "entry" : "entries"} to drill`}
+              subtitle={totalCards > 0 ? `${totalCards} journal ${totalCards === 1 ? "entry" : "entries"} to drill` : "No journal entries for this chapter"}
               bg="#f0fdf4"
               borderColor="#bbf7d0"
               buttonLabel="Start Drilling →"
               onClick={() => document.getElementById("je-cram-tool")?.scrollIntoView({ behavior: "smooth" })}
+              disabled={totalCards === 0}
             />
             <ChapterToolCard
               icon="⚡"
               title="Key Formulas"
-              subtitle={formulas.length > 0 ? `${formulas.length} formula${formulas.length !== 1 ? "s" : ""} for this chapter` : "No formulas for this chapter"}
+              subtitle={formulas.length > 0 ? `${formulas.length} formula${formulas.length !== 1 ? "s" : ""}` : "No formulas yet"}
               bg={formulas.length > 0 ? "#fffbeb" : "#f8fafc"}
               borderColor={formulas.length > 0 ? "#fde68a" : "#e2e8f0"}
               buttonLabel={formulasOpen ? "Hide Formulas" : "View Formulas →"}
-              onClick={() => setFormulasOpen(!formulasOpen)}
+              onClick={() => { setFormulasOpen(!formulasOpen); if (!formulasOpen) setTrapsOpen(false); }}
               disabled={formulas.length === 0}
             />
             <ChapterToolCard
               icon="⚠️"
               title="Exam Traps"
-              subtitle={traps.length > 0 ? `${traps.length} common mistake${traps.length !== 1 ? "s" : ""}` : "No traps for this chapter"}
+              subtitle={traps.length > 0 ? `${traps.length} common mistake${traps.length !== 1 ? "s" : ""}` : "No traps yet"}
               bg={traps.length > 0 ? "#fef2f2" : "#f8fafc"}
               borderColor={traps.length > 0 ? "#fecaca" : "#e2e8f0"}
               buttonLabel={trapsOpen ? "Hide Traps" : "View Traps →"}
-              onClick={() => setTrapsOpen(!trapsOpen)}
+              onClick={() => { setTrapsOpen(!trapsOpen); if (!trapsOpen) setFormulasOpen(false); }}
               disabled={traps.length === 0}
             />
           </div>
 
           {/* Formulas accordion */}
           {formulasOpen && formulas.length > 0 && (
-            <div className="mt-3 rounded-xl p-4 space-y-2" style={{ background: "#fffbeb", border: "1px solid #fde68a" }}>
+            <div className="mt-3 space-y-2">
               {formulas.map((f, idx) => {
                 if (isPreview && idx >= 1) return null;
                 return (
-                  <div key={idx} className="rounded-lg px-3 py-2 font-mono text-[12px] leading-[1.6]" style={{ background: t.pageBg, color: t.text, border: `1px solid ${t.border}` }}>
+                  <div key={idx} className="font-mono text-[12px] leading-[1.6]" style={{ background: "#fffbeb", color: "#1e293b", padding: "10px 14px", borderRadius: 6, borderLeft: "3px solid #d97706" }}>
                     {f}
                   </div>
                 );
               })}
-              {isPreview && formulas.length > 1 && <MiniPaywall enrollUrl={enrollUrl} theme={t} />}
+              {isPreview && formulas.length > 1 && (
+                <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
+              )}
             </div>
           )}
 
           {/* Traps accordion */}
           {trapsOpen && traps.length > 0 && (
-            <div className="mt-3 rounded-xl p-4 space-y-2" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
+            <div className="mt-3 space-y-2">
               {traps.map((trap, idx) => {
                 if (isPreview && idx >= 1) return null;
                 return (
-                  <div key={idx} className="rounded-lg px-3 py-2 text-[12px] leading-[1.6]" style={{ background: t.pageBg, color: t.text, border: `1px solid ${t.border}`, borderLeft: "3px solid #EF4444" }}>
+                  <div key={idx} className="text-[12px] leading-[1.6]" style={{ background: "#fef2f2", color: "#1e293b", padding: "10px 14px", borderRadius: 6, borderLeft: "3px solid #dc2626" }}>
                     {trap}
                   </div>
                 );
               })}
-              {isPreview && traps.length > 1 && <MiniPaywall enrollUrl={enrollUrl} theme={t} />}
+              {isPreview && traps.length > 1 && (
+                <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
+              )}
             </div>
           )}
         </div>
