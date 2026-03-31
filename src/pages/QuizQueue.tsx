@@ -1598,6 +1598,27 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
                                 </Button>
                               </>
                             )}
+                            {/* PHASE 2: Add JE Recall
+                            // When clicked, this will call a new edge function that:
+                            // 1. Fetches all unique JE entries from assets assigned to this topic_id
+                            //    (from supplementary_je_json)
+                            // 2. Deduplicates by entry label/description similarity
+                            // 3. Generates one je_recall question per unique entry using the same
+                            //    4-choice distractor pattern
+                            // 4. Appends to existing topic_quiz_questions (does not delete existing)
+                            // Only assets with topic_id = this topic contribute JEs. */}
+                            <button
+                              disabled
+                              title="Generate additional JE Recall questions — one per unique journal entry in this topic. Coming in Phase 2."
+                              className="h-7 text-[11px] px-2.5 rounded-full cursor-not-allowed opacity-60"
+                              style={{
+                                background: "#f1f5f9",
+                                border: "1px solid #e2e8f0",
+                                color: "#94a3b8",
+                              }}
+                            >
+                              ＋ JE Recall
+                            </button>
                           </>
                         )}
                       </div>
