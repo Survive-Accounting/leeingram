@@ -127,7 +127,8 @@ function buildHtml(data: {
       print-color-adjust: exact !important;
       color-adjust: exact !important;
   }
-  body {
+  html, body {
+    height: 100%;
     margin: 0;
     padding: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -136,28 +137,25 @@ function buildHtml(data: {
     background: #fff;
     width: 816px;
   }
-  .header {
-    background: #14213D;
+  .page-wrapper {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .page-content {
+    flex: 1;
+    padding: 20px 24px 32px;
+  }
+  .page-footer {
+    background-color: #14213D !important;
+    background: linear-gradient(#14213D, #14213D) !important;
     padding: 14px 24px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: center;
+    margin-top: auto;
+    border-top: 4px solid #14213D;
   }
-  .header img.logo { height: 28px; width: auto; }
-  .header .byline { color: rgba(255,255,255,0.6); font-size: 10px; }
-  .cta {
-    background: #f0fdf4;
-    border-bottom: 1px solid #bbf7d0;
-    padding: 9px 24px;
-    font-size: 10px;
-    color: #14213D;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .cta .cta-left { color: #14213D; }
-  .cta .cta-right { font-weight: 700; color: #14213D; }
-  .content { padding: 20px 24px; }
   .based-on { font-size: 10px; color: #64748b; margin-bottom: 4px; }
   .problem-title { font-size: 16px; font-weight: 700; color: #14213D; margin-bottom: 4px; }
   .course-label { font-size: 10px; color: #64748b; margin-bottom: 16px; }
@@ -191,7 +189,8 @@ function buildHtml(data: {
   .work-box.lg { height: 140px; }
 </style>
 </head>
-<body style="margin:0;padding:0;">
+<body style="margin:0;padding:0;height:100%;">
+<div class="page-wrapper">
 <!-- FUTURE DRM: When student auth is implemented, append student name and email to the right side of this header bar as a subtle watermark. Pass as optional parameters: lw_user_name, lw_user_email. Display as small white/40 text alongside "Created by Lee Ingram" -->
 <div style="background-color:#14213D;background:linear-gradient(#14213D,#14213D) !important;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;width:100%;margin:0;box-sizing:border-box;border-bottom:4px solid #14213D;">
   <img src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png" style="height:32px;width:auto;display:block;" alt="Survive Accounting" />
@@ -200,7 +199,7 @@ function buildHtml(data: {
 <div style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:9px 24px;font-size:10px;color:#14213D;">
   Get full solution + more study tools at&nbsp;<a href="https://SurviveAccounting.com" style="font-weight:700;color:#14213D;text-decoration:underline;">SurviveAccounting.com →</a>
 </div>
-<div class="content">
+<div class="page-content">
   <div class="course-label">${escHtml(data.courseName)} · ${escHtml(data.chapterName)}</div>
   <div class="based-on">Practice problem based on ${escHtml(data.sourceRef)}</div>
   ${data.problemTitle ? `<div class="problem-title">${escHtml(data.problemTitle)}</div>` : ""}
@@ -209,9 +208,11 @@ function buildHtml(data: {
   <div class="problem-text">${data.problemTextHtml}</div>
   ${data.instructionsHtml ? `<div class="section-label">Instructions</div><div class="instructions-wrap">${data.instructionsHtml}</div>` : ""}
 </div>
-<div style="margin-top:32px;border-top:1px solid #e2e8f0;padding:12px 24px;background:#f0fdf4;display:flex;justify-content:space-between;align-items:center;">
-  <span style="font-size:10px;color:#14213D;">Get the full solution + worked steps, key concepts, and exam traps at</span>
-  <a href="https://SurviveAccounting.com" style="font-size:10px;font-weight:700;color:#14213D;text-decoration:underline;">SurviveAccounting.com →</a>
+<div class="page-footer">
+  <span style="color:rgba(255,255,255,0.9);font-size:11px;font-family:system-ui,-apple-system,sans-serif;text-align:center;">
+    Get full solution + more study tools at&nbsp;<a href="https://SurviveAccounting.com" style="color:#ffffff;font-weight:700;text-decoration:underline;">SurviveAccounting.com →</a>
+  </span>
+</div>
 </div>
 </body>
 </html>`;
