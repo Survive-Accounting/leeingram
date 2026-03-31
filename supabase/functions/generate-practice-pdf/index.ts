@@ -124,7 +124,9 @@ function buildHtml(data: {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
     font-size: 11px;
     color: #1e293b;
     background: #fff;
@@ -185,10 +187,11 @@ function buildHtml(data: {
   .work-box.lg { height: 140px; }
 </style>
 </head>
-<body>
-<div style="background:#14213D;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;width:100%;">
-  <img src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png" style="height:28px;width:auto;" alt="Survive Accounting" />
-  <span style="color:rgba(255,255,255,0.6);font-size:10px;">Created by Lee Ingram</span>
+<body style="margin:0;padding:0;">
+<!-- FUTURE DRM: When student auth is implemented, append student name and email to the right side of this header bar as a subtle watermark. Pass as optional parameters: lw_user_name, lw_user_email. Display as small white/40 text alongside "Created by Lee Ingram" -->
+<div style="background-color:#14213D;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;width:100%;margin:0;box-sizing:border-box;">
+  <img src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png" style="height:32px;width:auto;display:block;" alt="Survive Accounting" />
+  <span style="color:rgba(255,255,255,0.7);font-size:10px;font-family:system-ui,-apple-system,sans-serif;white-space:nowrap;">Created by Lee Ingram</span>
 </div>
 <div style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:9px 24px;font-size:10px;color:#14213D;">
   Get full solution + more study tools at&nbsp;<a href="https://SurviveAccounting.com" style="font-weight:700;color:#14213D;text-decoration:underline;">SurviveAccounting.com →</a>
