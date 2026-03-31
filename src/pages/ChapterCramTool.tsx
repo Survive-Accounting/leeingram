@@ -452,6 +452,7 @@ export default function ChapterCramTool() {
   const [shuffledOrder, setShuffledOrder] = useState<number[] | null>(null);
   const [formulasOpen, setFormulasOpen] = useState(false);
   const [trapsOpen, setTrapsOpen] = useState(false);
+  const [videoElapsed, setVideoElapsed] = useState(0);
 
   // Fetch chapter info
   const { data: chapter } = useQuery({
