@@ -544,6 +544,36 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
   });
 
+  // Fetch chapter videos
+  const { data: chapterVideos } = useQuery({
+    queryKey: ["cram-chapter-videos", chapterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("chapter_videos")
+        .select("*")
+        .eq("chapter_id", chapterId)
+        .eq("is_active", true)
+        .order("recorded_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch approved teaching assets for this chapter
+  const { data: approvedAssets } = useQuery({
+    queryKey: ["cram-approved-assets", chapterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title")
+        .eq("chapter_id", chapterId)
+        .eq("status", "approved")
+        .order("source_ref");
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
   // Fetch payment links for paywall
   const { data: paymentLinks } = useQuery({
     queryKey: ["payment-links-cram"],
