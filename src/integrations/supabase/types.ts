@@ -4078,6 +4078,35 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_video_requests: {
+        Row: {
+          created_at: string
+          id: string
+          topic_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          topic_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          topic_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_video_requests_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_explore_items: {
         Row: {
           category: string
