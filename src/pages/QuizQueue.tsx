@@ -1,5 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import {
+  parseJEOption,
+  renderJEOptionHtml,
+  renderFeedbackHtml,
+  type JEOptionRow,
+} from "@/lib/questionHtmlRenderer";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -736,42 +742,114 @@ function QuizReviewDrawer({
                     )}
 
                     {/* JE Recall */}
-                    {q.question_type === "je_recall" && (
-                      <div className="space-y-2">
-                        {q.je_description && (
-                          <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
-                        )}
-                        {(() => {
-                          let accounts = q.je_accounts;
-                          if (typeof accounts === "string") {
-                            try { accounts = JSON.parse(accounts); } catch { accounts = null; }
-                          }
-                          return Array.isArray(accounts) && accounts.length > 0 ? (
-                          <table className="text-xs w-full border-collapse">
-                            <thead>
-                              <tr className="border-b border-border">
-                                <th className="text-left py-1 font-semibold text-muted-foreground">Account</th>
-                                <th className="text-left py-1 font-semibold text-muted-foreground">Side</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {accounts.map((a: any, i: number) => (
-                                <tr key={i} className="border-b border-border/50">
-                                  <td className="py-1">{a?.account_name ?? "—"}</td>
-                                  <td className="py-1 font-medium">
-                                    {a?.side === "debit" ? "DR" : "CR"}
-                                  </td>
+                    {q.question_type === "je_recall" && (() => {
+                      const jeOpts = {
+                        a: parseJEOption(q.option_a),
+                        b: parseJEOption(q.option_b),
+                        c: parseJEOption(q.option_c),
+                        d: parseJEOption(q.option_d),
+                      };
+                      const hasStructured = jeOpts.a || jeOpts.b || jeOpts.c || jeOpts.d;
+
+                      if (hasStructured) {
+                        return (
+                          <div className="space-y-2">
+                            {q.je_description && (
+                              <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
+                            )}
+                            {(["a", "b", "c", "d"] as const).map((k) => {
+                              const rows = jeOpts[k];
+                              if (!rows) return null;
+                              const isCorrect = q.correct_answer === k;
+                              return (
+                                <div
+                                  key={k}
+                                  className="rounded-md p-2.5"
+                                  style={{
+                                    borderLeft: `3px solid ${isCorrect ? "#22c55e" : "#e2e8f0"}`,
+                                    borderRadius: 6,
+                                    background: isCorrect ? "#f0fdf4" : "white",
+                                    border: `1px solid ${isCorrect ? "#22c55e" : "#e2e8f0"}`,
+                                    borderLeftWidth: 3,
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[12px] font-bold">
+                                      Choice {k.toUpperCase()}
+                                      {isCorrect && <span className="text-emerald-600 ml-1">✓ Correct</span>}
+                                    </span>
+                                    <button
+                                      className="text-[12px] text-blue-400 hover:text-blue-600"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(renderJEOptionHtml(rows));
+                                        toast.success(`Choice ${k.toUpperCase()} HTML copied — paste into LW answer field ${k.toUpperCase()}`);
+                                      }}
+                                    >
+                                      Copy →
+                                    </button>
+                                  </div>
+                                  <table className="text-[11px] w-full border-collapse">
+                                    <thead>
+                                      <tr className="border-b border-border">
+                                        <th className="text-left py-0.5 font-semibold text-muted-foreground">Account</th>
+                                        <th className="text-center py-0.5 font-semibold text-muted-foreground w-[50px]">Debit</th>
+                                        <th className="text-center py-0.5 font-semibold text-muted-foreground w-[50px]">Credit</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {[...rows.filter(r => r.side === "debit"), ...rows.filter(r => r.side === "credit")].map((r, i) => (
+                                        <tr key={i} className="border-b border-border/50">
+                                          <td className={`py-0.5 ${r.side === "credit" ? "pl-4" : ""}`}>{r.account_name}</td>
+                                          <td className="py-0.5 text-center">{r.side === "debit" ? "✓" : ""}</td>
+                                          <td className="py-0.5 text-center">{r.side === "credit" ? "✓" : ""}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              );
+                            })}
+                            {q.explanation_correct && (
+                              <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // Fallback: legacy je_accounts display
+                      let accounts = q.je_accounts;
+                      if (typeof accounts === "string") {
+                        try { accounts = JSON.parse(accounts); } catch { accounts = null; }
+                      }
+                      return (
+                        <div className="space-y-2">
+                          {q.je_description && (
+                            <p className="text-xs text-muted-foreground italic">{q.je_description}</p>
+                          )}
+                          {Array.isArray(accounts) && accounts.length > 0 && (
+                            <table className="text-xs w-full border-collapse">
+                              <thead>
+                                <tr className="border-b border-border">
+                                  <th className="text-left py-1 font-semibold text-muted-foreground">Account</th>
+                                  <th className="text-left py-1 font-semibold text-muted-foreground">Side</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          ) : null;
-                        })()}
-                        {q.explanation_correct && (
-                          <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
-                        )}
-                      </div>
-                    )}
+                              </thead>
+                              <tbody>
+                                {accounts.map((a: any, i: number) => (
+                                  <tr key={i} className="border-b border-border/50">
+                                    <td className="py-1">{a?.account_name ?? "—"}</td>
+                                    <td className="py-1 font-medium">{a?.side === "debit" ? "DR" : "CR"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                          {q.explanation_correct && (
+                            <p className="text-[11px] text-muted-foreground">{q.explanation_correct}</p>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Rejection notes */}
                     {rejectingId === q.id ? (
@@ -838,19 +916,110 @@ function QuizReviewDrawer({
                         <Pencil className="h-3 w-3 mr-0.5" /> Edit
                       </Button>
                       {(q.review_status === "approved" || q.review_status === "edited") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 text-[11px] px-2"
-                          onClick={() => {
-                            const embed = `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
-                            navigator.clipboard.writeText(embed);
-                            toast.success("Embed copied — paste into LW question feedback field");
-                          }}
-                        >
-                          <Copy className="h-3 w-3 mr-0.5" /> Embed
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const embed = `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${q.id}" width="100%" height="520" frameborder="0" style="border:none;border-radius:8px;"></iframe>`;
+                              navigator.clipboard.writeText(embed);
+                              toast.success("Embed copied — paste into LW question feedback field");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> Embed
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const isJE = q.question_type === "je_recall";
+                              const html = isJE
+                                ? `<p>${q.question_text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>`
+                                : `<p>${q.question_text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>`;
+                              navigator.clipboard.writeText(html);
+                              toast.success("Question text copied — paste into LW question field");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> Question
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const isJE = q.question_type === "je_recall";
+                              const jeOpts = isJE ? {
+                                a: parseJEOption(q.option_a),
+                                b: parseJEOption(q.option_b),
+                                c: parseJEOption(q.option_c),
+                                d: parseJEOption(q.option_d),
+                              } : null;
+                              const correctRows = jeOpts?.[q.correct_answer as 'a'|'b'|'c'|'d'] ?? undefined;
+                              const html = renderFeedbackHtml(true, q.explanation_correct, correctRows ?? undefined);
+                              navigator.clipboard.writeText(html);
+                              toast.success("Correct feedback HTML copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> ✓ Feedback
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 text-[11px] px-2"
+                            onClick={() => {
+                              const html = renderFeedbackHtml(false, q.explanation_correct);
+                              navigator.clipboard.writeText(html);
+                              toast.success("Incorrect feedback HTML copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-0.5" /> ✗ Feedback
+                          </Button>
+                        </>
                       )}
+
+                      {/* JE Recall per-choice copy grid */}
+                      {(q.review_status === "approved" || q.review_status === "edited") && q.question_type === "je_recall" && (() => {
+                        const jeOpts = {
+                          a: parseJEOption(q.option_a),
+                          b: parseJEOption(q.option_b),
+                          c: parseJEOption(q.option_c),
+                          d: parseJEOption(q.option_d),
+                        };
+                        const hasAny = jeOpts.a || jeOpts.b || jeOpts.c || jeOpts.d;
+                        if (!hasAny) return null;
+                        return (
+                          <div className="w-full pt-1">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Answer Choices</p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {(["a","b","c","d"] as const).map((k) => {
+                                const rows = jeOpts[k];
+                                if (!rows) return null;
+                                const isCorrect = q.correct_answer === k;
+                                return (
+                                  <button
+                                    key={k}
+                                    className="text-[11px] rounded-md px-2.5 py-1.5 text-left"
+                                    style={{
+                                      background: "#f8fafc",
+                                      border: `1px solid ${isCorrect ? "#22c55e" : "#e2e8f0"}`,
+                                      borderRadius: 6,
+                                      color: isCorrect ? "#166534" : undefined,
+                                    }}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(renderJEOptionHtml(rows));
+                                      toast.success(`Choice ${k.toUpperCase()} copied — paste into LW answer ${k.toUpperCase()}`);
+                                    }}
+                                  >
+                                    Copy {k.toUpperCase()} HTML{isCorrect ? " ✓" : ""}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* ── Student Preview (collapsible) ── */}
@@ -1429,6 +1598,27 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
                                 </Button>
                               </>
                             )}
+                            {/* PHASE 2: Add JE Recall
+                            // When clicked, this will call a new edge function that:
+                            // 1. Fetches all unique JE entries from assets assigned to this topic_id
+                            //    (from supplementary_je_json)
+                            // 2. Deduplicates by entry label/description similarity
+                            // 3. Generates one je_recall question per unique entry using the same
+                            //    4-choice distractor pattern
+                            // 4. Appends to existing topic_quiz_questions (does not delete existing)
+                            // Only assets with topic_id = this topic contribute JEs. */}
+                            <button
+                              disabled
+                              title="Generate additional JE Recall questions — one per unique journal entry in this topic. Coming in Phase 2."
+                              className="h-7 text-[11px] px-2.5 rounded-full cursor-not-allowed opacity-60"
+                              style={{
+                                background: "#f1f5f9",
+                                border: "1px solid #e2e8f0",
+                                color: "#94a3b8",
+                              }}
+                            >
+                              ＋ JE Recall
+                            </button>
                           </>
                         )}
                       </div>
