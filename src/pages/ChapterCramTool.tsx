@@ -574,6 +574,31 @@ export default function ChapterCramTool() {
     return map;
   }, [topicAssets]);
 
+  // Map topic_id → chapter_videos for that topic
+  const topicVideosMap = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const v of (chapterVideos as any[] || [])) {
+      if (!v.topic_id) continue;
+      if (!map[v.topic_id]) map[v.topic_id] = [];
+      map[v.topic_id].push(v);
+    }
+    return map;
+  }, [chapterVideos]);
+
+  // Map topic_id → sorted approved assets for accordion
+  const topicAssetsMap = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const a of (approvedAssets as any[] || [])) {
+      if (!a.topic_id) continue;
+      if (!map[a.topic_id]) map[a.topic_id] = [];
+      map[a.topic_id].push(a);
+    }
+    for (const key of Object.keys(map)) {
+      map[key].sort(sortBySourceRef);
+    }
+    return map;
+  }, [approvedAssets]);
+
   // Non-supplementary topics
   const displayTopics = useMemo(() => {
     return (topics || []).filter((t: any) => !t.is_supplementary);
