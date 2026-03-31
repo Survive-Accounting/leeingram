@@ -558,9 +558,7 @@ function RevealToggle({
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
 
-  const reportMailto = sectionName && assetCode
-    ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
-    : null;
+  const hasReportLink = !!(sectionName && assetCode);
 
   const handleToggle = () => {
     const next = !open;
