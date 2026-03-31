@@ -110,12 +110,16 @@ JE Recall (je_recall):
 - Randomize which pattern maps to which letter so the correct answer is not always the same position.
 - explanation_correct: explain WHY each account is debited or credited. Reference the specific accounts by name. Minimum 30 words.`;
 
+    const jeRecallAddendum = totalJeEntries >= 1
+      ? `\n\nFor je_recall questions: Base the correct JE on the actual accounts in the supplementary_je_json entries for assets assigned to this topic. Use those exact account names. Build distractors by modifying those same accounts using the three distractor patterns. Do not invent unrelated accounts.`
+      : "";
+
     const userPrompt = `Topic: ${topic.topic_name}
 Description: ${topic.topic_description || "N/A"}
 Rationale: ${topic.topic_rationale || "N/A"}
 Total JE entries in this topic: ${totalJeEntries}
 
-${assetContext || "No teaching assets available for this topic."}`;
+${assetContext || "No teaching assets available for this topic."}${jeRecallAddendum}`;
 
     const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
