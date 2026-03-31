@@ -420,7 +420,7 @@ export default function ChapterCramTool() {
   const [askEmailError, setAskEmailError] = useState("");
 
   // Admin video manager state
-  const [vmType, setVmType] = useState<"intro" | "topic" | "legacy">("intro");
+  const [vmType, setVmType] = useState<"intro" | "showcase" | "topic" | "legacy">("intro");
   const [vmTopicId, setVmTopicId] = useState<string>("");
   const [vmVimeoUrl, setVmVimeoUrl] = useState("");
   const [vmThumbUrl, setVmThumbUrl] = useState("");
