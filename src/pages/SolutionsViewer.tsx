@@ -534,6 +534,7 @@ function RevealToggle({
   forceOpen,
   onReveal,
   onBuyClick,
+  onReportClick,
 }: {
   label: string;
   children: React.ReactNode;
@@ -549,6 +550,7 @@ function RevealToggle({
   forceOpen?: boolean;
   onReveal?: (sectionName: string) => void;
   onBuyClick?: () => void;
+  onReportClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
