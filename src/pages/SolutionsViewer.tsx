@@ -1597,9 +1597,6 @@ function PracticePdfButton({
 }) {
   const [generating, setGenerating] = useState(false);
 
-  // PHASE 1: Testing on BE13.3 (IA2 Ch 13) — remove source_ref
-  // check after template approval to enable across all assets
-  if (sourceRef !== "BE13.3") return null;
 
   const handleClick = async () => {
     setGenerating(true);
