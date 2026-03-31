@@ -1325,6 +1325,60 @@ export type Database = {
           },
         ]
       }
+      chapter_videos: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          recorded_at: string | null
+          thumbnail_url: string | null
+          title: string | null
+          topic_id: string | null
+          video_type: string
+          vimeo_embed_url: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          recorded_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          topic_id?: string | null
+          video_type?: string
+          vimeo_embed_url: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          recorded_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          topic_id?: string | null
+          video_type?: string
+          vimeo_embed_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_videos_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_videos_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           chapter_name: string
