@@ -1441,7 +1441,7 @@ export default function ChapterCramTool() {
                     <span
                       className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
                       style={{
-                        background: vid.video_type === "intro" ? "#14213D" : vid.video_type === "topic" ? "#2563eb" : "#94a3b8",
+                        background: vid.video_type === "intro" ? "#14213D" : vid.video_type === "showcase" ? "#7c3aed" : vid.video_type === "topic" ? "#1d4ed8" : "#64748b",
                       }}
                     >
                       {vid.video_type}
