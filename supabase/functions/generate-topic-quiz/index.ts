@@ -269,6 +269,8 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
 
     let insertedCount = 0;
     for (const q of questions) {
+      const isJeRecall = q.question_type === "je_recall";
+
       const { error: insErr } = await sb.from("topic_quiz_questions").insert({
         topic_id,
         chapter_id: topic.chapter_id,
@@ -277,10 +279,10 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
         question_text: q.question_text || "",
         correct_answer: q.correct_answer || "",
         explanation_correct: q.explanation_correct || "",
-        option_a: q.option_a || null,
-        option_b: q.option_b || null,
-        option_c: q.option_c || null,
-        option_d: q.option_d || null,
+        option_a: isJeRecall ? JSON.stringify(q.je_option_a || []) : (q.option_a || null),
+        option_b: isJeRecall ? JSON.stringify(q.je_option_b || []) : (q.option_b || null),
+        option_c: isJeRecall ? JSON.stringify(q.je_option_c || []) : (q.option_c || null),
+        option_d: isJeRecall ? JSON.stringify(q.je_option_d || []) : (q.option_d || null),
         explanation_a: q.explanation_a || null,
         explanation_b: q.explanation_b || null,
         explanation_c: q.explanation_c || null,
