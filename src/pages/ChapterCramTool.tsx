@@ -608,7 +608,26 @@ export default function ChapterCramTool() {
     return displayTopics.some((t: any) => !t.lw_video_link);
   }, [displayTopics]);
 
-  // Build cram cards
+  // Solutions library filtered assets
+  const solutionsFiltered = useMemo(() => {
+    const all = (approvedAssets as any[] || []).slice().sort(sortBySourceRef);
+    return all.filter((a: any) => {
+      const ref = (a.source_ref || "").toUpperCase();
+      if (solutionsTab === "be") return ref.startsWith("BE") || ref.startsWith("QS");
+      if (solutionsTab === "ex") return ref.startsWith("E") && !ref.startsWith("EX") || ref.startsWith("EX");
+      if (solutionsTab === "p") return ref.startsWith("P");
+      return false;
+    });
+  }, [approvedAssets, solutionsTab]);
+
+  // Handle topic video request
+  const handleRequestTopicVideo = async (topicId: string) => {
+    try {
+      await supabase.from("topic_video_requests").insert({ topic_id: topicId, user_agent: navigator.userAgent });
+    } catch { /* noop */ }
+    setRequestedTopics(prev => new Set(prev).add(topicId));
+  };
+
   const cramCards: CramCard[] = useMemo(() => {
     if (!assets) return [];
     const cards: CramCard[] = [];
