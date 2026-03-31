@@ -122,7 +122,11 @@ function buildHtml(data: {
 <head>
 <meta charset="UTF-8">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+  }
   body {
     margin: 0;
     padding: 0;
@@ -189,7 +193,7 @@ function buildHtml(data: {
 </head>
 <body style="margin:0;padding:0;">
 <!-- FUTURE DRM: When student auth is implemented, append student name and email to the right side of this header bar as a subtle watermark. Pass as optional parameters: lw_user_name, lw_user_email. Display as small white/40 text alongside "Created by Lee Ingram" -->
-<div style="background-color:#14213D;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;width:100%;margin:0;box-sizing:border-box;">
+<div style="background-color:#14213D;background:linear-gradient(#14213D,#14213D) !important;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;width:100%;margin:0;box-sizing:border-box;border-bottom:4px solid #14213D;">
   <img src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png" style="height:32px;width:auto;display:block;" alt="Survive Accounting" />
   <span style="color:rgba(255,255,255,0.7);font-size:10px;font-family:system-ui,-apple-system,sans-serif;white-space:nowrap;">Created by Lee Ingram</span>
 </div>
@@ -340,9 +344,11 @@ serve(async (req) => {
         html,
         css: "",
         google_fonts: "Inter",
-        viewport_width: 816,
+        viewport_width: 1200,
         viewport_height: 1056,
         device_scale: 2,
+        ms_delay: 500,
+        omit_background: false,
       }),
     });
 
