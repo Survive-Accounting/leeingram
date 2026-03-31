@@ -534,6 +534,7 @@ function RevealToggle({
   forceOpen,
   onReveal,
   onBuyClick,
+  onReportClick,
 }: {
   label: string;
   children: React.ReactNode;
@@ -549,6 +550,7 @@ function RevealToggle({
   forceOpen?: boolean;
   onReveal?: (sectionName: string) => void;
   onBuyClick?: () => void;
+  onReportClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -556,9 +558,7 @@ function RevealToggle({
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
 
-  const reportMailto = sectionName && assetCode
-    ? `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode} — ${sectionName}`)}&body=${encodeURIComponent(`I found an issue in the ${sectionName} section of ${assetCode}. Please describe the issue below:\n\n`)}`
-    : null;
+  const hasReportLink = !!(sectionName && assetCode);
 
   const handleToggle = () => {
     const next = !open;
@@ -608,18 +608,18 @@ function RevealToggle({
           ) : (
             <>
               {children}
-              {(reportMailto || extraFooterLeft) && (
+              {(hasReportLink || extraFooterLeft) && (
                 <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: `1px solid ${theme.border}` }}>
                   <div>{extraFooterLeft || null}</div>
-                  {reportMailto ? (
-                    <a
-                      href={reportMailto}
+                  {hasReportLink ? (
+                    <button
+                      onClick={onReportClick}
                       className="flex items-center gap-1.5 text-[12px] hover:underline"
-                      style={{ color: theme.textMuted }}
+                      style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}
                     >
                       <AlertTriangle className="h-3 w-3" />
                       Report an issue with this section →
-                    </a>
+                    </button>
                   ) : <div />}
                 </div>
               )}
@@ -907,58 +907,198 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
 
 // ── Report Issue Modal ──────────────────────────────────────────────
 
-function ReportIssueModal({ open, onOpenChange, asset }: { open: boolean; onOpenChange: (v: boolean) => void; asset: any }) {
+const ISSUE_TYPES = [
+  "Something looks wrong in the solution",
+  "Numbers don't match my textbook",
+  "Journal entry question",
+  "Missing content",
+  "Other",
+];
+
+function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: () => void; asset: any }) {
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [issueType, setIssueType] = useState(ISSUE_TYPES[0]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const chapter = (asset as any)?.chapters;
+  const course = (asset as any)?.courses;
+  const chapterNum = chapter?.chapter_number || null;
+  const chapterName = chapter?.chapter_name || "";
+  const courseName = (() => {
+    const code = (course?.code || "").toUpperCase();
+    if (code === "IA2") return "Intermediate Accounting 2";
+    if (code === "IA1") return "Intermediate Accounting 1";
+    if (code === "MA2") return "Managerial Accounting";
+    if (code === "FA1") return "Financial Accounting";
+    return course?.course_name || code;
+  })();
 
   const handleSubmit = async () => {
-    if (!message.trim()) { toast.error("Please describe the issue"); return; }
+    if (!email.trim().toLowerCase().endsWith(".edu")) {
+      setEmailError("Please use your .edu school email address.");
+      return;
+    }
+    setEmailError("");
+    if (!message.trim()) return;
     setSubmitting(true);
+    setSubmitError("");
     try {
-      await supabase.from("asset_issue_reports").insert({
-        teaching_asset_id: asset.id,
+      await (supabase as any).from("chapter_questions").insert({
+        chapter_id: asset.chapter_id,
+        student_email: email.trim(),
+        question: message.trim(),
+        issue_type: "issue",
         asset_name: asset.asset_name,
-        reporter_email: email.trim() || null,
-        message: message.trim(),
+        source_ref: asset.source_ref,
+        status: "new",
       });
       supabase.functions.invoke("send-issue-report", {
-        body: { asset_name: asset.asset_name, source_ref: asset.source_ref, reporter_email: email.trim() || "Anonymous", message: message.trim() },
+        body: {
+          student_email: email.trim(),
+          message: message.trim(),
+          issue_type_label: issueType,
+          asset_name: asset.asset_name,
+          source_ref: asset.source_ref,
+          problem_title: asset._problemTitle || asset.problem_title || "",
+          course_name: courseName,
+          chapter_number: chapterNum,
+          chapter_name: chapterName,
+        },
       }).catch(() => {});
-      toast.success("Report submitted — thank you!");
-      setEmail("");
-      setMessage("");
-      onOpenChange(false);
-    } catch (e: any) {
-      toast.error(e.message || "Failed to submit report");
+      setSent(true);
+    } catch {
+      setSubmitError("Something went wrong — email lee@surviveaccounting.com directly");
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Report an Issue</DialogTitle>
-          <DialogDescription>{asset.source_ref} · {asset.asset_name}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div>
-            <Label className="text-xs">Email (optional)</Label>
-            <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com (optional — for follow-up)" className="mt-1" />
-          </div>
-          <div>
-            <Label className="text-xs">Message</Label>
-            <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Describe the issue — wrong answer, typo, missing info, etc." rows={4} className="mt-1" />
-          </div>
+    <>
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }}
+      />
+      {/* Modal */}
+      <div
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%,-50%)",
+          background: "#ffffff",
+          borderRadius: 12,
+          padding: 24,
+          width: "min(480px, 90vw)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          zIndex: 101,
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[16px] font-bold" style={{ color: "#14213D" }}>Report an Issue</p>
+          <button onClick={onClose} style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", fontSize: 24, lineHeight: 1 }}>×</button>
         </div>
-        <DialogFooter>
-          <DialogClose asChild><Button variant="ghost" size="sm">Cancel</Button></DialogClose>
-          <Button size="sm" onClick={handleSubmit} disabled={submitting}>{submitting ? "Sending…" : "Send Report"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+        {sent ? (
+          <div className="text-center py-6">
+            <CheckCircle className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
+            <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>Thanks for flagging this!</p>
+            <p className="text-[13px] mt-1.5" style={{ color: "#64748b" }}>I'll look into it and reply to {email} if I need more info.</p>
+            <p className="text-[13px] italic mt-1" style={{ color: "#14213D" }}>— Lee</p>
+            <button
+              onClick={onClose}
+              className="w-full text-[14px] font-semibold text-white mt-4"
+              style={{ background: "#14213D", borderRadius: 8, padding: 12, border: "none", cursor: "pointer" }}
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Asset context banner */}
+            <div className="mb-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px" }}>
+              <p className="text-[12px]" style={{ color: "#64748b" }}>
+                Problem: <strong>{asset.source_ref}</strong>
+                {(asset._problemTitle || asset.problem_title) && <><br />{asset._problemTitle || asset.problem_title}</>}
+                <br />Course: {courseName}
+                <br />Chapter: Ch {chapterNum || "?"} — {chapterName}
+              </p>
+            </div>
+
+            {/* Email */}
+            <div className="mb-3">
+              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>Your .edu email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setEmailError(""); setSubmitError(""); }}
+                placeholder="your@university.edu"
+                className="w-full outline-none transition-colors"
+                style={{ border: `1px solid ${emailError ? "#dc2626" : "#e2e8f0"}`, borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
+                onFocus={e => e.target.style.borderColor = emailError ? "#dc2626" : "#14213D"}
+                onBlur={e => e.target.style.borderColor = emailError ? "#dc2626" : "#e2e8f0"}
+              />
+              {emailError && <p className="text-[12px] mt-1" style={{ color: "#dc2626" }}>{emailError}</p>}
+            </div>
+
+            {/* Issue type */}
+            <div className="mb-3">
+              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>What kind of issue?</label>
+              <select
+                value={issueType}
+                onChange={e => setIssueType(e.target.value)}
+                className="w-full outline-none"
+                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14, background: "#fff" }}
+              >
+                {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Message */}
+            <div className="mb-3">
+              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>Describe the issue</label>
+              <textarea
+                value={message}
+                onChange={e => { setMessage(e.target.value); setSubmitError(""); }}
+                placeholder="Describe what looks wrong or what you're confused about..."
+                rows={4}
+                className="w-full outline-none"
+                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14, resize: "vertical" }}
+                onFocus={e => e.target.style.borderColor = "#14213D"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              disabled={submitting || !email.trim() || !message.trim()}
+              onClick={handleSubmit}
+              className="w-full text-[14px] font-semibold text-white transition-all hover:brightness-95 active:scale-[0.98]"
+              style={{
+                background: "#14213D",
+                borderRadius: 8,
+                padding: 12,
+                cursor: submitting ? "wait" : "pointer",
+                opacity: (submitting || !email.trim() || !message.trim()) ? 0.6 : 1,
+                border: "none",
+              }}
+            >
+              {submitting ? "Sending..." : "Submit Report →"}
+            </button>
+            {submitError && <p className="text-[12px] mt-2" style={{ color: "#dc2626" }}>{submitError}</p>}
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -1505,11 +1645,9 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-
-  const reportMailto = `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode}`)}&body=${encodeURIComponent(`I found an issue on this page (${assetCode}). Please describe the issue below:\n\n`)}`;
 
   return (
     <>
@@ -1555,13 +1693,13 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
                 About Lee Ingram
               </button>
               <div className="w-px h-5" style={{ background: theme.border }} />
-              <a
-                href={reportMailto}
+              <button
+                onClick={onReportClick}
                 className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
-                style={{ color: theme.textMuted }}
+                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
               >
                 ⚠ Report Issue →
-              </a>
+              </button>
               <div className="w-px h-5" style={{ background: theme.border }} />
             </>
           )}
@@ -2299,7 +2437,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} onShareClick={handleShareClick} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
@@ -2428,6 +2566,7 @@ export default function SolutionsViewer() {
                   chapterLink={chapterLink}
                   chapterNumber={chapterNum}
                   forceOpen={allTogglesForceOpen}
+                  onReportClick={() => setReportOpen(true)}
                   onReveal={handleReveal}
                   onBuyClick={handleBuyClick}
                 >
@@ -2437,7 +2576,7 @@ export default function SolutionsViewer() {
 
               {/* 2. How to Solve This */}
               {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   {asset._flowcharts?.length > 1 ? (
                     <div className="space-y-2">
                       {asset._flowcharts.map((fc: any) => {
@@ -2467,7 +2606,7 @@ export default function SolutionsViewer() {
 
               {/* 3. Journal Entries */}
               {hasJE && (
-                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   {isPreview ? (
                     <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
                   ) : (
@@ -2482,7 +2621,7 @@ export default function SolutionsViewer() {
 
               {/* 3b. Supplementary JEs — only show if there are NO main JEs */}
               {asset.supplementary_je_json && !hasJE && (
-                <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <SupplementaryJESection
                     data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
                     theme={t}
@@ -2492,14 +2631,14 @@ export default function SolutionsViewer() {
 
               {/* 4. Important Formulas */}
               {formulas.trim() && (
-                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <GroupedFormulas text={formulas} theme={t} />
                 </RevealToggle>
               )}
 
               {/* 5. Key Concepts */}
               {conceptNotes.trim() && (
-                <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <ul className="space-y-3">
                     {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
                       <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
@@ -2513,7 +2652,7 @@ export default function SolutionsViewer() {
 
               {/* 6. Exam Traps */}
               {examTraps.trim() && (
-                <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
                     <ul className="space-y-3">
                       {parseExamTraps(examTraps).map((trap: string, i: number) => (
@@ -2537,7 +2676,7 @@ export default function SolutionsViewer() {
         </div>
       </main>
 
-      <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
+      <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} />
     </div>
     </>
   );
