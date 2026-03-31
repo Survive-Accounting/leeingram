@@ -1645,11 +1645,9 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-
-  const reportMailto = `mailto:lee@surviveaccounting.com?subject=${encodeURIComponent(`Issue Report: ${assetCode}`)}&body=${encodeURIComponent(`I found an issue on this page (${assetCode}). Please describe the issue below:\n\n`)}`;
 
   return (
     <>
