@@ -352,15 +352,15 @@ function ChapterToolCard({ icon, title, subtitle, bg, borderColor, buttonLabel, 
   icon: string; title: string; subtitle: string; bg: string; borderColor: string; buttonLabel: string; onClick: () => void; disabled?: boolean;
 }) {
   return (
-    <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: bg, border: `1px solid ${borderColor}`, opacity: disabled ? 0.5 : 1 }}>
+    <div className="flex flex-col gap-2" style={{ background: bg, border: `1px solid ${borderColor}`, borderRadius: 10, padding: 16, opacity: disabled ? 0.5 : 1 }}>
       <span className="text-[20px]">{icon}</span>
       <p className="text-[14px] font-bold" style={{ color: "#14213D" }}>{title}</p>
       <p className="text-[12px]" style={{ color: "#64748B" }}>{subtitle}</p>
       <button
         onClick={onClick}
         disabled={disabled}
-        className="mt-auto text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all hover:brightness-95 active:scale-[0.98]"
-        style={{ background: disabled ? "#E2E8F0" : "#14213D", color: disabled ? "#94A3B8" : "#FFFFFF", cursor: disabled ? "default" : "pointer" }}
+        className="w-full text-[13px] font-semibold transition-all hover:brightness-95 active:scale-[0.98]"
+        style={{ background: disabled ? "#E2E8F0" : "#14213D", color: disabled ? "#94A3B8" : "#FFFFFF", cursor: disabled ? "default" : "pointer", borderRadius: 8, padding: "8px 16px", marginTop: 12 }}
       >
         {buttonLabel}
       </button>
