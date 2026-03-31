@@ -10,10 +10,11 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
-import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp, ChevronRight, Trash2, CheckCircle2 } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
