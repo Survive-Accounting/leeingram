@@ -548,7 +548,7 @@ export default function ChapterCramTool() {
   const { data: chapterVideos } = useQuery({
     queryKey: ["cram-chapter-videos", chapterId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("chapter_videos")
         .select("*")
         .eq("chapter_id", chapterId)
