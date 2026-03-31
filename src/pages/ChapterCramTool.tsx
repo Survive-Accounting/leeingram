@@ -613,9 +613,10 @@ export default function ChapterCramTool() {
     const all = (approvedAssets as any[] || []).slice().sort(sortBySourceRef);
     return all.filter((a: any) => {
       const ref = (a.source_ref || "").toUpperCase();
-      if (solutionsTab === "be") return ref.startsWith("BE") || ref.startsWith("QS");
-      if (solutionsTab === "ex") return ref.startsWith("E") && !ref.startsWith("EX") || ref.startsWith("EX");
-      if (solutionsTab === "p") return ref.startsWith("P");
+      const parsed = parseSourceRef(ref);
+      if (solutionsTab === "be") return parsed.prefix === "BE" || parsed.prefix === "QS";
+      if (solutionsTab === "ex") return parsed.prefix === "E" || parsed.prefix === "EX";
+      if (solutionsTab === "p") return parsed.prefix === "P";
       return false;
     });
   }, [approvedAssets, solutionsTab]);
