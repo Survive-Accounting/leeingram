@@ -2566,6 +2566,7 @@ export default function SolutionsViewer() {
                   chapterLink={chapterLink}
                   chapterNumber={chapterNum}
                   forceOpen={allTogglesForceOpen}
+                  onReportClick={() => setReportOpen(true)}
                   onReveal={handleReveal}
                   onBuyClick={handleBuyClick}
                 >
