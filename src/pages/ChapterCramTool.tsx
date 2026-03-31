@@ -922,6 +922,46 @@ export default function ChapterCramTool() {
           )}
         </div>
 
+        {/* ─── CHAPTER VIDEOS (Showcases) ─── */}
+        {(() => {
+          const showcaseVideos = (chapterVideos as any[] || [])
+            .filter((v: any) => v.video_type === "showcase")
+            .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          if (showcaseVideos.length === 0) return null;
+          return (
+            <div style={{ marginTop: 32 }} className="mb-8">
+              <SectionLabel>Chapter Videos</SectionLabel>
+              <div className="space-y-6">
+                {showcaseVideos.map((vid: any) => (
+                  <div key={vid.id}>
+                    {vid.title && (
+                      <p className="text-[13px] font-bold mb-2" style={{ color: "#14213D" }}>{vid.title}</p>
+                    )}
+                    {isPreview ? (
+                      <div className="flex flex-col items-center justify-center" style={{ background: "#1e293b", borderRadius: 12, aspectRatio: "16/9" }}>
+                        <Lock className="h-6 w-6 text-white" />
+                        <p className="text-[14px] font-bold text-white mt-2">Unlock with Study Pass</p>
+                        <div className="mt-4 w-full px-4">
+                          <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative" style={{ borderRadius: 12, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
+                        <iframe
+                          src={vid.vimeo_embed_url}
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ─── SECTION 3: TOPIC ACCORDION ─── */}
         {topicsLocked && displayTopics.length > 0 && (
           <div style={{ marginTop: 32 }} className="mb-8">
