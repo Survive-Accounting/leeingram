@@ -563,7 +563,7 @@ export default function ChapterCramTool() {
   const { data: approvedAssets } = useQuery({
     queryKey: ["cram-approved-assets", chapterId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("teaching_assets")
         .select("id, asset_name, source_ref, asset_type, topic_id, problem_title")
         .eq("chapter_id", chapterId)
