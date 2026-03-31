@@ -64,7 +64,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
   const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
   const qcPaths = QC_ITEMS.map(i => i.path);
-  const phase3Paths = ["/study-tools/flashcards", "/study-tools/formula-recall", "/study-tools/entry-builder", "/study-tools/problem-dissector", "/survive-chapter"];
+  const phase3Paths = ["/survive-chapter"];
 
   const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
 
