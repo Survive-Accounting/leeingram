@@ -1,5 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import {
+  parseJEOption,
+  renderJEOptionHtml,
+  renderFeedbackHtml,
+  type JEOptionRow,
+} from "@/lib/questionHtmlRenderer";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
