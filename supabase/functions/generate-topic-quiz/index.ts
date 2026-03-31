@@ -98,11 +98,17 @@ True/False (true_false):
 - Explain why the false option is wrong
 
 JE Recall (je_recall):
-- Give a transaction description
-- Student identifies which accounts to debit and credit
-- No amounts required
-- List 2–4 accounts with their correct debit/credit side
-- Explain the reasoning`;
+- question_text: describe the transaction in 1-2 sentences. Do NOT ask "which journal entry is correct" — just describe the transaction. Example: "Survive Company A issues $500,000 of 10% bonds at par on January 1."
+- Generate EXACTLY 4 choices using je_option_a through je_option_d.
+- Each choice is an array of JE rows: account_name and side only. NO dollar amounts.
+- Debits listed before credits. Max 4 accounts per choice.
+- Exactly ONE choice is correct. Set correct_answer to the letter of the correct choice.
+- The 3 distractors must use these specific patterns:
+  PATTERN 1 — Reversed: Same accounts, all debits and credits swapped.
+  PATTERN 2 — Wrong account: Replace one account with a plausible wrong account (e.g. Notes Payable instead of Bonds Payable).
+  PATTERN 3 — Wrong structure: Add an extra wrong account, or merge two accounts into one incorrect account.
+- Randomize which pattern maps to which letter so the correct answer is not always the same position.
+- explanation_correct: explain WHY each account is debited or credited. Reference the specific accounts by name. Minimum 30 words.`;
 
     const userPrompt = `Topic: ${topic.topic_name}
 Description: ${topic.topic_description || "N/A"}
