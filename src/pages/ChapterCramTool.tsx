@@ -102,7 +102,35 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── Tiered Paywall Card ─────────────────────────────────────────────
+function SectionHeaderWithToggle({ label, count, isAdmin, sectionName, isVisible, onToggle }: {
+  label: string; count?: number; isAdmin?: boolean; sectionName: string; isVisible: boolean; onToggle: (name: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: "#94A3B8" }}>
+          {label}
+        </p>
+        {count !== undefined && count > 0 && (
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{count}</span>
+        )}
+      </div>
+      {isAdmin && (
+        <button
+          onClick={() => onToggle(sectionName)}
+          className="flex items-center gap-1 text-[10px] font-semibold transition-colors hover:opacity-80"
+          style={{ color: isVisible ? "#94a3b8" : "#dc2626", background: "none", border: "none", cursor: "pointer" }}
+          title={isVisible ? "Hide from students" : "Show to students"}
+        >
+          {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+          {!isVisible && "Hidden"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+
 
 function TieredPaywallCard({ enrollUrl, fullPassLink, chapterLink, chapterNumber, theme }: {
   enrollUrl: string; fullPassLink?: any; chapterLink?: any; chapterNumber?: number | null; theme: Theme;
@@ -548,16 +576,55 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
   });
 
-  // Fetch approved teaching assets for this chapter
+  // Fetch approved teaching assets for this chapter (with formulas)
   const { data: approvedAssets } = useQuery({
     queryKey: ["cram-approved-assets", chapterId],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title")
+        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title, important_formulas")
         .eq("chapter_id", chapterId)
         .eq("status", "approved")
         .order("source_ref");
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch flowcharts for this chapter
+  const { data: flowchartsData } = useQuery({
+    queryKey: ["cram-flowcharts", chapterId],
+    queryFn: async () => {
+      // Get all approved asset IDs for this chapter, then fetch their flowcharts
+      const { data: assetIds } = await (supabase as any)
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, topic_id")
+        .eq("chapter_id", chapterId)
+        .eq("status", "approved")
+        .not("topic_id", "is", null);
+      if (!assetIds?.length) return [];
+      const ids = assetIds.map((a: any) => a.id);
+      const { data: flowcharts } = await (supabase as any)
+        .from("asset_flowcharts")
+        .select("id, teaching_asset_id, instruction_number, instruction_label, flowchart_image_url")
+        .in("teaching_asset_id", ids)
+        .not("flowchart_image_url", "is", null)
+        .order("instruction_number");
+      // Merge asset info
+      const assetMap = Object.fromEntries(assetIds.map((a: any) => [a.id, a]));
+      return (flowcharts || []).map((f: any) => ({ ...f, asset: assetMap[f.teaching_asset_id] }));
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch section config for admin toggles
+  const { data: sectionConfigs } = useQuery({
+    queryKey: ["cram-section-config", chapterId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("chapter_section_config")
+        .select("*")
+        .eq("chapter_id", chapterId);
       return data || [];
     },
     enabled: !!chapterId,
@@ -658,6 +725,100 @@ export default function ChapterCramTool() {
       return false;
     });
   }, [approvedAssets, solutionsTab]);
+
+  // Structured formulas from approved assets
+  const structuredFormulas = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { name: string; expression: string; explanation?: string }[] = [];
+    for (const asset of (approvedAssets as any[] || [])) {
+      const raw = asset.important_formulas;
+      if (!raw || typeof raw !== "string") continue;
+      for (const line of raw.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx > 0) {
+          const name = trimmed.substring(0, eqIdx).trim();
+          const expression = trimmed.substring(eqIdx).trim();
+          const key = name.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ name, expression: `${name} ${expression}` });
+          }
+        } else {
+          const key = trimmed.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ name: trimmed, expression: trimmed });
+          }
+        }
+      }
+    }
+    return result;
+  }, [approvedAssets]);
+
+  // Flowcharts grouped by topic
+  const flowchartsByTopic = useMemo(() => {
+    const map: Record<string, { topicName: string; items: any[] }> = {};
+    for (const f of (flowchartsData || [])) {
+      const tid = f.asset?.topic_id;
+      if (!tid) continue;
+      if (!map[tid]) {
+        const topic = (topics || []).find((t: any) => t.id === tid);
+        map[tid] = { topicName: topic?.topic_name || "Unknown Topic", items: [] };
+      }
+      map[tid].items.push(f);
+    }
+    return map;
+  }, [flowchartsData, topics]);
+
+  const totalFlowcharts = useMemo(() => (flowchartsData || []).length, [flowchartsData]);
+
+  // Section visibility helpers
+  const sectionConfigMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    for (const cfg of (sectionConfigs || [])) {
+      map[cfg.section_name] = cfg;
+    }
+    return map;
+  }, [sectionConfigs]);
+
+  const isSectionVisible = useCallback((name: string) => {
+    const cfg = sectionConfigMap[name];
+    if (!cfg) return true;
+    return cfg.is_visible;
+  }, [sectionConfigMap]);
+
+  const isItemHidden = useCallback((sectionName: string, itemId: string) => {
+    const cfg = sectionConfigMap[sectionName];
+    if (!cfg) return false;
+    return (cfg.hidden_item_ids || []).includes(itemId);
+  }, [sectionConfigMap]);
+
+  const toggleSectionVisibility = async (sectionName: string) => {
+    const current = isSectionVisible(sectionName);
+    const cfg = sectionConfigMap[sectionName];
+    if (cfg) {
+      await (supabase as any).from("chapter_section_config").update({ is_visible: !current, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+    } else {
+      await (supabase as any).from("chapter_section_config").insert({ chapter_id: chapterId, section_name: sectionName, is_visible: !current });
+    }
+    queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
+  };
+
+  const toggleItemHidden = async (sectionName: string, itemId: string) => {
+    const cfg = sectionConfigMap[sectionName];
+    const currentList: string[] = cfg?.hidden_item_ids || [];
+    const newList = currentList.includes(itemId) ? currentList.filter((id: string) => id !== itemId) : [...currentList, itemId];
+    if (cfg) {
+      await (supabase as any).from("chapter_section_config").update({ hidden_item_ids: newList, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+    } else {
+      await (supabase as any).from("chapter_section_config").insert({ chapter_id: chapterId, section_name: sectionName, is_visible: true, hidden_item_ids: newList });
+    }
+    queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
+  };
+
+  const [openFlowchartTopic, setOpenFlowchartTopic] = useState<string | null>(null);
 
   // Handle topic video request
   const handleRequestTopicVideo = async (topicId: string) => {
@@ -1101,10 +1262,13 @@ export default function ChapterCramTool() {
         )}
 
         {/* ─── SECTION 4: JE CRAM TOOL (only if cards exist) ─── */}
-        {totalCards > 0 && (
-          <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32 }}>
+        {totalCards > 0 && (isSectionVisible("journal_entries") || isAdmin) && (
+          <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32, opacity: !isSectionVisible("journal_entries") ? 0.5 : 1 }}>
+            {!isSectionVisible("journal_entries") && isAdmin && (
+              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+            )}
             <div className="flex items-center justify-between mb-3">
-              <SectionLabel>Journal Entries</SectionLabel>
+              <SectionHeaderWithToggle label="Journal Entries to Memorize" count={totalCards} isAdmin={!!isAdmin} sectionName="journal_entries" isVisible={isSectionVisible("journal_entries")} onToggle={toggleSectionVisibility} />
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-semibold" style={{ color: "#94a3b8" }}>{totalCards} entries</span>
                 <button
@@ -1139,14 +1303,27 @@ export default function ChapterCramTool() {
             <div className="space-y-4">
               {displayCards.map((card, idx) => {
                 if (isPreview && idx >= PREVIEW_LIMIT) return null;
+                const hidden = isItemHidden("journal_entries", card.id);
+                if (hidden && !isAdmin) return null;
                 return (
-                  <CramCardComponent
-                    key={card.id}
-                    card={card}
-                    theme={t}
-                    isReviewed={reviewedSet.has(card.id)}
-                    onReview={() => handleReview(card.id)}
-                  />
+                  <div key={card.id} className="relative" style={{ opacity: hidden ? 0.4 : 1 }}>
+                    {isAdmin && (
+                      <button
+                        onClick={() => toggleItemHidden("journal_entries", card.id)}
+                        className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] font-semibold rounded px-1.5 py-0.5"
+                        style={{ background: hidden ? "#fef2f2" : "#f1f5f9", color: hidden ? "#dc2626" : "#94a3b8", border: "none", cursor: "pointer" }}
+                        title={hidden ? "Show to students" : "Hide from students"}
+                      >
+                        {hidden ? <><EyeOff className="h-3 w-3" /> Hidden</> : <EyeOff className="h-3 w-3" />}
+                      </button>
+                    )}
+                    <CramCardComponent
+                      card={card}
+                      theme={t}
+                      isReviewed={reviewedSet.has(card.id)}
+                      onReview={() => handleReview(card.id)}
+                    />
+                  </div>
                 );
               })}
 
@@ -1165,8 +1342,12 @@ export default function ChapterCramTool() {
         )}
 
         {/* ─── SECTION 5: SOLUTIONS LIBRARY ─── */}
-        <div style={{ marginTop: 32 }} className="mb-8">
-          <SectionLabel>Solutions Library</SectionLabel>
+        {(isSectionVisible("solutions_library") || isAdmin) && (
+        <div style={{ marginTop: 32, opacity: !isSectionVisible("solutions_library") ? 0.5 : 1 }} className="mb-8">
+          {!isSectionVisible("solutions_library") && isAdmin && (
+            <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+          )}
+          <SectionHeaderWithToggle label="Solutions Library" isAdmin={!!isAdmin} sectionName="solutions_library" isVisible={isSectionVisible("solutions_library")} onToggle={toggleSectionVisibility} />
           <p className="text-[12px] mb-3" style={{ color: "#64748b" }}>Browse all practice problems for this chapter.</p>
 
           {/* Tab buttons */}
@@ -1217,14 +1398,92 @@ export default function ChapterCramTool() {
             </div>
           )}
         </div>
+        )}
 
-        {/* ─── SECTION 6: ASK LEE ─── */}
-        <div style={{ marginTop: 32 }} className="mb-8">
-          <SectionLabel>Ask Lee</SectionLabel>
+        {/* ─── SECTION 6: FORMULAS TO MEMORIZE ─── */}
+        {structuredFormulas.length > 0 && (isSectionVisible("formulas") || isAdmin) && (
+          <div style={{ marginTop: 32, opacity: !isSectionVisible("formulas") ? 0.5 : 1 }} className="mb-8">
+            {!isSectionVisible("formulas") && isAdmin && (
+              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+            )}
+            <SectionHeaderWithToggle label="Formulas to Memorize" count={structuredFormulas.length} isAdmin={!!isAdmin} sectionName="formulas" isVisible={isSectionVisible("formulas")} onToggle={toggleSectionVisibility} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {structuredFormulas.map((f, idx) => (
+                <div key={idx} className="rounded-lg" style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: 16 }}>
+                  <p className="text-[13px] font-semibold uppercase tracking-[0.05em]" style={{ color: "#14213D" }}>{f.name}</p>
+                  <p className="font-mono text-[18px] font-medium mt-1.5" style={{ color: "#14213D" }}>{f.expression}</p>
+                  {f.explanation && <p className="text-[13px] mt-2" style={{ color: "#94a3b8" }}>{f.explanation}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECTION 7: HOW TO SOLVE (Flowcharts) ─── */}
+        {totalFlowcharts > 0 && (isSectionVisible("flowcharts") || isAdmin) && (
+          <div style={{ marginTop: 32, opacity: !isSectionVisible("flowcharts") ? 0.5 : 1 }} className="mb-8">
+            {!isSectionVisible("flowcharts") && isAdmin && (
+              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+            )}
+            <SectionHeaderWithToggle label="How to Solve" count={totalFlowcharts} isAdmin={!!isAdmin} sectionName="flowcharts" isVisible={isSectionVisible("flowcharts")} onToggle={toggleSectionVisibility} />
+            <div className="space-y-2">
+              {Object.entries(flowchartsByTopic).map(([topicId, group]) => {
+                const isOpen = openFlowchartTopic === topicId;
+                return (
+                  <div key={topicId}>
+                    <button
+                      onClick={() => setOpenFlowchartTopic(isOpen ? null : topicId)}
+                      className="w-full flex items-center justify-between"
+                      style={{ height: 44, background: isOpen ? "#f8fafc" : "#ffffff", border: "1px solid #e2e8f0", borderRadius: isOpen ? "8px 8px 0 0" : 8, padding: "0 14px", cursor: "pointer" }}
+                    >
+                      <span className="text-[13px] font-bold truncate" style={{ color: "#14213D" }}>{group.topicName}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{group.items.length}</span>
+                        <ChevronRight className="h-3.5 w-3.5 transition-transform" style={{ color: "#94a3b8", transform: isOpen ? "rotate(90deg)" : "none" }} />
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", padding: 16 }}>
+                        <div className="space-y-4">
+                          {group.items.map((fc: any) => (
+                            <div key={fc.id}>
+                              {fc.instruction_label && (
+                                <p className="text-[12px] font-semibold mb-2" style={{ color: "#14213D" }}>
+                                  {fc.instruction_label}
+                                </p>
+                              )}
+                              <img
+                                src={fc.flowchart_image_url}
+                                alt={fc.instruction_label || `Flowchart ${fc.instruction_number}`}
+                                className="w-full rounded-lg"
+                                style={{ border: "1px solid #e2e8f0" }}
+                              />
+                              <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
+                                From {fc.asset?.source_ref || fc.asset?.asset_name || "—"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECTION 8: ASK LEE ─── */}
+        {(isSectionVisible("ask_lee") || isAdmin) && (
+        <div style={{ marginTop: 32, opacity: !isSectionVisible("ask_lee") ? 0.5 : 1 }} className="mb-8">
+          {!isSectionVisible("ask_lee") && isAdmin && (
+            <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+          )}
+          <SectionHeaderWithToggle label="Ask Lee" isAdmin={!!isAdmin} sectionName="ask_lee" isVisible={isSectionVisible("ask_lee")} onToggle={toggleSectionVisibility} />
           {!askSent ? (
             <>
               <p className="text-[13px] mb-4" style={{ color: "#64748b" }}>
-                Have a question about Ch {chapterNum || "?"} — {chapterName}? Send it over — I typically reply within 2 business days.
+                Have a question about {chapterName || "this chapter"}? Send it over — I typically reply within 2 business days.
               </p>
               <input
                 id="ask-lee-email"
@@ -1245,7 +1504,7 @@ export default function ChapterCramTool() {
               <textarea
                 value={askQuestion}
                 onChange={e => { setAskQuestion(e.target.value); setAskError(""); }}
-                placeholder={`What's your question about Ch ${chapterNum || "?"} — ${chapterName}?`}
+                placeholder={`What's your question about ${chapterName || "this chapter"}?`}
                 rows={4}
                 required
                 className="w-full mb-3 outline-none transition-colors"
@@ -1317,6 +1576,7 @@ export default function ChapterCramTool() {
             </div>
           )}
         </div>
+        )}
 
         {/* About Lee (at bottom) */}
         <div className="mt-10 mb-8">
