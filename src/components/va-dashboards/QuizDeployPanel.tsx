@@ -251,13 +251,7 @@ function InstructionsPanel() {
               Question Bank you just created
             </li>
             <li>
-              For each <strong>JE question</strong> below: open that question in
-              LW, then use the copy buttons to replace each answer choice with
-              the HTML table version
-            </li>
-            <li>
-              For all questions: paste <strong>Feedback HTML</strong> into both
-              the Correct and Incorrect explanation fields
+              Verify questions render correctly in LW preview (all content loads via iframes automatically)
             </li>
             <li>
               Click <strong>"Mark as Imported"</strong> when done
