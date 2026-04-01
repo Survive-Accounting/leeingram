@@ -351,7 +351,7 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
           <CopyBtn
             key={num}
             label={["A", "B", "C", "D"][i]}
-            text={iframeTag(`/quiz-choice/${q.id}/${num}`, isJE ? 150 : 60)}
+            text={iframeTag(`/quiz-choice/${q.id}/${num}`, isJE ? 142 : 60)}
             className="w-7 px-0"
           />
         ))}

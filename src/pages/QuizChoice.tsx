@@ -71,7 +71,7 @@ export default function QuizChoice() {
     const ordered = [...debits, ...credits];
 
     return (
-      <div ref={ref} style={{ padding: 4, background: "transparent" }}>
+      <div ref={ref} style={{ padding: 0, margin: 0, background: "transparent" }}>
         <table style={{ borderCollapse: "collapse", width: "100%", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
           <thead>
             <tr>
