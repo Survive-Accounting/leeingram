@@ -256,9 +256,13 @@ export default function QuizExplanation() {
     <div className="font-sans" style={{ fontSize: 14, background: "transparent", color: "#e8e8e8" }}>
       {/* Header */}
       <div className="px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: "#14213D" }}>
-        <span className="text-white font-bold" style={{ fontSize: 13 }}>📖 Deep Explanation</span>
+        <img
+          src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
+          alt="Survive Accounting"
+          style={{ height: 22, width: "auto" }}
+        />
         <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
-          {topic?.topic_name} · Ch {chapter?.chapter_number}
+          Ch. {chapter?.chapter_number} · {topic?.topic_name ? topic.topic_name.charAt(0).toUpperCase() + topic.topic_name.slice(1).toLowerCase() : ""}
         </span>
       </div>
 
