@@ -1821,6 +1821,20 @@ export default function SolutionsViewer() {
   // ── Page start time for time_on_page ──
   const startTimeRef = useRef(Date.now());
 
+  // ── Share buttons visibility setting ──
+  const { data: shareButtonsVisible = false } = useQuery({
+    queryKey: ["app-setting-share-buttons"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "share_buttons_visible")
+        .maybeSingle();
+      return data?.value === "true";
+    },
+    staleTime: 60 * 1000,
+  });
+
   // Theme — light only
   const t = lightTheme;
 
