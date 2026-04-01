@@ -552,7 +552,7 @@ function JeTab({ jeData }: { jeData: any[] }) {
       </p>
       {jeData.map((je, idx) => (
         <div key={idx} className="space-y-1.5">
-          <p className="text-xs font-semibold" style={{ color: "#374151" }}>{je.label}</p>
+          <p className="text-xs font-semibold" style={{ color: "#e8e8e8" }}>{je.label}</p>
           {Array.isArray(je.entries) && je.entries.map((entry: any, ei: number) => {
             const rawLines = entry.accounts || entry.lines || [];
             if (!Array.isArray(rawLines) || rawLines.length === 0) return null;
