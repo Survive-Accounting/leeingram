@@ -6,6 +6,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 import { ExternalLink, Copy } from "lucide-react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { toast } from "sonner";
