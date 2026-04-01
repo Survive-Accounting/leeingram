@@ -203,23 +203,19 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
       <div className="flex items-center gap-1 shrink-0 flex-wrap">
         <CopyBtn
           label={<><Copy className="h-3 w-3 mr-0.5" />Q</>}
-          text={questionHtml(q.question_text)}
+          text={iframeTag(`/quiz-question/${q.id}`, 200)}
         />
-        {["A", "B", "C", "D"].map((letter, i) => (
+        {["1", "2", "3", "4"].map((num, i) => (
           <CopyBtn
-            key={letter}
-            label={letter}
-            text={
-              isJE && jeParsed[i]
-                ? jeChoiceHtml(jeParsed[i]!)
-                : choiceTexts[i] || ""
-            }
+            key={num}
+            label={["A", "B", "C", "D"][i]}
+            text={iframeTag(`/quiz-choice/${q.id}/${num}`, isJE ? 160 : 80)}
             className="w-7 px-0"
           />
         ))}
         <CopyBtn
           label={<><Copy className="h-3 w-3 mr-0.5" />FB</>}
-          text={feedbackHtml(q.id)}
+          text={iframeTag(`/quiz-explanation/${q.id}`, 600)}
         />
       </div>
     </div>
