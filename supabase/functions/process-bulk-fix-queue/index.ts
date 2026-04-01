@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       .order("queue_position", { ascending: true })
       .limit(1);
 
-    let currentItem = currentItems?.[0];
+    currentItem = currentItems?.[0];
 
     if (!currentItem) {
       const { data: pendingItems } = await sb
