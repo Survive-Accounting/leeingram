@@ -44,19 +44,14 @@ export default function PaymentLinksAdmin() {
     },
   });
 
-  // Fetch IA2 chapters 13-22
+  // Fetch ALL chapters for all courses
   const { data: chapters } = useQuery({
-    queryKey: ["pl-chapters"],
+    queryKey: ["pl-chapters-all"],
     queryFn: async () => {
-      const { data: cs } = await supabase.from("courses").select("id").eq("code", "IA2").limit(1);
-      const courseId = cs?.[0]?.id;
-      if (!courseId) return [];
       const { data } = await supabase
         .from("chapters")
         .select("id, chapter_number, chapter_name, course_id")
-        .eq("course_id", courseId)
-        .gte("chapter_number", 13)
-        .lte("chapter_number", 22)
+        .order("course_id")
         .order("chapter_number");
       return data || [];
     },
