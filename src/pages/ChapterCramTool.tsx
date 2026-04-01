@@ -1385,10 +1385,88 @@ export default function ChapterCramTool() {
             </div>
           )}
         </div>
+        )}
 
-        {/* ─── SECTION 6: ASK LEE ─── */}
-        <div style={{ marginTop: 32 }} className="mb-8">
-          <SectionLabel>Ask Lee</SectionLabel>
+        {/* ─── SECTION 6: FORMULAS TO MEMORIZE ─── */}
+        {structuredFormulas.length > 0 && (isSectionVisible("formulas") || isAdmin) && (
+          <div style={{ marginTop: 32, opacity: !isSectionVisible("formulas") ? 0.5 : 1 }} className="mb-8">
+            {!isSectionVisible("formulas") && isAdmin && (
+              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+            )}
+            <SectionHeaderWithToggle label="Formulas to Memorize" count={structuredFormulas.length} isAdmin={!!isAdmin} sectionName="formulas" isVisible={isSectionVisible("formulas")} onToggle={toggleSectionVisibility} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {structuredFormulas.map((f, idx) => (
+                <div key={idx} className="rounded-lg" style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: 16 }}>
+                  <p className="text-[13px] font-semibold uppercase tracking-[0.05em]" style={{ color: "#14213D" }}>{f.name}</p>
+                  <p className="font-mono text-[18px] font-medium mt-1.5" style={{ color: "#14213D" }}>{f.expression}</p>
+                  {f.explanation && <p className="text-[13px] mt-2" style={{ color: "#94a3b8" }}>{f.explanation}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECTION 7: HOW TO SOLVE (Flowcharts) ─── */}
+        {totalFlowcharts > 0 && (isSectionVisible("flowcharts") || isAdmin) && (
+          <div style={{ marginTop: 32, opacity: !isSectionVisible("flowcharts") ? 0.5 : 1 }} className="mb-8">
+            {!isSectionVisible("flowcharts") && isAdmin && (
+              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+            )}
+            <SectionHeaderWithToggle label="How to Solve" count={totalFlowcharts} isAdmin={!!isAdmin} sectionName="flowcharts" isVisible={isSectionVisible("flowcharts")} onToggle={toggleSectionVisibility} />
+            <div className="space-y-2">
+              {Object.entries(flowchartsByTopic).map(([topicId, group]) => {
+                const isOpen = openFlowchartTopic === topicId;
+                return (
+                  <div key={topicId}>
+                    <button
+                      onClick={() => setOpenFlowchartTopic(isOpen ? null : topicId)}
+                      className="w-full flex items-center justify-between"
+                      style={{ height: 44, background: isOpen ? "#f8fafc" : "#ffffff", border: "1px solid #e2e8f0", borderRadius: isOpen ? "8px 8px 0 0" : 8, padding: "0 14px", cursor: "pointer" }}
+                    >
+                      <span className="text-[13px] font-bold truncate" style={{ color: "#14213D" }}>{group.topicName}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{group.items.length}</span>
+                        <ChevronRight className="h-3.5 w-3.5 transition-transform" style={{ color: "#94a3b8", transform: isOpen ? "rotate(90deg)" : "none" }} />
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", padding: 16 }}>
+                        <div className="space-y-4">
+                          {group.items.map((fc: any) => (
+                            <div key={fc.id}>
+                              {fc.instruction_label && (
+                                <p className="text-[12px] font-semibold mb-2" style={{ color: "#14213D" }}>
+                                  {fc.instruction_label}
+                                </p>
+                              )}
+                              <img
+                                src={fc.flowchart_image_url}
+                                alt={fc.instruction_label || `Flowchart ${fc.instruction_number}`}
+                                className="w-full rounded-lg"
+                                style={{ border: "1px solid #e2e8f0" }}
+                              />
+                              <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
+                                From {fc.asset?.source_ref || fc.asset?.asset_name || "—"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECTION 8: ASK LEE ─── */}
+        {(isSectionVisible("ask_lee") || isAdmin) && (
+        <div style={{ marginTop: 32, opacity: !isSectionVisible("ask_lee") ? 0.5 : 1 }} className="mb-8">
+          {!isSectionVisible("ask_lee") && isAdmin && (
+            <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+          )}
+          <SectionHeaderWithToggle label="Ask Lee" isAdmin={!!isAdmin} sectionName="ask_lee" isVisible={isSectionVisible("ask_lee")} onToggle={toggleSectionVisibility} />
           {!askSent ? (
             <>
               <p className="text-[13px] mb-4" style={{ color: "#64748b" }}>
