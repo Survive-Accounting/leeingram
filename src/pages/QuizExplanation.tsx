@@ -493,7 +493,7 @@ function SolutionTab({ question }: { question: Question }) {
                   </span>
                   <div>
                     {label && (
-                      <p className="font-bold" style={{ fontSize: 13, color: "#374151" }}>{label}</p>
+                      <p className="font-bold" style={{ fontSize: 13, color: "#e8e8e8" }}>{label}</p>
                     )}
                     {exp && (
                       <p className="italic" style={{ fontSize: 12, color: "#94a3b8" }}>{exp}</p>
