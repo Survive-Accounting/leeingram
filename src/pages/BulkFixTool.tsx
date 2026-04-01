@@ -453,6 +453,26 @@ export default function BulkFixTool() {
           after: `Will generate supplementary JEs for ${missingCount ?? 0} assets via AI`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "generate_worked_steps") {
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_solution_text", "is", null);
+        // Exclude assets that already have worked_steps
+        countQ = countQ.or("worked_steps.is.null,worked_steps.eq.");
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: missingCount } = await countQ;
+        setTotalMatched(missingCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "worked_steps",
+          before: `${missingCount ?? 0} approved assets have solution text but no worked steps`,
+          after: `Will extract step-by-step worked solutions for ${missingCount ?? 0} assets via AI`,
+        }]);
+        setIsAiPreview(true);
       } else if (operation === "generate_flowcharts") {
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
           .is("flowchart_image_url", null);
