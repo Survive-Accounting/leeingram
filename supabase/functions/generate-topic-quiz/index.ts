@@ -30,7 +30,7 @@ serve(async (req) => {
 
     const { data: assets, error: assetErr } = await sb
       .from("teaching_assets")
-      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json")
+      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json, survive_problem_text")
       .eq("topic_id", topic_id);
     if (assetErr) throw assetErr;
 
@@ -45,13 +45,73 @@ serve(async (req) => {
       }
     }
 
-    let mix: { mc: number; true_false: number; je_recall: number };
-    if (totalJeEntries >= 5) {
-      mix = { mc: 2, true_false: 1, je_recall: 2 };
+    let mix: { calc_mc: number; conceptual_mc: number; je_recall: number; claude_split_metadata?: any };
+
+    if (totalJeEntries >= 3) {
+      mix = { calc_mc: 3, conceptual_mc: 0, je_recall: 2 };
     } else if (totalJeEntries >= 1) {
-      mix = { mc: 3, true_false: 1, je_recall: 1 };
+      mix = { calc_mc: 3, conceptual_mc: 1, je_recall: 1 };
     } else {
-      mix = { mc: 4, true_false: 1, je_recall: 0 };
+      // Ask Claude to decide the split
+      const sampleText = (assets || []).slice(0, 3).map(a =>
+        (a.survive_problem_text || a.problem_context || "").substring(0, 300)
+      ).filter(Boolean).join("\n---\n");
+
+      const splitResp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          system: "You decide the question mix for a quiz. Return a tool call with calc_mc and conceptual_mc counts.",
+          messages: [{
+            role: "user",
+            content: `Topic: ${topic.topic_name}\nDescription: ${topic.topic_description || "N/A"}\n\nSample problem text:\n${sampleText || "No problems available"}\n\nDecide how to split 5 questions between calculation MC and conceptual MC.\nConstraints: min 1 of each, max 4 of either, total must equal 5.\nCalculation MC = questions with numbers, formulas, dollar amounts.\nConceptual MC = definitions, principles, classifications, theory.`
+          }],
+          max_tokens: 512,
+          tools: [{
+            name: "return_split",
+            description: "Return the question split decision",
+            input_schema: {
+              type: "object",
+              properties: {
+                calc_mc: { type: "number", description: "Number of calculation MC questions (1-4)" },
+                conceptual_mc: { type: "number", description: "Number of conceptual MC questions (1-4)" },
+                reasoning: { type: "string", description: "Brief explanation of why this split was chosen" },
+              },
+              required: ["calc_mc", "conceptual_mc", "reasoning"],
+            },
+          }],
+          tool_choice: { type: "tool", name: "return_split" },
+        }),
+      });
+
+      let calcMc = 3, conceptualMc = 2, reasoning = "default fallback";
+      if (splitResp.ok) {
+        const splitData = await splitResp.json();
+        const toolBlock = splitData.content?.find((b: any) => b.type === "tool_use");
+        if (toolBlock?.input) {
+          const inp = toolBlock.input;
+          const c = Math.min(4, Math.max(1, inp.calc_mc || 3));
+          const co = Math.min(4, Math.max(1, inp.conceptual_mc || 2));
+          // Ensure total = 5
+          if (c + co === 5) {
+            calcMc = c;
+            conceptualMc = co;
+          }
+          reasoning = inp.reasoning || "";
+        }
+      }
+
+      mix = {
+        calc_mc: calcMc,
+        conceptual_mc: conceptualMc,
+        je_recall: 0,
+        claude_split_metadata: { calc_mc: calcMc, conceptual_mc: conceptualMc, reasoning },
+      };
     }
 
     // ── Build asset context for prompt ──
@@ -67,7 +127,10 @@ serve(async (req) => {
     }).join("\n\n");
 
     // ── STEP 3: Call Anthropic AI with tool calling ──
-    const mixDescription = `- ${mix.mc} multiple choice (mc)\n- ${mix.true_false} true/false (true_false)\n- ${mix.je_recall} journal entry recall (je_recall)`;
+    const totalMc = mix.calc_mc + mix.conceptual_mc;
+    const mixDescription = mix.je_recall > 0
+      ? `- ${mix.calc_mc} calculation multiple choice (mc) — questions involving numbers, formulas, dollar amounts\n- ${mix.conceptual_mc > 0 ? `${mix.conceptual_mc} conceptual multiple choice (mc) — questions about definitions, principles, classifications\n- ` : ""}${mix.je_recall} journal entry recall (je_recall)`
+      : `- ${mix.calc_mc} calculation multiple choice (mc) — questions involving numbers, formulas, dollar amounts\n- ${mix.conceptual_mc} conceptual multiple choice (mc) — questions about definitions, principles, classifications`;
 
     const systemPrompt = `You are an expert accounting professor generating a quick knowledge-check quiz for undergraduate exam preparation.
 
@@ -80,11 +143,9 @@ QUALITY RULES:
 - Questions must be concise. Question text must be under 3 sentences.
 - MC distractors must be plausible but not tricky.
 - JE recall: max 3–4 accounts per entry.
-- T/F statements must be crystal clear with no ambiguity.
 - Every question MUST include a explanation_correct field that explains WHY the correct answer is right. This is required — never leave it null or empty.
   For MC questions: explain the calculation or reasoning that leads to the correct answer.
   For JE recall: explain why those specific accounts are debited/credited.
-  For T/F: explain the accounting principle that makes the statement true or false.
 
 RULES FOR EACH TYPE:
 
@@ -93,14 +154,10 @@ Multiple Choice (mc):
 - Distractors must be plausible — common student mistakes
 - Explain why each wrong answer is wrong
 
-True/False (true_false):
-- Statement must be clear and unambiguous
-- Explain why the false option is wrong
-
 JE Recall (je_recall):
-- question_text: describe the transaction in 1-2 sentences. Do NOT ask "which journal entry is correct" — just describe the transaction. Example: "Survive Company A issues $500,000 of 10% bonds at par on January 1."
+- question_text: Describe the scenario/transaction and ask the student to identify the correct journal entry. The question must NOT indicate which choice is correct in any way. End the question with "Select the journal entry that correctly records this transaction."
 - Generate EXACTLY 4 choices using je_option_a through je_option_d.
-- Each choice is an array of JE rows: account_name and side only. NO dollar amounts.
+- Each choice is an array of JE rows: account_name and side only. NO dollar amounts. NO correct answer markers.
 - Debits listed before credits. Max 4 accounts per choice.
 - Exactly ONE choice is correct. Set correct_answer to the letter of the correct choice.
 - The 3 distractors must use these specific patterns:
@@ -148,7 +205,7 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
                     type: "object",
                     properties: {
                       question_number: { type: "number" },
-                      question_type: { type: "string", enum: ["mc", "true_false", "je_recall"] },
+                      question_type: { type: "string", enum: ["mc", "je_recall"] },
                       question_text: { type: "string" },
                       option_a: { type: "string" },
                       option_b: { type: "string" },
@@ -300,7 +357,11 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
     }
 
     return new Response(
-      JSON.stringify({ success: true, questions_generated: insertedCount, mix }),
+      JSON.stringify({
+        success: true,
+        questions_generated: insertedCount,
+        mix,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
