@@ -92,37 +92,10 @@ function letterToNumber(letter: string): string {
   return map[upper] || (/^\d+$/.test(upper) ? upper : "1");
 }
 
-/* ── HTML generators ── */
-function questionHtml(text: string): string {
-  return `<div style="font-family:Inter,sans-serif;font-size:15px;line-height:1.6;padding:12px 16px;border-left:4px solid #14213D;background:#f8f9fa;border-radius:4px;">${text}</div>`;
-}
+const BASE = "https://learn.surviveaccounting.com";
 
-function feedbackHtml(questionId: string): string {
-  return `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${questionId}" width="100%" height="600" frameborder="0" style="border:none;border-radius:8px;overflow:hidden;"></iframe>
-<script>
-window.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='resize'){
-    var f=document.querySelector('iframe');
-    if(f)f.style.height=e.data.height+'px';
-  }
-});
-</script>`;
-}
-
-function jeChoiceHtml(rows: JEOptionRow[]): string {
-  const debits = rows.filter((r) => r.side === "debit");
-  const credits = rows.filter((r) => r.side === "credit");
-  const ordered = [...debits, ...credits];
-
-  const trs = ordered
-    .map((r) => {
-      const isCredit = r.side === "credit";
-      const padStyle = isCredit ? "padding-left:20px;" : "";
-      return `<tr><td style="border:1px solid #ddd;padding:8px;text-align:left;${padStyle}">${r.account_name}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;width:80px;">${isCredit ? "" : "✓"}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;width:80px;">${isCredit ? "✓" : ""}</td></tr>`;
-    })
-    .join("");
-
-  return `<table style="border-collapse:collapse;width:100%;font-family:Inter,sans-serif;font-size:14px;"><thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left;background:#14213D;color:white;">Account</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Debit</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Credit</th></tr></thead><tbody>${trs}</tbody></table>`;
+function iframeTag(path: string, height: number): string {
+  return `<iframe src="${BASE}${path}" width="100%" height="${height}" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
 }
 
 /* ── XLSX builder ── */
@@ -134,19 +107,21 @@ async function buildTopicXLSX(
   const header = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
-    "Answer5", "Answer6", "Answer7", "Answer8", "Answer9", "Answer10",
     "CorrectExplanation", "IncorrectExplanation",
   ];
 
   const rows = questions.map((q) => {
-    const qHtml = questionHtml(q.question_text);
     const corAns = letterToNumber(q.correct_answer);
-    const fb = feedbackHtml(q.id);
+    const questionIframe = iframeTag(`/quiz-question/${q.id}`, 200);
+    const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 160 : 80);
+    const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 160 : 80);
+    const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 160 : 80);
+    const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 160 : 80);
+    const explanationIframe = iframeTag(`/quiz-explanation/${q.id}`, 600);
     return [
-      topicName, "TMC", qHtml, corAns,
-      q.answer_a || "", q.answer_b || "", q.answer_c || "", q.answer_d || "",
-      "", "", "", "", "", "",
-      fb, fb,
+      topicName, "TMC", questionIframe, corAns,
+      answer1, answer2, answer3, answer4,
+      explanationIframe, explanationIframe,
     ];
   });
 
