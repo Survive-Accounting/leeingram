@@ -430,6 +430,7 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
         success: true,
         questions_generated: insertedCount,
         mix,
+        company_name_warnings,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
