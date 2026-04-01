@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { copyToClipboard } from "@/lib/clipboardFallback";
-import { parseJEOption, type JEOptionRow } from "@/lib/questionHtmlRenderer";
+
 
 /* ── Types ── */
 interface TopicWithMeta {
@@ -92,37 +92,10 @@ function letterToNumber(letter: string): string {
   return map[upper] || (/^\d+$/.test(upper) ? upper : "1");
 }
 
-/* ── HTML generators ── */
-function questionHtml(text: string): string {
-  return `<div style="font-family:Inter,sans-serif;font-size:15px;line-height:1.6;padding:12px 16px;border-left:4px solid #14213D;background:#f8f9fa;border-radius:4px;">${text}</div>`;
-}
+const BASE = "https://learn.surviveaccounting.com";
 
-function feedbackHtml(questionId: string): string {
-  return `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${questionId}" width="100%" height="600" frameborder="0" style="border:none;border-radius:8px;overflow:hidden;"></iframe>
-<script>
-window.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='resize'){
-    var f=document.querySelector('iframe');
-    if(f)f.style.height=e.data.height+'px';
-  }
-});
-</script>`;
-}
-
-function jeChoiceHtml(rows: JEOptionRow[]): string {
-  const debits = rows.filter((r) => r.side === "debit");
-  const credits = rows.filter((r) => r.side === "credit");
-  const ordered = [...debits, ...credits];
-
-  const trs = ordered
-    .map((r) => {
-      const isCredit = r.side === "credit";
-      const padStyle = isCredit ? "padding-left:20px;" : "";
-      return `<tr><td style="border:1px solid #ddd;padding:8px;text-align:left;${padStyle}">${r.account_name}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;width:80px;">${isCredit ? "" : "✓"}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;width:80px;">${isCredit ? "✓" : ""}</td></tr>`;
-    })
-    .join("");
-
-  return `<table style="border-collapse:collapse;width:100%;font-family:Inter,sans-serif;font-size:14px;"><thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left;background:#14213D;color:white;">Account</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Debit</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Credit</th></tr></thead><tbody>${trs}</tbody></table>`;
+function iframeTag(path: string, height: number): string {
+  return `<iframe src="${BASE}${path}" width="100%" height="${height}" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
 }
 
 /* ── XLSX builder ── */
@@ -134,19 +107,21 @@ async function buildTopicXLSX(
   const header = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
-    "Answer5", "Answer6", "Answer7", "Answer8", "Answer9", "Answer10",
     "CorrectExplanation", "IncorrectExplanation",
   ];
 
   const rows = questions.map((q) => {
-    const qHtml = questionHtml(q.question_text);
     const corAns = letterToNumber(q.correct_answer);
-    const fb = feedbackHtml(q.id);
+    const questionIframe = iframeTag(`/quiz-question/${q.id}`, 200);
+    const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 160 : 80);
+    const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 160 : 80);
+    const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 160 : 80);
+    const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 160 : 80);
+    const explanationIframe = iframeTag(`/quiz-explanation/${q.id}`, 600);
     return [
-      topicName, "TMC", qHtml, corAns,
-      q.answer_a || "", q.answer_b || "", q.answer_c || "", q.answer_d || "",
-      "", "", "", "", "", "",
-      fb, fb,
+      topicName, "TMC", questionIframe, corAns,
+      answer1, answer2, answer3, answer4,
+      explanationIframe, explanationIframe,
     ];
   });
 
@@ -198,12 +173,6 @@ function CopyBtn({
 /* ── Question Row ── */
 function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
   const isJE = q.question_type === "je_recall";
-  const jeA = parseJEOption(q.answer_a);
-  const jeB = parseJEOption(q.answer_b);
-  const jeC = parseJEOption(q.answer_c);
-  const jeD = parseJEOption(q.answer_d);
-  const choiceTexts = [q.answer_a, q.answer_b, q.answer_c, q.answer_d];
-  const jeParsed = [jeA, jeB, jeC, jeD];
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-2 px-3 border-b border-border/30 last:border-0 text-xs">
@@ -228,23 +197,19 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
       <div className="flex items-center gap-1 shrink-0 flex-wrap">
         <CopyBtn
           label={<><Copy className="h-3 w-3 mr-0.5" />Q</>}
-          text={questionHtml(q.question_text)}
+          text={iframeTag(`/quiz-question/${q.id}`, 200)}
         />
-        {["A", "B", "C", "D"].map((letter, i) => (
+        {["1", "2", "3", "4"].map((num, i) => (
           <CopyBtn
-            key={letter}
-            label={letter}
-            text={
-              isJE && jeParsed[i]
-                ? jeChoiceHtml(jeParsed[i]!)
-                : choiceTexts[i] || ""
-            }
+            key={num}
+            label={["A", "B", "C", "D"][i]}
+            text={iframeTag(`/quiz-choice/${q.id}/${num}`, isJE ? 160 : 80)}
             className="w-7 px-0"
           />
         ))}
         <CopyBtn
           label={<><Copy className="h-3 w-3 mr-0.5" />FB</>}
-          text={feedbackHtml(q.id)}
+          text={iframeTag(`/quiz-explanation/${q.id}`, 600)}
         />
       </div>
     </div>
@@ -280,13 +245,7 @@ function InstructionsPanel() {
               Question Bank you just created
             </li>
             <li>
-              For each <strong>JE question</strong> below: open that question in
-              LW, then use the copy buttons to replace each answer choice with
-              the HTML table version
-            </li>
-            <li>
-              For all questions: paste <strong>Feedback HTML</strong> into both
-              the Correct and Incorrect explanation fields
+              Verify questions render correctly in LW preview (all content loads via iframes automatically)
             </li>
             <li>
               Click <strong>"Mark as Imported"</strong> when done
