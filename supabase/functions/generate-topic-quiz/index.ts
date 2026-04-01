@@ -157,12 +157,20 @@ QUALITY RULES:
   For MC questions: explain the calculation or reasoning that leads to the correct answer.
   For JE recall: explain why those specific accounts are debited/credited.
 
+CRITICAL RULE FOR MC ANSWER OPTIONS:
+- option_a, option_b, option_c, option_d must contain ONLY the short answer value.
+- Examples of CORRECT option values: "$12,000", "18%", "Net income", "$4,500 gain", "Depreciation expense"
+- Examples of WRONG option values: "$12,000 because the company recognized revenue" or "The answer is $18,000 which reflects..."
+- NEVER include explanations, reasoning, or justifications in option fields.
+- All explanations go ONLY in explanation_a, explanation_b, explanation_c, explanation_d fields.
+- If the answer is a dollar amount, format it with $ and commas (e.g. "$12,000").
+
 RULES FOR EACH TYPE:
 
 Multiple Choice (mc):
-- 4 options (a/b/c/d)
+- 4 options (a/b/c/d) — SHORT values only, never sentences of explanation
 - Distractors must be plausible — common student mistakes
-- Explain why each wrong answer is wrong
+- Explain why each wrong answer is wrong in the explanation fields, NOT in the option fields
 
 JE Recall (je_recall):
 - question_text: Describe the scenario/transaction and ask the student to identify the correct journal entry. The question must NOT indicate which choice is correct in any way. End the question with "Select the journal entry that correctly records this transaction."

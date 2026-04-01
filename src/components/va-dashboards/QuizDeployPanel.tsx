@@ -244,8 +244,28 @@ function CopyBtn({
 }
 
 /* ── Question Row ── */
+/** Check if an MC option looks like it contains explanation text instead of a short value */
+function isSuspiciousOption(val: string | undefined | null): boolean {
+  if (!val || val.length <= 30) return false;
+  // If it starts with $ or a digit, it's likely a numeric answer
+  if (/^[\$\d]/.test(val.trim())) return false;
+  return true;
+}
+
+/** Check if correct_answer points to a null option */
+function hasNullCorrectAnswer(q: BankedQ): boolean {
+  const map: Record<string, string> = { A: q.answer_a, B: q.answer_b, C: q.answer_c, D: q.answer_d };
+  const letter = (q.correct_answer || "").trim().toUpperCase();
+  const val = map[letter];
+  return !val || val.trim() === "";
+}
+
 function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
   const isJE = q.question_type === "je_recall";
+
+  // Only flag MC questions for suspicious options
+  const suspiciousAnswers = !isJE && [q.answer_a, q.answer_b, q.answer_c, q.answer_d].some(isSuspiciousOption);
+  const nullCorrect = hasNullCorrectAnswer(q);
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-2 px-3 border-b border-border/30 last:border-0 text-xs">
@@ -262,6 +282,16 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
         >
           {isJE ? "JE" : "MC"}
         </Badge>
+        {suspiciousAnswers && (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/40 text-[9px] shrink-0">
+            ⚠ Check answers
+          </Badge>
+        )}
+        {nullCorrect && (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/40 text-[9px] shrink-0">
+            ⚠ Null correct answer
+          </Badge>
+        )}
         <span className="text-muted-foreground truncate">
           {q.question_text.slice(0, 80)}
           {q.question_text.length > 80 ? "…" : ""}
