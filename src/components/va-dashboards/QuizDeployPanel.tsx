@@ -301,6 +301,12 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
   const suspiciousAnswers = !isJE && [q.answer_a, q.answer_b, q.answer_c, q.answer_d].some(isSuspiciousOption);
   const nullCorrect = hasNullCorrectAnswer(q);
 
+  // Company name check
+  const companyPattern = /[A-Z][a-z]+ (?:Corp|Inc|Co|Ltd|Company|Corporation)/g;
+  const companyMatches = (q.question_text || "").match(companyPattern) || [];
+  const badCompanyNames = companyMatches.filter(m => m !== "Survive Company");
+  const hasCompanyWarning = badCompanyNames.length > 0;
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-2 px-3 border-b border-border/30 last:border-0 text-xs">
       <div className="flex items-center gap-2 flex-1 min-w-0">
