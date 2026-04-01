@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts";
 
 interface HistoryEntry {
   label: string;
@@ -56,6 +56,7 @@ const OPERATION_LABELS: Record<string, string> = {
   custom_ai: "Custom AI Rewrite",
   enrich_je_rows: "Enrich JE Rows (debit_credit_reason + amount_source)",
   generate_supplementary_je: "Generate Supplementary JEs (backfill)",
+  generate_worked_steps: "Generate Worked Steps (backfill)",
   generate_flowcharts: "Generate Flowcharts (backfill missing)",
   generate_dissector_highlights: "Generate Dissector Highlights (backfill missing)",
   enrich_je_tooltips: "Enrich JE Tooltips (fill gaps)",
@@ -264,6 +265,7 @@ export default function BulkFixTool() {
     if (operation === "custom_ai") return "Custom AI Rewrite";
     if (operation === "enrich_je_rows") return "Enrich JE Rows (debit_credit_reason + amount_source)";
     if (operation === "generate_supplementary_je") return "Generate Supplementary JEs (backfill)";
+    if (operation === "generate_worked_steps") return "Generate Worked Steps (backfill)";
     if (operation === "generate_flowcharts") return "Generate Flowcharts (backfill missing)";
     if (operation === "generate_dissector_highlights") return "Generate Dissector Highlights (backfill missing)";
     if (operation === "enrich_je_tooltips") return "Enrich JE Tooltips (fill gaps)";
@@ -449,6 +451,26 @@ export default function BulkFixTool() {
           field: "supplementary_je_json",
           before: `${missingCount ?? 0} assets have main JE but no supplementary JE`,
           after: `Will generate supplementary JEs for ${missingCount ?? 0} assets via AI`,
+        }]);
+        setIsAiPreview(true);
+      } else if (operation === "generate_worked_steps") {
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_solution_text", "is", null);
+        // Exclude assets that already have worked_steps
+        countQ = countQ.or("worked_steps.is.null,worked_steps.eq.");
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: missingCount } = await countQ;
+        setTotalMatched(missingCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "worked_steps",
+          before: `${missingCount ?? 0} approved assets have solution text but no worked steps`,
+          after: `Will extract step-by-step worked solutions for ${missingCount ?? 0} assets via AI`,
         }]);
         setIsAiPreview(true);
       } else if (operation === "generate_flowcharts") {

@@ -42,6 +42,14 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
     fn: "generate-supplementary-je",
     bodyFn: (id) => ({ teaching_asset_id: id }),
   },
+  generate_worked_steps: {
+    fn: "generate-worked-steps",
+    bodyFn: (id) => ({ teaching_asset_id: id }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb.from("teaching_assets").select("worked_steps").eq("id", id).single();
+      return !!(data?.worked_steps?.trim());
+    },
+  },
   generate_flowcharts: {
     fn: "generate-flowchart",
     bodyFn: (id) => ({ teaching_asset_id: id }),
