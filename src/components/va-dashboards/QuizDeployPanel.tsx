@@ -168,10 +168,23 @@ function buildDebugJSON(
       .map(([k]) => k);
     row.null_or_empty_fields = nullFields;
 
+    // Company name scan
+    const companyPattern = /[A-Z][a-z]+ (?:Corp|Inc|Co|Ltd|Company|Corporation)/g;
+    const matches = (q.question_text || "").match(companyPattern) || [];
+    const badNames = matches.filter(m => m !== "Survive Company");
+    if (badNames.length > 0) {
+      row.company_name_warnings = badNames;
+    }
+
     return row;
   });
 
-  return { question_mix: questionMix, questions: rows };
+  // Aggregate company warnings
+  const allCompanyWarnings = rows
+    .filter((r: any) => r.company_name_warnings)
+    .map((r: any) => `Q${r.row_index}: ${r.company_name_warnings.join(", ")}`);
+
+  return { question_mix: questionMix, company_name_warnings: allCompanyWarnings, questions: rows };
 }
 
 async function buildTopicXLSX(
