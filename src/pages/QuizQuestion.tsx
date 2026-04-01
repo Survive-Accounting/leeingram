@@ -9,15 +9,19 @@ function useEmbedSetup() {
   useEffect(() => {
     document.documentElement.style.background = "transparent";
     document.body.style.background = "transparent";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
   }, []);
   useEffect(() => {
     const send = () => {
       if (ref.current) {
-        window.parent.postMessage({ type: "resize", height: ref.current.scrollHeight }, "*");
+        const h = ref.current.scrollHeight;
+        window.parent.postMessage({ type: "resize", height: h }, "*");
+        window.parent.postMessage({ type: "sa-height", height: h }, "*");
       }
     };
     send();
-    const t = setTimeout(send, 300);
+    const t = setTimeout(send, 200);
     document.fonts.ready.then(send);
     const observer = new ResizeObserver(send);
     if (ref.current) observer.observe(ref.current);
@@ -25,6 +29,13 @@ function useEmbedSetup() {
   }, []);
   return ref;
 }
+
+const LABEL_CONFIG: Record<string, { text: string; color: string }> = {
+  je_recall: { text: "JOURNAL ENTRY QUESTION", color: "#FBBF24" },
+  calc_mc: { text: "CALCULATION QUESTION", color: "#60A5FA" },
+  conceptual_mc: { text: "CONCEPTUAL QUESTION", color: "#34D399" },
+  mc: { text: "QUESTION", color: "#60A5FA" },
+};
 
 export default function QuizQuestion() {
   const { questionId } = useParams<{ questionId: string }>();
@@ -48,7 +59,7 @@ export default function QuizQuestion() {
   if (!q) return <div style={{ padding: "12px 4px", fontFamily: "Inter, sans-serif", fontSize: 15, color: "#e8e8e8" }}>Question not found.</div>;
 
   const text = q.question_type === "je_recall" && q.je_description ? q.je_description : q.question_text;
-  const label = q.question_type === "je_recall" ? "JOURNAL ENTRY QUESTION" : "QUESTION";
+  const labelCfg = LABEL_CONFIG[q.question_type] || LABEL_CONFIG.mc;
 
   return (
     <div
@@ -57,7 +68,7 @@ export default function QuizQuestion() {
         fontFamily: "Inter, sans-serif",
         background: "rgba(255,255,255,0.06)",
         border: "1px solid rgba(255,255,255,0.12)",
-        borderLeft: "4px solid #CE1126",
+        borderLeft: `4px solid ${labelCfg.color}`,
         borderRadius: 8,
         padding: "16px 18px",
         margin: 0,
@@ -67,11 +78,11 @@ export default function QuizQuestion() {
         fontSize: 10,
         fontWeight: 600,
         letterSpacing: "0.08em",
-        color: "#CE1126",
+        color: labelCfg.color,
         textTransform: "uppercase" as const,
         marginBottom: 8,
       }}>
-        {label}
+        {labelCfg.text}
       </div>
       <div style={{
         fontSize: 15,
@@ -91,7 +102,7 @@ export default function QuizQuestion() {
         color: "rgba(255,255,255,0.35)",
         textAlign: "left",
       }}>
-        Survive Accounting · surviveaccounting.com
+        surviveaccounting.com · Created by Lee Ingram
       </div>
     </div>
   );
