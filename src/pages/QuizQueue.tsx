@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   parseJEOption,
