@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,11 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Eye, Users, Clock, Share2, ShoppingCart, ExternalLink, ChevronDown, ChevronRight, BarChart3, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+/* Emails to exclude from stats (VAs + admin test) */
+const EXCLUDED_EMAILS = new Set([
+  "theacarmellesumagaysay@gmail.com",
+  "valinonorlynmae@gmail.com",
+  "jking.cim@gmail.com",
+  "lee@survivestudios.com",
+]);
 
 type AssetEvent = {
   id: string;
