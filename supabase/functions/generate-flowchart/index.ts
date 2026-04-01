@@ -293,7 +293,7 @@ ${(workedSteps || "").slice(0, 3000)}${instructionBlock}`;
     body: JSON.stringify({
       html,
       viewport_width: 640,
-      viewport_height: 1200,
+      viewport_height: 2000,
       device_scale: 2,
     }),
   });
