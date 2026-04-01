@@ -193,7 +193,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapt
         `True${paste(ansUrl("true"))}`,
         `False${paste(ansUrl("false"))}`,
         "", "",
-        correctExp, incorrectExp,
+        correctExp, incorrectExp, bankName,
       ].map(esc).join(",");
     }
 
