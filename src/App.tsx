@@ -84,6 +84,8 @@ import SurviveChapterAdmin from "./pages/SurviveChapterAdmin";
 import QuizExplanation from "./pages/QuizExplanation";
 import QuizQuestion from "./pages/QuizQuestion";
 import QuizChoice from "./pages/QuizChoice";
+import QuizStart from "./pages/QuizStart";
+import QuizEnd from "./pages/QuizEnd";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
