@@ -135,13 +135,15 @@ function ReviewStatusBadge({ status }: { status: string }) {
 
 /* ──────── CSV Export Helper ──────── */
 
-function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: string): string {
+function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapterName?: string; courseCode?: string; chapterNumber?: number; topicNumber?: number }): string {
   const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
+  const bankName = buildQuizFilename(opts?.courseCode, opts?.chapterNumber, opts?.topicNumber, topicName).replace(/\.csv$/, "");
 
   const headers = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
     "CorrectExplanation", "IncorrectExplanation",
+    "QuestionBankName",
   ];
 
   const esc = (v: string) => {
