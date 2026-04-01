@@ -532,7 +532,7 @@ function ExplanationText({ text }: { text: string }) {
             <span
               key={i}
               className="inline-block rounded px-1.5 py-0.5 mx-0.5 font-mono"
-              style={{ backgroundColor: "#f1f5f9", fontSize: 13 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.1)", fontSize: 13, color: "#e8e8e8" }}
             >
               {part}
             </span>
