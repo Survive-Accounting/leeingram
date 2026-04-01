@@ -99,7 +99,7 @@ Rules:
 3. Labels must follow the format: "How to record [transaction]" — e.g. "How to record costs incurred", "How to record billings to customer", "How to record revenue recognition (Percentage-of-Completion)".
 4. If the same entry type differs by method (e.g. Percentage-of-Completion vs Cost-Recovery), show each method variant once.
 5. Group related debits and credits into a single entry.
-6. Use standard accounting account names from the provided list when possible.
+6. Use ONLY account names from the provided whitelist. Do NOT invent or hallucinate account names. If the whitelist lacks a needed account, use the closest match.
 7. Order entries by logical sequence (costs → billings → collections → revenue → closing).
 8. Return ONLY valid JSON, no markdown.`;
 
