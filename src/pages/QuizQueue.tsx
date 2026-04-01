@@ -173,7 +173,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapt
     "— Step 2: For each question, click Edit in LW → click </> in each field → paste the iframe HTML shown below that field",
     "— Step 3: Paste the quiz URL back into the Quiz Queue once live",
     `— Questions: ${questions.length} | Topic: ${topicName} | Chapter: ${opts?.chapterName ?? ""}`,
-    "", "", "", "", "",
+    "", "", "", "", "", "",
   ].map(esc).join(",");
 
   const rows = questions.map((q) => {
