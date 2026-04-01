@@ -30,9 +30,19 @@ serve(async (req) => {
 
     const { data: assets, error: assetErr } = await sb
       .from("teaching_assets")
-      .select("problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json, survive_problem_text")
-      .eq("topic_id", topic_id);
+      .select("id, problem_context, survive_solution_text, important_formulas, concept_notes, exam_traps, supplementary_je_json, survive_problem_text, asset_type")
+      .eq("topic_id", topic_id)
+      .not("asset_approved_at", "is", null);
     if (assetErr) throw assetErr;
+
+    // Determine example asset: first approved asset sorted by type priority (BE > QS > E > P)
+    const TYPE_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, EX: 2, P: 3 };
+    const sortedForExample = [...(assets || [])].sort((a, b) => {
+      const oa = TYPE_ORDER[a.asset_type?.toUpperCase() ?? ""] ?? 99;
+      const ob = TYPE_ORDER[b.asset_type?.toUpperCase() ?? ""] ?? 99;
+      return oa - ob;
+    });
+    const exampleAssetId = sortedForExample[0]?.id ?? null;
 
     // ── STEP 2: Determine question mix ──
     let totalJeEntries = 0;
