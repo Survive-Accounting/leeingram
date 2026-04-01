@@ -622,24 +622,19 @@ export default function AssetStatsDashboard() {
                                         // Build asset lookup and group by chapter
                                         const assetLookup = new Map(teachingAssets.map(ta => [ta.asset_name, ta]));
                                         const byChapter = new Map<string, { chapterLabel: string; items: { assetName: string; sourceRef: string }[] }>();
-                                        const ungrouped: { assetName: string; sourceRef: string }[] = [];
 
                                         for (const name of s.assetsViewed) {
                                           const ta = assetLookup.get(name);
-                                          const sourceRef = ta?.source_ref || name;
-                                          if (ta?.chapter_id) {
-                                            const ch = chapters.find(c => c.id === ta.chapter_id);
-                                            const key = ta.chapter_id;
-                                            if (!byChapter.has(key)) {
-                                              byChapter.set(key, {
-                                                chapterLabel: ch ? `Ch ${ch.chapter_number}: ${ch.chapter_name}` : "Unknown",
-                                                items: [],
-                                              });
-                                            }
-                                            byChapter.get(key)!.items.push({ assetName: name, sourceRef });
-                                          } else {
-                                            ungrouped.push({ assetName: name, sourceRef });
+                                          if (!ta?.source_ref || !ta?.chapter_id) continue; // skip assets without source_ref
+                                          const ch = chapters.find(c => c.id === ta.chapter_id);
+                                          const key = ta.chapter_id;
+                                          if (!byChapter.has(key)) {
+                                            byChapter.set(key, {
+                                              chapterLabel: ch ? `Ch ${ch.chapter_number}: ${ch.chapter_name}` : "Unknown",
+                                              items: [],
+                                            });
                                           }
+                                          byChapter.get(key)!.items.push({ assetName: name, sourceRef: ta.source_ref });
                                         }
 
                                         const sortedChapters = [...byChapter.entries()].sort((a, b) => {
