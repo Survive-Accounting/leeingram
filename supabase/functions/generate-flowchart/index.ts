@@ -83,7 +83,7 @@ function buildFlowchartHtml(flowchart: any): string {
     font-family: Arial, sans-serif;
     background: #FFFFFF;
     margin: 0;
-    padding: 24px;
+    padding: 20px;
     width: 600px;
   }
   .title {
