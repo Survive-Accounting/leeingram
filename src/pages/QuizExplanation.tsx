@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
+import { JournalEntryTable } from "@/components/JournalEntryTable";
 
 /* ── Types ── */
 interface Question {
@@ -45,39 +46,9 @@ interface AssetInfo {
   asset_name: string;
   source_ref: string;
   problem_title: string;
-  concept_notes: string | null;
-  exam_traps: any;
-  important_formulas: any;
+  lw_activity_url: string | null;
+  asset_type: string | null;
   supplementary_je_json: any;
-}
-
-/* ── Account type detection ── */
-const ASSET_EXPENSE_KEYWORDS = [
-  "cash", "accounts receivable", "receivable", "inventory", "equipment",
-  "supplies", "land", "building", "prepaid", "investment", "vehicle",
-  "furniture", "machinery", "cost of goods", "cogs", "expense", "depreciation expense",
-  "amortization expense", "interest expense", "rent expense", "salary expense",
-  "wages expense", "insurance expense", "tax expense", "utilities expense",
-  "loss", "dividend", "drawing", "withdrawal",
-];
-
-const LIABILITY_EQUITY_REVENUE_KEYWORDS = [
-  "accounts payable", "payable", "unearned", "deferred", "notes payable",
-  "bonds payable", "mortgage", "liability", "accrued", "revenue", "sales",
-  "service revenue", "interest revenue", "gain", "income", "retained earnings",
-  "common stock", "capital", "equity", "accumulated depreciation",
-  "accumulated amortization", "allowance",
-];
-
-function getAccountCategory(name: string): "asset_expense" | "liability_equity_revenue" {
-  const lower = name.toLowerCase();
-  for (const kw of LIABILITY_EQUITY_REVENUE_KEYWORDS) {
-    if (lower.includes(kw)) return "liability_equity_revenue";
-  }
-  for (const kw of ASSET_EXPENSE_KEYWORDS) {
-    if (lower.includes(kw)) return "asset_expense";
-  }
-  return "asset_expense";
 }
 
 /* ── Source ref sorting ── */
@@ -98,8 +69,17 @@ function sortBySourceRef(a: AssetInfo, b: AssetInfo): number {
   return pa.num - pb.num;
 }
 
+function assetTypeBadge(ref: string): string {
+  const p = ref.match(/^([A-Z]+)/)?.[1];
+  if (p === "BE") return "BE";
+  if (p === "QS") return "QS";
+  if (p === "E") return "EX";
+  if (p === "P") return "P";
+  return p || "?";
+}
+
 /* ── Tabs ── */
-type TabKey = "solution" | "je" | "concepts" | "traps" | "example";
+type TabKey = "solution" | "je" | "examples";
 
 export default function QuizExplanation() {
   const { questionId } = useParams<{ questionId: string }>();
@@ -108,6 +88,7 @@ export default function QuizExplanation() {
   const [chapter, setChapter] = useState<ChapterInfo | null>(null);
   const [course, setCourse] = useState<CourseInfo | null>(null);
   const [assets, setAssets] = useState<AssetInfo[]>([]);
+  const [jeData, setJeData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("solution");
@@ -133,14 +114,29 @@ export default function QuizExplanation() {
             .select("chapter_number, chapter_name, course_id")
             .eq("id", q.chapter_id).single(),
           supabase.from("teaching_assets")
-            .select("id, asset_name, source_ref, problem_title, concept_notes, exam_traps, important_formulas, supplementary_je_json")
+            .select("id, asset_name, source_ref, problem_title, lw_activity_url, asset_type, supplementary_je_json")
             .eq("topic_id", q.topic_id)
-            .limit(3),
+            .not("asset_approved_at", "is", null)
+            .limit(10),
         ]);
 
         if (topicRes.data) setTopic(topicRes.data as unknown as TopicInfo);
         if (chapterRes.data) setChapter(chapterRes.data as unknown as ChapterInfo);
         if (assetsRes.data) setAssets(assetsRes.data as unknown as AssetInfo[]);
+
+        // Gather JE data from assets that have supplementary_je_json
+        const jes: any[] = [];
+        if (assetsRes.data) {
+          for (const a of assetsRes.data as any[]) {
+            const json = a.supplementary_je_json;
+            if (!json) continue;
+            const entries = Array.isArray(json) ? json : (json as any)?.entries;
+            if (Array.isArray(entries) && entries.length > 0) {
+              jes.push({ label: `${a.source_ref} — ${a.problem_title}`, entries });
+            }
+          }
+        }
+        setJeData(jes);
 
         // Fetch course info
         const courseId = (chapterRes.data as any)?.course_id || (topicRes.data as any)?.course_id;
@@ -158,35 +154,38 @@ export default function QuizExplanation() {
     })();
   }, [questionId]);
 
-  // Height reporting for iframe
+  // Height reporting for iframe — use resize message type
+  const reportHeight = useCallback(() => {
+    const height = document.body.scrollHeight;
+    window.parent.postMessage({ type: "sa-height", height }, "*");
+    window.parent.postMessage({ type: "resize", height }, "*");
+  }, []);
+
   useEffect(() => {
     if (loading) return;
-    const report = () => {
-      window.parent.postMessage(
-        { type: "sa-height", height: document.body.scrollHeight },
-        "*"
-      );
+    // Report after render
+    reportHeight();
+    const t1 = setTimeout(reportHeight, 300);
+    const t2 = setTimeout(reportHeight, 800);
+    // Also observe DOM size changes
+    const observer = new ResizeObserver(reportHeight);
+    observer.observe(document.body);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      observer.disconnect();
     };
-    report();
-    const timer = setTimeout(report, 500);
-    return () => clearTimeout(timer);
-  }, [loading, activeTab]);
+  }, [loading, activeTab, reportHeight]);
 
   // Determine available tabs
   const availableTabs = useMemo(() => {
     const tabs: { key: TabKey; label: string }[] = [{ key: "solution", label: "Solution" }];
 
-    const hasJe = question?.question_type === "je_recall" ||
-      assets.some((a) => a.supplementary_je_json);
-    if (hasJe) tabs.push({ key: "je", label: "Journal Entry" });
-
-    if (assets.some((a) => a.concept_notes || a.important_formulas))
-      tabs.push({ key: "concepts", label: "Concepts" });
-    if (assets.some((a) => a.exam_traps)) tabs.push({ key: "traps", label: "Exam Traps" });
-    if (assets.length > 0) tabs.push({ key: "example", label: "Example" });
+    if (jeData.length > 0) tabs.push({ key: "je", label: "Journal Entries" });
+    if (assets.length > 0) tabs.push({ key: "examples", label: "Examples" });
 
     return tabs;
-  }, [question, assets]);
+  }, [jeData, assets]);
 
   // Report issue mailto
   const reportMailto = useMemo(() => {
@@ -229,7 +228,7 @@ export default function QuizExplanation() {
   }
 
   return (
-    <div className="bg-white text-slate-900 min-h-screen font-sans" style={{ fontSize: 14 }}>
+    <div className="bg-white text-slate-900 font-sans" style={{ fontSize: 14 }}>
       {/* Header */}
       <div className="px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: "#14213D" }}>
         <span className="text-white font-bold" style={{ fontSize: 13 }}>📖 Deep Explanation</span>
@@ -261,13 +260,11 @@ export default function QuizExplanation() {
       {/* Tab content */}
       <div className="px-4 py-4">
         {activeTab === "solution" && <SolutionTab question={question} />}
-        {activeTab === "je" && <JeTab question={question} assets={assets} />}
-        {activeTab === "concepts" && <ConceptsTab assets={assets} />}
-        {activeTab === "traps" && <TrapsTab assets={assets} />}
-        {activeTab === "example" && <ExampleTab assets={assets} />}
+        {activeTab === "je" && <JeTab jeData={jeData} />}
+        {activeTab === "examples" && <ExamplesTab assets={assets} />}
       </div>
 
-      {/* Footer with report issue */}
+      {/* Footer */}
       <div className="text-center py-3 space-y-1" style={{ backgroundColor: "#f8fafc" }}>
         <a
           href={reportMailto}
@@ -289,6 +286,39 @@ export default function QuizExplanation() {
 /* ════════════════════════════════════════ */
 
 function SolutionTab({ question }: { question: Question }) {
+  // JE Recall questions — render correct answer as JE table with tooltips
+  if (question.question_type === "je_recall" && Array.isArray(question.je_accounts) && question.je_accounts.length > 0) {
+    // Build a JournalEntryGroup from je_accounts
+    const lines = question.je_accounts.map((a: any) => ({
+      account: a.account_name,
+      side: a.side || "debit",
+      debit: a.side === "debit" ? (a.amount || 0) : 0,
+      credit: a.side === "credit" ? (a.amount || 0) : 0,
+      debit_credit_reason: a.debit_credit_reason || a.reason,
+      amount_source: a.amount_source,
+    }));
+
+    return (
+      <div className="space-y-3">
+        <p className="text-xs italic" style={{ color: "#64748b" }}>
+          Hover over each row to see why this entry is recorded this way.
+        </p>
+        <JournalEntryTable
+          completedJson={[{ label: question.je_description || "Journal Entry", lines, unbalanced: false }]}
+          mode="completed"
+          showHeading={false}
+        />
+        {question.explanation_correct && (
+          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
+            <p className="text-xs" style={{ color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>WHY</p>
+            <p className="text-sm leading-relaxed">{question.explanation_correct}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // MC questions — standard explanation with calculation highlighting
   const optMap: Record<string, string | null> = {
     a: question.option_a, b: question.option_b,
     c: question.option_c, d: question.option_d,
@@ -298,11 +328,7 @@ function SolutionTab({ question }: { question: Question }) {
     c: question.explanation_c, d: question.explanation_d,
   };
 
-  const wrongKeys = question.question_type === "mc"
-    ? ["a", "b", "c", "d"].filter((k) => k !== question.correct_answer)
-    : question.question_type === "true_false"
-      ? ["a", "b"].filter((k) => k !== question.correct_answer)
-      : [];
+  const wrongKeys = ["a", "b", "c", "d"].filter((k) => k !== question.correct_answer);
 
   return (
     <div className="space-y-5">
@@ -311,15 +337,12 @@ function SolutionTab({ question }: { question: Question }) {
         <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
           ✓ WHY THIS IS CORRECT
         </p>
-        <div
-          className="rounded-md p-4"
-          style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}
-        >
-          <p style={{ fontSize: 14, lineHeight: 1.65 }}>{question.explanation_correct}</p>
+        <div className="rounded-md p-4" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
+          <ExplanationText text={question.explanation_correct} />
         </div>
       </div>
 
-      {/* Wrong answers (MC/TF only) */}
+      {/* Wrong answers */}
       {wrongKeys.length > 0 && (
         <div>
           <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#dc2626" }}>
@@ -327,9 +350,7 @@ function SolutionTab({ question }: { question: Question }) {
           </p>
           <div className="space-y-3">
             {wrongKeys.map((k) => {
-              const label = question.question_type === "true_false"
-                ? (k === "a" ? "True" : "False")
-                : optMap[k];
+              const label = optMap[k];
               const exp = expMap[k];
               if (!label && !exp) return null;
               return (
@@ -358,144 +379,136 @@ function SolutionTab({ question }: { question: Question }) {
   );
 }
 
-function JeTab({ question, assets }: { question: Question; assets: AssetInfo[] }) {
-  const [showWhy, setShowWhy] = useState(false);
-  const [showSupp, setShowSupp] = useState(false);
+/** Renders explanation text with dollar amounts / calculations in highlighted blocks */
+function ExplanationText({ text }: { text: string }) {
+  if (!text) return null;
 
-  const accounts = Array.isArray(question.je_accounts) ? question.je_accounts : [];
+  // Check if the text contains dollar amounts or calculation patterns
+  const calcPattern = /\$[\d,]+(?:\.\d+)?|\d+\s*[×x*÷/]\s*\d+|=\s*\$?[\d,]+/g;
+  const hasCalc = calcPattern.test(text);
 
-  // Gather supplementary JE from assets
-  const suppEntries: any[] = [];
-  for (const a of assets) {
-    const json = a.supplementary_je_json;
-    if (!json) continue;
-    const entries = Array.isArray(json) ? json : (json as any)?.entries;
-    if (Array.isArray(entries)) {
-      for (const e of entries.slice(0, 2)) {
-        if (suppEntries.length < 2) suppEntries.push(e);
-      }
-    }
+  if (!hasCalc) {
+    return <BulletedText text={text} />;
   }
 
+  // Split text around calculation segments
+  const parts = text.split(/(\$[\d,]+(?:\.\d+)?(?:\s*[×x*÷/+\-]\s*\$?[\d,]+(?:\.\d+)?)*(?:\s*=\s*\$?[\d,]+(?:\.\d+)?)?)/g);
+
+  return (
+    <p className="text-sm leading-relaxed">
+      {parts.map((part, i) => {
+        if (calcPattern.test(part)) {
+          return (
+            <span
+              key={i}
+              className="inline-block rounded px-1.5 py-0.5 mx-0.5 font-mono"
+              style={{ backgroundColor: "#f1f5f9", fontSize: 13 }}
+            >
+              {part}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </p>
+  );
+}
+
+function JeTab({ jeData }: { jeData: any[] }) {
   return (
     <div className="space-y-4">
-      {accounts.length > 0 && (
-        <div>
-          <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
-            THE JOURNAL ENTRY
-          </p>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr style={{ backgroundColor: "#14213D", color: "white" }}>
-                <th className="text-left py-1.5 px-3 font-semibold" style={{ fontSize: 12 }}>Account</th>
-                <th className="text-left py-1.5 px-3 font-semibold" style={{ fontSize: 12 }}>Type</th>
-                <th className="text-left py-1.5 px-3 font-semibold" style={{ fontSize: 12 }}>Side</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((a: any, i: number) => {
-                const cat = getAccountCategory(a.account_name ?? "");
-                const isDebit = a.side === "debit";
-                return (
-                  <tr key={i} className="border-b border-slate-100">
-                    <td className="py-1.5 px-3" style={{ fontSize: 13, fontWeight: isDebit ? 600 : 400, paddingLeft: isDebit ? 12 : 28 }}>
-                      {a.account_name}
-                    </td>
-                    <td className="py-1.5 px-3">
-                      <span
-                        className="rounded px-1.5 py-0.5"
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: cat === "asset_expense" ? "#2563eb" : "#7c3aed",
-                          backgroundColor: cat === "asset_expense" ? "#eff6ff" : "#f5f3ff",
-                        }}
-                      >
-                        {cat === "asset_expense" ? "(+Dr / -Cr)" : "(-Dr / +Cr)"}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-3 font-bold" style={{ fontSize: 13, color: isDebit ? "#2563eb" : "#7c3aed" }}>
-                      {isDebit ? "DR" : "CR"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* Collapsible why */}
-          <button
-            onClick={() => setShowWhy(!showWhy)}
-            className="mt-2 text-xs font-medium"
-            style={{ color: "#64748b" }}
-          >
-            💡 {showWhy ? "Hide" : "Why these entries?"}
-          </button>
-          {showWhy && question.explanation_correct && (
-            <p className="mt-1 text-xs leading-relaxed" style={{ color: "#64748b" }}>
-              {question.explanation_correct}
-            </p>
-          )}
+      <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
+        RELATED JOURNAL ENTRIES
+      </p>
+      {jeData.map((je, idx) => (
+        <div key={idx} className="space-y-1.5">
+          <p className="text-xs font-semibold" style={{ color: "#374151" }}>{je.label}</p>
+          {Array.isArray(je.entries) && je.entries.map((entry: any, ei: number) => {
+            // Build legacy group format for JournalEntryTable
+            const lines = (entry.accounts || entry.lines || []).map((line: any) => ({
+              account: line.account_name || line.account,
+              side: line.side || "debit",
+              debit: line.side === "debit" ? (line.amount || 0) : 0,
+              credit: line.side === "credit" ? (line.amount || 0) : 0,
+              debit_credit_reason: line.debit_credit_reason || line.reason,
+              amount_source: line.amount_source,
+            }));
+            return (
+              <JournalEntryTable
+                key={ei}
+                completedJson={[{
+                  label: entry.description || `Entry ${ei + 1}`,
+                  lines,
+                  unbalanced: false,
+                }]}
+                mode="completed"
+                heading={entry.description || undefined}
+                showHeading={!!entry.description}
+              />
+            );
+          })}
         </div>
-      )}
+      ))}
+    </div>
+  );
+}
 
-      {suppEntries.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowSupp(!showSupp)}
-            className="text-xs font-medium"
-            style={{ color: "#64748b" }}
-          >
-            📝 {showSupp ? "Hide" : "Show"} related journal entries ({suppEntries.length})
-          </button>
-          {showSupp && (
-            <div className="mt-2 space-y-3">
-              {suppEntries.map((entry: any, idx: number) => (
-                <div key={idx} className="rounded border border-slate-200 p-3">
-                  {entry.description && (
-                    <p className="text-xs font-medium mb-2" style={{ color: "#374151" }}>
-                      {entry.description}
-                    </p>
-                  )}
-                  {Array.isArray(entry.accounts || entry.lines) && (
-                    <div className="text-xs space-y-1" style={{ color: "#475569" }}>
-                      {(entry.accounts || entry.lines).map((line: any, li: number) => {
-                        const isDebit = line.side === "debit";
-                        return (
-                          <p key={li} style={{ paddingLeft: isDebit ? 0 : 16 }}>
-                            <span className="font-bold" style={{ color: isDebit ? "#2563eb" : "#7c3aed" }}>
-                              {isDebit ? "DR" : "CR"}
-                            </span>{" "}
-                            {line.account_name || line.account}
-                            {line.amount && (
-                              <span className="ml-2" style={{ color: "#94a3b8" }}>
-                                {typeof line.amount === "number" ? `$${line.amount.toLocaleString()}` : line.amount}
-                              </span>
-                            )}
-                          </p>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
+function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
+  const sorted = [...assets].sort(sortBySourceRef);
+
+  return (
+    <div className="space-y-3">
+      <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
+        RELATED EXAMPLES
+      </p>
+      {sorted.map((a) => {
+        const badge = assetTypeBadge(a.source_ref);
+        const hasLink = a.lw_activity_url && a.lw_activity_url.trim().length > 0;
+
+        return (
+          <div key={a.id} className="rounded-lg border border-slate-200 p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span
+                className="rounded px-1.5 py-0.5 font-bold"
+                style={{
+                  fontSize: 10,
+                  color: "#2563eb",
+                  backgroundColor: "#eff6ff",
+                }}
+              >
+                {badge}
+              </span>
+              <p className="text-sm font-medium text-slate-700">
+                {a.source_ref} — {a.problem_title}
+              </p>
             </div>
-          )}
-        </div>
-      )}
-
-      {accounts.length === 0 && suppEntries.length === 0 && (
-        <p className="text-xs text-center py-4" style={{ color: "#94a3b8" }}>
-          No journal entries available for this question.
-        </p>
-      )}
+            {hasLink ? (
+              <a
+                href={a.lw_activity_url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
+                style={{ color: "#2563eb" }}
+              >
+                View in course <ExternalLink className="h-3 w-3" />
+              </a>
+            ) : (
+              <span
+                className="rounded px-1.5 py-0.5 text-xs shrink-0"
+                style={{ color: "#94a3b8", backgroundColor: "#f1f5f9", fontSize: 10 }}
+              >
+                Link pending
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 /** Render text as bulleted list — splits on newlines/sentences */
 function BulletedText({ text }: { text: string }) {
-  // Split on newlines, periods followed by capital letters, or bullet chars
   const bullets = text
     .split(/\n|(?<=\.)\s+(?=[A-Z])/)
     .map((s) => s.replace(/^[•\-–—]\s*/, "").trim())
@@ -514,122 +527,5 @@ function BulletedText({ text }: { text: string }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function ConceptsTab({ assets }: { assets: AssetInfo[] }) {
-  const conceptAsset = assets.find((a) => a.concept_notes);
-  const formulaAsset = assets.find((a) => a.important_formulas);
-
-  const formulaText = useMemo(() => {
-    if (!formulaAsset?.important_formulas) return null;
-    const f = formulaAsset.important_formulas;
-    if (typeof f === "string") return f;
-    if (Array.isArray(f)) return f.join("\n\n");
-    return JSON.stringify(f, null, 2);
-  }, [formulaAsset]);
-
-  return (
-    <div className="space-y-5">
-      {conceptAsset?.concept_notes && (
-        <div>
-          <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#d97706" }}>
-            KEY CONCEPTS
-          </p>
-          <div
-            className="rounded-md p-4"
-            style={{ backgroundColor: "#fffbeb", borderLeft: "3px solid #d97706" }}
-          >
-            <BulletedText text={conceptAsset.concept_notes} />
-          </div>
-        </div>
-      )}
-
-      {formulaText && (
-        <div>
-          <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
-            IMPORTANT FORMULAS
-          </p>
-          <div
-            className="rounded-md p-4"
-            style={{ backgroundColor: "#f1f5f9", borderLeft: "3px solid #14213D" }}
-          >
-            <BulletedText text={formulaText} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TrapsTab({ assets }: { assets: AssetInfo[] }) {
-  // Gather all trap strings across assets
-  const allTraps: string[] = [];
-  for (const a of assets) {
-    if (!a.exam_traps) continue;
-    if (typeof a.exam_traps === "string") {
-      // Split long text into individual traps
-      a.exam_traps
-        .split(/\n|(?<=\.)\s+(?=[A-Z])/)
-        .map((s: string) => s.replace(/^[•\-–—]\s*/, "").trim())
-        .filter((s: string) => s.length > 0)
-        .forEach((t: string) => allTraps.push(t));
-    } else if (Array.isArray(a.exam_traps)) {
-      for (const t of a.exam_traps) {
-        if (typeof t === "string" && t.trim()) allTraps.push(t.trim());
-      }
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#dc2626" }}>
-        ⚠ EXAM TRAPS
-      </p>
-      {allTraps.length > 0 ? (
-        <div
-          className="rounded-md p-4"
-          style={{ backgroundColor: "#fef2f2", borderLeft: "3px solid #dc2626" }}
-        >
-          <ul className="space-y-3">
-            {allTraps.map((t, i) => (
-              <li key={i} className="flex gap-2 text-sm leading-relaxed">
-                <span className="shrink-0 mt-0.5" style={{ color: "#dc2626" }}>⚠</span>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <p className="text-xs text-center py-4" style={{ color: "#94a3b8" }}>
-          No exam traps available.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ExampleTab({ assets }: { assets: AssetInfo[] }) {
-  const sorted = [...assets].sort(sortBySourceRef).slice(0, 2);
-
-  return (
-    <div className="space-y-3">
-      {sorted.map((a) => (
-        <div key={a.id} className="rounded-lg border border-slate-200 p-4 space-y-2">
-          <p className="text-sm font-medium text-slate-700">
-            {a.source_ref} — {a.problem_title}
-          </p>
-          <a
-            href={`https://learn.surviveaccounting.com/solutions/${a.asset_name}?ref=lw`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block text-xs font-medium"
-            style={{ color: "#2563eb" }}
-          >
-            View Full Solution →
-          </a>
-        </div>
-      ))}
-    </div>
   );
 }
