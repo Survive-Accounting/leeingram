@@ -412,7 +412,7 @@ function SolutionTab({ question }: { question: Question }) {
           showHeading={false}
         />
         {question.explanation_correct && (
-          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
+          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
             <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
             <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
           </div>
@@ -436,7 +436,7 @@ function SolutionTab({ question }: { question: Question }) {
           <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
             ✓ CORRECT JOURNAL ENTRY
           </p>
-          <div className="rounded-md p-3" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
+          <div className="rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
             {correctRows ? <JEOptionMiniTable rows={correctRows} /> : <p className="text-sm" style={{ color: "#e8e8e8" }}>{optMap[question.correct_answer]}</p>}
             {question.explanation_correct && (
               <p className="text-sm leading-relaxed" style={{ marginTop: 8, color: "#e8e8e8" }}>{question.explanation_correct}</p>
@@ -467,7 +467,7 @@ function SolutionTab({ question }: { question: Question }) {
         <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
           ✓ WHY THIS IS CORRECT
         </p>
-        <div className="rounded-md p-4" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
+        <div className="rounded-md p-4" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
           <ExplanationText text={question.explanation_correct} />
         </div>
       </div>
