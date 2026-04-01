@@ -89,12 +89,12 @@ function buildFlowchartHtml(flowchart: any): string {
   .title {
     background: #131E35;
     color: white;
-    padding: 14px 20px;
+    padding: 10px 16px;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
   .step {
     border-radius: 8px;
