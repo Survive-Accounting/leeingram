@@ -6,8 +6,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Copy } from "lucide-react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { toast } from "sonner";
 
 export default function SurviveChapterAdmin() {
   const { data: courses } = useQuery({
