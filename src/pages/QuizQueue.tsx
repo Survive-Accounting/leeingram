@@ -222,7 +222,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapt
         `${wrong1}${paste(ansUrl("b"))}`,
         `${wrong2}${paste(ansUrl("c"))}`,
         `${wrong3}${paste(ansUrl("d"))}`,
-        correctExp, incorrectExp,
+        correctExp, incorrectExp, bankName,
       ].map(esc).join(",");
     }
 
