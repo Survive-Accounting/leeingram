@@ -102,7 +102,35 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── Tiered Paywall Card ─────────────────────────────────────────────
+function SectionHeaderWithToggle({ label, count, isAdmin, sectionName, isVisible, onToggle }: {
+  label: string; count?: number; isAdmin?: boolean; sectionName: string; isVisible: boolean; onToggle: (name: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: "#94A3B8" }}>
+          {label}
+        </p>
+        {count !== undefined && count > 0 && (
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{count}</span>
+        )}
+      </div>
+      {isAdmin && (
+        <button
+          onClick={() => onToggle(sectionName)}
+          className="flex items-center gap-1 text-[10px] font-semibold transition-colors hover:opacity-80"
+          style={{ color: isVisible ? "#94a3b8" : "#dc2626", background: "none", border: "none", cursor: "pointer" }}
+          title={isVisible ? "Hide from students" : "Show to students"}
+        >
+          {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+          {!isVisible && "Hidden"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+
 
 function TieredPaywallCard({ enrollUrl, fullPassLink, chapterLink, chapterNumber, theme }: {
   enrollUrl: string; fullPassLink?: any; chapterLink?: any; chapterNumber?: number | null; theme: Theme;
