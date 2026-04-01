@@ -1237,6 +1237,41 @@ export type Database = {
           },
         ]
       }
+      chapter_section_config: {
+        Row: {
+          chapter_id: string
+          hidden_item_ids: string[]
+          id: string
+          is_visible: boolean
+          section_name: string
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          hidden_item_ids?: string[]
+          id?: string
+          is_visible?: boolean
+          section_name: string
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          hidden_item_ids?: string[]
+          id?: string
+          is_visible?: boolean
+          section_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_section_config_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_topics: {
         Row: {
           asset_codes: string[] | null
