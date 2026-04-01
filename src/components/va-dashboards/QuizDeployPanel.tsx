@@ -413,6 +413,16 @@ function TopicCard({
                 {bankName}
               </button>
 
+              {/* Debug JSON */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[10px] text-muted-foreground"
+                onClick={handleDebugJSON}
+              >
+                Debug JSON
+              </Button>
+
               {/* Export */}
               <Button
                 size="sm"
