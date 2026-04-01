@@ -540,6 +540,18 @@ function TopicCard({
               <InstructionsPanel />
             </div>
           )}
+
+          {/* Start/End screen HTML copy buttons */}
+          <div className="mt-2 ml-6 flex items-center gap-2 flex-wrap">
+            <CopyBtn
+              label={<><Copy className="h-3 w-3 mr-0.5" /> Copy Start Screen HTML</>}
+              text={`<iframe src="${BASE}/quiz-start/${topic.id}" width="100%" height="500" frameborder="0" style="border:none;overflow:hidden;"></iframe>`}
+            />
+            <CopyBtn
+              label={<><Copy className="h-3 w-3 mr-0.5" /> Copy End Screen HTML</>}
+              text={`<iframe src="${BASE}/quiz-end/${topic.id}" width="100%" height="520" frameborder="0" style="border:none;overflow:hidden;"></iframe>`}
+            />
+          </div>
         </div>
 
         {/* Question list */}

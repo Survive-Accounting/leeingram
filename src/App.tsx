@@ -84,6 +84,8 @@ import SurviveChapterAdmin from "./pages/SurviveChapterAdmin";
 import QuizExplanation from "./pages/QuizExplanation";
 import QuizQuestion from "./pages/QuizQuestion";
 import QuizChoice from "./pages/QuizChoice";
+import QuizStart from "./pages/QuizStart";
+import QuizEnd from "./pages/QuizEnd";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -130,6 +132,8 @@ const AppRoutes = () => {
       <Route path="/quiz-explanation/:questionId" element={<QuizExplanation />} />
       <Route path="/quiz-question/:questionId" element={<QuizQuestion />} />
       <Route path="/quiz-choice/:questionId/:choiceNumber" element={<QuizChoice />} />
+      <Route path="/quiz-start/:topicId" element={<QuizStart />} />
+      <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />

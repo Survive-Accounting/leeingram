@@ -1620,20 +1620,6 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, is
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-7 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-                                  disabled={isExporting}
-                                  onClick={() => handleExport(t)}
-                                >
-                                  {isExporting ? (
-                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  ) : (
-                                    <FileDown className="h-3 w-3 mr-1" />
-                                  )}
-                                  Export CSV
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
                                   className="h-7 text-xs"
                                   onClick={() => setReviewTopic({ id: t.id, name: t.topic_name })}
                                 >
