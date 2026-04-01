@@ -126,7 +126,7 @@ function buildDebugJSON(
     const corAns = letterToNumber(q.correct_answer);
     const corNum = parseInt(corAns, 10);
     const isJE = q.question_type === "je_recall";
-    const choiceHeight = isJE ? 150 : 60;
+    const choiceHeight = isJE ? 142 : 60;
     const answers = [q.answer_a, q.answer_b, q.answer_c, q.answer_d];
     const correctOptionValue = answers[corNum - 1] || null;
 
@@ -204,10 +204,10 @@ async function buildTopicXLSX(
   const rows = questions.map((q, i) => {
     const corAns = letterToNumber(q.correct_answer);
     const questionIframe = iframeTag(`/quiz-question/${q.id}`, 120);
-    const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 150 : 60);
-    const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 150 : 60);
-    const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 150 : 60);
-    const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 150 : 60);
+    const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 142 : 60);
+    const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 142 : 60);
+    const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 142 : 60);
+    const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 142 : 60);
     const explanationIframe = iframeTag(`/quiz-explanation/${q.id}`, 600);
 
     // Log iframe URLs
@@ -351,7 +351,7 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
           <CopyBtn
             key={num}
             label={["A", "B", "C", "D"][i]}
-            text={iframeTag(`/quiz-choice/${q.id}/${num}`, isJE ? 150 : 60)}
+            text={iframeTag(`/quiz-choice/${q.id}/${num}`, isJE ? 142 : 60)}
             className="w-7 px-0"
           />
         ))}

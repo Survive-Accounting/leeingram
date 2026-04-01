@@ -12,6 +12,10 @@ function useEmbedSetup() {
     document.body.style.background = "transparent";
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.documentElement.style.margin = "0";
+    document.documentElement.style.padding = "0";
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
   }, []);
   useEffect(() => {
     const send = () => {
@@ -67,7 +71,7 @@ export default function QuizChoice() {
     const ordered = [...debits, ...credits];
 
     return (
-      <div ref={ref} style={{ padding: 4, background: "transparent" }}>
+      <div ref={ref} style={{ padding: 0, margin: 0, background: "transparent" }}>
         <table style={{ borderCollapse: "collapse", width: "100%", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
           <thead>
             <tr>
