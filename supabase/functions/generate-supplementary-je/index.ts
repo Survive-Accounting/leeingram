@@ -103,13 +103,13 @@ Rules:
 7. Order entries by logical sequence (costs → billings → collections → revenue → closing).
 8. Return ONLY valid JSON, no markdown.`;
 
-    const userPrompt = `Problem:\n${asset.problem_context || asset.survive_problem_text || "No problem text"}
+    const userPrompt = `${chapterContext ? `Chapter context: ${chapterContext}\n\n` : ""}Problem:\n${asset.problem_context || asset.survive_problem_text || "No problem text"}
 
 Solution:\n${asset.survive_solution_text || "No solution text"}
 
 ${instructions ? `Instructions:\n${instructions}` : ""}
 
-${accountList ? `Available accounts:\n${accountList}` : ""}
+Account whitelist (${accountSource} source — use ONLY these names):\n${accountList}
 
 Identify all implicit journal entries a student studying this problem should understand.`;
 
