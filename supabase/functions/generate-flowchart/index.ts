@@ -142,22 +142,10 @@ function buildFlowchartHtml(flowchart: any): string {
     text-align: center;
     padding-bottom: 8px;
   }
-  .branding-inner {
-    display: inline-block;
-    background: #131E35;
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
   .branding-label {
     display: inline-block;
     font-size: 13px;
     color: #6B7280;
-    vertical-align: middle;
   }
 </style>
 </head>
@@ -166,7 +154,6 @@ function buildFlowchartHtml(flowchart: any): string {
   ${stepsHtml}
   ${remindersHtml}
   <div class="branding">
-    <span class="branding-inner">SA</span>
     <span class="branding-label"><b style="color:#131E35">SurviveAccounting</b>.com</span>
   </div>
 </body>
