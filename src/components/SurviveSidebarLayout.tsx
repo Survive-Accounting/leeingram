@@ -40,8 +40,7 @@ const PHASE_1_ITEMS = [
 const PHASE_2_ITEMS = [
   { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
   { label: "Quiz Queue", path: "/quiz-queue", icon: Package },
-  { label: "Video Queue", path: "/video-queue", icon: Video },
-  { label: "Deployment Queue", path: "/deployment", icon: Rocket },
+  { label: "Quiz Deployment", path: "/quizzes-ready", icon: Rocket },
 ];
 
 const QC_ITEMS = [

@@ -356,6 +356,7 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
         explanation_d: q.explanation_d || null,
         je_accounts: q.je_accounts || null,
         je_description: q.je_description || null,
+        example_asset_id: exampleAssetId,
         review_status: "pending",
       } as any);
 
