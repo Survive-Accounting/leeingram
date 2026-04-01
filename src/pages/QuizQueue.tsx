@@ -1375,9 +1375,8 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, is
         return;
       }
 
-      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name, chapterName);
-      const slug = topic.topic_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      const filename = `ch${chapterNumber ?? 0}-${slug}-quiz.csv`;
+      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name, { chapterName, courseCode, chapterNumber, topicNumber: topic.topic_number ?? undefined });
+      const filename = buildQuizFilename(courseCode, chapterNumber, topic.topic_number ?? undefined, topic.topic_name);
       downloadCsv(csv, filename);
       toast.success("CSV exported — ready for LearnWorlds import");
     } catch {
