@@ -1808,15 +1808,15 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
               style={{ borderBottom: `1px solid ${theme.border}` }}
             >
               <span className="text-[11px]" style={{ color: theme.textMuted }}>
-                Built for you in 2026 — and growing.{" "}
+                This content is brand new —{" "}
                 <button
                   onClick={() => setFeedbackOpen(true)}
                   className="underline hover:no-underline"
                   style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
                 >
-                  Share feedback →
+                  share your feedback
                 </button>
-                {" — Lee"}
+                .
               </span>
               <button
                 onClick={dismissBanner}
