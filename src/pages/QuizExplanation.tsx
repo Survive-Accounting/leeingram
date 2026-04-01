@@ -333,18 +333,18 @@ function JEOptionMiniTable({ rows }: { rows: { account_name: string; side: strin
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
-        <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-          <th style={{ textAlign: "left", padding: "3px 4px", fontSize: 11, color: "#64748b" }}>Account</th>
-          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#64748b", width: 50 }}>Debit</th>
-          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#64748b", width: 50 }}>Credit</th>
+        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
+          <th style={{ textAlign: "left", padding: "3px 4px", fontSize: 11, color: "#94a3b8" }}>Account</th>
+          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#94a3b8", width: 50 }}>Debit</th>
+          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#94a3b8", width: 50 }}>Credit</th>
         </tr>
       </thead>
       <tbody>
         {ordered.map((r, i) => (
-          <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-            <td style={{ padding: "3px 4px", paddingLeft: r.side === "credit" ? 20 : 4, fontSize: 13 }}>{r.account_name}</td>
-            <td style={{ textAlign: "center", padding: "3px 4px", color: "#16a34a" }}>{r.side === "debit" ? "✓" : ""}</td>
-            <td style={{ textAlign: "center", padding: "3px 4px", color: "#16a34a" }}>{r.side === "credit" ? "✓" : ""}</td>
+          <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <td style={{ padding: "3px 4px", paddingLeft: r.side === "credit" ? 20 : 4, fontSize: 13, color: "#e8e8e8" }}>{r.account_name}</td>
+            <td style={{ textAlign: "center", padding: "3px 4px", color: "#4ade80" }}>{r.side === "debit" ? "✓" : ""}</td>
+            <td style={{ textAlign: "center", padding: "3px 4px", color: "#4ade80" }}>{r.side === "credit" ? "✓" : ""}</td>
           </tr>
         ))}
       </tbody>
