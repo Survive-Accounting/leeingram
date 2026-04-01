@@ -1708,7 +1708,14 @@ export default function QuizQueue() {
   const { impersonating } = useImpersonation();
   const { workspace } = useActiveWorkspace();
   const navigate = useNavigate();
+  const [courseCode, setCourseCode] = useState<string>("");
   const showPlaceholder = isVa || !!impersonating;
+
+  useEffect(() => {
+    if (!workspace?.courseId) return;
+    supabase.from("courses").select("code").eq("id", workspace.courseId).single()
+      .then(({ data }) => { if (data?.code) setCourseCode(data.code); });
+  }, [workspace?.courseId]);
 
   if (showPlaceholder) {
     return (
