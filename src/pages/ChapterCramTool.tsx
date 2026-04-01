@@ -1,219 +1,380 @@
-/**
- * ChapterCramTool — "Survive This Chapter" hub page.
- * Route: /cram/:chapterId or /cram?chapter_id=[uuid]
- *
- * Sections:
- *   1. Chapter Tools (Cram Tool card, Key Formulas, Exam Traps)
- *   2. Topic Breakdown (if topics are locked)
- *   3. JE Cram Tool (existing card deck)
- */
-
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { useAuth } from "@/contexts/AuthContext";
-import { Lock, ExternalLink, Calendar, Eye, EyeOff, CheckCircle, Shuffle, ChevronDown, ChevronUp, ChevronRight, Trash2, CheckCircle2 } from "lucide-react";
+import { CheckCircle, Eye, EyeOff, Lock, Shuffle } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
-const AORAKI_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png";
-const LEE_HERO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
+const PREVIEW_LIMIT = 3;
 
-const lightTheme = {
+const theme = {
   pageBg: "#FFFFFF",
-  cardBg: "#F8F9FA",
-  text: "#1A1A1A",
-  textMuted: "#666666",
-  heading: "#131E35",
-  border: "#E0E0E0",
-  tableHeaderBg: "#1A2E55",
-  tableAltBg: "#F8F9FA",
-  watermarkOverlay: "rgba(255,255,255,0.93)",
+  cardBg: "#FFFFFF",
+  mutedBg: "#F8FAFC",
+  text: "#0F172A",
+  textMuted: "#64748B",
+  label: "#94A3B8",
+  heading: "#14213D",
+  border: "#E2E8F0",
+  navy: "#14213D",
+  navySoft: "#EFF6FF",
+  successBg: "#F0FDF4",
+  successBorder: "#BBF7D0",
+  successText: "#166534",
+  warningBg: "#FEF2F2",
+  warningText: "#DC2626",
+  amberBg: "#FFFBEB",
+  amberBorder: "#FDE68A",
+  amberText: "#92400E",
 };
 
-type Theme = typeof lightTheme;
-
-// ── Types ───────────────────────────────────────────────────────────
-
-interface SupplementaryRow {
+type SupplementaryRow = {
   account_name: string;
   side: "debit" | "credit";
   debit_credit_reason?: string;
   amount_source?: string;
-}
+};
 
-interface SupplementaryEntry {
+type SupplementaryEntry = {
   label: string;
   rows: SupplementaryRow[];
-}
+};
 
-interface CramCard {
+type CompletedRow = {
+  account_name: string;
+  debit: number | null;
+  credit: number | null;
+  debit_credit_reason?: string;
+  amount_source?: string;
+};
+
+type CramCard = {
   id: string;
   assetName: string;
   sourceRef: string;
   label: string;
   rows: SupplementaryRow[];
-  completedRows: { account_name: string; debit: number | null; credit: number | null; debit_credit_reason?: string; amount_source?: string }[] | null;
+  completedRows: CompletedRow[] | null;
+};
+
+type FormulaCard = {
+  name: string;
+  expression: string;
+  explanation?: string;
+};
+
+type SectionConfigRow = {
+  id: string;
+  chapter_id: string;
+  section_name: string;
+  is_visible: boolean;
+  hidden_item_ids: string[] | null;
+  updated_at: string;
+};
+
+function parseSourceRef(ref: string): { prefix: string; num: number; sub: number } {
+  const match = ref.match(/^([A-Z]+)(\d+)(?:\.(\d+))?/i);
+  if (!match) return { prefix: "ZZ", num: 9999, sub: 0 };
+  return {
+    prefix: match[1].toUpperCase(),
+    num: Number.parseInt(match[2], 10),
+    sub: match[3] ? Number.parseInt(match[3], 10) : 0,
+  };
 }
 
-// ── Match supplementary entries to completed entries ─────────────────
+const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, EX: 2, P: 3 };
 
-function matchCompletedEntry(
-  suppEntry: SupplementaryEntry,
-  completedJson: any
-): CramCard["completedRows"] {
+function sortBySourceRef(a: { source_ref?: string | null }, b: { source_ref?: string | null }) {
+  const left = parseSourceRef(a.source_ref || "");
+  const right = parseSourceRef(b.source_ref || "");
+  const leftOrder = PREFIX_ORDER[left.prefix] ?? 99;
+  const rightOrder = PREFIX_ORDER[right.prefix] ?? 99;
+
+  if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+  if (left.num !== right.num) return left.num - right.num;
+  return left.sub - right.sub;
+}
+
+function matchCompletedEntry(suppEntry: SupplementaryEntry, completedJson: unknown): CompletedRow[] | null {
   if (!completedJson) return null;
-  const parsed: CanonicalJEPayload = typeof completedJson === "string" ? JSON.parse(completedJson) : completedJson;
-  if (!isCanonicalJE(parsed)) return null;
 
-  const suppAccounts = new Set(suppEntry.rows.map(r => r.account_name.toLowerCase().trim()));
+  try {
+    const parsed: CanonicalJEPayload = typeof completedJson === "string" ? JSON.parse(completedJson) : (completedJson as CanonicalJEPayload);
+    if (!isCanonicalJE(parsed)) return null;
 
-  let bestMatch: any[] | null = null;
-  let bestScore = 0;
+    const suppAccounts = new Set(suppEntry.rows.map((row) => row.account_name.toLowerCase().trim()));
+    let bestMatch: CompletedRow[] | null = null;
+    let bestScore = 0;
 
-  for (const section of parsed.scenario_sections) {
-    for (const entry of section.entries_by_date) {
-      const entryAccounts = new Set((entry.rows || []).map((r: any) => (r.account_name || "").toLowerCase().trim()));
-      let overlap = 0;
-      for (const acc of suppAccounts) {
-        if (entryAccounts.has(acc)) overlap++;
-      }
-      if (overlap > bestScore) {
-        bestScore = overlap;
-        bestMatch = entry.rows;
+    for (const section of parsed.scenario_sections) {
+      for (const entry of section.entries_by_date) {
+        const entryRows = (entry.rows || []) as CompletedRow[];
+        const entryAccounts = new Set(entryRows.map((row) => (row.account_name || "").toLowerCase().trim()));
+        let overlap = 0;
+
+        for (const account of suppAccounts) {
+          if (entryAccounts.has(account)) overlap += 1;
+        }
+
+        if (overlap > bestScore) {
+          bestScore = overlap;
+          bestMatch = entryRows;
+        }
       }
     }
+
+    return bestScore > 0 ? bestMatch : null;
+  } catch {
+    return null;
   }
-
-  if (bestScore === 0) return null;
-  return bestMatch;
 }
 
-// ── Section Label ───────────────────────────────────────────────────
+function parseImportantFormulas(raw: unknown): FormulaCard[] {
+  const formulas: FormulaCard[] = [];
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[9px] font-bold tracking-[0.15em] uppercase mb-3" style={{ color: "#94A3B8" }}>
-      {children}
-    </p>
-  );
+  const visit = (value: unknown) => {
+    if (!value) return;
+
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && parsed !== value && (Array.isArray(parsed) || typeof parsed === "object")) {
+          visit(parsed);
+          return;
+        }
+      } catch {
+        // Fall through to plain text parsing.
+      }
+
+      trimmed
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .forEach((line) => {
+          const parts = line.split(/\s+[—–-]\s+/);
+          const formulaPart = parts[0]?.trim() || "";
+          const explanation = parts.slice(1).join(" — ").trim() || undefined;
+          const eqIndex = formulaPart.indexOf("=");
+
+          if (eqIndex > 0) {
+            const name = formulaPart.slice(0, eqIndex).trim();
+            formulas.push({
+              name: name || formulaPart,
+              expression: formulaPart,
+              explanation,
+            });
+            return;
+          }
+
+          formulas.push({
+            name: formulaPart,
+            expression: formulaPart,
+            explanation,
+          });
+        });
+      return;
+    }
+
+    if (typeof value === "object") {
+      const record = value as Record<string, unknown>;
+
+      if (record.formulas) {
+        visit(record.formulas);
+        return;
+      }
+
+      const name = record.name ?? record.formula_name ?? record.title;
+      const expression = record.expression ?? record.formula_expression ?? record.formula ?? record.value;
+      const explanation = record.explanation ?? record.description ?? record.note;
+
+      if (typeof name === "string" && typeof expression === "string") {
+        formulas.push({
+          name: name.trim(),
+          expression: expression.trim(),
+          explanation: typeof explanation === "string" ? explanation.trim() : undefined,
+        });
+        return;
+      }
+
+      Object.values(record).forEach(visit);
+    }
+  };
+
+  visit(raw);
+  return formulas.filter((formula) => formula.name.trim() && formula.expression.trim());
 }
 
-function SectionHeaderWithToggle({ label, count, isAdmin, sectionName, isVisible, onToggle }: {
-  label: string; count?: number; isAdmin?: boolean; sectionName: string; isVisible: boolean; onToggle: (name: string) => void;
+function SectionHeaderWithToggle({
+  label,
+  count,
+  isAdmin,
+  sectionName,
+  isVisible,
+  onToggle,
+}: {
+  label: string;
+  count?: number;
+  isAdmin: boolean;
+  sectionName: string;
+  isVisible: boolean;
+  onToggle: (sectionName: string) => Promise<void> | void;
 }) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-2">
-        <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: "#94A3B8" }}>
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="flex items-center gap-2 flex-wrap min-w-0">
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: theme.label }}>
           {label}
         </p>
-        {count !== undefined && count > 0 && (
-          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{count}</span>
+        {typeof count === "number" && count > 0 && (
+          <span
+            className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
+            style={{ background: "#F1F5F9", color: theme.textMuted }}
+          >
+            {count}
+          </span>
+        )}
+        {isAdmin && !isVisible && (
+          <span
+            className="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+            style={{ background: theme.warningBg, color: theme.warningText }}
+          >
+            Hidden from students
+          </span>
         )}
       </div>
+
       {isAdmin && (
         <button
+          type="button"
           onClick={() => onToggle(sectionName)}
-          className="flex items-center gap-1 text-[10px] font-semibold transition-colors hover:opacity-80"
-          style={{ color: isVisible ? "#94a3b8" : "#dc2626", background: "none", border: "none", cursor: "pointer" }}
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-80"
+          style={{ background: "transparent", border: `1px solid ${theme.border}`, color: isVisible ? theme.textMuted : theme.warningText }}
           title={isVisible ? "Hide from students" : "Show to students"}
         >
-          {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-          {!isVisible && "Hidden"}
+          {isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
         </button>
       )}
     </div>
   );
 }
 
-
-
-function TieredPaywallCard({ enrollUrl, fullPassLink, chapterLink, chapterNumber, theme }: {
-  enrollUrl: string; fullPassLink?: any; chapterLink?: any; chapterNumber?: number | null; theme: Theme;
+function TieredPaywallCard({
+  enrollUrl,
+  chapterNumber,
+  fullPassLink,
+  chapterLink,
+}: {
+  enrollUrl: string;
+  chapterNumber: number | null;
+  fullPassLink?: any;
+  chapterLink?: any;
 }) {
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at ? now < new Date(fullPassLink.sale_expires_at) : false;
-  const fullPassUrl = fullPassLink?.url || enrollUrl;
-  const chapterUrl = chapterLink?.url || enrollUrl;
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+  const fullPassUrl = fullPassLink?.url || enrollUrl;
+  const singleChapterUrl = chapterLink?.url || enrollUrl;
 
   return (
-    <div className="rounded-xl p-5 space-y-4" style={{ background: "#FFFBF0" }}>
-      <div className="text-center mb-2">
-        <Lock className="h-6 w-6 mx-auto mb-2" style={{ color: "#14213D" }} />
-        <p className="text-[15px] font-bold" style={{ color: "#14213D" }}>Unlock all journal entries with a Study Pass</p>
-        <p className="text-[13px] mt-1" style={{ color: theme.textMuted }}>You've seen 3 free journal entries.</p>
+    <div className="rounded-xl p-5" style={{ background: "#FFFBF0", border: `1px solid ${theme.amberBorder}` }}>
+      <div className="text-center">
+        <Lock className="mx-auto h-5 w-5" style={{ color: theme.navy }} />
+        <p className="mt-2 text-[15px] font-bold" style={{ color: theme.navy }}>
+          Unlock the full chapter with a Study Pass
+        </p>
       </div>
-      <div className="relative rounded-xl px-6 py-6" style={{ background: "#14213D", border: "2px solid rgba(212,175,55,0.5)", boxShadow: "0 4px 24px rgba(20,33,61,0.25)" }}>
-        <span className="absolute top-0 right-0 text-[10px] font-bold px-3 py-1.5 rounded-bl-xl rounded-tr-xl" style={{ background: "#CE1126", color: "#FFFFFF" }}>Best Value</span>
-        <p className="font-bold text-[16px] text-white">Full Study Pass — Intermediate Accounting 2</p>
-        <div className="flex items-baseline gap-2 mt-2">
-          {saleActive && fullPassLink?.original_price_cents && <span className="line-through text-[14px]" style={{ color: "rgba(255,255,255,0.45)" }}>{formatPrice(fullPassLink.original_price_cents)}</span>}
-          <span className="font-bold text-[24px] text-white">{formatPrice(fullPassLink?.price_cents || 12500)}</span>
-          {saleActive && fullPassLink?.sale_label && <span className="text-[12px] font-semibold" style={{ color: "#00FFFF" }}>· {fullPassLink.sale_label}</span>}
+
+      <div
+        className="relative mt-4 rounded-xl px-6 py-6"
+        style={{ background: theme.navy, border: "2px solid rgba(212,175,55,0.45)" }}
+      >
+        <span
+          className="absolute right-0 top-0 rounded-bl-xl rounded-tr-xl px-3 py-1.5 text-[10px] font-bold"
+          style={{ background: "#CE1126", color: "#FFFFFF" }}
+        >
+          Best Value
+        </span>
+
+        <p className="text-[16px] font-bold text-white">Full Study Pass</p>
+        <div className="mt-2 flex items-baseline gap-2">
+          {saleActive && fullPassLink?.original_price_cents && (
+            <span className="text-[14px] line-through" style={{ color: "rgba(255,255,255,0.45)" }}>
+              {formatPrice(fullPassLink.original_price_cents)}
+            </span>
+          )}
+          <span className="text-[24px] font-bold text-white">{formatPrice(fullPassLink?.price_cents || 12500)}</span>
         </div>
-        <a href={fullPassUrl} target="_blank" rel="noopener noreferrer" className="block w-full mt-4 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]" style={{ background: "#CE1126", height: 48, lineHeight: "24px" }}>Get Full Access →</a>
-        <p className="text-[11px] mt-3 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>7-day refund policy · Covers Ch 13–22 · Access expires after finals</p>
+        <a
+          href={fullPassUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 block rounded-lg px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-90"
+          style={{ background: "#CE1126" }}
+        >
+          Get Full Access →
+        </a>
       </div>
+
       {chapterNumber && (
-        <div className="rounded-xl px-6 py-5" style={{ border: `1px solid ${theme.border}`, background: theme.pageBg }}>
-          <p className="font-bold text-[15px]" style={{ color: theme.text }}>Chapter {chapterNumber} Only</p>
-          <p className="font-bold text-[22px] mt-1" style={{ color: theme.text }}>{formatPrice(chapterLink?.price_cents || 3000)}</p>
-          <a href={chapterUrl} target="_blank" rel="noopener noreferrer" className="block w-full mt-3 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]" style={{ background: "#006BA6", height: 48, lineHeight: "24px" }}>Buy Chapter {chapterNumber} →</a>
-          <p className="text-[11px] mt-2.5 text-center" style={{ color: theme.textMuted }}>Covers Ch {chapterNumber} only · Access expires after finals</p>
+        <div className="mt-4 rounded-xl px-6 py-5" style={{ background: theme.cardBg, border: `1px solid ${theme.border}` }}>
+          <p className="text-[15px] font-bold" style={{ color: theme.text }}>
+            Chapter {chapterNumber} Only
+          </p>
+          <p className="mt-1 text-[22px] font-bold" style={{ color: theme.text }}>
+            {formatPrice(chapterLink?.price_cents || 3000)}
+          </p>
+          <a
+            href={singleChapterUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 block rounded-lg px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-90"
+            style={{ background: "#006BA6" }}
+          >
+            Buy Chapter {chapterNumber} →
+          </a>
         </div>
       )}
     </div>
   );
 }
 
-// ── Mini Paywall (for formulas / exam traps) ────────────────────────
-
-function MiniPaywall({ enrollUrl, theme }: { enrollUrl: string; theme: Theme }) {
-  return (
-    <div className="rounded-lg p-4 text-center" style={{ background: "#FFFBF0", border: "1px solid #FDE68A" }}>
-      <Lock className="h-5 w-5 mx-auto mb-2" style={{ color: "#14213D" }} />
-      <p className="text-[13px] font-bold" style={{ color: "#14213D" }}>Unlock all content with a Study Pass</p>
-      <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 px-5 py-2 rounded-lg font-bold text-[13px] text-white transition-all hover:brightness-90" style={{ background: "#14213D" }}>Get Access →</a>
-    </div>
-  );
-}
-
-// ── JE Cram Card ────────────────────────────────────────────────────
-
-function CramCardComponent({
+function JournalEntryCard({
   card,
-  theme,
+  hidden,
+  isAdmin,
   isReviewed,
   onReview,
+  onToggleHidden,
 }: {
   card: CramCard;
-  theme: Theme;
+  hidden: boolean;
+  isAdmin: boolean;
   isReviewed: boolean;
   onReview: () => void;
+  onToggleHidden: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const [flashGreen, setFlashGreen] = useState(false);
-
-  const handleReview = () => {
-    if (isReviewed) return;
-    setFlashGreen(true);
-    onReview();
-    setTimeout(() => setFlashGreen(false), 600);
-  };
 
   const displayRows = card.rows.map((suppRow) => {
     const matchedRow = card.completedRows?.find(
-      (cr) => cr.account_name.toLowerCase().trim() === suppRow.account_name.toLowerCase().trim()
+      (row) => row.account_name.toLowerCase().trim() === suppRow.account_name.toLowerCase().trim(),
     );
-    const isCredit = suppRow.side === "credit";
+
     return {
       account_name: suppRow.account_name,
-      isCredit,
+      isCredit: suppRow.side === "credit",
       debit: matchedRow?.debit ?? null,
       credit: matchedRow?.credit ?? null,
       debit_credit_reason: matchedRow?.debit_credit_reason || suppRow.debit_credit_reason || "",
@@ -223,49 +384,60 @@ function CramCardComponent({
 
   return (
     <div
-      className="rounded-xl overflow-hidden transition-all"
+      className="relative rounded-xl border overflow-hidden"
       style={{
-        background: theme.pageBg,
-        border: `1px solid ${flashGreen ? "#22C55E" : isReviewed ? "#BBF7D0" : theme.border}`,
-        borderLeftWidth: isReviewed ? 4 : 1,
-        borderLeftColor: isReviewed ? "#22C55E" : undefined,
-        boxShadow: flashGreen
-          ? "0 0 20px rgba(34,197,94,0.2)"
-          : "0 2px 12px rgba(0,0,0,0.04)",
+        background: theme.cardBg,
+        borderColor: isReviewed ? theme.successBorder : theme.border,
+        boxShadow: "0 2px 10px rgba(15,23,42,0.04)",
+        opacity: hidden ? 0.4 : 1,
       }}
     >
-      <div className="px-4 sm:px-5 pt-4 pb-2">
-        <p className="text-[11px] font-mono" style={{ color: theme.textMuted }}>
-          From {card.sourceRef || card.assetName}
-        </p>
-        <p className="text-[14px] font-bold mt-1 leading-[1.4]" style={{ color: theme.text }}>
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={onToggleHidden}
+          className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-md"
+          style={{ background: hidden ? theme.warningBg : theme.mutedBg, color: hidden ? theme.warningText : theme.textMuted, border: `1px solid ${theme.border}` }}
+          title={hidden ? "Show entry to students" : "Hide entry from students"}
+        >
+          <EyeOff className="h-3.5 w-3.5" />
+        </button>
+      )}
+
+      <div className="px-4 pt-4 pb-2 sm:px-5">
+        <div className="flex flex-wrap items-center gap-2 pr-10">
+          <p className="text-[11px] font-mono" style={{ color: theme.textMuted }}>
+            {card.sourceRef || card.assetName}
+          </p>
+          {isAdmin && hidden && (
+            <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: theme.warningBg, color: theme.warningText }}>
+              Hidden
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-[14px] font-bold leading-[1.4]" style={{ color: theme.text }}>
           {card.label}
         </p>
       </div>
 
-      <div className="px-4 sm:px-5 pb-3">
+      <div className="px-4 pb-3 sm:px-5">
         <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: theme.tableHeaderBg }}>
-                <th className="text-left px-3 py-1.5 text-white font-bold text-[12px]">Account</th>
-                <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Debit</th>
-                <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Credit</th>
+              <tr style={{ background: theme.navy }}>
+                <th className="px-3 py-1.5 text-left text-[12px] font-bold text-white">Account</th>
+                <th className="w-24 px-3 py-1.5 text-right text-[12px] font-bold text-white">Debit</th>
+                <th className="w-24 px-3 py-1.5 text-right text-[12px] font-bold text-white">Credit</th>
               </tr>
             </thead>
             <tbody>
-              {displayRows.map((row, ri) => (
-                <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
-                  <td
-                    className={`px-3 py-1.5 text-[13px] ${row.isCredit ? "pl-10" : ""}`}
-                    style={{ color: theme.text }}
-                  >
+              {displayRows.map((row, index) => (
+                <tr key={`${row.account_name}-${index}`} style={{ background: index % 2 === 0 ? "#FFFFFF" : theme.mutedBg }}>
+                  <td className={`px-3 py-1.5 text-[13px] ${row.isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
                     {row.account_name}
-                    {revealed && row.debit_credit_reason && (
-                      <JETooltip text={row.debit_credit_reason} variant="solutions" />
-                    )}
+                    {revealed && row.debit_credit_reason && <JETooltip text={row.debit_credit_reason} variant="solutions" />}
                   </td>
-                  <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: revealed ? theme.text : theme.textMuted }}>
+                  <td className="px-3 py-1.5 text-right text-[13px] font-mono" style={{ color: revealed ? theme.text : theme.textMuted }}>
                     {!row.isCredit ? (
                       revealed ? (
                         row.debit != null && row.debit !== 0 ? (
@@ -273,11 +445,17 @@ function CramCardComponent({
                             {Number(row.debit).toLocaleString("en-US")}
                             {row.amount_source && <JETooltip text={row.amount_source} variant="solutions" />}
                           </span>
-                        ) : "???"
-                      ) : "???"
-                    ) : ""}
+                        ) : (
+                          "???"
+                        )
+                      ) : (
+                        "???"
+                      )
+                    ) : (
+                      ""
+                    )}
                   </td>
-                  <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: revealed ? theme.text : theme.textMuted }}>
+                  <td className="px-3 py-1.5 text-right text-[13px] font-mono" style={{ color: revealed ? theme.text : theme.textMuted }}>
                     {row.isCredit ? (
                       revealed ? (
                         row.credit != null && row.credit !== 0 ? (
@@ -285,9 +463,15 @@ function CramCardComponent({
                             {Number(row.credit).toLocaleString("en-US")}
                             {row.amount_source && <JETooltip text={row.amount_source} variant="solutions" />}
                           </span>
-                        ) : "???"
-                      ) : "???"
-                    ) : ""}
+                        ) : (
+                          "???"
+                        )
+                      ) : (
+                        "???"
+                      )
+                    ) : (
+                      ""
+                    )}
                   </td>
                 </tr>
               ))}
@@ -296,26 +480,24 @@ function CramCardComponent({
         </div>
       </div>
 
-      <div className="px-4 sm:px-5 pb-4 flex items-center gap-3">
+      <div className="flex items-center gap-3 px-4 pb-4 sm:px-5">
         <button
-          onClick={() => setRevealed(!revealed)}
-          className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold transition-all hover:brightness-95 active:scale-[0.98]"
-          style={{
-            background: revealed ? theme.cardBg : "#FEF3C7",
-            color: revealed ? theme.textMuted : "#92400E",
-            border: `1px solid ${revealed ? theme.border : "#FCD34D"}`,
-          }}
+          type="button"
+          onClick={() => setRevealed((value) => !value)}
+          className="rounded-lg px-4 py-2 text-[12px] font-semibold"
+          style={{ background: revealed ? theme.mutedBg : "#FEF3C7", color: revealed ? theme.textMuted : theme.amberText, border: `1px solid ${revealed ? theme.border : "#FCD34D"}` }}
         >
-          {revealed ? <><EyeOff className="h-3.5 w-3.5" /> Hide Amounts</> : <><Eye className="h-3.5 w-3.5" /> Reveal Amounts</>}
+          {revealed ? "Hide Amounts" : "Reveal Amounts"}
         </button>
         <button
-          onClick={handleReview}
+          type="button"
+          onClick={onReview}
           disabled={isReviewed}
-          className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold transition-all hover:brightness-95 active:scale-[0.98]"
+          className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold"
           style={{
-            background: isReviewed ? "#F0FDF4" : "#DCFCE7",
-            color: isReviewed ? "#86EFAC" : "#166534",
-            border: `1px solid ${isReviewed ? "#BBF7D0" : "#86EFAC"}`,
+            background: isReviewed ? theme.successBg : "#DCFCE7",
+            color: isReviewed ? "#15803D" : theme.successText,
+            border: `1px solid ${isReviewed ? theme.successBorder : "#86EFAC"}`,
             cursor: isReviewed ? "default" : "pointer",
           }}
         >
@@ -327,1433 +509,549 @@ function CramCardComponent({
   );
 }
 
-// ── About Lee Section ───────────────────────────────────────────────
-
-function AboutLeeSection({ theme }: { theme: Theme }) {
-  return (
-    <div className="rounded-xl px-5 py-6 flex flex-col items-center text-center gap-4" style={{ background: theme.pageBg, border: `1px solid ${theme.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
-      <img
-        src={LEE_HERO_URL}
-        alt="Lee Ingram"
-        className="w-full"
-        style={{ objectFit: "contain", borderRadius: 12, maxHeight: 280 }}
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-      />
-      <div className="max-w-[400px]">
-        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Founder of{" "}
-          <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
-            SurviveAccounting.com
-          </a>.
-          <br />
-          Tutoring entrepreneur since 2015.
-          <br />
-          Hope my study tools give you more confidence going into your exam 👍
-          <br />
-          <span className="italic">— Lee</span>
-        </p>
-        <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted }}>
-          Ole Miss Alum<br />
-          B.A. &amp; M.Acc. in Accounting • 3.75 GPA
-        </p>
-      </div>
-      <div className="flex flex-col gap-1.5 text-[12px]">
-        <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
-          <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
-        </a>
-        <a
-          href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1 hover:underline font-semibold"
-          style={{ color: "#3B82F6" }}
-        >
-          <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// ── Chapter Tool Card ───────────────────────────────────────────────
-
-function ChapterToolCard({ icon, title, subtitle, bg, borderColor, buttonLabel, onClick, disabled }: {
-  icon: string; title: string; subtitle: string; bg: string; borderColor: string; buttonLabel: string; onClick: () => void; disabled?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-2" style={{ background: bg, border: `1px solid ${borderColor}`, borderRadius: 10, padding: 16, opacity: disabled ? 0.5 : 1 }}>
-      <span className="text-[20px]">{icon}</span>
-      <p className="text-[14px] font-bold" style={{ color: "#14213D" }}>{title}</p>
-      <p className="text-[12px]" style={{ color: "#64748B" }}>{subtitle}</p>
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className="w-full text-[13px] font-semibold transition-all hover:brightness-95 active:scale-[0.98]"
-        style={{ background: disabled ? "#E2E8F0" : "#14213D", color: disabled ? "#94A3B8" : "#FFFFFF", cursor: disabled ? "default" : "pointer", borderRadius: 8, padding: "8px 16px", marginTop: 12 }}
-      >
-        {buttonLabel}
-      </button>
-    </div>
-  );
-}
-
-// ── Source ref sorting helper ────────────────────────────────────────
-
-const PREFIX_ORDER: Record<string, number> = { BE: 0, QS: 1, E: 2, EX: 2, P: 3 };
-
-function parseSourceRef(ref: string): { prefix: string; num: number; sub: number } {
-  const m = ref.match(/^([A-Z]+)(\d+)(?:\.(\d+))?/i);
-  if (!m) return { prefix: "ZZ", num: 9999, sub: 0 };
-  return { prefix: m[1].toUpperCase(), num: parseInt(m[2], 10), sub: m[3] ? parseInt(m[3], 10) : 0 };
-}
-
-function sortBySourceRef(a: any, b: any): number {
-  const pa = parseSourceRef(a.source_ref || "");
-  const pb = parseSourceRef(b.source_ref || "");
-  const oa = PREFIX_ORDER[pa.prefix] ?? 99;
-  const ob = PREFIX_ORDER[pb.prefix] ?? 99;
-  if (oa !== ob) return oa - ob;
-  if (pa.num !== pb.num) return pa.num - pb.num;
-  return pa.sub - pb.sub;
-}
-
-// ── MAIN COMPONENT ──────────────────────────────────────────────────
-
 export default function ChapterCramTool() {
-  const { chapterId: paramChapterId } = useParams<{ chapterId: string }>();
+  const { chapterId: routeChapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
-  const queryChapterId = searchParams.get("chapter_id") || "";
-  const chapterId = paramChapterId || queryChapterId;
+  const chapterId = routeChapterId || searchParams.get("chapter_id") || "";
   const isPreview = searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const t = lightTheme;
+  const { user, loading: authLoading } = useAuth();
 
   const [reviewedSet, setReviewedSet] = useState<Set<string>>(new Set());
   const [shuffledOrder, setShuffledOrder] = useState<number[] | null>(null);
-  const [formulasOpen, setFormulasOpen] = useState(false);
-  const [trapsOpen, setTrapsOpen] = useState(false);
-  const [videoElapsed, setVideoElapsed] = useState(0);
-  const [openTopicId, setOpenTopicId] = useState<string | null>(null);
   const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p">("be");
-  const [requestedTopics, setRequestedTopics] = useState<Set<string>>(new Set());
 
-  // Ask Lee form state
-  const [askEmail, setAskEmail] = useState("");
-  const [askQuestion, setAskQuestion] = useState("");
-  const [askSending, setAskSending] = useState(false);
-  const [askSent, setAskSent] = useState(false);
-  const [askError, setAskError] = useState("");
-  const [askEmailError, setAskEmailError] = useState("");
-
-  // Admin video manager state
-  const [vmType, setVmType] = useState<"intro" | "showcase" | "topic" | "legacy">("intro");
-  const [vmTopicId, setVmTopicId] = useState<string>("");
-  const [vmVimeoUrl, setVmVimeoUrl] = useState("");
-  const [vmThumbUrl, setVmThumbUrl] = useState("");
-  const [vmTitle, setVmTitle] = useState("");
-  const [vmDate, setVmDate] = useState("");
-  const [vmSaving, setVmSaving] = useState(false);
-  const [vmDeleteConfirm, setVmDeleteConfirm] = useState<string | null>(null);
-
-  // Check if admin
-  const { data: isAdmin } = useQuery({
+  const { data: isAdmin = false } = useQuery({
     queryKey: ["cram-admin-check", user?.id],
+    enabled: !authLoading,
     queryFn: async () => {
       if (!user?.id) return false;
-      const { data } = await supabase.from("va_accounts").select("role").eq("user_id", user.id).maybeSingle();
-      if (data?.role === "admin" || data?.role === "lead_va") return true;
-      // Fallback: check if user email is admin
-      return user.email === "lee@surviveaccounting.com";
+
+      const { data, error } = await supabase
+        .from("va_accounts")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const normalizedEmail = user.email?.toLowerCase() || "";
+      if (["lee@survivestudios.com", "lee@surviveaccounting.com"].includes(normalizedEmail)) return true;
+      if (!data) return true;
+
+      return data.role === "admin" || data.role === "lead_va";
     },
-    enabled: !!user?.id,
   });
 
-  // Fetch chapter info
-  const { data: chapter } = useQuery({
+  const { data: chapter, isLoading: chapterLoading } = useQuery({
     queryKey: ["cram-chapter", chapterId],
+    enabled: !!chapterId,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("chapters")
-        .select("id, chapter_number, chapter_name, course_id, topics_locked, courses!chapters_course_id_fkey(code, course_name)")
+        .select("id, chapter_number, chapter_name, course_id, courses!chapters_course_id_fkey(code, course_name)")
         .eq("id", chapterId)
         .single();
-      return data;
+
+      if (error) throw error;
+      return data as any;
     },
-    enabled: !!chapterId,
   });
 
-  // Fetch all assets with supplementary_je_json
-  const { data: assets, isLoading } = useQuery({
-    queryKey: ["cram-assets", chapterId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("teaching_assets")
-        .select("id, asset_name, source_ref, supplementary_je_json, journal_entry_completed_json")
-        .eq("chapter_id", chapterId)
-        .not("supplementary_je_json", "is", null)
-        .order("source_ref");
-      return data || [];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch chapter topics
-  const { data: topics } = useQuery({
-    queryKey: ["cram-topics", chapterId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("chapter_topics")
-        .select("id, topic_name, topic_number, topic_description, lw_quiz_link, lw_video_link, is_supplementary, is_active")
-        .eq("chapter_id", chapterId)
-        .eq("is_active", true)
-        .order("topic_number");
-      return data || [];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch formulas
-  const { data: formulasData } = useQuery({
-    queryKey: ["cram-formulas", chapterId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("teaching_assets")
-        .select("important_formulas")
-        .eq("chapter_id", chapterId)
-        .not("important_formulas", "is", null)
-        .neq("important_formulas", "")
-        .limit(10);
-      return data || [];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch exam traps
-  const { data: trapsData } = useQuery({
-    queryKey: ["cram-traps", chapterId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("teaching_assets")
-        .select("exam_traps")
-        .eq("chapter_id", chapterId)
-        .not("exam_traps", "is", null)
-        .neq("exam_traps", "")
-        .limit(10);
-      return data || [];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch topic asset counts
-  const { data: topicAssets } = useQuery({
-    queryKey: ["cram-topic-assets", chapterId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("teaching_assets")
-        .select("id, asset_name, source_ref, topic_id")
-        .eq("chapter_id", chapterId)
-        .not("topic_id", "is", null)
-        .order("source_ref");
-      return data || [];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch chapter videos
-  const { data: chapterVideos } = useQuery({
-    queryKey: ["cram-chapter-videos", chapterId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("chapter_videos")
-        .select("*")
-        .eq("chapter_id", chapterId)
-        .eq("is_active", true)
-        .order("recorded_at", { ascending: false });
-      return data || [];
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch approved teaching assets for this chapter (with formulas)
-  const { data: approvedAssets } = useQuery({
+  const { data: approvedAssets = [], isLoading: assetsLoading } = useQuery({
     queryKey: ["cram-approved-assets", chapterId],
+    enabled: !!chapterId,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title, important_formulas")
+        .select(
+          "id, asset_name, source_ref, asset_type, problem_title, important_formulas, supplementary_je_json, journal_entry_completed_json",
+        )
         .eq("chapter_id", chapterId)
         .eq("status", "approved")
         .order("source_ref");
-      return data || [];
+
+      if (error) throw error;
+      return (data || []) as any[];
     },
-    enabled: !!chapterId,
   });
 
-  // Fetch flowcharts for this chapter
-  const { data: flowchartsData } = useQuery({
-    queryKey: ["cram-flowcharts", chapterId],
-    queryFn: async () => {
-      // Get all approved asset IDs for this chapter, then fetch their flowcharts
-      const { data: assetIds } = await (supabase as any)
-        .from("teaching_assets")
-        .select("id, asset_name, source_ref, topic_id")
-        .eq("chapter_id", chapterId)
-        .eq("status", "approved")
-        .not("topic_id", "is", null);
-      if (!assetIds?.length) return [];
-      const ids = assetIds.map((a: any) => a.id);
-      const { data: flowcharts } = await (supabase as any)
-        .from("asset_flowcharts")
-        .select("id, teaching_asset_id, instruction_number, instruction_label, flowchart_image_url")
-        .in("teaching_asset_id", ids)
-        .not("flowchart_image_url", "is", null)
-        .order("instruction_number");
-      // Merge asset info
-      const assetMap = Object.fromEntries(assetIds.map((a: any) => [a.id, a]));
-      return (flowcharts || []).map((f: any) => ({ ...f, asset: assetMap[f.teaching_asset_id] }));
-    },
-    enabled: !!chapterId,
-  });
-
-  // Fetch section config for admin toggles
-  const { data: sectionConfigs } = useQuery({
+  const { data: sectionConfigs = [] } = useQuery({
     queryKey: ["cram-section-config", chapterId],
+    enabled: !!chapterId,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("chapter_section_config")
         .select("*")
         .eq("chapter_id", chapterId);
-      return data || [];
+
+      if (error) throw error;
+      return (data || []) as SectionConfigRow[];
     },
-    enabled: !!chapterId,
   });
 
-  // Fetch payment links for paywall
-  const { data: paymentLinks } = useQuery({
+  const { data: paymentLinks = [] } = useQuery({
     queryKey: ["payment-links-cram"],
+    enabled: isPreview,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await supabase.from("payment_links").select("*").eq("is_active", true);
+      const { data, error } = await (supabase as any).from("payment_links").select("*").eq("is_active", true);
+      if (error) throw error;
       return data || [];
     },
-    staleTime: 5 * 60 * 1000,
-    enabled: isPreview,
   });
 
-  // Deduplicate formulas and traps
-  const formulas = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const row of formulasData || []) {
-      const text = (row as any).important_formulas?.trim();
-      if (text && !seen.has(text)) { seen.add(text); result.push(text); }
-    }
-    return result;
-  }, [formulasData]);
-
-  const traps = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const row of trapsData || []) {
-      const text = (row as any).exam_traps?.trim();
-      if (text && !seen.has(text)) { seen.add(text); result.push(text); }
-    }
-    return result;
-  }, [trapsData]);
-
-  // Topic asset counts + first asset
-  const topicCountMap = useMemo(() => {
-    const map: Record<string, { count: number; firstName: string | null }> = {};
-    for (const a of topicAssets || []) {
-      const tid = (a as any).topic_id;
-      if (!tid) continue;
-      if (!map[tid]) map[tid] = { count: 0, firstName: null };
-      map[tid].count++;
-      if (!map[tid].firstName) map[tid].firstName = (a as any).asset_name;
-    }
-    return map;
-  }, [topicAssets]);
-
-  // Map topic_id → chapter_videos for that topic
-  const topicVideosMap = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    for (const v of (chapterVideos as any[] || [])) {
-      if (!v.topic_id) continue;
-      if (!map[v.topic_id]) map[v.topic_id] = [];
-      map[v.topic_id].push(v);
-    }
-    return map;
-  }, [chapterVideos]);
-
-  // Map topic_id → sorted approved assets for accordion
-  const topicAssetsMap = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    for (const a of (approvedAssets as any[] || [])) {
-      if (!a.topic_id) continue;
-      if (!map[a.topic_id]) map[a.topic_id] = [];
-      map[a.topic_id].push(a);
-    }
-    for (const key of Object.keys(map)) {
-      map[key].sort(sortBySourceRef);
-    }
-    return map;
-  }, [approvedAssets]);
-
-  // Non-supplementary topics
-  const displayTopics = useMemo(() => {
-    return (topics || []).filter((t: any) => !t.is_supplementary);
-  }, [topics]);
-
-  const anyTopicMissingVideo = useMemo(() => {
-    return displayTopics.some((t: any) => !t.lw_video_link);
-  }, [displayTopics]);
-
-  // Solutions library filtered assets
-  const solutionsFiltered = useMemo(() => {
-    const all = (approvedAssets as any[] || []).slice().sort(sortBySourceRef);
-    return all.filter((a: any) => {
-      const at = (a.asset_type || "").toLowerCase();
-      const ref = (a.source_ref || "").toUpperCase();
-      const parsed = parseSourceRef(ref);
-      const isBE = at === "be" || at === "qs" || at === "brief_exercise" || at === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
-      const isEX = at === "e" || at === "ex" || at === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
-      const isP = at === "p" || at === "problem" || parsed.prefix === "P";
-      if (solutionsTab === "be") return isBE || (!isEX && !isP); // fallback to BE
-      if (solutionsTab === "ex") return isEX;
-      if (solutionsTab === "p") return isP;
-      return false;
-    });
-  }, [approvedAssets, solutionsTab]);
-
-  // Structured formulas from approved assets
-  const structuredFormulas = useMemo(() => {
-    const seen = new Set<string>();
-    const result: { name: string; expression: string; explanation?: string }[] = [];
-    for (const asset of (approvedAssets as any[] || [])) {
-      const raw = asset.important_formulas;
-      if (!raw || typeof raw !== "string") continue;
-      for (const line of raw.split("\n")) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        const eqIdx = trimmed.indexOf("=");
-        if (eqIdx > 0) {
-          const name = trimmed.substring(0, eqIdx).trim();
-          const expression = trimmed.substring(eqIdx).trim();
-          const key = name.toLowerCase();
-          if (!seen.has(key)) {
-            seen.add(key);
-            result.push({ name, expression: `${name} ${expression}` });
-          }
-        } else {
-          const key = trimmed.toLowerCase();
-          if (!seen.has(key)) {
-            seen.add(key);
-            result.push({ name: trimmed, expression: trimmed });
-          }
-        }
-      }
-    }
-    return result;
-  }, [approvedAssets]);
-
-  // Flowcharts grouped by topic
-  const flowchartsByTopic = useMemo(() => {
-    const map: Record<string, { topicName: string; items: any[] }> = {};
-    for (const f of (flowchartsData || [])) {
-      const tid = f.asset?.topic_id;
-      if (!tid) continue;
-      if (!map[tid]) {
-        const topic = (topics || []).find((t: any) => t.id === tid);
-        map[tid] = { topicName: topic?.topic_name || "Unknown Topic", items: [] };
-      }
-      map[tid].items.push(f);
-    }
-    return map;
-  }, [flowchartsData, topics]);
-
-  const totalFlowcharts = useMemo(() => (flowchartsData || []).length, [flowchartsData]);
-
-  // Section visibility helpers
   const sectionConfigMap = useMemo(() => {
-    const map: Record<string, any> = {};
-    for (const cfg of (sectionConfigs || [])) {
-      map[cfg.section_name] = cfg;
-    }
+    const map: Record<string, SectionConfigRow> = {};
+    sectionConfigs.forEach((config) => {
+      map[config.section_name] = config;
+    });
     return map;
   }, [sectionConfigs]);
 
-  const isSectionVisible = useCallback((name: string) => {
-    const cfg = sectionConfigMap[name];
-    if (!cfg) return true;
-    return cfg.is_visible;
-  }, [sectionConfigMap]);
+  const isSectionVisible = useCallback(
+    (sectionName: string) => {
+      const config = sectionConfigMap[sectionName];
+      return config ? config.is_visible : true;
+    },
+    [sectionConfigMap],
+  );
 
-  const isItemHidden = useCallback((sectionName: string, itemId: string) => {
-    const cfg = sectionConfigMap[sectionName];
-    if (!cfg) return false;
-    return (cfg.hidden_item_ids || []).includes(itemId);
-  }, [sectionConfigMap]);
+  const isItemHidden = useCallback(
+    (sectionName: string, itemId: string) => {
+      const config = sectionConfigMap[sectionName];
+      return config ? (config.hidden_item_ids || []).includes(itemId) : false;
+    },
+    [sectionConfigMap],
+  );
 
-  const toggleSectionVisibility = async (sectionName: string) => {
-    const current = isSectionVisible(sectionName);
-    const cfg = sectionConfigMap[sectionName];
-    if (cfg) {
-      await (supabase as any).from("chapter_section_config").update({ is_visible: !current, updated_at: new Date().toISOString() }).eq("id", cfg.id);
-    } else {
-      await (supabase as any).from("chapter_section_config").insert({ chapter_id: chapterId, section_name: sectionName, is_visible: !current });
-    }
-    queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
-  };
+  const toggleSectionVisibility = useCallback(
+    async (sectionName: string) => {
+      const config = sectionConfigMap[sectionName];
+      const nextVisible = !isSectionVisible(sectionName);
 
-  const toggleItemHidden = async (sectionName: string, itemId: string) => {
-    const cfg = sectionConfigMap[sectionName];
-    const currentList: string[] = cfg?.hidden_item_ids || [];
-    const newList = currentList.includes(itemId) ? currentList.filter((id: string) => id !== itemId) : [...currentList, itemId];
-    if (cfg) {
-      await (supabase as any).from("chapter_section_config").update({ hidden_item_ids: newList, updated_at: new Date().toISOString() }).eq("id", cfg.id);
-    } else {
-      await (supabase as any).from("chapter_section_config").insert({ chapter_id: chapterId, section_name: sectionName, is_visible: true, hidden_item_ids: newList });
-    }
-    queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
-  };
+      if (config) {
+        const { error } = await (supabase as any)
+          .from("chapter_section_config")
+          .update({ is_visible: nextVisible, updated_at: new Date().toISOString() })
+          .eq("id", config.id);
 
-  const [openFlowchartTopic, setOpenFlowchartTopic] = useState<string | null>(null);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("chapter_section_config").insert({
+          chapter_id: chapterId,
+          section_name: sectionName,
+          is_visible: nextVisible,
+          hidden_item_ids: [],
+        });
 
-  // Handle topic video request
-  const handleRequestTopicVideo = async (topicId: string) => {
-    try {
-      await supabase.from("topic_video_requests").insert({ topic_id: topicId, user_agent: navigator.userAgent });
-    } catch { /* noop */ }
-    setRequestedTopics(prev => new Set(prev).add(topicId));
-  };
+        if (error) throw error;
+      }
 
-  const cramCards: CramCard[] = useMemo(() => {
-    if (!assets) return [];
+      await queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
+    },
+    [chapterId, isSectionVisible, queryClient, sectionConfigMap],
+  );
+
+  const toggleItemHidden = useCallback(
+    async (sectionName: string, itemId: string) => {
+      const config = sectionConfigMap[sectionName];
+      const currentHidden = config?.hidden_item_ids || [];
+      const nextHidden = currentHidden.includes(itemId)
+        ? currentHidden.filter((value) => value !== itemId)
+        : [...currentHidden, itemId];
+
+      if (config) {
+        const { error } = await (supabase as any)
+          .from("chapter_section_config")
+          .update({ hidden_item_ids: nextHidden, updated_at: new Date().toISOString() })
+          .eq("id", config.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("chapter_section_config").insert({
+          chapter_id: chapterId,
+          section_name: sectionName,
+          is_visible: true,
+          hidden_item_ids: nextHidden,
+        });
+
+        if (error) throw error;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
+    },
+    [chapterId, queryClient, sectionConfigMap],
+  );
+
+  const cramCards = useMemo<CramCard[]>(() => {
     const cards: CramCard[] = [];
-    for (const asset of assets) {
-      const suppJson = typeof asset.supplementary_je_json === "string"
-        ? JSON.parse(asset.supplementary_je_json)
-        : asset.supplementary_je_json;
-      if (!suppJson?.entries) continue;
-      for (let i = 0; i < suppJson.entries.length; i++) {
-        const entry: SupplementaryEntry = suppJson.entries[i];
-        if (!entry.rows?.length) continue;
-        const completedRows = matchCompletedEntry(entry, asset.journal_entry_completed_json);
+
+    approvedAssets.forEach((asset) => {
+      let supplementary = asset.supplementary_je_json;
+      if (!supplementary) return;
+
+      if (typeof supplementary === "string") {
+        try {
+          supplementary = JSON.parse(supplementary);
+        } catch {
+          return;
+        }
+      }
+
+      if (!supplementary?.entries || !Array.isArray(supplementary.entries)) return;
+
+      supplementary.entries.forEach((entry: SupplementaryEntry, index: number) => {
+        if (!entry?.rows?.length) return;
+
         cards.push({
-          id: `${asset.id}-${i}`,
+          id: `${asset.id}-${index}`,
           assetName: asset.asset_name,
           sourceRef: asset.source_ref || asset.asset_name,
           label: entry.label,
           rows: entry.rows,
-          completedRows,
+          completedRows: matchCompletedEntry(entry, asset.journal_entry_completed_json),
         });
-      }
-    }
-    return cards;
-  }, [assets]);
+      });
+    });
 
-  // Apply shuffle order
+    return cards;
+  }, [approvedAssets]);
+
   const displayCards = useMemo(() => {
     if (!shuffledOrder) return cramCards;
-    return shuffledOrder.map(i => cramCards[i]).filter(Boolean);
+    return shuffledOrder.map((index) => cramCards[index]).filter(Boolean);
   }, [cramCards, shuffledOrder]);
 
+  const visibleJournalCards = useMemo(() => {
+    return displayCards.filter((card) => isAdmin || !isItemHidden("journal_entries", card.id));
+  }, [displayCards, isAdmin, isItemHidden]);
+
+  const structuredFormulas = useMemo(() => {
+    const seen = new Set<string>();
+    const cards: FormulaCard[] = [];
+
+    approvedAssets.forEach((asset) => {
+      parseImportantFormulas(asset.important_formulas).forEach((formula) => {
+        const key = formula.name.toLowerCase().trim().replace(/\s+/g, " ");
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        cards.push(formula);
+      });
+    });
+
+    return cards;
+  }, [approvedAssets]);
+
+  const solutionsFiltered = useMemo(() => {
+    const sorted = [...approvedAssets].sort(sortBySourceRef);
+
+    return sorted.filter((asset) => {
+      const assetType = (asset.asset_type || "").toLowerCase();
+      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
+      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
+
+      if (solutionsTab === "be") return isBE || (!isEX && !isP);
+      if (solutionsTab === "ex") return isEX;
+      return isP;
+    });
+  }, [approvedAssets, solutionsTab]);
+
+  const reviewedCount = visibleJournalCards.filter((card) => reviewedSet.has(card.id)).length;
+  const progressPercent = visibleJournalCards.length > 0 ? (reviewedCount / visibleJournalCards.length) * 100 : 0;
+
   const handleShuffle = useCallback(() => {
-    const indices = Array.from({ length: cramCards.length }, (_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
+    const indices = Array.from({ length: cramCards.length }, (_, index) => index);
+    for (let index = indices.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
     }
     setShuffledOrder(indices);
     setReviewedSet(new Set());
   }, [cramCards.length]);
 
-  const handleReview = (cardId: string) => {
-    setReviewedSet(prev => new Set(prev).add(cardId));
-  };
+  const handleReview = useCallback((cardId: string) => {
+    setReviewedSet((previous) => new Set(previous).add(cardId));
+  }, []);
 
-  const reviewedCount = reviewedSet.size;
-  const totalCards = cramCards.length;
-  const progressPercent = totalCards > 0 ? (reviewedCount / totalCards) * 100 : 0;
-
-  // Page title
   useEffect(() => {
     if (!chapter) return;
-    document.title = `Survive This Chapter — Ch ${(chapter as any).chapter_number} — Survive Accounting`;
-    return () => { document.title = "Survive Accounting"; };
+    document.title = "Legacy";
+    document.title = `Survive This Chapter — Ch ${chapter.chapter_number} — Survive Accounting`;
+    return () => {
+      document.title = "Survive Accounting";
+    };
   }, [chapter]);
-
-  const courseCode = (chapter as any)?.courses?.code || "";
-  const courseDisplayName = (() => {
-    const code = courseCode.toUpperCase();
-    if (code === "IA2") return "Intermediate Accounting 2";
-    if (code === "IA1") return "Intermediate Accounting 1";
-    if (code === "MA2") return "Managerial Accounting";
-    if (code === "FA1") return "Financial Accounting";
-    return (chapter as any)?.courses?.course_name || courseCode;
-  })();
-
-  const chapterNum = (chapter as any)?.chapter_number || null;
-  const chapterName = (chapter as any)?.chapter_name || "";
-  const topicsLocked = (chapter as any)?.topics_locked === true;
-  const fullPassLink = (paymentLinks || []).find((l: any) => l.link_type === "full_pass" && l.course_id === (chapter as any)?.course_id);
-  const chapterLink = (paymentLinks || []).find((l: any) => l.link_type === "chapter" && l.chapter_id === chapterId);
-
-  // Find intro video
-  const introVideo = useMemo(() => {
-    return (chapterVideos as any[] || []).find((v: any) => v.video_type === "intro") || null;
-  }, [chapterVideos]);
-
-  // 30-second paywall timer for intro video
-  useEffect(() => {
-    if (!introVideo || !isPreview) return;
-    const interval = setInterval(() => {
-      setVideoElapsed(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [introVideo, isPreview]);
-
-  const PREVIEW_LIMIT = 3;
 
   if (!chapterId) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
-        <p className="text-[16px]" style={{ color: t.text }}>No chapter specified. Use /cram/[chapterId] or ?chapter_id=[uuid].</p>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: theme.pageBg }}>
+        <p style={{ color: theme.text }}>No chapter specified.</p>
       </div>
     );
   }
 
-  if (isLoading) {
+  if (chapterLoading || assetsLoading || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
-        <div className="animate-spin h-8 w-8 border-4 rounded-full" style={{ borderColor: t.border, borderTopColor: t.text }} />
+      <div className="flex min-h-screen items-center justify-center" style={{ background: theme.pageBg }}>
+        <div className="h-8 w-8 animate-spin rounded-full border-4" style={{ borderColor: theme.border, borderTopColor: theme.heading }} />
       </div>
     );
   }
+
+  const courseCode = chapter?.courses?.code || "";
+  const courseDisplayName =
+    courseCode === "IA2"
+      ? "Intermediate Accounting 2"
+      : courseCode === "IA1"
+        ? "Intermediate Accounting 1"
+        : courseCode === "MA2"
+          ? "Managerial Accounting"
+          : courseCode === "FA1"
+            ? "Financial Accounting"
+            : chapter?.courses?.course_name || courseCode;
+
+  const fullPassLink = paymentLinks.find((link: any) => link.link_type === "full_pass" && link.course_id === chapter?.course_id);
+  const chapterLink = paymentLinks.find((link: any) => link.link_type === "chapter" && link.chapter_id === chapterId);
+
+  const showSolutionsSection = isAdmin || isSectionVisible("solutions_library");
+  const showJournalSection = (visibleJournalCards.length > 0 || isAdmin) && (isAdmin || isSectionVisible("journal_entries"));
+  const showFormulasSection = (structuredFormulas.length > 0 || isAdmin) && (isAdmin || isSectionVisible("formulas"));
 
   return (
-    <div className="min-h-screen relative" style={{ background: t.pageBg }}>
-      {/* Watermark */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${AORAKI_URL})`, opacity: 0.06 }} />
-        <div className="absolute inset-0" style={{ background: t.watermarkOverlay }} />
-      </div>
-
-      {/* Navy Header */}
-      <header className="relative sticky top-0" style={{ zIndex: 20, background: "#14213D", height: 48 }}>
-        <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center" style={{ maxWidth: 680 }}>
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <img src={LOGO_URL} alt="Survive Accounting" className="h-7 sm:h-8 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            <span className="text-[11px] sm:text-[12px] text-white/50 truncate">Created by Lee Ingram</span>
-          </div>
+    <div className="min-h-screen" style={{ background: theme.pageBg }}>
+      <header style={{ background: theme.navy, height: 48 }}>
+        <div className="mx-auto flex h-full max-w-[920px] items-center px-4 sm:px-6">
+          <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8" />
         </div>
       </header>
 
-      {/* Content */}
-      <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 680 }}>
-
-        {/* Page Header */}
-        <div className="mb-6">
+      <main className="mx-auto max-w-[920px] px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mb-8">
           {courseDisplayName && (
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ color: "#94a3b8" }}>
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: theme.label }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="text-[24px] font-bold mt-1" style={{ color: "#14213D" }}>
+          <h1 className="mt-1 text-[26px] font-bold" style={{ color: theme.heading }}>
             Survive This Chapter
           </h1>
-          <p className="text-[14px] font-bold mt-0.5" style={{ color: "#14213D" }}>
-            {chapterNum ? `Ch ${chapterNum}` : ""}{chapterName ? ` — ${chapterName}` : ""}
+          <p className="mt-1 text-[15px] font-semibold" style={{ color: theme.heading }}>
+            Ch {chapter?.chapter_number} — {chapter?.chapter_name}
           </p>
         </div>
 
-        {/* ─── CHAPTER INTRO VIDEO ─── */}
-        {introVideo && (
-          <div className="mb-8">
-            <div className="relative" style={{ borderRadius: 12, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
-              <iframe
-                src={`${introVideo.vimeo_embed_url}?autoplay=0&title=0&byline=0&portrait=0`}
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
+        <div className="space-y-10">
+          {showSolutionsSection && (
+            <section style={{ opacity: isSectionVisible("solutions_library") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle
+                label="SOLUTIONS LIBRARY"
+                isAdmin={isAdmin}
+                sectionName="solutions_library"
+                isVisible={isSectionVisible("solutions_library")}
+                onToggle={toggleSectionVisibility}
               />
-              {/* 30-second paywall overlay for free users */}
-              {isPreview && videoElapsed >= 30 && (
-                <div
-                  className="flex flex-col items-center justify-end"
-                  style={{
-                    position: "absolute",
-                    top: "35%",
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: "linear-gradient(transparent, rgba(20,33,61,0.97) 40%)",
-                    paddingBottom: 24,
-                    zIndex: 10,
-                  }}
-                >
-                  <Lock className="h-5 w-5 text-white" />
-                  <p className="text-[13px] font-bold text-white mt-2">Continue watching with a Study Pass</p>
-                  <div className="mt-4 w-full px-4">
-                    <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
-                  </div>
-                </div>
-              )}
-            </div>
-            {introVideo.recorded_at && (
-              <p className="text-[10px] mt-2" style={{ color: "#94a3b8" }}>
-                Recorded {new Date(introVideo.recorded_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-              </p>
-            )}
-            {introVideo.title && (
-              <p className="text-[13px] font-medium mt-1" style={{ color: "#14213D" }}>{introVideo.title}</p>
-            )}
-          </div>
-        )}
 
-        {/* ─── CHAPTER TOOLS ─── */}
-        <div className="mb-8" style={{ marginTop: 32 }}>
-          <SectionLabel>Chapter Tools</SectionLabel>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <ChapterToolCard
-              icon="📚"
-              title="Chapter Cram Tool"
-              subtitle={totalCards > 0 ? `${totalCards} journal ${totalCards === 1 ? "entry" : "entries"} to drill` : "No journal entries for this chapter"}
-              bg="#f0fdf4"
-              borderColor="#bbf7d0"
-              buttonLabel="Start Drilling →"
-              onClick={() => document.getElementById("je-cram-tool")?.scrollIntoView({ behavior: "smooth" })}
-              disabled={totalCards === 0}
-            />
-            <ChapterToolCard
-              icon="⚡"
-              title="Key Formulas"
-              subtitle={formulas.length > 0 ? `${formulas.length} formula${formulas.length !== 1 ? "s" : ""}` : "No formulas yet"}
-              bg={formulas.length > 0 ? "#fffbeb" : "#f8fafc"}
-              borderColor={formulas.length > 0 ? "#fde68a" : "#e2e8f0"}
-              buttonLabel={formulasOpen ? "Hide Formulas" : "View Formulas →"}
-              onClick={() => { setFormulasOpen(!formulasOpen); if (!formulasOpen) setTrapsOpen(false); }}
-              disabled={formulas.length === 0}
-            />
-            <ChapterToolCard
-              icon="⚠️"
-              title="Exam Traps"
-              subtitle={traps.length > 0 ? `${traps.length} common mistake${traps.length !== 1 ? "s" : ""}` : "No traps yet"}
-              bg={traps.length > 0 ? "#fef2f2" : "#f8fafc"}
-              borderColor={traps.length > 0 ? "#fecaca" : "#e2e8f0"}
-              buttonLabel={trapsOpen ? "Hide Traps" : "View Traps →"}
-              onClick={() => { setTrapsOpen(!trapsOpen); if (!trapsOpen) setFormulasOpen(false); }}
-              disabled={traps.length === 0}
-            />
-          </div>
-
-          {/* Formulas accordion */}
-          {formulasOpen && formulas.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {formulas.map((f, idx) => {
-                if (isPreview && idx >= 1) return null;
-                return (
-                  <div key={idx} className="font-mono text-[12px] leading-[1.6]" style={{ background: "#fffbeb", color: "#1e293b", padding: "10px 14px", borderRadius: 6, borderLeft: "3px solid #d97706" }}>
-                    {f}
-                  </div>
-                );
-              })}
-              {isPreview && formulas.length > 1 && (
-                <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
-              )}
-            </div>
-          )}
-
-          {/* Traps accordion */}
-          {trapsOpen && traps.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {traps.map((trap, idx) => {
-                if (isPreview && idx >= 1) return null;
-                return (
-                  <div key={idx} className="text-[12px] leading-[1.6]" style={{ background: "#fef2f2", color: "#1e293b", padding: "10px 14px", borderRadius: 6, borderLeft: "3px solid #dc2626" }}>
-                    {trap}
-                  </div>
-                );
-              })}
-              {isPreview && traps.length > 1 && (
-                <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ─── CHAPTER VIDEOS (Showcases) ─── */}
-        {(() => {
-          const showcaseVideos = (chapterVideos as any[] || [])
-            .filter((v: any) => v.video_type === "showcase")
-            .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-          if (showcaseVideos.length === 0) return null;
-          return (
-            <div style={{ marginTop: 32 }} className="mb-8">
-              <SectionLabel>Chapter Videos</SectionLabel>
-              <div className="space-y-6">
-                {showcaseVideos.map((vid: any) => (
-                  <div key={vid.id}>
-                    {vid.title && (
-                      <p className="text-[13px] font-bold mb-2" style={{ color: "#14213D" }}>{vid.title}</p>
-                    )}
-                    {isPreview ? (
-                      <div className="flex flex-col items-center justify-center" style={{ background: "#1e293b", borderRadius: 12, aspectRatio: "16/9" }}>
-                        <Lock className="h-6 w-6 text-white" />
-                        <p className="text-[14px] font-bold text-white mt-2">Unlock with Study Pass</p>
-                        <div className="mt-4 w-full px-4">
-                          <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative" style={{ borderRadius: 12, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
-                        <iframe
-                          src={vid.vimeo_embed_url}
-                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ─── SECTION 3: TOPIC ACCORDION ─── */}
-        {topicsLocked && displayTopics.length > 0 && (
-          <div style={{ marginTop: 32 }} className="mb-8">
-            <SectionLabel>Topics</SectionLabel>
-            {anyTopicMissingVideo && (
-              <p className="text-[11px] italic mb-3" style={{ color: "#94a3b8" }}>
-                🎬 Videos are being added throughout Spring 2026. Topics with quizzes and solutions are fully ready now.
-              </p>
-            )}
-            <div className="space-y-2">
-              {displayTopics.map((topic: any) => {
-                const isOpen = openTopicId === topic.id;
-                const topicVids = topicVideosMap[topic.id] || [];
-                const topicProblems = topicAssetsMap[topic.id] || [];
-                const problemCount = topicCountMap[topic.id]?.count || 0;
-                const hasQuiz = !!topic.lw_quiz_link;
-                const hasTopicVideo = topicVids.length > 0;
-
-                return (
-                  <div key={topic.id}>
-                    {/* Accordion Header */}
-                    <button
-                      onClick={() => setOpenTopicId(isOpen ? null : topic.id)}
-                      className="w-full flex items-center justify-between transition-colors"
-                      style={{
-                        height: 52,
-                        background: isOpen ? "#f8fafc" : "#ffffff",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: isOpen ? "8px 8px 0 0" : 8,
-                        padding: "0 16px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="shrink-0 text-[10px] font-bold text-white" style={{ background: "#14213D", borderRadius: 20, padding: "2px 8px" }}>
-                          {topic.topic_number || "—"}
-                        </span>
-                        <span className="text-[14px] font-bold truncate" style={{ color: "#14213D" }}>{topic.topic_name}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {hasQuiz && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}>Quiz</span>
-                        )}
-                        {hasTopicVideo && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }}>Video</span>
-                        )}
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
-                          {problemCount} Problem{problemCount !== 1 ? "s" : ""}
-                        </span>
-                        <ChevronRight
-                          className="h-4 w-4 transition-transform duration-200"
-                          style={{ color: "#94a3b8", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
-                        />
-                      </div>
-                    </button>
-
-                    {/* Accordion Body */}
-                    {isOpen && (
-                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", padding: 16 }}>
-                        {/* ── VIDEO ── */}
-                        <p className="text-[8px] font-bold tracking-[0.15em] uppercase mb-2.5" style={{ color: "#94a3b8" }}>VIDEO</p>
-                        {hasTopicVideo ? (
-                          isPreview ? (
-                            <div className="flex items-center justify-center" style={{ background: "#1e293b", borderRadius: 8, aspectRatio: "16/9" }}>
-                              <div className="text-center">
-                                <Lock className="h-5 w-5 mx-auto text-white" />
-                                <p className="text-[12px] text-white mt-2">Unlock with Study Pass</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="relative" style={{ borderRadius: 8, overflow: "hidden", background: "#000", width: "100%", paddingTop: "56.25%" }}>
-                                <iframe
-                                  src={`${topicVids[0].vimeo_embed_url}?autoplay=0&title=0&byline=0&portrait=0`}
-                                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                                  allow="autoplay; fullscreen; picture-in-picture"
-                                  allowFullScreen
-                                />
-                              </div>
-                              {topicVids[0].title && <p className="text-[12px] mt-2" style={{ color: "#14213D" }}>{topicVids[0].title}</p>}
-                            </div>
-                          )
-                        ) : (
-                          <div style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px 14px" }}>
-                            <p className="text-[12px]" style={{ color: "#64748b" }}>🎬 In production — Lee is filming this topic</p>
-                            {!requestedTopics.has(topic.id) ? (
-                              <button onClick={() => handleRequestTopicVideo(topic.id)} className="mt-1.5 text-[11px] font-semibold hover:underline" style={{ color: "#3b82f6", cursor: "pointer", background: "none", border: "none", padding: 0 }}>🙋 Request priority →</button>
-                            ) : (
-                              <p className="mt-1.5 text-[11px] font-semibold" style={{ color: "#22c55e" }}>✓ Requested!</p>
-                            )}
-                          </div>
-                        )}
-
-                        {/* ── QUIZ ── */}
-                        <p className="text-[8px] font-bold tracking-[0.15em] uppercase mt-4 mb-2.5" style={{ color: "#94a3b8" }}>QUIZ</p>
-                        {hasQuiz ? (
-                          <div className="flex items-center justify-between" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 14px" }}>
-                            <p className="text-[13px] font-bold" style={{ color: "#14213D" }}>📝 Topic Quiz — 5 questions</p>
-                            <a href={topic.lw_quiz_link} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-white shrink-0" style={{ background: "#14213D", borderRadius: 6, padding: "6px 14px" }}>Take Quiz →</a>
-                          </div>
-                        ) : (
-                          <div style={{ background: "#f1f5f9", borderRadius: 8, padding: "12px 14px" }}>
-                            <p className="text-[12px]" style={{ color: "#94a3b8" }}>Quiz not yet available</p>
-                          </div>
-                        )}
-
-                        {/* ── PRACTICE PROBLEMS ── */}
-                        <p className="text-[8px] font-bold tracking-[0.15em] uppercase mt-4 mb-2.5" style={{ color: "#94a3b8" }}>PRACTICE PROBLEMS</p>
-                        {topicProblems.length > 0 ? (
-                          <div>
-                            {topicProblems.map((asset: any, idx: number) => {
-                              if (isPreview && idx >= 3) return null;
-                              return (
-                                <div key={asset.id} className="flex items-center" style={{ padding: "8px 0", borderBottom: idx < topicProblems.length - 1 ? "1px solid #e2e8f0" : "none" }}>
-                                  <span className="font-mono text-[11px] shrink-0" style={{ color: "#14213D", minWidth: 60 }}>{asset.source_ref}</span>
-                                  <span className="text-[12px] flex-1 truncate mx-3" style={{ color: "#1e293b" }}>{asset.problem_title || asset.asset_name}</span>
-                                  <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="text-[12px] shrink-0 whitespace-nowrap" style={{ color: "#3b82f6" }}>View →</a>
-                                </div>
-                              );
-                            })}
-                            {isPreview && topicProblems.length > 3 && (
-                              <a href={enrollUrl} target="_blank" rel="noopener noreferrer" className="block mt-2 text-[12px] font-semibold" style={{ background: "#fffbf0", borderRadius: 6, padding: "8px 12px", color: "#14213D", cursor: "pointer" }}>
-                                🔒 Unlock all {topicProblems.length} problems with a Study Pass →
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-[12px]" style={{ color: "#94a3b8", padding: "8px 0" }}>No practice problems for this topic yet.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ─── SECTION 4: JE CRAM TOOL (only if cards exist) ─── */}
-        {totalCards > 0 && (isSectionVisible("journal_entries") || isAdmin) && (
-          <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32, opacity: !isSectionVisible("journal_entries") ? 0.5 : 1 }}>
-            {!isSectionVisible("journal_entries") && isAdmin && (
-              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
-            )}
-            <div className="flex items-center justify-between mb-3">
-              <SectionHeaderWithToggle label="Journal Entries to Memorize" count={totalCards} isAdmin={!!isAdmin} sectionName="journal_entries" isVisible={isSectionVisible("journal_entries")} onToggle={toggleSectionVisibility} />
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] font-semibold" style={{ color: "#94a3b8" }}>{totalCards} entries</span>
-                <button
-                  onClick={handleShuffle}
-                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all hover:brightness-95 active:scale-[0.97]"
-                  style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}
-                >
-                  <Shuffle className="h-3 w-3" /> Shuffle
-                </button>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-4 rounded-xl px-4 py-3" style={{ background: t.cardBg, border: `1px solid ${t.border}` }}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[13px] font-semibold" style={{ color: t.text }}>
-                  {reviewedCount} of {totalCards} reviewed
-                </p>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${progressPercent}%`,
-                    background: progressPercent === 100 ? "#22C55E" : "#3B82F6",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Cards */}
-            <div className="space-y-4">
-              {displayCards.map((card, idx) => {
-                if (isPreview && idx >= PREVIEW_LIMIT) return null;
-                const hidden = isItemHidden("journal_entries", card.id);
-                if (hidden && !isAdmin) return null;
-                return (
-                  <div key={card.id} className="relative" style={{ opacity: hidden ? 0.4 : 1 }}>
-                    {isAdmin && (
-                      <button
-                        onClick={() => toggleItemHidden("journal_entries", card.id)}
-                        className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] font-semibold rounded px-1.5 py-0.5"
-                        style={{ background: hidden ? "#fef2f2" : "#f1f5f9", color: hidden ? "#dc2626" : "#94a3b8", border: "none", cursor: "pointer" }}
-                        title={hidden ? "Show to students" : "Hide from students"}
-                      >
-                        {hidden ? <><EyeOff className="h-3 w-3" /> Hidden</> : <EyeOff className="h-3 w-3" />}
-                      </button>
-                    )}
-                    <CramCardComponent
-                      card={card}
-                      theme={t}
-                      isReviewed={reviewedSet.has(card.id)}
-                      onReview={() => handleReview(card.id)}
-                    />
-                  </div>
-                );
-              })}
-
-              {/* Paywall after 3 cards in preview mode */}
-              {isPreview && totalCards > PREVIEW_LIMIT && (
-                <TieredPaywallCard
-                  enrollUrl={enrollUrl}
-                  fullPassLink={fullPassLink}
-                  chapterLink={chapterLink}
-                  chapterNumber={chapterNum}
-                  theme={t}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ─── SECTION 5: SOLUTIONS LIBRARY ─── */}
-        {(isSectionVisible("solutions_library") || isAdmin) && (
-        <div style={{ marginTop: 32, opacity: !isSectionVisible("solutions_library") ? 0.5 : 1 }} className="mb-8">
-          {!isSectionVisible("solutions_library") && isAdmin && (
-            <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
-          )}
-          <SectionHeaderWithToggle label="Solutions Library" isAdmin={!!isAdmin} sectionName="solutions_library" isVisible={isSectionVisible("solutions_library")} onToggle={toggleSectionVisibility} />
-          <p className="text-[12px] mb-3" style={{ color: "#64748b" }}>Browse all practice problems for this chapter.</p>
-
-          {/* Tab buttons */}
-          <div className="flex gap-2 mb-4">
-            {([["be", "Brief Exercises"], ["ex", "Exercises"], ["p", "Problems"]] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setSolutionsTab(key)}
-                className="text-[12px] font-semibold transition-colors"
-                style={{
-                  padding: "6px 16px",
-                  borderRadius: 20,
-                  background: solutionsTab === key ? "#14213D" : "#f1f5f9",
-                  color: solutionsTab === key ? "#ffffff" : "#64748b",
-                  cursor: "pointer",
-                  border: "none",
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Asset rows */}
-          {solutionsFiltered.length > 0 ? (
-            <div>
-              {solutionsFiltered.map((asset: any, idx: number) => {
-                if (isPreview && idx >= 3) return null;
-                return (
-                  <div key={asset.id} className="flex items-center" style={{ padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
-                    <span className="font-mono text-[11px] shrink-0" style={{ color: "#14213D", minWidth: 60 }}>{asset.source_ref}</span>
-                    <span className="text-[12px] flex-1 truncate mx-3" style={{ color: "#1e293b" }}>{asset.problem_title || asset.asset_name}</span>
-                    <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="text-[12px] shrink-0 whitespace-nowrap" style={{ color: "#3b82f6" }}>View →</a>
-                  </div>
-                );
-              })}
-              {isPreview && solutionsFiltered.length > 3 && (
-                <div className="mt-3">
-                  <TieredPaywallCard enrollUrl={enrollUrl} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} theme={t} />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ padding: 16 }}>
-              <p className="text-[12px]" style={{ color: "#94a3b8" }}>
-                No {solutionsTab === "be" ? "brief exercises" : solutionsTab === "ex" ? "exercises" : "problems"} for this chapter yet.
-              </p>
-            </div>
-          )}
-        </div>
-        )}
-
-        {/* ─── SECTION 6: FORMULAS TO MEMORIZE ─── */}
-        {structuredFormulas.length > 0 && (isSectionVisible("formulas") || isAdmin) && (
-          <div style={{ marginTop: 32, opacity: !isSectionVisible("formulas") ? 0.5 : 1 }} className="mb-8">
-            {!isSectionVisible("formulas") && isAdmin && (
-              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
-            )}
-            <SectionHeaderWithToggle label="Formulas to Memorize" count={structuredFormulas.length} isAdmin={!!isAdmin} sectionName="formulas" isVisible={isSectionVisible("formulas")} onToggle={toggleSectionVisibility} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {structuredFormulas.map((f, idx) => (
-                <div key={idx} className="rounded-lg" style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: 16 }}>
-                  <p className="text-[13px] font-semibold uppercase tracking-[0.05em]" style={{ color: "#14213D" }}>{f.name}</p>
-                  <p className="font-mono text-[18px] font-medium mt-1.5" style={{ color: "#14213D" }}>{f.expression}</p>
-                  {f.explanation && <p className="text-[13px] mt-2" style={{ color: "#94a3b8" }}>{f.explanation}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ─── SECTION 7: HOW TO SOLVE (Flowcharts) ─── */}
-        {totalFlowcharts > 0 && (isSectionVisible("flowcharts") || isAdmin) && (
-          <div style={{ marginTop: 32, opacity: !isSectionVisible("flowcharts") ? 0.5 : 1 }} className="mb-8">
-            {!isSectionVisible("flowcharts") && isAdmin && (
-              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
-            )}
-            <SectionHeaderWithToggle label="How to Solve" count={totalFlowcharts} isAdmin={!!isAdmin} sectionName="flowcharts" isVisible={isSectionVisible("flowcharts")} onToggle={toggleSectionVisibility} />
-            <div className="space-y-2">
-              {Object.entries(flowchartsByTopic).map(([topicId, group]) => {
-                const isOpen = openFlowchartTopic === topicId;
-                return (
-                  <div key={topicId}>
-                    <button
-                      onClick={() => setOpenFlowchartTopic(isOpen ? null : topicId)}
-                      className="w-full flex items-center justify-between"
-                      style={{ height: 44, background: isOpen ? "#f8fafc" : "#ffffff", border: "1px solid #e2e8f0", borderRadius: isOpen ? "8px 8px 0 0" : 8, padding: "0 14px", cursor: "pointer" }}
-                    >
-                      <span className="text-[13px] font-bold truncate" style={{ color: "#14213D" }}>{group.topicName}</span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{group.items.length}</span>
-                        <ChevronRight className="h-3.5 w-3.5 transition-transform" style={{ color: "#94a3b8", transform: isOpen ? "rotate(90deg)" : "none" }} />
-                      </div>
-                    </button>
-                    {isOpen && (
-                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", padding: 16 }}>
-                        <div className="space-y-4">
-                          {group.items.map((fc: any) => (
-                            <div key={fc.id}>
-                              {fc.instruction_label && (
-                                <p className="text-[12px] font-semibold mb-2" style={{ color: "#14213D" }}>
-                                  {fc.instruction_label}
-                                </p>
-                              )}
-                              <img
-                                src={fc.flowchart_image_url}
-                                alt={fc.instruction_label || `Flowchart ${fc.instruction_number}`}
-                                className="w-full rounded-lg"
-                                style={{ border: "1px solid #e2e8f0" }}
-                              />
-                              <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
-                                From {fc.asset?.source_ref || fc.asset?.asset_name || "—"}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ─── SECTION 8: ASK LEE ─── */}
-        {(isSectionVisible("ask_lee") || isAdmin) && (
-        <div style={{ marginTop: 32, opacity: !isSectionVisible("ask_lee") ? 0.5 : 1 }} className="mb-8">
-          {!isSectionVisible("ask_lee") && isAdmin && (
-            <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
-          )}
-          <SectionHeaderWithToggle label="Ask Lee" isAdmin={!!isAdmin} sectionName="ask_lee" isVisible={isSectionVisible("ask_lee")} onToggle={toggleSectionVisibility} />
-          {!askSent ? (
-            <>
-              <p className="text-[13px] mb-4" style={{ color: "#64748b" }}>
-                Have a question about {chapterName || "this chapter"}? Send it over — I typically reply within 2 business days.
-              </p>
-              <input
-                id="ask-lee-email"
-                type="email"
-                value={askEmail}
-                onChange={e => { setAskEmail(e.target.value); setAskError(""); setAskEmailError(""); }}
-                placeholder="your@email.com"
-                required
-                className="w-full outline-none transition-colors"
-                style={{ border: `1px solid ${askEmailError ? "#dc2626" : "#e2e8f0"}`, borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
-                onFocus={e => e.target.style.borderColor = askEmailError ? "#dc2626" : "#14213D"}
-                onBlur={e => e.target.style.borderColor = askEmailError ? "#dc2626" : "#e2e8f0"}
-              />
-              {askEmailError && (
-                <p className="text-[12px] mt-1" style={{ color: "#dc2626" }}>{askEmailError}</p>
-              )}
-              <div className="mb-2.5" />
-              <textarea
-                value={askQuestion}
-                onChange={e => { setAskQuestion(e.target.value); setAskError(""); }}
-                placeholder={`What's your question about ${chapterName || "this chapter"}?`}
-                rows={4}
-                required
-                className="w-full mb-3 outline-none transition-colors"
-                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14, resize: "vertical" }}
-                onFocus={e => e.target.style.borderColor = "#14213D"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
-              />
-              <button
-                disabled={askSending || !askEmail.trim() || !askQuestion.trim()}
-                onClick={async () => {
-                  // .edu validation
-                   const allowedTestEmails = ["lee@survivestudios.com"];
-                   const trimmedAskEmail = askEmail.trim().toLowerCase();
-                   if (!trimmedAskEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedAskEmail)) {
-                     setAskEmailError("Please use your .edu school email address to submit a question.");
-                     document.getElementById("ask-lee-email")?.focus();
-                     return;
-                   }
-                  setAskEmailError("");
-                  setAskSending(true);
-                  setAskError("");
-                  try {
-                    // Insert into chapter_questions
-                    await (supabase as any).from("chapter_questions").insert({
-                      chapter_id: chapterId,
-                      student_email: askEmail.trim(),
-                      question: askQuestion.trim(),
-                      status: "new",
-                    });
-                    // Send email notification
-                    await supabase.functions.invoke("send-chapter-question", {
-                      body: {
-                        student_email: askEmail.trim(),
-                        question: askQuestion.trim(),
-                        course_name: courseDisplayName,
-                        chapter_number: chapterNum,
-                        chapter_name: chapterName,
-                      },
-                    });
-                    setAskSent(true);
-                  } catch {
-                    setAskError("Something went wrong — email lee@surviveaccounting.com directly");
-                  } finally {
-                    setAskSending(false);
-                  }
-                }}
-                className="w-full font-semibold text-[14px] text-white transition-all hover:brightness-95 active:scale-[0.98]"
-                style={{
-                  background: "#14213D",
-                  borderRadius: 8,
-                  padding: 12,
-                  cursor: askSending ? "wait" : "pointer",
-                  opacity: (askSending || !askEmail.trim() || !askQuestion.trim()) ? 0.6 : 1,
-                  border: "none",
-                }}
-              >
-                {askSending ? "Sending..." : "Send Question →"}
-              </button>
-              {askError && (
-                <p className="text-[12px] mt-2" style={{ color: "#dc2626" }}>{askError}</p>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-6">
-              <CheckCircle2 className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
-              <p className="text-[16px] font-bold mt-3" style={{ color: "#14213D" }}>Thanks for reaching out!</p>
-              <p className="text-[13px] mt-1.5" style={{ color: "#64748b" }}>I'll reply to {askEmail} within 2 business days.</p>
-              <p className="text-[13px] italic mt-1" style={{ color: "#14213D" }}>— Lee</p>
-            </div>
-          )}
-        </div>
-        )}
-
-        {/* About Lee (at bottom) */}
-        <div className="mt-10 mb-8">
-          <AboutLeeSection theme={t} />
-        </div>
-
-        {/* ─── ADMIN VIDEO MANAGER ─── */}
-        {isAdmin && (
-          <div className="mb-8" style={{ borderLeft: "3px solid #f59e0b", background: "#fffbeb", borderRadius: 8, padding: 16, marginTop: 32 }}>
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase mb-3" style={{ color: "#92400e" }}>Video Manager</p>
-
-            {/* Add Video Form */}
-            <div className="space-y-2.5">
-              <div>
-                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Type</label>
-                <select
-                  value={vmType}
-                  onChange={e => setVmType(e.target.value as any)}
-                  className="w-full text-[13px] outline-none"
-                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", background: "#fff" }}
-                >
-                  <option value="intro">intro — Chapter intro clip</option>
-                  <option value="showcase">showcase — Legacy video showcase</option>
-                  <option value="topic">topic — Topic walkthrough</option>
-                  <option value="legacy">legacy — Individual legacy video</option>
-                </select>
-              </div>
-
-              {(vmType === "topic" || vmType === "legacy" || vmType === "showcase") && (
-                <div>
-                  <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Topic</label>
-                  <select
-                    value={vmTopicId}
-                    onChange={e => setVmTopicId(e.target.value)}
-                    className="w-full text-[13px] outline-none"
-                    style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", background: "#fff" }}
+              <div className="mb-4 flex flex-wrap gap-2">
+                {([
+                  ["be", "Brief Exercises"],
+                  ["ex", "Exercises"],
+                  ["p", "Problems"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSolutionsTab(key)}
+                    className="rounded-full px-4 py-1.5 text-[12px] font-semibold"
+                    style={{
+                      background: solutionsTab === key ? theme.navy : theme.mutedBg,
+                      color: solutionsTab === key ? "#FFFFFF" : theme.textMuted,
+                      border: "none",
+                    }}
                   >
-                    <option value="">Select topic...</option>
-                    {(topics || []).filter((t: any) => t.is_active).map((t: any) => (
-                      <option key={t.id} value={t.id}>{t.topic_number ? `${t.topic_number}. ` : ""}{t.topic_name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Vimeo Embed URL</label>
-                <input
-                  value={vmVimeoUrl}
-                  onChange={e => setVmVimeoUrl(e.target.value)}
-                  placeholder="https://player.vimeo.com/video/[VIDEO_ID]"
-                  className="w-full text-[13px] outline-none"
-                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Thumbnail URL (optional)</label>
-                <input
-                  value={vmThumbUrl}
-                  onChange={e => setVmThumbUrl(e.target.value)}
-                  className="w-full text-[13px] outline-none"
-                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Title (optional)</label>
-                <input
-                  value={vmTitle}
-                  onChange={e => setVmTitle(e.target.value)}
-                  className="w-full text-[13px] outline-none"
-                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold block mb-1" style={{ color: "#92400e" }}>Recorded date (optional)</label>
-                <input
-                  type="date"
-                  value={vmDate}
-                  onChange={e => setVmDate(e.target.value)}
-                  className="w-full text-[13px] outline-none"
-                  style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px" }}
-                />
-              </div>
-
-              <button
-                disabled={vmSaving || !vmVimeoUrl.trim()}
-                onClick={async () => {
-                  setVmSaving(true);
-                  try {
-                    await (supabase as any).from("chapter_videos").insert({
-                      chapter_id: chapterId,
-                      topic_id: (vmType === "topic" || vmType === "legacy" || vmType === "showcase") && vmTopicId ? vmTopicId : null,
-                      video_type: vmType,
-                      vimeo_embed_url: vmVimeoUrl.trim(),
-                      thumbnail_url: vmThumbUrl.trim() || null,
-                      title: vmTitle.trim() || null,
-                      recorded_at: vmDate || null,
-                      is_active: true,
-                    });
-                    queryClient.invalidateQueries({ queryKey: ["cram-chapter-videos", chapterId] });
-                    setVmVimeoUrl(""); setVmThumbUrl(""); setVmTitle(""); setVmDate(""); setVmTopicId("");
-                  } catch (e) {
-                    console.error("Failed to add video:", e);
-                  } finally {
-                    setVmSaving(false);
-                  }
-                }}
-                className="w-full text-[13px] font-semibold text-white transition-all hover:brightness-95"
-                style={{ background: "#14213D", borderRadius: 6, padding: "8px 16px", cursor: vmSaving ? "wait" : "pointer", opacity: (!vmVimeoUrl.trim() || vmSaving) ? 0.6 : 1, border: "none" }}
-              >
-                {vmSaving ? "Saving..." : "Add Video"}
-              </button>
-            </div>
-
-            {/* Existing Videos List */}
-            <p className="text-[9px] font-bold tracking-[0.15em] uppercase mt-5 mb-2" style={{ color: "#92400e" }}>Existing Videos for this Chapter</p>
-            {(chapterVideos as any[] || []).length > 0 ? (
-              <div className="space-y-2">
-                {(chapterVideos as any[]).map((vid: any) => (
-                  <div key={vid.id} className="flex items-center gap-2 text-[12px]" style={{ padding: "6px 0", borderBottom: "1px solid #fde68a" }}>
-                    <span
-                      className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                      style={{
-                        background: vid.video_type === "intro" ? "#14213D" : vid.video_type === "showcase" ? "#7c3aed" : vid.video_type === "topic" ? "#1d4ed8" : "#64748b",
-                      }}
-                    >
-                      {vid.video_type}
-                    </span>
-                    <span className="flex-1 truncate" style={{ color: "#14213D" }}>
-                      {(vid.title || vid.vimeo_embed_url || "").slice(0, 40)}
-                    </span>
-                    {vid.recorded_at && (
-                      <span className="text-[10px] shrink-0" style={{ color: "#92400e" }}>
-                        {new Date(vid.recorded_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                      </span>
-                    )}
-                    {vmDeleteConfirm === vid.id ? (
-                      <div className="flex gap-1 shrink-0">
-                        <button
-                          onClick={async () => {
-                            await (supabase as any).from("chapter_videos").delete().eq("id", vid.id);
-                            queryClient.invalidateQueries({ queryKey: ["cram-chapter-videos", chapterId] });
-                            setVmDeleteConfirm(null);
-                          }}
-                          className="text-[11px] font-bold px-2 py-0.5 rounded"
-                          style={{ background: "#dc2626", color: "#fff", border: "none", cursor: "pointer" }}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          onClick={() => setVmDeleteConfirm(null)}
-                          className="text-[11px] px-2 py-0.5 rounded"
-                          style={{ background: "#e2e8f0", color: "#64748b", border: "none", cursor: "pointer" }}
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setVmDeleteConfirm(vid.id)}
-                        className="shrink-0"
-                        style={{ color: "#dc2626", background: "none", border: "none", cursor: "pointer" }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
+                    {label}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <p className="text-[12px]" style={{ color: "rgba(146,64,14,0.6)" }}>No videos added yet for this chapter.</p>
-            )}
-          </div>
-        )}
+
+              <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                {solutionsFiltered.length > 0 ? (
+                  <div>
+                    {solutionsFiltered.map((asset, index) => {
+                      if (isPreview && index >= PREVIEW_LIMIT) return null;
+
+                      return (
+                        <div
+                          key={asset.id}
+                          className="flex items-center gap-3 px-4 py-3 text-[12px] sm:px-5"
+                          style={{ borderBottom: index < solutionsFiltered.length - 1 ? `1px solid ${theme.border}` : "none" }}
+                        >
+                          <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>
+                            {asset.source_ref || "—"}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>
+                            {asset.problem_title || asset.asset_name}
+                          </span>
+                          <a
+                            href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 text-[12px] font-semibold"
+                            style={{ color: "#2563EB" }}
+                          >
+                            View →
+                          </a>
+                        </div>
+                      );
+                    })}
+
+                    {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
+                      <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
+                        <TieredPaywallCard
+                          enrollUrl={enrollUrl}
+                          chapterNumber={chapter?.chapter_number || null}
+                          fullPassLink={fullPassLink}
+                          chapterLink={chapterLink}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-4 py-5 sm:px-5">
+                    <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                      No solutions in this tab yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {showJournalSection && (
+            <section id="je-cram-tool" className="scroll-mt-16" style={{ opacity: isSectionVisible("journal_entries") ? 1 : 0.4 }}>
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <SectionHeaderWithToggle
+                  label="JOURNAL ENTRIES TO MEMORIZE"
+                  count={visibleJournalCards.length}
+                  isAdmin={isAdmin}
+                  sectionName="journal_entries"
+                  isVisible={isSectionVisible("journal_entries")}
+                  onToggle={toggleSectionVisibility}
+                />
+
+                {visibleJournalCards.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleShuffle}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold"
+                    style={{ background: theme.navySoft, color: "#2563EB", border: `1px solid #BFDBFE` }}
+                  >
+                    <Shuffle className="h-3 w-3" />
+                    Shuffle
+                  </button>
+                )}
+              </div>
+
+              {visibleJournalCards.length > 0 ? (
+                <>
+                  <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                        {reviewedCount} of {visibleJournalCards.length} reviewed
+                      </p>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full" style={{ background: "#E5E7EB" }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%`, background: progressPercent === 100 ? "#22C55E" : "#3B82F6" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {visibleJournalCards.map((card, index) => {
+                      if (isPreview && index >= PREVIEW_LIMIT) return null;
+                      const hidden = isItemHidden("journal_entries", card.id);
+
+                      return (
+                        <JournalEntryCard
+                          key={card.id}
+                          card={card}
+                          hidden={hidden}
+                          isAdmin={isAdmin}
+                          isReviewed={reviewedSet.has(card.id)}
+                          onReview={() => handleReview(card.id)}
+                          onToggleHidden={() => toggleItemHidden("journal_entries", card.id)}
+                        />
+                      );
+                    })}
+
+                    {isPreview && visibleJournalCards.length > PREVIEW_LIMIT && (
+                      <TieredPaywallCard
+                        enrollUrl={enrollUrl}
+                        chapterNumber={chapter?.chapter_number || null}
+                        fullPassLink={fullPassLink}
+                        chapterLink={chapterLink}
+                      />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                    No journal entries to memorize yet.
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
+
+          {showFormulasSection && (
+            <section style={{ opacity: isSectionVisible("formulas") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle
+                label="FORMULAS TO MEMORIZE"
+                count={structuredFormulas.length}
+                isAdmin={isAdmin}
+                sectionName="formulas"
+                isVisible={isSectionVisible("formulas")}
+                onToggle={toggleSectionVisibility}
+              />
+
+              {structuredFormulas.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {structuredFormulas.map((formula) => (
+                    <div
+                      key={formula.name.toLowerCase()}
+                      className="rounded-lg border p-4"
+                      style={{ background: theme.cardBg, borderColor: theme.border }}
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.05em]" style={{ color: theme.heading }}>
+                        {formula.name}
+                      </p>
+                      <p className="mt-1.5 text-[16px] font-medium" style={{ color: theme.heading, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace" }}>
+                        {formula.expression}
+                      </p>
+                      {formula.explanation && (
+                        <p className="mt-2 text-[13px]" style={{ color: theme.textMuted }}>
+                          {formula.explanation}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                    No formulas to memorize yet.
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
       </main>
     </div>
   );
