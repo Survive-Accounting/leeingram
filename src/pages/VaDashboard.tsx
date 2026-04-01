@@ -390,7 +390,6 @@ export default function VaDashboard() {
             <QuizDeployPanel
               filterChapterIds={effectiveChapterIds}
               hideHeader
-              readOnly
             />
           </TabsContent>
 
