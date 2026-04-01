@@ -377,7 +377,7 @@ function JEWrongAnswers({ question }: { question: Question }) {
           const exp = expMap[k];
           if (!jeRows && !exp) return null;
           return (
-            <div key={k} className="rounded-md p-2.5" style={{ border: "1px solid #fca5a5", borderLeftWidth: 3 }}>
+            <div key={k} className="rounded-md p-2.5" style={{ border: "1px solid rgba(252,165,165,0.4)", borderLeftWidth: 3 }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>Choice {k.toUpperCase()}</span>
               {jeRows && <div style={{ marginTop: 4 }}><JEOptionMiniTable rows={jeRows} /></div>}
               {exp && <p style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", marginTop: 4 }}>{exp}</p>}
