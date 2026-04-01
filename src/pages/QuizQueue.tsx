@@ -1761,29 +1761,7 @@ export default function QuizQueue() {
           <p className="text-xs text-muted-foreground">Generate, review, and export quizzes for LearnWorlds.</p>
         </div>
 
-        <Tabs defaultValue="topic-quizzes">
-          <TabsList>
-            <TabsTrigger value="topic-quizzes" className="text-xs">
-              <ListChecks className="h-3.5 w-3.5 mr-1.5" /> Topic Quizzes
-            </TabsTrigger>
-            <TabsTrigger value="export" className="text-xs">
-              <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSVs
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="topic-quizzes" className="mt-4">
-            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} courseCode={courseCode} isAdmin={!isVa && !impersonating} />
-          </TabsContent>
-
-          <TabsContent value="export" className="mt-4">
-            <div className="rounded-lg border border-border bg-card p-6 text-center space-y-3">
-              <p className="text-sm text-muted-foreground">Quiz export tools live at their dedicated page.</p>
-              <Button variant="outline" size="sm" onClick={() => navigate("/quizzes-ready")}>
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Open Export CSVs
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
+        <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} courseCode={courseCode} isAdmin={!isVa && !impersonating} />
       </div>
     </SurviveSidebarLayout>
   );
