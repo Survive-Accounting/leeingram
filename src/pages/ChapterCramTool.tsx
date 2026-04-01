@@ -548,16 +548,55 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
   });
 
-  // Fetch approved teaching assets for this chapter
+  // Fetch approved teaching assets for this chapter (with formulas)
   const { data: approvedAssets } = useQuery({
     queryKey: ["cram-approved-assets", chapterId],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("teaching_assets")
-        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title")
+        .select("id, asset_name, source_ref, asset_type, topic_id, problem_title, important_formulas")
         .eq("chapter_id", chapterId)
         .eq("status", "approved")
         .order("source_ref");
+      return data || [];
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch flowcharts for this chapter
+  const { data: flowchartsData } = useQuery({
+    queryKey: ["cram-flowcharts", chapterId],
+    queryFn: async () => {
+      // Get all approved asset IDs for this chapter, then fetch their flowcharts
+      const { data: assetIds } = await (supabase as any)
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, topic_id")
+        .eq("chapter_id", chapterId)
+        .eq("status", "approved")
+        .not("topic_id", "is", null);
+      if (!assetIds?.length) return [];
+      const ids = assetIds.map((a: any) => a.id);
+      const { data: flowcharts } = await (supabase as any)
+        .from("asset_flowcharts")
+        .select("id, teaching_asset_id, instruction_number, instruction_label, flowchart_image_url")
+        .in("teaching_asset_id", ids)
+        .not("flowchart_image_url", "is", null)
+        .order("instruction_number");
+      // Merge asset info
+      const assetMap = Object.fromEntries(assetIds.map((a: any) => [a.id, a]));
+      return (flowcharts || []).map((f: any) => ({ ...f, asset: assetMap[f.teaching_asset_id] }));
+    },
+    enabled: !!chapterId,
+  });
+
+  // Fetch section config for admin toggles
+  const { data: sectionConfigs } = useQuery({
+    queryKey: ["cram-section-config", chapterId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("chapter_section_config")
+        .select("*")
+        .eq("chapter_id", chapterId);
       return data || [];
     },
     enabled: !!chapterId,
