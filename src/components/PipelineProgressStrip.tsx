@@ -15,8 +15,7 @@ const STAGES = [
   { key: "approved", label: "Teaching Assets", path: "/assets-library", tip: "Approved assets ready for sheet prep, quizzes, and video production." },
   { key: "topics", label: "Topic Generator", path: "/phase2-review", tip: "Generate core exam topics from approved teaching assets." },
   { key: "quiz_queue", label: "Quiz Queue", path: "/quiz-queue", tip: "Generate and review quiz questions for each topic." },
-  { key: "video_queue", label: "Video Queue", path: "/video-queue", tip: "Record walkthrough videos for each topic." },
-  { key: "deployed", label: "Deployment", path: "/deployment", tip: "Final deployment of quizzes and videos to LearnWorlds." },
+  { key: "quiz_deploy", label: "Quiz Deployment", path: "/quizzes-ready", tip: "Export and deploy quizzes to LearnWorlds." },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
