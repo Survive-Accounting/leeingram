@@ -133,15 +133,27 @@ function ReviewStatusBadge({ status }: { status: string }) {
   );
 }
 
+/* ──────── CSV Export Helpers ──────── */
+
+function buildQuizFilename(courseCode?: string, chapterNumber?: number, topicNumber?: number, topicName?: string): string {
+  const cc = (courseCode || "COURSE").toUpperCase();
+  const ch = String(chapterNumber ?? 0).padStart(2, "0");
+  const tn = String(topicNumber ?? 0).padStart(2, "0");
+  const slug = (topicName || "topic").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return `${cc}-Ch${ch}-T${tn}-${slug}-V1.csv`;
+}
+
 /* ──────── CSV Export Helper ──────── */
 
-function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: string): string {
+function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapterName?: string; courseCode?: string; chapterNumber?: number; topicNumber?: number }): string {
   const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
+  const bankName = buildQuizFilename(opts?.courseCode, opts?.chapterNumber, opts?.topicNumber, topicName).replace(/\.csv$/, "");
 
   const headers = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
     "CorrectExplanation", "IncorrectExplanation",
+    "QuestionBankName",
   ];
 
   const esc = (v: string) => {
@@ -160,8 +172,8 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: 
     "— Step 1: Import this CSV into LW to create quiz structure",
     "— Step 2: For each question, click Edit in LW → click </> in each field → paste the iframe HTML shown below that field",
     "— Step 3: Paste the quiz URL back into the Quiz Queue once live",
-    `— Questions: ${questions.length} | Topic: ${topicName} | Chapter: ${chapterName ?? ""}`,
-    "", "", "", "", "",
+    `— Questions: ${questions.length} | Topic: ${topicName} | Chapter: ${opts?.chapterName ?? ""}`,
+    "", "", "", "", "", "",
   ].map(esc).join(",");
 
   const rows = questions.map((q) => {
@@ -173,6 +185,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: 
     const incorrectExp = `Same HTML works for both:${paste(expUrl)}`;
 
     if (q.question_type === "true_false") {
+      // Legacy support for existing T/F questions
       const corAns = q.correct_answer === "a" ? "True" : "False";
       return [
         topicName, "True/False",
@@ -181,7 +194,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: 
         `True${paste(ansUrl("true"))}`,
         `False${paste(ansUrl("false"))}`,
         "", "",
-        correctExp, incorrectExp,
+        correctExp, incorrectExp, bankName,
       ].map(esc).join(",");
     }
 
@@ -210,7 +223,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: 
         `${wrong1}${paste(ansUrl("b"))}`,
         `${wrong2}${paste(ansUrl("c"))}`,
         `${wrong3}${paste(ansUrl("d"))}`,
-        correctExp, incorrectExp,
+        correctExp, incorrectExp, bankName,
       ].map(esc).join(",");
     }
 
@@ -228,7 +241,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, chapterName?: 
       `${q.option_b ?? ""}${paste(ansUrl("b"))}`,
       `${q.option_c ?? ""}${paste(ansUrl("c"))}`,
       `${q.option_d ?? ""}${paste(ansUrl("d"))}`,
-      correctExp, incorrectExp,
+      correctExp, incorrectExp, bankName,
     ].map(esc).join(",");
   });
 
@@ -1138,7 +1151,7 @@ function StartOverSection({ chapterId, chapterName, totalQuestionCount, onReset 
 
 /* ──────── Topic Quizzes Tab ──────── */
 
-function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string; isAdmin?: boolean }) {
+function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, isAdmin }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string; courseCode?: string; isAdmin?: boolean }) {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1244,7 +1257,7 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
 
       const completed: string[] = [];
       generatingIds.forEach((id) => {
-        if ((countByTopic[id] ?? 0) >= 10) {
+        if ((countByTopic[id] ?? 0) >= 5) {
           completed.push(id);
         }
       });
@@ -1258,7 +1271,7 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
 
         for (const id of completed) {
           const topic = topics.find((t) => t.id === id);
-          if (topic) toast.success(`${topic.topic_name} — 10 questions ready for review`);
+          if (topic) toast.success(`${topic.topic_name} — 5 questions ready for review`);
         }
 
         loadTopics();
@@ -1363,9 +1376,8 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { c
         return;
       }
 
-      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name, chapterName);
-      const slug = topic.topic_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      const filename = `ch${chapterNumber ?? 0}-${slug}-quiz.csv`;
+      const csv = buildLwCsv(questions as unknown as QuizQuestion[], topic.topic_name, { chapterName, courseCode, chapterNumber, topicNumber: topic.topic_number ?? undefined });
+      const filename = buildQuizFilename(courseCode, chapterNumber, topic.topic_number ?? undefined, topic.topic_name);
       downloadCsv(csv, filename);
       toast.success("CSV exported — ready for LearnWorlds import");
     } catch {
@@ -1697,7 +1709,14 @@ export default function QuizQueue() {
   const { impersonating } = useImpersonation();
   const { workspace } = useActiveWorkspace();
   const navigate = useNavigate();
+  const [courseCode, setCourseCode] = useState<string>("");
   const showPlaceholder = isVa || !!impersonating;
+
+  useEffect(() => {
+    if (!workspace?.courseId) return;
+    supabase.from("courses").select("code").eq("id", workspace.courseId).single()
+      .then(({ data }) => { if (data?.code) setCourseCode(data.code); });
+  }, [workspace?.courseId]);
 
   if (showPlaceholder) {
     return (
@@ -1735,7 +1754,7 @@ export default function QuizQueue() {
           </TabsList>
 
           <TabsContent value="topic-quizzes" className="mt-4">
-            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} isAdmin={!isVa && !impersonating} />
+            <TopicQuizzesTab chapterId={workspace?.chapterId} chapterNumber={workspace?.chapterNumber} chapterName={workspace?.chapterName} courseCode={courseCode} isAdmin={!isVa && !impersonating} />
           </TabsContent>
 
           <TabsContent value="export" className="mt-4">
