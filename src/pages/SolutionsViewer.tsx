@@ -1647,22 +1647,24 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick, showShare = true }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
   return (
     <>
       {/* Mobile: compact floating share button bottom-right */}
-      <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
-        <button
-          onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-          className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
-          style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
-        >
-          <Share2 className="h-3.5 w-3.5" /> Share
-        </button>
-      </div>
+      {showShare && (
+        <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
+          <button
+            onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
+            style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
+        </div>
+      )}
 
       {/* Desktop: full action bar */}
       <div
