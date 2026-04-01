@@ -1645,11 +1645,133 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
   );
 }
 
+// ── Feedback Modal ──────────────────────────────────────────────────
+
+function FeedbackModal({ open, onClose, asset }: { open: boolean; onClose: () => void; asset: any }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const chapter = (asset as any)?.chapters;
+  const course = (asset as any)?.courses;
+  const chapterName = chapter?.chapter_name || "";
+  const courseName = (() => {
+    const code = (course?.code || "").toUpperCase();
+    if (code === "IA2") return "Intermediate Accounting 2";
+    if (code === "IA1") return "Intermediate Accounting 1";
+    if (code === "MA2") return "Managerial Accounting";
+    if (code === "FA1") return "Financial Accounting";
+    return course?.course_name || code;
+  })();
+
+  const handleSubmit = async () => {
+    if (!feedback.trim()) return;
+    setSubmitting(true);
+    try {
+      await (supabase as any).from("chapter_questions").insert({
+        chapter_id: asset.chapter_id,
+        student_email: email.trim() || "anonymous",
+        question: feedback.trim(),
+        issue_type: "feedback",
+        asset_name: asset.asset_name,
+        source_ref: asset.source_ref,
+        status: "new",
+        student_name: name.trim() || null,
+      });
+      supabase.functions.invoke("send-issue-report", {
+        body: {
+          student_email: email.trim() || "anonymous@feedback",
+          message: feedback.trim(),
+          issue_type_label: "Student Feedback",
+          asset_name: asset.asset_name,
+          source_ref: asset.source_ref,
+          problem_title: name.trim() ? `From: ${name.trim()}` : "",
+          course_name: courseName,
+          chapter_number: chapter?.chapter_number || null,
+          chapter_name: chapterName,
+        },
+      }).catch(() => {});
+      setSent(true);
+      setTimeout(onClose, 2000);
+    } catch {
+      toast.error("Something went wrong — try again");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }} />
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#ffffff", borderRadius: 12, padding: 24, width: "min(420px, 92vw)", zIndex: 101, boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
+        {sent ? (
+          <div className="text-center py-8">
+            <CheckCircle className="h-8 w-8 mx-auto mb-3" style={{ color: "#22c55e" }} />
+            <p className="text-[15px] font-bold" style={{ color: "#14213D" }}>Got it — thank you. — Lee</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Share Feedback</h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="text-[12px] mb-4" style={{ color: "#999" }}>Lee reads every message personally.</p>
+            <div className="space-y-3">
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full px-3 py-2 rounded-md text-[13px]"
+                style={{ border: "1px solid #e0e0e0", outline: "none" }}
+              />
+              <input
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-3 py-2 rounded-md text-[13px]"
+                style={{ border: "1px solid #e0e0e0", outline: "none" }}
+              />
+              <textarea
+                value={feedback}
+                onChange={e => setFeedback(e.target.value)}
+                placeholder="What's working well? What could be better? Anything you'd like to see added?"
+                className="w-full px-3 py-2 rounded-md text-[13px]"
+                style={{ border: "1px solid #e0e0e0", outline: "none", minHeight: 100, resize: "vertical" }}
+              />
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !feedback.trim()}
+              className="w-full mt-4 py-2.5 rounded-md text-[13px] font-bold text-white transition-opacity"
+              style={{ background: "#14213D", opacity: submitting || !feedback.trim() ? 0.5 : 1 }}
+            >
+              {submitting ? "Sending…" : "Send to Lee →"}
+            </button>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick, showShare = true }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
+  });
+
+  const dismissBanner = () => {
+    setBannerDismissed(true);
+    try { localStorage.setItem("sa_feedback_banner_dismissed", "true"); } catch {}
+  };
 
   return (
     <>
@@ -1666,66 +1788,97 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
         </div>
       )}
 
-      {/* Desktop: full action bar */}
+      {/* Desktop: full action bar with feedback banner */}
       <div
         className="hidden sm:block fixed z-30"
         style={{ top: 56, right: 16 }}
       >
         <div
-          className="flex items-center rounded-full overflow-hidden"
+          className="rounded-xl overflow-hidden"
           style={{
             background: "#FFFFFF",
             border: `1px solid ${theme.border}`,
             boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)",
           }}
         >
-          {!collapsed && (
-            <>
-              {showShare && (
-                <>
-                  <button
-                    onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-                    className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                    style={{ color: "#3B82F6" }}
-                  >
-                    <Share2 className="h-3 w-3" /> Share This
-                  </button>
-                  <div className="w-px h-5" style={{ background: theme.border }} />
-                </>
-              )}
+          {/* Feedback banner row */}
+          {!bannerDismissed && !collapsed && (
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5"
+              style={{ borderBottom: `1px solid ${theme.border}` }}
+            >
+              <span className="text-[11px]" style={{ color: theme.textMuted }}>
+                Built for you in 2026 — and growing.{" "}
+                <button
+                  onClick={() => setFeedbackOpen(true)}
+                  className="underline hover:no-underline"
+                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
+                >
+                  Share feedback →
+                </button>
+                {" — Lee"}
+              </span>
               <button
-                onClick={() => setAboutOpen(true)}
-                className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
-                style={{ color: theme.text }}
+                onClick={dismissBanner}
+                className="ml-auto shrink-0 hover:opacity-70"
+                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
               >
-                About Lee Ingram
+                <X className="h-3 w-3" />
               </button>
-              <div className="w-px h-5" style={{ background: theme.border }} />
-              <button
-                onClick={onReportClick}
-                className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
-                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
-              >
-                ⚠ Report Issue →
-              </button>
-              <div className="w-px h-5" style={{ background: theme.border }} />
-            </>
+            </div>
           )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
-            style={{ color: theme.textMuted }}
-          >
-            {collapsed ? (
-              <>Show <ChevronDown className="h-3 w-3" /></>
-            ) : (
-              <ChevronUp className="h-3 w-3" />
+
+          {/* Button row */}
+          <div className="flex items-center">
+            {!collapsed && (
+              <>
+                {showShare && (
+                  <>
+                    <button
+                      onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
+                      className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                      style={{ color: "#3B82F6" }}
+                    >
+                      <Share2 className="h-3 w-3" /> Share This
+                    </button>
+                    <div className="w-px h-5" style={{ background: theme.border }} />
+                  </>
+                )}
+                <button
+                  onClick={() => setAboutOpen(true)}
+                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
+                  style={{ color: theme.text }}
+                >
+                  About Lee Ingram
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+                <button
+                  onClick={onReportClick}
+                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
+                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
+                >
+                  ⚠ Report Issue →
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+              </>
             )}
-          </button>
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
+              style={{ color: theme.textMuted }}
+            >
+              {collapsed ? (
+                <>Show <ChevronDown className="h-3 w-3" /></>
+              ) : (
+                <ChevronUp className="h-3 w-3" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
+      {asset && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} asset={asset} />}
     </>
   );
 }
@@ -2459,7 +2612,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>

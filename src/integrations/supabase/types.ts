@@ -1157,6 +1157,7 @@ export type Database = {
           source_ref: string | null
           status: string
           student_email: string
+          student_name: string | null
         }
         Insert: {
           asset_name?: string | null
@@ -1169,6 +1170,7 @@ export type Database = {
           source_ref?: string | null
           status?: string
           student_email: string
+          student_name?: string | null
         }
         Update: {
           asset_name?: string | null
@@ -1181,6 +1183,7 @@ export type Database = {
           source_ref?: string | null
           status?: string
           student_email?: string
+          student_name?: string | null
         }
         Relationships: [
           {
