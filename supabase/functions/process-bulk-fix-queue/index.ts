@@ -179,9 +179,7 @@ Deno.serve(async (req) => {
     }
 
     const assets = allAssets;
-    if (queryErr) throw new Error(`Failed to query assets: ${queryErr.message}`);
-
-    const total = assets?.length || 0;
+    const total = assets.length;
     const offset = currentItem.assets_processed || 0;
 
     if (total === 0 || offset >= total) {
