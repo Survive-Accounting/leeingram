@@ -172,6 +172,12 @@ export default function QuizExplanation() {
     })();
   }, [questionId]);
 
+  // Set transparent background immediately
+  useEffect(() => {
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+  }, []);
+
   // Height reporting for iframe — use resize message type
   const reportHeight = useCallback(() => {
     const height = document.body.scrollHeight;
@@ -185,6 +191,7 @@ export default function QuizExplanation() {
     reportHeight();
     const t1 = setTimeout(reportHeight, 300);
     const t2 = setTimeout(reportHeight, 800);
+    document.fonts.ready.then(reportHeight);
     // Also observe DOM size changes
     const observer = new ResizeObserver(reportHeight);
     observer.observe(document.body);
@@ -228,10 +235,10 @@ export default function QuizExplanation() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[200px] bg-white">
+      <div className="flex items-center justify-center min-h-[200px]" style={{ background: "transparent" }}>
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          <p className="text-xs text-slate-400">Loading explanation...</p>
+          <Loader2 className="h-5 w-5 animate-spin" style={{ color: "#e8e8e8" }} />
+          <p className="text-xs" style={{ color: "#e8e8e8" }}>Loading explanation...</p>
         </div>
       </div>
     );
@@ -239,34 +246,34 @@ export default function QuizExplanation() {
 
   if (error || !question) {
     return (
-      <div className="flex items-center justify-center min-h-[200px] bg-white">
-        <p className="text-sm text-slate-400">Explanation not available.</p>
+      <div className="flex items-center justify-center min-h-[200px]" style={{ background: "transparent" }}>
+        <p className="text-sm" style={{ color: "#e8e8e8" }}>Explanation not available.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white text-slate-900 font-sans" style={{ fontSize: 14 }}>
+    <div className="font-sans" style={{ fontSize: 14, background: "transparent", color: "#e8e8e8" }}>
       {/* Header */}
       <div className="px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: "#14213D" }}>
         <span className="text-white font-bold" style={{ fontSize: 13 }}>📖 Deep Explanation</span>
-        <span className="text-white/50" style={{ fontSize: 11 }}>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
           {topic?.topic_name} · Ch {chapter?.chapter_number}
         </span>
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar — pill style */}
       {availableTabs.length > 1 && (
-        <div className="flex border-b border-slate-200 px-4 gap-4 bg-white">
+        <div className="flex px-4 py-2 gap-2" style={{ background: "transparent" }}>
           {availableTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className="py-2 text-xs font-medium transition-colors relative"
+              className="py-1.5 px-3 text-xs font-medium transition-colors rounded-full"
               style={{
-                color: activeTab === t.key ? "#14213D" : "#94a3b8",
-                borderBottom: activeTab === t.key ? "2px solid #14213D" : "2px solid transparent",
-                marginBottom: -1,
+                backgroundColor: activeTab === t.key ? "#14213D" : "transparent",
+                color: activeTab === t.key ? "white" : "#94a3b8",
+                border: activeTab === t.key ? "none" : "1px solid rgba(255,255,255,0.15)",
               }}
             >
               {t.label}
@@ -283,15 +290,15 @@ export default function QuizExplanation() {
       </div>
 
       {/* Footer */}
-      <div className="text-center py-3 space-y-1" style={{ backgroundColor: "#f8fafc" }}>
+      <div className="text-center py-3 space-y-1" style={{ background: "transparent" }}>
         <a
           href={reportMailto}
           className="inline-block text-xs font-medium hover:underline"
-          style={{ color: "#64748b" }}
+          style={{ color: "#94a3b8" }}
         >
           🐛 Report an issue with this question
         </a>
-        <p style={{ fontSize: 11, color: "#cbd5e1" }}>
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
           Survive Accounting · by Lee Ingram
         </p>
       </div>
@@ -326,18 +333,18 @@ function JEOptionMiniTable({ rows }: { rows: { account_name: string; side: strin
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
-        <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-          <th style={{ textAlign: "left", padding: "3px 4px", fontSize: 11, color: "#64748b" }}>Account</th>
-          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#64748b", width: 50 }}>Debit</th>
-          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#64748b", width: 50 }}>Credit</th>
+        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
+          <th style={{ textAlign: "left", padding: "3px 4px", fontSize: 11, color: "#94a3b8" }}>Account</th>
+          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#94a3b8", width: 50 }}>Debit</th>
+          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#94a3b8", width: 50 }}>Credit</th>
         </tr>
       </thead>
       <tbody>
         {ordered.map((r, i) => (
-          <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-            <td style={{ padding: "3px 4px", paddingLeft: r.side === "credit" ? 20 : 4, fontSize: 13 }}>{r.account_name}</td>
-            <td style={{ textAlign: "center", padding: "3px 4px", color: "#16a34a" }}>{r.side === "debit" ? "✓" : ""}</td>
-            <td style={{ textAlign: "center", padding: "3px 4px", color: "#16a34a" }}>{r.side === "credit" ? "✓" : ""}</td>
+          <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <td style={{ padding: "3px 4px", paddingLeft: r.side === "credit" ? 20 : 4, fontSize: 13, color: "#e8e8e8" }}>{r.account_name}</td>
+            <td style={{ textAlign: "center", padding: "3px 4px", color: "#4ade80" }}>{r.side === "debit" ? "✓" : ""}</td>
+            <td style={{ textAlign: "center", padding: "3px 4px", color: "#4ade80" }}>{r.side === "credit" ? "✓" : ""}</td>
           </tr>
         ))}
       </tbody>
@@ -370,7 +377,7 @@ function JEWrongAnswers({ question }: { question: Question }) {
           const exp = expMap[k];
           if (!jeRows && !exp) return null;
           return (
-            <div key={k} className="rounded-md p-2.5" style={{ border: "1px solid #fca5a5", borderLeftWidth: 3 }}>
+            <div key={k} className="rounded-md p-2.5" style={{ border: "1px solid rgba(252,165,165,0.4)", borderLeftWidth: 3 }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>Choice {k.toUpperCase()}</span>
               {jeRows && <div style={{ marginTop: 4 }}><JEOptionMiniTable rows={jeRows} /></div>}
               {exp && <p style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", marginTop: 4 }}>{exp}</p>}
@@ -396,7 +403,7 @@ function SolutionTab({ question }: { question: Question }) {
 
     return (
       <div className="space-y-4">
-        <p className="text-xs italic" style={{ color: "#64748b" }}>
+        <p className="text-xs italic" style={{ color: "#94a3b8" }}>
           Hover over each row to see why this entry is recorded this way.
         </p>
         <JournalEntryTable
@@ -405,9 +412,9 @@ function SolutionTab({ question }: { question: Question }) {
           showHeading={false}
         />
         {question.explanation_correct && (
-          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
-            <p className="text-xs" style={{ color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>WHY</p>
-            <p className="text-sm leading-relaxed">{question.explanation_correct}</p>
+          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
+            <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
+            <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
           </div>
         )}
         <JEWrongAnswers question={question} />
@@ -429,10 +436,10 @@ function SolutionTab({ question }: { question: Question }) {
           <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
             ✓ CORRECT JOURNAL ENTRY
           </p>
-          <div className="rounded-md p-3" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
-            {correctRows ? <JEOptionMiniTable rows={correctRows} /> : <p className="text-sm">{optMap[question.correct_answer]}</p>}
+          <div className="rounded-md p-3" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
+            {correctRows ? <JEOptionMiniTable rows={correctRows} /> : <p className="text-sm" style={{ color: "#e8e8e8" }}>{optMap[question.correct_answer]}</p>}
             {question.explanation_correct && (
-              <p className="text-sm leading-relaxed" style={{ marginTop: 8 }}>{question.explanation_correct}</p>
+              <p className="text-sm leading-relaxed" style={{ marginTop: 8, color: "#e8e8e8" }}>{question.explanation_correct}</p>
             )}
           </div>
         </div>
@@ -460,7 +467,7 @@ function SolutionTab({ question }: { question: Question }) {
         <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
           ✓ WHY THIS IS CORRECT
         </p>
-        <div className="rounded-md p-4" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
+        <div className="rounded-md p-4" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
           <ExplanationText text={question.explanation_correct} />
         </div>
       </div>
@@ -480,13 +487,13 @@ function SolutionTab({ question }: { question: Question }) {
                 <div key={k} className="flex gap-3 items-start">
                   <span
                     className="shrink-0 rounded-full px-2 py-0.5 font-bold"
-                    style={{ fontSize: 11, color: "#dc2626", border: "1px solid #fca5a5" }}
+                    style={{ fontSize: 11, color: "#dc2626", border: "1px solid rgba(252,165,165,0.4)" }}
                   >
                     {k.toUpperCase()}
                   </span>
                   <div>
                     {label && (
-                      <p className="font-bold" style={{ fontSize: 13, color: "#374151" }}>{label}</p>
+                      <p className="font-bold" style={{ fontSize: 13, color: "#e8e8e8" }}>{label}</p>
                     )}
                     {exp && (
                       <p className="italic" style={{ fontSize: 12, color: "#94a3b8" }}>{exp}</p>
@@ -518,14 +525,14 @@ function ExplanationText({ text }: { text: string }) {
   const parts = text.split(/(\$[\d,]+(?:\.\d+)?(?:\s*[×x*÷/+\-]\s*\$?[\d,]+(?:\.\d+)?)*(?:\s*=\s*\$?[\d,]+(?:\.\d+)?)?)/g);
 
   return (
-    <p className="text-sm leading-relaxed">
+    <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>
       {parts.map((part, i) => {
         if (calcPattern.test(part)) {
           return (
             <span
               key={i}
               className="inline-block rounded px-1.5 py-0.5 mx-0.5 font-mono"
-              style={{ backgroundColor: "#f1f5f9", fontSize: 13 }}
+              style={{ backgroundColor: "rgba(255,255,255,0.1)", fontSize: 13, color: "#e8e8e8" }}
             >
               {part}
             </span>
@@ -545,7 +552,7 @@ function JeTab({ jeData }: { jeData: any[] }) {
       </p>
       {jeData.map((je, idx) => (
         <div key={idx} className="space-y-1.5">
-          <p className="text-xs font-semibold" style={{ color: "#374151" }}>{je.label}</p>
+          <p className="text-xs font-semibold" style={{ color: "#e8e8e8" }}>{je.label}</p>
           {Array.isArray(je.entries) && je.entries.map((entry: any, ei: number) => {
             const rawLines = entry.accounts || entry.lines || [];
             if (!Array.isArray(rawLines) || rawLines.length === 0) return null;
@@ -654,14 +661,14 @@ function BulletedText({ text }: { text: string }) {
     .filter((s) => s.length > 0);
 
   if (bullets.length <= 1) {
-    return <p className="text-sm leading-relaxed">{text}</p>;
+    return <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{text}</p>;
   }
 
   return (
     <ul className="space-y-3">
       {bullets.map((b, i) => (
-        <li key={i} className="flex gap-2 text-sm leading-relaxed">
-          <span className="shrink-0 mt-1" style={{ color: "#d97706" }}>•</span>
+        <li key={i} className="flex gap-2 text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>
+          <span className="shrink-0 mt-1" style={{ color: "#f59e0b" }}>•</span>
           <span>{b}</span>
         </li>
       ))}
