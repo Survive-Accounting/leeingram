@@ -1,0 +1,1 @@
+select id, asset_name from public.teaching_assets where journal_entry_completed_json is not null and supplementary_je_json is null order by asset_name asc limit 1;

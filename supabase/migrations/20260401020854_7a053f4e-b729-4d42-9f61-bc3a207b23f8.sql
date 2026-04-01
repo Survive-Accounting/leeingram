@@ -1,0 +1,1 @@
+select count(*) filter (where journal_entry_completed_json is not null and supplementary_je_json is null) as eligible_missing, count(*) filter (where supplementary_je_json is not null) as already_has_supplementary from public.teaching_assets;
