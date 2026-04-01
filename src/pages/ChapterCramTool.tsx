@@ -698,6 +698,100 @@ export default function ChapterCramTool() {
     });
   }, [approvedAssets, solutionsTab]);
 
+  // Structured formulas from approved assets
+  const structuredFormulas = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { name: string; expression: string; explanation?: string }[] = [];
+    for (const asset of (approvedAssets as any[] || [])) {
+      const raw = asset.important_formulas;
+      if (!raw || typeof raw !== "string") continue;
+      for (const line of raw.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx > 0) {
+          const name = trimmed.substring(0, eqIdx).trim();
+          const expression = trimmed.substring(eqIdx).trim();
+          const key = name.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ name, expression: `${name} ${expression}` });
+          }
+        } else {
+          const key = trimmed.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ name: trimmed, expression: trimmed });
+          }
+        }
+      }
+    }
+    return result;
+  }, [approvedAssets]);
+
+  // Flowcharts grouped by topic
+  const flowchartsByTopic = useMemo(() => {
+    const map: Record<string, { topicName: string; items: any[] }> = {};
+    for (const f of (flowchartsData || [])) {
+      const tid = f.asset?.topic_id;
+      if (!tid) continue;
+      if (!map[tid]) {
+        const topic = (topics || []).find((t: any) => t.id === tid);
+        map[tid] = { topicName: topic?.topic_name || "Unknown Topic", items: [] };
+      }
+      map[tid].items.push(f);
+    }
+    return map;
+  }, [flowchartsData, topics]);
+
+  const totalFlowcharts = useMemo(() => (flowchartsData || []).length, [flowchartsData]);
+
+  // Section visibility helpers
+  const sectionConfigMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    for (const cfg of (sectionConfigs || [])) {
+      map[cfg.section_name] = cfg;
+    }
+    return map;
+  }, [sectionConfigs]);
+
+  const isSectionVisible = useCallback((name: string) => {
+    const cfg = sectionConfigMap[name];
+    if (!cfg) return true;
+    return cfg.is_visible;
+  }, [sectionConfigMap]);
+
+  const isItemHidden = useCallback((sectionName: string, itemId: string) => {
+    const cfg = sectionConfigMap[sectionName];
+    if (!cfg) return false;
+    return (cfg.hidden_item_ids || []).includes(itemId);
+  }, [sectionConfigMap]);
+
+  const toggleSectionVisibility = async (sectionName: string) => {
+    const current = isSectionVisible(sectionName);
+    const cfg = sectionConfigMap[sectionName];
+    if (cfg) {
+      await (supabase as any).from("chapter_section_config").update({ is_visible: !current, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+    } else {
+      await (supabase as any).from("chapter_section_config").insert({ chapter_id: chapterId, section_name: sectionName, is_visible: !current });
+    }
+    queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
+  };
+
+  const toggleItemHidden = async (sectionName: string, itemId: string) => {
+    const cfg = sectionConfigMap[sectionName];
+    const currentList: string[] = cfg?.hidden_item_ids || [];
+    const newList = currentList.includes(itemId) ? currentList.filter((id: string) => id !== itemId) : [...currentList, itemId];
+    if (cfg) {
+      await (supabase as any).from("chapter_section_config").update({ hidden_item_ids: newList, updated_at: new Date().toISOString() }).eq("id", cfg.id);
+    } else {
+      await (supabase as any).from("chapter_section_config").insert({ chapter_id: chapterId, section_name: sectionName, is_visible: true, hidden_item_ids: newList });
+    }
+    queryClient.invalidateQueries({ queryKey: ["cram-section-config", chapterId] });
+  };
+
+  const [openFlowchartTopic, setOpenFlowchartTopic] = useState<string | null>(null);
+
   // Handle topic video request
   const handleRequestTopicVideo = async (topicId: string) => {
     try {
