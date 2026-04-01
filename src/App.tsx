@@ -135,7 +135,7 @@ const AppRoutes = () => {
       <Route path="/quiz-choice/:questionId/:choiceNumber" element={<QuizChoice />} />
       <Route path="/quiz-start/:topicId" element={<QuizStart />} />
       <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
-      <Route path="/legacy/:pageId" element={<LegacyNotion />} />
+      <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
