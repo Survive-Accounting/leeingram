@@ -487,7 +487,7 @@ function SolutionTab({ question }: { question: Question }) {
                 <div key={k} className="flex gap-3 items-start">
                   <span
                     className="shrink-0 rounded-full px-2 py-0.5 font-bold"
-                    style={{ fontSize: 11, color: "#dc2626", border: "1px solid #fca5a5" }}
+                    style={{ fontSize: 11, color: "#dc2626", border: "1px solid rgba(252,165,165,0.4)" }}
                   >
                     {k.toUpperCase()}
                   </span>
