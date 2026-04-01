@@ -417,7 +417,6 @@ function SolutionTab({ question }: { question: Question }) {
           completedJson={[{ label: question.je_description || "Journal Entry", lines, unbalanced: false }]}
           mode="completed"
           showHeading={false}
-          showTooltips={true}
         />
         {question.explanation_correct && (
           <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
