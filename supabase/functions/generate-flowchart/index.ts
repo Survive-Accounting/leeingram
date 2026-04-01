@@ -136,34 +136,34 @@ function buildFlowchartHtml(flowchart: any): string {
     margin-bottom: 4px;
   }
   .branding {
-    margin-top: 20px;
-    padding-top: 12px;
-    border-top: 1px solid #E0E0E0;
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 2px solid #E5E7EB;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
   }
   .branding-icon {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
     background: #131E35;
-    border-radius: 4px;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: bold;
-    font-size: 11px;
+    font-size: 13px;
   }
   .branding-text {
-    font-size: 11px;
-    color: #999;
+    font-size: 13px;
+    color: #6B7280;
     letter-spacing: 0.3px;
   }
   .branding-text strong {
     color: #131E35;
-    font-weight: 600;
+    font-weight: 700;
   }
 </style>
 </head>
