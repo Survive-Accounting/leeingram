@@ -135,10 +135,10 @@ function jeChoiceHtml(rows: JEOptionRow[]): string {
 }
 
 /* ── XLSX builder ── */
-function buildTopicXLSX(
+async function buildTopicXLSX(
   questions: BankedQ[],
   topicName: string,
-): Blob {
+): Promise<Blob> {
   const XLSX = await import("xlsx");
   const header = [
     "Group", "Type", "Question", "CorAns",
