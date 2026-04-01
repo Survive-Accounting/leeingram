@@ -24,6 +24,7 @@ interface Question {
   explanation_d: string | null;
   je_accounts: any;
   je_description: string | null;
+  example_asset_id: string | null;
 }
 
 interface TopicInfo {
@@ -106,7 +107,7 @@ export default function QuizExplanation() {
         if (qErr || !q) { setError(true); setLoading(false); return; }
         setQuestion(q as unknown as Question);
 
-        const [topicRes, chapterRes, assetsRes] = await Promise.all([
+        const [topicRes, chapterRes, allAssetsRes] = await Promise.all([
           supabase.from("chapter_topics")
             .select("topic_name, topic_description, course_id")
             .eq("id", q.topic_id).single(),
@@ -122,12 +123,23 @@ export default function QuizExplanation() {
 
         if (topicRes.data) setTopic(topicRes.data as unknown as TopicInfo);
         if (chapterRes.data) setChapter(chapterRes.data as unknown as ChapterInfo);
-        if (assetsRes.data) setAssets(assetsRes.data as unknown as AssetInfo[]);
+
+        // Build asset list: prioritize example_asset_id, then fill from topic
+        const allAssets = (allAssetsRes.data as unknown as AssetInfo[]) || [];
+        let finalAssets: AssetInfo[];
+        if (q.example_asset_id) {
+          const primary = allAssets.find((a) => a.id === q.example_asset_id);
+          const others = allAssets.filter((a) => a.id !== q.example_asset_id).sort(sortBySourceRef).slice(0, 2);
+          finalAssets = primary ? [primary, ...others] : others;
+        } else {
+          finalAssets = [...allAssets].sort(sortBySourceRef).slice(0, 3);
+        }
+        setAssets(finalAssets);
 
         // Gather JE data from assets that have supplementary_je_json
         const jes: any[] = [];
-        if (assetsRes.data) {
-          for (const a of assetsRes.data as any[]) {
+        if (allAssetsRes.data) {
+          for (const a of allAssetsRes.data as any[]) {
             const json = a.supplementary_je_json;
             if (!json) continue;
             const entries = Array.isArray(json) ? json : (json as any)?.entries;
@@ -453,56 +465,70 @@ function JeTab({ jeData }: { jeData: any[] }) {
   );
 }
 
+function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boolean }) {
+  const badge = assetTypeBadge(asset.source_ref);
+  const hasLink = asset.lw_activity_url && asset.lw_activity_url.trim().length > 0;
+
+  return (
+    <div
+      className="rounded-lg border p-4 flex items-center justify-between gap-3"
+      style={{ borderColor: isPrimary ? "#bfdbfe" : "#e2e8f0", backgroundColor: isPrimary ? "#f0f7ff" : undefined }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="rounded-full px-2 py-0.5 font-bold"
+          style={{ fontSize: 10, color: "#2563eb", backgroundColor: "#eff6ff" }}
+        >
+          {badge}
+        </span>
+        <p className="text-sm font-medium text-slate-700">
+          {asset.source_ref} — {asset.problem_title}
+        </p>
+      </div>
+      {hasLink ? (
+        <a
+          href={asset.lw_activity_url!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
+          style={{ color: "#2563eb" }}
+        >
+          View in course <ExternalLink className="h-3 w-3" />
+        </a>
+      ) : (
+        <span
+          className="rounded px-1.5 py-0.5 text-xs shrink-0"
+          style={{ color: "#94a3b8", backgroundColor: "#f1f5f9", fontSize: 10 }}
+        >
+          Link pending
+        </span>
+      )}
+    </div>
+  );
+}
+
 function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
-  const sorted = [...assets].sort(sortBySourceRef);
+  if (assets.length === 0) return null;
+
+  const primary = assets[0];
+  const more = assets.slice(1);
 
   return (
     <div className="space-y-3">
       <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
         RELATED EXAMPLES
       </p>
-      {sorted.map((a) => {
-        const badge = assetTypeBadge(a.source_ref);
-        const hasLink = a.lw_activity_url && a.lw_activity_url.trim().length > 0;
-
-        return (
-          <div key={a.id} className="rounded-lg border border-slate-200 p-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span
-                className="rounded px-1.5 py-0.5 font-bold"
-                style={{
-                  fontSize: 10,
-                  color: "#2563eb",
-                  backgroundColor: "#eff6ff",
-                }}
-              >
-                {badge}
-              </span>
-              <p className="text-sm font-medium text-slate-700">
-                {a.source_ref} — {a.problem_title}
-              </p>
-            </div>
-            {hasLink ? (
-              <a
-                href={a.lw_activity_url!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
-                style={{ color: "#2563eb" }}
-              >
-                View in course <ExternalLink className="h-3 w-3" />
-              </a>
-            ) : (
-              <span
-                className="rounded px-1.5 py-0.5 text-xs shrink-0"
-                style={{ color: "#94a3b8", backgroundColor: "#f1f5f9", fontSize: 10 }}
-              >
-                Link pending
-              </span>
-            )}
-          </div>
-        );
-      })}
+      <ExampleCard asset={primary} isPrimary />
+      {more.length > 0 && (
+        <>
+          <p className="uppercase font-bold tracking-wider mt-4 mb-1" style={{ fontSize: 9, color: "#94a3b8" }}>
+            MORE EXAMPLES
+          </p>
+          {more.map((a) => (
+            <ExampleCard key={a.id} asset={a} />
+          ))}
+        </>
+      )}
     </div>
   );
 }
