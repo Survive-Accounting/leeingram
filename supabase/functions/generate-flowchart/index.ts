@@ -138,32 +138,26 @@ function buildFlowchartHtml(flowchart: any): string {
   .branding {
     margin-top: 24px;
     padding-top: 14px;
-    border-top: 2px solid #E5E7EB;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+    border-top: 2px solid #D1D5DB;
+    text-align: center;
+    padding-bottom: 8px;
   }
-  .branding-icon {
-    width: 26px;
-    height: 26px;
+  .branding-inner {
+    display: inline-block;
     background: #131E35;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: white;
+    font-size: 10px;
     font-weight: bold;
-    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    vertical-align: middle;
   }
-  .branding-text {
+  .branding-label {
+    display: inline-block;
     font-size: 13px;
     color: #6B7280;
-    letter-spacing: 0.3px;
-  }
-  .branding-text strong {
-    color: #131E35;
-    font-weight: 700;
+    vertical-align: middle;
   }
 </style>
 </head>
@@ -172,8 +166,8 @@ function buildFlowchartHtml(flowchart: any): string {
   ${stepsHtml}
   ${remindersHtml}
   <div class="branding">
-    <div class="branding-icon">SA</div>
-    <div class="branding-text"><strong>SurviveAccounting</strong>.com</div>
+    <span class="branding-inner">SA</span>
+    <span class="branding-label"><b style="color:#131E35">SurviveAccounting</b>.com</span>
   </div>
 </body>
 </html>`;
