@@ -82,6 +82,8 @@ import SolutionsViewerStaging from "./pages/SolutionsViewerStaging";
 import ChapterCramTool from "./pages/ChapterCramTool";
 import SurviveChapterAdmin from "./pages/SurviveChapterAdmin";
 import QuizExplanation from "./pages/QuizExplanation";
+import QuizQuestion from "./pages/QuizQuestion";
+import QuizChoice from "./pages/QuizChoice";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
