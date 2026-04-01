@@ -1271,7 +1271,7 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, is
 
         for (const id of completed) {
           const topic = topics.find((t) => t.id === id);
-          if (topic) toast.success(`${topic.topic_name} — 10 questions ready for review`);
+          if (topic) toast.success(`${topic.topic_name} — 5 questions ready for review`);
         }
 
         loadTopics();
