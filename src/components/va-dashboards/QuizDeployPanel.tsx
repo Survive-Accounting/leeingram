@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { copyToClipboard } from "@/lib/clipboardFallback";
-import { parseJEOption } from "@/lib/questionHtmlRenderer";
+
 
 /* ── Types ── */
 interface TopicWithMeta {
