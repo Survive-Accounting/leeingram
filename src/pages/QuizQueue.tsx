@@ -1257,7 +1257,7 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, is
 
       const completed: string[] = [];
       generatingIds.forEach((id) => {
-        if ((countByTopic[id] ?? 0) >= 10) {
+        if ((countByTopic[id] ?? 0) >= 5) {
           completed.push(id);
         }
       });
