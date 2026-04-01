@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   parseJEOption,
@@ -260,19 +260,36 @@ function downloadCsv(content: string, filename: string) {
 
 /* ──────── Student Preview Section ──────── */
 
-function PreviewIframe({ src, height, greenBorder }: { src: string; height: number; greenBorder?: boolean }) {
+function PreviewIframe({ src, height: initialHeight, greenBorder }: { src: string; height: number; greenBorder?: boolean }) {
   const [loaded, setLoaded] = useState(false);
+  const [dynamicHeight, setDynamicHeight] = useState(Math.max(initialHeight, 400));
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  React.useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data && (e.data.type === "resize" || e.data.type === "sa-height") && typeof e.data.height === "number") {
+        // Only update if this message is from our iframe
+        if (iframeRef.current && e.source === iframeRef.current.contentWindow) {
+          setDynamicHeight(Math.max(e.data.height + 20, 400));
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   return (
-    <div className="relative" style={{ height }}>
+    <div className="relative" style={{ height: dynamicHeight, transition: "height 0.2s ease" }}>
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center rounded-md" style={{ background: "#f8fafc" }}>
           <span className="text-[11px] text-muted-foreground animate-pulse">Loading preview…</span>
         </div>
       )}
       <iframe
+        ref={iframeRef}
         src={src}
         width="100%"
-        height={height}
+        height={dynamicHeight}
         scrolling="no"
         onLoad={() => setLoaded(true)}
         className="rounded-md"
