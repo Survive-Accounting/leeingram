@@ -525,7 +525,7 @@ function ExplanationText({ text }: { text: string }) {
   const parts = text.split(/(\$[\d,]+(?:\.\d+)?(?:\s*[×x*÷/+\-]\s*\$?[\d,]+(?:\.\d+)?)*(?:\s*=\s*\$?[\d,]+(?:\.\d+)?)?)/g);
 
   return (
-    <p className="text-sm leading-relaxed">
+    <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>
       {parts.map((part, i) => {
         if (calcPattern.test(part)) {
           return (
