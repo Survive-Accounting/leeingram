@@ -1303,14 +1303,27 @@ export default function ChapterCramTool() {
             <div className="space-y-4">
               {displayCards.map((card, idx) => {
                 if (isPreview && idx >= PREVIEW_LIMIT) return null;
+                const hidden = isItemHidden("journal_entries", card.id);
+                if (hidden && !isAdmin) return null;
                 return (
-                  <CramCardComponent
-                    key={card.id}
-                    card={card}
-                    theme={t}
-                    isReviewed={reviewedSet.has(card.id)}
-                    onReview={() => handleReview(card.id)}
-                  />
+                  <div key={card.id} className="relative" style={{ opacity: hidden ? 0.4 : 1 }}>
+                    {isAdmin && (
+                      <button
+                        onClick={() => toggleItemHidden("journal_entries", card.id)}
+                        className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] font-semibold rounded px-1.5 py-0.5"
+                        style={{ background: hidden ? "#fef2f2" : "#f1f5f9", color: hidden ? "#dc2626" : "#94a3b8", border: "none", cursor: "pointer" }}
+                        title={hidden ? "Show to students" : "Hide from students"}
+                      >
+                        {hidden ? <><EyeOff className="h-3 w-3" /> Hidden</> : <EyeOff className="h-3 w-3" />}
+                      </button>
+                    )}
+                    <CramCardComponent
+                      card={card}
+                      theme={t}
+                      isReviewed={reviewedSet.has(card.id)}
+                      onReview={() => handleReview(card.id)}
+                    />
+                  </div>
                 );
               })}
 
