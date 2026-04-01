@@ -48,20 +48,51 @@ export default function QuizQuestion() {
   if (!q) return <div style={{ padding: "12px 4px", fontFamily: "Inter, sans-serif", fontSize: 15, color: "#e8e8e8" }}>Question not found.</div>;
 
   const text = q.question_type === "je_recall" && q.je_description ? q.je_description : q.question_text;
+  const label = q.question_type === "je_recall" ? "JOURNAL ENTRY QUESTION" : "QUESTION";
 
   return (
     <div
       ref={ref}
       style={{
         fontFamily: "Inter, sans-serif",
-        fontSize: 15,
-        lineHeight: 1.6,
-        padding: "12px 4px",
-        background: "transparent",
-        color: "#e8e8e8",
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderLeft: "4px solid #CE1126",
+        borderRadius: 8,
+        padding: "16px 18px",
+        margin: 0,
       }}
     >
-      {text}
+      <div style={{
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.08em",
+        color: "#CE1126",
+        textTransform: "uppercase" as const,
+        marginBottom: 8,
+      }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: 15,
+        lineHeight: 1.7,
+        color: "#f0f0f0",
+        fontWeight: 400,
+      }}>
+        {text}
+      </div>
+      <hr style={{
+        border: "none",
+        borderTop: "1px solid rgba(255,255,255,0.1)",
+        margin: "12px 0 8px",
+      }} />
+      <div style={{
+        fontSize: 11,
+        color: "rgba(255,255,255,0.35)",
+        textAlign: "left",
+      }}>
+        Survive Accounting · surviveaccounting.com
+      </div>
     </div>
   );
 }
