@@ -330,8 +330,8 @@ function TopicCard({
   );
   const fileName = `${bankName}.xlsx`;
 
-  const handleExport = () => {
-    const blob = buildTopicXLSX(questions, topic.topic_name);
+  const handleExport = async () => {
+    const blob = await buildTopicXLSX(questions, topic.topic_name);
     saveAs(blob, fileName);
     toast.success(`Downloaded ${questions.length} questions`);
   };
