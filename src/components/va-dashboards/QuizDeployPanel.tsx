@@ -99,6 +99,45 @@ function iframeTag(path: string, height: number): string {
 }
 
 /* ── XLSX builder ── */
+function buildDebugJSON(
+  questions: BankedQ[],
+  topicName: string,
+): object[] {
+  return questions.map((q, i) => {
+    const corAns = letterToNumber(q.correct_answer);
+    const isJE = q.question_type === "je_recall";
+    const choiceHeight = isJE ? 150 : 60;
+    const row: Record<string, string | null> = {
+      row_index: String(i + 1),
+      question_id: q.id,
+      question_type: q.question_type,
+      group: topicName,
+      type: "TMC",
+      question_text: q.question_text,
+      question_iframe: iframeTag(`/quiz-question/${q.id}`, 120),
+      correct_answer_number: corAns,
+      answer1_text: q.answer_a || null,
+      answer1_iframe: iframeTag(`/quiz-choice/${q.id}/1`, choiceHeight),
+      answer2_text: q.answer_b || null,
+      answer2_iframe: iframeTag(`/quiz-choice/${q.id}/2`, choiceHeight),
+      answer3_text: q.answer_c || null,
+      answer3_iframe: iframeTag(`/quiz-choice/${q.id}/3`, choiceHeight),
+      answer4_text: q.answer_d || null,
+      answer4_iframe: iframeTag(`/quiz-choice/${q.id}/4`, choiceHeight),
+      explanation_text: q.short_explanation || null,
+      explanation_iframe: iframeTag(`/quiz-explanation/${q.id}`, 600),
+    };
+
+    // Flag null/empty fields
+    const nullFields = Object.entries(row)
+      .filter(([, v]) => v === null || v === "")
+      .map(([k]) => k);
+    (row as any).null_or_empty_fields = nullFields;
+
+    return row;
+  });
+}
+
 async function buildTopicXLSX(
   questions: BankedQ[],
   topicName: string,
@@ -110,7 +149,10 @@ async function buildTopicXLSX(
     "CorrectExplanation", "IncorrectExplanation",
   ];
 
-  const rows = questions.map((q) => {
+  console.log(`[XLSX Export] Topic: "${topicName}", Questions: ${questions.length}`);
+  console.log(`[XLSX Export] Question IDs:`, questions.map(q => q.id));
+
+  const rows = questions.map((q, i) => {
     const corAns = letterToNumber(q.correct_answer);
     const questionIframe = iframeTag(`/quiz-question/${q.id}`, 120);
     const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 150 : 60);
@@ -118,6 +160,22 @@ async function buildTopicXLSX(
     const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 150 : 60);
     const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 150 : 60);
     const explanationIframe = iframeTag(`/quiz-explanation/${q.id}`, 600);
+
+    // Log iframe URLs
+    console.log(`[XLSX Export] Q${i + 1} (${q.id}):`, {
+      type: q.question_type,
+      questionUrl: `${BASE}/quiz-question/${q.id}`,
+      choiceUrls: [1, 2, 3, 4].map(n => `${BASE}/quiz-choice/${q.id}/${n}`),
+      explanationUrl: `${BASE}/quiz-explanation/${q.id}`,
+    });
+
+    // Log null/empty fields
+    const fields = { question_text: q.question_text, answer_a: q.answer_a, answer_b: q.answer_b, answer_c: q.answer_c, answer_d: q.answer_d, explanation: q.short_explanation };
+    const nullFields = Object.entries(fields).filter(([, v]) => !v).map(([k]) => k);
+    if (nullFields.length > 0) {
+      console.warn(`[XLSX Export] Q${i + 1} (${q.id}) has null/empty fields:`, nullFields);
+    }
+
     return [
       topicName, "TMC", questionIframe, corAns,
       answer1, answer2, answer3, answer4,
@@ -288,6 +346,13 @@ function TopicCard({
     toast.success(`Downloaded ${fileName}`);
   };
 
+  const handleDebugJSON = () => {
+    const debug = buildDebugJSON(questions, topic.topic_name);
+    const blob = new Blob([JSON.stringify(debug, null, 2)], { type: "application/json" });
+    saveAs(blob, `${bankName}_debug.json`);
+    toast.success("Debug JSON downloaded");
+  };
+
   const handleMarkImported = async () => {
     await supabase
       .from("chapter_topics")
@@ -347,6 +412,16 @@ function TopicCard({
               >
                 {bankName}
               </button>
+
+              {/* Debug JSON */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[10px] text-muted-foreground"
+                onClick={handleDebugJSON}
+              >
+                Debug JSON
+              </Button>
 
               {/* Export */}
               <Button

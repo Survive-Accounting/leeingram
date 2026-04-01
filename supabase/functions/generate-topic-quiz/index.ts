@@ -334,11 +334,45 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
     // ── STEP 4: Store results ──
     await sb.from("topic_quiz_questions").delete().eq("topic_id", topic_id);
 
+    console.log(`[generate-topic-quiz] Storing ${questions.length} questions for topic ${topic_id} (${topic.topic_name})`);
+
     let insertedCount = 0;
     for (const q of questions) {
       const isJeRecall = q.question_type === "je_recall";
 
+      const questionId = crypto.randomUUID();
+
+      // Log each question's data
+      console.log(`[generate-topic-quiz] Q${q.question_number}: id=${questionId}, type=${q.question_type}, correct=${q.correct_answer}`);
+
+      // Log iframe URLs that will be generated
+      const BASE = "https://learn.surviveaccounting.com";
+      console.log(`[generate-topic-quiz] Q${q.question_number} iframe URLs:`, JSON.stringify({
+        question: `${BASE}/quiz-question/${questionId}`,
+        choice1: `${BASE}/quiz-choice/${questionId}/1`,
+        choice2: `${BASE}/quiz-choice/${questionId}/2`,
+        choice3: `${BASE}/quiz-choice/${questionId}/3`,
+        choice4: `${BASE}/quiz-choice/${questionId}/4`,
+        explanation: `${BASE}/quiz-explanation/${questionId}`,
+      }));
+
+      // Log null/empty fields
+      const fields: Record<string, any> = {
+        question_text: q.question_text,
+        correct_answer: q.correct_answer,
+        explanation_correct: q.explanation_correct,
+        option_a: isJeRecall ? q.je_option_a : q.option_a,
+        option_b: isJeRecall ? q.je_option_b : q.option_b,
+        option_c: isJeRecall ? q.je_option_c : q.option_c,
+        option_d: isJeRecall ? q.je_option_d : q.option_d,
+      };
+      const nullFields = Object.entries(fields).filter(([, v]) => !v || (typeof v === "string" && v.trim() === "")).map(([k]) => k);
+      if (nullFields.length > 0) {
+        console.warn(`[generate-topic-quiz] Q${q.question_number} has null/empty fields:`, nullFields);
+      }
+
       const { error: insErr } = await sb.from("topic_quiz_questions").insert({
+        id: questionId,
         topic_id,
         chapter_id: topic.chapter_id,
         question_number: q.question_number || insertedCount + 1,
@@ -361,11 +395,13 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
       } as any);
 
       if (insErr) {
-        console.error("Insert error:", insErr);
+        console.error(`[generate-topic-quiz] Insert error for Q${q.question_number}:`, insErr);
         continue;
       }
       insertedCount++;
     }
+
+    console.log(`[generate-topic-quiz] Successfully inserted ${insertedCount}/${questions.length} questions`);
 
     return new Response(
       JSON.stringify({
