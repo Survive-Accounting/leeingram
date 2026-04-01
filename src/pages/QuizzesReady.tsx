@@ -134,11 +134,12 @@ function jeChoiceHtml(rows: JEOptionRow[]): string {
   return `<table style="border-collapse:collapse;width:100%;font-family:Inter,sans-serif;font-size:14px;"><thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left;background:#14213D;color:white;">Account</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Debit</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Credit</th></tr></thead><tbody>${trs}</tbody></table>`;
 }
 
-/* ── XLSX builder using tab-separated values for proper Excel ── */
-function buildTopicXLSX(
+/* ── XLSX builder ── */
+async function buildTopicXLSX(
   questions: BankedQ[],
   topicName: string,
-): Blob {
+): Promise<Blob> {
+  const XLSX = await import("xlsx");
   const header = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
@@ -150,36 +151,19 @@ function buildTopicXLSX(
     const qHtml = questionHtml(q.question_text);
     const corAns = letterToNumber(q.correct_answer);
     const fb = feedbackHtml(q.id);
-
     return [
-      topicName,
-      "TMC",
-      qHtml,
-      corAns,
-      q.answer_a || "",
-      q.answer_b || "",
-      q.answer_c || "",
-      q.answer_d || "",
+      topicName, "TMC", qHtml, corAns,
+      q.answer_a || "", q.answer_b || "", q.answer_c || "", q.answer_d || "",
       "", "", "", "", "", "",
-      fb,
-      fb,
+      fb, fb,
     ];
   });
 
-  // Build CSV with proper escaping for Excel
-  const escapeCSV = (val: string): string => {
-    if (!val) return "";
-    if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-      return '"' + val.replace(/"/g, '""') + '"';
-    }
-    return val;
-  };
-
-  const csvContent = [header, ...rows]
-    .map((row) => row.map(escapeCSV).join(","))
-    .join("\n");
-
-  return new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Questions");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
 
 /* ── Copy Button component ── */
@@ -344,10 +328,10 @@ function TopicCard({
     topic.topic_number,
     topic.topic_name,
   );
-  const fileName = `${bankName}.csv`;
+  const fileName = `${bankName}.xlsx`;
 
-  const handleExport = () => {
-    const blob = buildTopicXLSX(questions, topic.topic_name);
+  const handleExport = async () => {
+    const blob = await buildTopicXLSX(questions, topic.topic_name);
     saveAs(blob, fileName);
     toast.success(`Downloaded ${questions.length} questions`);
   };
@@ -415,7 +399,7 @@ function TopicCard({
                 className="h-7 text-[10px]"
                 onClick={handleExport}
               >
-                <Download className="h-3 w-3 mr-1" /> Export CSV
+                <Download className="h-3 w-3 mr-1" /> Export XLSX
               </Button>
 
               {!topic.lw_imported && (
