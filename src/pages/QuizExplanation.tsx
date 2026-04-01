@@ -107,7 +107,7 @@ export default function QuizExplanation() {
         if (qErr || !q) { setError(true); setLoading(false); return; }
         setQuestion(q as unknown as Question);
 
-        const [topicRes, chapterRes, assetsRes] = await Promise.all([
+        const [topicRes, chapterRes, allAssetsRes] = await Promise.all([
           supabase.from("chapter_topics")
             .select("topic_name, topic_description, course_id")
             .eq("id", q.topic_id).single(),
@@ -123,7 +123,18 @@ export default function QuizExplanation() {
 
         if (topicRes.data) setTopic(topicRes.data as unknown as TopicInfo);
         if (chapterRes.data) setChapter(chapterRes.data as unknown as ChapterInfo);
-        if (assetsRes.data) setAssets(assetsRes.data as unknown as AssetInfo[]);
+
+        // Build asset list: prioritize example_asset_id, then fill from topic
+        const allAssets = (allAssetsRes.data as unknown as AssetInfo[]) || [];
+        let finalAssets: AssetInfo[];
+        if (q.example_asset_id) {
+          const primary = allAssets.find((a) => a.id === q.example_asset_id);
+          const others = allAssets.filter((a) => a.id !== q.example_asset_id).sort(sortBySourceRef).slice(0, 2);
+          finalAssets = primary ? [primary, ...others] : others;
+        } else {
+          finalAssets = [...allAssets].sort(sortBySourceRef).slice(0, 3);
+        }
+        setAssets(finalAssets);
 
         // Gather JE data from assets that have supplementary_je_json
         const jes: any[] = [];
