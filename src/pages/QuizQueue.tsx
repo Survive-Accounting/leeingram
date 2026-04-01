@@ -511,20 +511,6 @@ function CopyBtn({ label, text, small }: { label: string; text: string; small?: 
   );
 }
 
-function CopyAllForLW({ questions }: { questions: QuizQuestion[] }) {
-  const [copied, fire] = useCopyState();
-  const handleCopy = () => {
-    const all = questions.map((q, i) => `──── Q${i + 1} ────\n${buildCopyAllText(q)}`).join("\n\n\n");
-    navigator.clipboard.writeText(all);
-    fire();
-    toast.success("All questions copied for LW");
-  };
-  return (
-    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleCopy}>
-      {copied ? <><Check className="h-3 w-3 mr-1 text-emerald-500" /> Copied!</> : <>📋 Copy All for LW</>}
-    </Button>
-  );
-}
 
 function QuestionCopyButtons({ question: q }: { question: QuizQuestion }) {
   const isJE = q.question_type === "je_recall";
