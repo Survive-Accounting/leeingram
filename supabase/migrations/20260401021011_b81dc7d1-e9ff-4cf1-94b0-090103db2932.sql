@@ -1,0 +1,1 @@
+select id, status, assets_processed, assets_succeeded, assets_errored, assets_skipped, error_summary, started_at, completed_at from public.bulk_fix_queue where operation_key = 'generate_supplementary_je' order by created_at desc limit 2;
