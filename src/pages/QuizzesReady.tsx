@@ -328,7 +328,7 @@ function TopicCard({
     topic.topic_number,
     topic.topic_name,
   );
-  const fileName = `${bankName}.csv`;
+  const fileName = `${bankName}.xlsx`;
 
   const handleExport = () => {
     const blob = buildTopicXLSX(questions, topic.topic_name);
