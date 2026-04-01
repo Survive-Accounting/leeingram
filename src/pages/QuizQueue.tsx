@@ -133,6 +133,16 @@ function ReviewStatusBadge({ status }: { status: string }) {
   );
 }
 
+/* ──────── CSV Export Helpers ──────── */
+
+function buildQuizFilename(courseCode?: string, chapterNumber?: number, topicNumber?: number, topicName?: string): string {
+  const cc = (courseCode || "COURSE").toUpperCase();
+  const ch = String(chapterNumber ?? 0).padStart(2, "0");
+  const tn = String(topicNumber ?? 0).padStart(2, "0");
+  const slug = (topicName || "topic").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return `${cc}-Ch${ch}-T${tn}-${slug}-V1.csv`;
+}
+
 /* ──────── CSV Export Helper ──────── */
 
 function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapterName?: string; courseCode?: string; chapterNumber?: number; topicNumber?: number }): string {
