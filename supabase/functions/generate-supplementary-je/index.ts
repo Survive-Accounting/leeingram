@@ -43,14 +43,38 @@ serve(async (req) => {
 
     const instructions = (instrData || []).map((i: any) => `(${String.fromCharCode(96 + i.instruction_number)}) ${i.instruction_text}`).join("\n");
 
-    // Fetch chapter accounts for reference
-    const { data: accounts } = await sb
+    // Fetch chapter accounts first; fall back to global chart_of_accounts
+    const { data: chapterAccounts } = await sb
       .from("chapter_accounts")
       .select("account_name, account_type, normal_balance")
       .eq("chapter_id", asset.chapter_id)
       .eq("is_approved", true);
 
-    const accountList = (accounts || []).map((a: any) => a.account_name).join(", ");
+    let accounts = chapterAccounts || [];
+    let accountSource = "chapter";
+    if (accounts.length === 0) {
+      const { data: globalAccounts } = await sb
+        .from("chart_of_accounts")
+        .select("canonical_name, account_type, normal_balance")
+        .eq("is_global_default", true);
+      accounts = (globalAccounts || []).map((a: any) => ({
+        account_name: a.canonical_name,
+        account_type: a.account_type,
+        normal_balance: a.normal_balance,
+      }));
+      accountSource = "global";
+    }
+
+    const accountList = accounts.map((a: any) => `${a.account_name} (${a.account_type}, ${a.normal_balance})`).join(", ");
+
+    // Fetch chapter context
+    const { data: chapter } = await sb
+      .from("chapters")
+      .select("chapter_name, chapter_number")
+      .eq("id", asset.chapter_id)
+      .single();
+
+    const chapterContext = chapter ? `Chapter ${chapter.chapter_number}: ${chapter.chapter_name}` : "";
 
     const systemPrompt = `You are an accounting journal entry expert. Given a problem and its solution, identify the DISTINCT types of journal entries a student should understand, even if the problem doesn't explicitly ask for them.
 
