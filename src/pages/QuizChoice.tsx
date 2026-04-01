@@ -12,6 +12,10 @@ function useEmbedSetup() {
     document.body.style.background = "transparent";
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.documentElement.style.margin = "0";
+    document.documentElement.style.padding = "0";
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
   }, []);
   useEffect(() => {
     const send = () => {
