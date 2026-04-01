@@ -92,9 +92,10 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(supabaseUrl, serviceKey);
   const invocationStartedAt = Date.now();
+  let currentItem: any = null;
 
   try {
-    let { data: currentItems } = await sb
+    const { data: currentItems } = await sb
       .from("bulk_fix_queue")
       .select("*")
       .eq("status", "running")
