@@ -185,6 +185,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapt
     const incorrectExp = `Same HTML works for both:${paste(expUrl)}`;
 
     if (q.question_type === "true_false") {
+      // Legacy support for existing T/F questions
       const corAns = q.correct_answer === "a" ? "True" : "False";
       return [
         topicName, "True/False",
