@@ -45,8 +45,7 @@ const STAGE_INSTRUCTIONS: Record<string, string> = {
   "/assets-library": "Finalized assets ready for production.",
   "/phase2-review": "Generate and manage core exam topics from teaching assets.",
   "/quiz-queue": "Generate and review quiz questions for each topic.",
-  "/video-queue": "Record walkthrough videos for each topic.",
-  "/deployment": "Deploy quizzes and videos to LearnWorlds.",
+  "/quizzes-ready": "Export and deploy quizzes to LearnWorlds.",
 };
 
 export function PipelineProgressStrip() {
