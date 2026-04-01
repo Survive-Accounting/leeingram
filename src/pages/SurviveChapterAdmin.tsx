@@ -6,6 +6,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 import { ExternalLink, Copy } from "lucide-react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { toast } from "sonner";
@@ -97,22 +98,18 @@ export default function SurviveChapterAdmin() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <a
-                        href={`/cram/${ch.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to={`/cram/${ch.id}`}
                         className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" /> Full
-                      </a>
-                      <a
-                        href={`/cram/${ch.id}?preview=true`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      </Link>
+                      <Link
+                        to={`/cram/${ch.id}?preview=true`}
                         className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" /> Preview
-                      </a>
+                      </Link>
                       <button
                         onClick={() => {
                           const html = `<iframe src="https://learn.surviveaccounting.com/legacy/NOTION_PAGE_ID?chapterId=${ch.id}" style="width:100%;height:600px;border:none;" frameborder="0"></iframe>`;
