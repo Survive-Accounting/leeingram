@@ -69,6 +69,30 @@ export default function AssetStatsDashboard() {
   const [studentSearch, setStudentSearch] = useState("");
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
 
+  const qc = useQueryClient();
+
+  // Share buttons toggle
+  const { data: shareButtonsVisible = false } = useQuery({
+    queryKey: ["app-setting-share-buttons"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "share_buttons_visible")
+        .maybeSingle();
+      return data?.value === "true";
+    },
+  });
+
+  const toggleShareButtons = async () => {
+    const newValue = !shareButtonsVisible;
+    await supabase
+      .from("app_settings")
+      .upsert({ key: "share_buttons_visible", value: String(newValue), updated_at: new Date().toISOString() } as any);
+    qc.invalidateQueries({ queryKey: ["app-setting-share-buttons"] });
+    toast.success(newValue ? "Share buttons enabled on Solutions pages" : "Share buttons hidden on Solutions pages");
+  };
+
   // Fetch all events (paginated)
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["asset-stats-events"],
