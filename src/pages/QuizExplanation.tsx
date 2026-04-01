@@ -669,6 +669,7 @@ function BulletedText({ text }: { text: string }) {
       {bullets.map((b, i) => (
         <li key={i} className="flex gap-2 text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>
           <span className="shrink-0 mt-1" style={{ color: "#f59e0b" }}>•</span>
+          <span>{b}</span>
         </li>
       ))}
     </ul>
