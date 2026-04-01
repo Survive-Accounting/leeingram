@@ -126,22 +126,42 @@ Deno.serve(async (req) => {
     }
 
     const needsJeJson = ["rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_tooltips", "enrich_je_rows"].includes(opKey);
-    let query = sb.from("teaching_assets").select("id, asset_name");
 
-    if (currentItem.scope_course_id) query = query.eq("course_id", currentItem.scope_course_id);
-    if (currentItem.scope_chapter_id) query = query.eq("chapter_id", currentItem.scope_chapter_id);
+    // Paginated fetch to avoid Supabase 1000-row default limit
+    const PAGE_SIZE = 1000;
+    let allAssets: any[] = [];
+    let from = 0;
 
-    const scopeStatus = currentItem.scope_status_filter || "approved";
-    if (scopeStatus === "approved") {
-      query = query.not("asset_approved_at", "is", null);
-    } else if (scopeStatus === "core") {
-      query = query.not("core_rank", "is", null);
+    while (true) {
+      let query = sb
+        .from("teaching_assets")
+        .select("id, asset_name")
+        .order("asset_name", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (currentItem.scope_course_id) query = query.eq("course_id", currentItem.scope_course_id);
+      if (currentItem.scope_chapter_id) query = query.eq("chapter_id", currentItem.scope_chapter_id);
+
+      const scopeStatus = currentItem.scope_status_filter || "approved";
+      if (scopeStatus === "approved") {
+        query = query.not("asset_approved_at", "is", null);
+      } else if (scopeStatus === "core") {
+        query = query.not("core_rank", "is", null);
+      }
+      if (needsJeJson) {
+        query = query.not("journal_entry_completed_json", "is", null);
+      }
+
+      const { data, error: queryErr } = await query;
+      if (queryErr) throw new Error(`Asset query failed: ${queryErr.message}`);
+      if (!data || data.length === 0) break;
+
+      allAssets.push(...data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
     }
-    if (needsJeJson) {
-      query = query.not("journal_entry_completed_json", "is", null);
-    }
 
-    const { data: assets, error: queryErr } = await query.order("asset_name", { ascending: true });
+    const assets = allAssets;
     if (queryErr) throw new Error(`Failed to query assets: ${queryErr.message}`);
 
     const total = assets?.length || 0;
