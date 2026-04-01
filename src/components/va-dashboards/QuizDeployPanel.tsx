@@ -105,9 +105,23 @@ function buildDebugJSON(
 ): object[] {
   return questions.map((q, i) => {
     const corAns = letterToNumber(q.correct_answer);
+    const corNum = parseInt(corAns, 10);
     const isJE = q.question_type === "je_recall";
     const choiceHeight = isJE ? 150 : 60;
-    const row: Record<string, string | null> = {
+    const answers = [q.answer_a, q.answer_b, q.answer_c, q.answer_d];
+    const correctOptionValue = answers[corNum - 1] || null;
+
+    // Correct answer validation
+    let correctAnswerValidation = "pass";
+    if (corNum >= 1 && corNum <= 4) {
+      if (!correctOptionValue) {
+        correctAnswerValidation = `fail: answer ${corNum} is null`;
+      }
+    } else {
+      correctAnswerValidation = `fail: correct_answer_number ${corAns} is out of range`;
+    }
+
+    const row: Record<string, any> = {
       row_index: String(i + 1),
       question_id: q.id,
       question_type: q.question_type,
@@ -116,6 +130,7 @@ function buildDebugJSON(
       question_text: q.question_text,
       question_iframe: iframeTag(`/quiz-question/${q.id}`, 120),
       correct_answer_number: corAns,
+      correct_answer_validation: correctAnswerValidation,
       answer1_text: q.answer_a || null,
       answer1_iframe: iframeTag(`/quiz-choice/${q.id}/1`, choiceHeight),
       answer2_text: q.answer_b || null,
@@ -130,9 +145,9 @@ function buildDebugJSON(
 
     // Flag null/empty fields
     const nullFields = Object.entries(row)
-      .filter(([, v]) => v === null || v === "")
+      .filter(([k, v]) => k !== "correct_answer_validation" && (v === null || v === ""))
       .map(([k]) => k);
-    (row as any).null_or_empty_fields = nullFields;
+    row.null_or_empty_fields = nullFields;
 
     return row;
   });
