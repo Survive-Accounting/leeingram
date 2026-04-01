@@ -44,19 +44,14 @@ export default function PaymentLinksAdmin() {
     },
   });
 
-  // Fetch IA2 chapters 13-22
+  // Fetch ALL chapters for all courses
   const { data: chapters } = useQuery({
-    queryKey: ["pl-chapters"],
+    queryKey: ["pl-chapters-all"],
     queryFn: async () => {
-      const { data: cs } = await supabase.from("courses").select("id").eq("code", "IA2").limit(1);
-      const courseId = cs?.[0]?.id;
-      if (!courseId) return [];
       const { data } = await supabase
         .from("chapters")
         .select("id, chapter_number, chapter_name, course_id")
-        .eq("course_id", courseId)
-        .gte("chapter_number", 13)
-        .lte("chapter_number", 22)
+        .order("course_id")
         .order("chapter_number");
       return data || [];
     },
@@ -295,60 +290,69 @@ export default function PaymentLinksAdmin() {
         </section>
 
         {/* ── Chapter Links ── */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Chapter Links (IA2 Chapters 13–22)</h2>
+        <section className="space-y-6">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Chapter Links (All Courses)</h2>
 
-          <div className="rounded-lg border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Chapter</TableHead>
-                  <TableHead className="text-xs">Label</TableHead>
-                  <TableHead className="text-xs">Price ($)</TableHead>
-                  <TableHead className="text-xs">URL</TableHead>
-                  <TableHead className="text-xs text-center">Active</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {chapters?.map(ch => {
-                  const link = chapterLinks[ch.id];
-                  if (!link) return null;
-                  return (
-                    <TableRow key={ch.id}>
-                      <TableCell className="text-sm font-medium whitespace-nowrap">
-                        Ch {ch.chapter_number} — {ch.chapter_name}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={link.label}
-                          onChange={e => updateChapter(ch.id, { label: e.target.value })}
-                          className="text-xs h-8 w-40"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={centsToDisplay(link.price_cents)}
-                          onChange={e => updateChapter(ch.id, { price_cents: displayToCents(e.target.value) })}
-                          className="text-xs h-8 w-20"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={link.url}
-                          onChange={e => updateChapter(ch.id, { url: e.target.value })}
-                          placeholder="Paste LearnWorlds link…"
-                          className="text-xs h-8"
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Switch checked={link.is_active} onCheckedChange={v => updateChapter(ch.id, { is_active: v })} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          {courses?.map((course) => {
+            const courseChapters = chapters?.filter(ch => ch.course_id === course.id) || [];
+            if (courseChapters.length === 0) return null;
+            return (
+              <div key={course.id} className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">{course.course_name} ({course.code})</h3>
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Chapter</TableHead>
+                        <TableHead className="text-xs">Label</TableHead>
+                        <TableHead className="text-xs">Price ($)</TableHead>
+                        <TableHead className="text-xs">URL</TableHead>
+                        <TableHead className="text-xs text-center">Active</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {courseChapters.map(ch => {
+                        const link = chapterLinks[ch.id];
+                        if (!link) return null;
+                        return (
+                          <TableRow key={ch.id}>
+                            <TableCell className="text-sm font-medium whitespace-nowrap">
+                              Ch {ch.chapter_number} — {ch.chapter_name}
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={link.label}
+                                onChange={e => updateChapter(ch.id, { label: e.target.value })}
+                                className="text-xs h-8 w-40"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={centsToDisplay(link.price_cents)}
+                                onChange={e => updateChapter(ch.id, { price_cents: displayToCents(e.target.value) })}
+                                className="text-xs h-8 w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={link.url}
+                                onChange={e => updateChapter(ch.id, { url: e.target.value })}
+                                placeholder="Paste LearnWorlds link…"
+                                className="text-xs h-8"
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Switch checked={link.is_active} onCheckedChange={v => updateChapter(ch.id, { is_active: v })} />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            );
+          })}
 
           <Button onClick={saveAllChapterLinks} disabled={savingChapters}>
             {savingChapters && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
