@@ -613,11 +613,61 @@ export default function AssetStatsDashboard() {
                                   <TableCell colSpan={7} className="p-0">
                                     <div className="bg-muted/30 p-3">
                                       <p className="text-[10px] font-bold text-muted-foreground mb-2">Assets Viewed</p>
-                                      <div className="flex flex-wrap gap-1">
-                                        {[...s.assetsViewed].map(name => (
-                                          <Badge key={name} variant="outline" className="text-[9px] font-mono">{name}</Badge>
-                                        ))}
-                                      </div>
+                                      {(() => {
+                                        // Build asset lookup and group by chapter
+                                        const assetLookup = new Map(teachingAssets.map(ta => [ta.asset_name, ta]));
+                                        const byChapter = new Map<string, { chapterLabel: string; items: { assetName: string; sourceRef: string }[] }>();
+                                        const ungrouped: { assetName: string; sourceRef: string }[] = [];
+
+                                        for (const name of s.assetsViewed) {
+                                          const ta = assetLookup.get(name);
+                                          const sourceRef = ta?.source_ref || name;
+                                          if (ta?.chapter_id) {
+                                            const ch = chapters.find(c => c.id === ta.chapter_id);
+                                            const key = ta.chapter_id;
+                                            if (!byChapter.has(key)) {
+                                              byChapter.set(key, {
+                                                chapterLabel: ch ? `Ch ${ch.chapter_number}: ${ch.chapter_name}` : "Unknown",
+                                                items: [],
+                                              });
+                                            }
+                                            byChapter.get(key)!.items.push({ assetName: name, sourceRef });
+                                          } else {
+                                            ungrouped.push({ assetName: name, sourceRef });
+                                          }
+                                        }
+
+                                        const sortedChapters = [...byChapter.entries()].sort((a, b) => {
+                                          const chA = chapters.find(c => c.id === a[0]);
+                                          const chB = chapters.find(c => c.id === b[0]);
+                                          return (chA?.chapter_number ?? 99) - (chB?.chapter_number ?? 99);
+                                        });
+
+                                        return (
+                                          <div className="space-y-2">
+                                            {sortedChapters.map(([chId, group]) => (
+                                              <div key={chId}>
+                                                <p className="text-[9px] font-semibold text-primary/80 mb-1">{group.chapterLabel}</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                  {group.items.sort((a, b) => a.sourceRef.localeCompare(b.sourceRef, undefined, { numeric: true })).map(item => (
+                                                    <Badge key={item.assetName} variant="outline" className="text-[9px] font-mono">{item.sourceRef}</Badge>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            ))}
+                                            {ungrouped.length > 0 && (
+                                              <div>
+                                                <p className="text-[9px] font-semibold text-muted-foreground mb-1">Other</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                  {ungrouped.map(item => (
+                                                    <Badge key={item.assetName} variant="outline" className="text-[9px] font-mono">{item.sourceRef}</Badge>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                   </TableCell>
                                 </TableRow>
