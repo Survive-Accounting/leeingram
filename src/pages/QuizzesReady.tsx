@@ -485,18 +485,18 @@ export default function QuizzesReady() {
   const { data: rawData, isLoading } = useQuery({
     queryKey: ["quiz-deploy-data"],
     queryFn: async () => {
-      // 1. Get all approved banked questions with their teaching_asset topic linkage
+      // 1. Get all approved questions from topic_quiz_questions
       const PAGE = 1000;
       let allQuestions: any[] = [];
       let from = 0;
       while (true) {
         const { data, error } = await supabase
-          .from("banked_questions")
+          .from("topic_quiz_questions")
           .select(
-            `id, teaching_asset_id, question_type, question_text,
-             answer_a, answer_b, answer_c, answer_d, answer_e,
-             correct_answer, short_explanation, difficulty, review_status,
-             teaching_assets!inner ( id, topic_id, chapter_id, course_id )`,
+            `id, topic_id, question_type, question_text,
+             option_a, option_b, option_c, option_d,
+             correct_answer, explanation_correct, review_status,
+             example_asset_id, chapter_id`,
           )
           .eq("review_status", "approved")
           .range(from, from + PAGE - 1);
@@ -510,11 +510,11 @@ export default function QuizzesReady() {
       const topicIds = [
         ...new Set(
           allQuestions
-            .map((q: any) => q.teaching_assets?.topic_id)
+            .map((q: any) => q.topic_id)
             .filter(Boolean),
         ),
       ] as string[];
-      if (topicIds.length === 0) return { questions: [], topics: [], chapters: [], courses: [] };
+      if (topicIds.length === 0) return { questions: allQuestions, topics: [], chapters: [], courses: [] };
 
       // 3. Fetch topics
       const { data: topics, error: tErr } = await supabase
@@ -571,14 +571,26 @@ export default function QuizzesReady() {
       (chapters as any[]).map((c: any) => [c.id, c]),
     );
 
-    // Map questions to topic
+    // Map questions to topic — remap column names to BankedQ shape
     const topicQMap = new Map<string, BankedQ[]>();
     for (const q of questions as any[]) {
-      const topicId = q.teaching_assets?.topic_id;
+      const topicId = q.topic_id;
       if (!topicId) continue;
       if (!topicQMap.has(topicId)) topicQMap.set(topicId, []);
       topicQMap.get(topicId)!.push({
-        ...q,
+        id: q.id,
+        teaching_asset_id: q.example_asset_id,
+        question_type: q.question_type,
+        question_text: q.question_text,
+        answer_a: q.option_a || "",
+        answer_b: q.option_b || "",
+        answer_c: q.option_c || "",
+        answer_d: q.option_d || "",
+        answer_e: "",
+        correct_answer: q.correct_answer || "",
+        short_explanation: q.explanation_correct || "",
+        difficulty: 0,
+        review_status: q.review_status,
         topic_id: topicId,
       });
     }
