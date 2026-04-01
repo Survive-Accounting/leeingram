@@ -14,9 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
-  HelpCircle, MessageSquare, ExternalLink, Library, FileUp,
+  HelpCircle, MessageSquare, ExternalLink, Library, FileUp, Rocket,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { QuizDeployPanel } from "@/components/va-dashboards/QuizDeployPanel";
 
 const PIPELINE_STAGES = [
   { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
