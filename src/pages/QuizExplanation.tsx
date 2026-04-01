@@ -410,10 +410,14 @@ function SolutionTab({ question }: { question: Question }) {
         <p className="text-xs italic" style={{ color: "#94a3b8" }}>
           Hover over each row to see why this entry is recorded this way.
         </p>
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontStyle: "italic", marginBottom: 8 }}>
+          Hover over each row to see why it's debited or credited.
+        </p>
         <JournalEntryTable
           completedJson={[{ label: question.je_description || "Journal Entry", lines, unbalanced: false }]}
           mode="completed"
           showHeading={false}
+          showTooltips={true}
         />
         {question.explanation_correct && (
           <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
@@ -421,7 +425,6 @@ function SolutionTab({ question }: { question: Question }) {
             <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
           </div>
         )}
-        <JEWrongAnswers question={question} />
       </div>
     );
   }
