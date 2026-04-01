@@ -385,6 +385,15 @@ export default function VaDashboard() {
             )}
           </TabsContent>
 
+          {/* ═══ QUIZ DEPLOYMENT ═══ */}
+          <TabsContent value="quiz-deploy" className="mt-3">
+            <QuizDeployPanel
+              filterChapterIds={effectiveChapterIds}
+              hideHeader
+              readOnly
+            />
+          </TabsContent>
+
           {/* ═══ HELP / SOP ═══ */}
           <TabsContent value="help" className="space-y-4 mt-3">
             <div className="rounded-lg border border-border bg-secondary/20 p-4 space-y-3">
