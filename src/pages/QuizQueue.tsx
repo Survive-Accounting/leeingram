@@ -1150,7 +1150,7 @@ function StartOverSection({ chapterId, chapterName, totalQuestionCount, onReset 
 
 /* ──────── Topic Quizzes Tab ──────── */
 
-function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, isAdmin }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string; isAdmin?: boolean }) {
+function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, isAdmin }: { chapterId: string | undefined; chapterNumber: number | undefined; chapterName?: string; courseCode?: string; isAdmin?: boolean }) {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<TopicRow[]>([]);
   const [loading, setLoading] = useState(true);
