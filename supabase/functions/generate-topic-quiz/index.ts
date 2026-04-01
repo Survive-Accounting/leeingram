@@ -146,6 +146,8 @@ serve(async (req) => {
 
 Generate exactly 5 questions for this accounting topic. This is a quick knowledge check, not a full exam.
 
+CRITICAL — COMPANY NAME: You must use 'Survive Company' as the company name in every single question. Never use Alpha Corp, Gamma Corp, Beta Inc, XYZ Corp, ABC Company, or any other company name. Every question must say 'Survive Company'. This is non-negotiable.
+
 QUESTION MIX:
 ${mixDescription}
 

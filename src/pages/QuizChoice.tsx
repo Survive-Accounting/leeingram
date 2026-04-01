@@ -10,15 +10,19 @@ function useEmbedSetup() {
   useEffect(() => {
     document.documentElement.style.background = "transparent";
     document.body.style.background = "transparent";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
   }, []);
   useEffect(() => {
     const send = () => {
       if (ref.current) {
-        window.parent.postMessage({ type: "resize", height: ref.current.scrollHeight }, "*");
+        const h = ref.current.scrollHeight;
+        window.parent.postMessage({ type: "resize", height: h }, "*");
+        window.parent.postMessage({ type: "sa-height", height: h }, "*");
       }
     };
     send();
-    const t = setTimeout(send, 300);
+    const t = setTimeout(send, 200);
     document.fonts.ready.then(send);
     const observer = new ResizeObserver(send);
     if (ref.current) observer.observe(ref.current);
@@ -89,7 +93,7 @@ export default function QuizChoice() {
     );
   }
 
-  // MC plain text
+  // MC plain text — left aligned
   return (
     <div
       ref={ref}
@@ -98,10 +102,13 @@ export default function QuizChoice() {
         fontSize: 15,
         fontWeight: 500,
         lineHeight: 1.6,
-        padding: "8px 12px",
-        textAlign: "center",
+        padding: "8px 4px",
+        textAlign: "left",
+        display: "flex",
+        alignItems: "center",
+        minHeight: 44,
         background: "transparent",
-        color: "#e8e8e8",
+        color: "#f0f0f0",
       }}
     >
       {raw}
