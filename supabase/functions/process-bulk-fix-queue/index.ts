@@ -306,9 +306,25 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
+    const message = err?.message || "Unknown error";
     console.error("process-bulk-fix-queue error:", err);
+
+    // Mark the current queue item as failed so it doesn't stay "running" forever
+    if (currentItem?.id) {
+      try {
+        await sb.from("bulk_fix_queue").update({
+          status: "failed",
+          completed_at: new Date().toISOString(),
+          error_summary: `Fatal: ${message}`.slice(0, 500),
+        }).eq("id", currentItem.id);
+      } catch (updateErr) {
+        console.error("Failed to mark queue item as failed:", updateErr);
+      }
+    }
+
+    // Still self-chain to pick up any remaining pending items
     selfChain(supabaseUrl, serviceKey);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
