@@ -83,18 +83,18 @@ function buildFlowchartHtml(flowchart: any): string {
     font-family: Arial, sans-serif;
     background: #FFFFFF;
     margin: 0;
-    padding: 24px;
+    padding: 20px;
     width: 600px;
   }
   .title {
     background: #131E35;
     color: white;
-    padding: 14px 20px;
+    padding: 10px 16px;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
   .step {
     border-radius: 8px;
@@ -135,12 +135,40 @@ function buildFlowchartHtml(flowchart: any): string {
     font-weight: bold;
     margin-bottom: 4px;
   }
+  .branding {
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 2px solid #D1D5DB;
+    text-align: center;
+    padding-bottom: 8px;
+  }
+  .branding-inner {
+    display: inline-block;
+    background: #131E35;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .branding-label {
+    display: inline-block;
+    font-size: 13px;
+    color: #6B7280;
+    vertical-align: middle;
+  }
 </style>
 </head>
 <body>
   <div class="title">${escapeHtml(flowchart.title || "How to Solve This")}</div>
   ${stepsHtml}
   ${remindersHtml}
+  <div class="branding">
+    <span class="branding-inner">SA</span>
+    <span class="branding-label"><b style="color:#131E35">SurviveAccounting</b>.com</span>
+  </div>
 </body>
 </html>`;
 }
@@ -265,7 +293,7 @@ ${(workedSteps || "").slice(0, 3000)}${instructionBlock}`;
     body: JSON.stringify({
       html,
       viewport_width: 640,
-      viewport_height: 800,
+      viewport_height: 2000,
       device_scale: 2,
     }),
   });
