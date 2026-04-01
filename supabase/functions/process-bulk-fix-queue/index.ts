@@ -41,6 +41,15 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
   generate_supplementary_je: {
     fn: "generate-supplementary-je",
     bodyFn: (id) => ({ teaching_asset_id: id }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb
+        .from("teaching_assets")
+        .select("journal_entry_completed_json, supplementary_je_json")
+        .eq("id", id)
+        .single();
+      // Skip if no primary JE exists OR supplementary already generated
+      return !data?.journal_entry_completed_json || !!data?.supplementary_je_json;
+    },
   },
   generate_worked_steps: {
     fn: "generate-worked-steps",
