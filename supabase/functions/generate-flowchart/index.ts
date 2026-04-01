@@ -295,7 +295,6 @@ ${(workedSteps || "").slice(0, 3000)}${instructionBlock}`;
       viewport_width: 640,
       viewport_height: 1200,
       device_scale: 2,
-      selector: "body",
     }),
   });
 
