@@ -56,6 +56,7 @@ const OPERATION_LABELS: Record<string, string> = {
   custom_ai: "Custom AI Rewrite",
   enrich_je_rows: "Enrich JE Rows (debit_credit_reason + amount_source)",
   generate_supplementary_je: "Generate Supplementary JEs (backfill)",
+  generate_worked_steps: "Generate Worked Steps (backfill)",
   generate_flowcharts: "Generate Flowcharts (backfill missing)",
   generate_dissector_highlights: "Generate Dissector Highlights (backfill missing)",
   enrich_je_tooltips: "Enrich JE Tooltips (fill gaps)",
