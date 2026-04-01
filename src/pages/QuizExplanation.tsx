@@ -595,7 +595,7 @@ function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boole
           {badge}
         </span>
         <p className="text-sm font-medium text-slate-700">
-          {asset.source_ref} — {asset.problem_title}
+          {asset.problem_title ? `${asset.source_ref} — ${asset.problem_title}` : asset.source_ref}
         </p>
       </div>
       {hasLink ? (
