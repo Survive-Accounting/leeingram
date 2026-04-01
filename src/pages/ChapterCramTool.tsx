@@ -1329,8 +1329,12 @@ export default function ChapterCramTool() {
         )}
 
         {/* ─── SECTION 5: SOLUTIONS LIBRARY ─── */}
-        <div style={{ marginTop: 32 }} className="mb-8">
-          <SectionLabel>Solutions Library</SectionLabel>
+        {(isSectionVisible("solutions_library") || isAdmin) && (
+        <div style={{ marginTop: 32, opacity: !isSectionVisible("solutions_library") ? 0.5 : 1 }} className="mb-8">
+          {!isSectionVisible("solutions_library") && isAdmin && (
+            <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+          )}
+          <SectionHeaderWithToggle label="Solutions Library" isAdmin={!!isAdmin} sectionName="solutions_library" isVisible={isSectionVisible("solutions_library")} onToggle={toggleSectionVisibility} />
           <p className="text-[12px] mb-3" style={{ color: "#64748b" }}>Browse all practice problems for this chapter.</p>
 
           {/* Tab buttons */}
