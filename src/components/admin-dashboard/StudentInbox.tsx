@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow } from "date-fns";
 
-type InboxTab = "questions" | "issues";
+type InboxTab = "questions" | "issues" | "feedback";
 
 export function StudentInbox() {
   const [inboxTab, setInboxTab] = useState<InboxTab>("questions");
@@ -48,8 +48,7 @@ export function StudentInbox() {
 
   const filtered = useMemo(() => {
     return rows.filter((r: any) => {
-      if (inboxTab === "questions" && r.issue_type !== "question") return false;
-      if (inboxTab === "issues" && r.issue_type !== "issue") return false;
+      if (r.issue_type !== inboxTab) return false;
       if (newOnly && r.status !== "new") return false;
       if (courseFilter !== "all") {
         const ch = chapterMap[r.chapter_id];
@@ -62,29 +61,35 @@ export function StudentInbox() {
 
   const newQuestionCount = rows.filter((r: any) => r.issue_type === "question" && r.status === "new").length;
   const newIssueCount = rows.filter((r: any) => r.issue_type === "issue" && r.status === "new").length;
+  const newFeedbackCount = rows.filter((r: any) => r.issue_type === "feedback" && r.status === "new").length;
 
   const handleMarkReplied = async (id: string) => {
     await supabase.from("chapter_questions").update({ status: "replied" } as any).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox"] });
   };
 
+  const tabConfig: { key: InboxTab; label: string; count: number }[] = [
+    { key: "questions", label: "Questions", count: newQuestionCount },
+    { key: "issues", label: "Issues", count: newIssueCount },
+    { key: "feedback", label: "Feedback", count: newFeedbackCount },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Sub-tabs */}
       <div className="flex gap-2">
-        {(["questions", "issues"] as const).map(t => {
-          const count = t === "questions" ? newQuestionCount : newIssueCount;
-          const active = inboxTab === t;
+        {tabConfig.map(t => {
+          const active = inboxTab === t.key;
           return (
             <button
-              key={t}
-              onClick={() => setInboxTab(t)}
+              key={t.key}
+              onClick={() => setInboxTab(t.key)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              {t === "questions" ? "Questions" : "Issues"}
-              {count > 0 && (
+              {t.label}
+              {t.count > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                  {count}
+                  {t.count}
                 </span>
               )}
             </button>
@@ -125,7 +130,7 @@ export function StudentInbox() {
         <p className="text-xs text-muted-foreground">Loading…</p>
       ) : filtered.length === 0 ? (
         <p className="text-xs text-muted-foreground py-4">
-          No {inboxTab === "questions" ? "questions" : "issues"} yet.
+          No {inboxTab} yet.
         </p>
       ) : (
         <div className="space-y-2">
@@ -134,7 +139,13 @@ export function StudentInbox() {
             const co = ch ? courseMap[ch.course_id] : null;
             const isNew = row.status === "new";
             const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
-            const mailtoSubject = encodeURIComponent(`Re: your question about ${row.source_ref || chapterLabel}`);
+            const mailtoSubject = encodeURIComponent(
+              inboxTab === "feedback"
+                ? `Re: your feedback on ${row.source_ref || row.asset_name || chapterLabel}`
+                : `Re: your question about ${row.source_ref || chapterLabel}`
+            );
+            const displayName = row.student_name || row.student_email;
+            const displayEmail = row.student_email === "anonymous" ? null : row.student_email;
 
             return (
               <div key={row.id} className="border border-border rounded-lg p-3 bg-card">
@@ -143,22 +154,21 @@ export function StudentInbox() {
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${isNew ? "bg-destructive/15 text-destructive" : "bg-green-100 text-green-700"}`}>
                     {isNew ? "New" : "Replied"}
                   </span>
-                  <span className="text-xs font-bold text-foreground">{row.student_email}</span>
+                  <span className="text-xs font-bold text-foreground">{displayName}</span>
+                  {row.student_name && displayEmail && (
+                    <span className="text-xs text-muted-foreground">{displayEmail}</span>
+                  )}
                   <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
                   </span>
                 </div>
 
-                {/* Asset context for issues */}
-                {row.issue_type === "issue" && (row.source_ref || chapterLabel) && (
+                {/* Asset context */}
+                {(row.source_ref || row.asset_name || chapterLabel) && (
                   <p className="text-[11px] text-muted-foreground font-mono mt-1">
-                    {row.source_ref}{row.source_ref && chapterLabel ? " — " : ""}{chapterLabel}
+                    {row.source_ref || row.asset_name}{(row.source_ref || row.asset_name) && chapterLabel ? " — " : ""}{chapterLabel}
+                    {co?.code ? ` · ${co.code}` : ""}
                   </p>
-                )}
-
-                {/* Question context for questions */}
-                {row.issue_type === "question" && chapterLabel && (
-                  <p className="text-[11px] text-muted-foreground mt-1">{co?.code ? `${co.code} · ` : ""}{chapterLabel}</p>
                 )}
 
                 {/* Message preview */}
@@ -178,12 +188,14 @@ export function StudentInbox() {
                       Mark Replied
                     </button>
                   )}
-                  <a
-                    href={`mailto:${row.student_email}?subject=${mailtoSubject}&body=${encodeURIComponent("Hi there,\n\n\n\n— Lee")}`}
-                    className="text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:underline"
-                  >
-                    Reply via Email →
-                  </a>
+                  {displayEmail && (
+                    <a
+                      href={`mailto:${displayEmail}?subject=${mailtoSubject}&body=${encodeURIComponent("Hi there,\n\n\n\n— Lee")}`}
+                      className="text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      Reply via Email →
+                    </a>
+                  )}
                 </div>
               </div>
             );
