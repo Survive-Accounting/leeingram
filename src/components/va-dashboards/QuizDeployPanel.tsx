@@ -81,9 +81,9 @@ function questionBankName(
   courseCode: string,
   chapterNum: number,
   topicNum: number | null,
-  topicName: string,
+  _topicName: string,
 ): string {
-  return `${courseCode}-Ch${pad2(chapterNum)}-T${pad2(topicNum ?? 0)}-${slugify(topicName)}-V1`;
+  return `${courseCode}-Ch${pad2(chapterNum)}-T${pad2(topicNum ?? 0)}-V1`;
 }
 
 function letterToNumber(letter: string): string {
