@@ -378,7 +378,13 @@ export default function AssetStatsDashboard() {
   return (
     <SurviveSidebarLayout>
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-foreground">Teaching Asset Stats</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">Teaching Asset Stats</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Share buttons on Solutions pages</span>
+            <Switch checked={shareButtonsVisible} onCheckedChange={toggleShareButtons} />
+          </div>
+        </div>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading events…</p>
