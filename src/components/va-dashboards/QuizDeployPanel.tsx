@@ -173,12 +173,6 @@ function CopyBtn({
 /* ── Question Row ── */
 function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
   const isJE = q.question_type === "je_recall";
-  const jeA = parseJEOption(q.answer_a);
-  const jeB = parseJEOption(q.answer_b);
-  const jeC = parseJEOption(q.answer_c);
-  const jeD = parseJEOption(q.answer_d);
-  const choiceTexts = [q.answer_a, q.answer_b, q.answer_c, q.answer_d];
-  const jeParsed = [jeA, jeB, jeC, jeD];
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-2 px-3 border-b border-border/30 last:border-0 text-xs">
