@@ -655,16 +655,6 @@ export default function AssetStatsDashboard() {
                                                 </div>
                                               </div>
                                             ))}
-                                            {ungrouped.length > 0 && (
-                                              <div>
-                                                <p className="text-[9px] font-semibold text-muted-foreground mb-1">Other</p>
-                                                <div className="flex flex-wrap gap-1">
-                                                  {ungrouped.map(item => (
-                                                    <Badge key={item.assetName} variant="outline" className="text-[9px] font-mono">{item.sourceRef}</Badge>
-                                                  ))}
-                                                </div>
-                                              </div>
-                                            )}
                                           </div>
                                         );
                                       })()}
