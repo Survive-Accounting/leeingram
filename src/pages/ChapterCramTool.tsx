@@ -1245,7 +1245,7 @@ export default function ChapterCramTool() {
               <textarea
                 value={askQuestion}
                 onChange={e => { setAskQuestion(e.target.value); setAskError(""); }}
-                placeholder={`What's your question about Ch ${chapterNum || "?"} — ${chapterName}?`}
+                placeholder={`What's your question about ${chapterName || "this chapter"}?`}
                 rows={4}
                 required
                 className="w-full mb-3 outline-none transition-colors"
