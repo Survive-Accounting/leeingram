@@ -403,7 +403,7 @@ function SolutionTab({ question }: { question: Question }) {
 
     return (
       <div className="space-y-4">
-        <p className="text-xs italic" style={{ color: "#64748b" }}>
+        <p className="text-xs italic" style={{ color: "#94a3b8" }}>
           Hover over each row to see why this entry is recorded this way.
         </p>
         <JournalEntryTable
