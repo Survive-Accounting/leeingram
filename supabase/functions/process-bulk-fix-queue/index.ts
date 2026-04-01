@@ -41,6 +41,15 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
   generate_supplementary_je: {
     fn: "generate-supplementary-je",
     bodyFn: (id) => ({ teaching_asset_id: id }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb
+        .from("teaching_assets")
+        .select("journal_entry_completed_json, supplementary_je_json")
+        .eq("id", id)
+        .single();
+      // Skip if no primary JE exists OR supplementary already generated
+      return !data?.journal_entry_completed_json || !!data?.supplementary_je_json;
+    },
   },
   generate_worked_steps: {
     fn: "generate-worked-steps",
@@ -83,16 +92,17 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(supabaseUrl, serviceKey);
   const invocationStartedAt = Date.now();
+  let currentItem: any = null;
 
   try {
-    let { data: currentItems } = await sb
+    const { data: currentItems } = await sb
       .from("bulk_fix_queue")
       .select("*")
       .eq("status", "running")
       .order("queue_position", { ascending: true })
       .limit(1);
 
-    let currentItem = currentItems?.[0];
+    currentItem = currentItems?.[0];
 
     if (!currentItem) {
       const { data: pendingItems } = await sb
@@ -170,9 +180,7 @@ Deno.serve(async (req) => {
     }
 
     const assets = allAssets;
-    if (queryErr) throw new Error(`Failed to query assets: ${queryErr.message}`);
-
-    const total = assets?.length || 0;
+    const total = assets.length;
     const offset = currentItem.assets_processed || 0;
 
     if (total === 0 || offset >= total) {
@@ -298,9 +306,25 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
+    const message = err?.message || "Unknown error";
     console.error("process-bulk-fix-queue error:", err);
+
+    // Mark the current queue item as failed so it doesn't stay "running" forever
+    if (currentItem?.id) {
+      try {
+        await sb.from("bulk_fix_queue").update({
+          status: "failed",
+          completed_at: new Date().toISOString(),
+          error_summary: `Fatal: ${message}`.slice(0, 500),
+        }).eq("id", currentItem.id);
+      } catch (updateErr) {
+        console.error("Failed to mark queue item as failed:", updateErr);
+      }
+    }
+
+    // Still self-chain to pick up any remaining pending items
     selfChain(supabaseUrl, serviceKey);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
