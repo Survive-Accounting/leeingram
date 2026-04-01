@@ -1262,10 +1262,13 @@ export default function ChapterCramTool() {
         )}
 
         {/* ─── SECTION 4: JE CRAM TOOL (only if cards exist) ─── */}
-        {totalCards > 0 && (
-          <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32 }}>
+        {totalCards > 0 && (isSectionVisible("journal_entries") || isAdmin) && (
+          <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32, opacity: !isSectionVisible("journal_entries") ? 0.5 : 1 }}>
+            {!isSectionVisible("journal_entries") && isAdmin && (
+              <div className="text-[11px] font-semibold mb-2 px-2 py-1 rounded" style={{ background: "#fef2f2", color: "#dc2626" }}>Hidden from students</div>
+            )}
             <div className="flex items-center justify-between mb-3">
-              <SectionLabel>Journal Entries to Memorize</SectionLabel>
+              <SectionHeaderWithToggle label="Journal Entries to Memorize" count={totalCards} isAdmin={!!isAdmin} sectionName="journal_entries" isVisible={isSectionVisible("journal_entries")} onToggle={toggleSectionVisibility} />
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-semibold" style={{ color: "#94a3b8" }}>{totalCards} entries</span>
                 <button
