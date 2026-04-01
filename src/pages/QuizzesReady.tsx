@@ -399,7 +399,7 @@ function TopicCard({
                 className="h-7 text-[10px]"
                 onClick={handleExport}
               >
-                <Download className="h-3 w-3 mr-1" /> Export CSV
+                <Download className="h-3 w-3 mr-1" /> Export XLSX
               </Button>
 
               {!topic.lw_imported && (
