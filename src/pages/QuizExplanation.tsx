@@ -150,7 +150,7 @@ export default function QuizExplanation() {
               return Array.isArray(lines) && lines.length > 0;
             });
             if (validEntries.length > 0) {
-              jes.push({ label: `${a.source_ref} — ${a.problem_title}`, entries: validEntries });
+              jes.push({ label: a.problem_title ? `${a.source_ref} — ${a.problem_title}` : a.source_ref, entries: validEntries });
             }
           }
         }
