@@ -412,9 +412,9 @@ function SolutionTab({ question }: { question: Question }) {
           showHeading={false}
         />
         {question.explanation_correct && (
-          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
-            <p className="text-xs" style={{ color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>WHY</p>
-            <p className="text-sm leading-relaxed">{question.explanation_correct}</p>
+          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "rgba(22,163,106,0.15)", borderLeft: "3px solid #16a34a" }}>
+            <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
+            <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
           </div>
         )}
         <JEWrongAnswers question={question} />
