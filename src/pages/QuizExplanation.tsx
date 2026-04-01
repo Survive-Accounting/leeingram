@@ -541,8 +541,9 @@ function JeTab({ jeData }: { jeData: any[] }) {
         <div key={idx} className="space-y-1.5">
           <p className="text-xs font-semibold" style={{ color: "#374151" }}>{je.label}</p>
           {Array.isArray(je.entries) && je.entries.map((entry: any, ei: number) => {
-            // Build legacy group format for JournalEntryTable
-            const lines = (entry.accounts || entry.lines || []).map((line: any) => ({
+            const rawLines = entry.accounts || entry.lines || [];
+            if (!Array.isArray(rawLines) || rawLines.length === 0) return null;
+            const lines = rawLines.map((line: any) => ({
               account: line.account_name || line.account,
               side: line.side || "debit",
               debit: line.side === "debit" ? (line.amount || 0) : 0,
@@ -550,6 +551,7 @@ function JeTab({ jeData }: { jeData: any[] }) {
               debit_credit_reason: line.debit_credit_reason || line.reason,
               amount_source: line.amount_source,
             }));
+            if (lines.length === 0) return null;
             return (
               <JournalEntryTable
                 key={ei}
