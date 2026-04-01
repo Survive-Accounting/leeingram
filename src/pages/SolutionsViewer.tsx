@@ -1681,14 +1681,18 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
         >
           {!collapsed && (
             <>
-              <button
-                onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-                className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                style={{ color: "#3B82F6" }}
-              >
-                <Share2 className="h-3 w-3" /> Share This
-              </button>
-              <div className="w-px h-5" style={{ background: theme.border }} />
+              {showShare && (
+                <>
+                  <button
+                    onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
+                    className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                    style={{ color: "#3B82F6" }}
+                  >
+                    <Share2 className="h-3 w-3" /> Share This
+                  </button>
+                  <div className="w-px h-5" style={{ background: theme.border }} />
+                </>
+              )}
               <button
                 onClick={() => setAboutOpen(true)}
                 className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
