@@ -661,7 +661,7 @@ function BulletedText({ text }: { text: string }) {
     .filter((s) => s.length > 0);
 
   if (bullets.length <= 1) {
-    return <p className="text-sm leading-relaxed">{text}</p>;
+    return <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{text}</p>;
   }
 
   return (
