@@ -126,7 +126,7 @@ function buildDebugJSON(
     const corAns = letterToNumber(q.correct_answer);
     const corNum = parseInt(corAns, 10);
     const isJE = q.question_type === "je_recall";
-    const choiceHeight = isJE ? 150 : 60;
+    const choiceHeight = isJE ? 142 : 60;
     const answers = [q.answer_a, q.answer_b, q.answer_c, q.answer_d];
     const correctOptionValue = answers[corNum - 1] || null;
 
