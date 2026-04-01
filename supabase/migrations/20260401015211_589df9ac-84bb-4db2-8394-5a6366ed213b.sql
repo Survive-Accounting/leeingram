@@ -1,0 +1,1 @@
+UPDATE bulk_fix_queue SET status = 'failed', error_summary = 'Manually stopped by admin', completed_at = now() WHERE id = '64b99cdb-0365-4bb7-954b-4cf296b7d2cf';
