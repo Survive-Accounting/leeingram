@@ -6,8 +6,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Copy } from "lucide-react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { toast } from "sonner";
 
 export default function SurviveChapterAdmin() {
   const { data: courses } = useQuery({
@@ -112,6 +113,17 @@ export default function SurviveChapterAdmin() {
                       >
                         <ExternalLink className="h-3 w-3" /> Preview
                       </a>
+                      <button
+                        onClick={() => {
+                          const html = `<iframe src="https://learn.surviveaccounting.com/legacy/NOTION_PAGE_ID?chapterId=${ch.id}" style="width:100%;height:600px;border:none;" frameborder="0"></iframe>`;
+                          navigator.clipboard.writeText(html);
+                          toast.success("Legacy iframe HTML copied — replace NOTION_PAGE_ID with the actual Notion page ID");
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                        title="Copy legacy iframe HTML"
+                      >
+                        <Copy className="h-3 w-3" /> Legacy
+                      </button>
                     </div>
                   </div>
                 );
