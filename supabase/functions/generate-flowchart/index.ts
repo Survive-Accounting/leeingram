@@ -135,12 +135,46 @@ function buildFlowchartHtml(flowchart: any): string {
     font-weight: bold;
     margin-bottom: 4px;
   }
+  .branding {
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid #E0E0E0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .branding-icon {
+    width: 20px;
+    height: 20px;
+    background: #131E35;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+  }
+  .branding-text {
+    font-size: 11px;
+    color: #999;
+    letter-spacing: 0.3px;
+  }
+  .branding-text strong {
+    color: #131E35;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
   <div class="title">${escapeHtml(flowchart.title || "How to Solve This")}</div>
   ${stepsHtml}
   ${remindersHtml}
+  <div class="branding">
+    <div class="branding-icon">SA</div>
+    <div class="branding-text"><strong>SurviveAccounting</strong>.com</div>
+  </div>
 </body>
 </html>`;
 }
