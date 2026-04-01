@@ -4,22 +4,60 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
 import {
-  Download, Loader2, CheckCircle2, ClipboardCopy, Check,
-  FileSpreadsheet, Film,
+  Download,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Check,
+  CheckCircle2,
+  ListChecks,
+  Rocket,
 } from "lucide-react";
-import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
 import { cn } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/clipboardFallback";
+import { parseJEOption, type JEOptionRow } from "@/lib/questionHtmlRenderer";
 
 /* ── Types ── */
-type BankedQ = {
+interface TopicWithMeta {
+  id: string;
+  topic_name: string;
+  topic_number: number | null;
+  chapter_id: string;
+  course_id: string | null;
+  lw_imported: boolean;
+  lw_imported_at: string | null;
+}
+
+interface ChapterWithCourse {
+  id: string;
+  chapter_number: number;
+  chapter_name: string;
+  course_id: string;
+  course_code: string;
+}
+
+interface BankedQ {
   id: string;
   teaching_asset_id: string | null;
   question_type: string;
@@ -33,611 +71,692 @@ type BankedQ = {
   short_explanation: string;
   difficulty: number;
   review_status: string;
-};
+  topic_id: string | null; // derived from teaching_assets
+}
 
-type AssetInfo = {
-  id: string;
-  asset_name: string;
-  source_ref: string | null;
-  core_rank: number | null;
-  mc_status: string;
-  course_id: string;
-  survive_problem_text: string;
-  problem_context: string | null;
-  lw_html_added: boolean;
-  lw_csv_exported_at: string | null;
-  sheet_master_url: string | null;
-  test_slide_url: string | null;
-};
+/* ── Helpers ── */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
-/* ── CSV helpers ── */
-function escapeCSV(val: string): string {
-  if (!val) return "";
-  if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-    return '"' + val.replace(/"/g, '""') + '"';
-  }
-  return val;
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function questionBankName(
+  courseCode: string,
+  chapterNum: number,
+  topicNum: number | null,
+  topicName: string,
+): string {
+  return `${courseCode}-Ch${pad2(chapterNum)}-T${pad2(topicNum ?? 0)}-${slugify(topicName)}-V1`;
 }
 
 function letterToNumber(letter: string): string {
   const map: Record<string, string> = { A: "1", B: "2", C: "3", D: "4", E: "5" };
   const upper = (letter || "").trim().toUpperCase();
-  if (map[upper]) return map[upper];
-  if (/^\d+$/.test(upper)) return upper;
-  for (const [k, v] of Object.entries(map)) {
-    if (upper.includes(k)) return v;
+  return map[upper] || (/^\d+$/.test(upper) ? upper : "1");
+}
+
+/* ── HTML generators ── */
+function questionHtml(text: string): string {
+  return `<div style="font-family:Inter,sans-serif;font-size:15px;line-height:1.6;padding:12px 16px;border-left:4px solid #14213D;background:#f8f9fa;border-radius:4px;">${text}</div>`;
+}
+
+function feedbackHtml(questionId: string): string {
+  return `<iframe src="https://learn.surviveaccounting.com/quiz-explanation/${questionId}" width="100%" height="600" frameborder="0" style="border:none;border-radius:8px;overflow:hidden;"></iframe>
+<script>
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='resize'){
+    var f=document.querySelector('iframe');
+    if(f)f.style.height=e.data.height+'px';
   }
-  return "1";
+});
+</script>`;
 }
 
-function getQuestionLWType(questionType: string): string {
-  const upper = questionType.toUpperCase();
-  if (upper === "TRUE_FALSE" || upper === "TF" || upper === "TTF") return "TTF";
-  return "TMC";
+function jeChoiceHtml(rows: JEOptionRow[]): string {
+  const debits = rows.filter((r) => r.side === "debit");
+  const credits = rows.filter((r) => r.side === "credit");
+  const ordered = [...debits, ...credits];
+
+  const trs = ordered
+    .map((r) => {
+      const isCredit = r.side === "credit";
+      const padStyle = isCredit ? "padding-left:20px;" : "";
+      return `<tr><td style="border:1px solid #ddd;padding:8px;text-align:left;${padStyle}">${r.account_name}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;width:80px;">${isCredit ? "" : "✓"}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;width:80px;">${isCredit ? "✓" : ""}</td></tr>`;
+    })
+    .join("");
+
+  return `<table style="border-collapse:collapse;width:100%;font-family:Inter,sans-serif;font-size:14px;"><thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left;background:#14213D;color:white;">Account</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Debit</th><th style="border:1px solid #ddd;padding:8px;text-align:center;background:#14213D;color:white;width:80px;">Credit</th></tr></thead><tbody>${trs}</tbody></table>`;
 }
 
-function buildLWCSV(questions: BankedQ[], assetNameMap: Map<string, string>): string {
-  const header = "Group,Type,Question,CorAns,Answer1,Answer2,Answer3,Answer4,Answer5,Answer6,Answer7,Answer8,Answer9,Answer10,CorrectExplanation,IncorrectExplanation";
+/* ── XLSX builder using tab-separated values for proper Excel ── */
+function buildTopicXLSX(
+  questions: BankedQ[],
+  topicName: string,
+): Blob {
+  const header = [
+    "Group", "Type", "Question", "CorAns",
+    "Answer1", "Answer2", "Answer3", "Answer4",
+    "Answer5", "Answer6", "Answer7", "Answer8", "Answer9", "Answer10",
+    "CorrectExplanation", "IncorrectExplanation",
+  ];
 
-  const rows = questions.map(q => {
-    const group = assetNameMap.get(q.teaching_asset_id || "") || "UNKNOWN";
-    const type = getQuestionLWType(q.question_type);
+  const rows = questions.map((q) => {
+    const qHtml = questionHtml(q.question_text);
     const corAns = letterToNumber(q.correct_answer);
+    const fb = feedbackHtml(q.id);
 
     return [
-      group,
-      type,
-      q.question_text,
+      topicName,
+      "TMC",
+      qHtml,
       corAns,
       q.answer_a || "",
       q.answer_b || "",
       q.answer_c || "",
       q.answer_d || "",
-      q.answer_e || "",
-      "", "", "", "", "",
-      q.short_explanation || "",
-      (q as any).incorrect_explanation || "Not quite! Review the problem scenario and try again. Each answer choice reflects a common approach — make sure you're recording the correct accounts, amounts, and debits/credits.",
-    ].map(escapeCSV).join(",");
+      "", "", "", "", "", "",
+      fb,
+      fb,
+    ];
   });
 
-  return header + "\n" + rows.join("\n");
-}
-
-/* ── Rank badge ── */
-function RankBadge({ rank }: { rank: number | null }) {
-  const r = rank ?? 3;
-  return (
-    <Badge variant="outline" className={cn(
-      "text-[10px] font-bold px-1.5 py-0",
-      r === 1 ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-        : r === 2 ? "bg-zinc-400/20 text-zinc-300 border-zinc-400/40"
-          : "bg-zinc-600/20 text-zinc-500 border-zinc-600/40"
-    )}>
-      R{r}
-    </Badge>
-  );
-}
-
-/* ── Add MC to Whiteboard button ── */
-function AddToWhiteboardButton({
-  assetId,
-  assetName,
-  sheetMasterUrl,
-  approvedCount,
-  chapterId,
-  onSynced,
-}: {
-  assetId: string;
-  assetName: string;
-  sheetMasterUrl: string | null;
-  approvedCount: number;
-  chapterId: string;
-  onSynced: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [selectedSet, setSelectedSet] = useState("");
-  const [syncing, setSyncing] = useState(false);
-
-  const { data: exportSets = [] } = useQuery({
-    queryKey: ["quiz-wb-export-sets", assetId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("export_set_questions")
-        .select("export_set_id, banked_questions!inner ( teaching_asset_id, review_status )")
-        .eq("banked_questions.teaching_asset_id", assetId)
-        .eq("banked_questions.review_status", "approved");
-      if (!data) return [];
-      const setIds = [...new Set(data.map((d: any) => d.export_set_id))];
-      if (setIds.length === 0) return [];
-      const { data: sets } = await supabase
-        .from("export_sets")
-        .select("id, name")
-        .in("id", setIds);
-      return (sets || []).map((s: any) => ({
-        ...s,
-        count: data.filter((d: any) => d.export_set_id === s.id).length,
-      }));
-    },
-    enabled: open && !!assetId,
-  });
-
-  const handleSync = async () => {
-    if (!selectedSet) return;
-    setSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("sync-mc-to-sheet", {
-        body: { teaching_asset_id: assetId, export_set_id: selectedSet },
-      });
-      if (error) throw error;
-      const setName = exportSets.find((s: any) => s.id === selectedSet)?.name || "";
-      toast.success(`Added ${data?.questions_added || 0} MC questions from '${setName}' to Hidden_Data`);
-      setOpen(false);
-      onSynced();
-    } catch (e: any) {
-      toast.error(e.message || "Sync failed");
-    } finally {
-      setSyncing(false);
+  // Build CSV with proper escaping for Excel
+  const escapeCSV = (val: string): string => {
+    if (!val) return "";
+    if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+      return '"' + val.replace(/"/g, '""') + '"';
     }
+    return val;
   };
 
-  if (!sheetMasterUrl || approvedCount === 0) {
-    return (
-      <Button size="sm" variant="outline" className="h-7 text-[10px]" disabled title={!sheetMasterUrl ? "Create sheet first" : "No approved questions"}>
-        <FileSpreadsheet className="h-3 w-3 mr-1" /> Whiteboard
-      </Button>
-    );
-  }
+  const csvContent = [header, ...rows]
+    .map((row) => row.map(escapeCSV).join(","))
+    .join("\n");
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" className="h-7 text-[10px]">
-          <FileSpreadsheet className="h-3 w-3 mr-1" /> Whiteboard
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-3 space-y-3">
-        <p className="text-xs font-medium text-foreground">Add MC to Hidden_Data</p>
-        <Select value={selectedSet} onValueChange={setSelectedSet}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Choose Export Set" />
-          </SelectTrigger>
-          <SelectContent>
-            {exportSets.map((s: any) => (
-              <SelectItem key={s.id} value={s.id} className="text-xs">
-                {s.name} ({s.count} Qs)
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-2">
-          <Button size="sm" className="h-7 text-xs flex-1" onClick={handleSync} disabled={!selectedSet || syncing}>
-            {syncing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-            Add to Sheet
-          </Button>
-          <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)}>Cancel</button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+  return new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
 }
 
-/* ── Add MC to Slides button ── */
-function AddToSlidesButton({
-  assetId,
-  whiteboardDone,
-  onCreated,
+/* ── Copy Button component ── */
+function CopyBtn({
+  label,
+  text,
+  className,
+  variant = "outline",
+  size = "sm",
 }: {
-  assetId: string;
-  whiteboardDone: boolean;
-  onCreated: () => void;
+  label: React.ReactNode;
+  text: string;
+  className?: string;
+  variant?: "outline" | "ghost" | "secondary";
+  size?: "sm" | "default";
 }) {
-  const [creating, setCreating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const handleCreate = async () => {
-    setCreating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-test-slide", {
-        body: { teaching_asset_id: assetId },
-      });
-      if (error) throw error;
-      if (data?.test_slide_url) {
-        window.open(data.test_slide_url, "_blank");
-      }
-      toast.success("Filming slides created");
-      onCreated();
-    } catch (e: any) {
-      toast.error(e.message || "Slides creation failed");
-    } finally {
-      setCreating(false);
-    }
+  const handleCopy = async () => {
+    await copyToClipboard(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
     <Button
-      size="sm"
-      variant="outline"
-      className="h-7 text-[10px]"
-      disabled={!whiteboardDone || creating}
-      title={!whiteboardDone ? "Add MC to Whiteboard first" : "Create filming slides"}
-      onClick={handleCreate}
+      size={size}
+      variant={variant}
+      className={cn(
+        "h-7 text-[10px] px-2 rounded-full transition-all",
+        copied && "bg-emerald-500/20 text-emerald-400 border-emerald-500/40",
+        className,
+      )}
+      onClick={handleCopy}
     >
-      {creating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Film className="h-3 w-3 mr-1" />}
-      Slides
+      {copied ? <Check className="h-3 w-3" /> : label}
     </Button>
   );
 }
 
-/* ══════════════════════════════════════════ */
+/* ── Question Row ── */
+function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
+  const isJE = q.question_type === "je_recall";
+  const jeA = parseJEOption(q.answer_a);
+  const jeB = parseJEOption(q.answer_b);
+  const jeC = parseJEOption(q.answer_c);
+  const jeD = parseJEOption(q.answer_d);
+  const choiceTexts = [q.answer_a, q.answer_b, q.answer_c, q.answer_d];
+  const jeParsed = [jeA, jeB, jeC, jeD];
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-2 px-3 border-b border-border/30 last:border-0 text-xs">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <Badge variant="outline" className="text-[9px] px-1.5 shrink-0">
+          Q{index + 1}
+        </Badge>
+        <Badge
+          variant="secondary"
+          className={cn(
+            "text-[9px] px-1.5 shrink-0",
+            isJE ? "bg-purple-500/20 text-purple-300" : "bg-blue-500/20 text-blue-300",
+          )}
+        >
+          {isJE ? "JE" : "MC"}
+        </Badge>
+        <span className="text-muted-foreground truncate">
+          {q.question_text.slice(0, 80)}
+          {q.question_text.length > 80 ? "…" : ""}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 shrink-0 flex-wrap">
+        <CopyBtn
+          label={<><Copy className="h-3 w-3 mr-0.5" />Q</>}
+          text={questionHtml(q.question_text)}
+        />
+        {["A", "B", "C", "D"].map((letter, i) => (
+          <CopyBtn
+            key={letter}
+            label={letter}
+            text={
+              isJE && jeParsed[i]
+                ? jeChoiceHtml(jeParsed[i]!)
+                : choiceTexts[i] || ""
+            }
+            className="w-7 px-0"
+          />
+        ))}
+        <CopyBtn
+          label={<><Copy className="h-3 w-3 mr-0.5" />FB</>}
+          text={feedbackHtml(q.id)}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Instructions Panel ── */
+function InstructionsPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1">
+          <ListChecks className="h-3.5 w-3.5" />
+          <span>Step-by-step instructions</span>
+          <ChevronDown
+            className={cn(
+              "h-3 w-3 transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 mt-2 text-xs space-y-1.5">
+          <ol className="list-decimal list-inside space-y-1.5 text-foreground/80">
+            <li>
+              Copy the <strong>Question Bank Name</strong> above → create a new
+              Question Bank in LearnWorlds with this exact name
+            </li>
+            <li>
+              Click <strong>"Export CSV"</strong> → import the CSV into the
+              Question Bank you just created
+            </li>
+            <li>
+              For each <strong>JE question</strong> below: open that question in
+              LW, then use the copy buttons to replace each answer choice with
+              the HTML table version
+            </li>
+            <li>
+              For all questions: paste <strong>Feedback HTML</strong> into both
+              the Correct and Incorrect explanation fields
+            </li>
+            <li>
+              Click <strong>"Mark as Imported"</strong> when done
+            </li>
+          </ol>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/* ── Topic Card ── */
+function TopicCard({
+  topic,
+  questions,
+  courseCode,
+  chapterNum,
+  onImported,
+}: {
+  topic: TopicWithMeta;
+  questions: BankedQ[];
+  courseCode: string;
+  chapterNum: number;
+  onImported: () => void;
+}) {
+  const [expanded, setExpanded] = useState(!topic.lw_imported);
+  const bankName = questionBankName(
+    courseCode,
+    chapterNum,
+    topic.topic_number,
+    topic.topic_name,
+  );
+  const fileName = `${bankName}.csv`;
+
+  const handleExport = () => {
+    const blob = buildTopicXLSX(questions, topic.topic_name);
+    saveAs(blob, fileName);
+    toast.success(`Downloaded ${questions.length} questions`);
+  };
+
+  const handleMarkImported = async () => {
+    await supabase
+      .from("chapter_topics")
+      .update({
+        lw_imported: true,
+        lw_imported_at: new Date().toISOString(),
+      } as any)
+      .eq("id", topic.id);
+    toast.success("Topic marked as imported");
+    onImported();
+  };
+
+  return (
+    <Card
+      className={cn(
+        "transition-all",
+        topic.lw_imported && "opacity-50 bg-muted/30",
+      )}
+    >
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <div className="p-4">
+          {/* Topic header */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-2 text-left flex-1 min-w-0">
+                {expanded ? (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+                <span className="font-medium text-sm text-foreground truncate">
+                  {topic.topic_number != null && `T${pad2(topic.topic_number)}: `}
+                  {topic.topic_name}
+                </span>
+              </button>
+            </CollapsibleTrigger>
+            <div className="flex items-center gap-2 flex-wrap shrink-0 ml-6 sm:ml-0">
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px]">
+                {questions.length} approved
+              </Badge>
+
+              {topic.lw_imported && (
+                <Badge className="bg-emerald-600/20 text-emerald-400 border-emerald-600/40 text-[10px]">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Imported
+                </Badge>
+              )}
+
+              {/* Bank name copy chip */}
+              <CopyBtn
+                label={
+                  <span className="font-mono text-[10px]">{bankName}</span>
+                }
+                text={bankName}
+                variant="secondary"
+                className="rounded-md h-6"
+              />
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px]"
+                onClick={handleExport}
+              >
+                <Download className="h-3 w-3 mr-1" /> Export CSV
+              </Button>
+
+              {!topic.lw_imported && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10px]"
+                    >
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Imported
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Mark as Imported?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Mark this topic as fully imported into LearnWorlds? The
+                        card will be grayed out but still visible for reference.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleMarkImported}>
+                        Confirm
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </div>
+
+          {/* Instructions */}
+          {!topic.lw_imported && (
+            <div className="mt-2 ml-6">
+              <InstructionsPanel />
+            </div>
+          )}
+        </div>
+
+        {/* Question list */}
+        <CollapsibleContent>
+          <CardContent className="pt-0 px-4 pb-3">
+            <div className="border border-border/50 rounded-lg overflow-hidden">
+              {questions.map((q, i) => (
+                <QuestionRow key={q.id} q={q} index={i} />
+              ))}
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
+/* ══════════════════════════════════════════
+   MAIN PAGE
+   ══════════════════════════════════════════ */
 export default function QuizzesReady() {
   const qc = useQueryClient();
-  const { workspace } = useActiveWorkspace();
-  const [activeTab, setActiveTab] = useState("csv-export");
-  const [whiteboardSynced, setWhiteboardSynced] = useState<Set<string>>(new Set());
-
-  /* ── Fetch chapter + course info ── */
-  const { data: chapterInfo } = useQuery({
-    queryKey: ["quiz-chapter-info", workspace?.chapterId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("chapter_number, chapter_name, course_id, courses ( code )")
-        .eq("id", workspace!.chapterId)
-        .single();
-      if (error) throw error;
-      return data as any;
-    },
-    enabled: !!workspace?.chapterId,
-  });
-
-  const courseCode = chapterInfo?.courses?.code || "COURSE";
-  const chapterNum = chapterInfo?.chapter_number || 0;
-
-  /* ── Fetch core assets with mc questions ── */
-  const { data: coreAssets = [], isLoading: loadingA } = useQuery<AssetInfo[]>({
-    queryKey: ["quiz-ready-assets", workspace?.chapterId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teaching_assets")
-        .select("id, asset_name, source_ref, core_rank, mc_status, course_id, survive_problem_text, problem_context, lw_html_added, lw_csv_exported_at, sheet_master_url, test_slide_url")
-        .eq("chapter_id", workspace!.chapterId)
-        .eq("phase2_status", "core_asset")
-        .in("mc_status", ["in_progress", "complete"])
-        .order("core_rank", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as AssetInfo[];
-    },
-    enabled: !!workspace?.chapterId,
-  });
-
-  /* ── Fetch all banked questions for this chapter ── */
-  const { data: allBankedQuestions = [], isLoading: loadingQ } = useQuery({
-    queryKey: ["quiz-all-banked", workspace?.chapterId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("banked_questions")
-        .select(`
-          id, teaching_asset_id, question_type, question_text,
-          answer_a, answer_b, answer_c, answer_d, answer_e,
-          correct_answer, short_explanation, difficulty, review_status,
-          teaching_assets!inner ( chapter_id )
-        `)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data as any[]).filter(q => q.teaching_assets?.chapter_id === workspace!.chapterId) as BankedQ[];
-    },
-    enabled: !!workspace?.chapterId,
-  });
-
-  /* ── Fetch problem_instructions for HTML checklist ── */
-  const assetIds = useMemo(() => coreAssets.map(a => a.id), [coreAssets]);
-  const { data: problemInstructions = [] } = useQuery({
-    queryKey: ["quiz-problem-instructions", assetIds],
-    queryFn: async () => {
-      if (assetIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("problem_instructions")
-        .select("teaching_asset_id, instruction_number, instruction_text")
-        .in("teaching_asset_id", assetIds)
-        .order("instruction_number", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: assetIds.length > 0,
-  });
-
-  const isLoading = loadingA || loadingQ;
-
-  const assetNameMap = useMemo(() => new Map(coreAssets.map(a => [a.id, a.asset_name])), [coreAssets]);
-
-  /* ── Per-asset question counts ── */
-  const assetRows = useMemo(() => {
-    return coreAssets
-      .filter(a => allBankedQuestions.some(q => q.teaching_asset_id === a.id))
-      .map(a => {
-        const qs = allBankedQuestions.filter(q => q.teaching_asset_id === a.id);
-        return {
-          ...a,
-          approvedCount: qs.filter(q => q.review_status === "approved").length,
-          pendingCount: qs.filter(q => q.review_status === "pending").length,
-          rejectedCount: qs.filter(q => q.review_status === "rejected").length,
-          approvedQuestions: qs.filter(q => q.review_status === "approved"),
-        };
-      });
-  }, [coreAssets, allBankedQuestions]);
-
-  const approvedQuestions = useMemo(
-    () => allBankedQuestions.filter(q => q.review_status === "approved"),
-    [allBankedQuestions]
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
+    new Set(),
   );
 
-  /* ── Export timestamp update helper ── */
-  const markExported = useCallback(async (ids: string[]) => {
-    const now = new Date().toISOString();
-    for (const id of ids) {
-      await supabase.from("teaching_assets").update({ lw_csv_exported_at: now } as any).eq("id", id);
+  /* ── Fetch all topics with approved questions ── */
+  const { data: rawData, isLoading } = useQuery({
+    queryKey: ["quiz-deploy-data"],
+    queryFn: async () => {
+      // 1. Get all approved banked questions with their teaching_asset topic linkage
+      const PAGE = 1000;
+      let allQuestions: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("banked_questions")
+          .select(
+            `id, teaching_asset_id, question_type, question_text,
+             answer_a, answer_b, answer_c, answer_d, answer_e,
+             correct_answer, short_explanation, difficulty, review_status,
+             teaching_assets!inner ( id, topic_id, chapter_id, course_id )`,
+          )
+          .eq("review_status", "approved")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        allQuestions = allQuestions.concat(data || []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+
+      // 2. Collect unique topic IDs
+      const topicIds = [
+        ...new Set(
+          allQuestions
+            .map((q: any) => q.teaching_assets?.topic_id)
+            .filter(Boolean),
+        ),
+      ] as string[];
+      if (topicIds.length === 0) return { questions: [], topics: [], chapters: [], courses: [] };
+
+      // 3. Fetch topics
+      const { data: topics, error: tErr } = await supabase
+        .from("chapter_topics")
+        .select(
+          "id, topic_name, topic_number, chapter_id, course_id, lw_imported, lw_imported_at, is_active",
+        )
+        .in("id", topicIds);
+      if (tErr) throw tErr;
+
+      // 4. Collect chapter IDs
+      const chapterIds = [
+        ...new Set((topics || []).map((t: any) => t.chapter_id)),
+      ] as string[];
+
+      // 5. Fetch chapters + courses
+      const { data: chapters, error: cErr } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name, course_id")
+        .in("id", chapterIds);
+      if (cErr) throw cErr;
+
+      const courseIds = [
+        ...new Set((chapters || []).map((c: any) => c.course_id)),
+      ] as string[];
+      const { data: courses, error: coErr } = await supabase
+        .from("courses")
+        .select("id, code, course_name")
+        .in("id", courseIds);
+      if (coErr) throw coErr;
+
+      return {
+        questions: allQuestions,
+        topics: topics || [],
+        chapters: chapters || [],
+        courses: courses || [],
+      };
+    },
+  });
+
+  const { questions, topics, chapters, courses } = rawData || {
+    questions: [],
+    topics: [],
+    chapters: [],
+    courses: [],
+  };
+
+  /* ── Build hierarchy: course → chapter → topic → questions ── */
+  const hierarchy = useMemo(() => {
+    const courseMap = new Map(
+      (courses as any[]).map((c: any) => [c.id, c]),
+    );
+    const chapterMap = new Map(
+      (chapters as any[]).map((c: any) => [c.id, c]),
+    );
+
+    // Map questions to topic
+    const topicQMap = new Map<string, BankedQ[]>();
+    for (const q of questions as any[]) {
+      const topicId = q.teaching_assets?.topic_id;
+      if (!topicId) continue;
+      if (!topicQMap.has(topicId)) topicQMap.set(topicId, []);
+      topicQMap.get(topicId)!.push({
+        ...q,
+        topic_id: topicId,
+      });
     }
-    qc.invalidateQueries({ queryKey: ["quiz-ready-assets"] });
-  }, [qc]);
 
-  /* ── Export handlers ── */
-  const exportAssetCSV = useCallback(async (assetId: string) => {
-    const assetQuestions = approvedQuestions.filter(q => q.teaching_asset_id === assetId);
-    if (assetQuestions.length === 0) { toast.error("No approved questions"); return; }
-
-    const csv = buildLWCSV(assetQuestions, assetNameMap);
-    const assetName = assetNameMap.get(assetId) || "asset";
-    const date = new Date().toISOString().slice(0, 10);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, `${courseCode}-Ch${String(chapterNum).padStart(2, "0")}-${assetName}-questions-${date}.csv`);
-
-    await markExported([assetId]);
-    toast.success(`Downloaded ${assetQuestions.length} questions`);
-  }, [approvedQuestions, courseCode, chapterNum, assetNameMap, markExported]);
-
-  const exportAllCSV = useCallback(async () => {
-    if (approvedQuestions.length === 0) { toast.error("No approved questions"); return; }
-
-    const csv = buildLWCSV(approvedQuestions, assetNameMap);
-    const date = new Date().toISOString().slice(0, 10);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, `${courseCode}-Ch${String(chapterNum).padStart(2, "0")}-questions-${date}.csv`);
-
-    const exportedIds = [...new Set(approvedQuestions.map(q => q.teaching_asset_id).filter(Boolean))] as string[];
-    await markExported(exportedIds);
-    toast.success(`Downloaded ${approvedQuestions.length} questions`);
-  }, [approvedQuestions, courseCode, chapterNum, assetNameMap, markExported]);
-
-  /* ── HTML copy helpers ── */
-  const copyScenarioHTML = useCallback((asset: AssetInfo) => {
-    const html = `<div style="background:#f8f9fa;border-left:4px solid #0066cc;padding:16px;margin-bottom:16px;border-radius:4px;font-family:Arial,sans-serif;font-size:14px;line-height:1.6"><strong>Problem Scenario</strong><br><br>${asset.problem_context || ""}<br><br>${asset.survive_problem_text || ""}</div>`;
-    navigator.clipboard.writeText(html);
-    toast.success("Scenario HTML copied!");
-  }, []);
-
-  const copyProblemHTML = useCallback((assetId: string) => {
-    const instructions = problemInstructions
-      .filter(pi => pi.teaching_asset_id === assetId)
-      .sort((a, b) => a.instruction_number - b.instruction_number);
-
-    const listItems = instructions.length > 0
-      ? `<ol>${instructions.map(i => `<li>${i.instruction_text}</li>`).join("")}</ol>`
-      : "<p>No instructions found.</p>";
-
-    const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;padding:8px"><strong>Required:</strong><br>${listItems}</div>`;
-    navigator.clipboard.writeText(html);
-    toast.success("Problem HTML copied!");
-  }, [problemInstructions]);
-
-  /* ── HTML checkbox toggle ── */
-  const toggleHtmlAdded = useCallback(async (assetId: string, value: boolean) => {
-    await supabase.from("teaching_assets").update({ lw_html_added: value } as any).eq("id", assetId);
-    qc.invalidateQueries({ queryKey: ["quiz-ready-assets"] });
-  }, [qc]);
-
-  const markAllHtmlComplete = useCallback(async () => {
-    const ids = assetRows.filter(a => a.approvedCount > 0).map(a => a.id);
-    for (const id of ids) {
-      await supabase.from("teaching_assets").update({ lw_html_added: true } as any).eq("id", id);
+    // Group topics by chapter
+    const chapterTopicMap = new Map<
+      string,
+      { topic: any; questions: BankedQ[] }[]
+    >();
+    for (const t of topics as any[]) {
+      const qs = topicQMap.get(t.id);
+      if (!qs || qs.length === 0) continue;
+      if (!chapterTopicMap.has(t.chapter_id))
+        chapterTopicMap.set(t.chapter_id, []);
+      chapterTopicMap.get(t.chapter_id)!.push({ topic: t, questions: qs });
     }
-    qc.invalidateQueries({ queryKey: ["quiz-ready-assets"] });
-    toast.success(`Marked ${ids.length} assets as HTML complete`);
-  }, [assetRows, qc]);
 
-  /* ── Whiteboard sync tracker ── */
-  const markWhiteboardSynced = useCallback((assetId: string) => {
-    setWhiteboardSynced(prev => new Set(prev).add(assetId));
-  }, []);
+    // Group chapters by course
+    const courseChapterMap = new Map<
+      string,
+      {
+        chapter: any;
+        courseCode: string;
+        topics: { topic: any; questions: BankedQ[] }[];
+        totalApproved: number;
+      }[]
+    >();
+    for (const [chId, topicList] of chapterTopicMap) {
+      const ch = chapterMap.get(chId);
+      if (!ch) continue;
+      const course = courseMap.get(ch.course_id);
+      const courseCode = course?.code || "COURSE";
+      const totalApproved = topicList.reduce(
+        (s, t) => s + t.questions.length,
+        0,
+      );
 
-  /* ── HTML checklist progress ── */
-  const htmlAddedCount = assetRows.filter(a => a.lw_html_added && a.approvedCount > 0).length;
-  const htmlTotalCount = assetRows.filter(a => a.approvedCount > 0).length;
-  const htmlPercent = htmlTotalCount > 0 ? Math.round((htmlAddedCount / htmlTotalCount) * 100) : 0;
+      if (!courseChapterMap.has(ch.course_id))
+        courseChapterMap.set(ch.course_id, []);
+      courseChapterMap.get(ch.course_id)!.push({
+        chapter: ch,
+        courseCode,
+        topics: topicList.sort(
+          (a, b) => (a.topic.topic_number ?? 0) - (b.topic.topic_number ?? 0),
+        ),
+        totalApproved,
+      });
+    }
 
-  const totalApproved = approvedQuestions.length;
+    // Sort chapters by number within each course
+    for (const chs of courseChapterMap.values()) {
+      chs.sort((a, b) => a.chapter.chapter_number - b.chapter.chapter_number);
+    }
 
-  /* ══════════════════════════════════════════
-     RENDER
-     ══════════════════════════════════════════ */
+    return courseChapterMap;
+  }, [questions, topics, chapters, courses]);
+
+  const toggleChapter = (chId: string) => {
+    setExpandedChapters((prev) => {
+      const next = new Set(prev);
+      if (next.has(chId)) next.delete(chId);
+      else next.add(chId);
+      return next;
+    });
+  };
+
+  const totalApproved = (questions as any[]).length;
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["quiz-deploy-data"] });
+
   return (
     <SurviveSidebarLayout>
       <div className="space-y-5 pb-12">
-
-        {/* ── HEADER ── */}
+        {/* Header */}
         <div>
           <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <Download className="h-5 w-5 text-primary" />
-            Quizzes Ready
+            <Rocket className="h-5 w-5" style={{ color: "#14213D" }} />
+            Quiz Deployment
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Export approved MC questions as LearnWorlds-compatible CSV files.
+            Deploy approved quiz questions into LearnWorlds. {totalApproved}{" "}
+            approved question{totalApproved !== 1 ? "s" : ""} ready.
           </p>
         </div>
 
-        {/* ── EMPTY STATE ── */}
-        {!isLoading && totalApproved === 0 && assetRows.length === 0 && (
-          <div className="text-center py-20 text-muted-foreground space-y-2">
-            <p className="text-base font-medium">No approved questions yet</p>
-            <p className="text-sm">Review MC questions first, then come back to export.</p>
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
           </div>
         )}
 
-        {(isLoading || totalApproved > 0 || assetRows.length > 0) && (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="csv-export">CSV Export</TabsTrigger>
-              <TabsTrigger value="html-checklist">HTML Checklist</TabsTrigger>
-            </TabsList>
-
-            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-               TAB 1 — CSV EXPORT
-               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-            <TabsContent value="csv-export" className="space-y-4 mt-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  {totalApproved} approved question{totalApproved !== 1 ? "s" : ""} across {assetRows.length} asset{assetRows.length !== 1 ? "s" : ""}
-                </p>
-                <Button size="sm" onClick={exportAllCSV} disabled={isLoading || totalApproved === 0}>
-                  <Download className="h-3.5 w-3.5 mr-1.5" /> Export All Approved
-                </Button>
-              </div>
-
-              {isLoading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
-                </div>
-              ) : (
-                <div className="rounded-md border border-border overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-muted/30 text-muted-foreground">
-                        <th className="px-3 py-2 text-left font-medium">Rank</th>
-                        <th className="px-3 py-2 text-left font-medium">Asset Code</th>
-                        <th className="px-3 py-2 text-left font-medium">Textbook Ref</th>
-                        <th className="px-3 py-2 text-center font-medium">Approved</th>
-                        <th className="px-3 py-2 text-center font-medium">Pending</th>
-                        <th className="px-3 py-2 text-center font-medium">Rejected</th>
-                        <th className="px-3 py-2 text-center font-medium">CSV</th>
-                        <th className="px-3 py-2 text-center font-medium">Whiteboard</th>
-                        <th className="px-3 py-2 text-center font-medium">Slides</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {assetRows.map(a => (
-                        <tr key={a.id} className="border-t border-border/40 hover:bg-muted/10">
-                          <td className="px-3 py-2.5"><RankBadge rank={a.core_rank} /></td>
-                          <td className="px-3 py-2.5 font-mono font-medium text-foreground">{a.asset_name}</td>
-                          <td className="px-3 py-2.5 text-muted-foreground">{a.source_ref || "—"}</td>
-                          <td className="px-3 py-2.5 text-center text-emerald-400 font-medium">{a.approvedCount}</td>
-                          <td className="px-3 py-2.5 text-center text-muted-foreground">{a.pendingCount}</td>
-                          <td className="px-3 py-2.5 text-center text-muted-foreground">{a.rejectedCount}</td>
-                          <td className="px-3 py-2.5 text-center">
-                            <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => exportAssetCSV(a.id)} disabled={a.approvedCount === 0} title="Download CSV">
-                              <Download className="h-3.5 w-3.5" />
-                            </Button>
-                          </td>
-                          <td className="px-3 py-2.5 text-center">
-                            <AddToWhiteboardButton
-                              assetId={a.id}
-                              assetName={a.asset_name}
-                              sheetMasterUrl={a.sheet_master_url}
-                              approvedCount={a.approvedCount}
-                              chapterId={workspace?.chapterId || ""}
-                              onSynced={() => markWhiteboardSynced(a.id)}
-                            />
-                          </td>
-                          <td className="px-3 py-2.5 text-center">
-                            <AddToSlidesButton
-                              assetId={a.id}
-                              whiteboardDone={whiteboardSynced.has(a.id)}
-                              onCreated={() => qc.invalidateQueries({ queryKey: ["quiz-ready-assets"] })}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </TabsContent>
-
-            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-               TAB 2 — HTML CHECKLIST
-               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-            <TabsContent value="html-checklist" className="space-y-4 mt-4">
-              {/* Progress summary */}
-              <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {htmlAddedCount} of {htmlTotalCount} assets have HTML added in LearnWorlds
-                    </p>
-                    <Progress value={htmlPercent} className="h-2 mt-2 w-64" />
-                  </div>
-                  <Button size="sm" variant="outline" onClick={markAllHtmlComplete} disabled={htmlAddedCount === htmlTotalCount}>
-                    <Check className="h-3.5 w-3.5 mr-1.5" /> Mark All Complete
-                  </Button>
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
-                </div>
-              ) : (
-                <div className="rounded-md border border-border overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-muted/30 text-muted-foreground">
-                        <th className="px-3 py-2 text-left font-medium">Rank</th>
-                        <th className="px-3 py-2 text-left font-medium">Asset Code</th>
-                        <th className="px-3 py-2 text-center font-medium">Approved</th>
-                        <th className="px-3 py-2 text-center font-medium">Copy Scenario</th>
-                        <th className="px-3 py-2 text-center font-medium">Copy Problem</th>
-                        <th className="px-3 py-2 text-center font-medium">HTML Added</th>
-                        <th className="px-3 py-2 text-left font-medium">Exported</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {assetRows.filter(a => a.approvedCount > 0).map(a => (
-                        <tr key={a.id} className="border-t border-border/40 hover:bg-muted/10">
-                          <td className="px-3 py-2.5"><RankBadge rank={a.core_rank} /></td>
-                          <td className="px-3 py-2.5 font-mono font-medium text-foreground">{a.asset_name}</td>
-                          <td className="px-3 py-2.5 text-center text-emerald-400 font-medium">{a.approvedCount}</td>
-                          <td className="px-3 py-2.5 text-center">
-                            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => copyScenarioHTML(a)}>
-                              <ClipboardCopy className="h-3 w-3 mr-1" /> Scenario
-                            </Button>
-                          </td>
-                          <td className="px-3 py-2.5 text-center">
-                            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => copyProblemHTML(a.id)}>
-                              <ClipboardCopy className="h-3 w-3 mr-1" /> Problem
-                            </Button>
-                          </td>
-                          <td className="px-3 py-2.5 text-center">
-                            <Checkbox
-                              checked={a.lw_html_added || false}
-                              onCheckedChange={(checked) => toggleHtmlAdded(a.id, !!checked)}
-                            />
-                          </td>
-                          <td className="px-3 py-2.5">
-                            {a.lw_csv_exported_at ? (
-                              <Badge variant="outline" className="text-[9px] bg-emerald-600/10 text-emerald-400 border-emerald-500/30">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                {new Date(a.lw_csv_exported_at).toLocaleDateString()}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+        {/* Empty */}
+        {!isLoading && hierarchy.size === 0 && (
+          <div className="text-center py-20 text-muted-foreground space-y-2">
+            <p className="text-base font-medium">No approved questions yet</p>
+            <p className="text-sm">
+              Review quiz questions first, then come back to deploy.
+            </p>
+          </div>
         )}
+
+        {/* Course → Chapter → Topic hierarchy */}
+        {!isLoading &&
+          [...hierarchy.entries()].map(([courseId, chaptersInCourse]) => {
+            const courseName =
+              (courses as any[]).find((c: any) => c.id === courseId)
+                ?.course_name || "Course";
+            const courseCode =
+              chaptersInCourse[0]?.courseCode || "COURSE";
+
+            return (
+              <div key={courseId} className="space-y-3">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  {courseCode} — {courseName}
+                </h2>
+
+                {chaptersInCourse.map(
+                  ({ chapter, topics: topicList, totalApproved: chTotal }) => {
+                    const isExpanded = expandedChapters.has(chapter.id);
+                    return (
+                      <div
+                        key={chapter.id}
+                        className="border border-border rounded-xl overflow-hidden"
+                      >
+                        {/* Chapter header */}
+                        <button
+                          className="w-full flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/20 transition-colors"
+                          onClick={() => toggleChapter(chapter.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="font-medium text-sm text-foreground">
+                              Ch {chapter.chapter_number}:{" "}
+                              {chapter.chapter_name}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px]"
+                              style={{
+                                borderColor: "#14213D",
+                                color: "#14213D",
+                              }}
+                            >
+                              {courseCode}
+                            </Badge>
+                          </div>
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px]">
+                            {chTotal} approved
+                          </Badge>
+                        </button>
+
+                        {/* Topics inside chapter */}
+                        {isExpanded && (
+                          <div className="p-4 space-y-3 bg-background/50">
+                            {topicList.map(({ topic, questions: tQuestions }) => (
+                              <TopicCard
+                                key={topic.id}
+                                topic={topic as TopicWithMeta}
+                                questions={tQuestions}
+                                courseCode={courseCode}
+                                chapterNum={chapter.chapter_number}
+                                onImported={refresh}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            );
+          })}
       </div>
     </SurviveSidebarLayout>
   );

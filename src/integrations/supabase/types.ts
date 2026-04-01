@@ -1248,6 +1248,9 @@ export type Database = {
           id: string
           is_active: boolean
           is_supplementary: boolean
+          lw_imported: boolean
+          lw_imported_at: string | null
+          lw_imported_by: string | null
           lw_quiz_link: string | null
           lw_video_link: string | null
           merged_into_topic_id: string | null
@@ -1269,6 +1272,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_supplementary?: boolean
+          lw_imported?: boolean
+          lw_imported_at?: string | null
+          lw_imported_by?: string | null
           lw_quiz_link?: string | null
           lw_video_link?: string | null
           merged_into_topic_id?: string | null
@@ -1290,6 +1296,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_supplementary?: boolean
+          lw_imported?: boolean
+          lw_imported_at?: string | null
+          lw_imported_by?: string | null
           lw_quiz_link?: string | null
           lw_video_link?: string | null
           merged_into_topic_id?: string | null
