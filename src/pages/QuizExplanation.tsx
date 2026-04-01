@@ -143,8 +143,14 @@ export default function QuizExplanation() {
             const json = a.supplementary_je_json;
             if (!json) continue;
             const entries = Array.isArray(json) ? json : (json as any)?.entries;
-            if (Array.isArray(entries) && entries.length > 0) {
-              jes.push({ label: `${a.source_ref} — ${a.problem_title}`, entries });
+            if (!Array.isArray(entries)) continue;
+            // Filter to only entries that have actual account lines
+            const validEntries = entries.filter((e: any) => {
+              const lines = e.accounts || e.lines || [];
+              return Array.isArray(lines) && lines.length > 0;
+            });
+            if (validEntries.length > 0) {
+              jes.push({ label: `${a.source_ref} — ${a.problem_title}`, entries: validEntries });
             }
           }
         }
