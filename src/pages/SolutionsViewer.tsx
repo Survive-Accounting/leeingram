@@ -1719,7 +1719,7 @@ function FeedbackModal({ open, onClose, asset }: { open: boolean; onClose: () =>
               <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Share Feedback</h3>
               <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
             </div>
-            <p className="text-[12px] mb-4" style={{ color: "#999" }}>Lee reads every message personally.</p>
+            <p className="text-[12px] mb-4" style={{ color: "#999" }}>I read every message personally.</p>
             <div className="space-y-3">
               <input
                 value={name}
@@ -1808,15 +1808,15 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
               style={{ borderBottom: `1px solid ${theme.border}` }}
             >
               <span className="text-[11px]" style={{ color: theme.textMuted }}>
-                Built for you in 2026 — and growing.{" "}
+                This content is brand new —{" "}
                 <button
                   onClick={() => setFeedbackOpen(true)}
                   className="underline hover:no-underline"
                   style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
                 >
-                  Share feedback →
+                  share your feedback
                 </button>
-                {" — Lee"}
+                .
               </span>
               <button
                 onClick={dismissBanner}
