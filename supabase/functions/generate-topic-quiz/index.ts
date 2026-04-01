@@ -58,7 +58,7 @@ serve(async (req) => {
     let mix: { calc_mc: number; conceptual_mc: number; je_recall: number; claude_split_metadata?: any };
 
     if (totalJeEntries >= 3) {
-      mix = { calc_mc: 3, conceptual_mc: 0, je_recall: 2 };
+      mix = { calc_mc: 2, conceptual_mc: 1, je_recall: 2 };
     } else if (totalJeEntries >= 1) {
       mix = { calc_mc: 3, conceptual_mc: 1, je_recall: 1 };
     } else {

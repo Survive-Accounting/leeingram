@@ -102,8 +102,27 @@ function iframeTag(path: string, height: number): string {
 function buildDebugJSON(
   questions: BankedQ[],
   topicName: string,
-): object[] {
-  return questions.map((q, i) => {
+): object {
+  // Derive question mix from actual data
+  const jeRecallCount = questions.filter(q => q.question_type === "je_recall").length;
+  const mcQuestions = questions.filter(q => q.question_type === "mc");
+  // We can't perfectly distinguish calc vs conceptual from stored data, so report totals
+  const calcMcCount = mcQuestions.length;
+  const totalJeEntries = jeRecallCount; // approximate from output
+  let mixSource: "hardcoded" | "claude" = "hardcoded";
+  if (jeRecallCount === 0) mixSource = "claude";
+
+  const questionMix = {
+    je_count_approx: totalJeEntries,
+    calc_mc: calcMcCount,
+    conceptual_mc: 0,
+    je_recall: jeRecallCount,
+    total: questions.length,
+    mix_source: mixSource,
+    note: "calc_mc and conceptual_mc cannot be distinguished from stored data; showing combined MC count as calc_mc",
+  };
+
+  const rows = questions.map((q, i) => {
     const corAns = letterToNumber(q.correct_answer);
     const corNum = parseInt(corAns, 10);
     const isJE = q.question_type === "je_recall";
@@ -151,6 +170,8 @@ function buildDebugJSON(
 
     return row;
   });
+
+  return { question_mix: questionMix, questions: rows };
 }
 
 async function buildTopicXLSX(
