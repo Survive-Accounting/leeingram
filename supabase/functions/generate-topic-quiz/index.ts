@@ -341,6 +341,18 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
       }
     }
 
+    // ── Post-generation company name scan ──
+    const companyNamePattern = /[A-Z][a-z]+ (?:Corp|Inc|Co|Ltd|Company|Corporation)/g;
+    const company_name_warnings: string[] = [];
+    for (const q of questions) {
+      const matches = (q.question_text || "").match(companyNamePattern) || [];
+      const bad = matches.filter((m: string) => m !== "Survive Company");
+      if (bad.length > 0) {
+        company_name_warnings.push(`Q${q.question_number}: found "${bad.join('", "')}"`);
+        console.warn(`[generate-topic-quiz] Company name warning Q${q.question_number}:`, bad);
+      }
+    }
+
     // ── STEP 4: Store results ──
     await sb.from("topic_quiz_questions").delete().eq("topic_id", topic_id);
 
