@@ -511,20 +511,6 @@ function CopyBtn({ label, text, small }: { label: string; text: string; small?: 
   );
 }
 
-function CopyAllForLW({ questions }: { questions: QuizQuestion[] }) {
-  const [copied, fire] = useCopyState();
-  const handleCopy = () => {
-    const all = questions.map((q, i) => `──── Q${i + 1} ────\n${buildCopyAllText(q)}`).join("\n\n\n");
-    navigator.clipboard.writeText(all);
-    fire();
-    toast.success("All questions copied for LW");
-  };
-  return (
-    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleCopy}>
-      {copied ? <><Check className="h-3 w-3 mr-1 text-emerald-500" /> Copied!</> : <>📋 Copy All for LW</>}
-    </Button>
-  );
-}
 
 function QuestionCopyButtons({ question: q }: { question: QuizQuestion }) {
   const isJE = q.question_type === "je_recall";
@@ -747,7 +733,7 @@ function QuizReviewDrawer({
           <Progress value={questions.length ? (approvedCount / questions.length) * 100 : 0} className="h-2" />
 
           <div className="flex justify-end gap-1.5">
-            <CopyAllForLW questions={questions} />
+            
             <Button size="sm" className="h-7 text-xs" onClick={handleApproveAll}>
               <CheckCheck className="h-3 w-3 mr-1" /> Approve All
             </Button>
@@ -1663,27 +1649,6 @@ function TopicQuizzesTab({ chapterId, chapterNumber, chapterName, courseCode, is
                                 </Button>
                               </>
                             )}
-                            {/* PHASE 2: Add JE Recall
-                            // When clicked, this will call a new edge function that:
-                            // 1. Fetches all unique JE entries from assets assigned to this topic_id
-                            //    (from supplementary_je_json)
-                            // 2. Deduplicates by entry label/description similarity
-                            // 3. Generates one je_recall question per unique entry using the same
-                            //    4-choice distractor pattern
-                            // 4. Appends to existing topic_quiz_questions (does not delete existing)
-                            // Only assets with topic_id = this topic contribute JEs. */}
-                            <button
-                              disabled
-                              title="Generate additional JE Recall questions — one per unique journal entry in this topic. Coming in Phase 2."
-                              className="h-7 text-[11px] px-2.5 rounded-full cursor-not-allowed opacity-60"
-                              style={{
-                                background: "#f1f5f9",
-                                border: "1px solid #e2e8f0",
-                                color: "#94a3b8",
-                              }}
-                            >
-                              ＋ JE Recall
-                            </button>
                           </>
                         )}
                       </div>
