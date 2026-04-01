@@ -138,8 +138,8 @@ export default function QuizExplanation() {
 
         // Gather JE data from assets that have supplementary_je_json
         const jes: any[] = [];
-        if (assetsRes.data) {
-          for (const a of assetsRes.data as any[]) {
+        if (allAssetsRes.data) {
+          for (const a of allAssetsRes.data as any[]) {
             const json = a.supplementary_je_json;
             if (!json) continue;
             const entries = Array.isArray(json) ? json : (json as any)?.entries;
