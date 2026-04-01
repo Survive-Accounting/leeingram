@@ -332,6 +332,11 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
             ⚠ Null correct answer
           </Badge>
         )}
+        {hasCompanyWarning && (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/40 text-[9px] shrink-0">
+            ⚠ Wrong company name
+          </Badge>
+        )}
         <span className="text-muted-foreground truncate">
           {q.question_text.slice(0, 80)}
           {q.question_text.length > 80 ? "…" : ""}
