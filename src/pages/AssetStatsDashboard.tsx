@@ -147,9 +147,14 @@ export default function AssetStatsDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Filter events — exclude VA/admin emails
+  // Filter events — exclude VA/admin emails and anonymous share/buy clicks (admin testing)
   const filteredEvents = useMemo(() => {
-    let filtered = events.filter(e => !e.lw_email || !EXCLUDED_EMAILS.has(e.lw_email));
+    let filtered = events.filter(e => {
+      if (e.lw_email && EXCLUDED_EMAILS.has(e.lw_email)) return false;
+      // Exclude anonymous share/buy clicks (all from admin testing)
+      if (!e.lw_email && (e.event_type === "share_click" || e.event_type === "buy_click")) return false;
+      return true;
+    });
 
     // Date filter
     if (dateFilter !== "all") {
