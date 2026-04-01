@@ -448,9 +448,8 @@ function SolutionTab({ question }: { question: Question }) {
             {question.explanation_correct && (
               <p className="text-sm leading-relaxed" style={{ marginTop: 8, color: "#e8e8e8" }}>{question.explanation_correct}</p>
             )}
-          </div>
+           </div>
         </div>
-        <JEWrongAnswers question={question} />
       </div>
     );
   }
