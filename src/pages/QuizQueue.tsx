@@ -594,9 +594,8 @@ function QuizReviewDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div>
+        <div className="mt-3 space-y-4">
           <Progress value={questions.length ? (approvedCount / questions.length) * 100 : 0} className="h-2" />
-        </div>
 
           <div className="flex justify-end gap-1.5">
             <CopyAllForLW questions={questions} />
