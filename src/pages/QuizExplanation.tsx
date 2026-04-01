@@ -297,10 +297,88 @@ export default function QuizExplanation() {
 /*  TAB COMPONENTS                         */
 /* ════════════════════════════════════════ */
 
+/** Parse a JE option string (JSON array of {account_name, side}) into structured rows */
+function parseJEOptionLocal(value: string | null | undefined): { account_name: string; side: string }[] | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].account_name === "string") {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Render a mini JE table for an option */
+function JEOptionMiniTable({ rows }: { rows: { account_name: string; side: string }[] }) {
+  const debits = rows.filter(r => r.side === "debit");
+  const credits = rows.filter(r => r.side === "credit");
+  const ordered = [...debits, ...credits];
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead>
+        <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+          <th style={{ textAlign: "left", padding: "3px 4px", fontSize: 11, color: "#64748b" }}>Account</th>
+          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#64748b", width: 50 }}>Debit</th>
+          <th style={{ textAlign: "center", padding: "3px 4px", fontSize: 11, color: "#64748b", width: 50 }}>Credit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {ordered.map((r, i) => (
+          <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+            <td style={{ padding: "3px 4px", paddingLeft: r.side === "credit" ? 20 : 4, fontSize: 13 }}>{r.account_name}</td>
+            <td style={{ textAlign: "center", padding: "3px 4px", color: "#16a34a" }}>{r.side === "debit" ? "✓" : ""}</td>
+            <td style={{ textAlign: "center", padding: "3px 4px", color: "#16a34a" }}>{r.side === "credit" ? "✓" : ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** Render wrong JE options as mini tables */
+function JEWrongAnswers({ question }: { question: Question }) {
+  const optMap: Record<string, string | null> = {
+    a: question.option_a, b: question.option_b,
+    c: question.option_c, d: question.option_d,
+  };
+  const expMap: Record<string, string | null> = {
+    a: question.explanation_a, b: question.explanation_b,
+    c: question.explanation_c, d: question.explanation_d,
+  };
+  const wrongKeys = ["a", "b", "c", "d"].filter((k) => k !== question.correct_answer);
+
+  if (wrongKeys.length === 0) return null;
+
+  return (
+    <div>
+      <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#dc2626" }}>
+        ✗ WHY THE OTHER OPTIONS ARE WRONG
+      </p>
+      <div className="space-y-3">
+        {wrongKeys.map((k) => {
+          const jeRows = parseJEOptionLocal(optMap[k]);
+          const exp = expMap[k];
+          if (!jeRows && !exp) return null;
+          return (
+            <div key={k} className="rounded-md p-2.5" style={{ border: "1px solid #fca5a5", borderLeftWidth: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>Choice {k.toUpperCase()}</span>
+              {jeRows && <div style={{ marginTop: 4 }}><JEOptionMiniTable rows={jeRows} /></div>}
+              {exp && <p style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", marginTop: 4 }}>{exp}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SolutionTab({ question }: { question: Question }) {
   // JE Recall questions — render correct answer as JE table with tooltips
   if (question.question_type === "je_recall" && Array.isArray(question.je_accounts) && question.je_accounts.length > 0) {
-    // Build a JournalEntryGroup from je_accounts
     const lines = question.je_accounts.map((a: any) => ({
       account: a.account_name,
       side: a.side || "debit",
@@ -311,7 +389,7 @@ function SolutionTab({ question }: { question: Question }) {
     }));
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <p className="text-xs italic" style={{ color: "#64748b" }}>
           Hover over each row to see why this entry is recorded this way.
         </p>
@@ -326,6 +404,33 @@ function SolutionTab({ question }: { question: Question }) {
             <p className="text-sm leading-relaxed">{question.explanation_correct}</p>
           </div>
         )}
+        <JEWrongAnswers question={question} />
+      </div>
+    );
+  }
+
+  // JE Recall fallback — when je_accounts is empty but options have JE JSON
+  if (question.question_type === "je_recall") {
+    const optMap: Record<string, string | null> = {
+      a: question.option_a, b: question.option_b,
+      c: question.option_c, d: question.option_d,
+    };
+    const correctRows = parseJEOptionLocal(optMap[question.correct_answer]);
+
+    return (
+      <div className="space-y-5">
+        <div>
+          <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
+            ✓ CORRECT JOURNAL ENTRY
+          </p>
+          <div className="rounded-md p-3" style={{ backgroundColor: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
+            {correctRows ? <JEOptionMiniTable rows={correctRows} /> : <p className="text-sm">{optMap[question.correct_answer]}</p>}
+            {question.explanation_correct && (
+              <p className="text-sm leading-relaxed" style={{ marginTop: 8 }}>{question.explanation_correct}</p>
+            )}
+          </div>
+        </div>
+        <JEWrongAnswers question={question} />
       </div>
     );
   }
