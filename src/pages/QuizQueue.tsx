@@ -733,7 +733,7 @@ function QuizReviewDrawer({
           <Progress value={questions.length ? (approvedCount / questions.length) * 100 : 0} className="h-2" />
 
           <div className="flex justify-end gap-1.5">
-            <CopyAllForLW questions={questions} />
+            
             <Button size="sm" className="h-7 text-xs" onClick={handleApproveAll}>
               <CheckCheck className="h-3 w-3 mr-1" /> Approve All
             </Button>
