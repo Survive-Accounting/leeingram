@@ -1563,6 +1563,7 @@ export default function ChapterCramTool() {
             </div>
           )}
         </div>
+        )}
 
         {/* About Lee (at bottom) */}
         <div className="mt-10 mb-8">
