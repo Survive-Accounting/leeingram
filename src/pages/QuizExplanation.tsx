@@ -24,6 +24,7 @@ interface Question {
   explanation_d: string | null;
   je_accounts: any;
   je_description: string | null;
+  example_asset_id: string | null;
 }
 
 interface TopicInfo {
