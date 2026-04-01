@@ -1224,7 +1224,7 @@ export default function ChapterCramTool() {
           {!askSent ? (
             <>
               <p className="text-[13px] mb-4" style={{ color: "#64748b" }}>
-                Have a question about Ch {chapterNum || "?"} — {chapterName}? Send it over — I typically reply within 2 business days.
+                Have a question about {chapterName || "this chapter"}? Send it over — I typically reply within 2 business days.
               </p>
               <input
                 id="ask-lee-email"
