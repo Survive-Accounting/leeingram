@@ -172,6 +172,12 @@ export default function QuizExplanation() {
     })();
   }, [questionId]);
 
+  // Set transparent background immediately
+  useEffect(() => {
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+  }, []);
+
   // Height reporting for iframe — use resize message type
   const reportHeight = useCallback(() => {
     const height = document.body.scrollHeight;
@@ -185,6 +191,7 @@ export default function QuizExplanation() {
     reportHeight();
     const t1 = setTimeout(reportHeight, 300);
     const t2 = setTimeout(reportHeight, 800);
+    document.fonts.ready.then(reportHeight);
     // Also observe DOM size changes
     const observer = new ResizeObserver(reportHeight);
     observer.observe(document.body);
