@@ -172,7 +172,7 @@ function buildLwCsv(questions: QuizQuestion[], topicName: string, opts?: { chapt
     "— Step 1: Import this CSV into LW to create quiz structure",
     "— Step 2: For each question, click Edit in LW → click </> in each field → paste the iframe HTML shown below that field",
     "— Step 3: Paste the quiz URL back into the Quiz Queue once live",
-    `— Questions: ${questions.length} | Topic: ${topicName} | Chapter: ${chapterName ?? ""}`,
+    `— Questions: ${questions.length} | Topic: ${topicName} | Chapter: ${opts?.chapterName ?? ""}`,
     "", "", "", "", "",
   ].map(esc).join(",");
 
