@@ -4031,6 +4031,7 @@ export type Database = {
           chapter_id: string
           correct_answer: string
           created_at: string
+          example_asset_id: string | null
           explanation_a: string | null
           explanation_b: string | null
           explanation_c: string | null
@@ -4056,6 +4057,7 @@ export type Database = {
           chapter_id: string
           correct_answer?: string
           created_at?: string
+          example_asset_id?: string | null
           explanation_a?: string | null
           explanation_b?: string | null
           explanation_c?: string | null
@@ -4081,6 +4083,7 @@ export type Database = {
           chapter_id?: string
           correct_answer?: string
           created_at?: string
+          example_asset_id?: string | null
           explanation_a?: string | null
           explanation_b?: string | null
           explanation_c?: string | null
@@ -4108,6 +4111,13 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_quiz_questions_example_asset_id_fkey"
+            columns: ["example_asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
             referencedColumns: ["id"]
           },
           {
