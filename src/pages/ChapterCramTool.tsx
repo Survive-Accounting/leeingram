@@ -1104,7 +1104,7 @@ export default function ChapterCramTool() {
         {totalCards > 0 && (
           <div id="je-cram-tool" className="scroll-mt-16" style={{ marginTop: 32 }}>
             <div className="flex items-center justify-between mb-3">
-              <SectionLabel>Journal Entries</SectionLabel>
+              <SectionLabel>Journal Entries to Memorize</SectionLabel>
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-semibold" style={{ color: "#94a3b8" }}>{totalCards} entries</span>
                 <button
