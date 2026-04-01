@@ -346,6 +346,13 @@ function TopicCard({
     toast.success(`Downloaded ${fileName}`);
   };
 
+  const handleDebugJSON = () => {
+    const debug = buildDebugJSON(questions, topic.topic_name);
+    const blob = new Blob([JSON.stringify(debug, null, 2)], { type: "application/json" });
+    saveAs(blob, `${bankName}_debug.json`);
+    toast.success("Debug JSON downloaded");
+  };
+
   const handleMarkImported = async () => {
     await supabase
       .from("chapter_topics")
