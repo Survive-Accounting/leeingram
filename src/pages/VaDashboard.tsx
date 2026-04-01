@@ -14,9 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
-  HelpCircle, MessageSquare, ExternalLink, Library, FileUp,
+  HelpCircle, MessageSquare, ExternalLink, Library, FileUp, Rocket,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { QuizDeployPanel } from "@/components/va-dashboards/QuizDeployPanel";
 
 const PIPELINE_STAGES = [
   { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
@@ -232,6 +233,9 @@ export default function VaDashboard() {
         <Tabs defaultValue="pipeline" className="w-full">
           <TabsList className="bg-secondary/50">
             <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
+            <TabsTrigger value="quiz-deploy" className="text-xs">
+              <Rocket className="h-3 w-3 mr-1" /> Quiz Deployment
+            </TabsTrigger>
             <TabsTrigger value="help" className="text-xs">Help / SOP</TabsTrigger>
           </TabsList>
 
@@ -379,6 +383,15 @@ export default function VaDashboard() {
                 })()}
               </div>
             )}
+          </TabsContent>
+
+          {/* ═══ QUIZ DEPLOYMENT ═══ */}
+          <TabsContent value="quiz-deploy" className="mt-3">
+            <QuizDeployPanel
+              filterChapterIds={effectiveChapterIds}
+              hideHeader
+              readOnly
+            />
           </TabsContent>
 
           {/* ═══ HELP / SOP ═══ */}
