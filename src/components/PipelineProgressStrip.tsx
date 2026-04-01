@@ -15,8 +15,7 @@ const STAGES = [
   { key: "approved", label: "Teaching Assets", path: "/assets-library", tip: "Approved assets ready for sheet prep, quizzes, and video production." },
   { key: "topics", label: "Topic Generator", path: "/phase2-review", tip: "Generate core exam topics from approved teaching assets." },
   { key: "quiz_queue", label: "Quiz Queue", path: "/quiz-queue", tip: "Generate and review quiz questions for each topic." },
-  { key: "video_queue", label: "Video Queue", path: "/video-queue", tip: "Record walkthrough videos for each topic." },
-  { key: "deployed", label: "Deployment", path: "/deployment", tip: "Final deployment of quizzes and videos to LearnWorlds." },
+  { key: "quiz_deploy", label: "Quiz Deployment", path: "/quizzes-ready", tip: "Export and deploy quizzes to LearnWorlds." },
 ] as const;
 
 const STAGE_ORDER: Record<string, number> = {
@@ -27,7 +26,7 @@ const STAGE_ORDER: Record<string, number> = {
 const ROLE_ACTIVE_STAGES: Record<EffectiveRole, string[]> = {
   content_creation_va: ["/problem-bank", "/content", "/review", "/assets-library"],
   sheet_prep_va: ["/assets-library", "/deployment"],
-  lead_va: ["/problem-bank", "/content", "/review", "/assets-library", "/quiz-queue", "/video-queue", "/deployment"],
+  lead_va: ["/problem-bank", "/content", "/review", "/assets-library", "/quiz-queue", "/quizzes-ready"],
   admin: STAGES.map(s => s.path),
 };
 
@@ -46,8 +45,7 @@ const STAGE_INSTRUCTIONS: Record<string, string> = {
   "/assets-library": "Finalized assets ready for production.",
   "/phase2-review": "Generate and manage core exam topics from teaching assets.",
   "/quiz-queue": "Generate and review quiz questions for each topic.",
-  "/video-queue": "Record walkthrough videos for each topic.",
-  "/deployment": "Deploy quizzes and videos to LearnWorlds.",
+  "/quizzes-ready": "Export and deploy quizzes to LearnWorlds.",
 };
 
 export function PipelineProgressStrip() {

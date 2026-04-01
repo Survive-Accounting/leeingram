@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
-  Inbox, Factory, Library, FileCheck, Package, Video,
+  Inbox, Factory, Library, FileCheck, Package,
   Rocket, Users, CheckCircle2, Loader2, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
   ChevronRight, CreditCard, ClipboardCheck, TrendingUp,
@@ -40,8 +40,7 @@ const PHASE_1_ITEMS = [
 const PHASE_2_ITEMS = [
   { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
   { label: "Quiz Queue", path: "/quiz-queue", icon: Package },
-  { label: "Video Queue", path: "/video-queue", icon: Video },
-  { label: "Deployment Queue", path: "/deployment", icon: Rocket },
+  { label: "Quiz Deployment", path: "/quizzes-ready", icon: Rocket },
 ];
 
 const QC_ITEMS = [

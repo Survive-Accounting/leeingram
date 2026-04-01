@@ -1,0 +1,1 @@
+ALTER TABLE public.topic_quiz_questions ADD COLUMN example_asset_id UUID REFERENCES public.teaching_assets(id) ON DELETE SET NULL;
