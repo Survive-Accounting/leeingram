@@ -569,7 +569,7 @@ export default function ChapterCramTool() {
           "id, asset_name, source_ref, asset_type, problem_title, important_formulas, supplementary_je_json, journal_entry_completed_json",
         )
         .eq("chapter_id", chapterId)
-        .eq("status", "approved")
+        .not("asset_approved_at", "is", null)
         .order("source_ref");
 
       if (error) throw error;
