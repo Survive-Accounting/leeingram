@@ -233,6 +233,9 @@ export default function VaDashboard() {
         <Tabs defaultValue="pipeline" className="w-full">
           <TabsList className="bg-secondary/50">
             <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
+            <TabsTrigger value="quiz-deploy" className="text-xs">
+              <Rocket className="h-3 w-3 mr-1" /> Quiz Deployment
+            </TabsTrigger>
             <TabsTrigger value="help" className="text-xs">Help / SOP</TabsTrigger>
           </TabsList>
 
