@@ -389,6 +389,7 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
               <div className="space-y-2">
                 {(["a", "b", "c", "d"] as const).map((k, i) => {
                   const isCorrect = q.correct_answer === k;
+                  const jeRows = parseJEOption(optMap[k]);
                   return (
                     <div
                       key={k}
@@ -399,9 +400,30 @@ function StudentPreviewSection({ question: q }: { question: QuizQuestion }) {
                       }}
                     >
                       <span className={`font-bold mr-1 ${isCorrect ? "text-emerald-600" : "text-muted-foreground"}`}>
-                        Choice {i + 1}{isCorrect ? " ✓" : ""}
+                        Choice {k.toUpperCase()}{isCorrect ? " ✓ Correct" : ""}
                       </span>
-                      {optMap[k] || "—"}
+                      {jeRows ? (
+                        <table className="text-[11px] w-full border-collapse mt-1">
+                          <thead>
+                            <tr className="border-b border-border">
+                              <th className="text-left py-0.5 font-semibold text-muted-foreground">Account</th>
+                              <th className="text-center py-0.5 font-semibold text-muted-foreground w-[50px]">Debit</th>
+                              <th className="text-center py-0.5 font-semibold text-muted-foreground w-[50px]">Credit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...jeRows.filter(r => r.side === "debit"), ...jeRows.filter(r => r.side === "credit")].map((r, ri) => (
+                              <tr key={ri} className="border-b border-border/50">
+                                <td className={`py-0.5 ${r.side === "credit" ? "pl-4" : ""}`}>{r.account_name}</td>
+                                <td className="py-0.5 text-center">{r.side === "debit" ? "✓" : ""}</td>
+                                <td className="py-0.5 text-center">{r.side === "credit" ? "✓" : ""}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <span>{optMap[k] || "—"}</span>
+                      )}
                     </div>
                   );
                 })}
