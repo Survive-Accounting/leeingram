@@ -112,11 +112,11 @@ async function buildTopicXLSX(
 
   const rows = questions.map((q) => {
     const corAns = letterToNumber(q.correct_answer);
-    const questionIframe = iframeTag(`/quiz-question/${q.id}`, 200);
-    const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 160 : 80);
-    const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 160 : 80);
-    const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 160 : 80);
-    const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 160 : 80);
+    const questionIframe = iframeTag(`/quiz-question/${q.id}`, 120);
+    const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 150 : 60);
+    const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 150 : 60);
+    const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 150 : 60);
+    const answer4 = iframeTag(`/quiz-choice/${q.id}/4`, q.question_type === "je_recall" ? 150 : 60);
     const explanationIframe = iframeTag(`/quiz-explanation/${q.id}`, 600);
     return [
       topicName, "TMC", questionIframe, corAns,
