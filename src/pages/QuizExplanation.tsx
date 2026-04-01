@@ -235,10 +235,10 @@ export default function QuizExplanation() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[200px] bg-white">
+      <div className="flex items-center justify-center min-h-[200px]" style={{ background: "transparent" }}>
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          <p className="text-xs text-slate-400">Loading explanation...</p>
+          <Loader2 className="h-5 w-5 animate-spin" style={{ color: "#e8e8e8" }} />
+          <p className="text-xs" style={{ color: "#e8e8e8" }}>Loading explanation...</p>
         </div>
       </div>
     );
@@ -246,34 +246,34 @@ export default function QuizExplanation() {
 
   if (error || !question) {
     return (
-      <div className="flex items-center justify-center min-h-[200px] bg-white">
-        <p className="text-sm text-slate-400">Explanation not available.</p>
+      <div className="flex items-center justify-center min-h-[200px]" style={{ background: "transparent" }}>
+        <p className="text-sm" style={{ color: "#e8e8e8" }}>Explanation not available.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white text-slate-900 font-sans" style={{ fontSize: 14 }}>
+    <div className="font-sans" style={{ fontSize: 14, background: "transparent", color: "#e8e8e8" }}>
       {/* Header */}
       <div className="px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: "#14213D" }}>
         <span className="text-white font-bold" style={{ fontSize: 13 }}>📖 Deep Explanation</span>
-        <span className="text-white/50" style={{ fontSize: 11 }}>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
           {topic?.topic_name} · Ch {chapter?.chapter_number}
         </span>
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar — pill style */}
       {availableTabs.length > 1 && (
-        <div className="flex border-b border-slate-200 px-4 gap-4 bg-white">
+        <div className="flex px-4 py-2 gap-2" style={{ background: "transparent" }}>
           {availableTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className="py-2 text-xs font-medium transition-colors relative"
+              className="py-1.5 px-3 text-xs font-medium transition-colors rounded-full"
               style={{
-                color: activeTab === t.key ? "#14213D" : "#94a3b8",
-                borderBottom: activeTab === t.key ? "2px solid #14213D" : "2px solid transparent",
-                marginBottom: -1,
+                backgroundColor: activeTab === t.key ? "#14213D" : "transparent",
+                color: activeTab === t.key ? "white" : "#94a3b8",
+                border: activeTab === t.key ? "none" : "1px solid rgba(255,255,255,0.15)",
               }}
             >
               {t.label}
@@ -290,15 +290,15 @@ export default function QuizExplanation() {
       </div>
 
       {/* Footer */}
-      <div className="text-center py-3 space-y-1" style={{ backgroundColor: "#f8fafc" }}>
+      <div className="text-center py-3 space-y-1" style={{ background: "transparent" }}>
         <a
           href={reportMailto}
           className="inline-block text-xs font-medium hover:underline"
-          style={{ color: "#64748b" }}
+          style={{ color: "#94a3b8" }}
         >
           🐛 Report an issue with this question
         </a>
-        <p style={{ fontSize: 11, color: "#cbd5e1" }}>
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
           Survive Accounting · by Lee Ingram
         </p>
       </div>

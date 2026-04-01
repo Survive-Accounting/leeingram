@@ -5,8 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { parseJEOption } from "@/lib/questionHtmlRenderer";
 
-function useResizeMessage() {
+function useEmbedSetup() {
   const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+  }, []);
   useEffect(() => {
     const send = () => {
       if (ref.current) {
@@ -14,9 +18,11 @@ function useResizeMessage() {
       }
     };
     send();
+    const t = setTimeout(send, 300);
+    document.fonts.ready.then(send);
     const observer = new ResizeObserver(send);
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => { clearTimeout(t); observer.disconnect(); };
   }, []);
   return ref;
 }
@@ -25,7 +31,7 @@ const CHOICE_MAP: Record<string, string> = { "1": "option_a", "2": "option_b", "
 
 export default function QuizChoice() {
   const { questionId, choiceNumber } = useParams<{ questionId: string; choiceNumber: string }>();
-  const ref = useResizeMessage();
+  const ref = useEmbedSetup();
 
   const { data: q, isLoading } = useQuery({
     queryKey: ["quiz-choice-embed", questionId],
@@ -41,12 +47,12 @@ export default function QuizChoice() {
     enabled: !!questionId,
   });
 
-  if (isLoading) return <div style={{ padding: 16 }}><Loader2 className="h-4 w-4 animate-spin" /></div>;
-  if (!q || !choiceNumber) return <div style={{ padding: 16, fontFamily: "Inter, sans-serif", fontSize: 15 }}>Not found.</div>;
+  if (isLoading) return <div style={{ padding: 8 }}><Loader2 className="h-4 w-4 animate-spin" style={{ color: "#e8e8e8" }} /></div>;
+  if (!q || !choiceNumber) return <div style={{ padding: 8, fontFamily: "Inter, sans-serif", fontSize: 15, color: "#e8e8e8" }}>Not found.</div>;
 
   const field = CHOICE_MAP[choiceNumber];
   const raw = field ? (q as any)[field] : null;
-  if (!raw) return <div style={{ padding: 16, fontFamily: "Inter, sans-serif", fontSize: 15 }}>—</div>;
+  if (!raw) return <div style={{ padding: 8, fontFamily: "Inter, sans-serif", fontSize: 15, color: "#e8e8e8" }}>—</div>;
 
   const isJE = q.question_type === "je_recall";
   const jeParsed = isJE ? parseJEOption(raw) : null;
@@ -57,13 +63,13 @@ export default function QuizChoice() {
     const ordered = [...debits, ...credits];
 
     return (
-      <div ref={ref} style={{ padding: 8, background: "transparent" }}>
-        <table style={{ borderCollapse: "collapse", width: "100%", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
+      <div ref={ref} style={{ padding: 4, background: "transparent" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
           <thead>
             <tr>
-              <th style={{ border: "1px solid #ddd", padding: 8, textAlign: "left", background: "#14213D", color: "white" }}>Account</th>
-              <th style={{ border: "1px solid #ddd", padding: 8, textAlign: "center", background: "#14213D", color: "white", width: 80 }}>Debit</th>
-              <th style={{ border: "1px solid #ddd", padding: 8, textAlign: "center", background: "#14213D", color: "white", width: 80 }}>Credit</th>
+              <th style={{ padding: "6px 8px", textAlign: "left", background: "#14213D", color: "white" }}>Account</th>
+              <th style={{ padding: "6px 8px", textAlign: "center", background: "#14213D", color: "white", width: 70 }}>Debit</th>
+              <th style={{ padding: "6px 8px", textAlign: "center", background: "#14213D", color: "white", width: 70 }}>Credit</th>
             </tr>
           </thead>
           <tbody>
@@ -71,9 +77,9 @@ export default function QuizChoice() {
               const isCredit = r.side === "credit";
               return (
                 <tr key={i}>
-                  <td style={{ border: "1px solid #ddd", padding: 8, textAlign: "left", paddingLeft: isCredit ? 20 : 8 }}>{r.account_name}</td>
-                  <td style={{ border: "1px solid #ddd", padding: 8, textAlign: "center", width: 80 }}>{isCredit ? "" : "✓"}</td>
-                  <td style={{ border: "1px solid #ddd", padding: 8, textAlign: "center", width: 80 }}>{isCredit ? "✓" : ""}</td>
+                  <td style={{ borderBottom: "1px solid rgba(255,255,255,0.15)", padding: "6px 8px", textAlign: "left", paddingLeft: isCredit ? 24 : 8, color: "#e8e8e8" }}>{r.account_name}</td>
+                  <td style={{ borderBottom: "1px solid rgba(255,255,255,0.15)", padding: "6px 8px", textAlign: "center", width: 70, color: "#e8e8e8" }}>{isCredit ? "" : "✓"}</td>
+                  <td style={{ borderBottom: "1px solid rgba(255,255,255,0.15)", padding: "6px 8px", textAlign: "center", width: 70, color: "#e8e8e8" }}>{isCredit ? "✓" : ""}</td>
                 </tr>
               );
             })}
@@ -90,11 +96,12 @@ export default function QuizChoice() {
       style={{
         fontFamily: "Inter, sans-serif",
         fontSize: 15,
+        fontWeight: 500,
         lineHeight: 1.6,
-        padding: 16,
+        padding: "8px 12px",
         textAlign: "center",
         background: "transparent",
-        color: "#1a1a1a",
+        color: "#e8e8e8",
       }}
     >
       {raw}
