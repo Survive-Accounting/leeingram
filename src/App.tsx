@@ -86,6 +86,7 @@ import QuizQuestion from "./pages/QuizQuestion";
 import QuizChoice from "./pages/QuizChoice";
 import QuizStart from "./pages/QuizStart";
 import QuizEnd from "./pages/QuizEnd";
+import LegacyNotion from "./pages/LegacyNotion";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -134,6 +135,7 @@ const AppRoutes = () => {
       <Route path="/quiz-choice/:questionId/:choiceNumber" element={<QuizChoice />} />
       <Route path="/quiz-start/:topicId" element={<QuizStart />} />
       <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
+      <Route path="/legacy/:pageId" element={<LegacyNotion />} />
       <Route path="/tools/flashcards" element={<FlashcardTool />} />
       <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
       <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
