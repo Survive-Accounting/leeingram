@@ -147,9 +147,9 @@ export default function AssetStatsDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Filter events
+  // Filter events — exclude VA/admin emails
   const filteredEvents = useMemo(() => {
-    let filtered = events;
+    let filtered = events.filter(e => !e.lw_email || !EXCLUDED_EMAILS.has(e.lw_email));
 
     // Date filter
     if (dateFilter !== "all") {
