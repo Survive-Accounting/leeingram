@@ -1647,22 +1647,24 @@ function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenCha
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick, onReportClick, showShare = true }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
   return (
     <>
       {/* Mobile: compact floating share button bottom-right */}
-      <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
-        <button
-          onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-          className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
-          style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
-        >
-          <Share2 className="h-3.5 w-3.5" /> Share
-        </button>
-      </div>
+      {showShare && (
+        <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
+          <button
+            onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
+            style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
+        </div>
+      )}
 
       {/* Desktop: full action bar */}
       <div
@@ -1679,14 +1681,18 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, onShareClick
         >
           {!collapsed && (
             <>
-              <button
-                onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-                className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                style={{ color: "#3B82F6" }}
-              >
-                <Share2 className="h-3 w-3" /> Share This
-              </button>
-              <div className="w-px h-5" style={{ background: theme.border }} />
+              {showShare && (
+                <>
+                  <button
+                    onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
+                    className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                    style={{ color: "#3B82F6" }}
+                  >
+                    <Share2 className="h-3 w-3" /> Share This
+                  </button>
+                  <div className="w-px h-5" style={{ background: theme.border }} />
+                </>
+              )}
               <button
                 onClick={() => setAboutOpen(true)}
                 className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
@@ -1814,6 +1820,20 @@ export default function SolutionsViewer() {
 
   // ── Page start time for time_on_page ──
   const startTimeRef = useRef(Date.now());
+
+  // ── Share buttons visibility setting ──
+  const { data: shareButtonsVisible = false } = useQuery({
+    queryKey: ["app-setting-share-buttons"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "share_buttons_visible")
+        .maybeSingle();
+      return data?.value === "true";
+    },
+    staleTime: 60 * 1000,
+  });
 
   // Theme — light only
   const t = lightTheme;
@@ -2439,7 +2459,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>

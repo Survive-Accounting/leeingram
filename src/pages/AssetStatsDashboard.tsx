@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,11 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Eye, Users, Clock, Share2, ShoppingCart, ExternalLink, ChevronDown, ChevronRight, BarChart3, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+/* Emails to exclude from stats (VAs + admin test) */
+const EXCLUDED_EMAILS = new Set([
+  "theacarmellesumagaysay@gmail.com",
+  "valinonorlynmae@gmail.com",
+  "jking.cim@gmail.com",
+  "lee@survivestudios.com",
+]);
 
 type AssetEvent = {
   id: string;
@@ -58,6 +68,30 @@ export default function AssetStatsDashboard() {
   const [detailAsset, setDetailAsset] = useState<string | null>(null);
   const [studentSearch, setStudentSearch] = useState("");
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+
+  const qc = useQueryClient();
+
+  // Share buttons toggle
+  const { data: shareButtonsVisible = false } = useQuery({
+    queryKey: ["app-setting-share-buttons"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "share_buttons_visible")
+        .maybeSingle();
+      return data?.value === "true";
+    },
+  });
+
+  const toggleShareButtons = async () => {
+    const newValue = !shareButtonsVisible;
+    await supabase
+      .from("app_settings")
+      .upsert({ key: "share_buttons_visible", value: String(newValue), updated_at: new Date().toISOString() } as any);
+    qc.invalidateQueries({ queryKey: ["app-setting-share-buttons"] });
+    toast.success(newValue ? "Share buttons enabled on Solutions pages" : "Share buttons hidden on Solutions pages");
+  };
 
   // Fetch all events (paginated)
   const { data: events = [], isLoading } = useQuery({
@@ -113,9 +147,9 @@ export default function AssetStatsDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Filter events
+  // Filter events — exclude VA/admin emails
   const filteredEvents = useMemo(() => {
-    let filtered = events;
+    let filtered = events.filter(e => !e.lw_email || !EXCLUDED_EMAILS.has(e.lw_email));
 
     // Date filter
     if (dateFilter !== "all") {
@@ -344,7 +378,13 @@ export default function AssetStatsDashboard() {
   return (
     <SurviveSidebarLayout>
       <div className="space-y-6">
-        <h1 className="text-xl font-bold text-foreground">Teaching Asset Stats</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground">Teaching Asset Stats</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Share buttons on Solutions pages</span>
+            <Switch checked={shareButtonsVisible} onCheckedChange={toggleShareButtons} />
+          </div>
+        </div>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading events…</p>
