@@ -412,10 +412,13 @@ function InstructionsPanel() {
               <strong>Open</strong> the duplicated quiz → click "Add/Import Question" → select "From Question Bank" → find the bank you just created → click "Import &amp; Sync"
             </li>
             <li>
+              For each question <strong>except</strong> the rating question: click the question → go to <strong>Properties</strong> → change <strong>Option Numbering</strong> to "A, B, C". Also find the last question (the feedback/rating form) — it's exported as an MC with only "Skip this" as a choice. <strong>Delete</strong> any extra blank answer choices if needed.
+            </li>
+            <li>
               <strong>Preview</strong> the quiz as a student — verify all iframes load correctly (question text, answer choices, and feedback should all render without blank boxes or scroll bars)
             </li>
             <li>
-              After import, <strong>find</strong> the last question in the quiz — the feedback form. It's exported as an MC question with only "Skip this" as a choice. <strong>Delete</strong> any extra blank answer choices if needed. Verify the iframe loads correctly. That's your final check before marking done.
+              Go to <strong>Settings</strong> (top left) → <strong>After Submission</strong> → add two tags: <code className="bg-muted px-1 rounded text-[11px]">[quizcode]-submit</code> and <code className="bg-muted px-1 rounded text-[11px]">[quizcode]-pass</code>. Example: <code className="bg-muted px-1 rounded text-[11px]">IA2-Ch13-T01-V1-submit</code> and <code className="bg-muted px-1 rounded text-[11px]">IA2-Ch13-T01-V1-pass</code>. This tracks which students attempted and passed each quiz.
             </li>
             <li>
               If anything looks wrong, <strong>message</strong> Lee with:
