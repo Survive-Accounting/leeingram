@@ -196,6 +196,8 @@ async function buildTopicXLSX(
   const header = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
+    "Answer5", "Answer6", "Answer7", "Answer8",
+    "Answer9", "Answer10",
     "CorrectExplanation", "IncorrectExplanation",
   ];
 
@@ -229,6 +231,7 @@ async function buildTopicXLSX(
     return [
       topicName, "TMC", questionIframe, corAns,
       answer1, answer2, answer3, answer4,
+      "", "", "", "", "", "",
       explanationIframe, explanationIframe,
     ];
   });
@@ -237,8 +240,9 @@ async function buildTopicXLSX(
   if (topicId) {
     const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
     rows.push([
-      topicName, "MC", ratingIframe, "1",
+      topicName, "TMC", ratingIframe, "1",
       "Skip this", "(delete)", "(delete)", "(delete)",
+      "", "", "", "", "", "",
       "", "",
     ]);
   }
