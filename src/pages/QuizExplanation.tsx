@@ -470,7 +470,7 @@ function SolutionTab({ question }: { question: Question }) {
       {/* Correct */}
       <div>
         <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
-          ✓ WHY THIS IS CORRECT
+          ✓ WHY {question.correct_answer.toUpperCase()} IS CORRECT
         </p>
         <div className="rounded-md p-4" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
           <ExplanationText text={question.explanation_correct} />
