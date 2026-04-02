@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PREVIEW_LIMIT = 3;
 const SOLUTIONS_INITIAL_SHOW = 4;
+const LEE_HERO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
+const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 
 const theme = {
   pageBg: "#FFFFFF",
