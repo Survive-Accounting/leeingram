@@ -68,9 +68,11 @@ type CramCard = {
 };
 
 type FormulaCard = {
+  id: string;
   name: string;
   expression: string;
   explanation?: string;
+  image_url?: string | null;
 };
 
 type SectionConfigRow = {
