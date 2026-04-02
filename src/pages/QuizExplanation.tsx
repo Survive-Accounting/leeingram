@@ -407,10 +407,10 @@ function SolutionTab({ question }: { question: Question }) {
 
     return (
       <div className="space-y-4">
-        <p className="text-xs italic" style={{ color: "#94a3b8" }}>
-          Hover over each row to see why this entry is recorded this way.
+        <p className="uppercase font-bold tracking-wider mb-1" style={{ fontSize: 10, color: "#16a34a" }}>
+          ✓ CORRECT JOURNAL ENTRY
         </p>
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontStyle: "italic", marginBottom: 8 }}>
+        <p className="text-xs italic" style={{ color: "#94a3b8" }}>
           Hover over each row to see why it's debited or credited.
         </p>
         <JournalEntryTable
@@ -418,12 +418,6 @@ function SolutionTab({ question }: { question: Question }) {
           mode="completed"
           showHeading={false}
         />
-        {question.explanation_correct && (
-          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
-            <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
-            <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
-          </div>
-        )}
       </div>
     );
   }
@@ -436,6 +430,41 @@ function SolutionTab({ question }: { question: Question }) {
     };
     const correctRows = parseJEOptionLocal(optMap[question.correct_answer]);
 
+    // Try to build lines with tooltip data for the JournalEntryTable
+    if (correctRows && correctRows.length > 0) {
+      const lines = correctRows.map((r) => ({
+        account: r.account_name,
+        side: r.side || "debit",
+        debit: r.side === "debit" ? 0 : 0,
+        credit: r.side === "credit" ? 0 : 0,
+        debit_credit_reason: (r as any).debit_credit_reason || (r as any).reason,
+        amount_source: (r as any).amount_source,
+      }));
+
+      return (
+        <div className="space-y-4">
+          <p className="uppercase font-bold tracking-wider mb-1" style={{ fontSize: 10, color: "#16a34a" }}>
+            ✓ CORRECT JOURNAL ENTRY
+          </p>
+          <p className="text-xs italic" style={{ color: "#94a3b8" }}>
+            Hover over each row to see why it's debited or credited.
+          </p>
+          <JournalEntryTable
+            completedJson={[{ label: question.je_description || "Journal Entry", lines, unbalanced: false }]}
+            mode="completed"
+            showHeading={false}
+          />
+          {question.explanation_correct && (
+            <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
+              <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
+              <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Final fallback — plain text
     return (
       <div className="space-y-5">
         <div>
@@ -443,7 +472,7 @@ function SolutionTab({ question }: { question: Question }) {
             ✓ CORRECT JOURNAL ENTRY
           </p>
           <div className="rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
-            {correctRows ? <JEOptionMiniTable rows={correctRows} /> : <p className="text-sm" style={{ color: "#e8e8e8" }}>{optMap[question.correct_answer]}</p>}
+            <p className="text-sm" style={{ color: "#e8e8e8" }}>{optMap[question.correct_answer]}</p>
             {question.explanation_correct && (
               <p className="text-sm leading-relaxed" style={{ marginTop: 8, color: "#e8e8e8" }}>{question.explanation_correct}</p>
             )}
