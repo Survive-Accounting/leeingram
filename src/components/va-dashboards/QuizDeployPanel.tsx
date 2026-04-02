@@ -411,6 +411,9 @@ function InstructionsPanel() {
               <strong>Preview</strong> the quiz as a student — verify all iframes load correctly (question text, answer choices, and feedback should all render without blank boxes or scroll bars)
             </li>
             <li>
+              After import, <strong>find</strong> the last question in the quiz — the feedback form. Open it and verify the iframe loads correctly. That's your final check before marking done.
+            </li>
+            <li>
               If anything looks wrong, <strong>message</strong> Lee with:
               <ul className="list-disc list-inside ml-4 mt-1 space-y-0.5 text-[12px] text-muted-foreground">
                 <li>The Question Bank name (copy it above)</li>
