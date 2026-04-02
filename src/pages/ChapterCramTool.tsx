@@ -1133,7 +1133,7 @@ export default function ChapterCramTool() {
                     {isAdmin && (
                       <button
                         type="button"
-                        onClick={() => toggleItemHidden("formulas", slugify(currentFormula.name))}
+                        onClick={() => toggleItemHidden("formulas", currentFormula.id)}
                         className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-md"
                         style={{
                           background: currentFormulaHidden ? theme.warningBg : theme.mutedBg,
