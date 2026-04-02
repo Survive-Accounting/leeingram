@@ -179,6 +179,7 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
           if (eqIndex > 0) {
             const name = formulaPart.slice(0, eqIndex).trim();
             formulas.push({
+              id: crypto.randomUUID(),
               name: name || formulaPart,
               expression: formulaPart,
               explanation,
