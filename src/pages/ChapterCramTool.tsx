@@ -1199,34 +1199,23 @@ export default function ChapterCramTool() {
             </section>
           )}
 
-          {/* ──── Ask Lee ──── */}
+          {/* ──── Share Feedback / Report Issue ──── */}
           <section>
             <SectionHeaderWithToggle
-              label="ASK LEE"
+              label="SHARE FEEDBACK"
               isAdmin={isAdmin}
               sectionName="ask_lee"
               isVisible={isSectionVisible("ask_lee")}
               onToggle={toggleSectionVisibility}
             />
             {(isAdmin || isSectionVisible("ask_lee")) && (
-              <div
-                className="rounded-xl border p-5"
-                style={{ borderColor: theme.border, background: theme.cardBg, opacity: isSectionVisible("ask_lee") ? 1 : 0.4 }}
-              >
-                <p className="text-[14px] font-semibold" style={{ color: theme.heading }}>
-                  Have a question about this chapter?
-                </p>
-                <p className="mt-1 text-[13px]" style={{ color: theme.textMuted }}>
-                  Send me your question and I'll get back to you — usually within a few hours.
-                </p>
-                <a
-                  href={`mailto:lee@surviveaccounting.com?subject=Question about Ch ${chapter?.chapter_number || ""} — ${chapter?.chapter_name || ""}`}
-                  className="mt-3 inline-block rounded-lg px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-90"
-                  style={{ background: theme.navy }}
-                >
-                  Email Lee →
-                </a>
-              </div>
+              <CramFeedbackForm
+                chapterId={chapterId}
+                chapterNumber={chapter?.chapter_number}
+                chapterName={chapter?.chapter_name || ""}
+                courseDisplayName={courseDisplayName}
+                isVisible={isSectionVisible("ask_lee")}
+              />
             )}
           </section>
 
@@ -1241,23 +1230,548 @@ export default function ChapterCramTool() {
             />
             {(isAdmin || isSectionVisible("about_lee")) && (
               <div
-                className="rounded-xl border p-5"
+                className="rounded-xl border p-6"
                 style={{ borderColor: theme.border, background: theme.cardBg, opacity: isSectionVisible("about_lee") ? 1 : 0.4 }}
               >
-                <p className="text-[14px] font-semibold" style={{ color: theme.heading }}>
-                  Hi, I'm Lee Ingram
-                </p>
-                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: theme.textMuted }}>
-                  I'm an accounting educator who's spent years tutoring students one-on-one. I built Survive Accounting because I saw the same patterns — students struggling with the same concepts, making the same mistakes, and not having access to clear, structured explanations.
-                </p>
-                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: theme.textMuted }}>
-                  Every solution, journal entry, and formula on this page was built to help you study smarter — not harder. If something doesn't make sense, reach out. I read every message.
-                </p>
+                <div className="flex flex-col items-center text-center gap-4">
+                  <img
+                    src={LEE_HERO_URL}
+                    alt="Lee Ingram"
+                    className="w-full"
+                    style={{ objectFit: "contain", borderRadius: 12, maxHeight: 240 }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <div className="max-w-[400px]">
+                    <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+                      Creator of{" "}
+                      <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
+                        SurviveAccounting.com
+                      </a>.
+                      <br />
+                      Accounting tutor since 2015.
+                      <br />
+                      Loves helping students.
+                      <br /><br />
+                      Thanks for trying my study tools. Best of luck on your exam!
+                      <br />
+                      <span className="italic">— Lee</span>
+                    </p>
+                    <p className="text-[12px] leading-[1.6] mt-2" style={{ color: theme.textMuted }}>
+                      Ole Miss Alum<br />
+                      B.A. &amp; M.Acc. in Accounting • 3.75 GPA
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-[12px]">
+                    <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
+                      <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
+                    </a>
+                    <a
+                      href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1 hover:underline font-semibold"
+                      style={{ color: "#3B82F6" }}
+                    >
+                      <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
           </section>
         </div>
       </main>
+
+      {/* Floating Action Bar */}
+      <CramFloatingActionBar
+        chapterId={chapterId}
+        chapterNumber={chapter?.chapter_number}
+        chapterName={chapter?.chapter_name || ""}
+        courseDisplayName={courseDisplayName}
+      />
     </div>
+  );
+}
+
+// ── Feedback Form (Report Issue style with .edu validation) ─────────
+
+const CRAM_ISSUE_TYPES = [
+  "Something looks wrong",
+  "Missing content",
+  "General feedback",
+  "Question about this chapter",
+  "Other",
+];
+
+function CramFeedbackForm({
+  chapterId,
+  chapterNumber,
+  chapterName,
+  courseDisplayName,
+  isVisible,
+}: {
+  chapterId: string;
+  chapterNumber?: number;
+  chapterName: string;
+  courseDisplayName: string;
+  isVisible: boolean;
+}) {
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [name, setName] = useState("");
+  const [issueType, setIssueType] = useState(CRAM_ISSUE_TYPES[0]);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const allowedTestEmails = ["lee@survivestudios.com"];
+
+  const handleSubmit = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedEmail)) {
+      setEmailError("Please use your .edu school email address.");
+      return;
+    }
+    setEmailError("");
+    if (!message.trim()) return;
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await (supabase as any).from("chapter_questions").insert({
+        chapter_id: chapterId,
+        student_email: email.trim(),
+        question: message.trim(),
+        issue_type: issueType === "General feedback" ? "feedback" : "issue",
+        status: "new",
+        student_name: name.trim() || null,
+      });
+      supabase.functions.invoke("send-issue-report", {
+        body: {
+          student_email: email.trim(),
+          message: message.trim(),
+          issue_type_label: issueType,
+          course_name: courseDisplayName,
+          chapter_number: chapterNumber || null,
+          chapter_name: chapterName,
+        },
+      }).catch(() => {});
+      setSent(true);
+    } catch {
+      setSubmitError("Something went wrong — email lee@surviveaccounting.com directly");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-xl border p-5"
+      style={{ borderColor: theme.border, background: theme.cardBg, opacity: isVisible ? 1 : 0.4 }}
+    >
+      {sent ? (
+        <div className="text-center py-6">
+          <CheckCircle className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
+          <p className="text-[15px] font-bold mt-3" style={{ color: theme.heading }}>Got it — thank you!</p>
+          <p className="text-[13px] mt-1" style={{ color: theme.textMuted }}>I'll reply to {email} if needed.</p>
+          <p className="text-[13px] italic mt-1" style={{ color: theme.heading }}>— Lee</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-[14px] font-semibold" style={{ color: theme.heading }}>
+            Share Feedback or Report an Issue
+          </p>
+          <p className="mt-1 mb-4 text-[12px]" style={{ color: theme.textMuted }}>
+            I read every message personally.
+          </p>
+
+          <div className="space-y-3">
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Your name"
+              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none"
+              style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text }}
+            />
+
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setEmailError(""); }}
+                placeholder="your@university.edu"
+                className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none"
+                style={{ border: `1px solid ${emailError ? "#dc2626" : theme.border}`, background: theme.pageBg, color: theme.text }}
+              />
+              {emailError && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{emailError}</p>}
+            </div>
+
+            <select
+              value={issueType}
+              onChange={e => setIssueType(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none"
+              style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text }}
+            >
+              {CRAM_ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+
+            <textarea
+              value={message}
+              onChange={e => { setMessage(e.target.value); setSubmitError(""); }}
+              placeholder={`What's on your mind about Ch ${chapterNumber || ""} — ${chapterName}?`}
+              rows={4}
+              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none"
+              style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text, resize: "vertical" }}
+            />
+          </div>
+
+          <button
+            disabled={submitting || !email.trim() || !message.trim()}
+            onClick={handleSubmit}
+            className="w-full mt-4 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:brightness-95"
+            style={{
+              background: theme.navy,
+              opacity: (submitting || !email.trim() || !message.trim()) ? 0.5 : 1,
+              cursor: submitting ? "wait" : "pointer",
+            }}
+          >
+            {submitting ? "Sending…" : "Send to Lee →"}
+          </button>
+          {submitError && <p className="text-[11px] mt-2" style={{ color: "#dc2626" }}>{submitError}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── About Lee Modal ─────────────────────────────────────────────────
+
+function CramAboutLeeModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" style={{ borderRadius: 16 }}>
+        <DialogHeader>
+          <DialogTitle className="text-center">About Lee Ingram</DialogTitle>
+          <DialogDescription className="sr-only">Bio and contact info</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center text-center gap-4">
+          <img
+            src={LEE_HERO_URL}
+            alt="Lee Ingram"
+            className="w-full"
+            style={{ objectFit: "contain", borderRadius: 12, maxHeight: 280 }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+          <div className="max-w-[400px]">
+            <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+              Creator of{" "}
+              <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
+                SurviveAccounting.com
+              </a>.
+              <br />
+              Accounting tutor since 2015.
+              <br />
+              Loves helping students.
+              <br /><br />
+              Thanks for trying my study tools. Best of luck on your exam!
+              <br />
+              <span className="italic">— Lee</span>
+            </p>
+            <p className="text-[12px] leading-[1.6] mt-2" style={{ color: theme.textMuted }}>
+              Ole Miss Alum<br />
+              B.A. &amp; M.Acc. in Accounting • 3.75 GPA
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5 text-[12px]">
+            <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
+              <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
+            </a>
+            <a
+              href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1 hover:underline font-semibold"
+              style={{ color: "#3B82F6" }}
+            >
+              <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
+            </a>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Floating Action Bar ─────────────────────────────────────────────
+
+function CramFloatingActionBar({
+  chapterId,
+  chapterNumber,
+  chapterName,
+  courseDisplayName,
+}: {
+  chapterId: string;
+  chapterNumber?: number;
+  chapterName: string;
+  courseDisplayName: string;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    try { return localStorage.getItem("sa_cram_feedback_banner_dismissed") === "true"; } catch { return false; }
+  });
+
+  const shareUrl = `${STUDENT_BASE_URL}/cram/${chapterId}?preview=true`;
+
+  const dismissBanner = () => {
+    setBannerDismissed(true);
+    try { localStorage.setItem("sa_cram_feedback_banner_dismissed", "true"); } catch {}
+  };
+
+  return (
+    <>
+      {/* Mobile: compact floating share button bottom-right */}
+      <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
+        <button
+          onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Preview link copied — share with classmates!")); }}
+          className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg"
+          style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}
+        >
+          <Share2 className="h-3.5 w-3.5" /> Share
+        </button>
+      </div>
+
+      {/* Desktop: full action bar */}
+      <div className="hidden sm:block fixed z-30" style={{ top: 56, right: 16 }}>
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "#FFFFFF",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)",
+          }}
+        >
+          {/* Feedback banner */}
+          {!bannerDismissed && !collapsed && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5" style={{ borderBottom: `1px solid ${theme.border}` }}>
+              <span className="text-[11px]" style={{ color: theme.textMuted }}>
+                This content is brand new —{" "}
+                <button
+                  onClick={() => setFeedbackOpen(true)}
+                  className="underline hover:no-underline"
+                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
+                >
+                  share your feedback
+                </button>
+                .
+              </span>
+              <button
+                onClick={dismissBanner}
+                className="ml-auto shrink-0 hover:opacity-70"
+                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Button row */}
+          <div className="flex items-center">
+            {!collapsed && (
+              <>
+                <button
+                  onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Preview link copied — share with classmates!")); }}
+                  className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                  style={{ color: "#3B82F6" }}
+                >
+                  <Share2 className="h-3 w-3" /> Share This
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+                <button
+                  onClick={() => setAboutOpen(true)}
+                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
+                  style={{ color: theme.text }}
+                >
+                  About Lee Ingram
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+                <button
+                  onClick={() => setFeedbackOpen(true)}
+                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
+                  style={{ color: theme.textMuted }}
+                >
+                  ⚠ Report Issue →
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+              </>
+            )}
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
+              style={{ color: theme.textMuted }}
+            >
+              {collapsed ? (
+                <>Show <ChevronDown className="h-3 w-3" /></>
+              ) : (
+                <ChevronUp className="h-3 w-3" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <CramAboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
+
+      {/* Feedback modal */}
+      {feedbackOpen && (
+        <>
+          <div onClick={() => setFeedbackOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#ffffff", borderRadius: 12, padding: 24, width: "min(480px, 90vw)", maxHeight: "90vh", overflowY: "auto", zIndex: 101, boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
+            <CramFeedbackFormInline
+              chapterId={chapterId}
+              chapterNumber={chapterNumber}
+              chapterName={chapterName}
+              courseDisplayName={courseDisplayName}
+              onClose={() => setFeedbackOpen(false)}
+            />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+// ── Inline Feedback Form (for modal in floating bar) ────────────────
+
+function CramFeedbackFormInline({
+  chapterId,
+  chapterNumber,
+  chapterName,
+  courseDisplayName,
+  onClose,
+}: {
+  chapterId: string;
+  chapterNumber?: number;
+  chapterName: string;
+  courseDisplayName: string;
+  onClose: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [name, setName] = useState("");
+  const [issueType, setIssueType] = useState(CRAM_ISSUE_TYPES[0]);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const allowedTestEmails = ["lee@survivestudios.com"];
+
+  const handleSubmit = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedEmail)) {
+      setEmailError("Please use your .edu school email address.");
+      return;
+    }
+    setEmailError("");
+    if (!message.trim()) return;
+    setSubmitting(true);
+    try {
+      await (supabase as any).from("chapter_questions").insert({
+        chapter_id: chapterId,
+        student_email: email.trim(),
+        question: message.trim(),
+        issue_type: issueType === "General feedback" ? "feedback" : "issue",
+        status: "new",
+        student_name: name.trim() || null,
+      });
+      supabase.functions.invoke("send-issue-report", {
+        body: {
+          student_email: email.trim(),
+          message: message.trim(),
+          issue_type_label: issueType,
+          course_name: courseDisplayName,
+          chapter_number: chapterNumber || null,
+          chapter_name: chapterName,
+        },
+      }).catch(() => {});
+      setSent(true);
+      setTimeout(onClose, 2000);
+    } catch {
+      toast.error("Something went wrong — try again");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="text-center py-8">
+        <CheckCircle className="h-8 w-8 mx-auto mb-3" style={{ color: "#22c55e" }} />
+        <p className="text-[15px] font-bold" style={{ color: "#14213D" }}>Got it — thank you. — Lee</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Share Feedback</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
+      </div>
+      <p className="text-[12px] mb-4" style={{ color: "#999" }}>I read every message personally.</p>
+
+      <div className="mb-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px" }}>
+        <p className="text-[12px]" style={{ color: "#64748b" }}>
+          Course: {courseDisplayName}<br />
+          Chapter: Ch {chapterNumber || "?"} — {chapterName}
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Your name"
+          className="w-full px-3 py-2 rounded-md text-[13px] outline-none"
+          style={{ border: "1px solid #e0e0e0" }}
+        />
+        <div>
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setEmailError(""); }}
+            placeholder="your@university.edu"
+            className="w-full px-3 py-2 rounded-md text-[13px] outline-none"
+            style={{ border: `1px solid ${emailError ? "#dc2626" : "#e0e0e0"}` }}
+          />
+          {emailError && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{emailError}</p>}
+        </div>
+        <select
+          value={issueType}
+          onChange={e => setIssueType(e.target.value)}
+          className="w-full px-3 py-2 rounded-md text-[13px] outline-none"
+          style={{ border: "1px solid #e0e0e0", background: "#fff" }}
+        >
+          {CRAM_ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <textarea
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder={`What's on your mind about Ch ${chapterNumber || ""} — ${chapterName}?`}
+          rows={4}
+          className="w-full px-3 py-2 rounded-md text-[13px] outline-none"
+          style={{ border: "1px solid #e0e0e0", resize: "vertical" }}
+        />
+      </div>
+      <button
+        onClick={handleSubmit}
+        disabled={submitting || !email.trim() || !message.trim()}
+        className="w-full mt-4 py-2.5 rounded-md text-[13px] font-bold text-white transition-opacity"
+        style={{ background: "#14213D", opacity: submitting || !email.trim() || !message.trim() ? 0.5 : 1 }}
+      >
+        {submitting ? "Sending…" : "Send to Lee →"}
+      </button>
+    </>
   );
 }
