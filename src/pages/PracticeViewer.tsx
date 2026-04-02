@@ -482,29 +482,43 @@ function ReportIssueModal({ open, onOpenChange, asset }: { open: boolean; onOpen
 
 // ── Chapter Navigator (preview only) ────────────────────────────────
 
+const COURSE_OPTIONS = [
+  { code: "FA1", label: "Financial Accounting" },
+  { code: "MA2", label: "Managerial Accounting" },
+  { code: "IA1", label: "Intermediate 1" },
+  { code: "IA2", label: "Intermediate 2" },
+];
+
 function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
   const navigate = useNavigate();
+  const currentCourseCode = currentAsset.courses?.code || "IA2";
   const currentChapterId = currentAsset.chapter_id;
 
+  const [selectedCourse, setSelectedCourse] = useState(currentCourseCode);
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAssetName, setSelectedAssetName] = useState("");
 
   const { data: chapters } = useQuery({
-    queryKey: ["ia2-chapters-nav"],
+    queryKey: ["browse-chapters-nav-practice", selectedCourse],
     queryFn: async () => {
       const { data } = await supabase
         .from("chapters")
         .select("id, chapter_number, chapter_name, courses!chapters_course_id_fkey(code)")
-        .gte("chapter_number", 13)
-        .lte("chapter_number", 22)
         .order("chapter_number");
-      return (data || []).filter((c: any) => c.courses?.code === "IA2");
+      return (data || []).filter((c: any) => c.courses?.code === selectedCourse);
     },
   });
 
+  useEffect(() => {
+    if (selectedCourse !== currentCourseCode) {
+      setSelectedChapterId("");
+      setSelectedAssetName("");
+    }
+  }, [selectedCourse, currentCourseCode]);
+
   const { data: chapterAssets } = useQuery({
-    queryKey: ["nav-assets", selectedChapterId, selectedType],
+    queryKey: ["nav-assets-practice", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
       const { data } = await supabase
@@ -535,8 +549,20 @@ function ChapterNavigator({ currentAsset, theme }: { currentAsset: any; theme: T
 
   return (
     <div className="rounded-lg px-5 py-3 mb-4" style={{ background: theme.toggleBg, border: `1px solid ${theme.border}` }}>
-      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse Intermediate Accounting 2 Problems</p>
+      <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2" style={{ color: theme.textMuted }}>Browse Example Problems</p>
       <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+        <div className="flex-1">
+          <Select value={selectedCourse} onValueChange={(v) => { setSelectedCourse(v); setSelectedChapterId(""); setSelectedAssetName(""); }}>
+            <SelectTrigger className="h-8 text-xs" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COURSE_OPTIONS.map((c) => (
+                <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex-1">
           <Select value={selectedChapterId} onValueChange={(v) => { setSelectedChapterId(v); setSelectedAssetName(""); }}>
             <SelectTrigger className="h-8 text-xs" style={{ background: theme.pageBg, borderColor: theme.border, color: theme.text }}>

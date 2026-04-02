@@ -1106,8 +1106,16 @@ function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: ()
 
 // ── Browse Problems Bar (preview only, native selects) ──────────────
 
+const COURSE_OPTIONS = [
+  { code: "FA1", label: "Financial Accounting" },
+  { code: "MA2", label: "Managerial Accounting" },
+  { code: "IA1", label: "Intermediate 1" },
+  { code: "IA2", label: "Intermediate 2" },
+];
+
 function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
   const navigate = useNavigate();
+  const currentCourseCode = currentAsset.courses?.code || "IA2";
   const currentChapterId = currentAsset.chapter_id;
   const currentType = (() => {
     const ref = (currentAsset.source_ref || "").toUpperCase();
@@ -1117,25 +1125,31 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     return "all";
   })();
 
+  const [selectedCourse, setSelectedCourse] = useState(currentCourseCode);
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState(currentType);
   const [selectedSourceCode, setSelectedSourceCode] = useState(currentAsset.source_ref || "");
 
   const { data: chapters } = useQuery({
-    queryKey: ["ia2-chapters-nav"],
+    queryKey: ["browse-chapters-nav-solutions", selectedCourse],
     queryFn: async () => {
       const { data } = await supabase
         .from("chapters")
         .select("id, chapter_number, chapter_name, courses!chapters_course_id_fkey(code)")
-        .gte("chapter_number", 13)
-        .lte("chapter_number", 22)
         .order("chapter_number");
-      return (data || []).filter((c: any) => c.courses?.code === "IA2");
+      return (data || []).filter((c: any) => c.courses?.code === selectedCourse);
     },
   });
 
+  useEffect(() => {
+    if (selectedCourse !== currentCourseCode) {
+      setSelectedChapterId("");
+      setSelectedSourceCode("");
+    }
+  }, [selectedCourse, currentCourseCode]);
+
   const { data: chapterAssets } = useQuery({
-    queryKey: ["nav-assets", selectedChapterId, selectedType],
+    queryKey: ["nav-assets-solutions", selectedChapterId, selectedType],
     queryFn: async () => {
       if (!selectedChapterId) return [] as any[];
 
@@ -1180,7 +1194,6 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
       setSelectedSourceCode("");
       return;
     }
-
     const stillExists = chapterAssets.some((a: any) => a.source_ref === selectedSourceCode);
     if (!stillExists) {
       setSelectedSourceCode(chapterAssets[0].source_ref);
@@ -1212,9 +1225,20 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
   return (
     <div className="w-full">
       <p className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: theme.textMuted }}>
-        Browse Intermediate 2 Problems
+        Browse Example Problems
       </p>
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <select
+          value={selectedCourse}
+          onChange={(e) => { setSelectedCourse(e.target.value); setSelectedChapterId(""); setSelectedSourceCode(""); }}
+          style={selectStyle}
+          className="w-full sm:w-auto"
+        >
+          {COURSE_OPTIONS.map((c) => (
+            <option key={c.code} value={c.code}>{c.label}</option>
+          ))}
+        </select>
+
         <select
           value={selectedChapterId}
           onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedSourceCode(""); }}
@@ -1266,6 +1290,7 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     </div>
   );
 }
+
 
 // ── JE Preview Teaser (blanked out) ─────────────────────────────────
 
