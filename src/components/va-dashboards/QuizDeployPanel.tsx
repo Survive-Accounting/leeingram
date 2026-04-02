@@ -237,8 +237,8 @@ async function buildTopicXLSX(
   if (topicId) {
     const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
     rows.push([
-      topicName, "TMC", ratingIframe, "1",
-      "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐",
+      topicName, "TST", ratingIframe, "",
+      "Feel free to skip", "", "", "",
       "", "",
     ]);
   }
@@ -411,6 +411,9 @@ function InstructionsPanel() {
               <strong>Preview</strong> the quiz as a student — verify all iframes load correctly (question text, answer choices, and feedback should all render without blank boxes or scroll bars)
             </li>
             <li>
+              After import, <strong>find</strong> the last question in the quiz — the feedback form. Open it and verify the iframe loads correctly. That's your final check before marking done.
+            </li>
+            <li>
               If anything looks wrong, <strong>message</strong> Lee with:
               <ul className="list-disc list-inside ml-4 mt-1 space-y-0.5 text-[12px] text-muted-foreground">
                 <li>The Question Bank name (copy it above)</li>
@@ -548,9 +551,6 @@ function TopicCard({
               >
                 <Download className="h-3 w-3 mr-1" /> Export XLSX
               </Button>
-              <p className="text-[9px] text-muted-foreground italic hidden sm:block">
-                Last row is the feedback question — VA should change question type to Rating in LW after import.
-              </p>
 
               {/* Mark imported */}
               {!topic.lw_imported && !readOnly && (
