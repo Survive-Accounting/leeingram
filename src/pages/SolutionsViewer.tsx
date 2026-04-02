@@ -1106,8 +1106,16 @@ function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: ()
 
 // ── Browse Problems Bar (preview only, native selects) ──────────────
 
+const COURSE_OPTIONS = [
+  { code: "FA1", label: "Financial Accounting" },
+  { code: "MA2", label: "Managerial Accounting" },
+  { code: "IA1", label: "Intermediate 1" },
+  { code: "IA2", label: "Intermediate 2" },
+];
+
 function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: Theme }) {
   const navigate = useNavigate();
+  const currentCourseCode = currentAsset.courses?.code || "IA2";
   const currentChapterId = currentAsset.chapter_id;
   const currentType = (() => {
     const ref = (currentAsset.source_ref || "").toUpperCase();
@@ -1117,9 +1125,171 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
     return "all";
   })();
 
+  const [selectedCourse, setSelectedCourse] = useState(currentCourseCode);
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId || "");
   const [selectedType, setSelectedType] = useState(currentType);
   const [selectedSourceCode, setSelectedSourceCode] = useState(currentAsset.source_ref || "");
+
+  const { data: chapters } = useQuery({
+    queryKey: ["browse-chapters-nav-solutions", selectedCourse],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name, courses!chapters_course_id_fkey(code)")
+        .order("chapter_number");
+      return (data || []).filter((c: any) => c.courses?.code === selectedCourse);
+    },
+  });
+
+  useEffect(() => {
+    if (selectedCourse !== currentCourseCode) {
+      setSelectedChapterId("");
+      setSelectedSourceCode("");
+    }
+  }, [selectedCourse, currentCourseCode]);
+
+  const { data: chapterAssets } = useQuery({
+    queryKey: ["nav-assets-solutions", selectedChapterId, selectedType],
+    queryFn: async () => {
+      if (!selectedChapterId) return [] as any[];
+
+      const { data: approvedAssets } = await supabase
+        .from("teaching_assets")
+        .select("asset_name, source_ref")
+        .eq("chapter_id", selectedChapterId)
+        .not("asset_approved_at", "is", null)
+        .order("source_ref");
+
+      const { data: chapterProblems } = await supabase
+        .from("chapter_problems")
+        .select("source_code, source_label")
+        .eq("chapter_id", selectedChapterId)
+        .order("source_code");
+
+      const approved = approvedAssets || [];
+      const labelsByCode = new Map((chapterProblems || []).map((p: any) => [p.source_code, p.source_label]));
+
+      let filtered = approved;
+      if (selectedType !== "all") {
+        filtered = filtered.filter((a: any) => {
+          const ref = (a.source_ref || "").toUpperCase();
+          if (selectedType === "BE") return ref.startsWith("BE");
+          if (selectedType === "E") return ref.startsWith("E") && !ref.startsWith("EX");
+          if (selectedType === "P") return ref.startsWith("P");
+          return true;
+        });
+      }
+
+      return filtered.map((a: any) => ({
+        asset_name: a.asset_name,
+        source_ref: a.source_ref,
+        source_label: labelsByCode.get(a.source_ref) || a.source_ref,
+      })).sort((a: any, b: any) => naturalSortRef(a.source_ref, b.source_ref));
+    },
+    enabled: !!selectedChapterId,
+  });
+
+  useEffect(() => {
+    if (!chapterAssets?.length) {
+      setSelectedSourceCode("");
+      return;
+    }
+    const stillExists = chapterAssets.some((a: any) => a.source_ref === selectedSourceCode);
+    if (!stillExists) {
+      setSelectedSourceCode(chapterAssets[0].source_ref);
+    }
+  }, [chapterAssets, selectedSourceCode]);
+
+  const handleGo = () => {
+    const match = chapterAssets?.find((a: any) => a.source_ref === selectedSourceCode);
+    if (match?.asset_name) {
+      navigate(`/solutions/${match.asset_name}?preview=true`);
+    }
+  };
+
+  const selectStyle: React.CSSProperties = {
+    appearance: "none" as const,
+    background: theme.pageBg,
+    border: `1px solid ${theme.border}`,
+    color: theme.text,
+    borderRadius: 8,
+    padding: "6px 28px 6px 10px",
+    fontSize: 12,
+    height: 34,
+    minWidth: 116,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 8px center",
+  };
+
+  return (
+    <div className="w-full">
+      <p className="text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: theme.textMuted }}>
+        Browse Example Problems
+      </p>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <select
+          value={selectedCourse}
+          onChange={(e) => { setSelectedCourse(e.target.value); setSelectedChapterId(""); setSelectedSourceCode(""); }}
+          style={selectStyle}
+          className="w-full sm:w-auto"
+        >
+          {COURSE_OPTIONS.map((c) => (
+            <option key={c.code} value={c.code}>{c.label}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedChapterId}
+          onChange={(e) => { setSelectedChapterId(e.target.value); setSelectedSourceCode(""); }}
+          style={selectStyle}
+          className="w-full sm:w-auto"
+        >
+          <option value="">Chapter…</option>
+          {(chapters || []).map((ch: any) => (
+            <option key={ch.id} value={ch.id}>Ch {ch.chapter_number}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedType}
+          onChange={(e) => { setSelectedType(e.target.value); setSelectedSourceCode(""); }}
+          style={selectStyle}
+          className="w-full sm:w-auto"
+        >
+          <option value="all">Problem Type…</option>
+          <option value="BE">Brief Exercise</option>
+          <option value="E">Exercise</option>
+          <option value="P">Problem</option>
+        </select>
+
+        <select
+          value={selectedSourceCode}
+          onChange={(e) => setSelectedSourceCode(e.target.value)}
+          disabled={!chapterAssets?.length}
+          style={{ ...selectStyle, opacity: chapterAssets?.length ? 1 : 0.55 }}
+          className="w-full sm:w-auto"
+        >
+          <option value="">{!selectedChapterId ? "Source #…" : chapterAssets?.length ? "Source #…" : "None found"}</option>
+          {(chapterAssets || []).map((a: any) => (
+            <option key={a.asset_name} value={a.source_ref}>
+              {a.source_label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={handleGo}
+          disabled={!selectedSourceCode}
+          className="w-full sm:w-auto px-4 py-1 rounded-md text-[12px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
+          style={{ background: "#14213D", height: 34 }}
+        >
+          Go →
+        </button>
+      </div>
+    </div>
+  );
+}
 
   const { data: chapters } = useQuery({
     queryKey: ["ia2-chapters-nav"],
