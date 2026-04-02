@@ -38,7 +38,7 @@ const LABEL_CONFIG: Record<string, { text: string; color: string }> = {
   je_recall: { text: "JOURNAL ENTRY QUESTION", color: "#FBBF24" },
   calc_mc: { text: "CALCULATION QUESTION", color: "#60A5FA" },
   conceptual_mc: { text: "CONCEPTUAL QUESTION", color: "#34D399" },
-  mc: { text: "QUESTION", color: "#60A5FA" },
+  mc: { text: "CALCULATION QUESTION", color: "#60A5FA" },
 };
 
 export default function QuizQuestion() {

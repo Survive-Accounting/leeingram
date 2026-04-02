@@ -97,7 +97,7 @@ export default function QuizChoice() {
     );
   }
 
-  // MC plain text — left aligned
+  // MC plain text — single line, vertically centered
   return (
     <div
       ref={ref}
@@ -105,12 +105,11 @@ export default function QuizChoice() {
         fontFamily: "Inter, sans-serif",
         fontSize: 15,
         fontWeight: 500,
-        lineHeight: 1.6,
-        padding: "8px 4px",
+        lineHeight: 1.4,
+        padding: "4px 0",
         textAlign: "left",
         display: "flex",
         alignItems: "center",
-        minHeight: 44,
         background: "transparent",
         color: "#f0f0f0",
       }}

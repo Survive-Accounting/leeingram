@@ -290,7 +290,7 @@ export default function QuizExplanation() {
       <div className="px-4 py-4">
         {activeTab === "solution" && <SolutionTab question={question} />}
         {activeTab === "je" && <JeTab jeData={jeData} />}
-        {activeTab === "examples" && <ExamplesTab assets={assets} questionId={questionId} />}
+        {activeTab === "examples" && <ExamplesTab assets={assets} />}
       </div>
 
       {/* Footer */}
@@ -407,10 +407,10 @@ function SolutionTab({ question }: { question: Question }) {
 
     return (
       <div className="space-y-4">
-        <p className="text-xs italic" style={{ color: "#94a3b8" }}>
-          Hover over each row to see why this entry is recorded this way.
+        <p className="uppercase font-bold tracking-wider mb-1" style={{ fontSize: 10, color: "#16a34a" }}>
+          ✓ CORRECT JOURNAL ENTRY
         </p>
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontStyle: "italic", marginBottom: 8 }}>
+        <p className="text-xs italic" style={{ color: "#94a3b8" }}>
           Hover over each row to see why it's debited or credited.
         </p>
         <JournalEntryTable
@@ -418,12 +418,6 @@ function SolutionTab({ question }: { question: Question }) {
           mode="completed"
           showHeading={false}
         />
-        {question.explanation_correct && (
-          <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
-            <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
-            <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
-          </div>
-        )}
       </div>
     );
   }
@@ -436,6 +430,41 @@ function SolutionTab({ question }: { question: Question }) {
     };
     const correctRows = parseJEOptionLocal(optMap[question.correct_answer]);
 
+    // Try to build lines with tooltip data for the JournalEntryTable
+    if (correctRows && correctRows.length > 0) {
+      const lines = correctRows.map((r) => ({
+        account: r.account_name,
+        side: (r.side || "debit") as "debit" | "credit",
+        debit: r.side === "debit" ? 0 : 0,
+        credit: r.side === "credit" ? 0 : 0,
+        debit_credit_reason: (r as any).debit_credit_reason || (r as any).reason,
+        amount_source: (r as any).amount_source,
+      }));
+
+      return (
+        <div className="space-y-4">
+          <p className="uppercase font-bold tracking-wider mb-1" style={{ fontSize: 10, color: "#16a34a" }}>
+            ✓ CORRECT JOURNAL ENTRY
+          </p>
+          <p className="text-xs italic" style={{ color: "#94a3b8" }}>
+            Hover over each row to see why it's debited or credited.
+          </p>
+          <JournalEntryTable
+            completedJson={[{ label: question.je_description || "Journal Entry", lines, unbalanced: false }]}
+            mode="completed"
+            showHeading={false}
+          />
+          {question.explanation_correct && (
+            <div className="mt-3 rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
+              <p className="text-xs" style={{ color: "#4ade80", fontWeight: 600, marginBottom: 4 }}>WHY</p>
+              <p className="text-sm leading-relaxed" style={{ color: "#e8e8e8" }}>{question.explanation_correct}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Final fallback — plain text
     return (
       <div className="space-y-5">
         <div>
@@ -443,7 +472,7 @@ function SolutionTab({ question }: { question: Question }) {
             ✓ CORRECT JOURNAL ENTRY
           </p>
           <div className="rounded-md p-3" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
-            {correctRows ? <JEOptionMiniTable rows={correctRows} /> : <p className="text-sm" style={{ color: "#e8e8e8" }}>{optMap[question.correct_answer]}</p>}
+            <p className="text-sm" style={{ color: "#e8e8e8" }}>{optMap[question.correct_answer]}</p>
             {question.explanation_correct && (
               <p className="text-sm leading-relaxed" style={{ marginTop: 8, color: "#e8e8e8" }}>{question.explanation_correct}</p>
             )}
@@ -470,7 +499,7 @@ function SolutionTab({ question }: { question: Question }) {
       {/* Correct */}
       <div>
         <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#16a34a" }}>
-          ✓ WHY THIS IS CORRECT
+          ✓ WHY {question.correct_answer.toUpperCase()} IS CORRECT
         </p>
         <div className="rounded-md p-4" style={{ backgroundColor: "#1a3a1a", borderLeft: "3px solid #16a34a" }}>
           <ExplanationText text={question.explanation_correct} />
@@ -590,13 +619,9 @@ function JeTab({ jeData }: { jeData: any[] }) {
   );
 }
 
-function ExampleCard({ asset, isPrimary, questionId }: { asset: AssetInfo; isPrimary?: boolean; questionId?: string }) {
+function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boolean }) {
   const badge = assetTypeBadge(asset.source_ref);
   const hasLink = asset.lw_activity_url && asset.lw_activity_url.trim().length > 0;
-
-  const linkUrl = hasLink
-    ? `${asset.lw_activity_url}${asset.lw_activity_url!.includes("?") ? "&" : "?"}ref=quiz&qid=${questionId || ""}`
-    : undefined;
 
   return (
     <div
@@ -614,9 +639,9 @@ function ExampleCard({ asset, isPrimary, questionId }: { asset: AssetInfo; isPri
           {asset.problem_title ? `${asset.source_ref} — ${asset.problem_title}` : asset.source_ref}
         </p>
       </div>
-      {linkUrl ? (
+      {hasLink ? (
         <a
-          href={linkUrl}
+          href={asset.lw_activity_url!}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
@@ -636,7 +661,7 @@ function ExampleCard({ asset, isPrimary, questionId }: { asset: AssetInfo; isPri
   );
 }
 
-function ExamplesTab({ assets, questionId }: { assets: AssetInfo[]; questionId?: string }) {
+function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
   if (assets.length === 0) return null;
 
   const primary = assets[0];
@@ -647,14 +672,14 @@ function ExamplesTab({ assets, questionId }: { assets: AssetInfo[]; questionId?:
       <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
         RELATED EXAMPLES
       </p>
-      <ExampleCard asset={primary} isPrimary questionId={questionId} />
+      <ExampleCard asset={primary} isPrimary />
       {more.length > 0 && (
         <>
           <p className="uppercase font-bold tracking-wider mt-4 mb-1" style={{ fontSize: 9, color: "#94a3b8" }}>
             MORE EXAMPLES
           </p>
           {more.map((a) => (
-            <ExampleCard key={a.id} asset={a} questionId={questionId} />
+            <ExampleCard key={a.id} asset={a} />
           ))}
         </>
       )}

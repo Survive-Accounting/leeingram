@@ -48,10 +48,9 @@ export default function QuizEnd() {
       window.parent.postMessage({ type: "resize", height: h }, "*");
     };
     sendHeight();
-    const t = setTimeout(sendHeight, 150);
     document.fonts?.ready?.then(sendHeight);
     window.addEventListener("resize", sendHeight);
-    return () => { clearTimeout(t); window.removeEventListener("resize", sendHeight); };
+    return () => window.removeEventListener("resize", sendHeight);
   }, [data]);
 
   if (!data) return null;
@@ -59,27 +58,17 @@ export default function QuizEnd() {
   const hubUrl = `https://learn.surviveaccounting.com/cram/${data.chapter_id}`;
 
   return (
-    <div
-      ref={ref}
-      style={{
-        margin: 0,
-        padding: 0,
-        background: "#14213D",
-        fontFamily: "Inter, sans-serif",
-        minHeight: 340,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        position: "relative",
-      }}
-    >
+    <div ref={ref} style={{
+      margin: 0, padding: 0, background: "#14213D", fontFamily: "Inter, sans-serif",
+      display: "flex", flexDirection: "column", alignItems: "center",
+    }}>
       <link
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap"
         rel="stylesheet"
       />
 
-      {/* Top content */}
-      <div style={{ paddingTop: 40, textAlign: "center" }}>
+      {/* Top area */}
+      <div style={{ textAlign: "center", paddingTop: 32, width: "100%" }}>
         <p style={{
           fontSize: 11,
           color: "#CE1126",
@@ -140,7 +129,7 @@ export default function QuizEnd() {
       </div>
 
       {/* Bottom logo */}
-      <div style={{ marginTop: "auto", paddingBottom: 40, textAlign: "center" }}>
+      <div style={{ textAlign: "center", paddingTop: 24, paddingBottom: 32 }}>
         <img
           src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
           alt="Survive Accounting"
