@@ -138,7 +138,16 @@ export function StudentInbox() {
       updates.responded_at = null;
       updates.status = "new";
     }
-    await supabase.from("chapter_questions").update(updates).eq("id", id);
+    const { error } = await supabase.from("chapter_questions").update(updates).eq("id", id);
+    if (error) {
+      toast.error("Failed to update", { description: error.message });
+      return;
+    }
+    if (!currentValue) {
+      toast.success("Marked as responded ✓");
+    } else {
+      toast("Reopened — marked as not responded");
+    }
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
