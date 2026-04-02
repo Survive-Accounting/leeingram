@@ -208,8 +208,11 @@ export default function QuizRating() {
           maxWidth: 320,
         }}
       >
-        {submitting ? "Sending…" : "Send to Lee →"}
+        {submitting ? "Sending…" : "Send Feedback →"}
       </button>
+      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", marginTop: 8 }}>
+        Click Finish above to see your score.
+      </p>
     </div>
   );
 }

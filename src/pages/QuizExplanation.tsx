@@ -590,9 +590,13 @@ function JeTab({ jeData }: { jeData: any[] }) {
   );
 }
 
-function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boolean }) {
+function ExampleCard({ asset, isPrimary, questionId }: { asset: AssetInfo; isPrimary?: boolean; questionId?: string }) {
   const badge = assetTypeBadge(asset.source_ref);
   const hasLink = asset.lw_activity_url && asset.lw_activity_url.trim().length > 0;
+
+  const linkUrl = hasLink
+    ? `${asset.lw_activity_url}${asset.lw_activity_url!.includes("?") ? "&" : "?"}ref=quiz&qid=${questionId || ""}`
+    : undefined;
 
   return (
     <div
@@ -610,9 +614,9 @@ function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boole
           {asset.problem_title ? `${asset.source_ref} — ${asset.problem_title}` : asset.source_ref}
         </p>
       </div>
-      {hasLink ? (
+      {linkUrl ? (
         <a
-          href={asset.lw_activity_url!}
+          href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
