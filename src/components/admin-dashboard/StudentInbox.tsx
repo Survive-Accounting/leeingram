@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating";
@@ -137,7 +138,16 @@ export function StudentInbox() {
       updates.responded_at = null;
       updates.status = "new";
     }
-    await supabase.from("chapter_questions").update(updates).eq("id", id);
+    const { error } = await supabase.from("chapter_questions").update(updates).eq("id", id);
+    if (error) {
+      toast.error("Failed to update", { description: error.message });
+      return;
+    }
+    if (!currentValue) {
+      toast.success("Marked as responded ✓");
+    } else {
+      toast("Reopened — marked as not responded");
+    }
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
