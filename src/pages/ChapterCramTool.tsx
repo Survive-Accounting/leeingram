@@ -765,20 +765,14 @@ export default function ChapterCramTool() {
   }, [displayCards, isAdmin, isItemHidden]);
 
   const structuredFormulas = useMemo(() => {
-    const seen = new Set<string>();
-    const cards: FormulaCard[] = [];
-
-    approvedAssets.forEach((asset) => {
-      parseImportantFormulas(asset.important_formulas).forEach((formula) => {
-        const key = formula.name.toLowerCase().trim().replace(/\s+/g, " ");
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        cards.push(formula);
-      });
-    });
-
-    return cards;
-  }, [approvedAssets]);
+    return chapterFormulas.map((f: any): FormulaCard => ({
+      id: f.id,
+      name: f.formula_name,
+      expression: f.formula_expression,
+      explanation: f.formula_explanation || undefined,
+      image_url: f.image_url,
+    }));
+  }, [chapterFormulas]);
 
   const solutionsFiltered = useMemo(() => {
     const sorted = [...approvedAssets].sort(sortBySourceRef);
