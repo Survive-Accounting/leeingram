@@ -434,7 +434,7 @@ function SolutionTab({ question }: { question: Question }) {
     if (correctRows && correctRows.length > 0) {
       const lines = correctRows.map((r) => ({
         account: r.account_name,
-        side: r.side || "debit",
+        side: (r.side || "debit") as "debit" | "credit",
         debit: r.side === "debit" ? 0 : 0,
         credit: r.side === "credit" ? 0 : 0,
         debit_credit_reason: (r as any).debit_credit_reason || (r as any).reason,
