@@ -233,12 +233,12 @@ async function buildTopicXLSX(
     ];
   });
 
-  // Append feedback/rating row
+  // Append feedback/rating row as MC with "Skip this" + blank choices for VA review
   if (topicId) {
     const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
     rows.push([
-      topicName, "TST", ratingIframe, "",
-      "Skip this", "", "", "",
+      topicName, "MC", ratingIframe, "1",
+      "Skip this", "(delete)", "(delete)", "(delete)",
       "", "",
     ]);
   }
@@ -411,7 +411,7 @@ function InstructionsPanel() {
               <strong>Preview</strong> the quiz as a student — verify all iframes load correctly (question text, answer choices, and feedback should all render without blank boxes or scroll bars)
             </li>
             <li>
-              After import, <strong>find</strong> the last question in the quiz — the feedback form. Open it and verify the iframe loads correctly. That's your final check before marking done.
+              After import, <strong>find</strong> the last question in the quiz — the feedback form. It's exported as an MC question with "(delete)" placeholder choices. <strong>Delete</strong> the three "(delete)" answer choices, leaving only "Skip this." Verify the iframe loads correctly. That's your final check before marking done.
             </li>
             <li>
               If anything looks wrong, <strong>message</strong> Lee with:
