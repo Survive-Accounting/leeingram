@@ -1601,8 +1601,10 @@ function AboutLeeSection({ theme }: { theme: Theme }) {
           </a>.
           <br />
           Accounting tutor since 2015.
+          <br />
+          Loves helping students.
           <br /><br />
-          Best of luck studying!
+          Thanks for trying my study tools. Best of luck on your exam!
           <br />
           <span className="italic">— Lee</span>
         </p>
