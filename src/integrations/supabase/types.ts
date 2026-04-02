@@ -1154,6 +1154,9 @@ export type Database = {
           issue_type: string
           question: string
           reply_text: string | null
+          respond_by_at: string | null
+          responded: boolean
+          responded_at: string | null
           source_ref: string | null
           status: string
           student_email: string
@@ -1167,6 +1170,9 @@ export type Database = {
           issue_type?: string
           question?: string
           reply_text?: string | null
+          respond_by_at?: string | null
+          responded?: boolean
+          responded_at?: string | null
           source_ref?: string | null
           status?: string
           student_email: string
@@ -1180,6 +1186,9 @@ export type Database = {
           issue_type?: string
           question?: string
           reply_text?: string | null
+          respond_by_at?: string | null
+          responded?: boolean
+          responded_at?: string | null
           source_ref?: string | null
           status?: string
           student_email?: string
@@ -4990,6 +4999,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_respond_by: { Args: { p_created_at: string }; Returns: string }
       increment_practice_views: {
         Args: { asset_id: string }
         Returns: undefined
