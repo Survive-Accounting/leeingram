@@ -68,9 +68,11 @@ type CramCard = {
 };
 
 type FormulaCard = {
+  id: string;
   name: string;
   expression: string;
   explanation?: string;
+  image_url?: string | null;
 };
 
 type SectionConfigRow = {
@@ -177,6 +179,7 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
           if (eqIndex > 0) {
             const name = formulaPart.slice(0, eqIndex).trim();
             formulas.push({
+              id: crypto.randomUUID(),
               name: name || formulaPart,
               expression: formulaPart,
               explanation,
@@ -185,6 +188,7 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
           }
 
           formulas.push({
+            id: crypto.randomUUID(),
             name: formulaPart,
             expression: formulaPart,
             explanation,
@@ -207,6 +211,7 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
 
       if (typeof name === "string" && typeof expression === "string") {
         formulas.push({
+          id: crypto.randomUUID(),
           name: name.trim(),
           expression: expression.trim(),
           explanation: typeof explanation === "string" ? explanation.trim() : undefined,
@@ -584,11 +589,27 @@ export default function ChapterCramTool() {
       const { data, error } = await (supabase as any)
         .from("teaching_assets")
         .select(
-          "id, asset_name, source_ref, asset_type, problem_title, important_formulas, supplementary_je_json, journal_entry_completed_json",
+          "id, asset_name, source_ref, asset_type, problem_title, supplementary_je_json, journal_entry_completed_json",
         )
         .eq("chapter_id", chapterId)
         .not("asset_approved_at", "is", null)
         .order("source_ref");
+
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: chapterFormulas = [] } = useQuery({
+    queryKey: ["cram-chapter-formulas", chapterId],
+    enabled: !!chapterId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("chapter_formulas")
+        .select("id, formula_name, formula_expression, formula_explanation, image_url, is_approved, sort_order")
+        .eq("chapter_id", chapterId)
+        .eq("is_approved", true)
+        .order("sort_order");
 
       if (error) throw error;
       return (data || []) as any[];
@@ -747,20 +768,14 @@ export default function ChapterCramTool() {
   }, [displayCards, isAdmin, isItemHidden]);
 
   const structuredFormulas = useMemo(() => {
-    const seen = new Set<string>();
-    const cards: FormulaCard[] = [];
-
-    approvedAssets.forEach((asset) => {
-      parseImportantFormulas(asset.important_formulas).forEach((formula) => {
-        const key = formula.name.toLowerCase().trim().replace(/\s+/g, " ");
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        cards.push(formula);
-      });
-    });
-
-    return cards;
-  }, [approvedAssets]);
+    return chapterFormulas.map((f: any): FormulaCard => ({
+      id: f.id,
+      name: f.formula_name,
+      expression: f.formula_expression,
+      explanation: f.formula_explanation || undefined,
+      image_url: f.image_url,
+    }));
+  }, [chapterFormulas]);
 
   const solutionsFiltered = useMemo(() => {
     const sorted = [...approvedAssets].sort(sortBySourceRef);
@@ -780,8 +795,7 @@ export default function ChapterCramTool() {
 
   const visibleFormulas = useMemo(() => {
     return structuredFormulas.filter((formula) => {
-      const id = slugify(formula.name);
-      return isAdmin || !isItemHidden("formulas", id);
+      return isAdmin || !isItemHidden("formulas", formula.id);
     });
   }, [structuredFormulas, isAdmin, isItemHidden]);
 
@@ -855,7 +869,7 @@ export default function ChapterCramTool() {
 
   // Current formula for flashcard
   const currentFormula = visibleFormulas[formulaIndex];
-  const currentFormulaHidden = currentFormula ? isItemHidden("formulas", slugify(currentFormula.name)) : false;
+  const currentFormulaHidden = currentFormula ? isItemHidden("formulas", currentFormula.id) : false;
 
   // Current JE card for flashcard
   const currentJeCard = visibleJournalCards[jeIndex];
@@ -1119,7 +1133,7 @@ export default function ChapterCramTool() {
                     {isAdmin && (
                       <button
                         type="button"
-                        onClick={() => toggleItemHidden("formulas", slugify(currentFormula.name))}
+                        onClick={() => toggleItemHidden("formulas", currentFormula.id)}
                         className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-md"
                         style={{
                           background: currentFormulaHidden ? theme.warningBg : theme.mutedBg,
@@ -1141,25 +1155,41 @@ export default function ChapterCramTool() {
                       </span>
                     )}
 
-                    <p
-                      className="text-[11px] font-semibold uppercase"
-                      style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
-                    >
-                      {currentFormula.name}
-                    </p>
-                    <p
-                      className="text-[20px] font-medium"
-                      style={{
-                        color: theme.heading,
-                        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
-                      }}
-                    >
-                      {currentFormula.expression}
-                    </p>
-                    {currentFormula.explanation && (
-                      <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
-                        {currentFormula.explanation}
-                      </p>
+                    {currentFormula.image_url ? (
+                      <img
+                        src={currentFormula.image_url}
+                        alt={currentFormula.name}
+                        style={{ width: "100%", maxWidth: 600, margin: "0 auto", borderRadius: 12, display: "block" }}
+                      />
+                    ) : (
+                      <>
+                        <p
+                          className="text-[11px] font-semibold uppercase"
+                          style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
+                        >
+                          {currentFormula.name}
+                        </p>
+                        <p
+                          className="text-[20px] font-medium"
+                          style={{
+                            color: theme.heading,
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+                          }}
+                        >
+                          {currentFormula.expression}
+                        </p>
+                        {currentFormula.explanation && (
+                          <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
+                            {currentFormula.explanation}
+                          </p>
+                        )}
+                        <span
+                          className="mt-3 inline-block rounded-full px-2 py-0.5 text-[10px]"
+                          style={{ background: theme.mutedBg, color: theme.textMuted }}
+                        >
+                          Image coming soon
+                        </span>
+                      </>
                     )}
                   </div>
 
