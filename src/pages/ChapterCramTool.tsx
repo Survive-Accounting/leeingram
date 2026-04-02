@@ -792,8 +792,7 @@ export default function ChapterCramTool() {
 
   const visibleFormulas = useMemo(() => {
     return structuredFormulas.filter((formula) => {
-      const id = slugify(formula.name);
-      return isAdmin || !isItemHidden("formulas", id);
+      return isAdmin || !isItemHidden("formulas", formula.id);
     });
   }, [structuredFormulas, isAdmin, isItemHidden]);
 
