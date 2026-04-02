@@ -978,6 +978,56 @@ export type Database = {
           },
         ]
       }
+      chapter_formulas: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          formula_explanation: string | null
+          formula_expression: string
+          formula_name: string
+          generated_at: string
+          id: string
+          image_url: string | null
+          is_approved: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          formula_explanation?: string | null
+          formula_expression: string
+          formula_name: string
+          generated_at?: string
+          id?: string
+          image_url?: string | null
+          is_approved?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          formula_explanation?: string | null
+          formula_expression?: string
+          formula_name?: string
+          generated_at?: string
+          id?: string
+          image_url?: string | null
+          is_approved?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_formulas_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_problems: {
         Row: {
           build_run_id: string | null
