@@ -188,6 +188,7 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
           }
 
           formulas.push({
+            id: crypto.randomUUID(),
             name: formulaPart,
             expression: formulaPart,
             explanation,
