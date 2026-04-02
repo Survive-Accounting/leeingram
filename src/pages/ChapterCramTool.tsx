@@ -211,6 +211,7 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
 
       if (typeof name === "string" && typeof expression === "string") {
         formulas.push({
+          id: crypto.randomUUID(),
           name: name.trim(),
           expression: expression.trim(),
           explanation: typeof explanation === "string" ? explanation.trim() : undefined,
