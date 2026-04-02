@@ -241,7 +241,7 @@ async function buildTopicXLSX(
     const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
     rows.push([
       topicName, "TMC", ratingIframe, "1",
-      "Skip this", "(delete)", "(delete)", "(delete)",
+      "Skip this", "", "", "",
       "", "", "", "", "", "",
       "", "",
     ]);

@@ -56,77 +56,78 @@ export default function QuizStart() {
   if (!data) return null;
 
   return (
-    <div ref={ref} style={{ margin: 0, padding: 0, background: "#14213D", fontFamily: "Inter, sans-serif" }}>
+    <div ref={ref} style={{
+      margin: 0, padding: 0, background: "#14213D", fontFamily: "Inter, sans-serif",
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+    }}>
       <link
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap"
         rel="stylesheet"
       />
-      {/* Hero image */}
-      <img
-        src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png"
-        alt="Mountain landscape"
-        style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }}
-      />
 
-      {/* Content */}
-      <div style={{ padding: "32px 24px", textAlign: "center" }}>
-        {/* Logo */}
-        <img
-          src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
-          alt="Survive Accounting"
-          style={{ width: 160, margin: "0 auto", display: "block" }}
-        />
+      {/* Top area */}
+      <div style={{ flex: 1, textAlign: "center", paddingTop: 40 }}>
+        <p style={{
+          fontSize: 16,
+          color: "#CE1126",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          fontWeight: 700,
+          margin: 0,
+        }}>
+          Refresher Quiz
+        </p>
 
-        {/* Topic name */}
         <h1 style={{
           fontFamily: "'DM Serif Display', serif",
-          fontSize: 28,
+          fontSize: 26,
           color: "#ffffff",
-          marginTop: 20,
+          marginTop: 8,
           marginBottom: 0,
           fontWeight: 400,
         }}>
           {data.topic_name}
         </h1>
 
-        {/* Chapter + course */}
         <p style={{
           fontSize: 14,
-          color: "rgba(255,255,255,0.6)",
-          marginTop: 8,
+          color: "rgba(255,255,255,0.55)",
+          marginTop: 6,
           marginBottom: 0,
         }}>
-          Chapter {data.chapter_number} · {data.course_name}
+          Ch. {data.chapter_number} · {data.course_name}
         </p>
 
-        {/* Red divider */}
         <div style={{
           width: 40,
           height: 2,
           background: "#CE1126",
-          margin: "20px auto",
+          margin: "16px auto",
         }} />
 
-        {/* Instruction text */}
         <p style={{
-          fontSize: 14,
-          color: "rgba(255,255,255,0.8)",
-          lineHeight: 1.7,
-          maxWidth: 400,
-          margin: "0 auto",
+          fontSize: 13,
+          color: "rgba(255,255,255,0.5)",
+          margin: 0,
         }}>
-          This quick quiz tests your understanding of {data.topic_name}.
-          <br />
-          5 questions · Multiple choice · Journal entry recall
+          5 questions
         </p>
+      </div>
 
-        {/* Footer */}
+      {/* Bottom area */}
+      <div style={{ textAlign: "center", paddingBottom: 40 }}>
+        <img
+          src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
+          alt="Survive Accounting"
+          style={{ width: 120, margin: "0 auto", display: "block" }}
+        />
         <p style={{
-          fontSize: 12,
+          fontSize: 11,
           color: "rgba(255,255,255,0.4)",
-          marginTop: 24,
+          marginTop: 6,
+          marginBottom: 0,
         }}>
-          by Lee Ingram
+          Created by Lee Ingram
         </p>
       </div>
     </div>
