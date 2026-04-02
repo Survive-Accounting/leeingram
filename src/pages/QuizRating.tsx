@@ -160,7 +160,7 @@ export default function QuizRating() {
         ))}
       </div>
       <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", margin: "0 0 12px" }}>
-        How helpful was this quiz?
+        How helpful was this? (optional)
       </p>
 
       {/* Message */}
