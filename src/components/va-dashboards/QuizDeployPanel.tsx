@@ -190,6 +190,7 @@ function buildDebugJSON(
 async function buildTopicXLSX(
   questions: BankedQ[],
   topicName: string,
+  topicId?: string,
 ): Promise<Blob> {
   const XLSX = await import("xlsx");
   const header = [
@@ -231,6 +232,16 @@ async function buildTopicXLSX(
       explanationIframe, explanationIframe,
     ];
   });
+
+  // Append feedback/rating row
+  if (topicId) {
+    const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
+    rows.push([
+      topicName, "TMC", ratingIframe, "1",
+      "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐",
+      "", "",
+    ]);
+  }
 
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
