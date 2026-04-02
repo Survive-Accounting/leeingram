@@ -290,7 +290,7 @@ export default function QuizExplanation() {
       <div className="px-4 py-4">
         {activeTab === "solution" && <SolutionTab question={question} />}
         {activeTab === "je" && <JeTab jeData={jeData} />}
-        {activeTab === "examples" && <ExamplesTab assets={assets} />}
+        {activeTab === "examples" && <ExamplesTab assets={assets} questionId={questionId} />}
       </div>
 
       {/* Footer */}
