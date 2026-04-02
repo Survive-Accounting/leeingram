@@ -143,7 +143,7 @@ export default function QuizRating() {
   return (
     <div ref={ref} style={{ fontFamily: "Inter, sans-serif", padding: "8px 4px", color: "#f0f0f0" }}>
       <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 16, margin: "0 0 16px" }}>
-        How was this quiz?
+        You've completed this quiz!
       </p>
 
       {/* Stars */}
