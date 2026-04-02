@@ -533,6 +533,9 @@ function TopicCard({
               >
                 <Download className="h-3 w-3 mr-1" /> Export XLSX
               </Button>
+              <p className="text-[9px] text-muted-foreground italic hidden sm:block">
+                Last row is the feedback question — VA should change question type to Rating in LW after import.
+              </p>
 
               {/* Mark imported */}
               {!topic.lw_imported && !readOnly && (
