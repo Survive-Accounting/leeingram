@@ -2,37 +2,68 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
+import { CheckCircle2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
-type InboxTab = "questions" | "issues" | "feedback" | "quiz_rating";
+type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating";
+type StatusFilter = "all" | "needs_response" | "responded";
 
-function parseRatingMeta(sourceRef: string | null): { star_rating?: number; topic_name?: string; topic_id?: string } {
+function parseRatingMeta(sourceRef: string | null): { star_rating?: number; topic_name?: string } {
   if (!sourceRef) return {};
   try { return JSON.parse(sourceRef); } catch { return {}; }
 }
 
+function RespondByBadge({ respondByAt, responded }: { respondByAt: string | null; responded: boolean }) {
+  if (!respondByAt || responded) return null;
+  const d = new Date(respondByAt);
+  const now = new Date();
+  const overdue = isBefore(d, now);
+  const dueToday = !overdue && isToday(d);
+
+  const label = format(d, "EEE MMM d · h:mm a");
+
+  if (overdue) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] font-bold bg-destructive/15 text-destructive rounded px-1.5 py-0.5">OVERDUE</span>
+        <span className="text-[11px] text-destructive font-medium">{label}</span>
+      </div>
+    );
+  }
+  if (dueToday) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 rounded px-1.5 py-0.5">DUE TODAY</span>
+        <span className="text-[11px] text-amber-600 font-medium">{label}</span>
+      </div>
+    );
+  }
+  return <span className="text-[11px] text-muted-foreground">{label}</span>;
+}
+
+const issueColors: Record<string, string> = {
+  question: "bg-blue-100 text-blue-700",
+  issue: "bg-destructive/15 text-destructive",
+  feedback: "bg-green-100 text-green-700",
+  quiz_rating: "bg-amber-100 text-amber-700",
+};
+
+const issueLabels: Record<string, string> = {
+  question: "Question",
+  issue: "Issue",
+  feedback: "Feedback",
+  quiz_rating: "Quiz Feedback",
+};
+
 export function StudentInbox() {
-  const [inboxTab, setInboxTab] = useState<InboxTab>("questions");
-  const [courseFilter, setCourseFilter] = useState("all");
-  const [chapterFilter, setChapterFilter] = useState("all");
-  const [newOnly, setNewOnly] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [issueFilter, setIssueFilter] = useState<IssueFilter>("all");
   const queryClient = useQueryClient();
 
   const { data: chaptersData } = useChaptersWithCourses();
   const chapters = chaptersData?.chapters || [];
   const courses = chaptersData?.courses || [];
-
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["admin-student-inbox"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapter_questions")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as any[];
-    },
-  });
 
   const chapterMap = useMemo(() => {
     const m: Record<string, { chapter_number: number; chapter_name: string; course_id: string }> = {};
@@ -46,240 +77,232 @@ export function StudentInbox() {
     return m;
   }, [courses]);
 
-  const filteredChapters = useMemo(() => {
-    if (courseFilter === "all") return chapters;
-    return chapters.filter((c: any) => c.course_id === courseFilter);
-  }, [chapters, courseFilter]);
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["admin-student-inbox-v2"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_questions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      // Filter out quiz_rating rows with no message
+      return (data as any[]).filter((r: any) =>
+        r.issue_type !== "quiz_rating" || (r.question && r.question.trim() !== "")
+      );
+    },
+  });
 
   const filtered = useMemo(() => {
     return rows.filter((r: any) => {
-      if (r.issue_type !== inboxTab) return false;
-      if (newOnly && r.status !== "new") return false;
-      if (courseFilter !== "all") {
-        const ch = chapterMap[r.chapter_id];
-        if (!ch || ch.course_id !== courseFilter) return false;
+      if (statusFilter === "needs_response" && r.responded) return false;
+      if (statusFilter === "responded" && !r.responded) return false;
+      if (issueFilter !== "all") {
+        if (issueFilter === "questions" && r.issue_type !== "question") return false;
+        if (issueFilter === "issues" && r.issue_type !== "issue") return false;
+        if (issueFilter === "feedback" && r.issue_type !== "feedback") return false;
+        if (issueFilter === "quiz_rating" && r.issue_type !== "quiz_rating") return false;
       }
-      if (chapterFilter !== "all" && r.chapter_id !== chapterFilter) return false;
       return true;
     });
-  }, [rows, inboxTab, courseFilter, chapterFilter, newOnly, chapterMap]);
+  }, [rows, statusFilter, issueFilter]);
 
-  const newQuestionCount = rows.filter((r: any) => r.issue_type === "question" && r.status === "new").length;
-  const newIssueCount = rows.filter((r: any) => r.issue_type === "issue" && r.status === "new").length;
-  const newFeedbackCount = rows.filter((r: any) => r.issue_type === "feedback" && r.status === "new").length;
-  const newRatingCount = rows.filter((r: any) => r.issue_type === "quiz_rating" && r.status === "new").length;
-
-  // Rating stats
-  const ratingRows = useMemo(() => rows.filter((r: any) => r.issue_type === "quiz_rating"), [rows]);
-  const ratingStats = useMemo(() => {
-    const byTopic: Record<string, { total: number; count: number; name: string }> = {};
-    let allTotal = 0;
-    let allCount = 0;
-    ratingRows.forEach((r: any) => {
-      const meta = parseRatingMeta(r.source_ref);
-      const stars = meta.star_rating;
-      if (!stars) return;
-      allTotal += stars;
-      allCount++;
-      const tName = meta.topic_name || "Unknown";
-      const tId = meta.topic_id || "unknown";
-      if (!byTopic[tId]) byTopic[tId] = { total: 0, count: 0, name: tName };
-      byTopic[tId].total += stars;
-      byTopic[tId].count++;
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a: any, b: any) => {
+      // Unresponded first
+      if (a.responded !== b.responded) return a.responded ? 1 : -1;
+      if (!a.responded && !b.responded) {
+        // Sort by respond_by_at ASC (most urgent first)
+        const aTime = a.respond_by_at ? new Date(a.respond_by_at).getTime() : Infinity;
+        const bTime = b.respond_by_at ? new Date(b.respond_by_at).getTime() : Infinity;
+        return aTime - bTime;
+      }
+      // Responded: most recently responded first
+      const aResp = a.responded_at ? new Date(a.responded_at).getTime() : 0;
+      const bResp = b.responded_at ? new Date(b.responded_at).getTime() : 0;
+      return bResp - aResp;
     });
-    return {
-      avgAll: allCount > 0 ? (allTotal / allCount).toFixed(1) : null,
-      totalCount: allCount,
-      byTopic,
-    };
-  }, [ratingRows]);
+  }, [filtered]);
 
-  const handleMarkReplied = async (id: string) => {
-    await supabase.from("chapter_questions").update({ status: "replied" } as any).eq("id", id);
-    queryClient.invalidateQueries({ queryKey: ["admin-student-inbox"] });
+  const unrespondedCount = rows.filter((r: any) => !r.responded).length;
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const respondedThisWeek = rows.filter((r: any) => r.responded && r.responded_at && new Date(r.responded_at) >= weekAgo).length;
+
+  const handleToggleResponded = async (id: string, currentValue: boolean) => {
+    const updates: any = { responded: !currentValue };
+    if (!currentValue) {
+      updates.responded_at = new Date().toISOString();
+      updates.status = "replied";
+    } else {
+      updates.responded_at = null;
+      updates.status = "new";
+    }
+    await supabase.from("chapter_questions").update(updates).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
-  const tabConfig: { key: InboxTab; label: string; count: number }[] = [
-    { key: "questions", label: "Questions", count: newQuestionCount },
-    { key: "issues", label: "Issues", count: newIssueCount },
-    { key: "feedback", label: "Feedback", count: newFeedbackCount },
-    { key: "quiz_rating", label: "Quiz Ratings", count: newRatingCount },
-  ];
-
   return (
-    <div className="space-y-4">
-      {/* Sub-tabs */}
-      <div className="flex gap-2">
-        {tabConfig.map(t => {
-          const active = inboxTab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setInboxTab(t.key)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+    <TooltipProvider>
+      <div className="space-y-4">
+        {/* Summary bar */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">Inbox</span>
+            {unrespondedCount > 0 ? (
+              <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold px-1.5">
+                {unrespondedCount}
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] rounded-full bg-green-100 text-green-700 text-[11px] font-bold px-1.5">
+                0
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">{respondedThisWeek} responded this week</span>
+
+          <div className="ml-auto flex items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+              className="text-xs border border-border rounded-md px-2 py-1.5 bg-background text-foreground"
             >
-              {t.label}
-              {t.count > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                  {t.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              <option value="all">All</option>
+              <option value="needs_response">Needs Response</option>
+              <option value="responded">Responded</option>
+            </select>
+            <select
+              value={issueFilter}
+              onChange={e => setIssueFilter(e.target.value as IssueFilter)}
+              className="text-xs border border-border rounded-md px-2 py-1.5 bg-background text-foreground"
+            >
+              <option value="all">All Types</option>
+              <option value="questions">Questions</option>
+              <option value="issues">Issues</option>
+              <option value="feedback">Feedback</option>
+              <option value="quiz_rating">Quiz Feedback</option>
+            </select>
+          </div>
+        </div>
 
-      {/* Rating summary stats */}
-      {inboxTab === "quiz_rating" && ratingStats.avgAll && (
-        <div className="flex items-center gap-4 bg-card border border-border rounded-lg p-3">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">{ratingStats.avgAll}</div>
-            <div className="text-[10px] text-muted-foreground">Avg Rating</div>
+        {/* List */}
+        {isLoading ? (
+          <p className="text-xs text-muted-foreground">Loading…</p>
+        ) : sorted.length === 0 && statusFilter === "all" && issueFilter === "all" ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <CheckCircle2 className="h-8 w-8 text-green-500 mb-2" />
+            <p className="text-sm text-muted-foreground italic">"All caught up." — Lee</p>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-foreground">{ratingStats.totalCount}</div>
-            <div className="text-[10px] text-muted-foreground">Total Ratings</div>
-          </div>
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-3">
-              {Object.entries(ratingStats.byTopic)
-                .sort(([, a], [, b]) => (b.total / b.count) - (a.total / a.count))
-                .slice(0, 5)
-                .map(([id, t]) => (
-                  <div key={id} className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    <span className="text-amber-400">{(t.total / t.count).toFixed(1)}★</span>{" "}
-                    {t.name.slice(0, 25)} ({t.count})
+        ) : sorted.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4">No messages match this filter.</p>
+        ) : (
+          <div className="space-y-2">
+            {sorted.map((row: any) => {
+              const ch = chapterMap[row.chapter_id];
+              const co = ch ? courseMap[ch.course_id] : null;
+              const isRating = row.issue_type === "quiz_rating";
+              const ratingMeta = isRating ? parseRatingMeta(row.source_ref) : null;
+              const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
+              const displayEmail = row.student_email && row.student_email !== "anonymous" ? row.student_email : null;
+
+              const overdue = row.respond_by_at && !row.responded && isBefore(new Date(row.respond_by_at), now);
+              const dueToday = row.respond_by_at && !row.responded && !overdue && isToday(new Date(row.respond_by_at));
+
+              const borderClass = overdue
+                ? "border-l-4 border-l-destructive"
+                : dueToday
+                ? "border-l-4 border-l-amber-400"
+                : "border-l-4 border-l-transparent";
+
+              const mailtoSubject = encodeURIComponent(
+                `Re: Your message about ${isRating && ratingMeta?.topic_name ? ratingMeta.topic_name : chapterLabel}`
+              );
+
+              return (
+                <div
+                  key={row.id}
+                  className={`border border-border rounded-lg p-3 bg-card flex gap-4 ${borderClass} ${row.responded ? "opacity-50" : ""}`}
+                >
+                  {/* Left */}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${issueColors[row.issue_type] || "bg-secondary text-secondary-foreground"}`}>
+                        {issueLabels[row.issue_type] || row.issue_type}
+                      </span>
+                      {isRating && ratingMeta?.star_rating && (
+                        <span className="text-amber-400 font-bold text-sm">
+                          {"★".repeat(ratingMeta.star_rating)}
+                          <span className="text-muted-foreground">{"★".repeat(5 - ratingMeta.star_rating)}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-xs font-bold text-foreground">
+                        {displayEmail || "Anonymous"}
+                      </span>
+                      {row.student_name && (
+                        <span className="text-[11px] text-muted-foreground ml-2">{row.student_name}</span>
+                      )}
+                    </div>
+
+                    {row.question && (
+                      <p className="text-[13px] text-foreground">
+                        {row.question.length > 120 ? row.question.slice(0, 120) + "…" : row.question}
+                      </p>
+                    )}
+
+                    {/* Context */}
+                    {(isRating && ratingMeta?.topic_name) ? (
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {ratingMeta.topic_name}{chapterLabel ? ` — ${chapterLabel}` : ""}{co?.code ? ` · ${co.code}` : ""}
+                      </p>
+                    ) : (chapterLabel || row.asset_name || row.source_ref) ? (
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {row.source_ref || row.asset_name}{(row.source_ref || row.asset_name) && chapterLabel ? " — " : ""}{chapterLabel}{co?.code ? ` · ${co.code}` : ""}
+                      </p>
+                    ) : null}
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-[10px] text-muted-foreground cursor-default">
+                          {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">
+                        {format(new Date(row.created_at), "PPpp")}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
-                ))}
-            </div>
+
+                  {/* Right */}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <RespondByBadge respondByAt={row.respond_by_at} responded={row.responded} />
+
+                    {displayEmail && (
+                      <a
+                        href={`mailto:${displayEmail}?subject=${mailtoSubject}`}
+                        className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap"
+                      >
+                        Reply via Email →
+                      </a>
+                    )}
+
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={!!row.responded}
+                        onChange={() => handleToggleResponded(row.id, !!row.responded)}
+                        className="rounded"
+                      />
+                      {row.responded ? "Responded" : "Mark responded"}
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={courseFilter}
-          onChange={e => { setCourseFilter(e.target.value); setChapterFilter("all"); }}
-          className="text-xs border border-border rounded-md px-2 py-1.5 bg-background text-foreground"
-        >
-          <option value="all">All courses</option>
-          {courses.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.code}</option>
-          ))}
-        </select>
-        <select
-          value={chapterFilter}
-          onChange={e => setChapterFilter(e.target.value)}
-          className="text-xs border border-border rounded-md px-2 py-1.5 bg-background text-foreground"
-        >
-          <option value="all">All chapters</option>
-          {filteredChapters.map((c: any) => (
-            <option key={c.id} value={c.id}>Ch {c.chapter_number} — {c.chapter_name}</option>
-          ))}
-        </select>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-          <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} className="rounded" />
-          New only
-        </label>
+        )}
       </div>
-
-      {/* List */}
-      {isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-4">
-          No {inboxTab === "quiz_rating" ? "quiz ratings" : inboxTab} yet.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((row: any) => {
-            const ch = chapterMap[row.chapter_id];
-            const co = ch ? courseMap[ch.course_id] : null;
-            const isNew = row.status === "new";
-            const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
-            const isRating = row.issue_type === "quiz_rating";
-            const ratingMeta = isRating ? parseRatingMeta(row.source_ref) : null;
-
-            const mailtoSubject = encodeURIComponent(
-              inboxTab === "feedback"
-                ? `Re: your feedback on ${row.source_ref || row.asset_name || chapterLabel}`
-                : inboxTab === "quiz_rating"
-                ? `Re: your quiz rating for ${ratingMeta?.topic_name || chapterLabel}`
-                : `Re: your question about ${row.source_ref || chapterLabel}`
-            );
-            const displayName = row.student_name || row.student_email;
-            const displayEmail = row.student_email === "anonymous" ? null : row.student_email;
-
-            return (
-              <div key={row.id} className="border border-border rounded-lg p-3 bg-card">
-                {/* Top line */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${isNew ? "bg-destructive/15 text-destructive" : "bg-green-100 text-green-700"}`}>
-                    {isNew ? "New" : "Replied"}
-                  </span>
-                  {isRating && ratingMeta?.star_rating && (
-                    <span className="text-amber-400 font-bold text-sm">
-                      {"★".repeat(ratingMeta.star_rating)}
-                      <span className="text-muted-foreground">{"★".repeat(5 - ratingMeta.star_rating)}</span>
-                    </span>
-                  )}
-                  <span className="text-xs font-bold text-foreground">{displayName}</span>
-                  {row.student_name && displayEmail && (
-                    <span className="text-xs text-muted-foreground">{displayEmail}</span>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
-                  </span>
-                </div>
-
-                {/* Asset/topic context */}
-                {isRating && ratingMeta?.topic_name ? (
-                  <p className="text-[11px] text-muted-foreground font-mono mt-1">
-                    {ratingMeta.topic_name}
-                    {chapterLabel ? ` — ${chapterLabel}` : ""}
-                    {co?.code ? ` · ${co.code}` : ""}
-                  </p>
-                ) : (row.source_ref || row.asset_name || chapterLabel) && (
-                  <p className="text-[11px] text-muted-foreground font-mono mt-1">
-                    {row.source_ref || row.asset_name}{(row.source_ref || row.asset_name) && chapterLabel ? " — " : ""}{chapterLabel}
-                    {co?.code ? ` · ${co.code}` : ""}
-                  </p>
-                )}
-
-                {/* Message preview */}
-                {row.question && (
-                  <p className="text-[13px] text-foreground mt-1.5">
-                    {(row.question || "").length > 120
-                      ? (row.question || "").slice(0, 120) + "…"
-                      : row.question}
-                  </p>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center gap-3 mt-2">
-                  {isNew && (
-                    <button
-                      onClick={() => handleMarkReplied(row.id)}
-                      className="text-[11px] font-semibold text-primary hover:underline"
-                    >
-                      Mark Replied
-                    </button>
-                  )}
-                  {displayEmail && (
-                    <a
-                      href={`mailto:${displayEmail}?subject=${mailtoSubject}&body=${encodeURIComponent("Hi there,\n\n\n\n— Lee")}`}
-                      className="text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:underline"
-                    >
-                      Reply via Email →
-                    </a>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    </TooltipProvider>
   );
 }
