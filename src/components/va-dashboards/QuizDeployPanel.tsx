@@ -196,6 +196,8 @@ async function buildTopicXLSX(
   const header = [
     "Group", "Type", "Question", "CorAns",
     "Answer1", "Answer2", "Answer3", "Answer4",
+    "Answer5", "Answer6", "Answer7", "Answer8",
+    "Answer9", "Answer10",
     "CorrectExplanation", "IncorrectExplanation",
   ];
 
