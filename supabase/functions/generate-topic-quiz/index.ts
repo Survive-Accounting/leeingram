@@ -335,6 +335,21 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
       throw new Error(`Expected 5 questions, got ${questions.length}. Please try regenerating.`);
     }
 
+    // Post-process: tag MC questions as calc_mc or conceptual_mc based on mix order
+    let calcCount = 0;
+    let conceptualCount = 0;
+    for (const q of questions) {
+      if (q.question_type === "mc") {
+        if (calcCount < mix.calc_mc) {
+          q.question_type = "calc_mc";
+          calcCount++;
+        } else {
+          q.question_type = "conceptual_mc";
+          conceptualCount++;
+        }
+      }
+    }
+
     for (const q of questions) {
       if (!q.explanation_correct || q.explanation_correct.trim().length < 10) {
         throw new Error(`Question ${q.question_number} is missing explanation_correct. Please try regenerating.`);

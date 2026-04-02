@@ -233,12 +233,12 @@ async function buildTopicXLSX(
     ];
   });
 
-  // Append feedback/rating row
+  // Append feedback/rating row as MC with "Skip this" + blank choices for VA review
   if (topicId) {
     const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
     rows.push([
-      topicName, "TST", ratingIframe, "",
-      "Skip this", "", "", "",
+      topicName, "MC", ratingIframe, "1",
+      "Skip this", "(delete)", "(delete)", "(delete)",
       "", "",
     ]);
   }
