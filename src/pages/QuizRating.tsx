@@ -143,7 +143,7 @@ export default function QuizRating() {
   return (
     <div ref={ref} style={{ fontFamily: "Inter, sans-serif", padding: "8px 4px", color: "#f0f0f0" }}>
       <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 16, margin: "0 0 16px" }}>
-        How was this quiz?
+        You've completed this quiz!
       </p>
 
       {/* Stars */}
@@ -160,7 +160,7 @@ export default function QuizRating() {
         ))}
       </div>
       <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", margin: "0 0 12px" }}>
-        How helpful was this quiz?
+        How helpful was this? (optional)
       </p>
 
       {/* Message */}
@@ -208,8 +208,11 @@ export default function QuizRating() {
           maxWidth: 320,
         }}
       >
-        {submitting ? "Sending…" : "Send to Lee →"}
+        {submitting ? "Sending…" : "Send Feedback →"}
       </button>
+      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", marginTop: 8 }}>
+        Click Finish above to see your score.
+      </p>
     </div>
   );
 }

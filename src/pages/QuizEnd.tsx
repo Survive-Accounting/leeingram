@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface TopicData {
   topic_name: string;
-  chapter_name: string;
+  chapter_id: string;
   chapter_number: number;
   course_name: string;
 }
@@ -33,7 +33,7 @@ export default function QuizEnd() {
 
       setData({
         topic_name: topic.topic_name,
-        chapter_name: ch?.chapter_name ?? "",
+        chapter_id: topic.chapter_id,
         chapter_number: ch?.chapter_number ?? 0,
         course_name: co?.course_name ?? "",
       });
@@ -48,54 +48,52 @@ export default function QuizEnd() {
       window.parent.postMessage({ type: "resize", height: h }, "*");
     };
     sendHeight();
+    const t = setTimeout(sendHeight, 150);
     document.fonts?.ready?.then(sendHeight);
     window.addEventListener("resize", sendHeight);
-    return () => window.removeEventListener("resize", sendHeight);
+    return () => { clearTimeout(t); window.removeEventListener("resize", sendHeight); };
   }, [data]);
 
   if (!data) return null;
 
-  const hubUrl = "https://learn.surviveaccounting.com";
+  const hubUrl = `https://learn.surviveaccounting.com/cram/${data.chapter_id}`;
 
   return (
-    <div ref={ref} style={{ margin: 0, padding: 0, background: "#14213D", fontFamily: "Inter, sans-serif" }}>
+    <div
+      ref={ref}
+      style={{
+        margin: 0,
+        padding: 0,
+        background: "#14213D",
+        fontFamily: "Inter, sans-serif",
+        minHeight: 340,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        position: "relative",
+      }}
+    >
       <link
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap"
         rel="stylesheet"
       />
-      {/* Hero image */}
-      <img
-        src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/88d6f7c98cfeb62f0e339a7648214ace.png"
-        alt="Mountain landscape"
-        style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }}
-      />
 
-      {/* Content */}
-      <div style={{ padding: "32px 24px", textAlign: "center" }}>
-        {/* Logo */}
-        <img
-          src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
-          alt="Survive Accounting"
-          style={{ width: 160, margin: "0 auto", display: "block" }}
-        />
-
-        {/* Quiz Complete label */}
+      {/* Top content */}
+      <div style={{ paddingTop: 40, textAlign: "center" }}>
         <p style={{
-          fontSize: 13,
+          fontSize: 11,
           color: "#CE1126",
           textTransform: "uppercase",
           letterSpacing: "0.1em",
-          marginTop: 24,
-          marginBottom: 0,
           fontWeight: 600,
+          margin: 0,
         }}>
           Quiz Complete
         </p>
 
-        {/* Topic name */}
         <h1 style={{
           fontFamily: "'DM Serif Display', serif",
-          fontSize: 26,
+          fontSize: 24,
           color: "#ffffff",
           marginTop: 8,
           marginBottom: 0,
@@ -104,54 +102,57 @@ export default function QuizEnd() {
           {data.topic_name}
         </h1>
 
-        {/* Red divider */}
         <div style={{
           width: 40,
           height: 2,
           background: "#CE1126",
-          margin: "20px auto",
+          margin: "14px auto",
         }} />
 
-        {/* Message */}
         <p style={{
-          fontSize: 15,
-          color: "rgba(255,255,255,0.85)",
-          lineHeight: 1.8,
-          maxWidth: 440,
+          fontSize: 13,
+          color: "rgba(255,255,255,0.7)",
+          lineHeight: 1.7,
+          maxWidth: 320,
           margin: "0 auto",
+          textAlign: "center",
         }}>
-          Review your results below. If you missed something,
-          check the Deep Explanation for each question —
-          it walks you through exactly why the correct answer is right.
+          Check the Deep Explanation on any question you missed — it shows exactly why the correct answer is right.
         </p>
 
-        {/* CTA button */}
         <a
           href={hubUrl}
           target="_parent"
           style={{
-            display: "block",
-            width: "fit-content",
-            margin: "24px auto 0",
+            display: "inline-block",
+            marginTop: 20,
             background: "#CE1126",
             color: "#ffffff",
             fontSize: 14,
             fontWeight: 500,
-            padding: "12px 24px",
+            padding: "10px 22px",
             borderRadius: 6,
             textDecoration: "none",
           }}
         >
           Back to Chapter Hub →
         </a>
+      </div>
 
-        {/* Footer */}
+      {/* Bottom logo */}
+      <div style={{ marginTop: "auto", paddingBottom: 40, textAlign: "center" }}>
+        <img
+          src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
+          alt="Survive Accounting"
+          style={{ width: 120, margin: "0 auto", display: "block" }}
+        />
         <p style={{
-          fontSize: 12,
+          fontSize: 11,
           color: "rgba(255,255,255,0.4)",
-          marginTop: 20,
+          marginTop: 6,
+          marginBottom: 0,
         }}>
-          by Lee Ingram · surviveaccounting.com
+          Created by Lee Ingram
         </p>
       </div>
     </div>

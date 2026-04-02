@@ -290,7 +290,7 @@ export default function QuizExplanation() {
       <div className="px-4 py-4">
         {activeTab === "solution" && <SolutionTab question={question} />}
         {activeTab === "je" && <JeTab jeData={jeData} />}
-        {activeTab === "examples" && <ExamplesTab assets={assets} />}
+        {activeTab === "examples" && <ExamplesTab assets={assets} questionId={questionId} />}
       </div>
 
       {/* Footer */}
@@ -590,9 +590,13 @@ function JeTab({ jeData }: { jeData: any[] }) {
   );
 }
 
-function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boolean }) {
+function ExampleCard({ asset, isPrimary, questionId }: { asset: AssetInfo; isPrimary?: boolean; questionId?: string }) {
   const badge = assetTypeBadge(asset.source_ref);
   const hasLink = asset.lw_activity_url && asset.lw_activity_url.trim().length > 0;
+
+  const linkUrl = hasLink
+    ? `${asset.lw_activity_url}${asset.lw_activity_url!.includes("?") ? "&" : "?"}ref=quiz&qid=${questionId || ""}`
+    : undefined;
 
   return (
     <div
@@ -610,9 +614,9 @@ function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boole
           {asset.problem_title ? `${asset.source_ref} — ${asset.problem_title}` : asset.source_ref}
         </p>
       </div>
-      {hasLink ? (
+      {linkUrl ? (
         <a
-          href={asset.lw_activity_url!}
+          href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
@@ -632,7 +636,7 @@ function ExampleCard({ asset, isPrimary }: { asset: AssetInfo; isPrimary?: boole
   );
 }
 
-function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
+function ExamplesTab({ assets, questionId }: { assets: AssetInfo[]; questionId?: string }) {
   if (assets.length === 0) return null;
 
   const primary = assets[0];
@@ -643,14 +647,14 @@ function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
       <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
         RELATED EXAMPLES
       </p>
-      <ExampleCard asset={primary} isPrimary />
+      <ExampleCard asset={primary} isPrimary questionId={questionId} />
       {more.length > 0 && (
         <>
           <p className="uppercase font-bold tracking-wider mt-4 mb-1" style={{ fontSize: 9, color: "#94a3b8" }}>
             MORE EXAMPLES
           </p>
           {more.map((a) => (
-            <ExampleCard key={a.id} asset={a} />
+            <ExampleCard key={a.id} asset={a} questionId={questionId} />
           ))}
         </>
       )}
