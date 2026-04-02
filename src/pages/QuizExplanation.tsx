@@ -636,7 +636,7 @@ function ExampleCard({ asset, isPrimary, questionId }: { asset: AssetInfo; isPri
   );
 }
 
-function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
+function ExamplesTab({ assets, questionId }: { assets: AssetInfo[]; questionId?: string }) {
   if (assets.length === 0) return null;
 
   const primary = assets[0];
@@ -647,14 +647,14 @@ function ExamplesTab({ assets }: { assets: AssetInfo[] }) {
       <p className="uppercase font-bold tracking-wider mb-2" style={{ fontSize: 10, color: "#14213D" }}>
         RELATED EXAMPLES
       </p>
-      <ExampleCard asset={primary} isPrimary />
+      <ExampleCard asset={primary} isPrimary questionId={questionId} />
       {more.length > 0 && (
         <>
           <p className="uppercase font-bold tracking-wider mt-4 mb-1" style={{ fontSize: 9, color: "#94a3b8" }}>
             MORE EXAMPLES
           </p>
           {more.map((a) => (
-            <ExampleCard key={a.id} asset={a} />
+            <ExampleCard key={a.id} asset={a} questionId={questionId} />
           ))}
         </>
       )}
