@@ -866,7 +866,7 @@ export default function ChapterCramTool() {
 
   // Current formula for flashcard
   const currentFormula = visibleFormulas[formulaIndex];
-  const currentFormulaHidden = currentFormula ? isItemHidden("formulas", slugify(currentFormula.name)) : false;
+  const currentFormulaHidden = currentFormula ? isItemHidden("formulas", currentFormula.id) : false;
 
   // Current JE card for flashcard
   const currentJeCard = visibleJournalCards[jeIndex];
