@@ -393,23 +393,38 @@ function InstructionsPanel() {
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 mt-2 text-xs space-y-1.5">
-          <ol className="list-decimal list-inside space-y-1.5 text-foreground/80">
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 mt-2 text-xs space-y-2">
+          <ol className="list-decimal list-inside space-y-2 text-foreground/80">
             <li>
-              Copy the <strong>Question Bank Name</strong> above → create a new
-              Question Bank in LearnWorlds with this exact name
+              <strong>Click</strong> "Copy Question Bank Name" above → go to LearnWorlds Question Banks → create a new Question Bank with this exact name
             </li>
             <li>
-              Click <strong>"Export XLSX"</strong> → import the file into the
-              Question Bank you just created
+              <strong>Click</strong> "Export XLSX" → import the file into the Question Bank you just created using "Import &amp; Sync"
             </li>
             <li>
-              Verify questions render correctly in LW preview (all content loads via iframes automatically)
+              In LearnWorlds, go to your course → Quizzes section → <strong>duplicate</strong> the "Refresher Quiz Template" → rename it to match the topic name
             </li>
             <li>
-              Click <strong>"Mark as Imported"</strong> when done
+              <strong>Open</strong> the duplicated quiz → click "Add/Import Question" → select "From Question Bank" → find the bank you just created → click "Import &amp; Sync"
+            </li>
+            <li>
+              <strong>Preview</strong> the quiz as a student — verify all iframes load correctly (question text, answer choices, and feedback should all render without blank boxes or scroll bars)
+            </li>
+            <li>
+              If anything looks wrong, <strong>message</strong> Lee with:
+              <ul className="list-disc list-inside ml-4 mt-1 space-y-0.5 text-[12px] text-muted-foreground">
+                <li>The Question Bank name (copy it above)</li>
+                <li>A screenshot of the issue</li>
+                <li>Which question number has the problem</li>
+              </ul>
+            </li>
+            <li>
+              <strong>Click</strong> "Mark as Imported" on this topic when done → move to the next topic and repeat until all topics in this chapter have quizzes attached
             </li>
           </ol>
+          <p className="text-[11px] text-muted-foreground italic mt-3">
+            Quizzes are called "Refresher Quizzes" in LearnWorlds — this keeps them distinct from graded exams students will take at the end of the semester.
+          </p>
         </div>
       </CollapsibleContent>
     </Collapsible>
