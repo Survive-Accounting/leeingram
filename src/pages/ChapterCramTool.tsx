@@ -4,9 +4,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, Shuffle } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, EyeOff, ExternalLink, Calendar, Lock, Share2, Shuffle, X } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/clipboardFallback";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PREVIEW_LIMIT = 3;
