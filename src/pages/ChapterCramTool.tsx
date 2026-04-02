@@ -1155,25 +1155,41 @@ export default function ChapterCramTool() {
                       </span>
                     )}
 
-                    <p
-                      className="text-[11px] font-semibold uppercase"
-                      style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
-                    >
-                      {currentFormula.name}
-                    </p>
-                    <p
-                      className="text-[20px] font-medium"
-                      style={{
-                        color: theme.heading,
-                        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
-                      }}
-                    >
-                      {currentFormula.expression}
-                    </p>
-                    {currentFormula.explanation && (
-                      <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
-                        {currentFormula.explanation}
-                      </p>
+                    {currentFormula.image_url ? (
+                      <img
+                        src={currentFormula.image_url}
+                        alt={currentFormula.name}
+                        style={{ width: "100%", maxWidth: 600, margin: "0 auto", borderRadius: 12, display: "block" }}
+                      />
+                    ) : (
+                      <>
+                        <p
+                          className="text-[11px] font-semibold uppercase"
+                          style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
+                        >
+                          {currentFormula.name}
+                        </p>
+                        <p
+                          className="text-[20px] font-medium"
+                          style={{
+                            color: theme.heading,
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+                          }}
+                        >
+                          {currentFormula.expression}
+                        </p>
+                        {currentFormula.explanation && (
+                          <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
+                            {currentFormula.explanation}
+                          </p>
+                        )}
+                        <span
+                          className="mt-3 inline-block rounded-full px-2 py-0.5 text-[10px]"
+                          style={{ background: theme.mutedBg, color: theme.textMuted }}
+                        >
+                          Image coming soon
+                        </span>
+                      </>
                     )}
                   </div>
 
