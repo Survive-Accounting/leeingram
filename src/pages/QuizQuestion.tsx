@@ -11,17 +11,21 @@ function useEmbedSetup() {
     document.body.style.background = "transparent";
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    // Fire resize immediately on mount using documentElement height
+    const h0 = document.documentElement.scrollHeight;
+    window.parent.postMessage({ type: "resize", height: h0 }, "*");
+    window.parent.postMessage({ type: "sa-height", height: h0 }, "*");
   }, []);
   useEffect(() => {
     const send = () => {
-      if (ref.current) {
-        const h = ref.current.scrollHeight;
-        window.parent.postMessage({ type: "resize", height: h }, "*");
-        window.parent.postMessage({ type: "sa-height", height: h }, "*");
-      }
+      const h = ref.current
+        ? ref.current.scrollHeight
+        : document.documentElement.scrollHeight;
+      window.parent.postMessage({ type: "resize", height: h }, "*");
+      window.parent.postMessage({ type: "sa-height", height: h }, "*");
     };
     send();
-    const t = setTimeout(send, 200);
+    const t = setTimeout(send, 100);
     document.fonts.ready.then(send);
     const observer = new ResizeObserver(send);
     if (ref.current) observer.observe(ref.current);

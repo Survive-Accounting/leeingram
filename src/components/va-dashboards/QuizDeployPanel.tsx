@@ -345,7 +345,7 @@ function QuestionRow({ q, index }: { q: BankedQ; index: number }) {
       <div className="flex items-center gap-1 shrink-0 flex-wrap">
         <CopyBtn
           label={<><Copy className="h-3 w-3 mr-0.5" />Q</>}
-          text={iframeTag(`/quiz-question/${q.id}`, 120)}
+          text={iframeTag(`/quiz-question/${q.id}`, 160)}
         />
         {["1", "2", "3", "4"].map((num, i) => (
           <CopyBtn
