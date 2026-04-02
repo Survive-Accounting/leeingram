@@ -190,6 +190,7 @@ function buildDebugJSON(
 async function buildTopicXLSX(
   questions: BankedQ[],
   topicName: string,
+  topicId?: string,
 ): Promise<Blob> {
   const XLSX = await import("xlsx");
   const header = [
@@ -231,6 +232,16 @@ async function buildTopicXLSX(
       explanationIframe, explanationIframe,
     ];
   });
+
+  // Append feedback/rating row
+  if (topicId) {
+    const ratingIframe = `<iframe src="${BASE}/quiz-rating/${topicId}" width="100%" height="320" frameborder="0" style="border:none;overflow:hidden;"></iframe>`;
+    rows.push([
+      topicName, "TMC", ratingIframe, "1",
+      "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐",
+      "", "",
+    ]);
+  }
 
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
@@ -431,7 +442,7 @@ function TopicCard({
   const fileName = `${bankName}.xlsx`;
 
   const handleExport = async () => {
-    const blob = await buildTopicXLSX(questions, topic.topic_name);
+    const blob = await buildTopicXLSX(questions, topic.topic_name, topic.id);
     saveAs(blob, fileName);
     toast.success(`Downloaded ${fileName}`);
   };
@@ -522,6 +533,9 @@ function TopicCard({
               >
                 <Download className="h-3 w-3 mr-1" /> Export XLSX
               </Button>
+              <p className="text-[9px] text-muted-foreground italic hidden sm:block">
+                Last row is the feedback question — VA should change question type to Rating in LW after import.
+              </p>
 
               {/* Mark imported */}
               {!topic.lw_imported && !readOnly && (
