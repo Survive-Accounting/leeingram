@@ -586,11 +586,27 @@ export default function ChapterCramTool() {
       const { data, error } = await (supabase as any)
         .from("teaching_assets")
         .select(
-          "id, asset_name, source_ref, asset_type, problem_title, important_formulas, supplementary_je_json, journal_entry_completed_json",
+          "id, asset_name, source_ref, asset_type, problem_title, supplementary_je_json, journal_entry_completed_json",
         )
         .eq("chapter_id", chapterId)
         .not("asset_approved_at", "is", null)
         .order("source_ref");
+
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: chapterFormulas = [] } = useQuery({
+    queryKey: ["cram-chapter-formulas", chapterId],
+    enabled: !!chapterId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("chapter_formulas")
+        .select("id, formula_name, formula_expression, formula_explanation, image_url, is_approved, sort_order")
+        .eq("chapter_id", chapterId)
+        .eq("is_approved", true)
+        .order("sort_order");
 
       if (error) throw error;
       return (data || []) as any[];
