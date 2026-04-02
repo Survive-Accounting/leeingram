@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,20 +9,22 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Download, Upload, RefreshCw, CheckCircle2, ChevronDown, FlaskConical } from "lucide-react";
+import { Loader2, Download, Upload, RefreshCw, CheckCircle2, ChevronDown, FlaskConical, Image, RotateCcw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export function ChapterFormulasManager() {
   const queryClient = useQueryClient();
   const [selectedChapterId, setSelectedChapterId] = useState<string>("");
   const [generating, setGenerating] = useState(false);
+  const [generatingImages, setGeneratingImages] = useState(false);
+  const [regeneratingImageId, setRegeneratingImageId] = useState<string | null>(null);
   const [confirmRegenOpen, setConfirmRegenOpen] = useState(false);
+  const [confirmImagesOpen, setConfirmImagesOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importJson, setImportJson] = useState("");
   const [reasoningOpen, setReasoningOpen] = useState(false);
   const [lastReasoning, setLastReasoning] = useState<string | null>(null);
 
-  // Fetch chapters with course info
   const { data: chapters } = useQuery({
     queryKey: ["formula-mgr-chapters"],
     queryFn: async () => {
@@ -39,7 +41,6 @@ export function ChapterFormulasManager() {
     },
   });
 
-  // Fetch formulas for selected chapter
   const { data: formulas, isLoading: formulasLoading } = useQuery({
     queryKey: ["chapter-formulas", selectedChapterId],
     queryFn: async () => {
@@ -58,6 +59,8 @@ export function ChapterFormulasManager() {
   const approvedCount = formulas?.filter((f: any) => f.is_approved).length || 0;
   const totalCount = formulas?.length || 0;
   const lastGenerated = formulas?.[0]?.generated_at;
+  const needsImageCount = formulas?.filter((f: any) => f.is_approved && !f.image_url).length || 0;
+  const allApproved = totalCount > 0 && approvedCount === totalCount;
 
   const handleGenerate = async () => {
     setConfirmRegenOpen(false);
@@ -76,6 +79,50 @@ export function ChapterFormulasManager() {
       toast.error("Generation failed", { description: e.message });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateImages = async () => {
+    setConfirmImagesOpen(false);
+    setGeneratingImages(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-formula-images", {
+        body: { chapter_id: selectedChapterId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const msg = `Generated ${data.generated} images`;
+      if (data.errors?.length) {
+        toast.warning(msg, { description: `${data.errors.length} errors occurred` });
+      } else {
+        toast.success(msg);
+      }
+      queryClient.invalidateQueries({ queryKey: ["chapter-formulas", selectedChapterId] });
+    } catch (e: any) {
+      toast.error("Image generation failed", { description: e.message });
+    } finally {
+      setGeneratingImages(false);
+    }
+  };
+
+  const handleRegenerateImage = async (formulaId: string) => {
+    setRegeneratingImageId(formulaId);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-formula-images", {
+        body: { chapter_id: selectedChapterId, formula_id: formulaId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data.errors?.length) {
+        toast.error("Image failed", { description: data.errors[0] });
+      } else {
+        toast.success("Image regenerated");
+      }
+      queryClient.invalidateQueries({ queryKey: ["chapter-formulas", selectedChapterId] });
+    } catch (e: any) {
+      toast.error("Regeneration failed", { description: e.message });
+    } finally {
+      setRegeneratingImageId(null);
     }
   };
 
@@ -106,11 +153,7 @@ export function ChapterFormulasManager() {
       for (const f of parsed) {
         if (!f.formula_name || !f.formula_expression) throw new Error("Each formula must have formula_name and formula_expression");
       }
-
-      // Delete existing
       await supabase.from("chapter_formulas").delete().eq("chapter_id", selectedChapterId);
-
-      // Insert new
       const rows = parsed.map((f: any, i: number) => ({
         chapter_id: selectedChapterId,
         formula_name: f.formula_name,
@@ -121,7 +164,6 @@ export function ChapterFormulasManager() {
       }));
       const { error } = await supabase.from("chapter_formulas").insert(rows);
       if (error) throw error;
-
       setImportOpen(false);
       setImportJson("");
       toast.success(`Imported ${rows.length} formulas`);
@@ -215,6 +257,15 @@ export function ChapterFormulasManager() {
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve All ({totalCount})
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirmImagesOpen(true)}
+                disabled={!allApproved || generatingImages || needsImageCount === 0}
+              >
+                {generatingImages ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Image className="h-3.5 w-3.5 mr-1" />}
+                Generate Images ({needsImageCount})
+              </Button>
             </div>
           </div>
 
@@ -230,43 +281,72 @@ export function ChapterFormulasManager() {
             <div className="space-y-2">
               {(formulas || []).map((f: any) => (
                 <Card key={f.id} className={`border-border ${f.is_approved ? "border-l-4 border-l-green-500" : ""}`}>
-                  <CardContent className="py-3 px-4 flex items-start gap-3">
-                    {/* Sort order */}
-                    <input
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={f.sort_order}
-                      onBlur={(e) => {
-                        const v = parseInt(e.target.value);
-                        if (!isNaN(v) && v !== f.sort_order) handleSortChange(f.id, v);
-                      }}
-                      onChange={(e) => {
-                        // optimistic local update handled by onBlur
-                      }}
-                      className="w-10 h-8 text-center text-xs bg-secondary border border-border rounded"
-                      defaultValue={f.sort_order}
-                    />
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <p className="text-sm font-semibold text-foreground">{f.formula_name}</p>
-                      <p className="text-sm font-mono bg-secondary/50 rounded px-2 py-1 text-foreground">
-                        {f.formula_expression}
-                      </p>
-                      {f.formula_explanation && (
-                        <p className="text-xs text-muted-foreground">{f.formula_explanation}</p>
-                      )}
-                    </div>
-
-                    {/* Approve toggle */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-muted-foreground">{f.is_approved ? "Approved" : "Draft"}</span>
-                      <Switch
-                        checked={f.is_approved}
-                        onCheckedChange={() => handleToggleApproved(f.id, f.is_approved)}
+                  <CardContent className="py-3 px-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      {/* Sort order */}
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={f.sort_order}
+                        onBlur={(e) => {
+                          const v = parseInt(e.target.value);
+                          if (!isNaN(v) && v !== f.sort_order) handleSortChange(f.id, v);
+                        }}
+                        onChange={() => {}}
+                        className="w-10 h-8 text-center text-xs bg-secondary border border-border rounded"
                       />
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-sm font-semibold text-foreground">{f.formula_name}</p>
+                        <p className="text-sm font-mono bg-secondary/50 rounded px-2 py-1 text-foreground">
+                          {f.formula_expression}
+                        </p>
+                        {f.formula_explanation && (
+                          <p className="text-xs text-muted-foreground">{f.formula_explanation}</p>
+                        )}
+                      </div>
+
+                      {/* Approve toggle + Regen image */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        {f.is_approved && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            disabled={regeneratingImageId === f.id}
+                            onClick={() => handleRegenerateImage(f.id)}
+                          >
+                            {regeneratingImageId === f.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                            )}
+                            {f.image_url ? "Regen Image" : "Gen Image"}
+                          </Button>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">{f.is_approved ? "Approved" : "Draft"}</span>
+                          <Switch
+                            checked={f.is_approved}
+                            onCheckedChange={() => handleToggleApproved(f.id, f.is_approved)}
+                          />
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Image preview */}
+                    {f.image_url && (
+                      <div className="ml-13">
+                        <img
+                          src={f.image_url}
+                          alt={f.formula_name}
+                          className="rounded-lg border border-border max-w-full h-auto"
+                          style={{ maxHeight: 200 }}
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -305,6 +385,23 @@ export function ChapterFormulasManager() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmRegenOpen(false)}>Cancel</Button>
             <Button onClick={handleGenerate} variant="destructive">Replace & Regenerate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm generate images dialog */}
+      <Dialog open={confirmImagesOpen} onOpenChange={setConfirmImagesOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Formula Images?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will generate <span className="font-medium text-foreground">{needsImageCount} images</span> at approximately{" "}
+            <span className="font-medium text-foreground">${(needsImageCount * 0.002).toFixed(3)}</span> cost. Continue?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmImagesOpen(false)}>Cancel</Button>
+            <Button onClick={handleGenerateImages}>Generate Images</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
