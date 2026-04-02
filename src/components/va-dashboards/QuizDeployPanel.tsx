@@ -203,7 +203,7 @@ async function buildTopicXLSX(
 
   const rows = questions.map((q, i) => {
     const corAns = letterToNumber(q.correct_answer);
-    const questionIframe = iframeTag(`/quiz-question/${q.id}`, 120);
+    const questionIframe = iframeTag(`/quiz-question/${q.id}`, 160);
     const answer1 = iframeTag(`/quiz-choice/${q.id}/1`, q.question_type === "je_recall" ? 142 : 60);
     const answer2 = iframeTag(`/quiz-choice/${q.id}/2`, q.question_type === "je_recall" ? 142 : 60);
     const answer3 = iframeTag(`/quiz-choice/${q.id}/3`, q.question_type === "je_recall" ? 142 : 60);
