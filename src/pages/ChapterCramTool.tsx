@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle, Eye, EyeOff, Lock, Shuffle } from "lucide-react";
+import { CheckCircle, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, Shuffle } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PREVIEW_LIMIT = 3;
+const SOLUTIONS_INITIAL_SHOW = 4;
 
 const theme = {
   pageBg: "#FFFFFF",
@@ -214,6 +215,10 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
 
   visit(raw);
   return formulas.filter((formula) => formula.name.trim() && formula.expression.trim());
+}
+
+function slugify(text: string) {
+  return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
 function SectionHeaderWithToggle({
@@ -509,6 +514,11 @@ function JournalEntryCard({
   );
 }
 
+function getBELabel(courseCode: string) {
+  if (courseCode === "INTRO1" || courseCode === "INTRO2" || courseCode === "FA1" || courseCode === "MA2") return "Quick Studies";
+  return "Brief Exercises";
+}
+
 export default function ChapterCramTool() {
   const { chapterId: routeChapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
@@ -521,6 +531,9 @@ export default function ChapterCramTool() {
   const [reviewedSet, setReviewedSet] = useState<Set<string>>(new Set());
   const [shuffledOrder, setShuffledOrder] = useState<number[] | null>(null);
   const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p">("be");
+  const [expandedTabs, setExpandedTabs] = useState<Record<string, boolean>>({});
+  const [formulaIndex, setFormulaIndex] = useState(0);
+  const [jeIndex, setJeIndex] = useState(0);
 
   const { data: isAdmin = false } = useQuery({
     queryKey: ["cram-admin-check", user?.id],
@@ -760,6 +773,13 @@ export default function ChapterCramTool() {
     });
   }, [approvedAssets, solutionsTab]);
 
+  const visibleFormulas = useMemo(() => {
+    return structuredFormulas.filter((formula) => {
+      const id = slugify(formula.name);
+      return isAdmin || !isItemHidden("formulas", id);
+    });
+  }, [structuredFormulas, isAdmin, isItemHidden]);
+
   const reviewedCount = visibleJournalCards.filter((card) => reviewedSet.has(card.id)).length;
   const progressPercent = visibleJournalCards.length > 0 ? (reviewedCount / visibleJournalCards.length) * 100 : 0;
 
@@ -771,6 +791,7 @@ export default function ChapterCramTool() {
     }
     setShuffledOrder(indices);
     setReviewedSet(new Set());
+    setJeIndex(0);
   }, [cramCards.length]);
 
   const handleReview = useCallback((cardId: string) => {
@@ -779,12 +800,14 @@ export default function ChapterCramTool() {
 
   useEffect(() => {
     if (!chapter) return;
-    document.title = "Legacy";
     document.title = `Survive This Chapter — Ch ${chapter.chapter_number} — Survive Accounting`;
     return () => {
       document.title = "Survive Accounting";
     };
   }, [chapter]);
+
+  useEffect(() => { setFormulaIndex(0); }, [visibleFormulas.length]);
+  useEffect(() => { setJeIndex(0); }, [visibleJournalCards.length]);
 
   if (!chapterId) {
     return (
@@ -803,6 +826,7 @@ export default function ChapterCramTool() {
   }
 
   const courseCode = chapter?.courses?.code || "";
+  const beLabel = getBELabel(courseCode);
   const courseDisplayName =
     courseCode === "IA2"
       ? "Intermediate Accounting 2"
@@ -820,6 +844,17 @@ export default function ChapterCramTool() {
   const showSolutionsSection = isAdmin || isSectionVisible("solutions_library");
   const showJournalSection = (visibleJournalCards.length > 0 || isAdmin) && (isAdmin || isSectionVisible("journal_entries"));
   const showFormulasSection = (structuredFormulas.length > 0 || isAdmin) && (isAdmin || isSectionVisible("formulas"));
+
+  const isTabExpanded = (key: string) => !!expandedTabs[key];
+  const toggleTab = (key: string) => setExpandedTabs((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Current formula for flashcard
+  const currentFormula = visibleFormulas[formulaIndex];
+  const currentFormulaHidden = currentFormula ? isItemHidden("formulas", slugify(currentFormula.name)) : false;
+
+  // Current JE card for flashcard
+  const currentJeCard = visibleJournalCards[jeIndex];
+  const currentJeHidden = currentJeCard ? isItemHidden("journal_entries", currentJeCard.id) : false;
 
   return (
     <div className="min-h-screen" style={{ background: theme.pageBg }}>
@@ -845,6 +880,7 @@ export default function ChapterCramTool() {
         </div>
 
         <div className="space-y-10">
+          {/* ──── Solutions Library ──── */}
           {showSolutionsSection && (
             <section style={{ opacity: isSectionVisible("solutions_library") ? 1 : 0.4 }}>
               <SectionHeaderWithToggle
@@ -857,7 +893,7 @@ export default function ChapterCramTool() {
 
               <div className="mb-4 flex flex-wrap gap-2">
                 {([
-                  ["be", "Brief Exercises"],
+                  ["be", beLabel],
                   ["ex", "Exercises"],
                   ["p", "Problems"],
                 ] as const).map(([key, label]) => (
@@ -882,12 +918,13 @@ export default function ChapterCramTool() {
                   <div>
                     {solutionsFiltered.map((asset, index) => {
                       if (isPreview && index >= PREVIEW_LIMIT) return null;
+                      if (!isTabExpanded(solutionsTab) && index >= SOLUTIONS_INITIAL_SHOW) return null;
 
                       return (
                         <div
                           key={asset.id}
                           className="flex items-center gap-3 px-4 py-3 text-[12px] sm:px-5"
-                          style={{ borderBottom: index < solutionsFiltered.length - 1 ? `1px solid ${theme.border}` : "none" }}
+                          style={{ borderBottom: index < Math.min(solutionsFiltered.length, isTabExpanded(solutionsTab) ? solutionsFiltered.length : SOLUTIONS_INITIAL_SHOW) - 1 ? `1px solid ${theme.border}` : "none" }}
                         >
                           <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>
                             {asset.source_ref || "—"}
@@ -907,6 +944,19 @@ export default function ChapterCramTool() {
                         </div>
                       );
                     })}
+
+                    {!isPreview && solutionsFiltered.length > SOLUTIONS_INITIAL_SHOW && (
+                      <div className="px-4 py-3 sm:px-5" style={{ borderTop: `1px solid ${theme.border}` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleTab(solutionsTab)}
+                          className="text-[12px] font-semibold"
+                          style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer" }}
+                        >
+                          {isTabExpanded(solutionsTab) ? "Show less ↑" : `Show more → (${solutionsFiltered.length - SOLUTIONS_INITIAL_SHOW} more)`}
+                        </button>
+                      </div>
+                    )}
 
                     {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
                       <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
@@ -930,6 +980,7 @@ export default function ChapterCramTool() {
             </section>
           )}
 
+          {/* ──── Journal Entries to Memorize (Flashcard Mode) ──── */}
           {showJournalSection && (
             <section id="je-cram-tool" className="scroll-mt-16" style={{ opacity: isSectionVisible("journal_entries") ? 1 : 0.4 }}>
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -971,33 +1022,60 @@ export default function ChapterCramTool() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {visibleJournalCards.map((card, index) => {
-                      if (isPreview && index >= PREVIEW_LIMIT) return null;
-                      const hidden = isItemHidden("journal_entries", card.id);
+                  {currentJeCard && (
+                    <div style={{ opacity: currentJeHidden ? 0.5 : 1 }}>
+                      {isAdmin && currentJeHidden && (
+                        <div className="mb-2 rounded-md px-3 py-1.5 text-[11px] font-semibold" style={{ background: theme.warningBg, color: theme.warningText }}>
+                          Hidden from students
+                        </div>
+                      )}
+                      <JournalEntryCard
+                        card={currentJeCard}
+                        hidden={currentJeHidden}
+                        isAdmin={isAdmin}
+                        isReviewed={reviewedSet.has(currentJeCard.id)}
+                        onReview={() => handleReview(currentJeCard.id)}
+                        onToggleHidden={() => toggleItemHidden("journal_entries", currentJeCard.id)}
+                      />
+                    </div>
+                  )}
 
-                      return (
-                        <JournalEntryCard
-                          key={card.id}
-                          card={card}
-                          hidden={hidden}
-                          isAdmin={isAdmin}
-                          isReviewed={reviewedSet.has(card.id)}
-                          onReview={() => handleReview(card.id)}
-                          onToggleHidden={() => toggleItemHidden("journal_entries", card.id)}
-                        />
-                      );
-                    })}
+                  {visibleJournalCards.length > 1 && (
+                    <div className="mt-4 flex items-center justify-between">
+                      <button
+                        type="button"
+                        disabled={jeIndex === 0}
+                        onClick={() => setJeIndex((i) => i - 1)}
+                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Prev
+                      </button>
+                      <span className="text-[13px]" style={{ color: theme.textMuted }}>
+                        {jeIndex + 1} of {visibleJournalCards.length}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={jeIndex >= visibleJournalCards.length - 1}
+                        onClick={() => setJeIndex((i) => i + 1)}
+                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
 
-                    {isPreview && visibleJournalCards.length > PREVIEW_LIMIT && (
+                  {isPreview && visibleJournalCards.length > PREVIEW_LIMIT && (
+                    <div className="mt-4">
                       <TieredPaywallCard
                         enrollUrl={enrollUrl}
                         chapterNumber={chapter?.chapter_number || null}
                         fullPassLink={fullPassLink}
                         chapterLink={chapterLink}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
@@ -1009,39 +1087,103 @@ export default function ChapterCramTool() {
             </section>
           )}
 
+          {/* ──── Formulas to Memorize (Flashcard Mode) ──── */}
           {showFormulasSection && (
             <section style={{ opacity: isSectionVisible("formulas") ? 1 : 0.4 }}>
               <SectionHeaderWithToggle
                 label="FORMULAS TO MEMORIZE"
-                count={structuredFormulas.length}
+                count={visibleFormulas.length}
                 isAdmin={isAdmin}
                 sectionName="formulas"
                 isVisible={isSectionVisible("formulas")}
                 onToggle={toggleSectionVisibility}
               />
 
-              {structuredFormulas.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {structuredFormulas.map((formula) => (
-                    <div
-                      key={formula.name.toLowerCase()}
-                      className="rounded-lg border p-4"
-                      style={{ background: theme.cardBg, borderColor: theme.border }}
+              {visibleFormulas.length > 0 && currentFormula ? (
+                <>
+                  <div
+                    className="relative mx-auto flex min-h-[140px] flex-col justify-center rounded-xl"
+                    style={{
+                      background: theme.cardBg,
+                      padding: "24px 32px",
+                      boxShadow: "0 4px 20px rgba(15,23,42,0.06)",
+                      border: `1px solid ${theme.border}`,
+                      opacity: currentFormulaHidden ? 0.5 : 1,
+                    }}
+                  >
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => toggleItemHidden("formulas", slugify(currentFormula.name))}
+                        className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-md"
+                        style={{
+                          background: currentFormulaHidden ? theme.warningBg : theme.mutedBg,
+                          color: currentFormulaHidden ? theme.warningText : theme.textMuted,
+                          border: `1px solid ${theme.border}`,
+                        }}
+                        title={currentFormulaHidden ? "Show to students" : "Hide from students"}
+                      >
+                        <EyeOff className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+
+                    {isAdmin && currentFormulaHidden && (
+                      <span
+                        className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                        style={{ background: theme.warningBg, color: theme.warningText }}
+                      >
+                        Hidden from students
+                      </span>
+                    )}
+
+                    <p
+                      className="text-[11px] font-semibold uppercase"
+                      style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
                     >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.05em]" style={{ color: theme.heading }}>
-                        {formula.name}
+                      {currentFormula.name}
+                    </p>
+                    <p
+                      className="text-[20px] font-medium"
+                      style={{
+                        color: theme.heading,
+                        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+                      }}
+                    >
+                      {currentFormula.expression}
+                    </p>
+                    {currentFormula.explanation && (
+                      <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
+                        {currentFormula.explanation}
                       </p>
-                      <p className="mt-1.5 text-[16px] font-medium" style={{ color: theme.heading, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace" }}>
-                        {formula.expression}
-                      </p>
-                      {formula.explanation && (
-                        <p className="mt-2 text-[13px]" style={{ color: theme.textMuted }}>
-                          {formula.explanation}
-                        </p>
-                      )}
+                    )}
+                  </div>
+
+                  {visibleFormulas.length > 1 && (
+                    <div className="mt-4 flex items-center justify-between">
+                      <button
+                        type="button"
+                        disabled={formulaIndex === 0}
+                        onClick={() => setFormulaIndex((i) => i - 1)}
+                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Prev
+                      </button>
+                      <span className="text-[13px]" style={{ color: theme.textMuted }}>
+                        {formulaIndex + 1} of {visibleFormulas.length}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={formulaIndex >= visibleFormulas.length - 1}
+                        onClick={() => setFormulaIndex((i) => i + 1)}
+                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               ) : (
                 <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
                   <p className="text-[13px]" style={{ color: theme.textMuted }}>
@@ -1051,6 +1193,64 @@ export default function ChapterCramTool() {
               )}
             </section>
           )}
+
+          {/* ──── Ask Lee ──── */}
+          <section>
+            <SectionHeaderWithToggle
+              label="ASK LEE"
+              isAdmin={isAdmin}
+              sectionName="ask_lee"
+              isVisible={isSectionVisible("ask_lee")}
+              onToggle={toggleSectionVisibility}
+            />
+            {(isAdmin || isSectionVisible("ask_lee")) && (
+              <div
+                className="rounded-xl border p-5"
+                style={{ borderColor: theme.border, background: theme.cardBg, opacity: isSectionVisible("ask_lee") ? 1 : 0.4 }}
+              >
+                <p className="text-[14px] font-semibold" style={{ color: theme.heading }}>
+                  Have a question about this chapter?
+                </p>
+                <p className="mt-1 text-[13px]" style={{ color: theme.textMuted }}>
+                  Send me your question and I'll get back to you — usually within a few hours.
+                </p>
+                <a
+                  href={`mailto:lee@surviveaccounting.com?subject=Question about Ch ${chapter?.chapter_number || ""} — ${chapter?.chapter_name || ""}`}
+                  className="mt-3 inline-block rounded-lg px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-90"
+                  style={{ background: theme.navy }}
+                >
+                  Email Lee →
+                </a>
+              </div>
+            )}
+          </section>
+
+          {/* ──── About Lee ──── */}
+          <section>
+            <SectionHeaderWithToggle
+              label="ABOUT LEE"
+              isAdmin={isAdmin}
+              sectionName="about_lee"
+              isVisible={isSectionVisible("about_lee")}
+              onToggle={toggleSectionVisibility}
+            />
+            {(isAdmin || isSectionVisible("about_lee")) && (
+              <div
+                className="rounded-xl border p-5"
+                style={{ borderColor: theme.border, background: theme.cardBg, opacity: isSectionVisible("about_lee") ? 1 : 0.4 }}
+              >
+                <p className="text-[14px] font-semibold" style={{ color: theme.heading }}>
+                  Hi, I'm Lee Ingram
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: theme.textMuted }}>
+                  I'm an accounting educator who's spent years tutoring students one-on-one. I built Survive Accounting because I saw the same patterns — students struggling with the same concepts, making the same mistakes, and not having access to clear, structured explanations.
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: theme.textMuted }}>
+                  Every solution, journal entry, and formula on this page was built to help you study smarter — not harder. If something doesn't make sense, reach out. I read every message.
+                </p>
+              </div>
+            )}
+          </section>
         </div>
       </main>
     </div>
