@@ -147,7 +147,7 @@ function buildDebugJSON(
       group: topicName,
       type: "TMC",
       question_text: q.question_text,
-      question_iframe: iframeTag(`/quiz-question/${q.id}`, 120),
+      question_iframe: iframeTag(`/quiz-question/${q.id}`, 160),
       correct_answer_number: corAns,
       correct_answer_validation: correctAnswerValidation,
       answer1_text: q.answer_a || null,
