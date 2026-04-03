@@ -75,6 +75,7 @@ type TeachingAssetDetail = {
 type SectionDef = { key: string; label: string; hasContent: boolean };
 
 type VAAccount = { id: string; full_name: string; email: string; role: string };
+type QAReviewerAssignment = { course_id: string; chapter_id: string };
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -242,7 +243,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 
 export default function SolutionsQAReview() {
   const { impersonating } = useImpersonation();
-  const { vaAccount } = useVaAccount();
+  const { vaAccount, assignments } = useVaAccount();
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -273,6 +274,54 @@ export default function SolutionsQAReview() {
       return data as VAAccount[];
     },
   });
+
+  const activeQaRole = impersonating?.role || vaAccount?.role || null;
+  const isScopedVaSession = activeQaRole === "content_creation_va" || activeQaRole === "va_test";
+  const activeQaVaId = isScopedVaSession ? (impersonating?.id || vaAccount?.id || null) : null;
+
+  const { data: impersonatedAssignments, isLoading: isImpersonatedAssignmentsLoading } = useQuery<QAReviewerAssignment[]>({
+    queryKey: ["qa-impersonated-va-assignments", impersonating?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("va_assignments")
+        .select("course_id, chapter_id")
+        .eq("va_account_id", impersonating!.id);
+      if (error) throw error;
+      return (data ?? []) as QAReviewerAssignment[];
+    },
+    enabled: !!impersonating?.id && isScopedVaSession,
+  });
+
+  const activeAssignments = impersonating
+    ? impersonatedAssignments
+    : (assignments as QAReviewerAssignment[] | undefined);
+
+  const isAssignmentsLoading = !!activeQaVaId && (impersonating
+    ? isImpersonatedAssignmentsLoading
+    : activeAssignments === undefined);
+
+  const assignedCourseIds = useMemo(
+    () => [...new Set((activeAssignments ?? []).map((assignment) => assignment.course_id).filter(Boolean))],
+    [activeAssignments]
+  );
+
+  const availableCourses = useMemo(
+    () => (isScopedVaSession ? COURSES.filter((course) => assignedCourseIds.includes(course.id)) : COURSES),
+    [assignedCourseIds, isScopedVaSession]
+  );
+
+  const showAllCoursesOption = !isScopedVaSession || availableCourses.length > 1;
+  const allCoursesLabel = isScopedVaSession ? "All Assigned Courses" : "All Courses";
+  const scopedFilterInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isScopedVaSession || !assignedCourseIds.length || scopedFilterInitializedRef.current) return;
+    scopedFilterInitializedRef.current = true;
+    const nextCourseId = availableCourses.length > 1 ? "all" : assignedCourseIds[0];
+    setSelectedCourseId(nextCourseId);
+    localStorage.setItem("qa-course-filter", nextCourseId);
+    setCurrentIndex(0);
+  }, [assignedCourseIds, availableCourses.length, isScopedVaSession]);
 
   // ── Seed all courses ────────────────────────────────────────────
   const seedMutation = useMutation({
@@ -358,25 +407,26 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // ── Detect VA's assigned course (works for both impersonation AND real VAs) ──
-  const vaAssignedCourseId = useMemo(() => {
-    if (!allAssetsRaw) return null;
-    // Check impersonated VA name first, then real VA name
-    const vaName = impersonating?.full_name || vaAccount?.full_name;
-    if (!vaName) return null;
-    const match = allAssetsRaw.find(a => a.assigned_to === vaName);
-    return match?.course_id || null;
-  }, [impersonating, vaAccount, allAssetsRaw]);
+  const effectiveCourseId = useMemo(() => {
+    if (!isScopedVaSession) return selectedCourseId;
+    if (!assignedCourseIds.length) return "all";
+    if (selectedCourseId === "all") return showAllCoursesOption ? "all" : assignedCourseIds[0];
+    return assignedCourseIds.includes(selectedCourseId)
+      ? selectedCourseId
+      : (showAllCoursesOption ? "all" : assignedCourseIds[0]);
+  }, [assignedCourseIds, isScopedVaSession, selectedCourseId, showAllCoursesOption]);
 
-  const effectiveCourseId = vaAssignedCourseId || selectedCourseId;
-  const isCourseLockedByImpersonation = !!vaAssignedCourseId;
+  const isCourseSelectorLocked = isScopedVaSession && !showAllCoursesOption;
 
   // Filter by effective course
   const allAssets = useMemo(() => {
     if (!allAssetsRaw) return [];
-    if (effectiveCourseId === "all") return allAssetsRaw;
-    return allAssetsRaw.filter(a => a.course_id === effectiveCourseId);
-  }, [allAssetsRaw, effectiveCourseId]);
+    const scopedAssets = isScopedVaSession
+      ? allAssetsRaw.filter((asset) => assignedCourseIds.includes(asset.course_id))
+      : allAssetsRaw;
+    if (effectiveCourseId === "all") return scopedAssets;
+    return scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
+  }, [allAssetsRaw, assignedCourseIds, effectiveCourseId, isScopedVaSession]);
 
   const current = allAssets[currentIndex] ?? null;
   const totalReviewed = allAssets.filter(r => r.qa_status !== "pending").length;
@@ -597,7 +647,7 @@ export default function SolutionsQAReview() {
   }, [impersonating, vaAccount]);
 
   // ── Loading ─────────────────────────────────────────────────────
-  if (isLoading) {
+  if (isLoading || isAssignmentsLoading) {
     return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading QA records...</div>;
   }
 
@@ -617,7 +667,7 @@ export default function SolutionsQAReview() {
           {/* Course stats */}
           <div className="space-y-2">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Course Progress</p>
-            {COURSES.map(c => {
+            {availableCourses.map(c => {
               const s = courseStats[c.id];
               const pct = s && s.total > 0 ? (s.reviewed / s.total) * 100 : 0;
               return (
@@ -691,13 +741,13 @@ export default function SolutionsQAReview() {
           {/* Course selector */}
           <div className="space-y-2">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Start reviewing</p>
-            <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
+            <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseSelectorLocked}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="Select course" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Courses</SelectItem>
-                {COURSES.map(c => (
+                {showAllCoursesOption && <SelectItem value="all">{allCoursesLabel}</SelectItem>}
+                {availableCourses.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -724,11 +774,11 @@ export default function SolutionsQAReview() {
       <div className="flex flex-col items-center justify-center h-screen bg-background gap-3">
         <p className="text-muted-foreground text-sm">No QA records for this filter.</p>
         <div className="flex gap-2">
-          <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
+          <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseSelectorLocked}>
             <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Courses</SelectItem>
-              {COURSES.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
+              {showAllCoursesOption && <SelectItem value="all">{allCoursesLabel}</SelectItem>}
+              {availableCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
             </SelectContent>
           </Select>
           <Button size="sm" variant="outline" onClick={() => seedAllCourses()}>
@@ -751,11 +801,11 @@ export default function SolutionsQAReview() {
         </Link>
 
         {/* Course filter */}
-        <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
+        <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseSelectorLocked}>
           <SelectTrigger className="h-6 text-[10px] w-28 border-border"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Courses</SelectItem>
-            {COURSES.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
+            {showAllCoursesOption && <SelectItem value="all">{allCoursesLabel}</SelectItem>}
+            {availableCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
           </SelectContent>
         </Select>
 

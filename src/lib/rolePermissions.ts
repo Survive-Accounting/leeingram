@@ -13,6 +13,7 @@ const ROLE_ACTIVE_PATHS: Record<EffectiveRole, string[]> = {
     "/workspace",
     "/review",
     "/assets-library",
+    "/solutions-qa",
   ],
   sheet_prep_va: [
     "/assets-library",
