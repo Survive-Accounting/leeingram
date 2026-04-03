@@ -679,7 +679,7 @@ export default function SolutionsQAReview() {
           {/* Course selector */}
           <div className="space-y-2">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Start reviewing</p>
-            <Select value={selectedCourseId} onValueChange={handleCourseChange}>
+            <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="Select course" />
               </SelectTrigger>
@@ -712,7 +712,7 @@ export default function SolutionsQAReview() {
       <div className="flex flex-col items-center justify-center h-screen bg-background gap-3">
         <p className="text-muted-foreground text-sm">No QA records for this filter.</p>
         <div className="flex gap-2">
-          <Select value={selectedCourseId} onValueChange={handleCourseChange}>
+          <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
             <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Courses</SelectItem>
@@ -739,7 +739,7 @@ export default function SolutionsQAReview() {
         </Link>
 
         {/* Course filter */}
-        <Select value={selectedCourseId} onValueChange={handleCourseChange}>
+        <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
           <SelectTrigger className="h-6 text-[10px] w-28 border-border"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
