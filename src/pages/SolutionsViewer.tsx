@@ -2404,14 +2404,15 @@ export default function SolutionsViewer() {
     return () => clearInterval(iv);
   }, [tokenSession?.expires_at, previewToken]);
 
-  // Minimum display time for loading screen
-  const [minTimePassed, setMinTimePassed] = useState(false);
-  const [showLoadingDOM, setShowLoadingDOM] = useState(true);
+  // Minimum display time for loading screen — skip entirely in QA mode
+  const [minTimePassed, setMinTimePassed] = useState(isQaMode);
+  const [showLoadingDOM, setShowLoadingDOM] = useState(!isQaMode);
 
   useEffect(() => {
+    if (isQaMode) return;
     const timer = setTimeout(() => setMinTimePassed(true), 800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isQaMode]);
 
   // Fetch asset
   const { data, isLoading: dataLoading, isError: dataError } = useQuery({
