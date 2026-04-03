@@ -3815,6 +3815,7 @@ export type Database = {
           ebook_status: string
           exam_traps: string | null
           financial_statements_json: Json | null
+          fix_notes: string | null
           flowchart_image_id: string | null
           flowchart_image_url: string | null
           google_sheet_file_id: string | null
@@ -3912,6 +3913,7 @@ export type Database = {
           ebook_status?: string
           exam_traps?: string | null
           financial_statements_json?: Json | null
+          fix_notes?: string | null
           flowchart_image_id?: string | null
           flowchart_image_url?: string | null
           google_sheet_file_id?: string | null
@@ -4009,6 +4011,7 @@ export type Database = {
           ebook_status?: string
           exam_traps?: string | null
           financial_statements_json?: Json | null
+          fix_notes?: string | null
           flowchart_image_id?: string | null
           flowchart_image_url?: string | null
           google_sheet_file_id?: string | null

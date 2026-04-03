@@ -1,0 +1,1 @@
+ALTER TABLE public.teaching_assets ADD COLUMN fix_notes text;
