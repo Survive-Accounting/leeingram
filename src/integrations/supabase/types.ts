@@ -3522,6 +3522,7 @@ export type Database = {
       solutions_qa_assets: {
         Row: {
           asset_name: string
+          assigned_to: string | null
           chapter_id: string
           course_id: string
           created_at: string
@@ -3533,6 +3534,7 @@ export type Database = {
         }
         Insert: {
           asset_name: string
+          assigned_to?: string | null
           chapter_id: string
           course_id: string
           created_at?: string
@@ -3544,6 +3546,7 @@ export type Database = {
         }
         Update: {
           asset_name?: string
+          assigned_to?: string | null
           chapter_id?: string
           course_id?: string
           created_at?: string
