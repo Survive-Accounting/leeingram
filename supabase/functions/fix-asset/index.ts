@@ -1,0 +1,163 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const SECTION_COLUMNS: Record<string, string[]> = {
+  solution_je: ["journal_entry_completed_json"],
+  supplementary_je: ["supplementary_je_json"],
+  formulas: ["important_formulas"],
+  concepts: ["concept_notes"],
+  traps: ["exam_traps"],
+  flowchart: ["flowchart_image_url", "flowchart_image_id"],
+};
+
+function sectionToInvocation(key: string, teachingAssetId: string, fixPrompt: string) {
+  const map: Record<string, { fn: string; body: Record<string, unknown> }> = {
+    solution_je: { fn: "rewrite-je-tooltips", body: { teaching_asset_id: teachingAssetId, mode: "rewrite_reasons", fix_context: fixPrompt } },
+    supplementary_je: { fn: "generate-supplementary-je", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
+    formulas: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "important_formulas", fix_context: fixPrompt } },
+    concepts: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "concept_notes", fix_context: fixPrompt } },
+    traps: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "exam_traps", fix_context: fixPrompt } },
+    flowchart: { fn: "generate-flowchart", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
+  };
+  return map[key];
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  try {
+    const body = await req.json();
+    const { teaching_asset_id, sections, fix_prompt, action, snapshot } = body;
+
+    if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
+
+    // ── SNAPSHOT: Get current values before fix ──
+    if (action === "snapshot") {
+      if (!sections?.length) throw new Error("Missing sections");
+
+      const allCols = new Set<string>();
+      for (const s of sections) (SECTION_COLUMNS[s] || []).forEach(c => allCols.add(c));
+
+      const { data: asset, error } = await sb
+        .from("teaching_assets")
+        .select(["id", "asset_name", ...allCols].join(", "))
+        .eq("id", teaching_asset_id)
+        .single();
+      if (error || !asset) throw new Error("Asset not found");
+
+      const snap: Record<string, Record<string, unknown>> = {};
+      for (const s of sections) {
+        snap[s] = {};
+        for (const col of SECTION_COLUMNS[s] || []) snap[s][col] = (asset as any)[col];
+      }
+
+      return new Response(JSON.stringify({ snapshot: snap, asset_name: (asset as any).asset_name }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── RUN: Execute section regenerations ──
+    if (action === "run") {
+      if (!sections?.length) throw new Error("Missing sections");
+      if (!fix_prompt?.trim()) throw new Error("fix_prompt is required");
+
+      const results: { key: string; ok: boolean; error?: string }[] = [];
+
+      for (const sectionKey of sections) {
+        const inv = sectionToInvocation(sectionKey, teaching_asset_id, fix_prompt);
+        if (!inv) { results.push({ key: sectionKey, ok: false, error: "Unknown section" }); continue; }
+
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/${inv.fn}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify(inv.body),
+          });
+          if (!res.ok) {
+            results.push({ key: sectionKey, ok: false, error: (await res.text()).slice(0, 200) });
+          } else {
+            results.push({ key: sectionKey, ok: true });
+          }
+        } catch (e: any) {
+          results.push({ key: sectionKey, ok: false, error: e.message });
+        }
+      }
+
+      // Read updated values
+      const allCols = new Set<string>();
+      for (const s of sections) (SECTION_COLUMNS[s] || []).forEach(c => allCols.add(c));
+      const { data: updated } = await sb
+        .from("teaching_assets")
+        .select(["id", ...allCols].join(", "))
+        .eq("id", teaching_asset_id)
+        .single();
+
+      const after: Record<string, Record<string, unknown>> = {};
+      if (updated) {
+        for (const s of sections) {
+          after[s] = {};
+          for (const col of SECTION_COLUMNS[s] || []) after[s][col] = (updated as any)[col];
+        }
+      }
+
+      return new Response(JSON.stringify({ results, after }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── APPROVE: Save fix_notes audit trail ──
+    if (action === "approve") {
+      if (!fix_prompt) throw new Error("fix_prompt required");
+      const existing = await sb.from("teaching_assets").select("fix_notes").eq("id", teaching_asset_id).single();
+      const prev = (existing.data as any)?.fix_notes || "";
+      const timestamp = new Date().toISOString().slice(0, 16);
+      const newNote = `[${timestamp}] ${fix_prompt}`;
+      const combined = prev ? `${prev}\n---\n${newNote}` : newNote;
+
+      const { error } = await sb.from("teaching_assets").update({ fix_notes: combined }).eq("id", teaching_asset_id);
+      if (error) throw new Error("Failed to save: " + error.message);
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── RESTORE: Rollback to snapshot on reject ──
+    if (action === "restore") {
+      if (!snapshot || typeof snapshot !== "object") throw new Error("Missing snapshot");
+
+      const updateObj: Record<string, unknown> = {};
+      for (const sectionKey of Object.keys(snapshot)) {
+        for (const [col, val] of Object.entries(snapshot[sectionKey] as Record<string, unknown>)) {
+          updateObj[col] = val;
+        }
+      }
+
+      const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
+      if (error) throw new Error("Restore failed: " + error.message);
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    throw new Error("Invalid action. Use: snapshot, run, approve, restore");
+  } catch (e: any) {
+    console.error("fix-asset error:", e);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
