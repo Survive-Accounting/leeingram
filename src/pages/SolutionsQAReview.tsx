@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -241,6 +242,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 
 export default function SolutionsQAReview() {
   const { impersonating } = useImpersonation();
+  const { vaAccount } = useVaAccount();
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -322,10 +324,12 @@ export default function SolutionsQAReview() {
   });
 
   const seedAllCourses = useCallback(async () => {
+    let totalSeeded = 0;
     for (const course of COURSES) {
-      await seedMutation.mutateAsync(course.id);
+      const result = await seedMutation.mutateAsync(course.id);
+      totalSeeded += result?.seeded || 0;
     }
-    toast.success("All courses seeded");
+    if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
   }, [seedMutation]);
 
   useEffect(() => { seedAllCourses(); }, []);
@@ -354,13 +358,15 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // ── Impersonation: detect VA's assigned course ─────────────────
+  // ── Detect VA's assigned course (works for both impersonation AND real VAs) ──
   const vaAssignedCourseId = useMemo(() => {
-    if (!impersonating || !allAssetsRaw) return null;
-    const vaName = impersonating.full_name;
+    if (!allAssetsRaw) return null;
+    // Check impersonated VA name first, then real VA name
+    const vaName = impersonating?.full_name || vaAccount?.full_name;
+    if (!vaName) return null;
     const match = allAssetsRaw.find(a => a.assigned_to === vaName);
     return match?.course_id || null;
-  }, [impersonating, allAssetsRaw]);
+  }, [impersonating, vaAccount, allAssetsRaw]);
 
   const effectiveCourseId = vaAssignedCourseId || selectedCourseId;
   const isCourseLockedByImpersonation = !!vaAssignedCourseId;
@@ -581,14 +587,14 @@ export default function SolutionsQAReview() {
     setCurrentIndex(0);
   };
 
-  // ── Auto-set reviewer name when impersonating ──────────────────
+  // ── Auto-set reviewer name for impersonated or real VAs ─────────
   useEffect(() => {
-    if (impersonating?.full_name && !reviewerName) {
-      const name = impersonating.full_name;
+    const name = impersonating?.full_name || vaAccount?.full_name;
+    if (name && !reviewerName) {
       setReviewerName(name);
       localStorage.setItem("qa-reviewer-name", name);
     }
-  }, [impersonating]);
+  }, [impersonating, vaAccount]);
 
   // ── Loading ─────────────────────────────────────────────────────
   if (isLoading) {

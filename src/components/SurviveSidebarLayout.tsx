@@ -631,8 +631,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   </>
                 )}
 
-                {/* Quality Control section */}
-                {showPhase2 && (
+                {/* Quality Control section — visible to all roles */}
+                {(showPhase2 || isContentCreationVa) && (
                   <>
                     <div className="border-t border-border my-3" />
                     {!sidebarCollapsed && (
