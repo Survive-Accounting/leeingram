@@ -1063,6 +1063,21 @@ function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boo
               {emailError && <p className="text-[12px] mt-1" style={{ color: "#dc2626" }}>{emailError}</p>}
             </div>
 
+            {/* Name (optional) */}
+            <div className="mb-3">
+              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>Your name (optional)</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. King, or leave blank"
+                className="w-full outline-none transition-colors"
+                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
+                onFocus={e => e.target.style.borderColor = "#14213D"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+            </div>
+
             {/* Issue type */}
             <div className="mb-3">
               <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>What kind of issue?</label>
