@@ -79,19 +79,25 @@ function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
 
 function useDraggable(initialPos: { x: number; y: number }) {
   const [pos, setPos] = useState(initialPos);
+  const posRef = useRef(initialPos);
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
+  // Keep ref in sync with state
+  useEffect(() => { posRef.current = pos; }, [pos]);
+
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     dragging.current = true;
-    offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    offset.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y };
     e.preventDefault();
-  }, [pos]);
+  }, []);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y });
+      const next = { x: e.clientX - offset.current.x, y: e.clientY - offset.current.y };
+      posRef.current = next;
+      setPos(next);
     };
     const onUp = () => { dragging.current = false; };
     window.addEventListener("mousemove", onMove);
@@ -103,6 +109,7 @@ function useDraggable(initialPos: { x: number; y: number }) {
   }, []);
 
   const resetPos = useCallback((newPos: { x: number; y: number }) => {
+    posRef.current = newPos;
     setPos(newPos);
   }, []);
 
