@@ -298,6 +298,17 @@ export function StudentInbox() {
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <RespondByBadge respondByAt={row.respond_by_at} responded={row.responded} />
 
+                    {row.asset_name && (
+                      <a
+                        href={`/solutions/${row.asset_name}?admin=true`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
+                      >
+                        View Asset <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                    )}
+
                     {displayEmail && (
                       <a
                         href={`mailto:${displayEmail}?subject=${mailtoSubject}`}
@@ -316,6 +327,18 @@ export function StudentInbox() {
                       />
                       {row.responded ? "Responded" : "Mark responded"}
                     </label>
+
+                    {row.issue_type === "issue" && (
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={!!(row as any).fixed}
+                          onChange={() => handleToggleFixed(row.id, !!(row as any).fixed)}
+                          className="rounded accent-emerald-600"
+                        />
+                        {(row as any).fixed ? "✓ Fixed" : "Mark fixed"}
+                      </label>
+                    )}
                   </div>
                 </div>
               );
