@@ -915,14 +915,24 @@ const ISSUE_TYPES = [
   "Other",
 ];
 
-function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: () => void; asset: any }) {
+function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boolean; onClose: () => void; asset: any; isAdmin?: boolean }) {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [name, setName] = useState("");
   const [issueType, setIssueType] = useState(ISSUE_TYPES[0]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Pre-fill admin email for name
+  useEffect(() => {
+    if (isAdmin) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.email && !name) setName(session.user.email);
+      });
+    }
+  }, [isAdmin]);
 
   const chapter = (asset as any)?.chapters;
   const course = (asset as any)?.courses;
@@ -952,6 +962,7 @@ function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: ()
       await (supabase as any).from("chapter_questions").insert({
         chapter_id: asset.chapter_id,
         student_email: email.trim(),
+        student_name: name.trim() || null,
         question: message.trim(),
         issue_type: "issue",
         asset_name: asset.asset_name,
@@ -1050,6 +1061,21 @@ function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: ()
                 onBlur={e => e.target.style.borderColor = emailError ? "#dc2626" : "#e2e8f0"}
               />
               {emailError && <p className="text-[12px] mt-1" style={{ color: "#dc2626" }}>{emailError}</p>}
+            </div>
+
+            {/* Name (optional) */}
+            <div className="mb-3">
+              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>Your name (optional)</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. King, or leave blank"
+                className="w-full outline-none transition-colors"
+                style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14 }}
+                onFocus={e => e.target.style.borderColor = "#14213D"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
             </div>
 
             {/* Issue type */}
@@ -3037,7 +3063,7 @@ export default function SolutionsViewer() {
         </div>
       </main>
 
-      <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} />
+      <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
     </div>
     </>
   );
