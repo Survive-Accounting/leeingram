@@ -3063,7 +3063,7 @@ export default function SolutionsViewer() {
         </div>
       </main>
 
-      <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} />
+      <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
     </div>
     </>
   );
