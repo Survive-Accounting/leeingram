@@ -584,6 +584,15 @@ export default function SolutionsQAReview() {
     setCurrentIndex(0);
   };
 
+  // ── Auto-set reviewer name when impersonating ──────────────────
+  useEffect(() => {
+    if (impersonating?.full_name && !reviewerName) {
+      const name = impersonating.full_name;
+      setReviewerName(name);
+      localStorage.setItem("qa-reviewer-name", name);
+    }
+  }, [impersonating]);
+
   // ── Loading ─────────────────────────────────────────────────────
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading QA records...</div>;
