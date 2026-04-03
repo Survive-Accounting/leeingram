@@ -835,8 +835,8 @@ export default function SolutionsQAReview() {
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-muted-foreground" onClick={jumpToNextPending} title="Skip to next pending [S]">
-                  <SkipForward className="h-3 w-3 mr-0.5" /> Next Pending
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-muted-foreground" onClick={jumpToNextPending} title="Skip to unreviewed [S]">
+                  <SkipForward className="h-3 w-3 mr-0.5" /> Skip to Unreviewed →
                 </Button>
               </div>
 
