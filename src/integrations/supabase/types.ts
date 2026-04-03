@@ -1200,6 +1200,7 @@ export type Database = {
           asset_name: string | null
           chapter_id: string
           created_at: string
+          fixed: boolean
           id: string
           issue_type: string
           question: string
@@ -1216,6 +1217,7 @@ export type Database = {
           asset_name?: string | null
           chapter_id: string
           created_at?: string
+          fixed?: boolean
           id?: string
           issue_type?: string
           question?: string
@@ -1232,6 +1234,7 @@ export type Database = {
           asset_name?: string | null
           chapter_id?: string
           created_at?: string
+          fixed?: boolean
           id?: string
           issue_type?: string
           question?: string

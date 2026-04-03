@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_questions ADD COLUMN fixed boolean NOT NULL DEFAULT false;
