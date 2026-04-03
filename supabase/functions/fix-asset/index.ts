@@ -8,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Maps section keys to the DB columns they affect
 const SECTION_COLUMNS: Record<string, string[]> = {
   solution_je: ["journal_entry_completed_json"],
   supplementary_je: ["supplementary_je_json"],
@@ -18,9 +17,8 @@ const SECTION_COLUMNS: Record<string, string[]> = {
   flowchart: ["flowchart_image_url", "flowchart_image_id"],
 };
 
-// Maps section keys to the edge function + body they call
 function sectionToInvocation(key: string, teachingAssetId: string, fixPrompt: string) {
-  const base: Record<string, { fn: string; body: Record<string, unknown> }> = {
+  const map: Record<string, { fn: string; body: Record<string, unknown> }> = {
     solution_je: { fn: "rewrite-je-tooltips", body: { teaching_asset_id: teachingAssetId, mode: "rewrite_reasons", fix_context: fixPrompt } },
     supplementary_je: { fn: "generate-supplementary-je", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
     formulas: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "important_formulas", fix_context: fixPrompt } },
@@ -28,7 +26,7 @@ function sectionToInvocation(key: string, teachingAssetId: string, fixPrompt: st
     traps: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "exam_traps", fix_context: fixPrompt } },
     flowchart: { fn: "generate-flowchart", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
   };
-  return base[key];
+  return map[key];
 }
 
 serve(async (req) => {
@@ -39,102 +37,77 @@ serve(async (req) => {
   const sb = createClient(supabaseUrl, serviceKey);
 
   try {
-    const { teaching_asset_id, sections, fix_prompt, action } = await req.json();
+    const body = await req.json();
+    const { teaching_asset_id, sections, fix_prompt, action, snapshot } = body;
 
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
 
-    // ── ACTION: snapshot ── Get current values for selected sections
+    // ── SNAPSHOT: Get current values before fix ──
     if (action === "snapshot") {
-      if (!sections || !Array.isArray(sections) || sections.length === 0) {
-        throw new Error("Missing or empty sections array");
-      }
+      if (!sections?.length) throw new Error("Missing sections");
 
-      const allColumns = new Set<string>();
-      for (const s of sections) {
-        (SECTION_COLUMNS[s] || []).forEach(c => allColumns.add(c));
-      }
+      const allCols = new Set<string>();
+      for (const s of sections) (SECTION_COLUMNS[s] || []).forEach(c => allCols.add(c));
 
-      const selectStr = ["id", "asset_name", ...allColumns].join(", ");
       const { data: asset, error } = await sb
         .from("teaching_assets")
-        .select(selectStr)
+        .select(["id", "asset_name", ...allCols].join(", "))
         .eq("id", teaching_asset_id)
         .single();
       if (error || !asset) throw new Error("Asset not found");
 
-      // Return snapshot keyed by section
-      const snapshot: Record<string, Record<string, unknown>> = {};
+      const snap: Record<string, Record<string, unknown>> = {};
       for (const s of sections) {
-        snapshot[s] = {};
-        for (const col of SECTION_COLUMNS[s] || []) {
-          snapshot[s][col] = (asset as any)[col];
-        }
+        snap[s] = {};
+        for (const col of SECTION_COLUMNS[s] || []) snap[s][col] = (asset as any)[col];
       }
 
-      return new Response(JSON.stringify({ snapshot, asset_name: (asset as any).asset_name }), {
+      return new Response(JSON.stringify({ snapshot: snap, asset_name: (asset as any).asset_name }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── ACTION: run ── Execute fixes for selected sections
+    // ── RUN: Execute section regenerations ──
     if (action === "run") {
-      if (!sections || !Array.isArray(sections) || sections.length === 0) {
-        throw new Error("Missing or empty sections array");
-      }
-      if (!fix_prompt || typeof fix_prompt !== "string" || fix_prompt.trim().length === 0) {
-        throw new Error("fix_prompt is required");
-      }
+      if (!sections?.length) throw new Error("Missing sections");
+      if (!fix_prompt?.trim()) throw new Error("fix_prompt is required");
 
       const results: { key: string; ok: boolean; error?: string }[] = [];
 
       for (const sectionKey of sections) {
-        const invocation = sectionToInvocation(sectionKey, teaching_asset_id, fix_prompt);
-        if (!invocation) {
-          results.push({ key: sectionKey, ok: false, error: "Unknown section" });
-          continue;
-        }
+        const inv = sectionToInvocation(sectionKey, teaching_asset_id, fix_prompt);
+        if (!inv) { results.push({ key: sectionKey, ok: false, error: "Unknown section" }); continue; }
 
         try {
-          const fnUrl = `${supabaseUrl}/functions/v1/${invocation.fn}`;
-          const res = await fetch(fnUrl, {
+          const res = await fetch(`${supabaseUrl}/functions/v1/${inv.fn}`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${serviceKey}`,
-            },
-            body: JSON.stringify(invocation.body),
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify(inv.body),
           });
-
           if (!res.ok) {
-            const errText = await res.text();
-            results.push({ key: sectionKey, ok: false, error: errText.slice(0, 200) });
+            results.push({ key: sectionKey, ok: false, error: (await res.text()).slice(0, 200) });
           } else {
             results.push({ key: sectionKey, ok: true });
           }
         } catch (e: any) {
-          results.push({ key: sectionKey, ok: false, error: e.message || "Unknown error" });
+          results.push({ key: sectionKey, ok: false, error: e.message });
         }
       }
 
-      // Read the new values after regeneration
-      const allColumns = new Set<string>();
-      for (const s of sections) {
-        (SECTION_COLUMNS[s] || []).forEach(c => allColumns.add(c));
-      }
-      const selectStr = ["id", ...allColumns].join(", ");
-      const { data: updatedAsset } = await sb
+      // Read updated values
+      const allCols = new Set<string>();
+      for (const s of sections) (SECTION_COLUMNS[s] || []).forEach(c => allCols.add(c));
+      const { data: updated } = await sb
         .from("teaching_assets")
-        .select(selectStr)
+        .select(["id", ...allCols].join(", "))
         .eq("id", teaching_asset_id)
         .single();
 
       const after: Record<string, Record<string, unknown>> = {};
-      if (updatedAsset) {
+      if (updated) {
         for (const s of sections) {
           after[s] = {};
-          for (const col of SECTION_COLUMNS[s] || []) {
-            after[s][col] = (updatedAsset as any)[col];
-          }
+          for (const col of SECTION_COLUMNS[s] || []) after[s][col] = (updated as any)[col];
         }
       }
 
@@ -143,39 +116,26 @@ serve(async (req) => {
       });
     }
 
-    // ── ACTION: approve ── Save fix_notes audit trail
+    // ── APPROVE: Save fix_notes audit trail ──
     if (action === "approve") {
-      if (!fix_prompt) throw new Error("fix_prompt required for audit trail");
+      if (!fix_prompt) throw new Error("fix_prompt required");
+      const existing = await sb.from("teaching_assets").select("fix_notes").eq("id", teaching_asset_id).single();
+      const prev = (existing.data as any)?.fix_notes || "";
+      const timestamp = new Date().toISOString().slice(0, 16);
+      const newNote = `[${timestamp}] ${fix_prompt}`;
+      const combined = prev ? `${prev}\n---\n${newNote}` : newNote;
 
-      const { error } = await sb
-        .from("teaching_assets")
-        .update({ fix_notes: fix_prompt })
-        .eq("id", teaching_asset_id);
-      if (error) throw new Error("Failed to save fix_notes: " + error.message);
+      const { error } = await sb.from("teaching_assets").update({ fix_notes: combined }).eq("id", teaching_asset_id);
+      if (error) throw new Error("Failed to save: " + error.message);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── ACTION: reject ── Restore snapshot values
-    if (action === "reject") {
-      const { snapshot } = await req.json().catch(() => ({ snapshot: null }));
-      // snapshot was already parsed above from the original req.json()
-      // We need it passed in the body
-      if (!sections || !Array.isArray(sections)) throw new Error("Missing sections");
-
-      // The snapshot should be passed in the body
-      const body = { teaching_asset_id, sections, fix_prompt, action, snapshot: null as any };
-      // Re-read from the original parse — snapshot comes from the request body
-      // Actually we already destructured above, let's check
-    }
-
-    // ── ACTION: restore ── Restore a snapshot (called on reject)
+    // ── RESTORE: Rollback to snapshot on reject ──
     if (action === "restore") {
-      const { snapshot } = await req.json().catch(() => ({ snapshot: null }));
-      // Already parsed above
-      if (!snapshot || typeof snapshot !== "object") throw new Error("Missing snapshot data");
+      if (!snapshot || typeof snapshot !== "object") throw new Error("Missing snapshot");
 
       const updateObj: Record<string, unknown> = {};
       for (const sectionKey of Object.keys(snapshot)) {
@@ -184,18 +144,15 @@ serve(async (req) => {
         }
       }
 
-      const { error } = await sb
-        .from("teaching_assets")
-        .update(updateObj)
-        .eq("id", teaching_asset_id);
-      if (error) throw new Error("Failed to restore: " + error.message);
+      const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
+      if (error) throw new Error("Restore failed: " + error.message);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    throw new Error("Invalid action. Must be 'snapshot', 'run', 'approve', or 'restore'");
+    throw new Error("Invalid action. Use: snapshot, run, approve, restore");
   } catch (e: any) {
     console.error("fix-asset error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
