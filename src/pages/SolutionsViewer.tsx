@@ -3018,15 +3018,15 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 4. Important Formulas */}
-              {formulas.trim() && (
+              {/* 4. Important Formulas — hidden in QA mode */}
+              {formulas.trim() && !isQaMode && (
                 <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <GroupedFormulas text={formulas} theme={t} />
                 </RevealToggle>
               )}
 
-              {/* 5. Key Concepts */}
-              {conceptNotes.trim() && (
+              {/* 5. Key Concepts — hidden in QA mode */}
+              {conceptNotes.trim() && !isQaMode && (
                 <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <ul className="space-y-3">
                     {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
@@ -3039,8 +3039,8 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 6. Exam Traps */}
-              {examTraps.trim() && (
+              {/* 6. Exam Traps — hidden in QA mode */}
+              {examTraps.trim() && !isQaMode && (
                 <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
                     <ul className="space-y-3">
