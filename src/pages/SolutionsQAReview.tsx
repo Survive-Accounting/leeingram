@@ -357,12 +357,23 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // Filter by selected course
+  // ── Impersonation: detect VA's assigned course ─────────────────
+  const vaAssignedCourseId = useMemo(() => {
+    if (!impersonating || !allAssetsRaw) return null;
+    const vaName = impersonating.full_name;
+    const match = allAssetsRaw.find(a => a.assigned_to === vaName);
+    return match?.course_id || null;
+  }, [impersonating, allAssetsRaw]);
+
+  const effectiveCourseId = vaAssignedCourseId || selectedCourseId;
+  const isCourseLockedByImpersonation = !!vaAssignedCourseId;
+
+  // Filter by effective course
   const allAssets = useMemo(() => {
     if (!allAssetsRaw) return [];
-    if (selectedCourseId === "all") return allAssetsRaw;
-    return allAssetsRaw.filter(a => a.course_id === selectedCourseId);
-  }, [allAssetsRaw, selectedCourseId]);
+    if (effectiveCourseId === "all") return allAssetsRaw;
+    return allAssetsRaw.filter(a => a.course_id === effectiveCourseId);
+  }, [allAssetsRaw, effectiveCourseId]);
 
   const current = allAssets[currentIndex] ?? null;
   const totalReviewed = allAssets.filter(r => r.qa_status !== "pending").length;
