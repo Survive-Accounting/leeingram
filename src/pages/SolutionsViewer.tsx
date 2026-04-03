@@ -3072,6 +3072,37 @@ export default function SolutionsViewer() {
                   </>
                 )}
               </div>
+
+              {/* ── How This Works FAQ ── */}
+              <details className="mt-4 group">
+                <summary
+                  className="cursor-pointer list-none select-none"
+                  style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase" as const, letterSpacing: "0.05em", fontWeight: 600 }}
+                >
+                  How this works ↓
+                </summary>
+                <div className="mt-3 space-y-0">
+                  {[
+                    { q: "Why are the numbers different from my textbook?", a: "The dollar amounts are intentionally different — we use original numbers so you practice the concept, not just memorize an answer. The accounting method and journal entries are identical to your textbook." },
+                    { q: "Why does it say 'Survive Company' instead of the company name in my textbook?", a: "Same reason — original company names keep the problems fresh and prevent answer-sharing. The underlying accounting situation is the same." },
+                    { q: "What's included for free vs. paid?", a: "The practice problem and instructions are always free. The full solution, journal entries, key concepts, and exam traps are included with a Study Pass." },
+                    { q: "Something looks wrong — how do I report it?", a: "Use the 'Report Issue' button in the top-right corner. Lee reviews every report personally and fixes issues as they come in." },
+                    { q: "Who made this?", a: "Lee Ingram — accounting tutor at Ole Miss since 2020. These problems are built from real exam prep sessions with hundreds of students." },
+                  ].map((faq, i) => (
+                    <details key={i} className="group/faq" style={{ borderBottom: `1px solid ${t.border}` }}>
+                      <summary
+                        className="cursor-pointer list-none select-none py-3 text-[13px]"
+                        style={{ fontWeight: 500, color: t.text }}
+                      >
+                        {faq.q}
+                      </summary>
+                      <p className="pb-3 text-[13px] leading-[1.7]" style={{ color: t.textMuted }}>
+                        {faq.a}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+              </details>
             </div>
 
             {/* Subtle right border for desktop */}
