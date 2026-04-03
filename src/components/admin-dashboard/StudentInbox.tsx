@@ -300,7 +300,7 @@ export function StudentInbox() {
 
                     {row.asset_name && (
                       <a
-                        href={`/solutions/${row.asset_name}?admin=true`}
+                        href={`/solutions/${row.asset_name}?ref=lw`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
