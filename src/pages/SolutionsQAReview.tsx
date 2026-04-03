@@ -356,13 +356,15 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // ── Impersonation: detect VA's assigned course ─────────────────
+  // ── Detect VA's assigned course (works for both impersonation AND real VAs) ──
   const vaAssignedCourseId = useMemo(() => {
-    if (!impersonating || !allAssetsRaw) return null;
-    const vaName = impersonating.full_name;
+    if (!allAssetsRaw) return null;
+    // Check impersonated VA name first, then real VA name
+    const vaName = impersonating?.full_name || vaAccount?.full_name;
+    if (!vaName) return null;
     const match = allAssetsRaw.find(a => a.assigned_to === vaName);
     return match?.course_id || null;
-  }, [impersonating, allAssetsRaw]);
+  }, [impersonating, vaAccount, allAssetsRaw]);
 
   const effectiveCourseId = vaAssignedCourseId || selectedCourseId;
   const isCourseLockedByImpersonation = !!vaAssignedCourseId;
