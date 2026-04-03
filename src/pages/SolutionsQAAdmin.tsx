@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle2, Copy, FileText, Sparkles, Zap, Target } from "lucide-react";
+import { CheckCircle2, Copy, FileText, Sparkles, Zap, Target, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type QAAsset = {
@@ -33,6 +33,17 @@ type QAIssue = {
   fix_scope: string;
 };
 
+type StatusCounts = {
+  total: number;
+  pending: number;
+  clean: number;
+  issues: number;
+  fixApproved: number;
+  generated: number;
+};
+
+const PAGE_SIZE = 100;
+
 export default function SolutionsQAAdmin() {
   const qc = useQueryClient();
   const [fixDescriptions, setFixDescriptions] = useState<Record<string, string>>({});
@@ -43,14 +54,67 @@ export default function SolutionsQAAdmin() {
   const [allAssetsFilter, setAllAssetsFilter] = useState<string>("all");
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
 
-  const { data: assets } = useQuery({
-    queryKey: ["qa-admin-assets"],
+  // ── Server-side COUNT query for summary cards ──
+  const { data: counts } = useQuery<StatusCounts>({
+    queryKey: ["qa-admin-counts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("solutions_qa_assets" as any).select("*").order("asset_name");
-      if (error) throw error;
-      return (data as any[]) as QAAsset[];
+      // Use individual count queries since we can't do SQL aggregates via JS client
+      const base = supabase.from("solutions_qa_assets" as any);
+      const [total, pending, clean, issues, fixApproved, generated] = await Promise.all([
+        base.select("id", { count: "exact", head: true }),
+        base.select("id", { count: "exact", head: true }).eq("qa_status", "pending"),
+        base.select("id", { count: "exact", head: true }).eq("qa_status", "reviewed_clean"),
+        base.select("id", { count: "exact", head: true }).eq("qa_status", "reviewed_issues"),
+        base.select("id", { count: "exact", head: true }).eq("qa_status", "fix_approved"),
+        base.select("id", { count: "exact", head: true }).eq("qa_status", "fix_generated"),
+      ]);
+      return {
+        total: total.count ?? 0,
+        pending: pending.count ?? 0,
+        clean: clean.count ?? 0,
+        issues: issues.count ?? 0,
+        fixApproved: fixApproved.count ?? 0,
+        generated: generated.count ?? 0,
+      };
     },
   });
+
+  const safeCount = counts ?? { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
+
+  // ── Paginated assets for the "All Assets" tab ──
+  const assetsQueryKey = ["qa-admin-assets-paged", allAssetsFilter, allAssetsChapter];
+
+  const {
+    data: assetsPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: assetsQueryKey,
+    queryFn: async ({ pageParam = 0 }) => {
+      let q = supabase
+        .from("solutions_qa_assets" as any)
+        .select("*")
+        .order("asset_name")
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
+
+      if (allAssetsFilter !== "all") q = q.eq("qa_status", allAssetsFilter);
+      if (allAssetsChapter !== "all") q = q.eq("chapter_id", allAssetsChapter);
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return { rows: (data as any[]) as QAAsset[], nextOffset: (data as any[]).length === PAGE_SIZE ? pageParam + PAGE_SIZE : undefined };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+  });
+
+  const allAssetsFiltered = useMemo(() => assetsPages?.pages.flatMap(p => p.rows) ?? [], [assetsPages]);
+
+  // Reset pagination when filters change
+  const handleFilterChange = useCallback((setter: (v: string) => void, value: string) => {
+    setter(value);
+  }, []);
 
   const { data: allIssues } = useQuery({
     queryKey: ["qa-admin-issues"],
@@ -71,18 +135,6 @@ export default function SolutionsQAAdmin() {
     },
   });
 
-  const counts = useMemo(() => {
-    if (!assets) return { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
-    return {
-      total: assets.length,
-      pending: assets.filter(r => r.qa_status === "pending").length,
-      clean: assets.filter(r => r.qa_status === "reviewed_clean").length,
-      issues: assets.filter(r => r.qa_status === "reviewed_issues").length,
-      fixApproved: assets.filter(r => r.qa_status === "fix_approved").length,
-      generated: assets.filter(r => r.qa_status === "fix_generated").length,
-    };
-  }, [assets]);
-
   const bulkFixesReady = useMemo(() =>
     allIssues?.filter(i => i.fix_scope === "bulk_pattern" && i.fix_status === "approved").length ?? 0,
   [allIssues]);
@@ -90,20 +142,11 @@ export default function SolutionsQAAdmin() {
   const pendingIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "pending") || [], [allIssues]);
   const approvedIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "approved") || [], [allIssues]);
 
-  // Track which assets have bulk_pattern issues
   const bulkAssetIds = useMemo(() => {
     const ids = new Set<string>();
     allIssues?.forEach(i => { if (i.fix_scope === "bulk_pattern") ids.add(i.qa_asset_id); });
     return ids;
   }, [allIssues]);
-
-  const allAssetsFiltered = useMemo(() => {
-    if (!assets) return [];
-    let r = assets;
-    if (allAssetsFilter !== "all") r = r.filter(rec => rec.qa_status === allAssetsFilter);
-    if (allAssetsChapter !== "all") r = r.filter(rec => rec.chapter_id === allAssetsChapter);
-    return r;
-  }, [assets, allAssetsFilter, allAssetsChapter]);
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, fixDesc, fixScope }: { id: string; fixDesc: string; fixScope: string }) => {
@@ -176,7 +219,8 @@ export default function SolutionsQAAdmin() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
-      qc.invalidateQueries({ queryKey: ["qa-admin-assets"] });
+      qc.invalidateQueries({ queryKey: ["qa-admin-counts"] });
+      qc.invalidateQueries({ queryKey: assetsQueryKey });
       toast.success("All marked as generated");
       setGeneratedPrompt("");
       setPromptIds([]);
@@ -210,12 +254,12 @@ export default function SolutionsQAAdmin() {
         {/* Summary cards */}
         <div className="grid grid-cols-7 gap-2">
           {[
-            { label: "Total", value: counts.total, color: "text-foreground", bg: "" },
-            { label: "Pending", value: counts.pending, color: "text-muted-foreground", bg: "" },
-            { label: "Clean", value: counts.clean, color: "text-emerald-400", bg: "" },
-            { label: "Issues", value: counts.issues, color: "text-amber-400", bg: "" },
-            { label: "Fix Approved", value: counts.fixApproved, color: "text-blue-400", bg: "" },
-            { label: "Generated", value: counts.generated, color: "text-purple-400", bg: "" },
+            { label: "Total", value: safeCount.total, color: "text-foreground", bg: "" },
+            { label: "Pending", value: safeCount.pending, color: "text-muted-foreground", bg: "" },
+            { label: "Clean", value: safeCount.clean, color: "text-emerald-400", bg: "" },
+            { label: "Issues", value: safeCount.issues, color: "text-amber-400", bg: "" },
+            { label: "Fix Approved", value: safeCount.fixApproved, color: "text-blue-400", bg: "" },
+            { label: "Generated", value: safeCount.generated, color: "text-purple-400", bg: "" },
             { label: "⚡ Bulk Fixes", value: bulkFixesReady, color: "text-amber-900", bg: "bg-amber-400/30 border-amber-500/40" },
           ].map(c => (
             <Card key={c.label} className={`${c.bg || "bg-card/50"}`}>
@@ -231,7 +275,7 @@ export default function SolutionsQAAdmin() {
           <TabsList>
             <TabsTrigger value="issues" className="text-xs">Issues to Review ({pendingIssues.length})</TabsTrigger>
             <TabsTrigger value="prompt" className="text-xs">Generate Prompt ({approvedIssues.length})</TabsTrigger>
-            <TabsTrigger value="all" className="text-xs">All Assets ({counts.total})</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs">All Assets ({safeCount.total})</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: Issues */}
@@ -364,10 +408,10 @@ export default function SolutionsQAAdmin() {
             )}
           </TabsContent>
 
-          {/* TAB 3: All Assets */}
+          {/* TAB 3: All Assets (paginated) */}
           <TabsContent value="all" className="space-y-3 mt-3">
             <div className="flex items-center gap-2 mb-3">
-              <Select value={allAssetsFilter} onValueChange={v => setAllAssetsFilter(v)}>
+              <Select value={allAssetsFilter} onValueChange={v => handleFilterChange(setAllAssetsFilter, v)}>
                 <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
@@ -378,14 +422,16 @@ export default function SolutionsQAAdmin() {
                   <SelectItem value="fix_generated">Generated</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={allAssetsChapter} onValueChange={v => setAllAssetsChapter(v)}>
+              <Select value={allAssetsChapter} onValueChange={v => handleFilterChange(setAllAssetsChapter, v)}>
                 <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All chapters</SelectItem>
                   {chapters?.map(ch => <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <span className="text-xs text-muted-foreground ml-auto">{allAssetsFiltered.length} results</span>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {allAssetsFiltered.length} loaded{hasNextPage ? " (more available)" : ""}
+              </span>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-border">
@@ -415,6 +461,24 @@ export default function SolutionsQAAdmin() {
                 </tbody>
               </table>
             </div>
+
+            {hasNextPage && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                >
+                  {isFetchingNextPage ? (
+                    <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Loading…</>
+                  ) : (
+                    "Load more"
+                  )}
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
