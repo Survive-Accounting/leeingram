@@ -1785,12 +1785,157 @@ function FeedbackModal({ open, onClose, asset }: { open: boolean; onClose: () =>
   );
 }
 
+// ── Fix This Now Modal ───────────────────────────────────────────────
+
+const FIX_SECTIONS = [
+  { key: "solution_je", label: "Solution text + JE reasons", fn: "rewrite-je-tooltips", bodyFn: (id: string) => ({ teaching_asset_id: id, mode: "rewrite_reasons" }) },
+  { key: "supplementary_je", label: "Supplementary journal entries", fn: "generate-supplementary-je", bodyFn: (id: string) => ({ teaching_asset_id: id }) },
+  { key: "dissector", label: "Problem dissector highlights", fn: "generate-dissector-highlights", bodyFn: (id: string) => ({ teaching_asset_id: id }) },
+  { key: "formulas", label: "Important formulas", fn: "generate-ai-output", bodyFn: (id: string) => ({ teaching_asset_id: id, section: "important_formulas" }) },
+  { key: "concepts", label: "Key concepts", fn: "generate-ai-output", bodyFn: (id: string) => ({ teaching_asset_id: id, section: "concept_notes" }) },
+  { key: "traps", label: "Exam traps", fn: "generate-ai-output", bodyFn: (id: string) => ({ teaching_asset_id: id, section: "exam_traps" }) },
+  { key: "flowchart", label: "Flowchart", fn: "generate-flowchart", bodyFn: (id: string) => ({ teaching_asset_id: id }) },
+];
+
+function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: string; teachingAssetId: string; onClose: () => void }) {
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number; currentLabel: string }>({ current: 0, total: 0, currentLabel: "" });
+  const [results, setResults] = useState<{ key: string; ok: boolean; error?: string }[]>([]);
+  const [done, setDone] = useState(false);
+
+  const allChecked = checked.size === FIX_SECTIONS.length;
+  const toggleAll = () => {
+    if (allChecked) setChecked(new Set());
+    else setChecked(new Set(FIX_SECTIONS.map(s => s.key)));
+  };
+  const toggle = (key: string) => {
+    setChecked(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const runFix = async () => {
+    const selected = FIX_SECTIONS.filter(s => checked.has(s.key));
+    if (!selected.length) return;
+    setRunning(true);
+    setResults([]);
+    setProgress({ current: 0, total: selected.length, currentLabel: selected[0].label });
+
+    const newResults: { key: string; ok: boolean; error?: string }[] = [];
+    for (let i = 0; i < selected.length; i++) {
+      const sec = selected[i];
+      setProgress({ current: i, total: selected.length, currentLabel: sec.label });
+      try {
+        const { error } = await supabase.functions.invoke(sec.fn, { body: sec.bodyFn(teachingAssetId) });
+        if (error) throw error;
+        newResults.push({ key: sec.key, ok: true });
+      } catch (err: any) {
+        newResults.push({ key: sec.key, ok: false, error: err.message || "Unknown error" });
+      }
+      setResults([...newResults]);
+    }
+    setProgress(p => ({ ...p, current: selected.length }));
+    setDone(true);
+    setRunning(false);
+  };
+
+  const hasErrors = results.some(r => !r.ok);
+
+  return (
+    <Dialog open onOpenChange={() => { if (!running) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">Regenerate Asset — {assetCode}</DialogTitle>
+          <DialogDescription className="text-xs">
+            Select sections to regenerate. Unchecked sections are untouched.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {/* Select All */}
+          <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer select-none border-b border-border pb-2">
+            <input type="checkbox" checked={allChecked} onChange={toggleAll} disabled={running} className="rounded" />
+            Select All
+          </label>
+
+          {/* Section checkboxes */}
+          <div className="space-y-1.5">
+            {FIX_SECTIONS.map(sec => {
+              const result = results.find(r => r.key === sec.key);
+              return (
+                <label key={sec.key} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input type="checkbox" checked={checked.has(sec.key)} onChange={() => toggle(sec.key)} disabled={running} className="rounded" />
+                  <span className="flex-1">{sec.label}</span>
+                  {result && (
+                    result.ok
+                      ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                      : <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                  )}
+                </label>
+              );
+            })}
+          </div>
+
+          {/* Warning */}
+          {!done && (
+            <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              ⚠ This will overwrite existing data for checked sections only. Unchecked sections are untouched.
+            </p>
+          )}
+
+          {/* Progress */}
+          {running && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Processing {progress.current + 1}/{progress.total}: {progress.currentLabel}…</span>
+            </div>
+          )}
+
+          {/* Done state */}
+          {done && !hasErrors && (
+            <p className="text-sm text-emerald-600 font-semibold">✓ Done — refresh to see changes</p>
+          )}
+          {done && hasErrors && (
+            <div className="space-y-1">
+              <p className="text-sm text-destructive font-semibold">Some sections failed:</p>
+              {results.filter(r => !r.ok).map(r => (
+                <p key={r.key} className="text-xs text-destructive">{FIX_SECTIONS.find(s => s.key === r.key)?.label}: {r.error}</p>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          {!done ? (
+            <Button
+              onClick={runFix}
+              disabled={checked.size === 0 || running}
+              className="text-white text-sm"
+              style={{ background: "#14213D" }}
+            >
+              {running ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Running…</> : "Run Fix →"}
+            </Button>
+          ) : (
+            <Button onClick={() => { onClose(); window.location.reload(); }} variant="outline">
+              Close & Refresh
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [fixOpen, setFixOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
   });
@@ -1859,6 +2004,19 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
           <div className="flex items-center">
             {!collapsed && (
               <>
+                {/* Admin: Fix This Now */}
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => setFixOpen(true)}
+                      className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
+                      style={{ color: "#14213D" }}
+                    >
+                      <Wrench className="h-3 w-3" /> Fix This Now
+                    </button>
+                    <div className="w-px h-5" style={{ background: theme.border }} />
+                  </>
+                )}
                 {showShare && (
                   <>
                     <button
@@ -1906,6 +2064,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
       {asset && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} asset={asset} />}
+      {fixOpen && asset && <FixThisNowModal assetCode={assetCode} teachingAssetId={asset.id} onClose={() => setFixOpen(false)} />}
     </>
   );
 }
