@@ -233,11 +233,23 @@ export default function SolutionsQAReview() {
         .eq("course_id", courseId);
       if (count && count > 0) return { seeded: 0 };
 
-      const { data: assets } = await supabase
-        .from("teaching_assets")
-        .select("id, asset_name, chapter_id, course_id")
-        .eq("course_id", courseId);
-      if (!assets?.length) return { seeded: 0 };
+      // Paginate to get ALL teaching assets (beyond 1000-row default)
+      let allTeachingAssets: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: page } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, chapter_id, course_id")
+          .eq("course_id", courseId)
+          .range(from, from + pageSize - 1);
+        if (!page?.length) break;
+        allTeachingAssets = allTeachingAssets.concat(page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+      if (!allTeachingAssets.length) return { seeded: 0 };
+      const assets = allTeachingAssets;
 
       const records = assets.map(a => ({
         teaching_asset_id: a.id,
