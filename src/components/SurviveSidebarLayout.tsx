@@ -564,18 +564,22 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   </Link>
                 )}
 
-                {/* Phase 1 — collapsible */}
-                {!sidebarCollapsed && (
-                  <button
-                    onClick={() => setPhase1Open(p => !p)}
-                    className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5 hover:text-primary/80 transition-colors"
-                  >
-                    <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase1Open && "rotate-90")} />
-                    Phase 1 · Teaching Asset Creation
-                  </button>
-                )}
-                {(sidebarCollapsed || phase1Open) && (
-                  <div className="space-y-0.5">{renderNavItems(phase1Items)}</div>
+                {/* Phase 1 — collapsible (hidden for Content Creation VAs) */}
+                {!isContentCreationVa && (
+                  <>
+                    {!sidebarCollapsed && (
+                      <button
+                        onClick={() => setPhase1Open(p => !p)}
+                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5 hover:text-primary/80 transition-colors"
+                      >
+                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase1Open && "rotate-90")} />
+                        Phase 1 · Teaching Asset Creation
+                      </button>
+                    )}
+                    {(sidebarCollapsed || phase1Open) && (
+                      <div className="space-y-0.5">{renderNavItems(phase1Items)}</div>
+                    )}
+                  </>
                 )}
 
                 {showPhase2 && (
