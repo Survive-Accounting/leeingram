@@ -2985,8 +2985,8 @@ export default function SolutionsViewer() {
             style={{ borderRight: undefined }}
           >
             <div
-              className="lg:sticky overflow-y-auto"
-              style={{ top: HEADER_HEIGHT + 16, maxHeight: `calc(100vh - ${HEADER_HEIGHT + 32}px)` }}
+              className="lg:sticky"
+              style={{ top: HEADER_HEIGHT + 16 }}
             >
               <div
                 className="rounded-xl px-4 sm:px-6 py-5 sm:py-6"
