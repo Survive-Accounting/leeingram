@@ -905,14 +905,19 @@ export default function SolutionsQAReview() {
                 </Button>
               </div>
 
-              {/* Chapter info */}
-              {assetDetail?.chapters && (
-                <div className="px-2.5 py-1 border-b border-border">
-                  <span className="text-[10px] text-muted-foreground">
+              {/* Chapter info + Jump to label */}
+              <div className="px-2.5 py-1 border-b border-border flex items-center gap-2">
+                {assetDetail?.chapters && (
+                  <span className="text-[10px] text-muted-foreground shrink-0">
                     Ch {assetDetail.chapters.chapter_number} · {assetDetail.source_ref || ""}
                   </span>
-                </div>
-              )}
+                )}
+                <JumpToLabelDropdown
+                  assets={allAssets}
+                  currentIndex={currentIndex}
+                  onJump={setCurrentIndex}
+                />
+              </div>
 
               {/* Step 1: Screenshot comparison */}
               {screenshotStep === "pending" && hasScreenshot && (
