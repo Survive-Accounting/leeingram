@@ -1156,6 +1156,13 @@ function BrowseProblemsBar({ currentAsset, theme }: { currentAsset: any; theme: 
   const [selectedType, setSelectedType] = useState(currentType);
   const [selectedSourceCode, setSelectedSourceCode] = useState(currentAsset.source_ref || "");
 
+  // Sync course dropdown when navigating to a different asset
+  useEffect(() => {
+    setSelectedCourse(currentCourseCode);
+    setSelectedChapterId(currentChapterId || "");
+    setSelectedSourceCode(currentAsset.source_ref || "");
+  }, [currentCourseCode, currentChapterId, currentAsset.source_ref]);
+
   const { data: chapters } = useQuery({
     queryKey: ["browse-chapters-nav-solutions", selectedCourse],
     queryFn: async () => {
