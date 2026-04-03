@@ -915,14 +915,24 @@ const ISSUE_TYPES = [
   "Other",
 ];
 
-function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: () => void; asset: any }) {
+function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boolean; onClose: () => void; asset: any; isAdmin?: boolean }) {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [name, setName] = useState("");
   const [issueType, setIssueType] = useState(ISSUE_TYPES[0]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Pre-fill admin email for name
+  useEffect(() => {
+    if (isAdmin) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.email && !name) setName(session.user.email);
+      });
+    }
+  }, [isAdmin]);
 
   const chapter = (asset as any)?.chapters;
   const course = (asset as any)?.courses;
@@ -952,6 +962,7 @@ function ReportIssueModal({ open, onClose, asset }: { open: boolean; onClose: ()
       await (supabase as any).from("chapter_questions").insert({
         chapter_id: asset.chapter_id,
         student_email: email.trim(),
+        student_name: name.trim() || null,
         question: message.trim(),
         issue_type: "issue",
         asset_name: asset.asset_name,

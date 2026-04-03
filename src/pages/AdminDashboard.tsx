@@ -25,7 +25,7 @@ export default function AdminDashboard() {
               <Users className="h-3.5 w-3.5" /> VA Team
             </TabsTrigger>
             <TabsTrigger value="inbox" className="gap-1.5 text-xs">
-              <Inbox className="h-3.5 w-3.5" /> Student Inbox
+              <Inbox className="h-3.5 w-3.5" /> Inbox
             </TabsTrigger>
             <TabsTrigger value="formulas" className="gap-1.5 text-xs">
               <FlaskConical className="h-3.5 w-3.5" /> Chapter Formulas
