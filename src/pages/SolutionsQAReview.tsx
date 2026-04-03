@@ -242,6 +242,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 
 export default function SolutionsQAReview() {
   const { impersonating } = useImpersonation();
+  const { vaAccount } = useVaAccount();
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
