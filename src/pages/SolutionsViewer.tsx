@@ -2170,6 +2170,7 @@ export default function SolutionsViewer() {
   const rawIsPreview = searchParams.get("preview") === "true";
   const previewToken = searchParams.get("preview_token") || "";
   const hasRefLw = searchParams.get("ref") === "lw";
+  const isQaMode = searchParams.get("qa") === "1";
   const enrollUrl = useEnrollUrl();
 
   // ── LW params ref (stable across renders) ──
@@ -2824,7 +2825,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} isAdmin={isAdmin} />
+      {!isQaMode && <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} isAdmin={isAdmin} />}
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>

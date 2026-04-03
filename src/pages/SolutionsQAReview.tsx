@@ -94,39 +94,88 @@ function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
 function useDraggable(initialPos: { x: number; y: number }) {
   const [pos, setPos] = useState(initialPos);
   const posRef = useRef(initialPos);
-  const dragging = useRef(false);
-  const offset = useRef({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
+  const pendingPosRef = useRef(initialPos);
+  const frameRef = useRef<number | null>(null);
 
-  useEffect(() => { posRef.current = pos; }, [pos]);
-
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    dragging.current = true;
-    offset.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y };
-    e.preventDefault();
+  const paint = useCallback((next: { x: number; y: number }) => {
+    pendingPosRef.current = next;
+    if (frameRef.current !== null) return;
+    frameRef.current = window.requestAnimationFrame(() => {
+      frameRef.current = null;
+      const el = containerRef.current;
+      if (!el) return;
+      const { x, y } = pendingPosRef.current;
+      el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    });
   }, []);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
-      const next = { x: e.clientX - offset.current.x, y: e.clientY - offset.current.y };
-      posRef.current = next;
-      setPos(next);
-    };
-    const onUp = () => { dragging.current = false; };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    paint(pos);
+  }, [paint, pos]);
+
+  useEffect(() => {
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
     };
   }, []);
+
+  const endDrag = useCallback((currentTarget?: HTMLDivElement, pointerId?: number) => {
+    if (pointerId !== undefined && currentTarget?.hasPointerCapture(pointerId)) {
+      currentTarget.releasePointerCapture(pointerId);
+    }
+    dragRef.current = null;
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+    setPos(posRef.current);
+  }, []);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select, label')) return;
+
+    dragRef.current = {
+      pointerId: e.pointerId,
+      offsetX: e.clientX - posRef.current.x,
+      offsetY: e.clientY - posRef.current.y,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "grabbing";
+    e.preventDefault();
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || e.pointerId != dragRef.current.pointerId) return;
+    const next = {
+      x: e.clientX - dragRef.current.offsetX,
+      y: e.clientY - dragRef.current.offsetY,
+    };
+    posRef.current = next;
+    paint(next);
+  }, [paint]);
+
+  const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || e.pointerId != dragRef.current.pointerId) return;
+    endDrag(e.currentTarget, e.pointerId);
+  }, [endDrag]);
+
+  const onPointerCancel = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || e.pointerId != dragRef.current.pointerId) return;
+    endDrag(e.currentTarget, e.pointerId);
+  }, [endDrag]);
 
   const resetPos = useCallback((newPos: { x: number; y: number }) => {
     posRef.current = newPos;
     setPos(newPos);
-  }, []);
+    paint(newPos);
+  }, [paint]);
 
-  return { pos, onMouseDown, resetPos };
+  return { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, resetPos };
 }
 
 // ── Quick Issue Form ─────────────────────────────────────────────────
@@ -207,7 +256,7 @@ export default function SolutionsQAReview() {
   const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
 
-  const { pos, onMouseDown } = useDraggable({ x: 16, y: 60 });
+  const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: 16, y: 60 });
 
   // ── Fetch VAs ───────────────────────────────────────────────────
   const { data: vaAccounts } = useQuery({
@@ -704,7 +753,7 @@ export default function SolutionsQAReview() {
         <iframe
           ref={iframeRef}
           key={current.asset_name}
-          src={`https://learn.surviveaccounting.com/solutions/${current.asset_name}?ref=lw`}
+          src={`/solutions/${current.asset_name}?ref=lw&qa=1`}
           className="w-full h-full border-0 pt-10"
           title={`Solutions: ${current.asset_name}`}
         />
@@ -715,15 +764,19 @@ export default function SolutionsQAReview() {
 
       {/* Floating QA Modal */}
       <div
-        className={`fixed z-50 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-150 ${
+        ref={containerRef}
+        className={`fixed left-0 top-0 z-50 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden will-change-transform ${
           isMinimized ? "w-[200px]" : "w-[300px] max-h-[85vh]"
         }`}
-        style={{ left: pos.x, top: pos.y }}
+        style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }}
       >
         {/* Drag handle */}
         <div
-          onMouseDown={onMouseDown}
-          className="flex items-center justify-between px-2.5 py-1.5 border-b border-border bg-muted/30 shrink-0 cursor-grab active:cursor-grabbing select-none"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          className="flex items-center justify-between px-2.5 py-1.5 border-b border-border bg-muted/30 shrink-0 cursor-grab active:cursor-grabbing select-none touch-none"
         >
           <div className="flex items-center gap-1.5">
             <GripHorizontal className="h-3 w-3 text-muted-foreground/40" />
