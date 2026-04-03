@@ -947,10 +947,9 @@ function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boo
     return course?.course_name || code;
   })();
 
-  const allowedTestEmails = ["lee@survivestudios.com"];
   const handleSubmit = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedEmail)) {
+    if (!isAllowedEmail(trimmedEmail)) {
       setEmailError("Please use your .edu school email address.");
       return;
     }
