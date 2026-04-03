@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
-  GripHorizontal, Upload, X, ChevronDown, ChevronUp, Search, Maximize2, Minimize2,
+  GripHorizontal, Upload, X, ChevronDown, ChevronUp, Maximize2, Minimize2,
+  SkipForward, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,13 +64,13 @@ type SectionDef = {
 function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   if (!asset) return [];
   const sections: SectionDef[] = [
-    { key: "solution", label: "Reveal Solution", hasContent: true },
-    { key: "howto", label: "Reveal How to Solve This", hasContent: !!asset.flowchart_image_url },
-    { key: "je", label: "Reveal Journal Entries", hasContent: !!asset.journal_entry_completed_json },
-    { key: "related_je", label: "Reveal Related Journal Entries", hasContent: !!asset.supplementary_je_json },
-    { key: "formulas", label: "Reveal Important Formulas", hasContent: !!(asset.important_formulas?.trim()) },
-    { key: "concepts", label: "Reveal Key Concepts", hasContent: !!(asset.concept_notes?.trim()) },
-    { key: "traps", label: "Reveal Exam Traps", hasContent: !!(asset.exam_traps?.trim()) },
+    { key: "solution", label: "Solution", hasContent: true },
+    { key: "howto", label: "How to Solve", hasContent: !!asset.flowchart_image_url },
+    { key: "je", label: "Journal Entries", hasContent: !!asset.journal_entry_completed_json },
+    { key: "related_je", label: "Related JE", hasContent: !!asset.supplementary_je_json },
+    { key: "formulas", label: "Formulas", hasContent: !!(asset.important_formulas?.trim()) },
+    { key: "concepts", label: "Concepts", hasContent: !!(asset.concept_notes?.trim()) },
+    { key: "traps", label: "Exam Traps", hasContent: !!(asset.exam_traps?.trim()) },
   ];
   return sections.filter(s => s.hasContent);
 }
@@ -108,9 +109,9 @@ function useDraggable(initialPos: { x: number; y: number }) {
   return { pos, onMouseDown, resetPos };
 }
 
-// ── Inline Issue Form ────────────────────────────────────────────────
+// ── Quick Issue Form ─────────────────────────────────────────────────
 
-function InlineIssueForm({
+function QuickIssueForm({
   section,
   qaAssetId,
   assetName,
@@ -124,28 +125,7 @@ function InlineIssueForm({
   onCancel: () => void;
 }) {
   const [desc, setDesc] = useState("");
-  const [fix, setFix] = useState("");
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "png";
-      const path = `qa/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("qa-screenshots").upload(path, file, { contentType: file.type });
-      if (error) throw error;
-      const { data } = supabase.storage.from("qa-screenshots").getPublicUrl(path);
-      setScreenshotUrl(data.publicUrl);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const save = async () => {
     if (!desc.trim()) return;
@@ -156,12 +136,10 @@ function InlineIssueForm({
         asset_name: assetName,
         section,
         issue_description: desc.trim(),
-        suggested_fix: fix.trim() || null,
-        screenshot_url: screenshotUrl,
         fix_status: "pending",
       });
       if (error) throw error;
-      toast.success("Issue added");
+      toast.success("Issue logged");
       onSaved();
     } catch (err: any) {
       toast.error(err.message);
@@ -171,44 +149,26 @@ function InlineIssueForm({
   };
 
   return (
-    <div className="pl-6 pr-2 pb-2 space-y-2 animate-in slide-in-from-top-1 duration-150">
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{section}</p>
+    <div className="pl-5 pr-1 pb-1.5 space-y-1.5 animate-in slide-in-from-top-1 duration-100">
       <Textarea
         value={desc}
         onChange={e => setDesc(e.target.value)}
-        placeholder="Describe the issue..."
-        className="text-xs min-h-[40px] resize-y"
+        placeholder={`What's wrong with ${section}?`}
+        className="text-xs min-h-[32px] resize-y"
         rows={2}
         autoFocus
+        onKeyDown={e => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && desc.trim()) {
+            e.preventDefault();
+            save();
+          }
+        }}
       />
-      <Textarea
-        value={fix}
-        onChange={e => setFix(e.target.value)}
-        placeholder="Suggest a fix (optional)..."
-        className="text-xs min-h-[28px] resize-y"
-        rows={1}
-      />
-      <div className="flex items-center gap-2">
-        <label className="cursor-pointer">
-          <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
-          <Button size="sm" variant="outline" className="text-[10px] h-6 px-2" asChild disabled={uploading}>
-            <span><Upload className="h-2.5 w-2.5 mr-1" />{uploading ? "..." : "Screenshot"}</span>
-          </Button>
-        </label>
-        {screenshotUrl && (
-          <div className="relative inline-block">
-            <img src={screenshotUrl} alt="" className="max-h-6 rounded border border-border" />
-            <button onClick={() => setScreenshotUrl(null)} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
-              <X className="h-2 w-2" />
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="flex gap-1.5">
-        <Button size="sm" className="text-[10px] h-6 px-2" disabled={!desc.trim() || saving} onClick={save}>
-          Add Issue →
+      <div className="flex gap-1">
+        <Button size="sm" className="text-[10px] h-5 px-2" disabled={!desc.trim() || saving} onClick={save}>
+          Add ⌘↵
         </Button>
-        <Button size="sm" variant="ghost" className="text-[10px] h-6 px-2" onClick={onCancel}>
+        <Button size="sm" variant="ghost" className="text-[10px] h-5 px-2" onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -235,20 +195,6 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
   );
 }
 
-// ── Scroll Down Reminder ─────────────────────────────────────────────
-
-function ScrollDownReminder() {
-  return (
-    <div className="fixed z-[45] left-1/2 -translate-x-1/2 bottom-24 pointer-events-none animate-bounce">
-      <div className="bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-semibold">
-        <ChevronDown className="h-4 w-4" />
-        Scroll Down to Check All Sections
-        <ChevronDown className="h-4 w-4" />
-      </div>
-    </div>
-  );
-}
-
 // ── Main Component ───────────────────────────────────────────────────
 
 export default function SolutionsQAReview() {
@@ -261,15 +207,10 @@ export default function SolutionsQAReview() {
   const [openIssueSection, setOpenIssueSection] = useState<string | null>(null);
   const [screenshotStep, setScreenshotStep] = useState<"pending" | "done">("pending");
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [activeChecklistIdx, setActiveChecklistIdx] = useState(0);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
-  // Position modal on left side by default
-  const { pos, onMouseDown, resetPos } = useDraggable({
-    x: 16,
-    y: 80,
-  });
+  const { pos, onMouseDown, resetPos } = useDraggable({ x: 16, y: 60 });
 
   // ── Seed IA2 records ────────────────────────────────────────────
   const seedMutation = useMutation({
@@ -324,6 +265,7 @@ export default function SolutionsQAReview() {
   const current = allAssets?.[currentIndex] ?? null;
   const totalReviewed = allAssets?.filter(r => r.qa_status !== "pending").length ?? 0;
   const totalAll = allAssets?.length ?? 0;
+  const totalPending = totalAll - totalReviewed;
   const progress = totalAll > 0 ? (totalReviewed / totalAll) * 100 : 0;
 
   // ── Fetch teaching asset detail for current ─────────────────────
@@ -381,38 +323,15 @@ export default function SolutionsQAReview() {
   const sections = useMemo(() => buildSections(assetDetail ?? null), [assetDetail]);
   const hasScreenshot = !!screenshotUrl;
   const issueCount = currentIssues?.length ?? 0;
-  const issueSectionCounts = useMemo(() => {
-    const map: Record<string, number> = {};
-    currentIssues?.forEach(i => { map[i.section] = (map[i.section] || 0) + 1; });
-    return map;
-  }, [currentIssues]);
-
-  // Determine which section is "active" — the first unchecked one
-  const activeSection = useMemo(() => {
-    if (screenshotStep !== "done") return null;
-    for (let i = 0; i < sections.length; i++) {
-      if (!checkedSections.has(sections[i].key)) return i;
-    }
-    return null; // all checked
-  }, [sections, checkedSections, screenshotStep]);
-
-  // Show scroll reminder when there's an active section beyond the first
-  const showScrollReminder = activeSection !== null && activeSection > 0 && checkedSections.size > 0;
+  const allChecked = sections.length > 0 && sections.every(s => checkedSections.has(s.key));
+  const isPending = current?.qa_status === "pending";
 
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
     setCheckedSections(new Set());
     setOpenIssueSection(null);
     setScreenshotStep(hasScreenshot ? "pending" : "done");
-    setActiveChecklistIdx(0);
   }, [current?.id, hasScreenshot]);
-
-  // Auto-move modal to left when entering checklist step
-  useEffect(() => {
-    if (screenshotStep === "done" && reviewerName) {
-      resetPos({ x: 16, y: 80 });
-    }
-  }, [screenshotStep, current?.id]);
 
   // ── Post message to iframe to open all toggles ──────────────────
   useEffect(() => {
@@ -458,7 +377,7 @@ export default function SolutionsQAReview() {
 
     qc.invalidateQueries({ queryKey: ["qa-assets"] });
     qc.invalidateQueries({ queryKey: ["qa-pending-count"] });
-    toast.success(finalStatus === "reviewed_clean" ? "Marked clean ✓" : "Issues flagged ⚠");
+    toast.success(finalStatus === "reviewed_clean" ? "✓ Clean" : "⚠ Issues saved");
 
     // Advance to next pending
     if (!allAssets) return;
@@ -467,14 +386,26 @@ export default function SolutionsQAReview() {
     else if (currentIndex < allAssets.length - 1) setCurrentIndex(i => i + 1);
   }, [current, currentIndex, allAssets, reviewerName, qc]);
 
-  // ── Screenshot comparison handlers ──────────────────────────────
+  // ── Jump to next pending ────────────────────────────────────────
+  const jumpToNextPending = useCallback(() => {
+    if (!allAssets) return;
+    const next = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
+    if (next >= 0) setCurrentIndex(next);
+    else {
+      const fromStart = allAssets.findIndex(r => r.qa_status === "pending");
+      if (fromStart >= 0) setCurrentIndex(fromStart);
+      else toast.info("All assets reviewed!");
+    }
+  }, [allAssets, currentIndex]);
+
+  // ── Screenshot comparison ───────────────────────────────────────
   const handleScreenshotMatch = useCallback(async (result: "yes" | "almost" | "no") => {
     if (result === "almost" && current) {
       await supabase.from("solutions_qa_issues" as any).insert({
         qa_asset_id: current.id,
         asset_name: current.asset_name,
         section: "Problem Text",
-        issue_description: "Problem text does not fully match textbook screenshot — minor differences",
+        issue_description: "Problem text minor mismatch with textbook",
         fix_status: "pending",
       });
       qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
@@ -483,13 +414,18 @@ export default function SolutionsQAReview() {
         qa_asset_id: current.id,
         asset_name: current.asset_name,
         section: "Problem Text",
-        issue_description: "Problem text does not match textbook screenshot",
+        issue_description: "Problem text does not match textbook",
         fix_status: "pending",
       });
       qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
     }
     setScreenshotStep("done");
   }, [current, qc]);
+
+  // ── Check all sections at once ──────────────────────────────────
+  const checkAll = useCallback(() => {
+    setCheckedSections(new Set(sections.map(s => s.key)));
+  }, [sections]);
 
   // ── Keyboard shortcuts ──────────────────────────────────────────
   useEffect(() => {
@@ -498,14 +434,12 @@ export default function SolutionsQAReview() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "TEXTAREA" || tag === "INPUT") return;
 
-      // Screenshot step shortcuts
       if (screenshotStep === "pending" && hasScreenshot) {
         if (e.key === "y" || e.key === "Y") { e.preventDefault(); handleScreenshotMatch("yes"); return; }
         if (e.key === "a" || e.key === "A") { e.preventDefault(); handleScreenshotMatch("almost"); return; }
         if (e.key === "n" || e.key === "N") { e.preventDefault(); handleScreenshotMatch("no"); return; }
       }
 
-      // Navigation
       if (e.key === "ArrowRight" || e.key === ".") {
         e.preventDefault();
         setCurrentIndex(i => Math.min((allAssets?.length ?? 1) - 1, i + 1));
@@ -515,9 +449,11 @@ export default function SolutionsQAReview() {
       } else if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         markAndAdvance();
+      } else if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        jumpToNextPending();
       }
 
-      // Number keys for checklist
       if (screenshotStep === "done") {
         const num = parseInt(e.key);
         if (num >= 1 && num <= sections.length) {
@@ -537,7 +473,7 @@ export default function SolutionsQAReview() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewerName, screenshotStep, hasScreenshot, handleScreenshotMatch, allAssets?.length, markAndAdvance, sections]);
+  }, [reviewerName, screenshotStep, hasScreenshot, handleScreenshotMatch, allAssets?.length, markAndAdvance, jumpToNextPending, sections]);
 
   // ── Loading ─────────────────────────────────────────────────────
   if (isLoading) {
@@ -551,47 +487,24 @@ export default function SolutionsQAReview() {
   // ── Render ──────────────────────────────────────────────────────
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-background">
-      {/* Back button */}
-      <Link
-        to="/dashboard"
-        className="fixed top-3 left-3 z-[55] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur border border-border text-xs text-muted-foreground hover:text-foreground transition-colors shadow-md"
-      >
-        <ArrowLeft className="h-3 w-3" /> Back to Admin
-      </Link>
-
-      {/* Red border overlay on problem text area during Step 1 */}
-      {screenshotStep === "pending" && hasScreenshot && (
-        <div
-          className="fixed z-[42] pointer-events-none"
-          style={{
-            left: 0,
-            top: 60,
-            width: "45%",
-            bottom: 60,
-          }}
+      {/* Back + progress bar at top */}
+      <div className="fixed top-0 left-0 right-0 z-[55] h-10 bg-card/95 backdrop-blur border-b border-border flex items-center px-3 gap-3">
+        <Link
+          to="/dashboard"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
         >
-          <div className="w-full h-full border-4 border-destructive rounded-lg animate-pulse opacity-70" />
+          <ArrowLeft className="h-3 w-3" /> Back
+        </Link>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Progress value={progress} className="flex-1 h-1.5 max-w-[200px]" />
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+            {totalReviewed}/{totalAll} done · {totalPending} left
+          </span>
         </div>
-      )}
-
-      {/* Red border overlay on active section toggle during checklist */}
-      {screenshotStep === "done" && activeSection !== null && (
-        <div
-          className="fixed z-[42] pointer-events-none"
-          style={{
-            // Target the right-side content area where toggles live
-            right: 0,
-            left: "40%",
-            top: 60,
-            bottom: 60,
-          }}
-        >
-          <div className="w-full h-full border-4 border-destructive/60 rounded-lg animate-pulse" />
-        </div>
-      )}
-
-      {/* Scroll Down reminder when checking sections beyond the first */}
-      {showScrollReminder && <ScrollDownReminder />}
+        {reviewerName && (
+          <span className="text-[10px] text-muted-foreground shrink-0">👤 {reviewerName}</span>
+        )}
+      </div>
 
       {/* Full-screen iframe */}
       {current && (
@@ -599,7 +512,7 @@ export default function SolutionsQAReview() {
           ref={iframeRef}
           key={current.asset_name}
           src={`https://learn.surviveaccounting.com/solutions/${current.asset_name}`}
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 pt-10"
           title={`Solutions: ${current.asset_name}`}
         />
       )}
@@ -609,305 +522,280 @@ export default function SolutionsQAReview() {
 
       {/* Floating QA Modal */}
       <div
-        className={`fixed z-50 bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
-          isMaximized
-            ? "inset-4 w-auto h-auto max-h-none"
-            : "w-[320px] max-h-[80vh]"
+        className={`fixed z-50 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-150 ${
+          isMinimized ? "w-[200px]" : "w-[300px] max-h-[85vh]"
         }`}
-        style={isMaximized ? undefined : { left: pos.x, top: pos.y }}
+        style={{ left: pos.x, top: pos.y }}
       >
-        {/* Drag handle + maximize */}
+        {/* Drag handle */}
         <div
-          onMouseDown={isMaximized ? undefined : onMouseDown}
-          className={`relative flex items-center justify-center py-1.5 border-b border-border bg-muted/30 shrink-0 ${isMaximized ? "" : "cursor-grab active:cursor-grabbing"}`}
+          onMouseDown={onMouseDown}
+          className="flex items-center justify-between px-2.5 py-1.5 border-b border-border bg-muted/30 shrink-0 cursor-grab active:cursor-grabbing"
         >
-          <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground/50" />
-          <button
-            onClick={() => setIsMaximized(prev => !prev)}
-            className="absolute right-2 top-1.5 p-0.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-            title={isMaximized ? "Minimize" : "Maximize"}
-          >
-            {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <GripHorizontal className="h-3 w-3 text-muted-foreground/40" />
+            <span className="font-mono font-bold text-[11px] text-foreground truncate max-w-[140px]">
+              {current?.asset_name || "—"}
+            </span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {!isPending && (
+              <Badge className="text-[8px] h-4 px-1 bg-emerald-500/20 text-emerald-400 mr-1">done</Badge>
+            )}
+            <button
+              onClick={() => setIsMinimized(prev => !prev)}
+              className="p-0.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
+            </button>
+          </div>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {/* Reviewer setup */}
-          {!reviewerName ? (
-            <div className="p-5 space-y-3">
-              <p className="text-sm font-semibold text-foreground">What's your name?</p>
-              <Input
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                placeholder="Your name"
-                className="text-sm"
-                autoFocus
-                onKeyDown={e => {
-                  if (e.key === "Enter" && nameInput.trim()) {
+        {isMinimized ? (
+          <div className="p-2 text-center">
+            <span className="text-[10px] text-muted-foreground">{currentIndex + 1}/{totalAll}</span>
+          </div>
+        ) : (
+          <>
+            {/* Reviewer setup */}
+            {!reviewerName ? (
+              <div className="p-4 space-y-2.5">
+                <p className="text-sm font-semibold text-foreground">Your name?</p>
+                <Input
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  placeholder="Enter your name"
+                  className="text-sm h-8"
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && nameInput.trim()) {
+                      localStorage.setItem("qa-reviewer-name", nameInput.trim());
+                      setReviewerName(nameInput.trim());
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  className="w-full h-8"
+                  disabled={!nameInput.trim()}
+                  onClick={() => {
                     localStorage.setItem("qa-reviewer-name", nameInput.trim());
                     setReviewerName(nameInput.trim());
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                className="w-full"
-                disabled={!nameInput.trim()}
-                onClick={() => {
-                  localStorage.setItem("qa-reviewer-name", nameInput.trim());
-                  setReviewerName(nameInput.trim());
-                }}
-              >
-                Start Reviewing →
-              </Button>
-            </div>
-          ) : (
-            <>
-              {/* Asset header */}
-              <div className="px-3 py-2.5 border-b border-border space-y-1.5 shrink-0">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-foreground text-xs truncate max-w-[180px]">
-                    {current?.asset_name}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground">{reviewerName}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {assetDetail?.chapters && (
-                    <span className="text-[10px] text-muted-foreground">
-                      Ch {assetDetail.chapters.chapter_number} · {assetDetail?.source_ref || ""}
-                    </span>
-                  )}
-                  <Badge variant="outline" className="text-[9px] ml-auto">
-                    {current?.qa_status.replace(/_/g, " ")}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Progress value={progress} className="flex-1 h-1.5" />
-                  <span className="text-[9px] text-muted-foreground whitespace-nowrap">
-                    {totalReviewed}/{totalAll}
-                  </span>
-                </div>
-                {/* Navigation */}
-                <div className="flex items-center gap-1 pt-0.5">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6"
-                    disabled={currentIndex <= 0}
-                    onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  <span className="text-[10px] text-muted-foreground">
-                    {currentIndex + 1} / {totalAll}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6"
-                    disabled={currentIndex >= (allAssets?.length ?? 1) - 1}
-                    onClick={() => setCurrentIndex(i => Math.min((allAssets?.length ?? 1) - 1, i + 1))}
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                  }}
+                >
+                  Start Reviewing →
+                </Button>
               </div>
-
-              {/* Step 1: Screenshot comparison */}
-              {screenshotStep === "pending" && hasScreenshot && (
-                <div className="px-3 py-3 border-b border-border space-y-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Step 1: Screenshot Comparison
-                  </p>
-                  <div className="text-[9px] text-destructive font-semibold flex items-center gap-1 animate-pulse">
-                    <ChevronLeft className="h-3 w-3" /> Check the problem text area (red border)
-                  </div>
-                  <div
-                    className="w-full max-h-[160px] rounded-lg border border-border overflow-hidden cursor-pointer bg-muted/20"
-                    onClick={() => setLightboxUrl(screenshotUrl!)}
-                  >
-                    <img
-                      src={screenshotUrl!}
-                      alt="Textbook screenshot"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <p className="text-xs text-foreground font-medium">
-                    Does the problem text match the textbook?
-                  </p>
-                  <div className="flex gap-1.5">
-                    <Button size="sm" className="flex-1 text-[10px] h-7 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleScreenshotMatch("yes")}>
-                      ✓ Yes <span className="ml-1 opacity-50">[Y]</span>
+            ) : (
+              <>
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {/* Nav row */}
+                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        disabled={currentIndex <= 0}
+                        onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {currentIndex + 1}/{totalAll}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        disabled={currentIndex >= (allAssets?.length ?? 1) - 1}
+                        onClick={() => setCurrentIndex(i => Math.min((allAssets?.length ?? 1) - 1, i + 1))}
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-[10px] text-muted-foreground"
+                      onClick={jumpToNextPending}
+                      title="Skip to next pending [S]"
+                    >
+                      <SkipForward className="h-3 w-3 mr-0.5" /> Next Pending
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-[10px] h-7 border-amber-500/30 text-amber-600" onClick={() => handleScreenshotMatch("almost")}>
-                      ~ Almost <span className="ml-1 opacity-50">[A]</span>
-                    </Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-[10px] h-7 border-destructive/30 text-destructive" onClick={() => handleScreenshotMatch("no")}>
-                      ✗ No <span className="ml-1 opacity-50">[N]</span>
-                    </Button>
                   </div>
-                </div>
-              )}
 
-              {/* No screenshot note */}
-              {screenshotStep === "done" && !hasScreenshot && (
-                <div className="px-3 py-1.5">
-                  <p className="text-[9px] text-muted-foreground italic">
-                    No textbook screenshot available for this asset.
-                  </p>
-                </div>
-              )}
+                  {/* Chapter info */}
+                  {assetDetail?.chapters && (
+                    <div className="px-2.5 py-1 border-b border-border">
+                      <span className="text-[10px] text-muted-foreground">
+                        Ch {assetDetail.chapters.chapter_number} · {assetDetail.source_ref || ""}
+                      </span>
+                    </div>
+                  )}
 
-              {/* Step 2: Section checklist — sequential guided review */}
-              {screenshotStep === "done" && (
-                <div className="px-3 py-2 space-y-1">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                    Section Checklist
-                  </p>
-                  {sections.map((sec, idx) => {
-                    const checked = checkedSections.has(sec.key);
-                    const sectionIssueCount = issueSectionCounts[sec.label] || 0;
-                    const isActive = activeSection === idx;
-                    const isPast = checked;
-                    const isFuture = !checked && activeSection !== null && idx > activeSection;
+                  {/* Step 1: Screenshot comparison */}
+                  {screenshotStep === "pending" && hasScreenshot && (
+                    <div className="px-2.5 py-2.5 border-b border-border space-y-2">
+                      <p className="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Eye className="h-3 w-3 text-destructive" /> Compare with Textbook
+                      </p>
+                      <div
+                        className="w-full max-h-[120px] rounded-lg border border-border overflow-hidden cursor-pointer bg-muted/20 hover:opacity-90 transition-opacity"
+                        onClick={() => setLightboxUrl(screenshotUrl!)}
+                      >
+                        <img
+                          src={screenshotUrl!}
+                          alt="Textbook"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <p className="text-[11px] text-foreground font-medium">Match textbook?</p>
+                      <div className="flex gap-1">
+                        <Button size="sm" className="flex-1 text-[10px] h-6 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleScreenshotMatch("yes")}>
+                          Yes [Y]
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 text-[10px] h-6 border-amber-500/30 text-amber-600" onClick={() => handleScreenshotMatch("almost")}>
+                          ~ish [A]
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 text-[10px] h-6 border-destructive/30 text-destructive" onClick={() => handleScreenshotMatch("no")}>
+                          No [N]
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
-                    return (
-                      <div key={sec.key}>
-                        <div
-                          className={`flex items-center gap-2 py-1.5 px-1.5 rounded-md group transition-all ${
-                            isActive
-                              ? "bg-destructive/10 border border-destructive/40 shadow-sm"
-                              : ""
-                          } ${isFuture ? "opacity-40" : ""}`}
-                        >
+                  {/* Step 2: Section checklist */}
+                  {screenshotStep === "done" && (
+                    <div className="px-2.5 py-2 space-y-0.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">
+                          Sections ({checkedSections.size}/{sections.length})
+                        </p>
+                        {!allChecked && sections.length > 0 && (
                           <button
-                            onClick={() => {
-                              setCheckedSections(prev => {
-                                const next = new Set(prev);
-                                if (next.has(sec.key)) next.delete(sec.key);
-                                else next.add(sec.key);
-                                return next;
-                              });
-                            }}
-                            className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              checked ? "bg-emerald-600 border-emerald-600" : isActive ? "border-destructive ring-1 ring-destructive/30" : "border-border hover:border-foreground/50"
-                            }`}
+                            onClick={checkAll}
+                            className="text-[9px] text-emerald-500 hover:text-emerald-400 font-medium"
                           >
-                            {checked && <CheckCircle2 className="h-3 w-3 text-white" />}
+                            Check All ✓
                           </button>
-                          <span className={`text-xs flex-1 truncate ${
-                            checked ? "text-muted-foreground line-through" : isActive ? "text-foreground font-medium" : "text-foreground"
-                          }`}>
-                            {sec.label.replace("Reveal ", "")}
-                          </span>
-                          <span className="text-[9px] text-muted-foreground/50 font-mono">[{idx + 1}]</span>
-                          {isActive && !checked && (
-                            <span className="text-[8px] text-destructive font-semibold animate-pulse">◀ CHECK</span>
-                          )}
-                          {sectionIssueCount > 0 && (
-                            <Badge className="bg-destructive/20 text-destructive text-[8px] h-4 px-1">
-                              {sectionIssueCount}
-                            </Badge>
-                          )}
-                          <button
-                            onClick={() => setOpenIssueSection(openIssueSection === sec.label ? null : sec.label)}
-                            className="text-amber-500 hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Report issue"
-                          >
-                            <AlertTriangle className="h-3 w-3" />
-                          </button>
-                        </div>
-                        {openIssueSection === sec.label && current && (
-                          <InlineIssueForm
-                            section={sec.label}
-                            qaAssetId={current.id}
-                            assetName={current.asset_name}
-                            onSaved={() => {
-                              setOpenIssueSection(null);
-                              qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
-                            }}
-                            onCancel={() => setOpenIssueSection(null)}
-                          />
                         )}
                       </div>
-                    );
-                  })}
 
-                  {/* All sections checked indicator */}
-                  {activeSection === null && sections.length > 0 && (
-                    <div className="flex items-center gap-1.5 pt-1 text-emerald-600">
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span className="text-[10px] font-semibold">All sections reviewed</span>
-                    </div>
-                  )}
+                      {sections.map((sec, idx) => {
+                        const checked = checkedSections.has(sec.key);
+                        return (
+                          <div key={sec.key}>
+                            <div className="flex items-center gap-1.5 py-1 px-1 rounded group hover:bg-muted/30 transition-colors">
+                              <button
+                                onClick={() => {
+                                  setCheckedSections(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(sec.key)) next.delete(sec.key);
+                                    else next.add(sec.key);
+                                    return next;
+                                  });
+                                }}
+                                className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                  checked ? "bg-emerald-600 border-emerald-600" : "border-border hover:border-foreground/50"
+                                }`}
+                              >
+                                {checked && <CheckCircle2 className="h-2.5 w-2.5 text-white" />}
+                              </button>
+                              <span className={`text-[11px] flex-1 ${checked ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                                {sec.label}
+                              </span>
+                              <span className="text-[8px] text-muted-foreground/40 font-mono">{idx + 1}</span>
+                              <button
+                                onClick={() => setOpenIssueSection(openIssueSection === sec.label ? null : sec.label)}
+                                className="text-amber-500 hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title={`Report issue with ${sec.label}`}
+                              >
+                                <AlertTriangle className="h-3 w-3" />
+                              </button>
+                            </div>
+                            {openIssueSection === sec.label && current && (
+                              <QuickIssueForm
+                                section={sec.label}
+                                qaAssetId={current.id}
+                                assetName={current.asset_name}
+                                onSaved={() => {
+                                  setOpenIssueSection(null);
+                                  qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
+                                }}
+                                onCancel={() => setOpenIssueSection(null)}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
 
-                  {/* Existing issues summary */}
-                  {issueCount > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border space-y-1">
-                      <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        {issueCount} issue{issueCount !== 1 ? "s" : ""} logged
-                      </p>
-                      {currentIssues?.map(issue => (
-                        <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-muted/30 rounded px-2 py-1">
-                          <Badge variant="outline" className="text-[8px] shrink-0">{issue.section.replace("Reveal ", "")}</Badge>
-                          <span className="truncate text-foreground">{issue.issue_description}</span>
-                          <button
-                            onClick={() => deleteIssueMutation.mutate(issue.id)}
-                            className="ml-auto shrink-0 text-destructive hover:text-destructive/80"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
+                      {/* Logged issues */}
+                      {issueCount > 0 && (
+                        <div className="mt-1.5 pt-1.5 border-t border-border space-y-0.5">
+                          <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">
+                            {issueCount} issue{issueCount !== 1 ? "s" : ""}
+                          </p>
+                          {currentIssues?.map(issue => (
+                            <div key={issue.id} className="flex items-center gap-1 text-[10px] bg-amber-500/5 rounded px-1.5 py-0.5">
+                              <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
+                              <span className="truncate text-foreground/80">{issue.issue_description}</span>
+                              <button
+                                onClick={() => deleteIssueMutation.mutate(issue.id)}
+                                className="ml-auto shrink-0 text-destructive/60 hover:text-destructive"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Keyboard shortcuts */}
-              <div className="px-3 py-1.5 border-t border-border">
-                <button
-                  onClick={() => setShortcutsOpen(!shortcutsOpen)}
-                  className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground w-full"
-                >
-                  {shortcutsOpen ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
-                  Keyboard Shortcuts
-                </button>
-                {shortcutsOpen && (
-                  <div className="mt-1 text-[9px] text-muted-foreground space-y-0.5 pb-1">
-                    {hasScreenshot && <p><kbd className="font-mono bg-muted px-1 rounded">Y</kbd> Yes · <kbd className="font-mono bg-muted px-1 rounded">A</kbd> Almost · <kbd className="font-mono bg-muted px-1 rounded">N</kbd> No</p>}
-                    <p><kbd className="font-mono bg-muted px-1 rounded">1-7</kbd> Check section · <kbd className="font-mono bg-muted px-1 rounded">⇧+1-7</kbd> Issue form</p>
-                    <p><kbd className="font-mono bg-muted px-1 rounded">→</kbd> <kbd className="font-mono bg-muted px-1 rounded">.</kbd> Next · <kbd className="font-mono bg-muted px-1 rounded">←</kbd> <kbd className="font-mono bg-muted px-1 rounded">,</kbd> Prev</p>
-                    <p><kbd className="font-mono bg-muted px-1 rounded">Enter</kbd> <kbd className="font-mono bg-muted px-1 rounded">Space</kbd> All Good → Next</p>
+                  {/* Shortcuts toggle */}
+                  <div className="px-2.5 py-1 border-t border-border">
+                    <button
+                      onClick={() => setShowShortcuts(!showShortcuts)}
+                      className="flex items-center gap-1 text-[9px] text-muted-foreground/60 hover:text-muted-foreground w-full"
+                    >
+                      {showShortcuts ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                      Keys
+                    </button>
+                    {showShortcuts && (
+                      <div className="mt-0.5 text-[9px] text-muted-foreground/60 space-y-0">
+                        <p><kbd className="font-mono bg-muted px-0.5 rounded">1-7</kbd> check · <kbd className="font-mono bg-muted px-0.5 rounded">⇧+#</kbd> issue</p>
+                        <p><kbd className="font-mono bg-muted px-0.5 rounded">→</kbd> next · <kbd className="font-mono bg-muted px-0.5 rounded">←</kbd> prev · <kbd className="font-mono bg-muted px-0.5 rounded">S</kbd> skip to pending</p>
+                        <p><kbd className="font-mono bg-muted px-0.5 rounded">Enter/Space</kbd> submit & next</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sticky bottom action */}
+                {screenshotStep === "done" && (
+                  <div className="shrink-0 border-t border-border bg-card px-2.5 py-2 space-y-1">
+                    {issueCount === 0 ? (
+                      <Button
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                        onClick={() => markAndAdvance()}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Good — Next →
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8"
+                        onClick={() => markAndAdvance("reviewed_issues")}
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
+                      </Button>
+                    )}
                   </div>
                 )}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Sticky bottom buttons */}
-        {reviewerName && screenshotStep === "done" && (
-          <div className="shrink-0 border-t border-border bg-card px-3 py-2 space-y-1.5">
-            {/* Only show "All Good" when there are NO issues */}
-            {issueCount === 0 && (
-              <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
-                onClick={() => markAndAdvance()}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> All Good — Next Asset →
-              </Button>
+              </>
             )}
-            {issueCount > 0 && (
-              <Button
-                className="w-full border-amber-500/30 bg-amber-600 hover:bg-amber-700 text-white text-xs h-8"
-                onClick={() => markAndAdvance("reviewed_issues")}
-              >
-                <AlertTriangle className="h-3 w-3 mr-1.5" /> Save Issues & Next →
-              </Button>
-            )}
-          </div>
+          </>
         )}
       </div>
     </div>
