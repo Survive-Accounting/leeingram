@@ -285,12 +285,23 @@ export default function SolutionsQAReview() {
   const { data: allAssetsRaw, isLoading } = useQuery({
     queryKey: ["qa-assets"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("solutions_qa_assets" as any)
-        .select("*")
-        .order("asset_name");
-      if (error) throw error;
-      return (data as any[]) as QAAsset[];
+      // Paginate to get ALL QA assets (beyond 1000-row default)
+      let all: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("solutions_qa_assets" as any)
+          .select("*")
+          .order("asset_name")
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return all as QAAsset[];
     },
   });
 
