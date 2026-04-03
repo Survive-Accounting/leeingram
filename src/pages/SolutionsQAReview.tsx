@@ -536,7 +536,7 @@ export default function SolutionsQAReview() {
               <ArrowLeft className="h-3 w-3" /> Back
             </Link>
             <h1 className="text-xl font-bold text-foreground">Solutions QA Review</h1>
-            <p className="text-sm text-muted-foreground mt-1">Quality check every solutions page before launch</p>
+            <p className="text-sm text-muted-foreground mt-1">Before expanding to new universities</p>
           </div>
 
           {/* Course stats */}
