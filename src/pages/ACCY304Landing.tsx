@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { isWhitelistedEmail } from "@/lib/emailWhitelist";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronUp, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
@@ -331,8 +332,7 @@ export default function ACCY304Landing() {
   // ── Email submit ──
   const handleEmailSubmit = async () => {
     const trimmed = email.trim().toLowerCase();
-    const allowedExceptions = ["lee@survivestudios.com"];
-    if (!trimmed.endsWith("@olemiss.edu") && !allowedExceptions.includes(trimmed)) {
+    if (!trimmed.endsWith("@olemiss.edu") && !isWhitelistedEmail(trimmed)) {
       setEmailError("This tool is for Ole Miss students only. Please use your @olemiss.edu email address.");
       return;
     }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -1355,11 +1356,9 @@ function CramFeedbackForm({
   const [sent, setSent] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const allowedTestEmails = ["lee@survivestudios.com"];
-
   const handleSubmit = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedEmail)) {
+    if (!isAllowedEmail(trimmedEmail)) {
       setEmailError("Please use your .edu school email address.");
       return;
     }
@@ -1695,11 +1694,9 @@ function CramFeedbackFormInline({
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const allowedTestEmails = ["lee@survivestudios.com"];
-
   const handleSubmit = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedEmail)) {
+    if (!isAllowedEmail(trimmedEmail)) {
       setEmailError("Please use your .edu school email address.");
       return;
     }
