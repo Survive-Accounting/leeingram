@@ -243,6 +243,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 // ── Main Component ───────────────────────────────────────────────────
 
 export default function SolutionsQAReview() {
+  const { impersonating } = useImpersonation();
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -256,6 +257,19 @@ export default function SolutionsQAReview() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
+
+  // ── Impersonation: detect VA's assigned course ─────────────────
+  const vaAssignedCourseId = useMemo(() => {
+    if (!impersonating || !allAssetsRaw) return null;
+    // Find a course where assets are assigned to this VA's name
+    const vaName = impersonating.full_name;
+    const match = allAssetsRaw.find(a => a.assigned_to === vaName);
+    return match?.course_id || null;
+  }, [impersonating, allAssetsRaw]);
+
+  // Lock course filter when impersonating a VA with an assignment
+  const effectiveCourseId = vaAssignedCourseId || selectedCourseId;
+  const isCourseLockedByImpersonation = !!vaAssignedCourseId;
 
   const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: 16, y: 60 });
 
