@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     // 1. Validate email — must be @olemiss.edu or test exception
     const trimmedEmail = (email || "").trim().toLowerCase();
-    const allowedExceptions = ["lee@survivestudios.com"];
+    const allowedExceptions = ["lee@survivestudios.com", "jking.cim@gmail.com", "valinonorlynmae@gmail.com", "theacarmellesumagaysay@gmail.com"];
     if (
       !trimmedEmail.endsWith("@olemiss.edu") &&
       !allowedExceptions.includes(trimmedEmail)
