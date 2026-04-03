@@ -1355,11 +1355,9 @@ function CramFeedbackForm({
   const [sent, setSent] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const allowedTestEmails = ["lee@survivestudios.com"];
-
   const handleSubmit = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail.endsWith(".edu") && !allowedTestEmails.includes(trimmedEmail)) {
+    if (!isAllowedEmail(trimmedEmail)) {
       setEmailError("Please use your .edu school email address.");
       return;
     }
