@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -242,6 +243,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 // ── Main Component ───────────────────────────────────────────────────
 
 export default function SolutionsQAReview() {
+  const { impersonating } = useImpersonation();
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -255,6 +257,7 @@ export default function SolutionsQAReview() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
+
 
   const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: 16, y: 60 });
 
@@ -354,12 +357,23 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // Filter by selected course
+  // ── Impersonation: detect VA's assigned course ─────────────────
+  const vaAssignedCourseId = useMemo(() => {
+    if (!impersonating || !allAssetsRaw) return null;
+    const vaName = impersonating.full_name;
+    const match = allAssetsRaw.find(a => a.assigned_to === vaName);
+    return match?.course_id || null;
+  }, [impersonating, allAssetsRaw]);
+
+  const effectiveCourseId = vaAssignedCourseId || selectedCourseId;
+  const isCourseLockedByImpersonation = !!vaAssignedCourseId;
+
+  // Filter by effective course
   const allAssets = useMemo(() => {
     if (!allAssetsRaw) return [];
-    if (selectedCourseId === "all") return allAssetsRaw;
-    return allAssetsRaw.filter(a => a.course_id === selectedCourseId);
-  }, [allAssetsRaw, selectedCourseId]);
+    if (effectiveCourseId === "all") return allAssetsRaw;
+    return allAssetsRaw.filter(a => a.course_id === effectiveCourseId);
+  }, [allAssetsRaw, effectiveCourseId]);
 
   const current = allAssets[currentIndex] ?? null;
   const totalReviewed = allAssets.filter(r => r.qa_status !== "pending").length;
@@ -570,6 +584,15 @@ export default function SolutionsQAReview() {
     setCurrentIndex(0);
   };
 
+  // ── Auto-set reviewer name when impersonating ──────────────────
+  useEffect(() => {
+    if (impersonating?.full_name && !reviewerName) {
+      const name = impersonating.full_name;
+      setReviewerName(name);
+      localStorage.setItem("qa-reviewer-name", name);
+    }
+  }, [impersonating]);
+
   // ── Loading ─────────────────────────────────────────────────────
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading QA records...</div>;
@@ -665,7 +688,7 @@ export default function SolutionsQAReview() {
           {/* Course selector */}
           <div className="space-y-2">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Start reviewing</p>
-            <Select value={selectedCourseId} onValueChange={handleCourseChange}>
+            <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="Select course" />
               </SelectTrigger>
@@ -698,7 +721,7 @@ export default function SolutionsQAReview() {
       <div className="flex flex-col items-center justify-center h-screen bg-background gap-3">
         <p className="text-muted-foreground text-sm">No QA records for this filter.</p>
         <div className="flex gap-2">
-          <Select value={selectedCourseId} onValueChange={handleCourseChange}>
+          <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
             <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Courses</SelectItem>
@@ -725,7 +748,7 @@ export default function SolutionsQAReview() {
         </Link>
 
         {/* Course filter */}
-        <Select value={selectedCourseId} onValueChange={handleCourseChange}>
+        <Select value={effectiveCourseId} onValueChange={handleCourseChange} disabled={isCourseLockedByImpersonation}>
           <SelectTrigger className="h-6 text-[10px] w-28 border-border"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
