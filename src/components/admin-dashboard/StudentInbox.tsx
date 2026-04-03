@@ -151,6 +151,16 @@ export function StudentInbox() {
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
+  const handleToggleFixed = async (id: string, currentValue: boolean) => {
+    const { error } = await supabase.from("chapter_questions").update({ fixed: !currentValue } as any).eq("id", id);
+    if (error) {
+      toast.error("Failed to update", { description: error.message });
+      return;
+    }
+    toast.success(!currentValue ? "Marked as fixed ✓" : "Unmarked fixed");
+    queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
