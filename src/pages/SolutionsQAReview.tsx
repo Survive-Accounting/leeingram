@@ -779,6 +779,18 @@ export default function SolutionsQAReview() {
         />
       )}
 
+      {/* Hidden preload iframe for next asset */}
+      {allAssets[currentIndex + 1] && (
+        <iframe
+          key={`preload-${allAssets[currentIndex + 1].asset_name}`}
+          src={`/solutions/${allAssets[currentIndex + 1].asset_name}?ref=lw&qa=1`}
+          className="sr-only"
+          aria-hidden="true"
+          tabIndex={-1}
+          title="Preload next"
+        />
+      )}
+
       {/* Lightbox */}
       {lightboxUrl && <ScreenshotLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
 
