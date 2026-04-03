@@ -1814,21 +1814,26 @@ function FeedbackModal({ open, onClose, asset }: { open: boolean; onClose: () =>
 // ── Fix This Now Modal ───────────────────────────────────────────────
 
 const FIX_SECTIONS = [
-  { key: "solution_je", label: "Solution text + JE reasons", fn: "rewrite-je-tooltips", bodyFn: (id: string) => ({ teaching_asset_id: id, mode: "rewrite_reasons" }) },
-  { key: "supplementary_je", label: "Supplementary journal entries", fn: "generate-supplementary-je", bodyFn: (id: string) => ({ teaching_asset_id: id }) },
-  { key: "dissector", label: "Problem dissector highlights", fn: "generate-dissector-highlights", bodyFn: (id: string) => ({ teaching_asset_id: id }) },
-  { key: "formulas", label: "Important formulas", fn: "generate-ai-output", bodyFn: (id: string) => ({ teaching_asset_id: id, section: "important_formulas" }) },
-  { key: "concepts", label: "Key concepts", fn: "generate-ai-output", bodyFn: (id: string) => ({ teaching_asset_id: id, section: "concept_notes" }) },
-  { key: "traps", label: "Exam traps", fn: "generate-ai-output", bodyFn: (id: string) => ({ teaching_asset_id: id, section: "exam_traps" }) },
-  { key: "flowchart", label: "Flowchart", fn: "generate-flowchart", bodyFn: (id: string) => ({ teaching_asset_id: id }) },
+  { key: "solution_je", label: "Solution text + JE reasons" },
+  { key: "supplementary_je", label: "Supplementary journal entries" },
+  { key: "formulas", label: "Important formulas" },
+  { key: "concepts", label: "Key concepts" },
+  { key: "traps", label: "Exam traps" },
+  { key: "flowchart", label: "Flowchart" },
 ];
+
+type FixStep = "prompt" | "running" | "review";
 
 function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: string; teachingAssetId: string; onClose: () => void }) {
   const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [running, setRunning] = useState(false);
+  const [fixPrompt, setFixPrompt] = useState("");
+  const [step, setStep] = useState<FixStep>("prompt");
   const [progress, setProgress] = useState<{ current: number; total: number; currentLabel: string }>({ current: 0, total: 0, currentLabel: "" });
   const [results, setResults] = useState<{ key: string; ok: boolean; error?: string }[]>([]);
-  const [done, setDone] = useState(false);
+  const [snapshot, setSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [afterData, setAfterData] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const allChecked = checked.size === FIX_SECTIONS.length;
   const toggleAll = () => {
@@ -1843,111 +1848,253 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
     });
   };
 
-  const runFix = async () => {
-    const selected = FIX_SECTIONS.filter(s => checked.has(s.key));
-    if (!selected.length) return;
-    setRunning(true);
-    setResults([]);
-    setProgress({ current: 0, total: selected.length, currentLabel: selected[0].label });
+  const canRun = checked.size > 0 && fixPrompt.trim().length > 0;
 
-    const newResults: { key: string; ok: boolean; error?: string }[] = [];
-    for (let i = 0; i < selected.length; i++) {
-      const sec = selected[i];
-      setProgress({ current: i, total: selected.length, currentLabel: sec.label });
-      try {
-        const { error } = await supabase.functions.invoke(sec.fn, { body: sec.bodyFn(teachingAssetId) });
-        if (error) throw error;
-        newResults.push({ key: sec.key, ok: true });
-      } catch (err: any) {
-        newResults.push({ key: sec.key, ok: false, error: err.message || "Unknown error" });
-      }
-      setResults([...newResults]);
+  const runFix = async () => {
+    const selectedKeys = FIX_SECTIONS.filter(s => checked.has(s.key)).map(s => s.key);
+    if (!selectedKeys.length || !fixPrompt.trim()) return;
+
+    setStep("running");
+    setResults([]);
+
+    // 1. Snapshot current state
+    try {
+      const { data: snapRes, error: snapErr } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, sections: selectedKeys, action: "snapshot" },
+      });
+      if (snapErr) throw snapErr;
+      setSnapshot(snapRes.snapshot);
+    } catch (err: any) {
+      toast.error("Failed to snapshot: " + (err.message || "Unknown error"));
+      setStep("prompt");
+      return;
     }
-    setProgress(p => ({ ...p, current: selected.length }));
-    setDone(true);
-    setRunning(false);
+
+    // 2. Run fixes
+    setProgress({ current: 0, total: selectedKeys.length, currentLabel: "Starting..." });
+    try {
+      const { data: runRes, error: runErr } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, sections: selectedKeys, fix_prompt: fixPrompt, action: "run" },
+      });
+      if (runErr) throw runErr;
+      setResults(runRes.results || []);
+      setAfterData(runRes.after || null);
+      setProgress({ current: selectedKeys.length, total: selectedKeys.length, currentLabel: "Complete" });
+      setStep("review");
+    } catch (err: any) {
+      toast.error("Fix failed: " + (err.message || "Unknown error"));
+      setStep("prompt");
+    }
+  };
+
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      const { error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, fix_prompt: fixPrompt, action: "approve" },
+      });
+      if (error) throw error;
+      toast.success("Fix approved and saved");
+      onClose();
+      window.location.reload();
+    } catch (err: any) {
+      toast.error("Approve failed: " + (err.message || "Unknown error"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!snapshot) { onClose(); return; }
+    setRestoring(true);
+    try {
+      const { error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, snapshot, action: "restore" },
+      });
+      if (error) throw error;
+      toast.success("Changes reverted — try again");
+      // Reset to prompt step
+      setStep("prompt");
+      setResults([]);
+      setAfterData(null);
+      setSnapshot(null);
+    } catch (err: any) {
+      toast.error("Restore failed: " + (err.message || "Unknown error"));
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const formatValue = (val: unknown): string => {
+    if (val === null || val === undefined) return "(empty)";
+    if (typeof val === "string") return val.length > 300 ? val.slice(0, 300) + "…" : val;
+    return JSON.stringify(val, null, 2).slice(0, 500);
   };
 
   const hasErrors = results.some(r => !r.ok);
 
   return (
-    <Dialog open onOpenChange={() => { if (!running) onClose(); }}>
-      <DialogContent className="max-w-md">
+    <Dialog open onOpenChange={() => { if (step !== "running") onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-base">Regenerate Asset — {assetCode}</DialogTitle>
+          <DialogTitle className="text-base">Fix Asset — {assetCode}</DialogTitle>
           <DialogDescription className="text-xs">
-            Select sections to regenerate. Unchecked sections are untouched.
+            {step === "prompt" && "Describe what's wrong and select sections to regenerate."}
+            {step === "running" && "Running fixes…"}
+            {step === "review" && "Review what changed before approving."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          {/* Select All */}
-          <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer select-none border-b border-border pb-2">
-            <input type="checkbox" checked={allChecked} onChange={toggleAll} disabled={running} className="rounded" />
-            Select All
-          </label>
+        {/* ── Step 1: Prompt ── */}
+        {step === "prompt" && (
+          <div className="space-y-4">
+            {/* Fix prompt textarea */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">What's wrong and how to fix it <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={fixPrompt}
+                onChange={e => setFixPrompt(e.target.value)}
+                placeholder="e.g. The journal entry for bond issuance is missing Interest Payable as a credit. Fix the supplementary JE to include Cash debit, Bonds Payable credit, Interest Payable credit."
+                className="text-xs min-h-[100px]"
+              />
+            </div>
 
-          {/* Section checkboxes */}
-          <div className="space-y-1.5">
-            {FIX_SECTIONS.map(sec => {
-              const result = results.find(r => r.key === sec.key);
-              return (
-                <label key={sec.key} className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                  <input type="checkbox" checked={checked.has(sec.key)} onChange={() => toggle(sec.key)} disabled={running} className="rounded" />
-                  <span className="flex-1">{sec.label}</span>
-                  {result && (
-                    result.ok
-                      ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
-                      : <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-                  )}
-                </label>
-              );
-            })}
-          </div>
+            {/* Section checkboxes */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Sections to regenerate</Label>
+              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer select-none border-b border-border pb-2">
+                <input type="checkbox" checked={allChecked} onChange={toggleAll} className="rounded" />
+                Select All
+              </label>
+              <div className="space-y-1.5">
+                {FIX_SECTIONS.map(sec => (
+                  <label key={sec.key} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input type="checkbox" checked={checked.has(sec.key)} onChange={() => toggle(sec.key)} className="rounded" />
+                    <span>{sec.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
-          {/* Warning */}
-          {!done && (
             <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              ⚠ This will overwrite existing data for checked sections only. Unchecked sections are untouched.
+              ⚠ This will regenerate checked sections using your fix prompt as context. Unchecked sections are untouched.
             </p>
-          )}
+          </div>
+        )}
 
-          {/* Progress */}
-          {running && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span>Processing {progress.current + 1}/{progress.total}: {progress.currentLabel}…</span>
-            </div>
-          )}
+        {/* ── Step 2: Running ── */}
+        {step === "running" && (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Running fixes — this may take a minute…</p>
+            <p className="text-xs text-muted-foreground">
+              Regenerating {progress.total} section{progress.total !== 1 ? "s" : ""} with your fix context
+            </p>
+          </div>
+        )}
 
-          {/* Done state */}
-          {done && !hasErrors && (
-            <p className="text-sm text-emerald-600 font-semibold">✓ Done — refresh to see changes</p>
-          )}
-          {done && hasErrors && (
+        {/* ── Step 3: Review ── */}
+        {step === "review" && (
+          <div className="space-y-4">
+            {/* Results summary */}
             <div className="space-y-1">
-              <p className="text-sm text-destructive font-semibold">Some sections failed:</p>
-              {results.filter(r => !r.ok).map(r => (
-                <p key={r.key} className="text-xs text-destructive">{FIX_SECTIONS.find(s => s.key === r.key)?.label}: {r.error}</p>
-              ))}
+              {results.map(r => {
+                const sec = FIX_SECTIONS.find(s => s.key === r.key);
+                return (
+                  <div key={r.key} className="flex items-center gap-2 text-sm">
+                    {r.ok
+                      ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      : <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                    }
+                    <span className="flex-1">{sec?.label}</span>
+                    {!r.ok && <span className="text-xs text-destructive">{r.error}</span>}
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
 
-        <DialogFooter>
-          {!done ? (
+            {hasErrors && (
+              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                Some sections failed. You can still approve the successful ones or reject all and try again.
+              </p>
+            )}
+
+            {/* Before/After diffs */}
+            {snapshot && afterData && (
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold">Before → After</Label>
+                {Object.keys(snapshot).map(sectionKey => {
+                  const sec = FIX_SECTIONS.find(s => s.key === sectionKey);
+                  const before = snapshot[sectionKey];
+                  const after = afterData[sectionKey];
+                  if (!after) return null;
+
+                  return (
+                    <div key={sectionKey} className="border border-border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-1.5 text-xs font-semibold border-b border-border">
+                        {sec?.label}
+                      </div>
+                      <div className="grid grid-cols-2 divide-x divide-border">
+                        <div className="p-2">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Before</p>
+                          {Object.entries(before).map(([col, val]) => (
+                            <pre key={col} className="text-[10px] text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
+                              {formatValue(val)}
+                            </pre>
+                          ))}
+                        </div>
+                        <div className="p-2">
+                          <p className="text-[9px] font-bold text-emerald-600 uppercase mb-1">After</p>
+                          {Object.entries(after).map(([col, val]) => (
+                            <pre key={col} className="text-[10px] text-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
+                              {formatValue(val)}
+                            </pre>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Fix prompt audit trail */}
+            <div className="bg-muted/30 rounded-lg px-3 py-2">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Fix prompt (saved as audit trail)</p>
+              <p className="text-xs text-foreground">{fixPrompt}</p>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2">
+          {step === "prompt" && (
             <Button
               onClick={runFix}
-              disabled={checked.size === 0 || running}
+              disabled={!canRun}
               className="text-white text-sm"
               style={{ background: "#14213D" }}
             >
-              {running ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Running…</> : "Run Fix →"}
+              Run Fix →
             </Button>
-          ) : (
-            <Button onClick={() => { onClose(); window.location.reload(); }} variant="outline">
-              Close & Refresh
-            </Button>
+          )}
+          {step === "review" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleReject}
+                disabled={restoring || approving}
+                className="text-xs"
+              >
+                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Reject & Try Again"}
+              </Button>
+              <Button
+                onClick={handleApprove}
+                disabled={approving || restoring}
+                className="text-white text-xs bg-emerald-600 hover:bg-emerald-700"
+              >
+                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "✓ Approve Fix"}
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>
