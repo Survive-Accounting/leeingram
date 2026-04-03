@@ -324,10 +324,12 @@ export default function SolutionsQAReview() {
   });
 
   const seedAllCourses = useCallback(async () => {
+    let totalSeeded = 0;
     for (const course of COURSES) {
-      await seedMutation.mutateAsync(course.id);
+      const result = await seedMutation.mutateAsync(course.id);
+      totalSeeded += result?.seeded || 0;
     }
-    toast.success("All courses seeded");
+    if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
   }, [seedMutation]);
 
   useEffect(() => { seedAllCourses(); }, []);
