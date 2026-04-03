@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
@@ -151,6 +151,16 @@ export function StudentInbox() {
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
+  const handleToggleFixed = async (id: string, currentValue: boolean) => {
+    const { error } = await supabase.from("chapter_questions").update({ fixed: !currentValue } as any).eq("id", id);
+    if (error) {
+      toast.error("Failed to update", { description: error.message });
+      return;
+    }
+    toast.success(!currentValue ? "Marked as fixed ✓" : "Unmarked fixed");
+    queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
@@ -288,6 +298,17 @@ export function StudentInbox() {
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <RespondByBadge respondByAt={row.respond_by_at} responded={row.responded} />
 
+                    {row.asset_name && (
+                      <a
+                        href={`/solutions/${row.asset_name}?admin=true`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
+                      >
+                        View Asset <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                    )}
+
                     {displayEmail && (
                       <a
                         href={`mailto:${displayEmail}?subject=${mailtoSubject}`}
@@ -306,6 +327,18 @@ export function StudentInbox() {
                       />
                       {row.responded ? "Responded" : "Mark responded"}
                     </label>
+
+                    {row.issue_type === "issue" && (
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={!!(row as any).fixed}
+                          onChange={() => handleToggleFixed(row.id, !!(row as any).fixed)}
+                          className="rounded accent-emerald-600"
+                        />
+                        {(row as any).fixed ? "✓ Fixed" : "Mark fixed"}
+                      </label>
+                    )}
                   </div>
                 </div>
               );
