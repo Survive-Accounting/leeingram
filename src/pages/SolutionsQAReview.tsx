@@ -178,6 +178,115 @@ function useDraggable(initialPos: { x: number; y: number }) {
   return { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, resetPos };
 }
 
+// ── Jump to Label Dropdown ────────────────────────────────────────────
+
+function JumpToLabelDropdown({
+  assets,
+  currentIndex,
+  onJump,
+}: {
+  assets: QAAsset[];
+  currentIndex: number;
+  onJump: (index: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Scroll to current item when opened
+  useEffect(() => {
+    if (open && listRef.current) {
+      const activeEl = listRef.current.querySelector('[data-active="true"]');
+      if (activeEl) activeEl.scrollIntoView({ block: "center" });
+    }
+  }, [open]);
+
+  const currentAsset = assets[currentIndex];
+  const currentLabel = currentAsset?.asset_name?.replace(/^[A-Z0-9]+_CH\d+_/, "").replace(/_[A-Z]$/, "") || "";
+
+  const filtered = search.trim()
+    ? assets.filter((a) => a.asset_name.toLowerCase().includes(search.toLowerCase()))
+    : assets;
+
+  return (
+    <div className="relative ml-auto" ref={dropdownRef}>
+      <button
+        onClick={() => { setOpen(!open); setSearch(""); }}
+        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground font-mono border border-border rounded px-1.5 py-0.5 hover:bg-muted/30 transition-colors"
+      >
+        {currentLabel || currentAsset?.asset_name || "—"}
+        <ChevronDown className="h-2.5 w-2.5" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-56 bg-popover border border-border rounded-lg shadow-xl z-[60] overflow-hidden">
+          <div className="p-1.5 border-b border-border">
+            <div className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-muted/30">
+              <svg className="h-3 w-3 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Jump to label..."
+                className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 outline-none"
+              />
+            </div>
+          </div>
+          <div ref={listRef} className="max-h-[280px] overflow-y-auto py-0.5">
+            {filtered.map((asset) => {
+              const idx = assets.indexOf(asset);
+              const isCurrent = idx === currentIndex;
+              const label = asset.asset_name.replace(/^[A-Z0-9]+_CH\d+_/, "").replace(/_[A-Z]$/, "");
+              const statusIcon =
+                asset.qa_status === "reviewed_clean" ? (
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                ) : asset.qa_status === "reviewed_issues" ? (
+                  <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                ) : null;
+
+              return (
+                <button
+                  key={asset.id}
+                  data-active={isCurrent}
+                  onClick={() => { onJump(idx); setOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent transition-colors ${
+                    isCurrent ? "bg-accent/50 font-semibold" : ""
+                  }`}
+                >
+                  <span className="font-mono text-foreground flex-1 truncate">{label}</span>
+                  {isCurrent && <span className="text-[9px] text-muted-foreground">✓ current</span>}
+                  {statusIcon}
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <p className="text-[10px] text-muted-foreground text-center py-3">No matches</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Quick Issue Form ─────────────────────────────────────────────────
 
 function QuickIssueForm({
