@@ -587,14 +587,14 @@ export default function SolutionsQAReview() {
     setCurrentIndex(0);
   };
 
-  // ── Auto-set reviewer name when impersonating ──────────────────
+  // ── Auto-set reviewer name for impersonated or real VAs ─────────
   useEffect(() => {
-    if (impersonating?.full_name && !reviewerName) {
-      const name = impersonating.full_name;
+    const name = impersonating?.full_name || vaAccount?.full_name;
+    if (name && !reviewerName) {
       setReviewerName(name);
       localStorage.setItem("qa-reviewer-name", name);
     }
-  }, [impersonating]);
+  }, [impersonating, vaAccount]);
 
   // ── Loading ─────────────────────────────────────────────────────
   if (isLoading) {
