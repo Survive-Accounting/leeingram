@@ -56,10 +56,10 @@ serve(async (req) => {
       throw new Error("Missing required fields: provider, messages");
     }
 
-    // For the "lovable" provider, always use Anthropic's claude-sonnet-4
+    // For the "lovable" provider, use Opus for targeted fixes, Sonnet otherwise
     const selectedModel = provider === "openai"
       ? (model || "gpt-4.1")
-      : "claude-sonnet-4-20250514";
+      : use_strong_model ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
 
     // ── Log: FETCH_SOURCE (context about what we received) ──
     await logEvent(run_id, "backend", "info", "FETCH_SOURCE", "Source data received", {
