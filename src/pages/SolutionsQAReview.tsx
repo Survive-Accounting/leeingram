@@ -568,28 +568,38 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // ── Chapter-level status counts ─────────────────────────────────
+  // ── Chapter-level status counts (single query, computed client-side) ──
   const { data: chapterStatusCounts } = useQuery({
     queryKey: ["qa-chapter-status-counts", effectiveCourseId],
     queryFn: async () => {
-      if (effectiveCourseId === "all" || !courseChapters?.length) return {};
+      if (effectiveCourseId === "all") return {};
+      // Fetch only chapter_id + qa_status (lightweight columns)
+      let all: { chapter_id: string; qa_status: string }[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("solutions_qa_assets" as any)
+          .select("chapter_id, qa_status")
+          .eq("course_id", effectiveCourseId)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data as any[]);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
       const counts: Record<string, { total: number; clean: number; issues: number; pending: number }> = {};
-      for (const ch of courseChapters) {
-        const [total, clean, issues] = await Promise.all([
-          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id),
-          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_clean"),
-          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_issues"),
-        ]);
-        counts[ch.id] = {
-          total: total.count ?? 0,
-          clean: clean.count ?? 0,
-          issues: issues.count ?? 0,
-          pending: (total.count ?? 0) - (clean.count ?? 0) - (issues.count ?? 0),
-        };
+      for (const row of all) {
+        if (!counts[row.chapter_id]) counts[row.chapter_id] = { total: 0, clean: 0, issues: 0, pending: 0 };
+        counts[row.chapter_id].total++;
+        if (row.qa_status === "reviewed_clean") counts[row.chapter_id].clean++;
+        else if (row.qa_status === "reviewed_issues") counts[row.chapter_id].issues++;
+        else counts[row.chapter_id].pending++;
       }
       return counts;
     },
-    enabled: effectiveCourseId !== "all" && (courseChapters?.length ?? 0) > 0,
+    enabled: effectiveCourseId !== "all",
   });
 
   const isCourseSelectorLocked = isScopedVaSession && !showAllCoursesOption;
