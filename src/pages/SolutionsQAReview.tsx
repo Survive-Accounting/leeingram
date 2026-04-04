@@ -452,17 +452,16 @@ export default function SolutionsQAReview() {
     setCurrentIndex(0);
   }, [assignedCourseIds, availableCourses.length, isScopedVaSession]);
 
-  // ── Seed all courses ────────────────────────────────────────────
+  // ── Seed all courses (lightweight: single COUNT check) ──────────
+  const seedCheckedRef = useRef(false);
   const seedMutation = useMutation({
     mutationFn: async (courseId: string) => {
-      // Check if already seeded for this course
       const { count } = await supabase
         .from("solutions_qa_assets" as any)
         .select("id", { count: "exact", head: true })
         .eq("course_id", courseId);
       if (count && count > 0) return { seeded: 0 };
 
-      // Paginate to get ALL teaching assets (beyond 1000-row default)
       let allTeachingAssets: any[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -478,9 +477,8 @@ export default function SolutionsQAReview() {
         from += pageSize;
       }
       if (!allTeachingAssets.length) return { seeded: 0 };
-      const assets = allTeachingAssets;
 
-      const records = assets.map(a => ({
+      const records = allTeachingAssets.map(a => ({
         teaching_asset_id: a.id,
         asset_name: a.asset_name,
         chapter_id: a.chapter_id,
@@ -501,16 +499,23 @@ export default function SolutionsQAReview() {
     },
   });
 
-  const seedAllCourses = useCallback(async () => {
-    let totalSeeded = 0;
-    for (const course of COURSES) {
-      const result = await seedMutation.mutateAsync(course.id);
-      totalSeeded += result?.seeded || 0;
-    }
-    if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
-  }, [seedMutation]);
-
-  useEffect(() => { seedAllCourses(); }, []);
+  useEffect(() => {
+    if (seedCheckedRef.current) return;
+    seedCheckedRef.current = true;
+    // Quick check: if ANY qa assets exist, skip seeding entirely
+    (async () => {
+      const { count } = await supabase
+        .from("solutions_qa_assets" as any)
+        .select("id", { count: "exact", head: true });
+      if (count && count > 0) return; // Already seeded
+      let totalSeeded = 0;
+      for (const course of COURSES) {
+        const result = await seedMutation.mutateAsync(course.id);
+        totalSeeded += result?.seeded || 0;
+      }
+      if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
+    })();
+  }, []);
 
   const effectiveCourseId = useMemo(() => {
     if (!isScopedVaSession) return selectedCourseId;
@@ -563,28 +568,38 @@ export default function SolutionsQAReview() {
     },
   });
 
-  // ── Chapter-level status counts ─────────────────────────────────
+  // ── Chapter-level status counts (single query, computed client-side) ──
   const { data: chapterStatusCounts } = useQuery({
     queryKey: ["qa-chapter-status-counts", effectiveCourseId],
     queryFn: async () => {
-      if (effectiveCourseId === "all" || !courseChapters?.length) return {};
+      if (effectiveCourseId === "all") return {};
+      // Fetch only chapter_id + qa_status (lightweight columns)
+      let all: { chapter_id: string; qa_status: string }[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("solutions_qa_assets" as any)
+          .select("chapter_id, qa_status")
+          .eq("course_id", effectiveCourseId)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data as any[]);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
       const counts: Record<string, { total: number; clean: number; issues: number; pending: number }> = {};
-      for (const ch of courseChapters) {
-        const [total, clean, issues] = await Promise.all([
-          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id),
-          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_clean"),
-          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_issues"),
-        ]);
-        counts[ch.id] = {
-          total: total.count ?? 0,
-          clean: clean.count ?? 0,
-          issues: issues.count ?? 0,
-          pending: (total.count ?? 0) - (clean.count ?? 0) - (issues.count ?? 0),
-        };
+      for (const row of all) {
+        if (!counts[row.chapter_id]) counts[row.chapter_id] = { total: 0, clean: 0, issues: 0, pending: 0 };
+        counts[row.chapter_id].total++;
+        if (row.qa_status === "reviewed_clean") counts[row.chapter_id].clean++;
+        else if (row.qa_status === "reviewed_issues") counts[row.chapter_id].issues++;
+        else counts[row.chapter_id].pending++;
       }
       return counts;
     },
-    enabled: effectiveCourseId !== "all" && (courseChapters?.length ?? 0) > 0,
+    enabled: effectiveCourseId !== "all",
   });
 
   const isCourseSelectorLocked = isScopedVaSession && !showAllCoursesOption;
@@ -978,7 +993,15 @@ export default function SolutionsQAReview() {
               {availableCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" onClick={() => seedAllCourses()}>
+          <Button size="sm" variant="outline" onClick={async () => {
+            let totalSeeded = 0;
+            for (const course of COURSES) {
+              const result = await seedMutation.mutateAsync(course.id);
+              totalSeeded += result?.seeded || 0;
+            }
+            if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
+            else toast.info("All courses already seeded");
+          }}>
             <RefreshCw className="h-3 w-3 mr-1" /> Seed
           </Button>
         </div>
