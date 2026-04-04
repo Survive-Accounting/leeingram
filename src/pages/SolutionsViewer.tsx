@@ -3184,7 +3184,7 @@ export default function SolutionsViewer() {
           <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img src={LOGO_URL} alt="Survive Accounting" className="h-7 sm:h-8 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <span className="text-[11px] sm:text-[12px] text-white/50 truncate">Created by Lee Ingram</span>
+              <span className="text-[11px] sm:text-[12px] text-white/50 truncate">Created by Lee Ingram · Tutor since 2015</span>
             </div>
           </div>
         </header>
