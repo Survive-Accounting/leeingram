@@ -993,7 +993,15 @@ export default function SolutionsQAReview() {
               {availableCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" onClick={() => seedAllCourses()}>
+          <Button size="sm" variant="outline" onClick={async () => {
+            let totalSeeded = 0;
+            for (const course of COURSES) {
+              const result = await seedMutation.mutateAsync(course.id);
+              totalSeeded += result?.seeded || 0;
+            }
+            if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
+            else toast.info("All courses already seeded");
+          }}>
             <RefreshCw className="h-3 w-3 mr-1" /> Seed
           </Button>
         </div>
