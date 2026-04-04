@@ -1531,6 +1531,61 @@ export default function SolutionsQAReview() {
           </Select>
         )}
 
+        {/* Source Ref navigator */}
+        {sourceRefGroups.length > 0 && (
+          <Popover open={sourceRefOpen} onOpenChange={setSourceRefOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-1 h-6 px-2 text-[10px] border border-border rounded hover:bg-accent transition-colors shrink-0">
+                <List className="h-3 w-3" />
+                <span>{assetDetail?.source_ref || current?.asset_name || "Jump"}</span>
+                <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[340px] p-0" align="start">
+              <ScrollArea className="max-h-[420px]">
+                <div className="p-2">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between px-2 pb-1.5 border-b border-border mb-1">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Source Ref</span>
+                    <div className="flex items-center gap-3 text-[9px] text-muted-foreground">
+                      <span className="w-6 text-center" title="Clean">✅</span>
+                      <span className="w-6 text-center" title="Issues">⚠️</span>
+                      <span className="w-6 text-center" title="Pending">○</span>
+                    </div>
+                  </div>
+                  {sourceRefGroups.map(group => (
+                    <div key={group.label} className="mb-2">
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-1">{group.label}</p>
+                      {group.items.map(item => {
+                        const isActive = item.assetIndex === currentIndex;
+                        const isClean = item.status === "reviewed_clean";
+                        const isIssues = item.status === "reviewed_issues";
+                        const isPend = item.status === "pending";
+                        return (
+                          <button
+                            key={item.assetName}
+                            onClick={() => { setCurrentIndex(item.assetIndex); setSourceRefOpen(false); }}
+                            className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] transition-colors ${
+                              isActive ? "bg-accent font-semibold" : "hover:bg-accent/50"
+                            }`}
+                          >
+                            <span className="truncate">{item.sourceRef || item.assetName}</span>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="w-6 text-center">{isClean ? <CheckCircle2 className="h-3 w-3 text-emerald-500 inline" /> : <span className="text-muted-foreground/20">–</span>}</span>
+                              <span className="w-6 text-center">{isIssues ? <AlertTriangle className="h-3 w-3 text-amber-500 inline" /> : <span className="text-muted-foreground/20">–</span>}</span>
+                              <span className="w-6 text-center">{isPend ? <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/30" /> : <span className="text-muted-foreground/20">–</span>}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+        )}
+
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Progress value={progress} className="flex-1 h-1.5 max-w-[200px]" />
           <span className="text-[10px] text-muted-foreground whitespace-nowrap">
