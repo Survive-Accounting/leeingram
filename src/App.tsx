@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,88 +10,97 @@ import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/va-dashboards/ImpersonationBanner";
 import { SprintProvider } from "@/contexts/SprintContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Landing from "./pages/Landing";
-import SurviveHome from "./pages/SurviveHome";
-import ContentFactory from "./pages/ContentFactory";
-import ContentRoadmap from "./pages/ContentRoadmap";
-import ChapterPage from "./pages/ChapterPage";
-import ChapterWorkspace from "./pages/ChapterWorkspace";
-import IdeasRoadmap from "./pages/IdeasRoadmap";
-import ReviewVariants from "./pages/ReviewVariants";
-import ProblemBank from "./pages/ProblemBank";
-import AssetsLibrary from "./pages/AssetsLibrary";
-import ExportSets from "./pages/ExportSets";
-import ExportSetDetail from "./pages/ExportSetDetail";
-import FilmingControlPanel from "./pages/FilmingControlPanel";
-import QuizzesReady from "./pages/QuizzesReady";
-import VideoPending from "./pages/VideoPending";
-import VideosReady from "./pages/VideosReady";
-import QuizQueue from "./pages/QuizQueue";
-import VideoQueue from "./pages/VideoQueue";
-import TutoringControlPanel from "./pages/TutoringControlPanel";
-import TutoringReview from "./pages/TutoringReview";
-import TutoringReviewDetail from "./pages/TutoringReviewDetail";
-import TutoringSourceDetail from "./pages/TutoringSourceDetail";
-import FocusTimer from "./pages/FocusTimer";
-import CreateLesson from "./pages/CreateLesson";
-import LessonDetail from "./pages/LessonDetail";
-import StyleGuide from "./pages/StyleGuide";
-import EmailFactory from "./pages/EmailFactory";
-import Marketing from "./pages/Marketing";
-import DomainSelect from "./pages/DomainSelect";
-import Writing from "./pages/Writing";
-import Leeingram from "./pages/Leeingram";
-import ProfIngram from "./pages/ProfIngram";
-import Travel from "./pages/Travel";
-import TripPlanning from "./pages/TripPlanning";
-import TripExploring from "./pages/TripExploring";
-import Auth from "./pages/Auth";
-import ChartOfAccounts from "./pages/ChartOfAccounts";
-import SolutionsPdfUpload from "./pages/SolutionsPdfUpload";
-import ScreenshotCapture from "./pages/ScreenshotCapture";
-import BatchRunDetail from "./pages/BatchRunDetail";
-import BankedQuestionReview from "./pages/BankedQuestionReview";
-import PipelineOverview from "./pages/PipelineOverview";
-import DeploymentChecklist from "./pages/DeploymentChecklist";
-import Phase2Review from "./pages/Phase2Review";
-import VaAdmin from "./pages/VaAdmin";
-import VaDashboard from "./pages/VaDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import StudentInboxPage from "./pages/StudentInboxPage";
-import NotFound from "./pages/NotFound";
-import ChapterComplete from "./pages/ChapterComplete";
-import TemplateManager from "./pages/TemplateManager";
-import DebugSession from "./pages/DebugSession";
-import BulkFixTool from "./pages/BulkFixTool";
-import FlashcardTool from "./pages/FlashcardTool";
-import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
-import SolutionsViewer from "./pages/SolutionsViewer";
-import PracticeViewer from "./pages/PracticeViewer";
-import ACCY304Landing from "./pages/ACCY304Landing";
-import ACCY304Admin from "./pages/ACCY304Admin";
-import PaymentLinksAdmin from "./pages/PaymentLinksAdmin";
-import FormulaRecallTool from "./pages/FormulaRecallTool";
-import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
-import EntryBuilderTool from "./pages/EntryBuilderTool";
-import StudyToolsEntryBuilder from "./pages/StudyToolsEntryBuilder";
-import ProblemDissectorTool from "./pages/ProblemDissectorTool";
-import StudyToolsProblemDissector from "./pages/StudyToolsProblemDissector";
-import SolutionsQAReview from "./pages/SolutionsQAReview";
-import SolutionsQAAdmin from "./pages/SolutionsQAAdmin";
-import JEDebug from "./pages/JEDebug";
-import AssetStatsDashboard from "./pages/AssetStatsDashboard";
-import SolutionsViewerStaging from "./pages/SolutionsViewerStaging";
-import ChapterCramTool from "./pages/ChapterCramTool";
-import SurviveChapterAdmin from "./pages/SurviveChapterAdmin";
-import QuizExplanation from "./pages/QuizExplanation";
-import QuizQuestion from "./pages/QuizQuestion";
-import QuizChoice from "./pages/QuizChoice";
-import QuizStart from "./pages/QuizStart";
-import QuizEnd from "./pages/QuizEnd";
-import QuizRating from "./pages/QuizRating";
-import LegacyNotionPage from "./pages/LegacyNotionPage";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
+
+// ── Lazy-loaded pages ────────────────────────────────────────────────
+const Landing = lazy(() => import("./pages/Landing"));
+const SurviveHome = lazy(() => import("./pages/SurviveHome"));
+const ContentFactory = lazy(() => import("./pages/ContentFactory"));
+const ContentRoadmap = lazy(() => import("./pages/ContentRoadmap"));
+const ChapterPage = lazy(() => import("./pages/ChapterPage"));
+const ChapterWorkspace = lazy(() => import("./pages/ChapterWorkspace"));
+const IdeasRoadmap = lazy(() => import("./pages/IdeasRoadmap"));
+const ReviewVariants = lazy(() => import("./pages/ReviewVariants"));
+const ProblemBank = lazy(() => import("./pages/ProblemBank"));
+const AssetsLibrary = lazy(() => import("./pages/AssetsLibrary"));
+const ExportSets = lazy(() => import("./pages/ExportSets"));
+const ExportSetDetail = lazy(() => import("./pages/ExportSetDetail"));
+const FilmingControlPanel = lazy(() => import("./pages/FilmingControlPanel"));
+const QuizzesReady = lazy(() => import("./pages/QuizzesReady"));
+const VideoPending = lazy(() => import("./pages/VideoPending"));
+const VideosReady = lazy(() => import("./pages/VideosReady"));
+const QuizQueue = lazy(() => import("./pages/QuizQueue"));
+const VideoQueue = lazy(() => import("./pages/VideoQueue"));
+const TutoringControlPanel = lazy(() => import("./pages/TutoringControlPanel"));
+const TutoringReview = lazy(() => import("./pages/TutoringReview"));
+const TutoringReviewDetail = lazy(() => import("./pages/TutoringReviewDetail"));
+const TutoringSourceDetail = lazy(() => import("./pages/TutoringSourceDetail"));
+const FocusTimer = lazy(() => import("./pages/FocusTimer"));
+const CreateLesson = lazy(() => import("./pages/CreateLesson"));
+const LessonDetail = lazy(() => import("./pages/LessonDetail"));
+const StyleGuide = lazy(() => import("./pages/StyleGuide"));
+const EmailFactory = lazy(() => import("./pages/EmailFactory"));
+const Marketing = lazy(() => import("./pages/Marketing"));
+const DomainSelect = lazy(() => import("./pages/DomainSelect"));
+const Writing = lazy(() => import("./pages/Writing"));
+const Leeingram = lazy(() => import("./pages/Leeingram"));
+const ProfIngram = lazy(() => import("./pages/ProfIngram"));
+const Travel = lazy(() => import("./pages/Travel"));
+const TripPlanning = lazy(() => import("./pages/TripPlanning"));
+const TripExploring = lazy(() => import("./pages/TripExploring"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ChartOfAccounts = lazy(() => import("./pages/ChartOfAccounts"));
+const SolutionsPdfUpload = lazy(() => import("./pages/SolutionsPdfUpload"));
+const ScreenshotCapture = lazy(() => import("./pages/ScreenshotCapture"));
+const BatchRunDetail = lazy(() => import("./pages/BatchRunDetail"));
+const BankedQuestionReview = lazy(() => import("./pages/BankedQuestionReview"));
+const PipelineOverview = lazy(() => import("./pages/PipelineOverview"));
+const DeploymentChecklist = lazy(() => import("./pages/DeploymentChecklist"));
+const Phase2Review = lazy(() => import("./pages/Phase2Review"));
+const VaAdmin = lazy(() => import("./pages/VaAdmin"));
+const VaDashboard = lazy(() => import("./pages/VaDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const StudentInboxPage = lazy(() => import("./pages/StudentInboxPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ChapterComplete = lazy(() => import("./pages/ChapterComplete"));
+const TemplateManager = lazy(() => import("./pages/TemplateManager"));
+const DebugSession = lazy(() => import("./pages/DebugSession"));
+const BulkFixTool = lazy(() => import("./pages/BulkFixTool"));
+const FlashcardTool = lazy(() => import("./pages/FlashcardTool"));
+const StudyToolsFlashcards = lazy(() => import("./pages/StudyToolsFlashcards"));
+const SolutionsViewer = lazy(() => import("./pages/SolutionsViewer"));
+const PracticeViewer = lazy(() => import("./pages/PracticeViewer"));
+const ACCY304Landing = lazy(() => import("./pages/ACCY304Landing"));
+const ACCY304Admin = lazy(() => import("./pages/ACCY304Admin"));
+const PaymentLinksAdmin = lazy(() => import("./pages/PaymentLinksAdmin"));
+const FormulaRecallTool = lazy(() => import("./pages/FormulaRecallTool"));
+const StudyToolsFormulaRecall = lazy(() => import("./pages/StudyToolsFormulaRecall"));
+const EntryBuilderTool = lazy(() => import("./pages/EntryBuilderTool"));
+const StudyToolsEntryBuilder = lazy(() => import("./pages/StudyToolsEntryBuilder"));
+const ProblemDissectorTool = lazy(() => import("./pages/ProblemDissectorTool"));
+const StudyToolsProblemDissector = lazy(() => import("./pages/StudyToolsProblemDissector"));
+const SolutionsQAReview = lazy(() => import("./pages/SolutionsQAReview"));
+const SolutionsQAAdmin = lazy(() => import("./pages/SolutionsQAAdmin"));
+const JEDebug = lazy(() => import("./pages/JEDebug"));
+const AssetStatsDashboard = lazy(() => import("./pages/AssetStatsDashboard"));
+const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging"));
+const ChapterCramTool = lazy(() => import("./pages/ChapterCramTool"));
+const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
+const QuizExplanation = lazy(() => import("./pages/QuizExplanation"));
+const QuizQuestion = lazy(() => import("./pages/QuizQuestion"));
+const QuizChoice = lazy(() => import("./pages/QuizChoice"));
+const QuizStart = lazy(() => import("./pages/QuizStart"));
+const QuizEnd = lazy(() => import("./pages/QuizEnd"));
+const QuizRating = lazy(() => import("./pages/QuizRating"));
+const LegacyNotionPage = lazy(() => import("./pages/LegacyNotionPage"));
+
+// ── Suspense fallback ────────────────────────────────────────────────
+const PageLoader = () => (
+  <div className="flex min-h-screen items-center justify-center text-foreground/60 text-sm">
+    Loading...
+  </div>
+);
 
 function RoutedAppBoundary({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -121,106 +131,108 @@ const AppRoutes = () => {
   const { session, loading } = useAuth();
 
   return (
-    <Routes>
-      {/* Survive Accounting — default to Asset Factory */}
-      <Route path="/" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
-      <Route path="/survive" element={<Navigate to="/content" replace />} />
-      <Route path="/survive" element={<Navigate to="/" replace />} />
-      {/* Public tools */}
-      <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
-      <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
-      <Route path="/practice/:assetCode" element={<PracticeViewer />} />
-      <Route path="/cram/:chapterId" element={<ChapterCramTool />} />
-      <Route path="/cram" element={<ChapterCramTool />} />
-      <Route path="/quiz-explanation/:questionId" element={<QuizExplanation />} />
-      <Route path="/quiz-question/:questionId" element={<QuizQuestion />} />
-      <Route path="/quiz-choice/:questionId/:choiceNumber" element={<QuizChoice />} />
-      <Route path="/quiz-start/:topicId" element={<QuizStart />} />
-      <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
-      <Route path="/quiz-rating/:topicId" element={<QuizRating />} />
-      <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
-      <Route path="/tools/flashcards" element={<FlashcardTool />} />
-      <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
-      <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
-      <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
-      {/* Public landing */}
-      <Route path="/landing" element={<Landing />} />
-      <Route path="/accy304" element={<ACCY304Landing />} />
-      {/* Admin auth */}
-      <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
-      {/* Post-login VA auto-redirect handled in DomainSelect */}
-      {/* Legacy redirect */}
-      <Route path="/auth" element={<Navigate to="/admin" replace />} />
-      <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
-      <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
-      <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
-      <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
-      <Route path="/workspace/:chapterId" element={<ProtectedRoute><ChapterWorkspace /></ProtectedRoute>} />
-      <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
-      <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
-      <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />
-      <Route path="/ideas" element={<ProtectedRoute><IdeasRoadmap /></ProtectedRoute>} />
-      <Route path="/problem-bank" element={<ProtectedRoute><ProblemBank /></ProtectedRoute>} />
-      <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
-      <Route path="/assets" element={<Navigate to="/assets-library" replace />} />
-      <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
-      <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
-      <Route path="/review" element={<ProtectedRoute><ReviewVariants /></ProtectedRoute>} />
-      <Route path="/filming" element={<Navigate to="/video-pending" replace />} />
-      <Route path="/quizzes-ready" element={<ProtectedRoute><QuizzesReady /></ProtectedRoute>} />
-      <Route path="/video-pending" element={<ProtectedRoute><VideoPending /></ProtectedRoute>} />
-      <Route path="/videos-ready" element={<ProtectedRoute><VideosReady /></ProtectedRoute>} />
-      <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
-      <Route path="/tutoring/review" element={<ProtectedRoute><TutoringReview /></ProtectedRoute>} />
-      <Route path="/tutoring/review/source/:problemId" element={<ProtectedRoute><TutoringSourceDetail /></ProtectedRoute>} />
-      <Route path="/tutoring/review/:problemId" element={<ProtectedRoute><TutoringReviewDetail /></ProtectedRoute>} />
-      <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />
-      <Route path="/focus" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
-      <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
-      <Route path="/marketing/emails" element={<ProtectedRoute><EmailFactory /></ProtectedRoute>} />
-      {/* Writing domain */}
-      <Route path="/writing" element={<ProtectedRoute><Writing /></ProtectedRoute>} />
-      {/* Leeingram domain */}
-      <Route path="/leeingram" element={<ProtectedRoute><Leeingram /></ProtectedRoute>} />
-      {/* Prof Ingram domain */}
-      <Route path="/prof-ingram" element={<ProtectedRoute><ProfIngram /></ProtectedRoute>} />
-      {/* Travel domain */}
-      <Route path="/travel" element={<ProtectedRoute><Travel /></ProtectedRoute>} />
-      <Route path="/travel/:tripId/planning" element={<ProtectedRoute><TripPlanning /></ProtectedRoute>} />
-      <Route path="/travel/:tripId/exploring" element={<ProtectedRoute><TripExploring /></ProtectedRoute>} />
-      <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
-      <Route path="/chart-of-accounts" element={<ProtectedRoute><ChartOfAccounts /></ProtectedRoute>} />
-      <Route path="/solutions-upload/:chapterId" element={<ProtectedRoute><SolutionsPdfUpload /></ProtectedRoute>} />
-      <Route path="/screenshot-capture/:chapterId" element={<ProtectedRoute><ScreenshotCapture /></ProtectedRoute>} />
-      <Route path="/batch-run/:batchRunId" element={<ProtectedRoute><BatchRunDetail /></ProtectedRoute>} />
-      <Route path="/question-review" element={<ProtectedRoute><BankedQuestionReview /></ProtectedRoute>} />
-      <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
-      <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
-      <Route path="/phase2-review" element={<ProtectedRoute><Phase2Review /></ProtectedRoute>} />
-      <Route path="/quiz-queue" element={<ProtectedRoute><QuizQueue /></ProtectedRoute>} />
-      <Route path="/video-queue" element={<ProtectedRoute><VideoQueue /></ProtectedRoute>} />
-      <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
-      <Route path="/debug-session/:chapterId" element={<ProtectedRoute><DebugSession /></ProtectedRoute>} />
-      <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />
-      <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
-      <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
-      <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
-      <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
-      <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
-      <Route path="/survive-chapter" element={<ProtectedRoute><SurviveChapterAdmin /></ProtectedRoute>} />
-      <Route path="/study-tools/flashcards" element={<ProtectedRoute><StudyToolsFlashcards /></ProtectedRoute>} />
-      <Route path="/study-tools/formula-recall" element={<ProtectedRoute><StudyToolsFormulaRecall /></ProtectedRoute>} />
-      <Route path="/study-tools/entry-builder" element={<ProtectedRoute><StudyToolsEntryBuilder /></ProtectedRoute>} />
-      <Route path="/study-tools/problem-dissector" element={<ProtectedRoute><StudyToolsProblemDissector /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
-      <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
-      <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
-      <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
-      <Route path="/share-leaderboard" element={<Navigate to="/asset-stats" replace />} />
-      <Route path="/asset-stats" element={<ProtectedRoute><AssetStatsDashboard /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Survive Accounting — default to Asset Factory */}
+        <Route path="/" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+        <Route path="/survive" element={<Navigate to="/content" replace />} />
+        <Route path="/survive" element={<Navigate to="/" replace />} />
+        {/* Public tools */}
+        <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
+        <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
+        <Route path="/practice/:assetCode" element={<PracticeViewer />} />
+        <Route path="/cram/:chapterId" element={<ChapterCramTool />} />
+        <Route path="/cram" element={<ChapterCramTool />} />
+        <Route path="/quiz-explanation/:questionId" element={<QuizExplanation />} />
+        <Route path="/quiz-question/:questionId" element={<QuizQuestion />} />
+        <Route path="/quiz-choice/:questionId/:choiceNumber" element={<QuizChoice />} />
+        <Route path="/quiz-start/:topicId" element={<QuizStart />} />
+        <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
+        <Route path="/quiz-rating/:topicId" element={<QuizRating />} />
+        <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
+        <Route path="/tools/flashcards" element={<FlashcardTool />} />
+        <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
+        <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
+        <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
+        {/* Public landing */}
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/accy304" element={<ACCY304Landing />} />
+        {/* Admin auth */}
+        <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
+        {/* Post-login VA auto-redirect handled in DomainSelect */}
+        {/* Legacy redirect */}
+        <Route path="/auth" element={<Navigate to="/admin" replace />} />
+        <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
+        <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+        <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
+        <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
+        <Route path="/workspace/:chapterId" element={<ProtectedRoute><ChapterWorkspace /></ProtectedRoute>} />
+        <Route path="/create-lesson" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
+        <Route path="/lesson/:lessonId" element={<ProtectedRoute><LessonDetail /></ProtectedRoute>} />
+        <Route path="/style-guide" element={<ProtectedRoute><StyleGuide /></ProtectedRoute>} />
+        <Route path="/ideas" element={<ProtectedRoute><IdeasRoadmap /></ProtectedRoute>} />
+        <Route path="/problem-bank" element={<ProtectedRoute><ProblemBank /></ProtectedRoute>} />
+        <Route path="/assets-library" element={<ProtectedRoute><AssetsLibrary /></ProtectedRoute>} />
+        <Route path="/assets" element={<Navigate to="/assets-library" replace />} />
+        <Route path="/export-sets" element={<ProtectedRoute><ExportSets /></ProtectedRoute>} />
+        <Route path="/export-sets/:setId" element={<ProtectedRoute><ExportSetDetail /></ProtectedRoute>} />
+        <Route path="/review" element={<ProtectedRoute><ReviewVariants /></ProtectedRoute>} />
+        <Route path="/filming" element={<Navigate to="/video-pending" replace />} />
+        <Route path="/quizzes-ready" element={<ProtectedRoute><QuizzesReady /></ProtectedRoute>} />
+        <Route path="/video-pending" element={<ProtectedRoute><VideoPending /></ProtectedRoute>} />
+        <Route path="/videos-ready" element={<ProtectedRoute><VideosReady /></ProtectedRoute>} />
+        <Route path="/tutoring" element={<ProtectedRoute><TutoringControlPanel /></ProtectedRoute>} />
+        <Route path="/tutoring/review" element={<ProtectedRoute><TutoringReview /></ProtectedRoute>} />
+        <Route path="/tutoring/review/source/:problemId" element={<ProtectedRoute><TutoringSourceDetail /></ProtectedRoute>} />
+        <Route path="/tutoring/review/:problemId" element={<ProtectedRoute><TutoringReviewDetail /></ProtectedRoute>} />
+        <Route path="/roadmap" element={<Navigate to="/ideas" replace />} />
+        <Route path="/focus" element={<ProtectedRoute><FocusTimer /></ProtectedRoute>} />
+        <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
+        <Route path="/marketing/emails" element={<ProtectedRoute><EmailFactory /></ProtectedRoute>} />
+        {/* Writing domain */}
+        <Route path="/writing" element={<ProtectedRoute><Writing /></ProtectedRoute>} />
+        {/* Leeingram domain */}
+        <Route path="/leeingram" element={<ProtectedRoute><Leeingram /></ProtectedRoute>} />
+        {/* Prof Ingram domain */}
+        <Route path="/prof-ingram" element={<ProtectedRoute><ProfIngram /></ProtectedRoute>} />
+        {/* Travel domain */}
+        <Route path="/travel" element={<ProtectedRoute><Travel /></ProtectedRoute>} />
+        <Route path="/travel/:tripId/planning" element={<ProtectedRoute><TripPlanning /></ProtectedRoute>} />
+        <Route path="/travel/:tripId/exploring" element={<ProtectedRoute><TripExploring /></ProtectedRoute>} />
+        <Route path="/email-factory" element={<Navigate to="/marketing/emails" replace />} />
+        <Route path="/chart-of-accounts" element={<ProtectedRoute><ChartOfAccounts /></ProtectedRoute>} />
+        <Route path="/solutions-upload/:chapterId" element={<ProtectedRoute><SolutionsPdfUpload /></ProtectedRoute>} />
+        <Route path="/screenshot-capture/:chapterId" element={<ProtectedRoute><ScreenshotCapture /></ProtectedRoute>} />
+        <Route path="/batch-run/:batchRunId" element={<ProtectedRoute><BatchRunDetail /></ProtectedRoute>} />
+        <Route path="/question-review" element={<ProtectedRoute><BankedQuestionReview /></ProtectedRoute>} />
+        <Route path="/pipeline" element={<ProtectedRoute><PipelineOverview /></ProtectedRoute>} />
+        <Route path="/deployment" element={<ProtectedRoute><DeploymentChecklist /></ProtectedRoute>} />
+        <Route path="/phase2-review" element={<ProtectedRoute><Phase2Review /></ProtectedRoute>} />
+        <Route path="/quiz-queue" element={<ProtectedRoute><QuizQueue /></ProtectedRoute>} />
+        <Route path="/video-queue" element={<ProtectedRoute><VideoQueue /></ProtectedRoute>} />
+        <Route path="/template-manager" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
+        <Route path="/debug-session/:chapterId" element={<ProtectedRoute><DebugSession /></ProtectedRoute>} />
+        <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />
+        <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
+        <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
+        <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
+        <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
+        <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
+        <Route path="/survive-chapter" element={<ProtectedRoute><SurviveChapterAdmin /></ProtectedRoute>} />
+        <Route path="/study-tools/flashcards" element={<ProtectedRoute><StudyToolsFlashcards /></ProtectedRoute>} />
+        <Route path="/study-tools/formula-recall" element={<ProtectedRoute><StudyToolsFormulaRecall /></ProtectedRoute>} />
+        <Route path="/study-tools/entry-builder" element={<ProtectedRoute><StudyToolsEntryBuilder /></ProtectedRoute>} />
+        <Route path="/study-tools/problem-dissector" element={<ProtectedRoute><StudyToolsProblemDissector /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
+        <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
+        <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
+        <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
+        <Route path="/share-leaderboard" element={<Navigate to="/asset-stats" replace />} />
+        <Route path="/asset-stats" element={<ProtectedRoute><AssetStatsDashboard /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
