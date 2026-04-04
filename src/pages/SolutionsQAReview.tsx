@@ -783,7 +783,8 @@ export default function SolutionsQAReview() {
   });
 
   const activeQaRole = impersonating?.role || vaAccount?.role || null;
-  const isScopedVaSession = activeQaRole === "content_creation_va" || activeQaRole === "va_test";
+  const isScopedVaSession = false; // All VAs see all courses/chapters
+  const canUseFixer = !activeQaRole || activeQaRole === "admin" || activeQaRole === "lead_va";
   const activeQaVaId = isScopedVaSession ? (impersonating?.id || vaAccount?.id || null) : null;
 
   const { data: impersonatedAssignments, isLoading: isImpersonatedAssignmentsLoading } = useQuery<QAReviewerAssignment[]>({
@@ -1855,7 +1856,7 @@ export default function SolutionsQAReview() {
                     <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
                   </Button>
                 )}
-                {current?.teaching_asset_id && (
+                {current?.teaching_asset_id && canUseFixer && (
                   <Button
                     variant="outline"
                     className="w-full text-xs h-7"
