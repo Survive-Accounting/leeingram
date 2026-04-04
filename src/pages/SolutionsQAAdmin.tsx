@@ -17,6 +17,7 @@ import {
   Mail, Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { WHITELISTED_EMAILS } from "@/lib/emailWhitelist";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -557,13 +558,16 @@ export default function SolutionsQAAdmin() {
   const { data: urgentCount } = useQuery({
     queryKey: ["qa-admin-urgent-count"],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("chapter_questions")
-        .select("id", { count: "exact", head: true })
+        .select("id, student_email")
         .eq("issue_type", "issue")
         .eq("responded", false);
       if (error) throw error;
-      return count ?? 0;
+      const studentOnly = (data || []).filter(
+        (r) => !WHITELISTED_EMAILS.includes((r.student_email || "").trim().toLowerCase())
+      );
+      return studentOnly.length;
     },
   });
 
@@ -580,7 +584,10 @@ export default function SolutionsQAAdmin() {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data || []) as StudentIssue[];
+      const studentOnly = (data || []).filter(
+        (r: any) => !WHITELISTED_EMAILS.includes((r.student_email || "").trim().toLowerCase())
+      );
+      return studentOnly as StudentIssue[];
     },
   });
 
