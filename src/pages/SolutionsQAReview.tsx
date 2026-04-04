@@ -1581,7 +1581,7 @@ export default function SolutionsQAReview() {
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             </PopoverContent>
           </Popover>
         )}
