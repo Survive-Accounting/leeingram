@@ -123,13 +123,18 @@ serve(async (req) => {
     // ── APPROVE: Save fix_notes audit trail ──
     if (action === "approve") {
       if (!fix_prompt) throw new Error("fix_prompt required");
+      const reviewer_name = body.reviewer_name || "Admin";
       const existing = await sb.from("teaching_assets").select("fix_notes").eq("id", teaching_asset_id).single();
       const prev = (existing.data as any)?.fix_notes || "";
       const timestamp = new Date().toISOString().slice(0, 16);
       const newNote = `[${timestamp}] ${fix_prompt}`;
       const combined = prev ? `${prev}\n---\n${newNote}` : newNote;
 
-      const { error } = await sb.from("teaching_assets").update({ fix_notes: combined }).eq("id", teaching_asset_id);
+      const { error } = await sb.from("teaching_assets").update({
+        fix_notes: combined,
+        last_reviewed_by: reviewer_name,
+        last_reviewed_at: new Date().toISOString(),
+      }).eq("id", teaching_asset_id);
       if (error) throw new Error("Failed to save: " + error.message);
 
       return new Response(JSON.stringify({ success: true }), {
