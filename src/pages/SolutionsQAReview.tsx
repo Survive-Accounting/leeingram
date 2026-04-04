@@ -734,12 +734,13 @@ export default function SolutionsQAReview() {
   useEffect(() => {
     if (restoredRef.current || !allAssets.length) return;
     restoredRef.current = true;
-    const lastAsset = localStorage.getItem("qa_last_asset_id");
-    if (lastAsset) {
-      const idx = allAssets.findIndex(a => a.asset_name === lastAsset);
+    // Priority: URL ?asset= param > localStorage last viewed
+    const target = urlAssetParam || localStorage.getItem("qa_last_asset_id");
+    if (target) {
+      const idx = allAssets.findIndex(a => a.asset_name === target);
       if (idx >= 0) setCurrentIndex(idx);
     }
-  }, [allAssets]);
+  }, [allAssets, urlAssetParam]);
 
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
