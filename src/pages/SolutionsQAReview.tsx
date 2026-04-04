@@ -370,6 +370,358 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
   );
 }
 
+// ── Fix Sections Config ──────────────────────────────────────────────
+
+const FIX_SECTIONS = [
+  { key: "solution_je", label: "Solution text + JE reasons" },
+  { key: "supplementary_je", label: "Supplementary journal entries" },
+  { key: "dissector", label: "Problem dissector highlights" },
+  { key: "formulas", label: "Important formulas" },
+  { key: "concepts", label: "Key concepts" },
+  { key: "traps", label: "Exam traps" },
+];
+
+// ── Fix Asset Modal ──────────────────────────────────────────────────
+
+type FixStep = "input" | "running" | "compare" | "done";
+
+function QAFixAssetModal({
+  teachingAssetId,
+  assetName,
+  reviewerName,
+  onClose,
+  onComplete,
+}: {
+  teachingAssetId: string;
+  assetName: string;
+  reviewerName: string;
+  onClose: () => void;
+  onComplete: () => void;
+}) {
+  const [step, setStep] = useState<FixStep>("input");
+  const [fixPrompt, setFixPrompt] = useState("");
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set());
+  const [runProgress, setRunProgress] = useState<Record<string, "pending" | "running" | "done" | "error">>({});
+  const [snapshot, setSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [afterData, setAfterData] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [runResults, setRunResults] = useState<{ key: string; ok: boolean; error?: string }[]>([]);
+  const [attemptNumber, setAttemptNumber] = useState(1);
+  const [sectionApproved, setSectionApproved] = useState<Record<string, boolean>>({});
+  const [sectionReverted, setSectionReverted] = useState<Record<string, boolean>>({});
+  const [viewMode, setViewMode] = useState<Record<string, "before" | "after">>({});
+
+  const canRun = fixPrompt.trim().length >= 20 && selectedSections.size > 0;
+
+  const toggleSection = (key: string) => {
+    setSelectedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedSections.size === FIX_SECTIONS.length) setSelectedSections(new Set());
+    else setSelectedSections(new Set(FIX_SECTIONS.map(s => s.key)));
+  };
+
+  const runFix = async () => {
+    const sections = [...selectedSections];
+    setStep("running");
+    const progress: Record<string, "pending" | "running" | "done" | "error"> = {};
+    sections.forEach(s => { progress[s] = "pending"; });
+    setRunProgress({ ...progress });
+
+    try {
+      // Snapshot
+      sections.forEach(s => { progress[s] = "running"; });
+      setRunProgress({ ...progress });
+      const snapRes = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, sections, action: "snapshot" },
+      });
+      if (snapRes.error) throw new Error(snapRes.error.message);
+      setSnapshot(snapRes.data.snapshot);
+
+      // Run
+      const runRes = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          sections,
+          fix_prompt: fixPrompt.trim(),
+          action: "run",
+          attempt_number: attemptNumber,
+        },
+      });
+      if (runRes.error) throw new Error(runRes.error.message);
+
+      const results = runRes.data.results as { key: string; ok: boolean; error?: string }[];
+      setRunResults(results);
+      setAfterData(runRes.data.after);
+      results.forEach(r => { progress[r.key] = r.ok ? "done" : "error"; });
+      setRunProgress({ ...progress });
+
+      // Init view modes
+      const modes: Record<string, "before" | "after"> = {};
+      const approved: Record<string, boolean> = {};
+      results.forEach(r => {
+        if (r.ok) { modes[r.key] = "after"; approved[r.key] = false; }
+      });
+      setViewMode(modes);
+      setSectionApproved(approved);
+      setSectionReverted({});
+      setStep("compare");
+    } catch (err: any) {
+      toast.error("Fix failed: " + err.message);
+      setStep("input");
+    }
+  };
+
+  const revertSection = async (sectionKey: string) => {
+    if (!snapshot?.[sectionKey]) return;
+    try {
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          snapshot: { [sectionKey]: snapshot[sectionKey] },
+          restore_sections: [sectionKey],
+          action: "restore_partial",
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+      setSectionReverted(prev => ({ ...prev, [sectionKey]: true }));
+      setSectionApproved(prev => ({ ...prev, [sectionKey]: false }));
+      toast.info(`${FIX_SECTIONS.find(s => s.key === sectionKey)?.label || sectionKey} reverted`);
+    } catch (err: any) {
+      toast.error("Revert failed: " + err.message);
+    }
+  };
+
+  const approveAll = async () => {
+    try {
+      // Save audit trail
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          fix_prompt: fixPrompt.trim(),
+          reviewer_name: reviewerName,
+          action: "approve",
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast.success("Changes approved and saved");
+      setStep("done");
+      onComplete();
+    } catch (err: any) {
+      toast.error("Approve failed: " + err.message);
+    }
+  };
+
+  const rejectAll = async () => {
+    if (!snapshot) return;
+    try {
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, snapshot, action: "restore" },
+      });
+      if (res.error) throw new Error(res.error.message);
+      toast.info("All changes reverted");
+      onClose();
+    } catch (err: any) {
+      toast.error("Restore failed: " + err.message);
+    }
+  };
+
+  const formatValue = (val: unknown): string => {
+    if (val === null || val === undefined) return "(empty)";
+    if (typeof val === "string") return val.length > 600 ? val.slice(0, 600) + "…" : val;
+    return JSON.stringify(val, null, 2);
+  };
+
+  const successfulSections = runResults.filter(r => r.ok && !sectionReverted[r.key]);
+  const allApproved = successfulSections.length > 0 && successfulSections.every(r => sectionApproved[r.key]);
+
+  return (
+    <Dialog open onOpenChange={() => { if (step !== "running") onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+          <div>
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Wrench className="h-4 w-4" /> Fix This Asset
+            </h2>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{assetName}</p>
+          </div>
+          {attemptNumber > 1 && (
+            <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber} (stronger model)</Badge>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Step 1: Describe the fix */}
+          {step === "input" && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">What's wrong and how should it be fixed?</label>
+                <Textarea
+                  value={fixPrompt}
+                  onChange={e => setFixPrompt(e.target.value)}
+                  placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable as a credit. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit."
+                  className="text-xs min-h-[100px]"
+                  autoFocus
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-foreground">Select what to regenerate</label>
+                  <button onClick={selectAll} className="text-[10px] text-primary hover:underline font-medium">
+                    {selectedSections.size === FIX_SECTIONS.length ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {FIX_SECTIONS.map(sec => (
+                    <label key={sec.key} className="flex items-center gap-2 cursor-pointer group">
+                      <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
+                      <span className="text-xs text-foreground group-hover:text-primary transition-colors">{sec.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <Button onClick={runFix} disabled={!canRun} className="w-full">
+                <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
+              </Button>
+            </>
+          )}
+
+          {/* Step 2: Running */}
+          {step === "running" && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-foreground">Running fix on {assetName}...</p>
+              {FIX_SECTIONS.filter(s => selectedSections.has(s.key)).map(sec => {
+                const status = runProgress[sec.key] || "pending";
+                return (
+                  <div key={sec.key} className="flex items-center gap-2 text-xs">
+                    {status === "running" || status === "pending" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    ) : status === "done" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-destructive" />
+                    )}
+                    <span className={status === "done" ? "text-muted-foreground" : "text-foreground"}>
+                      {status === "done" ? `✓ ${sec.label} updated` : sec.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Step 3: Before/After review */}
+          {step === "compare" && snapshot && afterData && (
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-foreground">Review Changes</p>
+
+              {runResults.filter(r => !r.ok).length > 0 && (
+                <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
+                  <p className="text-[10px] font-bold text-destructive">Some sections failed:</p>
+                  {runResults.filter(r => !r.ok).map(r => (
+                    <p key={r.key} className="text-[10px] text-destructive">{r.key}: {r.error}</p>
+                  ))}
+                </div>
+              )}
+
+              {runResults.filter(r => r.ok).map(result => {
+                const sec = FIX_SECTIONS.find(s => s.key === result.key);
+                const before = snapshot[result.key] || {};
+                const after = afterData[result.key] || {};
+                const mode = viewMode[result.key] || "after";
+                const approved = sectionApproved[result.key] || false;
+                const reverted = sectionReverted[result.key] || false;
+                const data = mode === "before" ? before : after;
+
+                return (
+                  <div key={result.key} className={`border rounded-lg overflow-hidden ${reverted ? "border-muted opacity-50" : approved ? "border-emerald-500/40" : "border-border"}`}>
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/30">
+                      <span className="text-xs font-bold text-foreground">{sec?.label || result.key}</span>
+                      <div className="flex items-center gap-2">
+                        {!reverted && (
+                          <>
+                            <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5">
+                              <button
+                                onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "before" }))}
+                                className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "before" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                              >
+                                Before
+                              </button>
+                              <button
+                                onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "after" }))}
+                                className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "after" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                              >
+                                After
+                              </button>
+                            </div>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px]">
+                              <Checkbox
+                                checked={approved}
+                                onCheckedChange={(checked) => setSectionApproved(prev => ({ ...prev, [result.key]: !!checked }))}
+                              />
+                              <span className={approved ? "text-emerald-500 font-medium" : "text-muted-foreground"}>Approve</span>
+                            </label>
+                          </>
+                        )}
+                        {!reverted ? (
+                          <button
+                            onClick={() => revertSection(result.key)}
+                            className="text-[10px] text-destructive/70 hover:text-destructive font-medium"
+                          >
+                            Revert
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic">Reverted</span>
+                        )}
+                      </div>
+                    </div>
+                    {!reverted && (
+                      <ScrollArea className="max-h-[200px]">
+                        <div className="p-3 space-y-1">
+                          {Object.entries(data).map(([col, val]) => (
+                            <div key={col}>
+                              <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
+                              <pre className={`text-[11px] whitespace-pre-wrap break-words ${mode === "after" ? "text-emerald-700" : "text-foreground"}`}>
+                                {formatValue(val)}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                );
+              })}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={approveAll}
+                  disabled={successfulSections.length === 0}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <Check className="h-3.5 w-3.5 mr-1" /> Approve All & Save
+                </Button>
+                <Button onClick={rejectAll} variant="outline" className="flex-1">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reject All
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────────
 
 export default function SolutionsQAReview() {
