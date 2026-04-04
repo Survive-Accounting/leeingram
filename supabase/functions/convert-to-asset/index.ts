@@ -1251,19 +1251,20 @@ CORE RULES:
 ENTITY NAMING:
 The primary entity in the problem — the one whose transactions are being described and whose books the student will primarily work from — is always named:
   "Survive Company A ([role])"
-Where [role] describes their role in the specific transaction. Examples:
-  Survive Company A (the issuer)
+Where [role] describes their role in the specific transaction.
+ONLY use these 7 roles — do NOT invent others:
+  seller, buyer, manufacturer, borrower, lender, lessee, lessor
+Examples:
   Survive Company A (the borrower)
-  Survive Company A (the lessor)
   Survive Company A (the seller)
+  Survive Company A (the lessee)
 
 If a second entity is involved in the transaction, name them:
   "Survive Company B ([role])"
-Where [role] describes their role. Examples:
-  Survive Company B (the investor)
+Examples:
   Survive Company B (the lender)
-  Survive Company B (the lessee)
   Survive Company B (the buyer)
+  Survive Company B (the lessor)
 
 Never use "Survive Company" without the A or B suffix and role hint.
 Never use "Counterparty" or "the other party".
@@ -1273,9 +1274,9 @@ PERSPECTIVE CLARITY IN INSTRUCTIONS:
 Every instruction that asks the student to prepare a journal entry, calculate an amount, or answer from a specific entity's perspective must explicitly name that entity inline.
 
 CORRECT format for each instruction line:
-  "(a) Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+  "(a) Prepare the journal entry on the books of Survive Company A (the borrower) to record the issuance of the note on January 1."
   "(b) Prepare the journal entry on the books of Survive Company A (the borrower) to record the interest payment on July 1."
-  "(c) Prepare the journal entry on the books of Survive Company B (the investor) to record the purchase of the bonds."
+  "(c) Prepare the journal entry on the books of Survive Company B (the lender) to record the receipt of interest."
 
 RULES for determining perspective:
 - Analyze the full problem context to determine which entity each instruction is asking about.

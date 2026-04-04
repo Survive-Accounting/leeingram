@@ -36,15 +36,15 @@ The teaching asset you are generating questions from uses this naming convention
 When writing question stems that reference a company name, always use the full name with role hint exactly as it appears in the source asset text.
 
 CORRECT:
-  "What amount did Survive Company A (the issuer) record as interest expense on July 1?"
-  "How much cash did Survive Company A (the borrower) receive at the time the note was issued?"
+  "What amount did Survive Company A (the borrower) record as interest expense on July 1?"
+  "How much cash did Survive Company A (the seller) receive at the time of the sale?"
 
 WRONG (do not do this):
   "What amount did Survive Company record..."
   "What amount did the company record..."
-  "What amount did the issuer record..."
+  "What amount did the borrower record..."
 
-If the source asset text uses "Survive Company A (the issuer)", your question stem must use that exact same label.
+If the source asset text uses "Survive Company A (the borrower)", your question stem must use that exact same label.
 
 If a question specifically tests whether the student knows which entity performs an action, you may write the question without naming the entity — but only when that ambiguity is intentional and the question is testing that knowledge specifically.
 

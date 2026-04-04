@@ -51,15 +51,15 @@ Rules:
 8. debit_credit_reason and amount_source must be included on EVERY row — never omit them.
 
 ENTITY NAMING:
-The primary entity — the one whose transactions are being described and whose books the student will primarily work from — is always named "Survive Company A ([role])" where [role] describes their role (e.g. the issuer, the borrower, the lessor, the seller).
-If a second entity is involved, name them "Survive Company B ([role])" (e.g. the investor, the lender, the lessee, the buyer).
+The primary entity — the one whose transactions are being described and whose books the student will primarily work from — is always named "Survive Company A ([role])" where [role] is one of ONLY these 7 allowed roles: seller, buyer, manufacturer, borrower, lender, lessee, lessor. Do NOT use any other role labels.
+If a second entity is involved, name them "Survive Company B ([role])" using the corresponding counterpart role (e.g. borrower/lender, lessee/lessor, seller/buyer).
 Never use "Survive Company" without the A or B suffix and role hint.
 Never use "Counterparty", "the other party", or X/Y naming.
 Include the parenthetical role hint ONLY on the very first mention of each entity in the problem text. All subsequent mentions use only the name without the parenthetical (e.g. first: "Survive Company A (the issuer)", later: "Survive Company A").
 
 PERSPECTIVE CLARITY:
 Every instruction that asks the student to prepare a journal entry must explicitly name the entity inline.
-CORRECT: "Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+CORRECT: "Prepare the journal entry on the books of Survive Company A (the borrower) to record the issuance of the note on January 1."
 WRONG: "Prepare the journal entry to record the issuance..." (missing whose books).
 Each instruction line must be self-contained and unambiguous — never rely on a generic header for perspective.
 
@@ -92,7 +92,7 @@ export function buildJEUserPrompt(opts: {
     parts.push(`Approved Chart of Accounts:\n${opts.chartOfAccounts.join(", ")}`);
   }
 
-  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. Include the parenthetical role hint only on the FIRST mention of each entity; omit it on all subsequent mentions. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B'. Never leave perspective ambiguous.");
+  parts.push("REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary entity 'Survive Company B ([role])'. ONLY use these 7 roles: seller, buyer, manufacturer, borrower, lender, lessee, lessor. Include the parenthetical role hint only on the FIRST mention of each entity; omit it on all subsequent mentions. Every instruction line must specify whose books inline using 'on the books of Survive Company A/B'. Never leave perspective ambiguous.");
 
   return parts.join("\n\n");
 }
