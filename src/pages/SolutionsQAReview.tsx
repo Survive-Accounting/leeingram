@@ -823,6 +823,14 @@ export default function SolutionsQAReview() {
   const handleCourseChange = (val: string) => {
     setSelectedCourseId(val);
     localStorage.setItem("qa-course-filter", val);
+    setSelectedChapterId("all");
+    localStorage.setItem("qa-chapter-filter", "all");
+    setCurrentIndex(0);
+  };
+
+  const handleChapterChange = (val: string) => {
+    setSelectedChapterId(val);
+    localStorage.setItem("qa-chapter-filter", val);
     setCurrentIndex(0);
   };
 
