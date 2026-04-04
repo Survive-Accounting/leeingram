@@ -39,6 +39,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { teaching_asset_id, sections, fix_prompt, action, snapshot } = body;
+    const attempt_number = body.attempt_number ?? 1;
 
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
 
