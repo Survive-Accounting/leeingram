@@ -3184,7 +3184,7 @@ export default function SolutionsViewer() {
           <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img src={LOGO_URL} alt="Survive Accounting" className="h-7 sm:h-8 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <span className="text-[11px] sm:text-[12px] text-white/50 truncate">Created by Lee Ingram</span>
+              <span className="text-[11px] sm:text-[12px] text-white/50 truncate">Created by Lee Ingram · Tutor since 2015</span>
             </div>
           </div>
         </header>
@@ -3236,7 +3236,7 @@ export default function SolutionsViewer() {
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
           >
-            ✦ More than a solutions manual — built from 10+ years of accounting tutoring experience
+            ✦ More than a solutions manual — built to help you think like an accountant.
           </span>
         </div>
 
