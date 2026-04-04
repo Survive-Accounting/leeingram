@@ -373,6 +373,8 @@ export default function SolutionsQAReview() {
   const { impersonating } = useImpersonation();
   const { vaAccount, assignments } = useVaAccount();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const urlAssetParam = searchParams.get("asset");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewerName, setReviewerName] = useState(() => localStorage.getItem("qa-reviewer-name") || "");
@@ -383,7 +385,19 @@ export default function SolutionsQAReview() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
+  const [selectedCourseId, setSelectedCourseId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const assetParam = params.get("asset");
+    if (assetParam) {
+      const prefix = assetParam.split("_")[0]?.toUpperCase();
+      const match = COURSES.find(c => c.code === prefix);
+      if (match) {
+        localStorage.setItem("qa-course-filter", match.id);
+        return match.id;
+      }
+    }
+    return localStorage.getItem("qa-course-filter") || "all";
+  });
   const [selectedChapterId, setSelectedChapterId] = useState(() => localStorage.getItem("qa-chapter-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
 
