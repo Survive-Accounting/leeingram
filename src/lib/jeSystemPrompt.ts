@@ -51,8 +51,8 @@ Rules:
 8. debit_credit_reason and amount_source must be included on EVERY row — never omit them.
 
 ENTITY NAMING:
-The primary entity — the one whose transactions are being described and whose books the student will primarily work from — is always named "Survive Company A ([role])" where [role] describes their role (e.g. the issuer, the borrower, the lessor, the seller).
-If a second entity is involved, name them "Survive Company B ([role])" (e.g. the investor, the lender, the lessee, the buyer).
+The primary entity — the one whose transactions are being described and whose books the student will primarily work from — is always named "Survive Company A ([role])" where [role] is one of ONLY these 7 allowed roles: seller, buyer, manufacturer, borrower, lender, lessee, lessor. Do NOT use any other role labels.
+If a second entity is involved, name them "Survive Company B ([role])" using the corresponding counterpart role (e.g. borrower/lender, lessee/lessor, seller/buyer).
 Never use "Survive Company" without the A or B suffix and role hint.
 Never use "Counterparty", "the other party", or X/Y naming.
 Include the parenthetical role hint ONLY on the very first mention of each entity in the problem text. All subsequent mentions use only the name without the parenthetical (e.g. first: "Survive Company A (the issuer)", later: "Survive Company A").
