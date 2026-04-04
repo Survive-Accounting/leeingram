@@ -545,7 +545,12 @@ export default function ChapterCramTool() {
   const [expandedTabs, setExpandedTabs] = useState<Record<string, boolean>>({});
   const [formulaIndex, setFormulaIndex] = useState(0);
   const [jeIndex, setJeIndex] = useState(0);
-
+  const [formulasSeenSet, setFormulasSeenSet] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem(`sa_formulas_seen_${chapterId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const { data: isAdmin = false } = useQuery({
     queryKey: ["cram-admin-check", user?.id],
     enabled: !authLoading,
@@ -590,7 +595,7 @@ export default function ChapterCramTool() {
       const { data, error } = await (supabase as any)
         .from("teaching_assets")
         .select(
-          "id, asset_name, source_ref, asset_type, problem_title, supplementary_je_json, journal_entry_completed_json",
+          "id, asset_name, source_ref, asset_type, problem_title, supplementary_je_json, journal_entry_completed_json, important_formulas",
         )
         .eq("chapter_id", chapterId)
         .not("asset_approved_at", "is", null)
@@ -768,37 +773,63 @@ export default function ChapterCramTool() {
     return displayCards.filter((card) => isAdmin || !isItemHidden("journal_entries", card.id));
   }, [displayCards, isAdmin, isItemHidden]);
 
-  const structuredFormulas = useMemo(() => {
-    return chapterFormulas.map((f: any): FormulaCard => ({
-      id: f.id,
-      name: f.formula_name,
-      expression: f.formula_expression,
-      explanation: f.formula_explanation || undefined,
-      image_url: f.image_url,
-    }));
+  // Chapter-level formulas with images
+  const chapterImageFormulas = useMemo(() => {
+    return chapterFormulas
+      .filter((f: any) => f.image_url)
+      .map((f: any): FormulaCard => ({
+        id: f.id,
+        name: f.formula_name,
+        expression: f.formula_expression,
+        explanation: f.formula_explanation || undefined,
+        image_url: f.image_url,
+      }));
   }, [chapterFormulas]);
 
-  const solutionsFiltered = useMemo(() => {
-    const sorted = [...approvedAssets].sort(sortBySourceRef);
-
-    return sorted.filter((asset) => {
-      const assetType = (asset.asset_type || "").toLowerCase();
-      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
-      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
-      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
-      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
-
-      if (solutionsTab === "be") return isBE || (!isEX && !isP);
-      if (solutionsTab === "ex") return isEX;
-      return isP;
+  // Fallback: per-asset important_formulas (legacy)
+  const perAssetFormulas = useMemo(() => {
+    if (chapterImageFormulas.length > 0) return [];
+    const all: FormulaCard[] = [];
+    approvedAssets.forEach((asset) => {
+      if (asset.important_formulas) {
+        all.push(...parseImportantFormulas(asset.important_formulas));
+      }
     });
-  }, [approvedAssets, solutionsTab]);
+    return all;
+  }, [approvedAssets, chapterImageFormulas.length]);
+
+  const useChapterFormulas = chapterImageFormulas.length > 0;
+  const structuredFormulas = useChapterFormulas ? chapterImageFormulas : perAssetFormulas;
 
   const visibleFormulas = useMemo(() => {
     return structuredFormulas.filter((formula) => {
       return isAdmin || !isItemHidden("formulas", formula.id);
     });
   }, [structuredFormulas, isAdmin, isItemHidden]);
+
+  const solutionsFiltered = useMemo(() => {
+    const sorted = [...approvedAssets].sort(sortBySourceRef);
+    return sorted.filter((asset) => {
+      const assetType = (asset.asset_type || "").toLowerCase();
+      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
+      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
+      if (solutionsTab === "be") return isBE || (!isEX && !isP);
+      if (solutionsTab === "ex") return isEX;
+      return isP;
+    });
+  }, [approvedAssets, solutionsTab]);
+
+  const formulasSeenCount = visibleFormulas.filter((f) => formulasSeenSet.has(f.id)).length;
+
+  const handleFormulaSeen = useCallback((formulaId: string) => {
+    setFormulasSeenSet((prev) => {
+      const next = new Set(prev).add(formulaId);
+      try { sessionStorage.setItem(`sa_formulas_seen_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [chapterId]);
 
   const reviewedCount = visibleJournalCards.filter((card) => reviewedSet.has(card.id)).length;
   const progressPercent = visibleJournalCards.length > 0 ? (reviewedCount / visibleJournalCards.length) * 100 : 0;
@@ -1121,11 +1152,20 @@ export default function ChapterCramTool() {
 
               {visibleFormulas.length > 0 && currentFormula ? (
                 <>
+                  {/* Seen progress */}
+                  {useChapterFormulas && (
+                    <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
+                      <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                        {formulasSeenCount === visibleFormulas.length ? "✓ " : ""}
+                        {formulasSeenCount} of {visibleFormulas.length} reviewed
+                      </p>
+                    </div>
+                  )}
+
                   <div
-                    className="relative mx-auto flex min-h-[140px] flex-col justify-center rounded-xl"
+                    className="relative mx-auto flex flex-col rounded-xl overflow-hidden"
                     style={{
                       background: theme.cardBg,
-                      padding: "24px 32px",
                       boxShadow: "0 4px 20px rgba(15,23,42,0.06)",
                       border: `1px solid ${theme.border}`,
                       opacity: currentFormulaHidden ? 0.5 : 1,
@@ -1135,9 +1175,9 @@ export default function ChapterCramTool() {
                       <button
                         type="button"
                         onClick={() => toggleItemHidden("formulas", currentFormula.id)}
-                        className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-md"
+                        className="absolute right-3 top-3 z-10 inline-flex h-6 w-6 items-center justify-center rounded-md"
                         style={{
-                          background: currentFormulaHidden ? theme.warningBg : theme.mutedBg,
+                          background: currentFormulaHidden ? theme.warningBg : "rgba(255,255,255,0.9)",
                           color: currentFormulaHidden ? theme.warningText : theme.textMuted,
                           border: `1px solid ${theme.border}`,
                         }}
@@ -1149,7 +1189,7 @@ export default function ChapterCramTool() {
 
                     {isAdmin && currentFormulaHidden && (
                       <span
-                        className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                        className="absolute left-3 top-3 z-10 rounded-full px-2 py-0.5 text-[9px] font-semibold"
                         style={{ background: theme.warningBg, color: theme.warningText }}
                       >
                         Hidden from students
@@ -1157,13 +1197,31 @@ export default function ChapterCramTool() {
                     )}
 
                     {currentFormula.image_url ? (
-                      <img
-                        src={currentFormula.image_url}
-                        alt={currentFormula.name}
-                        style={{ width: "100%", maxWidth: 600, margin: "0 auto", borderRadius: 12, display: "block" }}
-                      />
-                    ) : (
                       <>
+                        {/* Formula name heading above image */}
+                        <div className="px-5 pt-4 pb-2">
+                          <p className="text-[13px] font-semibold" style={{ color: theme.heading }}>
+                            {currentFormula.name}
+                          </p>
+                        </div>
+                        <div className="px-4 pb-4">
+                          <img
+                            src={currentFormula.image_url}
+                            alt={currentFormula.name}
+                            style={{
+                              width: "100%",
+                              maxWidth: 800,
+                              aspectRatio: "2 / 1",
+                              objectFit: "contain",
+                              margin: "0 auto",
+                              borderRadius: 12,
+                              display: "block",
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ padding: "24px 32px" }}>
                         <p
                           className="text-[11px] font-semibold uppercase"
                           style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
@@ -1190,7 +1248,28 @@ export default function ChapterCramTool() {
                         >
                           Image coming soon
                         </span>
-                      </>
+                      </div>
+                    )}
+
+                    {/* Got It button row */}
+                    {useChapterFormulas && (
+                      <div className="flex items-center gap-3 px-5 pb-4">
+                        <button
+                          type="button"
+                          onClick={() => handleFormulaSeen(currentFormula.id)}
+                          disabled={formulasSeenSet.has(currentFormula.id)}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold"
+                          style={{
+                            background: formulasSeenSet.has(currentFormula.id) ? theme.successBg : "#DCFCE7",
+                            color: formulasSeenSet.has(currentFormula.id) ? "#15803D" : theme.successText,
+                            border: `1px solid ${formulasSeenSet.has(currentFormula.id) ? theme.successBorder : "#86EFAC"}`,
+                            cursor: formulasSeenSet.has(currentFormula.id) ? "default" : "pointer",
+                          }}
+                        >
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          {formulasSeenSet.has(currentFormula.id) ? "Got It ✓" : "Got It"}
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -1206,7 +1285,8 @@ export default function ChapterCramTool() {
                         <ChevronLeft className="h-4 w-4" /> Prev
                       </button>
                       <span className="text-[13px]" style={{ color: theme.textMuted }}>
-                        {formulaIndex + 1} of {visibleFormulas.length}
+                        {formulasSeenSet.has(currentFormula.id) ? "✓ " : ""}
+                        {formulaIndex + 1} / {visibleFormulas.length}
                       </span>
                       <button
                         type="button"
