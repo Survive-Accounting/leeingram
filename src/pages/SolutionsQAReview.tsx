@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
@@ -728,6 +728,8 @@ export default function SolutionsQAReview() {
   const { impersonating } = useImpersonation();
   const { vaAccount, assignments } = useVaAccount();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const urlAssetParam = searchParams.get("asset");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewerName, setReviewerName] = useState(() => localStorage.getItem("qa-reviewer-name") || "");
@@ -738,7 +740,19 @@ export default function SolutionsQAReview() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
+  const [selectedCourseId, setSelectedCourseId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const assetParam = params.get("asset");
+    if (assetParam) {
+      const prefix = assetParam.split("_")[0]?.toUpperCase();
+      const match = COURSES.find(c => c.code === prefix);
+      if (match) {
+        localStorage.setItem("qa-course-filter", match.id);
+        return match.id;
+      }
+    }
+    return localStorage.getItem("qa-course-filter") || "all";
+  });
   const [selectedChapterId, setSelectedChapterId] = useState(() => localStorage.getItem("qa-chapter-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
   const [fixAssetOpen, setFixAssetOpen] = useState(false);
@@ -1076,12 +1090,13 @@ export default function SolutionsQAReview() {
   useEffect(() => {
     if (restoredRef.current || !allAssets.length) return;
     restoredRef.current = true;
-    const lastAsset = localStorage.getItem("qa_last_asset_id");
-    if (lastAsset) {
-      const idx = allAssets.findIndex(a => a.asset_name === lastAsset);
+    // Priority: URL ?asset= param > localStorage last viewed
+    const target = urlAssetParam || localStorage.getItem("qa_last_asset_id");
+    if (target) {
+      const idx = allAssets.findIndex(a => a.asset_name === target);
       if (idx >= 0) setCurrentIndex(idx);
     }
-  }, [allAssets]);
+  }, [allAssets, urlAssetParam]);
 
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
