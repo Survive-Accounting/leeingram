@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,7 +22,7 @@ import {
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
   GripHorizontal, X, ChevronDown, ChevronUp, Maximize2, Minimize2,
-  SkipForward, Eye, Users, RefreshCw,
+  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
