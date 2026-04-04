@@ -759,7 +759,15 @@ export default function SolutionsQAReview() {
     }
     return localStorage.getItem("qa-course-filter") || "all";
   });
-  const [selectedChapterId, setSelectedChapterId] = useState(() => localStorage.getItem("qa-chapter-filter") || "all");
+  const [selectedChapterId, setSelectedChapterId] = useState(() => {
+    // When deep-linking via ?asset=, reset chapter filter to "all" so the target asset isn't filtered out
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("asset")) {
+      localStorage.setItem("qa-chapter-filter", "all");
+      return "all";
+    }
+    return localStorage.getItem("qa-chapter-filter") || "all";
+  });
   const [showAssignPanel, setShowAssignPanel] = useState(false);
   const [fixAssetOpen, setFixAssetOpen] = useState(false);
 
