@@ -1037,13 +1037,13 @@ export default function SolutionsQAReview() {
           <>
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto min-h-0">
-              {/* Nav row */}
+              {/* Nav row: ← Prev | counter | Next → */}
               <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border">
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" className="h-6 w-6" disabled={currentIndex <= 0} onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}>
                     <ChevronLeft className="h-3.5 w-3.5" />
                   </Button>
-                  <span className="text-[10px] text-muted-foreground font-mono">{currentIndex + 1}/{totalAll}</span>
+                  <span className="text-[11px] text-muted-foreground font-mono font-medium">{currentIndex + 1} / {totalAll}</span>
                   <Button size="icon" variant="ghost" className="h-6 w-6" disabled={currentIndex >= allAssets.length - 1} onClick={() => setCurrentIndex(i => Math.min(allAssets.length - 1, i + 1))}>
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
@@ -1053,18 +1053,9 @@ export default function SolutionsQAReview() {
                 </Button>
               </div>
 
-              {/* Chapter info + Jump to label */}
-              <div className="px-2.5 py-1 border-b border-border flex items-center gap-2">
-                {assetDetail?.chapters && (
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    Ch {assetDetail.chapters.chapter_number} · {assetDetail.source_ref || ""}
-                  </span>
-                )}
-                <JumpToLabelDropdown
-                  assets={allAssets}
-                  currentIndex={currentIndex}
-                  onJump={setCurrentIndex}
-                />
+              {/* Asset code - small muted */}
+              <div className="px-2.5 py-1 border-b border-border flex items-center justify-end">
+                <span className="text-[9px] text-muted-foreground/60 font-mono">{current?.asset_name || ""}</span>
               </div>
 
               {/* Step 1: Screenshot comparison */}
