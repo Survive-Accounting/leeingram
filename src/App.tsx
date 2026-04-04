@@ -67,7 +67,7 @@ import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
 import PracticeViewer from "./pages/PracticeViewer";
 import ACCY304Landing from "./pages/ACCY304Landing";
-import WebsiteAdmin from "./pages/WebsiteAdmin";
+import ACCY304Admin from "./pages/ACCY304Admin";
 import PaymentLinksAdmin from "./pages/PaymentLinksAdmin";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
@@ -89,7 +89,6 @@ import QuizStart from "./pages/QuizStart";
 import QuizEnd from "./pages/QuizEnd";
 import QuizRating from "./pages/QuizRating";
 import LegacyNotionPage from "./pages/LegacyNotionPage";
-import CourseLanding from "./pages/CourseLanding";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -146,11 +145,7 @@ const AppRoutes = () => {
       <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
-      <Route path="/accy304" element={<Navigate to="/ole-miss/accy304" replace />} />
-      <Route path="/accy303" element={<Navigate to="/ole-miss/accy303" replace />} />
-      <Route path="/accy202" element={<Navigate to="/ole-miss/accy202" replace />} />
-      <Route path="/accy201" element={<Navigate to="/ole-miss/accy201" replace />} />
-      <Route path="/:campus/:courseCode" element={<CourseLanding />} />
+      <Route path="/accy304" element={<ACCY304Landing />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       {/* Post-login VA auto-redirect handled in DomainSelect */}
@@ -208,8 +203,7 @@ const AppRoutes = () => {
       <Route path="/debug-session/:chapterId" element={<ProtectedRoute><DebugSession /></ProtectedRoute>} />
       <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />
       <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
-      <Route path="/website-admin" element={<ProtectedRoute><WebsiteAdmin /></ProtectedRoute>} />
-      <Route path="/accy304-admin" element={<Navigate to="/website-admin" replace />} />
+      <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
       <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
       <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
       <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
