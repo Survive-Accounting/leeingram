@@ -59,7 +59,7 @@ Include the parenthetical role hint ONLY on the very first mention of each entit
 
 PERSPECTIVE CLARITY:
 Every instruction that asks the student to prepare a journal entry must explicitly name the entity inline.
-CORRECT: "Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+CORRECT: "Prepare the journal entry on the books of Survive Company A (the borrower) to record the issuance of the note on January 1."
 WRONG: "Prepare the journal entry to record the issuance..." (missing whose books).
 Each instruction line must be self-contained and unambiguous — never rely on a generic header for perspective.
 

@@ -1274,9 +1274,9 @@ PERSPECTIVE CLARITY IN INSTRUCTIONS:
 Every instruction that asks the student to prepare a journal entry, calculate an amount, or answer from a specific entity's perspective must explicitly name that entity inline.
 
 CORRECT format for each instruction line:
-  "(a) Prepare the journal entry on the books of Survive Company A (the issuer) to record the issuance of the bonds on January 1."
+  "(a) Prepare the journal entry on the books of Survive Company A (the borrower) to record the issuance of the note on January 1."
   "(b) Prepare the journal entry on the books of Survive Company A (the borrower) to record the interest payment on July 1."
-  "(c) Prepare the journal entry on the books of Survive Company B (the investor) to record the purchase of the bonds."
+  "(c) Prepare the journal entry on the books of Survive Company B (the lender) to record the receipt of interest."
 
 RULES for determining perspective:
 - Analyze the full problem context to determine which entity each instruction is asking about.
