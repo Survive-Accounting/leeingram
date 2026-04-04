@@ -61,6 +61,7 @@ const issueLabels: Record<string, string> = {
 export function StudentInbox() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [issueFilter, setIssueFilter] = useState<IssueFilter>("all");
+  const [senderFilter, setSenderFilter] = useState<SenderFilter>("all");
   const queryClient = useQueryClient();
 
   const { data: chaptersData } = useChaptersWithCourses();
