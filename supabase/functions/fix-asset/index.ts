@@ -78,6 +78,9 @@ serve(async (req) => {
         const inv = sectionToInvocation(sectionKey, teaching_asset_id, fix_prompt);
         if (!inv) { results.push({ key: sectionKey, ok: false, error: "Unknown section" }); continue; }
 
+        // Add use_strong_model flag for targeted fixes (Opus instead of Sonnet)
+        inv.body.use_strong_model = true;
+
         try {
           const res = await fetch(`${supabaseUrl}/functions/v1/${inv.fn}`, {
             method: "POST",

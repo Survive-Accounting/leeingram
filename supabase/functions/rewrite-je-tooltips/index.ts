@@ -127,7 +127,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: selectedModel,
           system: systemPrompt,
           messages: [
             { role: "user", content: userPrompt },
