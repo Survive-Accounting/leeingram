@@ -1986,7 +1986,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
     setProgress({ current: 0, total: selectedKeys.length, currentLabel: "Starting..." });
     try {
       const { data: runRes, error: runErr } = await supabase.functions.invoke("fix-asset", {
-        body: { teaching_asset_id: teachingAssetId, sections: selectedKeys, fix_prompt: fixPrompt, action: "run" },
+        body: { teaching_asset_id: teachingAssetId, sections: selectedKeys, fix_prompt: fixPrompt, action: "run", attempt_number: attemptNumber },
       });
       if (runErr) throw runErr;
       setResults(runRes.results || []);
