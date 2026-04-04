@@ -1195,10 +1195,11 @@ export default function SolutionsQAReview() {
                           <span className="text-[8px] text-muted-foreground/40 font-mono">{idx + 1}</span>
                           <button
                             onClick={() => setOpenIssueSection(openIssueSection === sec.label ? null : sec.label)}
-                            className="text-amber-500 hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={`Report issue with ${sec.label}`}
+                            className="flex items-center gap-0.5 text-[9px] font-medium text-amber-500 hover:text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 hover:bg-amber-500/10 transition-colors"
+                            title={`Report issue with ${sec.label} [Shift+${idx + 1}]`}
                           >
-                            <AlertTriangle className="h-3 w-3" />
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Issue
                           </button>
                         </div>
                         {openIssueSection === sec.label && current && (
