@@ -3834,6 +3834,8 @@ export type Database = {
           journal_entry_template_json: Json | null
           last_bulk_fix_at: string | null
           last_bulk_fix_label: string | null
+          last_reviewed_at: string | null
+          last_reviewed_by: string | null
           last_tutored_at: string | null
           lw_activity_url: string | null
           lw_csv_exported_at: string | null
@@ -3932,6 +3934,8 @@ export type Database = {
           journal_entry_template_json?: Json | null
           last_bulk_fix_at?: string | null
           last_bulk_fix_label?: string | null
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
           last_tutored_at?: string | null
           lw_activity_url?: string | null
           lw_csv_exported_at?: string | null
@@ -4030,6 +4034,8 @@ export type Database = {
           journal_entry_template_json?: Json | null
           last_bulk_fix_at?: string | null
           last_bulk_fix_label?: string | null
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
           last_tutored_at?: string | null
           lw_activity_url?: string | null
           lw_csv_exported_at?: string | null
