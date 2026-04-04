@@ -3,13 +3,38 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2, ExternalLink, AlertTriangle, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
-type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating";
+type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating" | "qa_issues";
 type StatusFilter = "all" | "needs_response" | "responded";
 type SenderFilter = "all" | "students" | "vas";
+
+type UnifiedRow = {
+  id: string;
+  source: "chapter_questions" | "qa_issues";
+  issue_type: string;
+  question: string;
+  student_email: string | null;
+  student_name: string | null;
+  chapter_id: string;
+  asset_name: string | null;
+  source_ref: string | null;
+  created_at: string;
+  responded: boolean;
+  responded_at: string | null;
+  respond_by_at: string | null;
+  status: string;
+  fixed: boolean;
+  reply_text: string | null;
+  // QA-specific fields
+  qa_section?: string;
+  qa_fix_status?: string;
+  qa_fix_scope?: string;
+  qa_screenshot_url?: string | null;
+};
 
 function parseRatingMeta(sourceRef: string | null): { star_rating?: number; topic_name?: string } {
   if (!sourceRef) return {};
@@ -49,6 +74,7 @@ const issueColors: Record<string, string> = {
   issue: "bg-destructive/15 text-destructive",
   feedback: "bg-green-100 text-green-700",
   quiz_rating: "bg-amber-100 text-amber-700",
+  qa_issue: "bg-orange-100 text-orange-700",
 };
 
 const issueLabels: Record<string, string> = {
@@ -56,6 +82,7 @@ const issueLabels: Record<string, string> = {
   issue: "Issue",
   feedback: "Feedback",
   quiz_rating: "Quiz Feedback",
+  qa_issue: "QA Issue",
 };
 
 export function StudentInbox() {
@@ -91,7 +118,8 @@ export function StudentInbox() {
 
   const vaEmailSet = useMemo(() => new Set(vaEmails), [vaEmails]);
 
-  const { data: rows = [], isLoading } = useQuery({
+  // Fetch chapter_questions
+  const { data: chapterRows = [], isLoading: isLoadingCQ } = useQuery({
     queryKey: ["admin-student-inbox-v2"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -105,63 +133,181 @@ export function StudentInbox() {
     },
   });
 
+  // Fetch QA issues
+  const { data: qaIssues = [], isLoading: isLoadingQA } = useQuery({
+    queryKey: ["admin-inbox-qa-issues"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("solutions_qa_issues" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Fetch QA assets for chapter mapping
+  const { data: qaAssetMap = {} } = useQuery({
+    queryKey: ["admin-inbox-qa-asset-map"],
+    queryFn: async () => {
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("solutions_qa_assets" as any)
+          .select("id, asset_name, chapter_id, course_id")
+          .range(from, from + 999);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < 1000) break;
+        from += 1000;
+      }
+      const m: Record<string, { chapter_id: string; course_id: string; asset_name: string }> = {};
+      all.forEach((a: any) => { m[a.id] = a; });
+      return m;
+    },
+  });
+
+  const isLoading = isLoadingCQ || isLoadingQA;
+
+  // Unify rows
+  const rows: UnifiedRow[] = useMemo(() => {
+    const unified: UnifiedRow[] = [];
+
+    // chapter_questions rows
+    chapterRows.forEach((r: any) => {
+      unified.push({
+        id: r.id,
+        source: "chapter_questions",
+        issue_type: r.issue_type,
+        question: r.question,
+        student_email: r.student_email,
+        student_name: r.student_name,
+        chapter_id: r.chapter_id,
+        asset_name: r.asset_name,
+        source_ref: r.source_ref,
+        created_at: r.created_at,
+        responded: !!r.responded,
+        responded_at: r.responded_at,
+        respond_by_at: r.respond_by_at,
+        status: r.status,
+        fixed: !!r.fixed,
+        reply_text: r.reply_text,
+      });
+    });
+
+    // QA issues
+    qaIssues.forEach((qi: any) => {
+      const qaAsset = qaAssetMap[qi.qa_asset_id];
+      const isResolved = qi.fix_status === "approved" || qi.fix_status === "generated" || qi.fix_status === "rejected";
+      unified.push({
+        id: `qa_${qi.id}`,
+        source: "qa_issues",
+        issue_type: "qa_issue",
+        question: qi.issue_description,
+        student_email: null,
+        student_name: qi.fix_status === "pending" ? "QA Review" : `QA Review (${qi.fix_status})`,
+        chapter_id: qaAsset?.chapter_id || "",
+        asset_name: qi.asset_name,
+        source_ref: null,
+        created_at: qi.created_at,
+        responded: isResolved,
+        responded_at: isResolved ? qi.created_at : null,
+        respond_by_at: null,
+        status: qi.fix_status,
+        fixed: qi.fix_status === "approved" || qi.fix_status === "generated",
+        reply_text: qi.fix_description,
+        qa_section: qi.section,
+        qa_fix_status: qi.fix_status,
+        qa_fix_scope: qi.fix_scope,
+        qa_screenshot_url: qi.screenshot_url,
+      });
+    });
+
+    return unified;
+  }, [chapterRows, qaIssues, qaAssetMap]);
+
   const filtered = useMemo(() => {
-    return rows.filter((r: any) => {
+    return rows.filter((r) => {
       if (statusFilter === "needs_response" && r.responded) return false;
       if (statusFilter === "responded" && !r.responded) return false;
       if (issueFilter !== "all") {
+        if (issueFilter === "qa_issues" && r.source !== "qa_issues") return false;
         if (issueFilter === "questions" && r.issue_type !== "question") return false;
         if (issueFilter === "issues" && r.issue_type !== "issue") return false;
         if (issueFilter === "feedback" && r.issue_type !== "feedback") return false;
         if (issueFilter === "quiz_rating" && r.issue_type !== "quiz_rating") return false;
       }
       if (senderFilter !== "all") {
-        const email = (r.student_email || "").toLowerCase();
-        const isVa = vaEmailSet.has(email);
-        if (senderFilter === "students" && isVa) return false;
-        if (senderFilter === "vas" && !isVa) return false;
+        if (r.source === "qa_issues") {
+          // QA issues are internal — show under "VAs"
+          if (senderFilter === "students") return false;
+        } else {
+          const email = (r.student_email || "").toLowerCase();
+          const isVa = vaEmailSet.has(email);
+          if (senderFilter === "students" && isVa) return false;
+          if (senderFilter === "vas" && !isVa) return false;
+        }
       }
       return true;
     });
   }, [rows, statusFilter, issueFilter, senderFilter, vaEmailSet]);
 
   const sorted = useMemo(() => {
-    return [...filtered].sort((a: any, b: any) => {
-      // Unresponded first
+    return [...filtered].sort((a, b) => {
       if (a.responded !== b.responded) return a.responded ? 1 : -1;
       if (!a.responded && !b.responded) {
-        // Sort by respond_by_at ASC (most urgent first)
         const aTime = a.respond_by_at ? new Date(a.respond_by_at).getTime() : Infinity;
         const bTime = b.respond_by_at ? new Date(b.respond_by_at).getTime() : Infinity;
-        return aTime - bTime;
+        if (aTime !== bTime) return aTime - bTime;
+        // QA issues without respond_by_at: sort by created_at DESC
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
-      // Responded: most recently responded first
       const aResp = a.responded_at ? new Date(a.responded_at).getTime() : 0;
       const bResp = b.responded_at ? new Date(b.responded_at).getTime() : 0;
       return bResp - aResp;
     });
   }, [filtered]);
 
-  const unrespondedCount = rows.filter((r: any) => !r.responded).length;
+  const unrespondedCount = rows.filter((r) => !r.responded).length;
+  const qaIssueCount = rows.filter((r) => r.source === "qa_issues" && !r.responded).length;
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const respondedThisWeek = rows.filter((r: any) => r.responded && r.responded_at && new Date(r.responded_at) >= weekAgo).length;
+  const respondedThisWeek = rows.filter((r) => r.responded && r.responded_at && new Date(r.responded_at) >= weekAgo).length;
 
-  const handleToggleResponded = async (id: string, currentValue: boolean) => {
-    const updates: any = { responded: !currentValue };
-    if (!currentValue) {
+  const handleToggleResponded = async (row: UnifiedRow) => {
+    if (row.source === "qa_issues") {
+      // Toggle QA issue fix_status between pending and approved
+      const realId = row.id.replace("qa_", "");
+      const newStatus = row.responded ? "pending" : "approved";
+      const { error } = await supabase
+        .from("solutions_qa_issues" as any)
+        .update({ fix_status: newStatus })
+        .eq("id", realId);
+      if (error) {
+        toast.error("Failed to update", { description: error.message });
+        return;
+      }
+      toast.success(newStatus === "approved" ? "Marked as resolved ✓" : "Reopened");
+      queryClient.invalidateQueries({ queryKey: ["admin-inbox-qa-issues"] });
+      return;
+    }
+
+    const updates: any = { responded: !row.responded };
+    if (!row.responded) {
       updates.responded_at = new Date().toISOString();
       updates.status = "replied";
     } else {
       updates.responded_at = null;
       updates.status = "new";
     }
-    const { error } = await supabase.from("chapter_questions").update(updates).eq("id", id);
+    const { error } = await supabase.from("chapter_questions").update(updates).eq("id", row.id);
     if (error) {
       toast.error("Failed to update", { description: error.message });
       return;
     }
-    if (!currentValue) {
+    if (!row.responded) {
       toast.success("Marked as responded ✓");
     } else {
       toast("Reopened — marked as not responded");
@@ -169,13 +315,29 @@ export function StudentInbox() {
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
-  const handleToggleFixed = async (id: string, currentValue: boolean) => {
-    const { error } = await supabase.from("chapter_questions").update({ fixed: !currentValue } as any).eq("id", id);
+  const handleToggleFixed = async (row: UnifiedRow) => {
+    if (row.source === "qa_issues") {
+      const realId = row.id.replace("qa_", "");
+      const newStatus = row.fixed ? "pending" : "approved";
+      const { error } = await supabase
+        .from("solutions_qa_issues" as any)
+        .update({ fix_status: newStatus })
+        .eq("id", realId);
+      if (error) {
+        toast.error("Failed to update", { description: error.message });
+        return;
+      }
+      toast.success(!row.fixed ? "Marked as fixed ✓" : "Unmarked fixed");
+      queryClient.invalidateQueries({ queryKey: ["admin-inbox-qa-issues"] });
+      return;
+    }
+
+    const { error } = await supabase.from("chapter_questions").update({ fixed: !row.fixed } as any).eq("id", row.id);
     if (error) {
       toast.error("Failed to update", { description: error.message });
       return;
     }
-    toast.success(!currentValue ? "Marked as fixed ✓" : "Unmarked fixed");
+    toast.success(!row.fixed ? "Marked as fixed ✓" : "Unmarked fixed");
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
   };
 
@@ -216,6 +378,11 @@ export function StudentInbox() {
                 0
               </span>
             )}
+            {qaIssueCount > 0 && (
+              <Badge variant="outline" className="text-[10px] border-orange-400 text-orange-600">
+                {qaIssueCount} QA
+              </Badge>
+            )}
           </div>
           <span className="text-xs text-muted-foreground">{respondedThisWeek} responded this week</span>
 
@@ -239,6 +406,7 @@ export function StudentInbox() {
               <option value="issues">Issues</option>
               <option value="feedback">Feedback</option>
               <option value="quiz_rating">Quiz Feedback</option>
+              <option value="qa_issues">QA Issues</option>
             </select>
           </div>
         </div>
@@ -255,10 +423,11 @@ export function StudentInbox() {
           <p className="text-xs text-muted-foreground py-4">No messages match this filter.</p>
         ) : (
           <div className="space-y-2">
-            {sorted.map((row: any) => {
+            {sorted.map((row) => {
               const ch = chapterMap[row.chapter_id];
               const co = ch ? courseMap[ch.course_id] : null;
               const isRating = row.issue_type === "quiz_rating";
+              const isQA = row.source === "qa_issues";
               const ratingMeta = isRating ? parseRatingMeta(row.source_ref) : null;
               const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
               const displayEmail = row.student_email && row.student_email !== "anonymous" ? row.student_email : null;
@@ -266,7 +435,9 @@ export function StudentInbox() {
               const overdue = row.respond_by_at && !row.responded && isBefore(new Date(row.respond_by_at), now);
               const dueToday = row.respond_by_at && !row.responded && !overdue && isToday(new Date(row.respond_by_at));
 
-              const borderClass = overdue
+              const borderClass = isQA && !row.responded
+                ? "border-l-4 border-l-orange-400"
+                : overdue
                 ? "border-l-4 border-l-destructive"
                 : dueToday
                 ? "border-l-4 border-l-amber-400"
@@ -287,6 +458,12 @@ export function StudentInbox() {
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${issueColors[row.issue_type] || "bg-secondary text-secondary-foreground"}`}>
                         {issueLabels[row.issue_type] || row.issue_type}
                       </span>
+                      {isQA && row.qa_section && (
+                        <Badge variant="outline" className="text-[9px]">{row.qa_section}</Badge>
+                      )}
+                      {isQA && row.qa_fix_scope === "bulk_pattern" && (
+                        <Badge className="bg-amber-500/20 text-amber-600 text-[8px]">⚡ Bulk</Badge>
+                      )}
                       {isRating && ratingMeta?.star_rating && (
                         <span className="text-amber-400 font-bold text-sm">
                           {"★".repeat(ratingMeta.star_rating)}
@@ -296,11 +473,17 @@ export function StudentInbox() {
                     </div>
 
                     <div>
-                      <span className="text-xs font-bold text-foreground">
-                        {displayEmail || "Anonymous"}
-                      </span>
-                      {row.student_name && (
-                        <span className="text-[11px] text-muted-foreground ml-2">{row.student_name}</span>
+                      {isQA ? (
+                        <span className="text-xs font-bold text-orange-600 font-mono">{row.asset_name}</span>
+                      ) : (
+                        <>
+                          <span className="text-xs font-bold text-foreground">
+                            {displayEmail || "Anonymous"}
+                          </span>
+                          {row.student_name && (
+                            <span className="text-[11px] text-muted-foreground ml-2">{row.student_name}</span>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -310,8 +493,17 @@ export function StudentInbox() {
                       </p>
                     )}
 
+                    {/* QA screenshot thumbnail */}
+                    {isQA && row.qa_screenshot_url && (
+                      <img src={row.qa_screenshot_url} alt="QA screenshot" className="max-h-16 rounded border border-border" />
+                    )}
+
                     {/* Context */}
-                    {(isRating && ratingMeta?.topic_name) ? (
+                    {isQA ? (
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {chapterLabel}{co?.code ? ` · ${co.code}` : ""}
+                      </p>
+                    ) : (isRating && ratingMeta?.topic_name) ? (
                       <p className="text-[10px] text-muted-foreground font-mono">
                         {ratingMeta.topic_name}{chapterLabel ? ` — ${chapterLabel}` : ""}{co?.code ? ` · ${co.code}` : ""}
                       </p>
@@ -335,9 +527,22 @@ export function StudentInbox() {
 
                   {/* Right */}
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <RespondByBadge respondByAt={row.respond_by_at} responded={row.responded} />
+                    {!isQA && <RespondByBadge respondByAt={row.respond_by_at} responded={row.responded} />}
 
-                    {row.asset_name && row.issue_type === "issue" && (
+                    {/* QA fix status badge */}
+                    {isQA && row.qa_fix_status && (
+                      <Badge variant="outline" className={`text-[9px] ${
+                        row.qa_fix_status === "pending" ? "border-orange-400 text-orange-600" :
+                        row.qa_fix_status === "approved" ? "border-emerald-400 text-emerald-600" :
+                        row.qa_fix_status === "rejected" ? "border-destructive text-destructive" :
+                        "border-muted text-muted-foreground"
+                      }`}>
+                        {row.qa_fix_status}
+                      </Badge>
+                    )}
+
+                    {/* View Asset link */}
+                    {row.asset_name && (
                       <a
                         href={`/solutions/${row.asset_name}?admin=true`}
                         target="_blank"
@@ -347,18 +552,19 @@ export function StudentInbox() {
                         View Asset → <ExternalLink className="h-2.5 w-2.5" />
                       </a>
                     )}
-                    {row.asset_name && row.issue_type !== "issue" && (
+
+                    {/* QA Admin link */}
+                    {isQA && (
                       <a
-                        href={`/solutions-qa?asset=${row.asset_name}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={`/solutions-qa`}
                         className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
                       >
-                        Go to Asset Page <ExternalLink className="h-2.5 w-2.5" />
+                        <Wrench className="h-2.5 w-2.5" /> QA Admin
                       </a>
                     )}
 
-                    {displayEmail && (
+                    {/* Reply via email — only for chapter_questions */}
+                    {!isQA && displayEmail && (
                       <a
                         href={`mailto:${displayEmail}?subject=${mailtoSubject}`}
                         className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap"
@@ -367,25 +573,30 @@ export function StudentInbox() {
                       </a>
                     )}
 
+                    {/* Responded / Resolved toggle */}
                     <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={!!row.responded}
-                        onChange={() => handleToggleResponded(row.id, !!row.responded)}
+                        onChange={() => handleToggleResponded(row)}
                         className="rounded"
                       />
-                      {row.responded ? "Responded" : "Mark responded"}
+                      {isQA
+                        ? (row.responded ? "Resolved" : "Mark resolved")
+                        : (row.responded ? "Responded" : "Mark responded")
+                      }
                     </label>
 
-                    {row.issue_type === "issue" && (
+                    {/* Fixed checkbox for issue-type rows */}
+                    {(row.issue_type === "issue" || isQA) && (
                       <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
                         <input
                           type="checkbox"
-                          checked={!!(row as any).fixed}
-                          onChange={() => handleToggleFixed(row.id, !!(row as any).fixed)}
+                          checked={!!row.fixed}
+                          onChange={() => handleToggleFixed(row)}
                           className="rounded accent-emerald-600"
                         />
-                        {(row as any).fixed ? "✓ Fixed" : "Mark fixed"}
+                        {row.fixed ? "✓ Fixed" : "Mark fixed"}
                       </label>
                     )}
                   </div>
