@@ -384,6 +384,7 @@ export default function SolutionsQAReview() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
+  const [selectedChapterId, setSelectedChapterId] = useState(() => localStorage.getItem("qa-chapter-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
 
 
