@@ -81,6 +81,9 @@ verify_jwt = false
 [functions.rewrite-je-tooltips]
 verify_jwt = false
 
+[functions.send-fix-email]
+verify_jwt = false
+
 [functions.send-bulk-fix-summary]
 verify_jwt = false
 
