@@ -80,6 +80,17 @@ export function StudentInbox() {
     return m;
   }, [courses]);
 
+  const { data: vaEmails = [] } = useQuery({
+    queryKey: ["va-emails-set"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("va_accounts").select("email");
+      if (error) throw error;
+      return (data || []).map((v: any) => (v.email as string).toLowerCase());
+    },
+  });
+
+  const vaEmailSet = useMemo(() => new Set(vaEmails), [vaEmails]);
+
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["admin-student-inbox-v2"],
     queryFn: async () => {
@@ -88,7 +99,6 @@ export function StudentInbox() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Filter out quiz_rating rows with no message
       return (data as any[]).filter((r: any) =>
         r.issue_type !== "quiz_rating" || (r.question && r.question.trim() !== "")
       );
@@ -105,9 +115,15 @@ export function StudentInbox() {
         if (issueFilter === "feedback" && r.issue_type !== "feedback") return false;
         if (issueFilter === "quiz_rating" && r.issue_type !== "quiz_rating") return false;
       }
+      if (senderFilter !== "all") {
+        const email = (r.student_email || "").toLowerCase();
+        const isVa = vaEmailSet.has(email);
+        if (senderFilter === "students" && isVa) return false;
+        if (senderFilter === "vas" && !isVa) return false;
+      }
       return true;
     });
-  }, [rows, statusFilter, issueFilter]);
+  }, [rows, statusFilter, issueFilter, senderFilter, vaEmailSet]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a: any, b: any) => {
