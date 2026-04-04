@@ -512,6 +512,15 @@ export default function SolutionsQAReview() {
 
   useEffect(() => { seedAllCourses(); }, []);
 
+  const effectiveCourseId = useMemo(() => {
+    if (!isScopedVaSession) return selectedCourseId;
+    if (!assignedCourseIds.length) return "all";
+    if (selectedCourseId === "all") return showAllCoursesOption ? "all" : assignedCourseIds[0];
+    return assignedCourseIds.includes(selectedCourseId)
+      ? selectedCourseId
+      : (showAllCoursesOption ? "all" : assignedCourseIds[0]);
+  }, [assignedCourseIds, isScopedVaSession, selectedCourseId, showAllCoursesOption]);
+
   // ── Fetch chapters for selected course ────────────────────────────
   const { data: courseChapters } = useQuery({
     queryKey: ["qa-course-chapters", effectiveCourseId],
