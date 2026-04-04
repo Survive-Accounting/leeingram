@@ -23,7 +23,7 @@ import {
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
   GripHorizontal, X, ChevronDown, ChevronUp, Maximize2, Minimize2,
-  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check,
+  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List,
 } from "lucide-react";
 import { toast } from "sonner";
 
