@@ -766,6 +766,8 @@ export default function SolutionsQAReview() {
 
   const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: 16, y: 60 });
 
+  const [sopOpen, setSopOpen] = useState(false);
+
   // ── Fetch VAs ───────────────────────────────────────────────────
   const { data: vaAccounts } = useQuery({
     queryKey: ["va-accounts-active"],
