@@ -2264,21 +2264,22 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
         <DialogFooter className="gap-2">
           {step === "prompt" && activeTab === "ai" && (
-          <div className="flex items-center gap-2">
-            {attemptNumber > 1 && (
-              <span className="text-[10px] font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5">
-                Using stronger model
-              </span>
-            )}
-            <Button
-              onClick={runFix}
-              disabled={!canRun}
-              className="text-white text-sm"
-              style={{ background: canRun ? "#14213D" : undefined }}
-            >
-              Run Fix →
-            </Button>
-          </div>
+            <div className="flex items-center gap-2">
+              {attemptNumber > 1 && (
+                <span className="text-[10px] font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5">
+                  Using stronger model
+                </span>
+              )}
+              <Button
+                onClick={runFix}
+                disabled={!canRun}
+                className="text-white text-sm"
+                style={{ background: canRun ? "#14213D" : undefined }}
+              >
+                Run Fix →
+              </Button>
+            </div>
+          )}
           {step === "prompt" && activeTab === "manual" && (
             <Button
               onClick={handleManualSave}
