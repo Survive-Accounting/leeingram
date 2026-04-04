@@ -1251,19 +1251,20 @@ CORE RULES:
 ENTITY NAMING:
 The primary entity in the problem — the one whose transactions are being described and whose books the student will primarily work from — is always named:
   "Survive Company A ([role])"
-Where [role] describes their role in the specific transaction. Examples:
-  Survive Company A (the issuer)
+Where [role] describes their role in the specific transaction.
+ONLY use these 7 roles — do NOT invent others:
+  seller, buyer, manufacturer, borrower, lender, lessee, lessor
+Examples:
   Survive Company A (the borrower)
-  Survive Company A (the lessor)
   Survive Company A (the seller)
+  Survive Company A (the lessee)
 
 If a second entity is involved in the transaction, name them:
   "Survive Company B ([role])"
-Where [role] describes their role. Examples:
-  Survive Company B (the investor)
+Examples:
   Survive Company B (the lender)
-  Survive Company B (the lessee)
   Survive Company B (the buyer)
+  Survive Company B (the lessor)
 
 Never use "Survive Company" without the A or B suffix and role hint.
 Never use "Counterparty" or "the other party".
