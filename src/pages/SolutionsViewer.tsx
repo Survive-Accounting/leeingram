@@ -1852,6 +1852,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
   const [afterData, setAfterData] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [approving, setApproving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [attemptNumber, setAttemptNumber] = useState(1);
 
   // Manual edit state
   const [manualFields, setManualFields] = useState<Record<string, string>>({});
@@ -1985,7 +1986,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
     setProgress({ current: 0, total: selectedKeys.length, currentLabel: "Starting..." });
     try {
       const { data: runRes, error: runErr } = await supabase.functions.invoke("fix-asset", {
-        body: { teaching_asset_id: teachingAssetId, sections: selectedKeys, fix_prompt: fixPrompt, action: "run" },
+        body: { teaching_asset_id: teachingAssetId, sections: selectedKeys, fix_prompt: fixPrompt, action: "run", attempt_number: attemptNumber },
       });
       if (runErr) throw runErr;
       setResults(runRes.results || []);
@@ -2028,6 +2029,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
       setResults([]);
       setAfterData(null);
       setSnapshot(null);
+      setAttemptNumber(prev => prev + 1);
       // Keep fixPrompt pre-filled for refinement
     } catch (err: any) {
       toast.error("Restore failed: " + (err.message || "Unknown error"));
@@ -2120,7 +2122,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
             </div>
 
             <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              ⚠ This will regenerate checked sections using Opus (strongest model) with your fix prompt as context.
+              ⚠ This will regenerate checked sections{attemptNumber > 1 ? " using Opus (strongest model)" : ""} with your fix prompt as context.
             </p>
           </div>
         )}
@@ -2262,14 +2264,21 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
         <DialogFooter className="gap-2">
           {step === "prompt" && activeTab === "ai" && (
-            <Button
-              onClick={runFix}
-              disabled={!canRun}
-              className="text-white text-sm"
-              style={{ background: canRun ? "#14213D" : undefined }}
-            >
-              Run Fix →
-            </Button>
+            <div className="flex items-center gap-2">
+              {attemptNumber > 1 && (
+                <span className="text-[10px] font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5">
+                  Using stronger model
+                </span>
+              )}
+              <Button
+                onClick={runFix}
+                disabled={!canRun}
+                className="text-white text-sm"
+                style={{ background: canRun ? "#14213D" : undefined }}
+              >
+                Run Fix →
+              </Button>
+            </div>
           )}
           {step === "prompt" && activeTab === "manual" && (
             <Button
