@@ -67,7 +67,7 @@ import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
 import PracticeViewer from "./pages/PracticeViewer";
 import ACCY304Landing from "./pages/ACCY304Landing";
-import ACCY304Admin from "./pages/ACCY304Admin";
+import WebsiteAdmin from "./pages/WebsiteAdmin";
 import PaymentLinksAdmin from "./pages/PaymentLinksAdmin";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
