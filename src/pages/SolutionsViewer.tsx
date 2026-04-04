@@ -2317,10 +2317,14 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false, courseCode = "" }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean; courseCode?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const [fixOpen, setFixOpen] = useState(() => {
     try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
   });
