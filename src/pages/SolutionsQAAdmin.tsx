@@ -113,6 +113,21 @@ export default function SolutionsQAAdmin() {
 
   const allAssetsFiltered = useMemo(() => assetsPages?.pages.flatMap(p => p.rows) ?? [], [assetsPages]);
 
+  // ── Restore last viewed asset on mount ──
+  useEffect(() => {
+    const lastAsset = localStorage.getItem("qa_last_asset_id");
+    if (lastAsset && allAssetsFiltered.length > 0) {
+      const found = allAssetsFiltered.find(a => a.asset_name === lastAsset);
+      if (found) {
+        setHighlightAsset(found.id);
+        setTimeout(() => {
+          highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => setHighlightAsset(null), 2000);
+        }, 100);
+      }
+    }
+  }, [allAssetsFiltered.length > 0]); // only run once when data first loads
+
   // Reset pagination when filters change
   const handleFilterChange = useCallback((setter: (v: string) => void, value: string) => {
     setter(value);
