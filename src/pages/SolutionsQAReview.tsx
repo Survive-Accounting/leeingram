@@ -1677,11 +1677,41 @@ export default function SolutionsQAReview() {
                     <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
                   </Button>
                 )}
+                {current?.teaching_asset_id && (
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs h-7"
+                    onClick={() => setFixAssetOpen(true)}
+                  >
+                    <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
+                  </Button>
+                )}
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Fix Asset Modal */}
+      {fixAssetOpen && current?.teaching_asset_id && (
+        <QAFixAssetModal
+          teachingAssetId={current.teaching_asset_id}
+          assetName={current.asset_name}
+          reviewerName={reviewerName}
+          onClose={() => setFixAssetOpen(false)}
+          onComplete={() => {
+            setFixAssetOpen(false);
+            qc.invalidateQueries({ queryKey: ["qa-asset-detail", current.teaching_asset_id] });
+            qc.invalidateQueries({ queryKey: ["qa-assets"] });
+            // Mark as clean if no remaining issues
+            if (issueCount === 0) {
+              supabase.from("solutions_qa_assets" as any)
+                .update({ qa_status: "reviewed_clean", reviewed_at: new Date().toISOString(), reviewed_by: reviewerName })
+                .eq("id", current.id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
