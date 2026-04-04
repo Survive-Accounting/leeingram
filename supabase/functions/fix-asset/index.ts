@@ -11,6 +11,7 @@ const corsHeaders = {
 const SECTION_COLUMNS: Record<string, string[]> = {
   solution_je: ["journal_entry_completed_json"],
   supplementary_je: ["supplementary_je_json"],
+  dissector: ["dissector_highlights_json"],
   formulas: ["important_formulas"],
   concepts: ["concept_notes"],
   traps: ["exam_traps"],
@@ -21,6 +22,7 @@ function sectionToInvocation(key: string, teachingAssetId: string, fixPrompt: st
   const map: Record<string, { fn: string; body: Record<string, unknown> }> = {
     solution_je: { fn: "rewrite-je-tooltips", body: { teaching_asset_id: teachingAssetId, mode: "rewrite_reasons", fix_context: fixPrompt } },
     supplementary_je: { fn: "generate-supplementary-je", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
+    dissector: { fn: "generate-dissector-highlights", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
     formulas: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "important_formulas", fix_context: fixPrompt } },
     concepts: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "concept_notes", fix_context: fixPrompt } },
     traps: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "exam_traps", fix_context: fixPrompt } },
