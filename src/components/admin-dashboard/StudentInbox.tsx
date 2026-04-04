@@ -182,6 +182,27 @@ export function StudentInbox() {
   return (
     <TooltipProvider>
       <div className="space-y-4">
+        {/* Sender tabs */}
+        <div className="flex items-center gap-1 border-b border-border">
+          {(["all", "students", "vas"] as SenderFilter[]).map((tab) => {
+            const labels: Record<SenderFilter, string> = { all: "All", students: "Students", vas: "VAs" };
+            const isActive = senderFilter === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setSenderFilter(tab)}
+                className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+                  isActive
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {labels[tab]}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Summary bar */}
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
