@@ -384,6 +384,7 @@ export default function SolutionsQAReview() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
+  const [selectedChapterId, setSelectedChapterId] = useState(() => localStorage.getItem("qa-chapter-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
 
 
@@ -511,20 +512,47 @@ export default function SolutionsQAReview() {
 
   useEffect(() => { seedAllCourses(); }, []);
 
-  // ── Fetch all QA assets ─────────────────────────────────────────
-  const { data: allAssetsRaw, isLoading } = useQuery({
-    queryKey: ["qa-assets"],
+  const effectiveCourseId = useMemo(() => {
+    if (!isScopedVaSession) return selectedCourseId;
+    if (!assignedCourseIds.length) return "all";
+    if (selectedCourseId === "all") return showAllCoursesOption ? "all" : assignedCourseIds[0];
+    return assignedCourseIds.includes(selectedCourseId)
+      ? selectedCourseId
+      : (showAllCoursesOption ? "all" : assignedCourseIds[0]);
+  }, [assignedCourseIds, isScopedVaSession, selectedCourseId, showAllCoursesOption]);
+
+  // ── Fetch chapters for selected course ────────────────────────────
+  const { data: courseChapters } = useQuery({
+    queryKey: ["qa-course-chapters", effectiveCourseId],
     queryFn: async () => {
-      // Paginate to get ALL QA assets (beyond 1000-row default)
+      if (effectiveCourseId === "all") return [];
+      const { data, error } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name")
+        .eq("course_id", effectiveCourseId)
+        .order("chapter_number");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: effectiveCourseId !== "all",
+  });
+
+  // ── Fetch QA assets — scoped to chapter when selected ───────────
+  const { data: allAssetsRaw, isLoading } = useQuery({
+    queryKey: ["qa-assets", effectiveCourseId, selectedChapterId],
+    queryFn: async () => {
       let all: any[] = [];
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const { data, error } = await supabase
+        let q = supabase
           .from("solutions_qa_assets" as any)
           .select("*")
           .order("asset_name")
           .range(from, from + pageSize - 1);
+        if (effectiveCourseId !== "all") q = q.eq("course_id", effectiveCourseId);
+        if (selectedChapterId !== "all") q = q.eq("chapter_id", selectedChapterId);
+        const { data, error } = await q;
         if (error) throw error;
         if (!data?.length) break;
         all = all.concat(data);
@@ -535,26 +563,40 @@ export default function SolutionsQAReview() {
     },
   });
 
-  const effectiveCourseId = useMemo(() => {
-    if (!isScopedVaSession) return selectedCourseId;
-    if (!assignedCourseIds.length) return "all";
-    if (selectedCourseId === "all") return showAllCoursesOption ? "all" : assignedCourseIds[0];
-    return assignedCourseIds.includes(selectedCourseId)
-      ? selectedCourseId
-      : (showAllCoursesOption ? "all" : assignedCourseIds[0]);
-  }, [assignedCourseIds, isScopedVaSession, selectedCourseId, showAllCoursesOption]);
+  // ── Chapter-level status counts ─────────────────────────────────
+  const { data: chapterStatusCounts } = useQuery({
+    queryKey: ["qa-chapter-status-counts", effectiveCourseId],
+    queryFn: async () => {
+      if (effectiveCourseId === "all" || !courseChapters?.length) return {};
+      const counts: Record<string, { total: number; clean: number; issues: number; pending: number }> = {};
+      for (const ch of courseChapters) {
+        const [total, clean, issues] = await Promise.all([
+          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id),
+          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_clean"),
+          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_issues"),
+        ]);
+        counts[ch.id] = {
+          total: total.count ?? 0,
+          clean: clean.count ?? 0,
+          issues: issues.count ?? 0,
+          pending: (total.count ?? 0) - (clean.count ?? 0) - (issues.count ?? 0),
+        };
+      }
+      return counts;
+    },
+    enabled: effectiveCourseId !== "all" && (courseChapters?.length ?? 0) > 0,
+  });
 
   const isCourseSelectorLocked = isScopedVaSession && !showAllCoursesOption;
 
-  // Filter by effective course
+  // Filter by effective course (already filtered in query, just sort)
   const allAssets = useMemo(() => {
     if (!allAssetsRaw) return [];
     const scopedAssets = isScopedVaSession
       ? allAssetsRaw.filter((asset) => assignedCourseIds.includes(asset.course_id))
       : allAssetsRaw;
-    const filtered = effectiveCourseId === "all" ? scopedAssets : scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
-    return [...filtered].sort(compareTextbookOrder);
-  }, [allAssetsRaw, assignedCourseIds, effectiveCourseId, isScopedVaSession]);
+    return [...scopedAssets].sort(compareTextbookOrder);
+  }, [allAssetsRaw, assignedCourseIds, isScopedVaSession]);
 
   const current = allAssets[currentIndex] ?? null;
   const totalReviewed = allAssets.filter(r => r.qa_status !== "pending").length;
@@ -781,6 +823,14 @@ export default function SolutionsQAReview() {
   const handleCourseChange = (val: string) => {
     setSelectedCourseId(val);
     localStorage.setItem("qa-course-filter", val);
+    setSelectedChapterId("all");
+    localStorage.setItem("qa-chapter-filter", "all");
+    setCurrentIndex(0);
+  };
+
+  const handleChapterChange = (val: string) => {
+    setSelectedChapterId(val);
+    localStorage.setItem("qa-chapter-filter", val);
     setCurrentIndex(0);
   };
 
@@ -956,6 +1006,37 @@ export default function SolutionsQAReview() {
           </SelectContent>
         </Select>
 
+        {/* Chapter filter */}
+        {effectiveCourseId !== "all" && courseChapters && courseChapters.length > 0 && (
+          <Select value={selectedChapterId} onValueChange={handleChapterChange}>
+            <SelectTrigger className="h-6 text-[10px] w-32 border-border"><SelectValue placeholder="All chapters" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All chapters</SelectItem>
+              {courseChapters.map(ch => {
+                const cts = chapterStatusCounts?.[ch.id];
+                const allClean = cts && cts.total > 0 && cts.pending === 0 && cts.issues === 0;
+                const hasIssues = cts && cts.issues > 0;
+                const hasPending = cts && cts.pending > 0;
+                return (
+                  <SelectItem key={ch.id} value={ch.id}>
+                    <span className="flex items-center gap-1.5">
+                      {allClean ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      ) : hasIssues ? (
+                        <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                      ) : hasPending ? (
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/30 shrink-0" />
+                      ) : null}
+                      Ch {ch.chapter_number}
+                      {cts && <span className="text-muted-foreground ml-1">({cts.clean}/{cts.total})</span>}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        )}
+
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Progress value={progress} className="flex-1 h-1.5 max-w-[200px]" />
           <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -1114,10 +1195,11 @@ export default function SolutionsQAReview() {
                           <span className="text-[8px] text-muted-foreground/40 font-mono">{idx + 1}</span>
                           <button
                             onClick={() => setOpenIssueSection(openIssueSection === sec.label ? null : sec.label)}
-                            className="text-amber-500 hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={`Report issue with ${sec.label}`}
+                            className="flex items-center gap-0.5 text-[9px] font-medium text-amber-500 hover:text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5 hover:bg-amber-500/10 transition-colors"
+                            title={`Report issue with ${sec.label} [Shift+${idx + 1}]`}
                           >
-                            <AlertTriangle className="h-3 w-3" />
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Issue
                           </button>
                         </div>
                         {openIssueSection === sec.label && current && (
