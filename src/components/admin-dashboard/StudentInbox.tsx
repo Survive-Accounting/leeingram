@@ -299,26 +299,14 @@ export function StudentInbox() {
                     <RespondByBadge respondByAt={row.respond_by_at} responded={row.responded} />
 
                     {row.asset_name && (
-                      <>
-                        <a
-                          href={`/solutions/${row.asset_name}?ref=lw`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
-                        >
-                          View Asset <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
-                        {row.issue_type === "issue" && (
-                          <a
-                            href={`/solutions/${row.asset_name}?ref=lw&admin=true&fix=true`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] font-semibold text-amber-600 hover:underline whitespace-nowrap flex items-center gap-1"
-                          >
-                            Fix Asset →
-                          </a>
-                        )}
-                      </>
+                      <a
+                        href={`/solutions-qa?asset=${row.asset_name}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
+                      >
+                        Go to Asset Page <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
                     )}
 
                     {displayEmail && (
