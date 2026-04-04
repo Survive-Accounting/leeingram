@@ -56,6 +56,7 @@ import Phase2Review from "./pages/Phase2Review";
 import VaAdmin from "./pages/VaAdmin";
 import VaDashboard from "./pages/VaDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import StudentInboxPage from "./pages/StudentInboxPage";
 import NotFound from "./pages/NotFound";
 import ChapterComplete from "./pages/ChapterComplete";
 import TemplateManager from "./pages/TemplateManager";
