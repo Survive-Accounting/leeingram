@@ -649,6 +649,25 @@ export default function SolutionsQAReview() {
     },
   });
 
+  // ── Save last viewed asset to localStorage ───────────────────────
+  useEffect(() => {
+    if (current?.asset_name) {
+      localStorage.setItem("qa_last_asset_id", current.asset_name);
+    }
+  }, [current?.asset_name]);
+
+  // ── Restore last viewed asset on mount ──────────────────────────
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || !allAssets.length) return;
+    restoredRef.current = true;
+    const lastAsset = localStorage.getItem("qa_last_asset_id");
+    if (lastAsset) {
+      const idx = allAssets.findIndex(a => a.asset_name === lastAsset);
+      if (idx >= 0) setCurrentIndex(idx);
+    }
+  }, [allAssets]);
+
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
     setCheckedSections(new Set());
