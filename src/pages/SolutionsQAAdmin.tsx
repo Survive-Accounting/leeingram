@@ -9,8 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle2, Copy, FileText, Sparkles, Zap, Target, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  CheckCircle2, Copy, FileText, Sparkles, Zap, Target, Loader2,
+  Wrench, X, RotateCcw, Check, ChevronDown, ChevronUp, ExternalLink,
+} from "lucide-react";
 import { toast } from "sonner";
+
+// ── Types ────────────────────────────────────────────────────────────
 
 type QAAsset = {
   id: string;
@@ -42,11 +49,421 @@ type StatusCounts = {
   generated: number;
 };
 
+type FixStep = "input" | "running" | "compare" | "done";
+
+type SectionOption = {
+  key: string;
+  label: string;
+};
+
+const FIX_SECTIONS: SectionOption[] = [
+  { key: "solution_je", label: "Solution text + JE reasons" },
+  { key: "supplementary_je", label: "Supplementary journal entries" },
+  { key: "dissector", label: "Problem dissector highlights" },
+  { key: "formulas", label: "Important formulas" },
+  { key: "concepts", label: "Key concepts" },
+  { key: "traps", label: "Exam traps" },
+  { key: "flowchart", label: "Flowchart" },
+];
+
 const PAGE_SIZE = 100;
+
+// ── Fix Asset Modal ──────────────────────────────────────────────────
+
+function FixAssetModal({
+  issue,
+  onClose,
+  onComplete,
+}: {
+  issue: QAIssue;
+  onClose: () => void;
+  onComplete: () => void;
+}) {
+  const [step, setStep] = useState<FixStep>("input");
+  const [fixPrompt, setFixPrompt] = useState(issue.issue_description || "");
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set());
+  const [runProgress, setRunProgress] = useState<Record<string, "pending" | "running" | "done" | "error">>({});
+  const [snapshot, setSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [afterData, setAfterData] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [runResults, setRunResults] = useState<{ key: string; ok: boolean; error?: string }[]>([]);
+  const [attemptNumber, setAttemptNumber] = useState(1);
+
+  // Need teaching_asset_id from the QA asset
+  const { data: qaAsset } = useQuery({
+    queryKey: ["fix-qa-asset", issue.qa_asset_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("solutions_qa_assets" as any)
+        .select("teaching_asset_id, asset_name")
+        .eq("id", issue.qa_asset_id)
+        .single();
+      if (error) throw error;
+      return data as { teaching_asset_id: string; asset_name: string };
+    },
+  });
+
+  const teachingAssetId = qaAsset?.teaching_asset_id;
+
+  const canRun = fixPrompt.trim().length >= 20 && selectedSections.size > 0 && !!teachingAssetId;
+
+  const toggleSection = (key: string) => {
+    setSelectedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedSections.size === FIX_SECTIONS.length) {
+      setSelectedSections(new Set());
+    } else {
+      setSelectedSections(new Set(FIX_SECTIONS.map(s => s.key)));
+    }
+  };
+
+  const runFix = async () => {
+    if (!teachingAssetId) return;
+    const sections = [...selectedSections];
+    setStep("running");
+
+    // Initialize progress
+    const progress: Record<string, "pending" | "running" | "done" | "error"> = {};
+    sections.forEach(s => { progress[s] = "pending"; });
+    setRunProgress({ ...progress });
+
+    try {
+      // Step 1: Take snapshot
+      sections.forEach(s => { progress[s] = "running"; });
+      setRunProgress({ ...progress });
+
+      const snapRes = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, sections, action: "snapshot" },
+      });
+      if (snapRes.error) throw new Error(snapRes.error.message);
+      setSnapshot(snapRes.data.snapshot);
+
+      // Step 2: Run regeneration
+      const runRes = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          sections,
+          fix_prompt: fixPrompt.trim(),
+          action: "run",
+          attempt_number: attemptNumber,
+        },
+      });
+      if (runRes.error) throw new Error(runRes.error.message);
+
+      const results = runRes.data.results as { key: string; ok: boolean; error?: string }[];
+      setRunResults(results);
+      setAfterData(runRes.data.after);
+
+      // Update progress
+      results.forEach(r => {
+        progress[r.key] = r.ok ? "done" : "error";
+      });
+      setRunProgress({ ...progress });
+
+      setStep("compare");
+    } catch (err: any) {
+      toast.error("Fix failed: " + err.message);
+      setStep("input");
+    }
+  };
+
+  const approveChanges = async () => {
+    if (!teachingAssetId) return;
+    try {
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          fix_prompt: fixPrompt.trim(),
+          action: "approve",
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+
+      // Mark issue as approved
+      await supabase.from("solutions_qa_issues" as any).update({
+        fix_status: "approved",
+        fix_description: fixPrompt.trim(),
+      }).eq("id", issue.id);
+
+      toast.success("Changes approved and saved");
+      setStep("done");
+      onComplete();
+    } catch (err: any) {
+      toast.error("Approve failed: " + err.message);
+    }
+  };
+
+  const rejectChanges = async () => {
+    if (!teachingAssetId || !snapshot) return;
+    try {
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          snapshot,
+          action: "restore",
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+
+      toast.info("Changes reverted — try again");
+      setAttemptNumber(prev => prev + 1);
+      setStep("input");
+      setRunResults([]);
+      setAfterData(null);
+    } catch (err: any) {
+      toast.error("Restore failed: " + err.message);
+    }
+  };
+
+  const formatValue = (val: unknown): string => {
+    if (val === null || val === undefined) return "(empty)";
+    if (typeof val === "string") return val.length > 500 ? val.slice(0, 500) + "…" : val;
+    return JSON.stringify(val, null, 2);
+  };
+
+  return (
+    <Dialog open onOpenChange={() => { if (step !== "running") onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+          <div>
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Wrench className="h-4 w-4" /> Fix This Asset
+            </h2>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{issue.asset_name} · {issue.section}</p>
+          </div>
+          {attemptNumber > 1 && (
+            <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber} (stronger model)</Badge>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Issue details — always visible */}
+          <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3">
+            <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1">Reported Issue</p>
+            <p className="text-xs text-foreground">{issue.issue_description}</p>
+            {issue.suggested_fix && (
+              <p className="text-xs text-muted-foreground mt-1 italic">Suggested: {issue.suggested_fix}</p>
+            )}
+          </div>
+
+          {issue.screenshot_url && (
+            <img src={issue.screenshot_url} alt="Issue screenshot" className="max-h-32 rounded border border-border" />
+          )}
+
+          {/* View asset link */}
+          <a
+            href={`/solutions/${issue.asset_name}?admin=true`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+          >
+            View Asset → <ExternalLink className="h-3 w-3" />
+          </a>
+
+          {/* STEP: INPUT */}
+          {step === "input" && (
+            <>
+              {/* Fix description */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">What's wrong and how to fix it</label>
+                <Textarea
+                  value={fixPrompt}
+                  onChange={e => setFixPrompt(e.target.value)}
+                  placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit."
+                  className="text-xs min-h-[80px]"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {fixPrompt.trim().length < 20
+                    ? `${20 - fixPrompt.trim().length} more characters needed`
+                    : "✓ Ready"}
+                </p>
+              </div>
+
+              {/* Section checkboxes */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-foreground">Sections to regenerate</label>
+                  <button
+                    onClick={selectAll}
+                    className="text-[10px] text-primary hover:underline font-medium"
+                  >
+                    {selectedSections.size === FIX_SECTIONS.length ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {FIX_SECTIONS.map(sec => (
+                    <label key={sec.key} className="flex items-center gap-2 cursor-pointer group">
+                      <Checkbox
+                        checked={selectedSections.has(sec.key)}
+                        onCheckedChange={() => toggleSection(sec.key)}
+                      />
+                      <span className="text-xs text-foreground group-hover:text-primary transition-colors">{sec.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedSections.size === 0 && (
+                  <p className="text-[10px] text-muted-foreground">Select at least one section</p>
+                )}
+              </div>
+
+              <Button
+                onClick={runFix}
+                disabled={!canRun}
+                className="w-full"
+              >
+                <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
+              </Button>
+            </>
+          )}
+
+          {/* STEP: RUNNING */}
+          {step === "running" && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-foreground">Regenerating sections…</p>
+              {FIX_SECTIONS.filter(s => selectedSections.has(s.key)).map(sec => {
+                const status = runProgress[sec.key] || "pending";
+                return (
+                  <div key={sec.key} className="flex items-center gap-2 text-xs">
+                    {status === "running" || status === "pending" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    ) : status === "done" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-destructive" />
+                    )}
+                    <span className={status === "done" ? "text-muted-foreground" : "text-foreground"}>{sec.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* STEP: COMPARE */}
+          {step === "compare" && snapshot && afterData && (
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-foreground">Review Changes</p>
+
+              {runResults.filter(r => !r.ok).length > 0 && (
+                <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
+                  <p className="text-[10px] font-bold text-destructive">Some sections failed:</p>
+                  {runResults.filter(r => !r.ok).map(r => (
+                    <p key={r.key} className="text-[10px] text-destructive">{r.key}: {r.error}</p>
+                  ))}
+                </div>
+              )}
+
+              {[...selectedSections].map(sectionKey => {
+                const before = snapshot[sectionKey] || {};
+                const after = afterData[sectionKey] || {};
+                const sec = FIX_SECTIONS.find(s => s.key === sectionKey);
+                const result = runResults.find(r => r.key === sectionKey);
+
+                if (!result?.ok) return null;
+
+                return (
+                  <CompareSection
+                    key={sectionKey}
+                    label={sec?.label || sectionKey}
+                    before={before}
+                    after={after}
+                    formatValue={formatValue}
+                  />
+                );
+              })}
+
+              <div className="flex gap-2 pt-2">
+                <Button onClick={approveChanges} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Check className="h-3.5 w-3.5 mr-1" /> Approve Changes
+                </Button>
+                <Button onClick={rejectChanges} variant="outline" className="flex-1">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reject & Try Again
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Compare Section ──────────────────────────────────────────────────
+
+function CompareSection({
+  label,
+  before,
+  after,
+  formatValue,
+}: {
+  label: string;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+  formatValue: (val: unknown) => string;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const cols = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 text-xs font-bold text-foreground hover:bg-muted/50 transition-colors"
+      >
+        {label}
+        {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+      {expanded && (
+        <div className="grid grid-cols-2 divide-x divide-border">
+          {/* Before */}
+          <div className="p-3 space-y-2">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Before</p>
+            {cols.map(col => (
+              <div key={col}>
+                <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
+                <ScrollArea className="max-h-[200px]">
+                  <pre className="text-[11px] text-foreground whitespace-pre-wrap break-words">
+                    {formatValue(before[col])}
+                  </pre>
+                </ScrollArea>
+              </div>
+            ))}
+          </div>
+          {/* After */}
+          <div className="p-3 space-y-2 bg-emerald-500/5">
+            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">After (proposed)</p>
+            {cols.map(col => {
+              const changed = formatValue(before[col]) !== formatValue(after[col]);
+              return (
+                <div key={col}>
+                  <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
+                  <ScrollArea className="max-h-[200px]">
+                    <pre className={`text-[11px] whitespace-pre-wrap break-words ${
+                      changed ? "text-emerald-700 bg-emerald-500/10 rounded px-1" : "text-foreground"
+                    }`}>
+                      {formatValue(after[col])}
+                    </pre>
+                  </ScrollArea>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Component ───────────────────────────────────────────────────
 
 export default function SolutionsQAAdmin() {
   const qc = useQueryClient();
-  const [fixDescriptions, setFixDescriptions] = useState<Record<string, string>>({});
   const [fixScopes, setFixScopes] = useState<Record<string, string>>({});
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [promptIds, setPromptIds] = useState<string[]>([]);
@@ -55,12 +472,12 @@ export default function SolutionsQAAdmin() {
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
   const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
+  const [fixIssue, setFixIssue] = useState<QAIssue | null>(null);
 
   // ── Server-side COUNT query for summary cards ──
   const { data: counts } = useQuery<StatusCounts>({
     queryKey: ["qa-admin-counts"],
     queryFn: async () => {
-      // Use individual count queries since we can't do SQL aggregates via JS client
       const base = supabase.from("solutions_qa_assets" as any);
       const [total, pending, clean, issues, fixApproved, generated] = await Promise.all([
         base.select("id", { count: "exact", head: true }),
@@ -126,9 +543,8 @@ export default function SolutionsQAAdmin() {
         }, 100);
       }
     }
-  }, [allAssetsFiltered.length > 0]); // only run once when data first loads
+  }, [allAssetsFiltered.length > 0]);
 
-  // Reset pagination when filters change
   const handleFilterChange = useCallback((setter: (v: string) => void, value: string) => {
     setter(value);
   }, []);
@@ -164,22 +580,6 @@ export default function SolutionsQAAdmin() {
     allIssues?.forEach(i => { if (i.fix_scope === "bulk_pattern") ids.add(i.qa_asset_id); });
     return ids;
   }, [allIssues]);
-
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, fixDesc, fixScope }: { id: string; fixDesc: string; fixScope: string }) => {
-      const { error } = await supabase.from("solutions_qa_issues" as any).update({
-        fix_status: "approved",
-        fix_description: fixDesc,
-        fix_scope: fixScope,
-      }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
-      toast.success("Fix approved");
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
 
   const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -290,7 +690,7 @@ export default function SolutionsQAAdmin() {
 
         <Tabs defaultValue="issues">
           <TabsList>
-            <TabsTrigger value="issues" className="text-xs">Issues to Review ({pendingIssues.length})</TabsTrigger>
+            <TabsTrigger value="issues" className="text-xs">Issues ({pendingIssues.length})</TabsTrigger>
             <TabsTrigger value="prompt" className="text-xs">Generate Prompt ({approvedIssues.length})</TabsTrigger>
             <TabsTrigger value="all" className="text-xs">All Assets ({safeCount.total})</TabsTrigger>
           </TabsList>
@@ -307,6 +707,14 @@ export default function SolutionsQAAdmin() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-sm text-foreground">{issue.asset_name}</span>
                       <Badge variant="outline" className="text-[10px]">{issue.section}</Badge>
+                      <a
+                        href={`/solutions/${issue.asset_name}?admin=true`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto text-[10px] text-primary hover:underline flex items-center gap-0.5"
+                      >
+                        View Asset <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
                     </div>
 
                     <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3">
@@ -324,13 +732,6 @@ export default function SolutionsQAAdmin() {
                         onClick={() => setExpandedImage(issue.screenshot_url)}
                       />
                     )}
-
-                    <Textarea
-                      value={fixDescriptions[issue.id] ?? issue.issue_description ?? ""}
-                      onChange={e => setFixDescriptions(prev => ({ ...prev, [issue.id]: e.target.value }))}
-                      placeholder="Edit fix description..."
-                      className="text-xs min-h-[60px]"
-                    />
 
                     {/* Fix scope toggle */}
                     <div className="space-y-1">
@@ -356,28 +757,18 @@ export default function SolutionsQAAdmin() {
                           <Zap className="h-3 w-3" /> Apply System-Wide
                         </button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground pl-1">
-                        {scope === "asset_specific"
-                          ? `Fix will only be applied to ${issue.asset_name}`
-                          : "Fix will be applied across ALL assets with this pattern — use for formatting rules, not content-specific issues"}
-                      </p>
                     </div>
 
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                        onClick={() => approveMutation.mutate({
-                          id: issue.id,
-                          fixDesc: fixDescriptions[issue.id] ?? issue.issue_description ?? "",
-                          fixScope: scope,
-                        })}
-                        disabled={approveMutation.isPending}
+                        className="text-xs"
+                        onClick={() => setFixIssue(issue)}
                       >
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Approve Fix
+                        <Wrench className="h-3 w-3 mr-1" /> Fix This Asset →
                       </Button>
                       <Button size="sm" variant="outline" className="text-xs" onClick={() => rejectMutation.mutate(issue.id)}>
-                        Reject
+                        Dismiss
                       </Button>
                     </div>
                   </CardContent>
@@ -511,6 +902,19 @@ export default function SolutionsQAAdmin() {
           {expandedImage && <img src={expandedImage} alt="Expanded screenshot" className="w-full rounded" />}
         </DialogContent>
       </Dialog>
+
+      {/* Fix Asset Modal */}
+      {fixIssue && (
+        <FixAssetModal
+          issue={fixIssue}
+          onClose={() => setFixIssue(null)}
+          onComplete={() => {
+            setFixIssue(null);
+            qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
+            qc.invalidateQueries({ queryKey: ["qa-admin-counts"] });
+          }}
+        />
+      )}
     </SurviveSidebarLayout>
   );
 }
