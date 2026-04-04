@@ -3,10 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap } from "lucide-react";
+import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { WHITELISTED_EMAILS } from "@/lib/emailWhitelist";
 
 type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating" | "qa_issues";
@@ -102,6 +105,9 @@ export function StudentInbox() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [issueFilter, setIssueFilter] = useState<IssueFilter>("all");
   const [senderFilter, setSenderFilter] = useState<SenderFilter>("all");
+  const [fixModalRow, setFixModalRow] = useState<UnifiedRow | null>(null);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: chaptersData } = useChaptersWithCourses();
@@ -335,6 +341,14 @@ export function StudentInbox() {
   };
 
   const handleToggleFixed = async (row: UnifiedRow) => {
+    // If marking as fixed (not un-fixing) and it's a chapter_questions issue with a student email, show modal
+    if (!row.fixed && row.source === "chapter_questions" && row.issue_type === "issue" && row.student_email) {
+      setFixModalRow(row);
+      setSendEmail(true);
+      return;
+    }
+
+    // Otherwise toggle directly
     if (row.source === "qa_issues") {
       const realId = row.id.replace("qa_", "");
       const newStatus = row.fixed ? "pending" : "approved";
@@ -358,6 +372,46 @@ export function StudentInbox() {
     }
     toast.success(!row.fixed ? "Marked as fixed ✓" : "Unmarked fixed");
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
+  };
+
+  const confirmFixAndSend = async (isTest: boolean = false) => {
+    if (!fixModalRow) return;
+    setIsSending(true);
+    try {
+      // Mark as fixed
+      if (!isTest) {
+        const { error } = await supabase.from("chapter_questions").update({ fixed: true } as any).eq("id", fixModalRow.id);
+        if (error) throw error;
+      }
+
+      // Send email if toggled on
+      if (sendEmail && fixModalRow.student_email && fixModalRow.asset_name) {
+        const firstName = fixModalRow.student_name?.split(" ")[0] || "there";
+        const { error: fnErr } = await supabase.functions.invoke("send-fix-email", {
+          body: {
+            to: fixModalRow.student_email,
+            subject: `Your issue with ${fixModalRow.asset_name} has been fixed`,
+            assetCode: fixModalRow.asset_name,
+            firstName,
+            isTest,
+            questionId: isTest ? null : fixModalRow.id,
+          },
+        });
+        if (fnErr) throw fnErr;
+        toast.success(isTest ? "Test email sent to lee@surviveaccounting.com ✓" : "Fix email sent ✓");
+      } else if (!isTest) {
+        toast.success("Marked as fixed (no email sent) ✓");
+      }
+
+      if (!isTest) {
+        setFixModalRow(null);
+        queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
+      }
+    } catch (err: any) {
+      toast.error("Failed: " + err.message);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -650,6 +704,62 @@ export function StudentInbox() {
             })}
           </div>
         )}
+      {/* Fix confirmation modal */}
+      <Dialog open={!!fixModalRow} onOpenChange={(o) => { if (!o && !isSending) setFixModalRow(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Mark as Fixed</DialogTitle>
+            <DialogDescription className="text-xs">
+              {fixModalRow?.asset_name && (
+                <span className="font-mono font-bold">{fixModalRow.asset_name}</span>
+              )}
+              {fixModalRow?.student_email && (
+                <span className="block mt-1">Student: {fixModalRow.student_email}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={sendEmail}
+                onCheckedChange={(v) => setSendEmail(!!v)}
+              />
+              <span className="text-xs text-foreground">Send fix notification email to student</span>
+            </label>
+
+            {sendEmail && (
+              <p className="text-[10px] text-muted-foreground pl-6">
+                Email will notify the student that the issue has been fixed and link to the updated asset.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {sendEmail && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={isSending}
+                onClick={() => confirmFixAndSend(true)}
+              >
+                {isSending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                Test Email
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="text-xs"
+              disabled={isSending}
+              onClick={() => confirmFixAndSend(false)}
+            >
+              {isSending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              {sendEmail ? "Mark Fixed & Send Email" : "Mark Fixed (No Email)"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </TooltipProvider>
   );
