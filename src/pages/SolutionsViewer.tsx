@@ -1852,6 +1852,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
   const [afterData, setAfterData] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [approving, setApproving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [attemptNumber, setAttemptNumber] = useState(1);
 
   // Manual edit state
   const [manualFields, setManualFields] = useState<Record<string, string>>({});
