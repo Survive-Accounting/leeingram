@@ -552,8 +552,8 @@ export default function SolutionsQAReview() {
     const scopedAssets = isScopedVaSession
       ? allAssetsRaw.filter((asset) => assignedCourseIds.includes(asset.course_id))
       : allAssetsRaw;
-    if (effectiveCourseId === "all") return scopedAssets;
-    return scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
+    const filtered = effectiveCourseId === "all" ? scopedAssets : scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
+    return [...filtered].sort(compareTextbookOrder);
   }, [allAssetsRaw, assignedCourseIds, effectiveCourseId, isScopedVaSession]);
 
   const current = allAssets[currentIndex] ?? null;
