@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2, ExternalLink, AlertTriangle, Wrench } from "lucide-react";
+import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { WHITELISTED_EMAILS } from "@/lib/emailWhitelist";
 
 type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating" | "qa_issues";
 type StatusFilter = "all" | "needs_response" | "responded";
@@ -34,7 +35,19 @@ type UnifiedRow = {
   qa_fix_status?: string;
   qa_fix_scope?: string;
   qa_screenshot_url?: string | null;
+  // Urgent flag
+  isUrgent?: boolean;
 };
+
+const URGENT_KEYWORDS = /wrong|incorrect|error|mistake|doesn't match|doesn't match|off|broken|fix/i;
+
+function isStudentEmail(email: string | null, vaEmailSet: Set<string>): boolean {
+  if (!email) return false;
+  const lower = email.trim().toLowerCase();
+  if (WHITELISTED_EMAILS.includes(lower)) return false;
+  if (vaEmailSet.has(lower)) return false;
+  return true;
+}
 
 function parseRatingMeta(sourceRef: string | null): { star_rating?: number; topic_name?: string } {
   if (!sourceRef) return {};
@@ -177,6 +190,11 @@ export function StudentInbox() {
 
     // chapter_questions rows
     chapterRows.forEach((r: any) => {
+      const isIssue = r.issue_type === "issue";
+      const fromStudent = isStudentEmail(r.student_email, vaEmailSet);
+      const hasUrgentKeyword = isIssue && URGENT_KEYWORDS.test(r.question || "");
+      const urgent = isIssue && fromStudent && hasUrgentKeyword;
+
       unified.push({
         id: r.id,
         source: "chapter_questions",
@@ -194,6 +212,7 @@ export function StudentInbox() {
         status: r.status,
         fixed: !!r.fixed,
         reply_text: r.reply_text,
+        isUrgent: urgent,
       });
     });
 
@@ -226,7 +245,7 @@ export function StudentInbox() {
     });
 
     return unified;
-  }, [chapterRows, qaIssues, qaAssetMap]);
+  }, [chapterRows, qaIssues, qaAssetMap, vaEmailSet]);
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -241,7 +260,6 @@ export function StudentInbox() {
       }
       if (senderFilter !== "all") {
         if (r.source === "qa_issues") {
-          // QA issues are internal — show under "VAs"
           if (senderFilter === "students") return false;
         } else {
           const email = (r.student_email || "").toLowerCase();
@@ -256,12 +274,13 @@ export function StudentInbox() {
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
+      // Urgent items first
+      if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
       if (a.responded !== b.responded) return a.responded ? 1 : -1;
       if (!a.responded && !b.responded) {
         const aTime = a.respond_by_at ? new Date(a.respond_by_at).getTime() : Infinity;
         const bTime = b.respond_by_at ? new Date(b.respond_by_at).getTime() : Infinity;
         if (aTime !== bTime) return aTime - bTime;
-        // QA issues without respond_by_at: sort by created_at DESC
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
       const aResp = a.responded_at ? new Date(a.responded_at).getTime() : 0;
@@ -272,13 +291,13 @@ export function StudentInbox() {
 
   const unrespondedCount = rows.filter((r) => !r.responded).length;
   const qaIssueCount = rows.filter((r) => r.source === "qa_issues" && !r.responded).length;
+  const urgentCount = rows.filter((r) => r.isUrgent && !r.responded).length;
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const respondedThisWeek = rows.filter((r) => r.responded && r.responded_at && new Date(r.responded_at) >= weekAgo).length;
 
   const handleToggleResponded = async (row: UnifiedRow) => {
     if (row.source === "qa_issues") {
-      // Toggle QA issue fix_status between pending and approved
       const realId = row.id.replace("qa_", "");
       const newStatus = row.responded ? "pending" : "approved";
       const { error } = await supabase
@@ -383,6 +402,11 @@ export function StudentInbox() {
                 {qaIssueCount} QA
               </Badge>
             )}
+            {urgentCount > 0 && (
+              <Badge className="bg-red-600 text-white text-[10px] font-bold">
+                ⚡ {urgentCount} Urgent
+              </Badge>
+            )}
           </div>
           <span className="text-xs text-muted-foreground">{respondedThisWeek} responded this week</span>
 
@@ -428,6 +452,7 @@ export function StudentInbox() {
               const co = ch ? courseMap[ch.course_id] : null;
               const isRating = row.issue_type === "quiz_rating";
               const isQA = row.source === "qa_issues";
+              const isIssueType = row.issue_type === "issue";
               const ratingMeta = isRating ? parseRatingMeta(row.source_ref) : null;
               const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
               const displayEmail = row.student_email && row.student_email !== "anonymous" ? row.student_email : null;
@@ -435,7 +460,9 @@ export function StudentInbox() {
               const overdue = row.respond_by_at && !row.responded && isBefore(new Date(row.respond_by_at), now);
               const dueToday = row.respond_by_at && !row.responded && !overdue && isToday(new Date(row.respond_by_at));
 
-              const borderClass = isQA && !row.responded
+              const borderClass = row.isUrgent && !row.responded
+                ? "border-l-4 border-l-red-500"
+                : isQA && !row.responded
                 ? "border-l-4 border-l-orange-400"
                 : overdue
                 ? "border-l-4 border-l-destructive"
@@ -455,9 +482,24 @@ export function StudentInbox() {
                   {/* Left */}
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {/* Go to QA Page button for issue-type rows */}
+                      {isIssueType && row.asset_name && (
+                        <a
+                          href={`/solutions-qa?asset=${row.asset_name}`}
+                          className="inline-flex items-center rounded text-[12px] font-medium text-white px-2.5 py-1 no-underline"
+                          style={{ backgroundColor: "#14213D", borderRadius: "4px", padding: "4px 10px" }}
+                        >
+                          Go to QA Page →
+                        </a>
+                      )}
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${issueColors[row.issue_type] || "bg-secondary text-secondary-foreground"}`}>
                         {issueLabels[row.issue_type] || row.issue_type}
                       </span>
+                      {row.isUrgent && !row.responded && (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-red-600 text-white">
+                          <Zap className="h-2.5 w-2.5 mr-0.5" /> URGENT
+                        </span>
+                      )}
                       {isQA && row.qa_section && (
                         <Badge variant="outline" className="text-[9px]">{row.qa_section}</Badge>
                       )}
@@ -541,8 +583,8 @@ export function StudentInbox() {
                       </Badge>
                     )}
 
-                    {/* View Asset link */}
-                    {row.asset_name && (
+                    {/* View Asset link — hide for issue-type rows (they get "Go to QA Page" instead) */}
+                    {row.asset_name && !isIssueType && (
                       <a
                         href={`/solutions/${row.asset_name}?admin=true`}
                         target="_blank"
@@ -587,8 +629,8 @@ export function StudentInbox() {
                       }
                     </label>
 
-                    {/* Fixed checkbox for issue-type rows */}
-                    {(row.issue_type === "issue" || isQA) && (
+                    {/* Fixed / Fix Applied checkbox */}
+                    {(isIssueType || isQA) && (
                       <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
                         <input
                           type="checkbox"
@@ -596,7 +638,10 @@ export function StudentInbox() {
                           onChange={() => handleToggleFixed(row)}
                           className="rounded accent-emerald-600"
                         />
-                        {row.fixed ? "✓ Fixed" : "Mark fixed"}
+                        {isIssueType
+                          ? (row.fixed ? "✓ Fix Applied" : "Fix Applied")
+                          : (row.fixed ? "✓ Fixed" : "Mark fixed")
+                        }
                       </label>
                     )}
                   </div>

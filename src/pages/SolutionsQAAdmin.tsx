@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,10 +13,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   CheckCircle2, Copy, FileText, Sparkles, Zap, Target, Loader2,
   Wrench, X, RotateCcw, Check, ChevronDown, ChevronUp, ExternalLink,
-  Mail, Send,
+  Mail, Send, Inbox,
 } from "lucide-react";
 import { toast } from "sonner";
-import { WHITELISTED_EMAILS } from "@/lib/emailWhitelist";
+import { Link } from "react-router-dom";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -40,20 +39,6 @@ type QAIssue = {
   fix_description: string | null;
   fix_status: string;
   fix_scope: string;
-};
-
-type StudentIssue = {
-  id: string;
-  chapter_id: string;
-  asset_name: string | null;
-  question: string;
-  student_email: string;
-  student_name: string | null;
-  responded: boolean;
-  responded_at: string | null;
-  created_at: string;
-  source_ref: string | null;
-  fixed: boolean;
 };
 
 type StatusCounts = {
@@ -83,108 +68,6 @@ const FIX_SECTIONS: SectionOption[] = [
 ];
 
 const PAGE_SIZE = 100;
-
-// ── Fix Email Preview Modal ──────────────────────────────────────────
-
-function FixEmailModal({
-  issue,
-  onClose,
-  onSent,
-}: {
-  issue: StudentIssue;
-  onClose: () => void;
-  onSent: () => void;
-}) {
-  const [sending, setSending] = useState<"test" | "real" | null>(null);
-
-  const assetCode = issue.asset_name || "unknown";
-  const emailParts = issue.student_email?.split("@")[0] || "";
-  const firstName = emailParts
-    ? emailParts.charAt(0).toUpperCase() + emailParts.slice(1).replace(/[._\d]/g, "")
-    : "there";
-  const displayFirst = firstName.length >= 2 ? firstName : "there";
-
-  const subject = `Fixed — ${assetCode} on Survive Accounting`;
-  const previewUrl = `learn.surviveaccounting.com/solutions/${assetCode}`;
-
-  const sendEmail = async (isTest: boolean) => {
-    setSending(isTest ? "test" : "real");
-    try {
-      const { data, error } = await supabase.functions.invoke("send-fix-email", {
-        body: {
-          to: issue.student_email,
-          subject,
-          assetCode,
-          firstName: displayFirst,
-          isTest,
-          questionId: issue.id,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      toast.success(isTest ? "Test email sent to Lee" : "Fix email sent to student");
-      if (!isTest) onSent();
-    } catch (err: any) {
-      toast.error("Failed: " + err.message);
-    } finally {
-      setSending(null);
-    }
-  };
-
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
-            <Mail className="h-4 w-4" /> Preview Fix Email
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div className="text-xs space-y-1">
-            <p><span className="font-bold text-muted-foreground">To:</span> {issue.student_email}</p>
-            <p><span className="font-bold text-muted-foreground">Subject:</span> {subject}</p>
-          </div>
-
-          <div className="rounded-md border border-border bg-muted/20 p-4 text-sm leading-relaxed space-y-3">
-            <p>Hey {displayFirst},</p>
-            <p>Thanks for flagging that — I appreciate it. I've improved that problem and it should make more sense now.</p>
-            <p>
-              You can view the updated version here:<br />
-              <a href={`https://${previewUrl}`} className="text-primary font-bold hover:underline" target="_blank" rel="noopener noreferrer">
-                {previewUrl}
-              </a>
-            </p>
-            <p>— Lee</p>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            disabled={!!sending}
-            onClick={() => sendEmail(true)}
-          >
-            {sending === "test" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
-            Send Test Email →
-          </Button>
-          <Button
-            size="sm"
-            className="text-xs"
-            disabled={!!sending}
-            onClick={() => sendEmail(false)}
-          >
-            {sending === "real" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
-            Send to Student →
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ── Fix Asset Modal ──────────────────────────────────────────────────
 
@@ -529,7 +412,6 @@ export default function SolutionsQAAdmin() {
   const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [fixIssue, setFixIssue] = useState<QAIssue | null>(null);
-  const [emailIssue, setEmailIssue] = useState<StudentIssue | null>(null);
 
   // ── Server-side COUNT queries ──
   const { data: counts } = useQuery<StatusCounts>({
@@ -555,41 +437,7 @@ export default function SolutionsQAAdmin() {
     },
   });
 
-  const { data: urgentCount } = useQuery({
-    queryKey: ["qa-admin-urgent-count"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapter_questions")
-        .select("id, student_email")
-        .eq("issue_type", "issue")
-        .eq("responded", false);
-      if (error) throw error;
-      const studentOnly = (data || []).filter(
-        (r) => !WHITELISTED_EMAILS.includes((r.student_email || "").trim().toLowerCase())
-      );
-      return studentOnly.length;
-    },
-  });
-
   const safeCount = counts ?? { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
-
-  // ── Student-reported issues ──
-  const { data: studentIssues } = useQuery({
-    queryKey: ["qa-admin-student-issues"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapter_questions")
-        .select("*")
-        .eq("issue_type", "issue")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      const studentOnly = (data || []).filter(
-        (r: any) => !WHITELISTED_EMAILS.includes((r.student_email || "").trim().toLowerCase())
-      );
-      return studentOnly as StudentIssue[];
-    },
-  });
 
   // ── Paginated assets for the "All Assets" tab ──
   const assetsQueryKey = ["qa-admin-assets-paged", allAssetsFilter, allAssetsChapter];
@@ -660,7 +508,6 @@ export default function SolutionsQAAdmin() {
     allIssues?.filter(i => i.fix_scope === "bulk_pattern" && i.fix_status === "approved").length ?? 0,
   [allIssues]);
 
-  const pendingIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "pending") || [], [allIssues]);
   const approvedIssues = useMemo(() => allIssues?.filter(i => i.fix_status === "approved") || [], [allIssues]);
 
   const bulkAssetIds = useMemo(() => {
@@ -668,45 +515,6 @@ export default function SolutionsQAAdmin() {
     allIssues?.forEach(i => { if (i.fix_scope === "bulk_pattern") ids.add(i.qa_asset_id); });
     return ids;
   }, [allIssues]);
-
-  // Merged issues list: URGENT student issues on top, then QA review issues
-  const mergedIssuesList = useMemo(() => {
-    const urgentRows = (studentIssues || [])
-      .filter(si => !si.responded)
-      .map(si => ({ type: "urgent" as const, data: si, created_at: si.created_at }));
-
-    const qaRows = pendingIssues.map(qi => ({ type: "qa" as const, data: qi, created_at: "" }));
-
-    // Urgent first, then QA
-    return [...urgentRows, ...qaRows];
-  }, [studentIssues, pendingIssues]);
-
-  const rejectMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("solutions_qa_issues" as any).update({ fix_status: "rejected" }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
-      toast.success("Issue rejected");
-    },
-  });
-
-  const markFixedMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("chapter_questions").update({
-        responded: true,
-        responded_at: new Date().toISOString(),
-        fixed: true,
-      }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["qa-admin-student-issues"] });
-      qc.invalidateQueries({ queryKey: ["qa-admin-urgent-count"] });
-      toast.success("Marked as fixed");
-    },
-  });
 
   const generatePrompt = () => {
     if (approvedIssues.length === 0) return;
@@ -763,21 +571,18 @@ export default function SolutionsQAAdmin() {
     return map;
   }, [allIssues]);
 
-  const getScope = (issue: QAIssue) => fixScopes[issue.id] ?? issue.fix_scope ?? "asset_specific";
-
   return (
     <SurviveSidebarLayout>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-8 gap-2">
+        {/* Summary stats */}
+        <div className="grid grid-cols-7 gap-2">
           {[
             { label: "Total", value: safeCount.total, color: "text-foreground", bg: "" },
             { label: "Pending", value: safeCount.pending, color: "text-muted-foreground", bg: "" },
             { label: "Clean", value: safeCount.clean, color: "text-emerald-400", bg: "" },
             { label: "Issues", value: safeCount.issues, color: "text-amber-400", bg: "" },
-            { label: "Urgent", value: urgentCount ?? 0, color: "text-white", bg: "bg-red-600/80 border-red-500/60" },
             { label: "Fix Approved", value: safeCount.fixApproved, color: "text-blue-400", bg: "" },
             { label: "Generated", value: safeCount.generated, color: "text-purple-400", bg: "" },
             { label: "⚡ Bulk Fixes", value: bulkFixesReady, color: "text-amber-900", bg: "bg-amber-400/30 border-amber-500/40" },
@@ -791,188 +596,62 @@ export default function SolutionsQAAdmin() {
           ))}
         </div>
 
-        <Tabs defaultValue="issues">
-          <TabsList>
-            <TabsTrigger value="issues" className="text-xs">
-              Issues ({mergedIssuesList.length})
-            </TabsTrigger>
-            <TabsTrigger value="prompt" className="text-xs">Generate Prompt ({approvedIssues.length})</TabsTrigger>
-            <TabsTrigger value="all" className="text-xs">All Assets ({safeCount.total})</TabsTrigger>
-          </TabsList>
+        {/* View in Inbox link */}
+        {safeCount.issues > 0 && (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/inbox"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+            >
+              <Inbox className="h-3.5 w-3.5" /> View Issues in Inbox →
+            </Link>
+          </div>
+        )}
 
-          {/* TAB 1: Issues — merged urgent + QA */}
-          <TabsContent value="issues" className="space-y-3 mt-3">
-            {mergedIssuesList.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No issues to review.</p>
-            ) : mergedIssuesList.map(row => {
-              if (row.type === "urgent") {
-                const si = row.data as StudentIssue;
-                return (
-                  <Card key={`student-${si.id}`} className="bg-card/50 border-red-500/30">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className="bg-red-600 text-white text-[10px] font-bold">URGENT</Badge>
-                        {si.asset_name && (
-                          <a
-                            href={`/solutions/${si.asset_name}?admin=true`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-mono font-bold text-sm text-primary hover:underline flex items-center gap-0.5"
-                          >
-                            {si.asset_name} <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
-                        )}
-                        <span className="text-[10px] text-muted-foreground ml-auto">
-                          {new Date(si.created_at).toLocaleDateString()} {new Date(si.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
+        {/* Generate Prompt section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Generate Prompt ({approvedIssues.length} fixes ready)</p>
+            <Button size="sm" className="text-xs" onClick={generatePrompt} disabled={approvedIssues.length === 0}>
+              <Sparkles className="h-3 w-3 mr-1" /> Generate Lovable Prompt
+            </Button>
+          </div>
 
-                      <div className="rounded-md bg-red-500/10 border border-red-500/20 p-3">
-                        <p className="text-xs text-foreground">{si.question}</p>
-                        {si.student_email && (
-                          <p className="text-[10px] text-muted-foreground mt-1">{si.student_email}</p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <label className="flex items-center gap-1.5 cursor-pointer text-xs">
-                          <Checkbox
-                            checked={si.responded}
-                            onCheckedChange={() => markFixedMutation.mutate(si.id)}
-                            disabled={si.responded}
-                          />
-                          <span className={si.responded ? "text-emerald-400" : "text-foreground"}>✓ Fixed</span>
-                        </label>
-
-                        {si.student_email && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs ml-auto gap-1"
-                            onClick={() => setEmailIssue(si)}
-                          >
-                            <Mail className="h-3 w-3" /> Send Fix Email →
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              }
-
-              // QA Review issue
-              const issue = row.data as QAIssue;
-              const scope = getScope(issue);
-              return (
-                <Card key={`qa-${issue.id}`} className="bg-card/50">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-muted text-muted-foreground text-[10px]">QA Review</Badge>
-                      <span className="font-mono font-bold text-sm text-foreground">{issue.asset_name}</span>
-                      <Badge variant="outline" className="text-[10px]">{issue.section}</Badge>
-                      <a
-                        href={`/solutions/${issue.asset_name}?admin=true`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-auto text-[10px] text-primary hover:underline flex items-center gap-0.5"
-                      >
-                        View Asset <ExternalLink className="h-2.5 w-2.5" />
-                      </a>
-                    </div>
-
-                    <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3">
-                      <p className="text-xs text-amber-300">{issue.issue_description}</p>
-                      {issue.suggested_fix && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">Suggested: {issue.suggested_fix}</p>
-                      )}
-                    </div>
-
-                    {issue.screenshot_url && (
-                      <img
-                        src={issue.screenshot_url}
-                        alt="Issue screenshot"
-                        className="max-h-32 rounded border border-border cursor-pointer hover:opacity-80"
-                        onClick={() => setExpandedImage(issue.screenshot_url)}
-                      />
-                    )}
-
-                    <div className="space-y-1">
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => setFixScopes(prev => ({ ...prev, [issue.id]: "asset_specific" }))}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
-                            scope === "asset_specific" ? "bg-muted text-foreground border border-border" : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Target className="h-3 w-3" /> This Asset Only
-                        </button>
-                        <button
-                          onClick={() => setFixScopes(prev => ({ ...prev, [issue.id]: "bulk_pattern" }))}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
-                            scope === "bulk_pattern" ? "bg-amber-500/30 text-amber-200 border border-amber-500/40 font-bold" : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Zap className="h-3 w-3" /> Apply System-Wide
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button size="sm" className="text-xs" onClick={() => setFixIssue(issue)}>
-                        <Wrench className="h-3 w-3 mr-1" /> Fix This Asset →
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => rejectMutation.mutate(issue.id)}>
-                        Dismiss
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </TabsContent>
-
-          {/* TAB 2: Generate Prompt */}
-          <TabsContent value="prompt" className="space-y-3 mt-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{approvedIssues.length} fixes ready to compile</p>
-              <Button size="sm" className="text-xs" onClick={generatePrompt} disabled={approvedIssues.length === 0}>
-                <Sparkles className="h-3 w-3 mr-1" /> Generate Lovable Prompt
-              </Button>
+          {generatedPrompt && (
+            <div className="space-y-3">
+              <Textarea value={generatedPrompt} readOnly className="text-xs font-mono min-h-[300px] bg-muted/30" />
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="text-xs" onClick={() => { navigator.clipboard.writeText(generatedPrompt); toast.success("Copied"); }}>
+                  <Copy className="h-3 w-3 mr-1" /> Copy Prompt
+                </Button>
+                <Button size="sm" className="text-xs bg-purple-600 hover:bg-purple-700 text-white" onClick={() => markGeneratedMutation.mutate()} disabled={markGeneratedMutation.isPending}>
+                  <FileText className="h-3 w-3 mr-1" /> Mark All as Generated
+                </Button>
+              </div>
             </div>
+          )}
 
-            {generatedPrompt && (
-              <div className="space-y-3">
-                <Textarea value={generatedPrompt} readOnly className="text-xs font-mono min-h-[300px] bg-muted/30" />
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="text-xs" onClick={() => { navigator.clipboard.writeText(generatedPrompt); toast.success("Copied"); }}>
-                    <Copy className="h-3 w-3 mr-1" /> Copy Prompt
-                  </Button>
-                  <Button size="sm" className="text-xs bg-purple-600 hover:bg-purple-700 text-white" onClick={() => markGeneratedMutation.mutate()} disabled={markGeneratedMutation.isPending}>
-                    <FileText className="h-3 w-3 mr-1" /> Mark All as Generated
-                  </Button>
+          {approvedIssues.length > 0 && !generatedPrompt && (
+            <div className="space-y-2">
+              {approvedIssues.map(r => (
+                <div key={r.id} className="flex items-center gap-2 text-xs text-muted-foreground border-b border-border pb-2">
+                  <span className="font-mono font-medium text-foreground">{r.asset_name}</span>
+                  <Badge variant="outline" className="text-[9px]">{r.section}</Badge>
+                  {r.fix_scope === "bulk_pattern" && (
+                    <Badge className="bg-amber-500/20 text-amber-400 text-[8px]">⚡ Bulk</Badge>
+                  )}
+                  <span>— {r.fix_description || r.issue_description}</span>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          )}
+        </div>
 
-            {approvedIssues.length > 0 && !generatedPrompt && (
-              <div className="space-y-2">
-                {approvedIssues.map(r => (
-                  <div key={r.id} className="flex items-center gap-2 text-xs text-muted-foreground border-b border-border pb-2">
-                    <span className="font-mono font-medium text-foreground">{r.asset_name}</span>
-                    <Badge variant="outline" className="text-[9px]">{r.section}</Badge>
-                    {r.fix_scope === "bulk_pattern" && (
-                      <Badge className="bg-amber-500/20 text-amber-400 text-[8px]">⚡ Bulk</Badge>
-                    )}
-                    <span>— {r.fix_description || r.issue_description}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* TAB 3: All Assets (paginated) */}
-          <TabsContent value="all" className="space-y-3 mt-3">
-            <div className="flex items-center gap-2 mb-3">
+        {/* All Assets table */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">All Assets ({safeCount.total})</p>
+            <div className="ml-auto flex items-center gap-2">
               <Select value={allAssetsFilter} onValueChange={v => handleFilterChange(setAllAssetsFilter, v)}>
                 <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -991,64 +670,64 @@ export default function SolutionsQAAdmin() {
                   {chapters?.map(ch => <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <span className="text-xs text-muted-foreground ml-auto">
+              <span className="text-xs text-muted-foreground">
                 {allAssetsFiltered.length} loaded{hasNextPage ? " (more available)" : ""}
               </span>
             </div>
+          </div>
 
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-muted/30 border-b border-border">
-                    <th className="text-left px-3 py-2 font-medium">Asset</th>
-                    <th className="text-left px-3 py-2 font-medium">Status</th>
-                    <th className="text-left px-3 py-2 font-medium">Reviewed By</th>
-                    <th className="text-left px-3 py-2 font-medium">Issues</th>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border">
+                  <th className="text-left px-3 py-2 font-medium">Asset</th>
+                  <th className="text-left px-3 py-2 font-medium">Status</th>
+                  <th className="text-left px-3 py-2 font-medium">Reviewed By</th>
+                  <th className="text-left px-3 py-2 font-medium">Issues</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allAssetsFiltered.map(r => (
+                  <tr
+                    key={r.id}
+                    ref={highlightAsset === r.id ? highlightRef : undefined}
+                    className={`border-b border-border/50 hover:bg-muted/10 transition-colors ${
+                      highlightAsset === r.id ? "ring-2 ring-primary bg-primary/10" : ""
+                    }`}
+                  >
+                    <td className="px-3 py-2 font-mono">
+                      {r.asset_name}
+                      {bulkAssetIds.has(r.id) && (
+                        <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{issueCountMap[r.id] || 0}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {allAssetsFiltered.map(r => (
-                    <tr
-                      key={r.id}
-                      ref={highlightAsset === r.id ? highlightRef : undefined}
-                      className={`border-b border-border/50 hover:bg-muted/10 transition-colors ${
-                        highlightAsset === r.id ? "ring-2 ring-primary bg-primary/10" : ""
-                      }`}
-                    >
-                      <td className="px-3 py-2 font-mono">
-                        {r.asset_name}
-                        {bulkAssetIds.has(r.id) && (
-                          <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{issueCountMap[r.id] || 0}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            {hasNextPage && (
-              <div className="flex justify-center pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs"
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                >
-                  {isFetchingNextPage ? (
-                    <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Loading…</>
-                  ) : (
-                    "Load more"
-                  )}
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+          {hasNextPage && (
+            <div className="flex justify-center pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? (
+                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Loading…</>
+                ) : (
+                  "Load more"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
@@ -1065,18 +744,6 @@ export default function SolutionsQAAdmin() {
             setFixIssue(null);
             qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
             qc.invalidateQueries({ queryKey: ["qa-admin-counts"] });
-          }}
-        />
-      )}
-
-      {emailIssue && (
-        <FixEmailModal
-          issue={emailIssue}
-          onClose={() => setEmailIssue(null)}
-          onSent={() => {
-            setEmailIssue(null);
-            qc.invalidateQueries({ queryKey: ["qa-admin-student-issues"] });
-            qc.invalidateQueries({ queryKey: ["qa-admin-urgent-count"] });
           }}
         />
       )}
