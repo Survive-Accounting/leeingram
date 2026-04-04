@@ -89,6 +89,7 @@ import QuizStart from "./pages/QuizStart";
 import QuizEnd from "./pages/QuizEnd";
 import QuizRating from "./pages/QuizRating";
 import LegacyNotionPage from "./pages/LegacyNotionPage";
+import CourseLanding from "./pages/CourseLanding";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
