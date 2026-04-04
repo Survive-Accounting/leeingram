@@ -105,6 +105,9 @@ export function StudentInbox() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [issueFilter, setIssueFilter] = useState<IssueFilter>("all");
   const [senderFilter, setSenderFilter] = useState<SenderFilter>("all");
+  const [fixModalRow, setFixModalRow] = useState<UnifiedRow | null>(null);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: chaptersData } = useChaptersWithCourses();
