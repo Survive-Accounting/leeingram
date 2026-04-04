@@ -389,7 +389,39 @@ function DissectorTooltipSpan({ text, highlight }: { text: string; highlight: Di
   );
 }
 
-function SectionHeading({ children, theme }: { children: React.ReactNode; theme: Theme }) {
+/** Detect repeated leading verb phrases across instruction parts and deduplicate */
+function deduplicateInstructions(instructions: string[]): { sharedPrefix: string | null; parts: string[] } {
+  if (instructions.length < 2) return { sharedPrefix: null, parts: instructions };
+
+  const extractPrefix = (text: string): string => {
+    const m = text.match(/^((?:Prepare|Record|Calculate|Compute|Determine|Journalize|Make|Write)\b.*?\b(?:to record|to|for|of))\b/i);
+    if (m) return m[1].trim();
+    const m2 = text.match(/^(.+?\bto\s+\w+)\b/i);
+    if (m2 && m2[1].length < text.length * 0.7) return m2[1].trim();
+    return "";
+  };
+
+  const prefixes = instructions.map(extractPrefix);
+  const nonEmpty = prefixes.filter(p => p.length > 0);
+  if (nonEmpty.length < 2) return { sharedPrefix: null, parts: instructions };
+
+  const normalized = nonEmpty[0].toLowerCase();
+  const allMatch = nonEmpty.every(p => p.toLowerCase() === normalized);
+  if (!allMatch) return { sharedPrefix: null, parts: instructions };
+
+  const shared = nonEmpty[0];
+  const stripped = instructions.map((inst, i) => {
+    if (!prefixes[i]) return inst;
+    let remainder = inst.slice(prefixes[i].length).trim();
+    remainder = remainder.replace(/^the\s+/i, "");
+    return remainder;
+  });
+
+  const displayPrefix = shared.replace(/\s+(to|for|of)$/i, " $1") + ":";
+  return { sharedPrefix: displayPrefix, parts: stripped };
+}
+
+
   return (
     <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3 mt-8" style={{ color: theme.heading, borderBottom: `1px solid ${theme.border}` }}>
       {children}
