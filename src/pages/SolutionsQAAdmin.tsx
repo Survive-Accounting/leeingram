@@ -584,7 +584,10 @@ export default function SolutionsQAAdmin() {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data || []) as StudentIssue[];
+      const studentOnly = (data || []).filter(
+        (r: any) => !WHITELISTED_EMAILS.includes((r.student_email || "").trim().toLowerCase())
+      );
+      return studentOnly as StudentIssue[];
     },
   });
 
