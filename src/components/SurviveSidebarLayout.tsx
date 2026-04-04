@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 // ── Routes that should NOT show the pipeline progress strip ────────
-const HIDE_PROGRESS_ROUTES = ["/dashboard", "/va-dashboard", "/va-admin", "/accy304-admin"];
+const HIDE_PROGRESS_ROUTES = ["/dashboard", "/va-dashboard", "/va-admin", "/website-admin"];
 
 // ── Sidebar Nav Items ──────────────────────────────────────────────
 const PHASE_1_ITEMS = [
