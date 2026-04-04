@@ -11,6 +11,7 @@ const corsHeaders = {
 const SECTION_COLUMNS: Record<string, string[]> = {
   solution_je: ["journal_entry_completed_json"],
   supplementary_je: ["supplementary_je_json"],
+  dissector: ["dissector_highlights_json"],
   formulas: ["important_formulas"],
   concepts: ["concept_notes"],
   traps: ["exam_traps"],
@@ -21,6 +22,7 @@ function sectionToInvocation(key: string, teachingAssetId: string, fixPrompt: st
   const map: Record<string, { fn: string; body: Record<string, unknown> }> = {
     solution_je: { fn: "rewrite-je-tooltips", body: { teaching_asset_id: teachingAssetId, mode: "rewrite_reasons", fix_context: fixPrompt } },
     supplementary_je: { fn: "generate-supplementary-je", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
+    dissector: { fn: "generate-dissector-highlights", body: { teaching_asset_id: teachingAssetId, fix_context: fixPrompt } },
     formulas: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "important_formulas", fix_context: fixPrompt } },
     concepts: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "concept_notes", fix_context: fixPrompt } },
     traps: { fn: "generate-ai-output", body: { teaching_asset_id: teachingAssetId, section: "exam_traps", fix_context: fixPrompt } },
@@ -123,13 +125,18 @@ serve(async (req) => {
     // ── APPROVE: Save fix_notes audit trail ──
     if (action === "approve") {
       if (!fix_prompt) throw new Error("fix_prompt required");
+      const reviewer_name = body.reviewer_name || "Admin";
       const existing = await sb.from("teaching_assets").select("fix_notes").eq("id", teaching_asset_id).single();
       const prev = (existing.data as any)?.fix_notes || "";
       const timestamp = new Date().toISOString().slice(0, 16);
       const newNote = `[${timestamp}] ${fix_prompt}`;
       const combined = prev ? `${prev}\n---\n${newNote}` : newNote;
 
-      const { error } = await sb.from("teaching_assets").update({ fix_notes: combined }).eq("id", teaching_asset_id);
+      const { error } = await sb.from("teaching_assets").update({
+        fix_notes: combined,
+        last_reviewed_by: reviewer_name,
+        last_reviewed_at: new Date().toISOString(),
+      }).eq("id", teaching_asset_id);
       if (error) throw new Error("Failed to save: " + error.message);
 
       return new Response(JSON.stringify({ success: true }), {
@@ -156,7 +163,31 @@ serve(async (req) => {
       });
     }
 
-    throw new Error("Invalid action. Use: snapshot, run, approve, restore");
+    // ── RESTORE_PARTIAL: Rollback specific sections ──
+    if (action === "restore_partial") {
+      if (!snapshot || typeof snapshot !== "object") throw new Error("Missing snapshot");
+      const restore_sections = body.restore_sections as string[];
+      if (!restore_sections?.length) throw new Error("Missing restore_sections");
+
+      const updateObj: Record<string, unknown> = {};
+      for (const sectionKey of restore_sections) {
+        if (!snapshot[sectionKey]) continue;
+        for (const [col, val] of Object.entries(snapshot[sectionKey] as Record<string, unknown>)) {
+          updateObj[col] = val;
+        }
+      }
+
+      if (Object.keys(updateObj).length > 0) {
+        const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
+        if (error) throw new Error("Partial restore failed: " + error.message);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    throw new Error("Invalid action. Use: snapshot, run, approve, restore, restore_partial");
   } catch (e: any) {
     console.error("fix-asset error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
