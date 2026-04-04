@@ -89,6 +89,7 @@ import QuizStart from "./pages/QuizStart";
 import QuizEnd from "./pages/QuizEnd";
 import QuizRating from "./pages/QuizRating";
 import LegacyNotionPage from "./pages/LegacyNotionPage";
+import CourseLanding from "./pages/CourseLanding";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
@@ -145,7 +146,11 @@ const AppRoutes = () => {
       <Route path="/tools/problem-dissector" element={<ProblemDissectorTool />} />
       {/* Public landing */}
       <Route path="/landing" element={<Landing />} />
-      <Route path="/accy304" element={<ACCY304Landing />} />
+      <Route path="/accy304" element={<Navigate to="/ole-miss/accy304" replace />} />
+      <Route path="/accy303" element={<Navigate to="/ole-miss/accy303" replace />} />
+      <Route path="/accy202" element={<Navigate to="/ole-miss/accy202" replace />} />
+      <Route path="/accy201" element={<Navigate to="/ole-miss/accy201" replace />} />
+      <Route path="/:campus/:courseCode" element={<CourseLanding />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       {/* Post-login VA auto-redirect handled in DomainSelect */}
