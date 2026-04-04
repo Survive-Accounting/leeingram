@@ -2312,7 +2312,9 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [fixOpen, setFixOpen] = useState(false);
+  const [fixOpen, setFixOpen] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
+  });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
   });
