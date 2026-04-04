@@ -704,6 +704,62 @@ export function StudentInbox() {
             })}
           </div>
         )}
+      {/* Fix confirmation modal */}
+      <Dialog open={!!fixModalRow} onOpenChange={(o) => { if (!o && !isSending) setFixModalRow(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Mark as Fixed</DialogTitle>
+            <DialogDescription className="text-xs">
+              {fixModalRow?.asset_name && (
+                <span className="font-mono font-bold">{fixModalRow.asset_name}</span>
+              )}
+              {fixModalRow?.student_email && (
+                <span className="block mt-1">Student: {fixModalRow.student_email}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={sendEmail}
+                onCheckedChange={(v) => setSendEmail(!!v)}
+              />
+              <span className="text-xs text-foreground">Send fix notification email to student</span>
+            </label>
+
+            {sendEmail && (
+              <p className="text-[10px] text-muted-foreground pl-6">
+                Email will notify the student that the issue has been fixed and link to the updated asset.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {sendEmail && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={isSending}
+                onClick={() => confirmFixAndSend(true)}
+              >
+                {isSending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                Test Email
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="text-xs"
+              disabled={isSending}
+              onClick={() => confirmFixAndSend(false)}
+            >
+              {isSending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              {sendEmail ? "Mark Fixed & Send Email" : "Mark Fixed (No Email)"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </TooltipProvider>
   );
