@@ -17,6 +17,7 @@ import {
   Mail, Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { WHITELISTED_EMAILS } from "@/lib/emailWhitelist";
 
 // ── Types ────────────────────────────────────────────────────────────
 
