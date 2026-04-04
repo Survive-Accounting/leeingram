@@ -2029,6 +2029,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
       setResults([]);
       setAfterData(null);
       setSnapshot(null);
+      setAttemptNumber(prev => prev + 1);
       // Keep fixPrompt pre-filled for refinement
     } catch (err: any) {
       toast.error("Restore failed: " + (err.message || "Unknown error"));
