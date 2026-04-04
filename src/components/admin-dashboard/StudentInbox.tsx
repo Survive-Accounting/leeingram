@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 
 type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating";
 type StatusFilter = "all" | "needs_response" | "responded";
+type SenderFilter = "all" | "students" | "vas";
 
 function parseRatingMeta(sourceRef: string | null): { star_rating?: number; topic_name?: string } {
   if (!sourceRef) return {};
