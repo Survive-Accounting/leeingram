@@ -1299,13 +1299,6 @@ export default function ChapterCramTool() {
                       </button>
                     </div>
                   )}
-                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
-                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
-                      >
-                        Next <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
                 </>
               ) : (
                 <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
