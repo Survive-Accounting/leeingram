@@ -161,7 +161,31 @@ serve(async (req) => {
       });
     }
 
-    throw new Error("Invalid action. Use: snapshot, run, approve, restore");
+    // ── RESTORE_PARTIAL: Rollback specific sections ──
+    if (action === "restore_partial") {
+      if (!snapshot || typeof snapshot !== "object") throw new Error("Missing snapshot");
+      const restore_sections = body.restore_sections as string[];
+      if (!restore_sections?.length) throw new Error("Missing restore_sections");
+
+      const updateObj: Record<string, unknown> = {};
+      for (const sectionKey of restore_sections) {
+        if (!snapshot[sectionKey]) continue;
+        for (const [col, val] of Object.entries(snapshot[sectionKey] as Record<string, unknown>)) {
+          updateObj[col] = val;
+        }
+      }
+
+      if (Object.keys(updateObj).length > 0) {
+        const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
+        if (error) throw new Error("Partial restore failed: " + error.message);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    throw new Error("Invalid action. Use: snapshot, run, approve, restore, restore_partial");
   } catch (e: any) {
     console.error("fix-asset error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
