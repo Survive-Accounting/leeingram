@@ -741,6 +741,7 @@ export default function SolutionsQAReview() {
   const [selectedCourseId, setSelectedCourseId] = useState(() => localStorage.getItem("qa-course-filter") || "all");
   const [selectedChapterId, setSelectedChapterId] = useState(() => localStorage.getItem("qa-chapter-filter") || "all");
   const [showAssignPanel, setShowAssignPanel] = useState(false);
+  const [fixAssetOpen, setFixAssetOpen] = useState(false);
 
 
   const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: 16, y: 60 });
