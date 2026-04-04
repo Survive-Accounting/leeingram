@@ -3269,7 +3269,7 @@ export default function SolutionsViewer() {
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
           >
-            ✦ Think like an accountant.<br />For students who actually want to get it.
+            ✦ Prep tools that help you survive your exam.
           </span>
         </div>
 
