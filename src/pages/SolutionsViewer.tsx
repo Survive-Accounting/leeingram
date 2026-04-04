@@ -4,7 +4,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3 } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
 import { naturalSortRef } from "@/lib/utils";
@@ -2317,10 +2317,14 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false, courseCode = "" }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean; courseCode?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const [fixOpen, setFixOpen] = useState(() => {
     try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
   });
@@ -2332,6 +2336,27 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
     setBannerDismissed(true);
     try { localStorage.setItem("sa_feedback_banner_dismissed", "true"); } catch {}
   };
+  // Close menu on outside click or Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) && menuBtnRef.current && !menuBtnRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => { document.removeEventListener("mousedown", handleClick); document.removeEventListener("keydown", handleKey); };
+  }, [menuOpen]);
+
+  const faqItems = [
+    { q: "Who made this?", a: "Lee Ingram — accounting tutor at the University of Mississippi since 2015. These problems are built from real exam prep sessions with hundreds of students." },
+    { q: "What textbook are these problems based on?", a: (() => { const cc = courseCode.toUpperCase(); if (cc === "IA1" || cc === "IA2") return "Intermediate Accounting, 18th Edition by Donald E. Kieso, Jerry J. Weygandt, and Terry D. Warfield (ISBN: 978-1-119-77889-9)."; return "Financial and Managerial Accounting by John J. Wild and Ken W. Shaw."; })() },
+    { q: "Why are the numbers different from my textbook?", a: "The dollar amounts are intentionally different — we use original numbers so you practice the concept, not just memorize an answer. The accounting method and journal entries are identical to your textbook." },
+    { q: "What's included for free vs. paid?", a: "The practice problem, instructions, and a blank Practice PDF are always free. The full solution, journal entries, key formulas, and more are included with a Study Pass." },
+    { q: "Something looks wrong — how do I report it?", a: "Use the 'Report Issue' button in the top-right corner. Lee reviews every report personally and fixes issues as they come in." },
+  ];
 
   return (
     <>
@@ -2446,6 +2471,63 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 <ChevronUp className="h-3 w-3" />
               )}
             </button>
+            <div className="w-px h-5" style={{ background: theme.border }} />
+            <div className="relative">
+              <button
+                ref={menuBtnRef}
+                onClick={() => { setMenuOpen(!menuOpen); setOpenFaqIndex(null); }}
+                className="px-2.5 py-2 transition-colors hover:bg-gray-50 flex items-center"
+                style={{ color: theme.textMuted }}
+                aria-label="Menu"
+              >
+                <Menu className="h-[18px] w-[18px]" />
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 top-full mt-1.5 w-[280px] sm:w-[280px] max-sm:fixed max-sm:left-0 max-sm:right-0 max-sm:top-[56px] max-sm:w-auto max-sm:mx-2"
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(0,0,0,0.1)",
+                    borderRadius: 8,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+                    zIndex: 50,
+                  }}
+                >
+                  <div style={{ fontSize: 10, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#999", padding: "12px 16px 6px", fontWeight: 600 }}>
+                    About & FAQ
+                  </div>
+                  <div>
+                    {faqItems.map((faq, i) => (
+                      <div key={i} style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                        <button
+                          onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
+                          className="w-full text-left cursor-pointer select-none"
+                          style={{ fontSize: 13, fontWeight: 500, color: "#14213D", padding: "10px 16px" }}
+                        >
+                          {faq.q}
+                        </button>
+                        <div
+                          style={{
+                            maxHeight: openFaqIndex === i ? 200 : 0,
+                            overflow: "hidden",
+                            transition: "max-height 0.25s ease",
+                          }}
+                        >
+                          <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, padding: "0 16px 12px" }}>
+                            {faq.a}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ borderTop: "1px solid rgba(0,0,0,0.1)" }}>
+                    <div className="cursor-default" style={{ fontSize: 13, color: "#BBB", padding: "10px 16px" }}>Sign in</div>
+                    <div className="cursor-default" style={{ fontSize: 13, color: "#BBB", padding: "10px 16px" }}>Dashboard</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -3188,7 +3270,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      {!isQaMode && <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} isAdmin={isAdmin} />}
+      {!isQaMode && <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible} isAdmin={isAdmin} courseCode={courseCode} />}
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
@@ -3288,36 +3370,6 @@ export default function SolutionsViewer() {
                 )}
               </div>
 
-              {/* ── How This Works FAQ ── */}
-              <details className="mt-4 group">
-                <summary
-                  className="cursor-pointer list-none select-none"
-                  style={{ fontSize: 12, color: t.textMuted, textTransform: "uppercase" as const, letterSpacing: "0.05em", fontWeight: 600 }}
-                >
-                  How this works ↓
-                </summary>
-                <div className="mt-3 space-y-0">
-                  {[
-                    { q: "Who made this?", a: "Lee Ingram — accounting tutor at the University of Mississippi since 2015. These problems are built from real exam prep sessions with hundreds of students." },
-                    { q: "What textbook are these problems based on?", a: (() => { const cc = courseCode.toUpperCase(); if (cc === "IA1" || cc === "IA2") return "Intermediate Accounting, 18th Edition by Donald E. Kieso, Jerry J. Weygandt, and Terry D. Warfield (ISBN: 978-1-119-77889-9)."; return "Financial and Managerial Accounting by John J. Wild and Ken W. Shaw."; })() },
-                    { q: "Why are the numbers different from my textbook?", a: "The dollar amounts are intentionally different — we use original numbers so you practice the concept, not just memorize an answer. The accounting method and journal entries are identical to your textbook." },
-                    { q: "What's included for free vs. paid?", a: "The practice problem, instructions, and a blank Practice PDF are always free. The full solution, journal entries, key formulas, and more are included with a Study Pass." },
-                    { q: "Something looks wrong — how do I report it?", a: "Use the 'Report Issue' button in the top-right corner. Lee reviews every report personally and fixes issues as they come in." },
-                  ].map((faq, i) => (
-                    <details key={i} className="group/faq" style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <summary
-                        className="cursor-pointer list-none select-none py-3 text-[13px]"
-                        style={{ fontWeight: 500, color: t.text }}
-                      >
-                        {faq.q}
-                      </summary>
-                      <p className="pb-3 text-[13px] leading-[1.7]" style={{ color: t.textMuted }}>
-                        {faq.a}
-                      </p>
-                    </details>
-                  ))}
-                </div>
-              </details>
             </div>
 
             {/* Subtle right border for desktop */}
