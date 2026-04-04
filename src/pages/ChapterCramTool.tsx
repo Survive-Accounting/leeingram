@@ -773,37 +773,49 @@ export default function ChapterCramTool() {
     return displayCards.filter((card) => isAdmin || !isItemHidden("journal_entries", card.id));
   }, [displayCards, isAdmin, isItemHidden]);
 
-  const structuredFormulas = useMemo(() => {
-    return chapterFormulas.map((f: any): FormulaCard => ({
-      id: f.id,
-      name: f.formula_name,
-      expression: f.formula_expression,
-      explanation: f.formula_explanation || undefined,
-      image_url: f.image_url,
-    }));
+  // Chapter-level formulas with images
+  const chapterImageFormulas = useMemo(() => {
+    return chapterFormulas
+      .filter((f: any) => f.image_url)
+      .map((f: any): FormulaCard => ({
+        id: f.id,
+        name: f.formula_name,
+        expression: f.formula_expression,
+        explanation: f.formula_explanation || undefined,
+        image_url: f.image_url,
+      }));
   }, [chapterFormulas]);
 
-  const solutionsFiltered = useMemo(() => {
-    const sorted = [...approvedAssets].sort(sortBySourceRef);
-
-    return sorted.filter((asset) => {
-      const assetType = (asset.asset_type || "").toLowerCase();
-      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
-      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
-      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
-      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
-
-      if (solutionsTab === "be") return isBE || (!isEX && !isP);
-      if (solutionsTab === "ex") return isEX;
-      return isP;
+  // Fallback: per-asset important_formulas (legacy)
+  const perAssetFormulas = useMemo(() => {
+    if (chapterImageFormulas.length > 0) return [];
+    const all: FormulaCard[] = [];
+    approvedAssets.forEach((asset) => {
+      if (asset.important_formulas) {
+        all.push(...parseImportantFormulas(asset.important_formulas));
+      }
     });
-  }, [approvedAssets, solutionsTab]);
+    return all;
+  }, [approvedAssets, chapterImageFormulas.length]);
+
+  const useChapterFormulas = chapterImageFormulas.length > 0;
+  const structuredFormulas = useChapterFormulas ? chapterImageFormulas : perAssetFormulas;
 
   const visibleFormulas = useMemo(() => {
     return structuredFormulas.filter((formula) => {
       return isAdmin || !isItemHidden("formulas", formula.id);
     });
   }, [structuredFormulas, isAdmin, isItemHidden]);
+
+  const formulasSeenCount = visibleFormulas.filter((f) => formulasSeenSet.has(f.id)).length;
+
+  const handleFormulaSeen = useCallback((formulaId: string) => {
+    setFormulasSeenSet((prev) => {
+      const next = new Set(prev).add(formulaId);
+      try { sessionStorage.setItem(`sa_formulas_seen_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [chapterId]);
 
   const reviewedCount = visibleJournalCards.filter((card) => reviewedSet.has(card.id)).length;
   const progressPercent = visibleJournalCards.length > 0 ? (reviewedCount / visibleJournalCards.length) * 100 : 0;
