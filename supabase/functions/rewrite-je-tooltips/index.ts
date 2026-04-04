@@ -44,7 +44,8 @@ serve(async (req) => {
   const sb = createClient(supabaseUrl, serviceKey);
 
   try {
-    const { teaching_asset_id, mode } = await req.json();
+    const { teaching_asset_id, mode, use_strong_model } = await req.json();
+    const selectedModel = use_strong_model ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
     if (!["enrich", "rewrite_reasons", "rewrite_amounts"].includes(mode)) {
       throw new Error("Invalid mode. Must be 'enrich', 'rewrite_reasons', or 'rewrite_amounts'");
@@ -126,7 +127,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: selectedModel,
           system: systemPrompt,
           messages: [
             { role: "user", content: userPrompt },

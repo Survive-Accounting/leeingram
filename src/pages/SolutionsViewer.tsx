@@ -4,7 +4,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2 } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3 } from "lucide-react";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
 import { naturalSortRef } from "@/lib/utils";
@@ -1829,9 +1829,20 @@ const FIX_SECTIONS = [
   { key: "flowchart", label: "Flowchart" },
 ];
 
+const SECTION_COLUMNS: Record<string, string[]> = {
+  solution_je: ["journal_entry_completed_json"],
+  supplementary_je: ["supplementary_je_json"],
+  formulas: ["important_formulas"],
+  concepts: ["concept_notes"],
+  traps: ["exam_traps"],
+  flowchart: ["flowchart_image_url", "flowchart_image_id"],
+};
+
 type FixStep = "prompt" | "running" | "review";
+type FixTab = "ai" | "manual";
 
 function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: string; teachingAssetId: string; onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<FixTab>("ai");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [fixPrompt, setFixPrompt] = useState("");
   const [step, setStep] = useState<FixStep>("prompt");
@@ -1841,6 +1852,13 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
   const [afterData, setAfterData] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [approving, setApproving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+
+  // Manual edit state
+  const [manualFields, setManualFields] = useState<Record<string, string>>({});
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualLoaded, setManualLoaded] = useState(false);
+  const [manualSaving, setManualSaving] = useState(false);
+  const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
 
   const allChecked = checked.size === FIX_SECTIONS.length;
   const toggleAll = () => {
@@ -1855,11 +1873,97 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
     });
   };
 
-  const canRun = checked.size > 0 && fixPrompt.trim().length > 0;
+  const MIN_PROMPT_LENGTH = 20;
+  const canRun = checked.size > 0 && fixPrompt.trim().length >= MIN_PROMPT_LENGTH;
+
+  // Load current data for manual edit tab
+  const loadManualData = async () => {
+    if (manualLoaded) return;
+    setManualLoading(true);
+    try {
+      const allCols = new Set<string>();
+      FIX_SECTIONS.forEach(s => (SECTION_COLUMNS[s.key] || []).forEach(c => allCols.add(c)));
+      const { data, error } = await supabase
+        .from("teaching_assets")
+        .select(["id", ...allCols].join(", "))
+        .eq("id", teachingAssetId)
+        .single();
+      if (error) throw error;
+      const fields: Record<string, string> = {};
+      for (const col of allCols) {
+        const val = (data as any)?.[col];
+        if (val === null || val === undefined) {
+          fields[col] = "";
+        } else if (typeof val === "object") {
+          fields[col] = JSON.stringify(val, null, 2);
+        } else {
+          fields[col] = String(val);
+        }
+      }
+      setManualFields(fields);
+      setManualLoaded(true);
+    } catch (err: any) {
+      toast.error("Failed to load asset data: " + err.message);
+    } finally {
+      setManualLoading(false);
+    }
+  };
+
+  const handleManualSave = async () => {
+    // Validate JSON fields
+    const jsonCols = ["journal_entry_completed_json", "supplementary_je_json"];
+    const errors: Record<string, string> = {};
+    const updateObj: Record<string, unknown> = {};
+
+    for (const [col, val] of Object.entries(manualFields)) {
+      if (!val.trim()) {
+        updateObj[col] = null;
+        continue;
+      }
+      if (jsonCols.includes(col)) {
+        try {
+          updateObj[col] = JSON.parse(val);
+        } catch {
+          errors[col] = "Invalid JSON";
+        }
+      } else {
+        updateObj[col] = val;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setJsonErrors(errors);
+      toast.error("Fix JSON errors before saving");
+      return;
+    }
+    setJsonErrors({});
+
+    setManualSaving(true);
+    try {
+      const { error } = await supabase
+        .from("teaching_assets")
+        .update(updateObj)
+        .eq("id", teachingAssetId);
+      if (error) throw error;
+
+      // Save audit trail
+      await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, fix_prompt: "Manual edit by admin", action: "approve" },
+      });
+
+      toast.success("Manual edits saved");
+      onClose();
+      window.location.reload();
+    } catch (err: any) {
+      toast.error("Save failed: " + err.message);
+    } finally {
+      setManualSaving(false);
+    }
+  };
 
   const runFix = async () => {
     const selectedKeys = FIX_SECTIONS.filter(s => checked.has(s.key)).map(s => s.key);
-    if (!selectedKeys.length || !fixPrompt.trim()) return;
+    if (!selectedKeys.length || fixPrompt.trim().length < MIN_PROMPT_LENGTH) return;
 
     setStep("running");
     setResults([]);
@@ -1912,7 +2016,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
   };
 
   const handleReject = async () => {
-    if (!snapshot) { onClose(); return; }
+    if (!snapshot) { setStep("prompt"); return; }
     setRestoring(true);
     try {
       const { error } = await supabase.functions.invoke("fix-asset", {
@@ -1920,11 +2024,11 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
       });
       if (error) throw error;
       toast.success("Changes reverted — try again");
-      // Reset to prompt step
       setStep("prompt");
       setResults([]);
       setAfterData(null);
       setSnapshot(null);
+      // Keep fixPrompt pre-filled for refinement
     } catch (err: any) {
       toast.error("Restore failed: " + (err.message || "Unknown error"));
     } finally {
@@ -1934,36 +2038,68 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
   const formatValue = (val: unknown): string => {
     if (val === null || val === undefined) return "(empty)";
-    if (typeof val === "string") return val.length > 300 ? val.slice(0, 300) + "…" : val;
-    return JSON.stringify(val, null, 2).slice(0, 500);
+    if (typeof val === "object") return JSON.stringify(val, null, 2);
+    if (typeof val === "string") return val.length > 500 ? val.slice(0, 500) + "…" : val;
+    return String(val);
+  };
+
+  const valuesMatch = (before: unknown, after: unknown): boolean => {
+    return JSON.stringify(before) === JSON.stringify(after);
   };
 
   const hasErrors = results.some(r => !r.ok);
 
   return (
     <Dialog open onOpenChange={() => { if (step !== "running") onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">Fix Asset — {assetCode}</DialogTitle>
           <DialogDescription className="text-xs">
-            {step === "prompt" && "Describe what's wrong and select sections to regenerate."}
+            {step === "prompt" && "Describe what's wrong and select sections to regenerate, or edit manually."}
             {step === "running" && "Running fixes…"}
             {step === "review" && "Review what changed before approving."}
           </DialogDescription>
         </DialogHeader>
 
-        {/* ── Step 1: Prompt ── */}
+        {/* Tab switcher - only show on prompt step */}
         {step === "prompt" && (
+          <div className="flex gap-1 border-b border-border mb-2">
+            <button
+              onClick={() => setActiveTab("ai")}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+                activeTab === "ai" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Sparkles className="h-3 w-3 inline mr-1" />AI Fix
+            </button>
+            <button
+              onClick={() => { setActiveTab("manual"); loadManualData(); }}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+                activeTab === "manual" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Edit3 className="h-3 w-3 inline mr-1" />Edit Manually
+            </button>
+          </div>
+        )}
+
+        {/* ── AI Fix Tab ── */}
+        {step === "prompt" && activeTab === "ai" && (
           <div className="space-y-4">
             {/* Fix prompt textarea */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">What's wrong and how to fix it <span className="text-destructive">*</span></Label>
+              <Label className="text-xs font-semibold">What's wrong and how should it be fixed? <span className="text-destructive">*</span></Label>
               <Textarea
                 value={fixPrompt}
                 onChange={e => setFixPrompt(e.target.value)}
-                placeholder="e.g. The journal entry for bond issuance is missing Interest Payable as a credit. Fix the supplementary JE to include Cash debit, Bonds Payable credit, Interest Payable credit."
+                placeholder="e.g. The solution text says 'To Calculate A' but provides no actual calculation. Regenerate the solution with a complete step-by-step worked example showing the math for each instruction part."
                 className="text-xs min-h-[100px]"
               />
+              <div className="flex items-center justify-between">
+                <p className={`text-[10px] ${fixPrompt.trim().length < MIN_PROMPT_LENGTH ? "text-muted-foreground" : "text-emerald-600"}`}>
+                  {fixPrompt.trim().length} characters {fixPrompt.trim().length < MIN_PROMPT_LENGTH && `(min ${MIN_PROMPT_LENGTH})`}
+                </p>
+              </div>
             </div>
 
             {/* Section checkboxes */}
@@ -1984,8 +2120,47 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
             </div>
 
             <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              ⚠ This will regenerate checked sections using your fix prompt as context. Unchecked sections are untouched.
+              ⚠ This will regenerate checked sections using Opus (strongest model) with your fix prompt as context.
             </p>
+          </div>
+        )}
+
+        {/* ── Manual Edit Tab ── */}
+        {step === "prompt" && activeTab === "manual" && (
+          <div className="space-y-4">
+            {manualLoading ? (
+              <div className="flex items-center justify-center py-8 gap-2">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Loading current content…</span>
+              </div>
+            ) : (
+              <>
+                {FIX_SECTIONS.map(sec => {
+                  const cols = SECTION_COLUMNS[sec.key] || [];
+                  return cols.map(col => {
+                    const isJson = col.endsWith("_json");
+                    const val = manualFields[col];
+                    if (val === undefined) return null;
+                    return (
+                      <div key={col} className="space-y-1">
+                        <Label className="text-xs font-semibold">{sec.label} — <span className="font-mono text-muted-foreground">{col}</span></Label>
+                        <textarea
+                          value={val}
+                          onChange={e => {
+                            setManualFields(prev => ({ ...prev, [col]: e.target.value }));
+                            if (jsonErrors[col]) setJsonErrors(prev => { const n = { ...prev }; delete n[col]; return n; });
+                          }}
+                          className={`w-full min-h-[120px] rounded-md border px-3 py-2 text-xs ${
+                            isJson ? "font-mono" : ""
+                          } ${jsonErrors[col] ? "border-destructive" : "border-input"} bg-background`}
+                        />
+                        {jsonErrors[col] && <p className="text-[10px] text-destructive">{jsonErrors[col]}</p>}
+                      </div>
+                    );
+                  });
+                })}
+              </>
+            )}
           </div>
         )}
 
@@ -1993,7 +2168,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
         {step === "running" && (
           <div className="flex flex-col items-center justify-center py-8 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Running fixes — this may take a minute…</p>
+            <p className="text-sm text-muted-foreground">Running fixes with Opus — this may take a minute…</p>
             <p className="text-xs text-muted-foreground">
               Regenerating {progress.total} section{progress.total !== 1 ? "s" : ""} with your fix context
             </p>
@@ -2036,29 +2211,41 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
                   const after = afterData[sectionKey];
                   if (!after) return null;
 
+                  // Check if any column actually changed
+                  const allSame = Object.keys(before).every(col => valuesMatch(before[col], after[col]));
+
                   return (
                     <div key={sectionKey} className="border border-border rounded-lg overflow-hidden">
-                      <div className="bg-muted/50 px-3 py-1.5 text-xs font-semibold border-b border-border">
-                        {sec?.label}
+                      <div className="bg-muted/50 px-3 py-1.5 text-xs font-semibold border-b border-border flex items-center justify-between">
+                        <span>{sec?.label}</span>
+                        {allSame && (
+                          <span className="text-[10px] text-amber-600 bg-amber-100 rounded px-1.5 py-0.5">⚠ No change detected</span>
+                        )}
                       </div>
-                      <div className="grid grid-cols-2 divide-x divide-border">
-                        <div className="p-2">
-                          <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Before</p>
-                          {Object.entries(before).map(([col, val]) => (
-                            <pre key={col} className="text-[10px] text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
-                              {formatValue(val)}
-                            </pre>
-                          ))}
+                      {allSame ? (
+                        <div className="p-3 text-xs text-amber-600 bg-amber-50">
+                          Fix prompt may need to be more specific for this section.
                         </div>
-                        <div className="p-2">
-                          <p className="text-[9px] font-bold text-emerald-600 uppercase mb-1">After</p>
-                          {Object.entries(after).map(([col, val]) => (
-                            <pre key={col} className="text-[10px] text-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
-                              {formatValue(val)}
-                            </pre>
-                          ))}
+                      ) : (
+                        <div className="grid grid-cols-2 divide-x divide-border">
+                          <div className="p-2">
+                            <p className="text-[9px] font-bold text-destructive uppercase mb-1">BEFORE</p>
+                            {Object.entries(before).map(([col, val]) => (
+                              <pre key={col} className="text-[10px] text-muted-foreground whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
+                                {formatValue(val)}
+                              </pre>
+                            ))}
+                          </div>
+                          <div className="p-2">
+                            <p className="text-[9px] font-bold text-emerald-600 uppercase mb-1">AFTER</p>
+                            {Object.entries(after).map(([col, val]) => (
+                              <pre key={col} className="text-[10px] text-foreground whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
+                                {formatValue(val)}
+                              </pre>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2074,14 +2261,23 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
         )}
 
         <DialogFooter className="gap-2">
-          {step === "prompt" && (
+          {step === "prompt" && activeTab === "ai" && (
             <Button
               onClick={runFix}
               disabled={!canRun}
               className="text-white text-sm"
-              style={{ background: "#14213D" }}
+              style={{ background: canRun ? "#14213D" : undefined }}
             >
               Run Fix →
+            </Button>
+          )}
+          {step === "prompt" && activeTab === "manual" && (
+            <Button
+              onClick={handleManualSave}
+              disabled={manualSaving || manualLoading}
+              className="text-white text-sm bg-emerald-600 hover:bg-emerald-700"
+            >
+              {manualSaving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "Save Changes"}
             </Button>
           )}
           {step === "review" && (
@@ -2092,14 +2288,15 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
                 disabled={restoring || approving}
                 className="text-xs"
               >
-                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Reject & Try Again"}
+                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Try Again"}
               </Button>
               <Button
                 onClick={handleApprove}
                 disabled={approving || restoring}
-                className="text-white text-xs bg-emerald-600 hover:bg-emerald-700"
+                className="text-white text-xs"
+                style={{ background: "#14213D" }}
               >
-                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "✓ Approve Fix"}
+                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "✓ Looks Good — Apply Fix"}
               </Button>
             </>
           )}
@@ -2115,7 +2312,9 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [fixOpen, setFixOpen] = useState(false);
+  const [fixOpen, setFixOpen] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
+  });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
   });
