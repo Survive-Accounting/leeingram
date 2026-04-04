@@ -1006,6 +1006,37 @@ export default function SolutionsQAReview() {
           </SelectContent>
         </Select>
 
+        {/* Chapter filter */}
+        {effectiveCourseId !== "all" && courseChapters && courseChapters.length > 0 && (
+          <Select value={selectedChapterId} onValueChange={handleChapterChange}>
+            <SelectTrigger className="h-6 text-[10px] w-32 border-border"><SelectValue placeholder="All chapters" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All chapters</SelectItem>
+              {courseChapters.map(ch => {
+                const cts = chapterStatusCounts?.[ch.id];
+                const allClean = cts && cts.total > 0 && cts.pending === 0 && cts.issues === 0;
+                const hasIssues = cts && cts.issues > 0;
+                const hasPending = cts && cts.pending > 0;
+                return (
+                  <SelectItem key={ch.id} value={ch.id}>
+                    <span className="flex items-center gap-1.5">
+                      {allClean ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      ) : hasIssues ? (
+                        <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                      ) : hasPending ? (
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/30 shrink-0" />
+                      ) : null}
+                      Ch {ch.chapter_number}
+                      {cts && <span className="text-muted-foreground ml-1">({cts.clean}/{cts.total})</span>}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        )}
+
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Progress value={progress} className="flex-1 h-1.5 max-w-[200px]" />
           <span className="text-[10px] text-muted-foreground whitespace-nowrap">
