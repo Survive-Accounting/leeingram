@@ -807,6 +807,20 @@ export default function ChapterCramTool() {
     });
   }, [structuredFormulas, isAdmin, isItemHidden]);
 
+  const solutionsFiltered = useMemo(() => {
+    const sorted = [...approvedAssets].sort(sortBySourceRef);
+    return sorted.filter((asset) => {
+      const assetType = (asset.asset_type || "").toLowerCase();
+      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
+      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
+      if (solutionsTab === "be") return isBE || (!isEX && !isP);
+      if (solutionsTab === "ex") return isEX;
+      return isP;
+    });
+  }, [approvedAssets, solutionsTab]);
+
   const formulasSeenCount = visibleFormulas.filter((f) => formulasSeenSet.has(f.id)).length;
 
   const handleFormulaSeen = useCallback((formulaId: string) => {
