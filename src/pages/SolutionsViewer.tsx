@@ -3353,21 +3353,30 @@ export default function SolutionsViewer() {
                 )}
 
                 {/* INSTRUCTIONS */}
-                {instructions.length > 0 && (
-                  <>
-                    <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
-                    <div className="space-y-4">
-                      {instructions.map((inst, idx) => {
-                        const letter = String.fromCharCode(97 + idx);
-                        return (
-                          <p key={idx} className="text-[14px] leading-[1.6]" style={{ color: t.text }}>
-                            <span className="font-bold" style={{ color: "#131E35" }}>({letter})</span>{" "}{inst}
+                {instructions.length > 0 && (() => {
+                  // Detect repeated leading verb phrases across parts
+                  const deduped = deduplicateInstructions(instructions);
+                  return (
+                    <>
+                      <SectionHeading theme={t}>INSTRUCTIONS</SectionHeading>
+                      <div className="space-y-4">
+                        {deduped.sharedPrefix && (
+                          <p className="text-[14px] leading-[1.6] font-bold" style={{ color: t.text }}>
+                            {deduped.sharedPrefix}
                           </p>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
+                        )}
+                        {deduped.parts.map((part, idx) => {
+                          const letter = String.fromCharCode(97 + idx);
+                          return (
+                            <p key={idx} className="text-[14px] leading-[1.6]" style={{ color: t.text }}>
+                              <span className="font-bold" style={{ color: "#131E35" }}>({letter})</span>{" "}{part}
+                            </p>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
             </div>
