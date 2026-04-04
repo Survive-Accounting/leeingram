@@ -1608,6 +1608,45 @@ export default function SolutionsQAReview() {
         </button>
       </div>
 
+      {/* VA SOP Panel */}
+      <div className="fixed top-10 left-0 right-0 z-[54]">
+        <Collapsible open={sopOpen} onOpenChange={setSopOpen}>
+          <CollapsibleTrigger className="w-full flex items-center gap-2 px-4 py-1.5 bg-card/95 backdrop-blur border-b border-border text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+            <Info className="h-3 w-3 shrink-0" />
+            <span className="font-medium">How This Works</span>
+            <ChevronDown className={`h-3 w-3 transition-transform ${sopOpen ? "rotate-180" : ""}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="bg-card/98 backdrop-blur border-b border-border px-6 py-4 space-y-3">
+              <div className="grid gap-3 max-w-3xl">
+                <div className="flex gap-3">
+                  <span className="text-xs font-bold text-primary shrink-0 pt-0.5">1</span>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground mb-0.5">QA Review</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">Work through your assigned assets using the review tool below. For each asset, compare the solution page against the textbook screenshot and review all solution toggles. If anything looks wrong — numbers off, missing section, formatting issue, wrong method — log it using Report Issue. Describe the problem clearly, then move on.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-xs font-bold text-primary shrink-0 pt-0.5">2</span>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground mb-0.5">Issue Inbox</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">Open the Issue Inbox to work through your open issues. For each issue: if it's a simple text correction, fix it directly and submit — it goes live immediately. If it needs AI regeneration, use the regeneration tool, review the before/after, and submit if it looks right. If you're not sure, mark it as 'Needs Lee' and skip. Do not guess.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-xs font-bold text-primary shrink-0 pt-0.5">3</span>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground mb-0.5">Send Fix Report</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">At the end of each sprint, hit Send Report. Lee receives an email listing every fix you've submitted — what was wrong, what changed, and how it was fixed. Lee reviews after the fact.</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 italic">Fixes go live to students immediately. If you're unsure about anything, always choose 'Needs Lee' over guessing.</p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
       {/* Full-screen iframe — PAID version (no preview param) with ref=lw for DRM bypass */}
       {current && (
         <iframe
