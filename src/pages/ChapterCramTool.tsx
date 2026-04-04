@@ -595,7 +595,7 @@ export default function ChapterCramTool() {
       const { data, error } = await (supabase as any)
         .from("teaching_assets")
         .select(
-          "id, asset_name, source_ref, asset_type, problem_title, supplementary_je_json, journal_entry_completed_json",
+          "id, asset_name, source_ref, asset_type, problem_title, supplementary_je_json, journal_entry_completed_json, important_formulas",
         )
         .eq("chapter_id", chapterId)
         .not("asset_approved_at", "is", null)
