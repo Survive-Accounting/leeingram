@@ -101,7 +101,7 @@ const issueLabels: Record<string, string> = {
   qa_issue: "QA Issue",
 };
 
-export function StudentInbox() {
+export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [issueFilter, setIssueFilter] = useState<IssueFilter>("all");
   const [senderFilter, setSenderFilter] = useState<SenderFilter>("all");
