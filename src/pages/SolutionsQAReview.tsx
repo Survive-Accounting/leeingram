@@ -452,17 +452,16 @@ export default function SolutionsQAReview() {
     setCurrentIndex(0);
   }, [assignedCourseIds, availableCourses.length, isScopedVaSession]);
 
-  // ── Seed all courses ────────────────────────────────────────────
+  // ── Seed all courses (lightweight: single COUNT check) ──────────
+  const seedCheckedRef = useRef(false);
   const seedMutation = useMutation({
     mutationFn: async (courseId: string) => {
-      // Check if already seeded for this course
       const { count } = await supabase
         .from("solutions_qa_assets" as any)
         .select("id", { count: "exact", head: true })
         .eq("course_id", courseId);
       if (count && count > 0) return { seeded: 0 };
 
-      // Paginate to get ALL teaching assets (beyond 1000-row default)
       let allTeachingAssets: any[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -478,9 +477,8 @@ export default function SolutionsQAReview() {
         from += pageSize;
       }
       if (!allTeachingAssets.length) return { seeded: 0 };
-      const assets = allTeachingAssets;
 
-      const records = assets.map(a => ({
+      const records = allTeachingAssets.map(a => ({
         teaching_asset_id: a.id,
         asset_name: a.asset_name,
         chapter_id: a.chapter_id,
@@ -501,16 +499,23 @@ export default function SolutionsQAReview() {
     },
   });
 
-  const seedAllCourses = useCallback(async () => {
-    let totalSeeded = 0;
-    for (const course of COURSES) {
-      const result = await seedMutation.mutateAsync(course.id);
-      totalSeeded += result?.seeded || 0;
-    }
-    if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
-  }, [seedMutation]);
-
-  useEffect(() => { seedAllCourses(); }, []);
+  useEffect(() => {
+    if (seedCheckedRef.current) return;
+    seedCheckedRef.current = true;
+    // Quick check: if ANY qa assets exist, skip seeding entirely
+    (async () => {
+      const { count } = await supabase
+        .from("solutions_qa_assets" as any)
+        .select("id", { count: "exact", head: true });
+      if (count && count > 0) return; // Already seeded
+      let totalSeeded = 0;
+      for (const course of COURSES) {
+        const result = await seedMutation.mutateAsync(course.id);
+        totalSeeded += result?.seeded || 0;
+      }
+      if (totalSeeded > 0) toast.success(`Seeded ${totalSeeded} new assets`);
+    })();
+  }, []);
 
   const effectiveCourseId = useMemo(() => {
     if (!isScopedVaSession) return selectedCourseId;
