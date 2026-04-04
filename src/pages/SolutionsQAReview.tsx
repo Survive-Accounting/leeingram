@@ -1541,8 +1541,8 @@ export default function SolutionsQAReview() {
                 <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-[340px] p-0" align="start">
-              <ScrollArea className="max-h-[420px]">
+            <PopoverContent className="w-[340px] p-0 max-h-[min(420px,70vh)] overflow-hidden" align="start">
+              <ScrollArea className="h-full max-h-[min(420px,70vh)]">
                 <div className="p-2">
                   {/* Header row */}
                   <div className="flex items-center justify-between px-2 pb-1.5 border-b border-border mb-1">
