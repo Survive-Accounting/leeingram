@@ -512,20 +512,38 @@ export default function SolutionsQAReview() {
 
   useEffect(() => { seedAllCourses(); }, []);
 
-  // ── Fetch all QA assets ─────────────────────────────────────────
-  const { data: allAssetsRaw, isLoading } = useQuery({
-    queryKey: ["qa-assets"],
+  // ── Fetch chapters for selected course ────────────────────────────
+  const { data: courseChapters } = useQuery({
+    queryKey: ["qa-course-chapters", effectiveCourseId],
     queryFn: async () => {
-      // Paginate to get ALL QA assets (beyond 1000-row default)
+      if (effectiveCourseId === "all") return [];
+      const { data, error } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name")
+        .eq("course_id", effectiveCourseId)
+        .order("chapter_number");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: effectiveCourseId !== "all",
+  });
+
+  // ── Fetch QA assets — scoped to chapter when selected ───────────
+  const { data: allAssetsRaw, isLoading } = useQuery({
+    queryKey: ["qa-assets", effectiveCourseId, selectedChapterId],
+    queryFn: async () => {
       let all: any[] = [];
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const { data, error } = await supabase
+        let q = supabase
           .from("solutions_qa_assets" as any)
           .select("*")
           .order("asset_name")
           .range(from, from + pageSize - 1);
+        if (effectiveCourseId !== "all") q = q.eq("course_id", effectiveCourseId);
+        if (selectedChapterId !== "all") q = q.eq("chapter_id", selectedChapterId);
+        const { data, error } = await q;
         if (error) throw error;
         if (!data?.length) break;
         all = all.concat(data);
@@ -536,26 +554,40 @@ export default function SolutionsQAReview() {
     },
   });
 
-  const effectiveCourseId = useMemo(() => {
-    if (!isScopedVaSession) return selectedCourseId;
-    if (!assignedCourseIds.length) return "all";
-    if (selectedCourseId === "all") return showAllCoursesOption ? "all" : assignedCourseIds[0];
-    return assignedCourseIds.includes(selectedCourseId)
-      ? selectedCourseId
-      : (showAllCoursesOption ? "all" : assignedCourseIds[0]);
-  }, [assignedCourseIds, isScopedVaSession, selectedCourseId, showAllCoursesOption]);
+  // ── Chapter-level status counts ─────────────────────────────────
+  const { data: chapterStatusCounts } = useQuery({
+    queryKey: ["qa-chapter-status-counts", effectiveCourseId],
+    queryFn: async () => {
+      if (effectiveCourseId === "all" || !courseChapters?.length) return {};
+      const counts: Record<string, { total: number; clean: number; issues: number; pending: number }> = {};
+      for (const ch of courseChapters) {
+        const [total, clean, issues] = await Promise.all([
+          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id),
+          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_clean"),
+          supabase.from("solutions_qa_assets" as any).select("id", { count: "exact", head: true }).eq("chapter_id", ch.id).eq("qa_status", "reviewed_issues"),
+        ]);
+        counts[ch.id] = {
+          total: total.count ?? 0,
+          clean: clean.count ?? 0,
+          issues: issues.count ?? 0,
+          pending: (total.count ?? 0) - (clean.count ?? 0) - (issues.count ?? 0),
+        };
+      }
+      return counts;
+    },
+    enabled: effectiveCourseId !== "all" && (courseChapters?.length ?? 0) > 0,
+  });
 
   const isCourseSelectorLocked = isScopedVaSession && !showAllCoursesOption;
 
-  // Filter by effective course
+  // Filter by effective course (already filtered in query, just sort)
   const allAssets = useMemo(() => {
     if (!allAssetsRaw) return [];
     const scopedAssets = isScopedVaSession
       ? allAssetsRaw.filter((asset) => assignedCourseIds.includes(asset.course_id))
       : allAssetsRaw;
-    const filtered = effectiveCourseId === "all" ? scopedAssets : scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
-    return [...filtered].sort(compareTextbookOrder);
-  }, [allAssetsRaw, assignedCourseIds, effectiveCourseId, isScopedVaSession]);
+    return [...scopedAssets].sort(compareTextbookOrder);
+  }, [allAssetsRaw, assignedCourseIds, isScopedVaSession]);
 
   const current = allAssets[currentIndex] ?? null;
   const totalReviewed = allAssets.filter(r => r.qa_status !== "pending").length;
