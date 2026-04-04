@@ -53,6 +53,8 @@ export default function SolutionsQAAdmin() {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [allAssetsFilter, setAllAssetsFilter] = useState<string>("all");
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
+  const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
+  const highlightRef = useRef<HTMLTableRowElement>(null);
 
   // ── Server-side COUNT query for summary cards ──
   const { data: counts } = useQuery<StatusCounts>({
