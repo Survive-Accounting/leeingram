@@ -341,6 +341,14 @@ export function StudentInbox() {
   };
 
   const handleToggleFixed = async (row: UnifiedRow) => {
+    // If marking as fixed (not un-fixing) and it's a chapter_questions issue with a student email, show modal
+    if (!row.fixed && row.source === "chapter_questions" && row.issue_type === "issue" && row.student_email) {
+      setFixModalRow(row);
+      setSendEmail(true);
+      return;
+    }
+
+    // Otherwise toggle directly
     if (row.source === "qa_issues") {
       const realId = row.id.replace("qa_", "");
       const newStatus = row.fixed ? "pending" : "approved";
@@ -364,6 +372,46 @@ export function StudentInbox() {
     }
     toast.success(!row.fixed ? "Marked as fixed ✓" : "Unmarked fixed");
     queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
+  };
+
+  const confirmFixAndSend = async (isTest: boolean = false) => {
+    if (!fixModalRow) return;
+    setIsSending(true);
+    try {
+      // Mark as fixed
+      if (!isTest) {
+        const { error } = await supabase.from("chapter_questions").update({ fixed: true } as any).eq("id", fixModalRow.id);
+        if (error) throw error;
+      }
+
+      // Send email if toggled on
+      if (sendEmail && fixModalRow.student_email && fixModalRow.asset_name) {
+        const firstName = fixModalRow.student_name?.split(" ")[0] || "there";
+        const { error: fnErr } = await supabase.functions.invoke("send-fix-email", {
+          body: {
+            to: fixModalRow.student_email,
+            subject: `Your issue with ${fixModalRow.asset_name} has been fixed`,
+            assetCode: fixModalRow.asset_name,
+            firstName,
+            isTest,
+            questionId: isTest ? null : fixModalRow.id,
+          },
+        });
+        if (fnErr) throw fnErr;
+        toast.success(isTest ? "Test email sent to lee@surviveaccounting.com ✓" : "Fix email sent ✓");
+      } else if (!isTest) {
+        toast.success("Marked as fixed (no email sent) ✓");
+      }
+
+      if (!isTest) {
+        setFixModalRow(null);
+        queryClient.invalidateQueries({ queryKey: ["admin-student-inbox-v2"] });
+      }
+    } catch (err: any) {
+      toast.error("Failed: " + err.message);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
