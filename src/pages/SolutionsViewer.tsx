@@ -2471,6 +2471,63 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 <ChevronUp className="h-3 w-3" />
               )}
             </button>
+            <div className="w-px h-5" style={{ background: theme.border }} />
+            <div className="relative">
+              <button
+                ref={menuBtnRef}
+                onClick={() => { setMenuOpen(!menuOpen); setOpenFaqIndex(null); }}
+                className="px-2.5 py-2 transition-colors hover:bg-gray-50 flex items-center"
+                style={{ color: theme.textMuted }}
+                aria-label="Menu"
+              >
+                <Menu className="h-[18px] w-[18px]" />
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 top-full mt-1.5 w-[280px] sm:w-[280px] max-sm:fixed max-sm:left-0 max-sm:right-0 max-sm:top-[56px] max-sm:w-auto max-sm:mx-2"
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(0,0,0,0.1)",
+                    borderRadius: 8,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+                    zIndex: 50,
+                  }}
+                >
+                  <div style={{ fontSize: 10, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "#999", padding: "12px 16px 6px", fontWeight: 600 }}>
+                    About & FAQ
+                  </div>
+                  <div>
+                    {faqItems.map((faq, i) => (
+                      <div key={i} style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                        <button
+                          onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
+                          className="w-full text-left cursor-pointer select-none"
+                          style={{ fontSize: 13, fontWeight: 500, color: "#14213D", padding: "10px 16px" }}
+                        >
+                          {faq.q}
+                        </button>
+                        <div
+                          style={{
+                            maxHeight: openFaqIndex === i ? 200 : 0,
+                            overflow: "hidden",
+                            transition: "max-height 0.25s ease",
+                          }}
+                        >
+                          <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, padding: "0 16px 12px" }}>
+                            {faq.a}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ borderTop: "1px solid rgba(0,0,0,0.1)" }}>
+                    <div className="cursor-default" style={{ fontSize: 13, color: "#BBB", padding: "10px 16px" }}>Sign in</div>
+                    <div className="cursor-default" style={{ fontSize: 13, color: "#BBB", padding: "10px 16px" }}>Dashboard</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
