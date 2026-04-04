@@ -1007,7 +1007,68 @@ export default function SolutionsQAReview() {
     return stats;
   }, [allAssetsRaw]);
 
-  // ── Fetch teaching asset detail ─────────────────────────────────
+  // ── Fetch source refs for all assets in current list ──────────────
+  const teachingAssetIds = useMemo(() => allAssets.map(a => a.teaching_asset_id), [allAssets]);
+  const { data: sourceRefMap } = useQuery({
+    queryKey: ["qa-source-refs", teachingAssetIds],
+    queryFn: async () => {
+      if (!teachingAssetIds.length) return {} as Record<string, string>;
+      const map: Record<string, string> = {};
+      // Batch in chunks of 200
+      for (let i = 0; i < teachingAssetIds.length; i += 200) {
+        const chunk = teachingAssetIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, source_ref")
+          .in("id", chunk);
+        if (data) for (const r of data) map[r.id] = (r as any).source_ref || "";
+      }
+      return map;
+    },
+    enabled: teachingAssetIds.length > 0,
+  });
+
+  // ── Source ref navigator data ───────────────────────────────────
+  const sourceRefGroups = useMemo(() => {
+    if (!sourceRefMap || !allAssets.length) return [];
+    const isIntro = effectiveCourseId === "11111111-1111-1111-1111-111111111111" || effectiveCourseId === "22222222-2222-2222-2222-222222222222";
+    
+    type RefItem = { assetIndex: number; assetName: string; sourceRef: string; status: string };
+    const items: RefItem[] = allAssets.map((a, idx) => ({
+      assetIndex: idx,
+      assetName: a.asset_name,
+      sourceRef: sourceRefMap[a.teaching_asset_id] || a.asset_name,
+      status: a.qa_status,
+    }));
+
+    // Categorize by source ref prefix
+    const categories: { label: string; items: RefItem[] }[] = [];
+    const beItems = items.filter(i => /^BE/i.test(i.sourceRef));
+    const qsItems = items.filter(i => /^QS/i.test(i.sourceRef));
+    const eItems = items.filter(i => /^E\d/i.test(i.sourceRef));
+    const pItems = items.filter(i => /^P\d/i.test(i.sourceRef));
+    const other = items.filter(i => 
+      !/^BE/i.test(i.sourceRef) && !/^QS/i.test(i.sourceRef) && 
+      !/^E\d/i.test(i.sourceRef) && !/^P\d/i.test(i.sourceRef)
+    );
+
+    if (isIntro) {
+      if (qsItems.length) categories.push({ label: "Quick Studies", items: qsItems });
+      if (beItems.length) categories.push({ label: "Brief Exercises", items: beItems });
+    } else {
+      if (beItems.length) categories.push({ label: "Brief Exercises", items: beItems });
+      if (qsItems.length) categories.push({ label: "Quick Studies", items: qsItems });
+    }
+    if (eItems.length) categories.push({ label: "Exercises", items: eItems });
+    if (pItems.length) categories.push({ label: "Problems", items: pItems });
+    if (other.length) categories.push({ label: "Other", items: other });
+
+    return categories;
+  }, [sourceRefMap, allAssets, effectiveCourseId]);
+
+  const [sourceRefOpen, setSourceRefOpen] = useState(false);
+
+
   const { data: assetDetail } = useQuery({
     queryKey: ["qa-asset-detail", current?.teaching_asset_id],
     queryFn: async () => {
