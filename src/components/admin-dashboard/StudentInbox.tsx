@@ -3,10 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap } from "lucide-react";
+import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { WHITELISTED_EMAILS } from "@/lib/emailWhitelist";
 
 type IssueFilter = "all" | "questions" | "issues" | "feedback" | "quiz_rating" | "qa_issues";
