@@ -49,6 +49,7 @@ serve(async (req) => {
       max_output_tokens = 3000,
       source_problem_id,
       run_id,
+      use_strong_model,
     } = await req.json();
 
     if (!provider || !messages) {
