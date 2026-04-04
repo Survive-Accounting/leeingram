@@ -67,7 +67,7 @@ import StudyToolsFlashcards from "./pages/StudyToolsFlashcards";
 import SolutionsViewer from "./pages/SolutionsViewer";
 import PracticeViewer from "./pages/PracticeViewer";
 import ACCY304Landing from "./pages/ACCY304Landing";
-import ACCY304Admin from "./pages/ACCY304Admin";
+import WebsiteAdmin from "./pages/WebsiteAdmin";
 import PaymentLinksAdmin from "./pages/PaymentLinksAdmin";
 import FormulaRecallTool from "./pages/FormulaRecallTool";
 import StudyToolsFormulaRecall from "./pages/StudyToolsFormulaRecall";
@@ -208,7 +208,8 @@ const AppRoutes = () => {
       <Route path="/debug-session/:chapterId" element={<ProtectedRoute><DebugSession /></ProtectedRoute>} />
       <Route path="/bulk-fix-tool" element={<ProtectedRoute><BulkFixTool /></ProtectedRoute>} />
       <Route path="/va-admin" element={<ProtectedRoute><VaAdmin /></ProtectedRoute>} />
-      <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
+      <Route path="/website-admin" element={<ProtectedRoute><WebsiteAdmin /></ProtectedRoute>} />
+      <Route path="/accy304-admin" element={<Navigate to="/website-admin" replace />} />
       <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
       <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
       <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
