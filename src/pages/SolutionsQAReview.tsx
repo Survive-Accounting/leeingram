@@ -1005,7 +1005,7 @@ export default function SolutionsQAReview() {
         }`}
         style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }}
       >
-        {/* Drag handle */}
+        {/* Drag handle + header */}
         <div
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -1013,14 +1013,15 @@ export default function SolutionsQAReview() {
           onPointerCancel={onPointerCancel}
           className="flex items-center justify-between px-2.5 py-1.5 border-b border-border bg-muted/30 shrink-0 cursor-grab active:cursor-grabbing select-none touch-none"
         >
-          <div className="flex items-center gap-1.5">
-            <GripHorizontal className="h-3 w-3 text-muted-foreground/40" />
-            <Badge variant="outline" className="text-[8px] h-4 px-1 font-mono">{courseCode}</Badge>
-            <span className="font-mono font-bold text-[11px] text-foreground truncate max-w-[120px]">
-              {current?.asset_name || "—"}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <GripHorizontal className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+            <span className="font-bold text-[12px] text-foreground truncate">
+              {assetDetail?.chapters ? `Ch ${assetDetail.chapters.chapter_number}` : "—"}
+              {" · "}
+              {assetDetail?.source_ref || current?.asset_name || "—"}
             </span>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             {!isPending && <Badge className="text-[8px] h-4 px-1 bg-emerald-500/20 text-emerald-400 mr-1">done</Badge>}
             <button onClick={() => setIsMinimized(prev => !prev)} className="p-0.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
               {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
