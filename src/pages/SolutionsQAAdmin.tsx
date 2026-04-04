@@ -463,7 +463,13 @@ export default function SolutionsQAAdmin() {
                 </thead>
                 <tbody>
                   {allAssetsFiltered.map(r => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/10">
+                    <tr
+                      key={r.id}
+                      ref={highlightAsset === r.id ? highlightRef : undefined}
+                      className={`border-b border-border/50 hover:bg-muted/10 transition-colors ${
+                        highlightAsset === r.id ? "ring-2 ring-primary bg-primary/10" : ""
+                      }`}
+                    >
                       <td className="px-3 py-2 font-mono">
                         {r.asset_name}
                         {bulkAssetIds.has(r.id) && (
