@@ -89,6 +89,25 @@ function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   ].filter(s => s.hasContent);
 }
 
+/** Parse asset_name into a sortable key following textbook order: BE < QS < E < P */
+function textbookSortKey(assetName: string): [number, number, number, string] {
+  // Extract source type and number from names like "IA2_CH13_BE13_1_A"
+  const match = assetName.match(/_CH\d+_(BE|QS|E|P)(\d+)[_.](\d+)/i);
+  if (!match) return [99, 0, 0, assetName];
+  const typeOrder: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
+  const type = match[1].toUpperCase();
+  return [typeOrder[type] ?? 99, parseInt(match[2], 10), parseInt(match[3], 10), assetName];
+}
+
+function compareTextbookOrder(a: QAAsset, b: QAAsset): number {
+  const ka = textbookSortKey(a.asset_name);
+  const kb = textbookSortKey(b.asset_name);
+  for (let i = 0; i < 3; i++) {
+    if (ka[i] !== kb[i]) return (ka[i] as number) - (kb[i] as number);
+  }
+  return ka[3].localeCompare(kb[3]);
+}
+
 // ── Draggable hook ───────────────────────────────────────────────────
 
 function useDraggable(initialPos: { x: number; y: number }) {
