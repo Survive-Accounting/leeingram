@@ -98,7 +98,7 @@ function FixAssetModal({
         .eq("id", issue.qa_asset_id)
         .single();
       if (error) throw error;
-      return data as { teaching_asset_id: string; asset_name: string };
+      return data as unknown as { teaching_asset_id: string; asset_name: string };
     },
   });
 
