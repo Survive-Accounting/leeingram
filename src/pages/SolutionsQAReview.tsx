@@ -1856,7 +1856,7 @@ export default function SolutionsQAReview() {
                     <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
                   </Button>
                 )}
-                {current?.teaching_asset_id && (
+                {current?.teaching_asset_id && canUseFixer && (
                   <Button
                     variant="outline"
                     className="w-full text-xs h-7"
