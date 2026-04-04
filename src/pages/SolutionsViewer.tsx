@@ -3090,11 +3090,11 @@ export default function SolutionsViewer() {
                 </summary>
                 <div className="mt-3 space-y-0">
                   {[
+                    { q: "Who made this?", a: "Lee Ingram — accounting tutor at the University of Mississippi since 2015. These problems are built from real exam prep sessions with hundreds of students." },
+                    { q: "What textbook are these problems based on?", a: (() => { const cc = courseCode.toUpperCase(); if (cc === "IA1" || cc === "IA2") return "Intermediate Accounting, 18th Edition by Donald E. Kieso, Jerry J. Weygandt, and Terry D. Warfield (ISBN: 978-1-119-77889-9)."; return "Financial and Managerial Accounting by John J. Wild and Ken W. Shaw."; })() },
                     { q: "Why are the numbers different from my textbook?", a: "The dollar amounts are intentionally different — we use original numbers so you practice the concept, not just memorize an answer. The accounting method and journal entries are identical to your textbook." },
-                    { q: "Why does it say 'Survive Company' instead of the company name in my textbook?", a: "Same reason — original company names keep the problems fresh and prevent answer-sharing. The underlying accounting situation is the same." },
-                    { q: "What's included for free vs. paid?", a: "The practice problem and instructions are always free. The full solution, journal entries, key concepts, and exam traps are included with a Study Pass." },
+                    { q: "What's included for free vs. paid?", a: "The practice problem, instructions, and a blank Practice PDF are always free. The full solution, journal entries, key formulas, and more are included with a Study Pass." },
                     { q: "Something looks wrong — how do I report it?", a: "Use the 'Report Issue' button in the top-right corner. Lee reviews every report personally and fixes issues as they come in." },
-                    { q: "Who made this?", a: "Lee Ingram — accounting tutor at Ole Miss since 2020. These problems are built from real exam prep sessions with hundreds of students." },
                   ].map((faq, i) => (
                     <details key={i} className="group/faq" style={{ borderBottom: `1px solid ${t.border}` }}>
                       <summary
