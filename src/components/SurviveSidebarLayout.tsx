@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package,
-  Rocket, Users, CheckCircle2, Loader2, BarChart3,
+  Globe, Users, CheckCircle2, Loader2, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
   ChevronRight, CreditCard, ClipboardCheck, TrendingUp,
 } from "lucide-react";
