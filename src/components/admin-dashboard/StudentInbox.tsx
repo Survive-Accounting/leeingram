@@ -659,15 +659,6 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
                       </a>
                     )}
 
-                    {/* Reply via email — only for chapter_questions */}
-                    {!isQA && displayEmail && (
-                      <a
-                        href={`mailto:${displayEmail}?subject=${mailtoSubject}`}
-                        className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap"
-                      >
-                        Reply via Email →
-                      </a>
-                    )}
 
                     {/* Responded / Resolved toggle */}
                     {!readOnly && (
