@@ -542,7 +542,8 @@ export default function SolutionsQAReview() {
     enabled: effectiveCourseId !== "all",
   });
 
-  // ── Fetch QA assets — scoped to chapter when selected ───────────
+  // ── Fetch QA assets — require course+chapter selection ───────────
+  const needsSelection = effectiveCourseId === "all";
   const { data: allAssetsRaw, isLoading } = useQuery({
     queryKey: ["qa-assets", effectiveCourseId, selectedChapterId],
     queryFn: async () => {
@@ -566,6 +567,7 @@ export default function SolutionsQAReview() {
       }
       return all as QAAsset[];
     },
+    enabled: !needsSelection,
   });
 
   // ── Chapter-level status counts (single query, computed client-side) ──
