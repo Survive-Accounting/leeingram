@@ -861,7 +861,43 @@ export default function SolutionsQAReview() {
   }, [impersonating, vaAccount]);
 
   // ── Loading ─────────────────────────────────────────────────────
-  if (isLoading || isAssignmentsLoading) {
+  if (isAssignmentsLoading) {
+    return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading QA records...</div>;
+  }
+
+  if (needsSelection && !isLoading) {
+    // Force course selection before loading data
+    return (
+      <div className="h-screen w-screen bg-background flex items-center justify-center">
+        <div className="bg-card border border-border rounded-xl p-8 w-full max-w-md shadow-lg space-y-6">
+          <div>
+            <Link to="/dashboard" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4">
+              <ArrowLeft className="h-3 w-3" /> Back
+            </Link>
+            <h1 className="text-xl font-bold text-foreground">Solutions QA Review</h1>
+            <p className="text-sm text-muted-foreground mt-1">Select a course to begin</p>
+          </div>
+          <div className="space-y-3">
+            {availableCourses.map(c => (
+              <button
+                key={c.id}
+                onClick={() => handleCourseChange(c.id)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border hover:bg-accent transition-colors text-left"
+              >
+                <div>
+                  <span className="text-sm font-bold text-foreground">{c.code}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{c.name}</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
     return <div className="flex items-center justify-center h-screen bg-background text-muted-foreground text-sm">Loading QA records...</div>;
   }
 
