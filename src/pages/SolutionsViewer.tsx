@@ -422,6 +422,7 @@ function deduplicateInstructions(instructions: string[]): { sharedPrefix: string
 }
 
 
+function SectionHeading({ children, theme }: { children: React.ReactNode; theme: Theme }) {
   return (
     <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3 mt-8" style={{ color: theme.heading, borderBottom: `1px solid ${theme.border}` }}>
       {children}
