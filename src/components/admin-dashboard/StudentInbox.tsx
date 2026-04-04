@@ -670,21 +670,23 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
                     )}
 
                     {/* Responded / Resolved toggle */}
-                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={!!row.responded}
-                        onChange={() => handleToggleResponded(row)}
-                        className="rounded"
-                      />
-                      {isQA
-                        ? (row.responded ? "Resolved" : "Mark resolved")
-                        : (row.responded ? "Responded" : "Mark responded")
-                      }
-                    </label>
+                    {!readOnly && (
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={!!row.responded}
+                          onChange={() => handleToggleResponded(row)}
+                          className="rounded"
+                        />
+                        {isQA
+                          ? (row.responded ? "Resolved" : "Mark resolved")
+                          : (row.responded ? "Responded" : "Mark responded")
+                        }
+                      </label>
+                    )}
 
                     {/* Fixed / Fix Applied checkbox */}
-                    {(isIssueType || isQA) && (
+                    {!readOnly && (isIssueType || isQA) && (
                       <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
                         <input
                           type="checkbox"
