@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, Inbox, FlaskConical } from "lucide-react";
+import { BarChart3, Users, FlaskConical } from "lucide-react";
 import { ProductionOverview } from "@/components/admin-dashboard/ProductionOverview";
 import { VaManagement } from "@/components/admin-dashboard/VaManagement";
 import { BackupSection } from "@/components/admin-dashboard/BackupSection";
-import { StudentInbox } from "@/components/admin-dashboard/StudentInbox";
 import { ChapterFormulasManager } from "@/components/admin-dashboard/ChapterFormulasManager";
 
 export default function AdminDashboard() {
@@ -24,9 +23,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="va" className="gap-1.5 text-xs">
               <Users className="h-3.5 w-3.5" /> VA Team
             </TabsTrigger>
-            <TabsTrigger value="inbox" className="gap-1.5 text-xs">
-              <Inbox className="h-3.5 w-3.5" /> Inbox
-            </TabsTrigger>
             <TabsTrigger value="formulas" className="gap-1.5 text-xs">
               <FlaskConical className="h-3.5 w-3.5" /> Chapter Formulas
             </TabsTrigger>
@@ -37,9 +33,6 @@ export default function AdminDashboard() {
           </TabsContent>
           <TabsContent value="va" className="mt-4">
             <VaManagement />
-          </TabsContent>
-          <TabsContent value="inbox" className="mt-4">
-            <StudentInbox />
           </TabsContent>
           <TabsContent value="formulas" className="mt-4">
             <ChapterFormulasManager />
