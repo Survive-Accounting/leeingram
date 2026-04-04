@@ -2336,6 +2336,27 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
     setBannerDismissed(true);
     try { localStorage.setItem("sa_feedback_banner_dismissed", "true"); } catch {}
   };
+  // Close menu on outside click or Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) && menuBtnRef.current && !menuBtnRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => { document.removeEventListener("mousedown", handleClick); document.removeEventListener("keydown", handleKey); };
+  }, [menuOpen]);
+
+  const faqItems = [
+    { q: "Who made this?", a: "Lee Ingram — accounting tutor at the University of Mississippi since 2015. These problems are built from real exam prep sessions with hundreds of students." },
+    { q: "What textbook are these problems based on?", a: (() => { const cc = courseCode.toUpperCase(); if (cc === "IA1" || cc === "IA2") return "Intermediate Accounting, 18th Edition by Donald E. Kieso, Jerry J. Weygandt, and Terry D. Warfield (ISBN: 978-1-119-77889-9)."; return "Financial and Managerial Accounting by John J. Wild and Ken W. Shaw."; })() },
+    { q: "Why are the numbers different from my textbook?", a: "The dollar amounts are intentionally different — we use original numbers so you practice the concept, not just memorize an answer. The accounting method and journal entries are identical to your textbook." },
+    { q: "What's included for free vs. paid?", a: "The practice problem, instructions, and a blank Practice PDF are always free. The full solution, journal entries, key formulas, and more are included with a Study Pass." },
+    { q: "Something looks wrong — how do I report it?", a: "Use the 'Report Issue' button in the top-right corner. Lee reviews every report personally and fixes issues as they come in." },
+  ];
 
   return (
     <>
