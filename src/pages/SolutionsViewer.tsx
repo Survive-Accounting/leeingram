@@ -2122,7 +2122,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
             </div>
 
             <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              ⚠ This will regenerate checked sections using Opus (strongest model) with your fix prompt as context.
+              ⚠ This will regenerate checked sections{attemptNumber > 1 ? " using Opus (strongest model)" : ""} with your fix prompt as context.
             </p>
           </div>
         )}
