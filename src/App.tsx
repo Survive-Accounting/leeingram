@@ -151,7 +151,6 @@ const AppRoutes = () => {
       <Route path="/accy202" element={<Navigate to="/ole-miss/accy202" replace />} />
       <Route path="/accy201" element={<Navigate to="/ole-miss/accy201" replace />} />
       <Route path="/:campus/:courseCode" element={<CourseLanding />} />
-      <Route path="/accy304" element={<ACCY304Landing />} />
       {/* Admin auth */}
       <Route path="/admin" element={!loading && session ? <Navigate to="/domains" replace /> : <Auth />} />
       {/* Post-login VA auto-redirect handled in DomainSelect */}
