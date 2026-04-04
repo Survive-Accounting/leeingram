@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -53,6 +53,8 @@ export default function SolutionsQAAdmin() {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [allAssetsFilter, setAllAssetsFilter] = useState<string>("all");
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
+  const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
+  const highlightRef = useRef<HTMLTableRowElement>(null);
 
   // ── Server-side COUNT query for summary cards ──
   const { data: counts } = useQuery<StatusCounts>({
@@ -110,6 +112,21 @@ export default function SolutionsQAAdmin() {
   });
 
   const allAssetsFiltered = useMemo(() => assetsPages?.pages.flatMap(p => p.rows) ?? [], [assetsPages]);
+
+  // ── Restore last viewed asset on mount ──
+  useEffect(() => {
+    const lastAsset = localStorage.getItem("qa_last_asset_id");
+    if (lastAsset && allAssetsFiltered.length > 0) {
+      const found = allAssetsFiltered.find(a => a.asset_name === lastAsset);
+      if (found) {
+        setHighlightAsset(found.id);
+        setTimeout(() => {
+          highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => setHighlightAsset(null), 2000);
+        }, 100);
+      }
+    }
+  }, [allAssetsFiltered.length > 0]); // only run once when data first loads
 
   // Reset pagination when filters change
   const handleFilterChange = useCallback((setter: (v: string) => void, value: string) => {
@@ -446,7 +463,13 @@ export default function SolutionsQAAdmin() {
                 </thead>
                 <tbody>
                   {allAssetsFiltered.map(r => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/10">
+                    <tr
+                      key={r.id}
+                      ref={highlightAsset === r.id ? highlightRef : undefined}
+                      className={`border-b border-border/50 hover:bg-muted/10 transition-colors ${
+                        highlightAsset === r.id ? "ring-2 ring-primary bg-primary/10" : ""
+                      }`}
+                    >
                       <td className="px-3 py-2 font-mono">
                         {r.asset_name}
                         {bulkAssetIds.has(r.id) && (

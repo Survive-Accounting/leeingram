@@ -89,6 +89,25 @@ function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   ].filter(s => s.hasContent);
 }
 
+/** Parse asset_name into a sortable key following textbook order: BE < QS < E < P */
+function textbookSortKey(assetName: string): [number, number, number, string] {
+  // Extract source type and number from names like "IA2_CH13_BE13_1_A"
+  const match = assetName.match(/_CH\d+_(BE|QS|E|P)(\d+)[_.](\d+)/i);
+  if (!match) return [99, 0, 0, assetName];
+  const typeOrder: Record<string, number> = { BE: 0, QS: 1, E: 2, P: 3 };
+  const type = match[1].toUpperCase();
+  return [typeOrder[type] ?? 99, parseInt(match[2], 10), parseInt(match[3], 10), assetName];
+}
+
+function compareTextbookOrder(a: QAAsset, b: QAAsset): number {
+  const ka = textbookSortKey(a.asset_name);
+  const kb = textbookSortKey(b.asset_name);
+  for (let i = 0; i < 3; i++) {
+    if (ka[i] !== kb[i]) return (ka[i] as number) - (kb[i] as number);
+  }
+  return ka[3].localeCompare(kb[3]);
+}
+
 // ── Draggable hook ───────────────────────────────────────────────────
 
 function useDraggable(initialPos: { x: number; y: number }) {
@@ -533,8 +552,8 @@ export default function SolutionsQAReview() {
     const scopedAssets = isScopedVaSession
       ? allAssetsRaw.filter((asset) => assignedCourseIds.includes(asset.course_id))
       : allAssetsRaw;
-    if (effectiveCourseId === "all") return scopedAssets;
-    return scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
+    const filtered = effectiveCourseId === "all" ? scopedAssets : scopedAssets.filter((asset) => asset.course_id === effectiveCourseId);
+    return [...filtered].sort(compareTextbookOrder);
   }, [allAssetsRaw, assignedCourseIds, effectiveCourseId, isScopedVaSession]);
 
   const current = allAssets[currentIndex] ?? null;
@@ -629,6 +648,25 @@ export default function SolutionsQAReview() {
       toast.success("Assignment saved");
     },
   });
+
+  // ── Save last viewed asset to localStorage ───────────────────────
+  useEffect(() => {
+    if (current?.asset_name) {
+      localStorage.setItem("qa_last_asset_id", current.asset_name);
+    }
+  }, [current?.asset_name]);
+
+  // ── Restore last viewed asset on mount ──────────────────────────
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || !allAssets.length) return;
+    restoredRef.current = true;
+    const lastAsset = localStorage.getItem("qa_last_asset_id");
+    if (lastAsset) {
+      const idx = allAssets.findIndex(a => a.asset_name === lastAsset);
+      if (idx >= 0) setCurrentIndex(idx);
+    }
+  }, [allAssets]);
 
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
@@ -967,7 +1005,7 @@ export default function SolutionsQAReview() {
         }`}
         style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }}
       >
-        {/* Drag handle */}
+        {/* Drag handle + header */}
         <div
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -975,14 +1013,15 @@ export default function SolutionsQAReview() {
           onPointerCancel={onPointerCancel}
           className="flex items-center justify-between px-2.5 py-1.5 border-b border-border bg-muted/30 shrink-0 cursor-grab active:cursor-grabbing select-none touch-none"
         >
-          <div className="flex items-center gap-1.5">
-            <GripHorizontal className="h-3 w-3 text-muted-foreground/40" />
-            <Badge variant="outline" className="text-[8px] h-4 px-1 font-mono">{courseCode}</Badge>
-            <span className="font-mono font-bold text-[11px] text-foreground truncate max-w-[120px]">
-              {current?.asset_name || "—"}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <GripHorizontal className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+            <span className="font-bold text-[12px] text-foreground truncate">
+              {assetDetail?.chapters ? `Ch ${assetDetail.chapters.chapter_number}` : "—"}
+              {" · "}
+              {assetDetail?.source_ref || current?.asset_name || "—"}
             </span>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             {!isPending && <Badge className="text-[8px] h-4 px-1 bg-emerald-500/20 text-emerald-400 mr-1">done</Badge>}
             <button onClick={() => setIsMinimized(prev => !prev)} className="p-0.5 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
               {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
@@ -998,13 +1037,13 @@ export default function SolutionsQAReview() {
           <>
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto min-h-0">
-              {/* Nav row */}
+              {/* Nav row: ← Prev | counter | Next → */}
               <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border">
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" className="h-6 w-6" disabled={currentIndex <= 0} onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}>
                     <ChevronLeft className="h-3.5 w-3.5" />
                   </Button>
-                  <span className="text-[10px] text-muted-foreground font-mono">{currentIndex + 1}/{totalAll}</span>
+                  <span className="text-[11px] text-muted-foreground font-mono font-medium">{currentIndex + 1} / {totalAll}</span>
                   <Button size="icon" variant="ghost" className="h-6 w-6" disabled={currentIndex >= allAssets.length - 1} onClick={() => setCurrentIndex(i => Math.min(allAssets.length - 1, i + 1))}>
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
@@ -1014,18 +1053,9 @@ export default function SolutionsQAReview() {
                 </Button>
               </div>
 
-              {/* Chapter info + Jump to label */}
-              <div className="px-2.5 py-1 border-b border-border flex items-center gap-2">
-                {assetDetail?.chapters && (
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    Ch {assetDetail.chapters.chapter_number} · {assetDetail.source_ref || ""}
-                  </span>
-                )}
-                <JumpToLabelDropdown
-                  assets={allAssets}
-                  currentIndex={currentIndex}
-                  onJump={setCurrentIndex}
-                />
+              {/* Asset code - small muted */}
+              <div className="px-2.5 py-1 border-b border-border flex items-center justify-end">
+                <span className="text-[9px] text-muted-foreground/60 font-mono">{current?.asset_name || ""}</span>
               </div>
 
               {/* Step 1: Screenshot comparison */}
