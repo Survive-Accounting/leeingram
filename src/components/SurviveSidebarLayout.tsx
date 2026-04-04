@@ -46,7 +46,7 @@ const PHASE_2_ITEMS = [
 const QC_ITEMS = [
   { label: "Asset Page QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
   { label: "QA Admin", path: "/solutions-qa-admin", icon: ClipboardCheck, adminOnly: true },
-  { label: "Asset Fixer", path: "/inbox", icon: Inbox, adminOnly: true },
+  { label: "Asset Page Fixer", path: "/inbox", icon: Inbox, adminOnly: false },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
