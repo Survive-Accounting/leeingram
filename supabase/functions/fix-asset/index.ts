@@ -135,13 +135,15 @@ serve(async (req) => {
 
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
 
-    // Fetch asset_name for Slack messages
+    // Fetch asset info for Slack messages
     const { data: assetRow } = await sb
       .from("teaching_assets")
-      .select("asset_name")
+      .select("asset_name, source_ref")
       .eq("id", teaching_asset_id)
       .single();
     const assetCode = (assetRow as any)?.asset_name || teaching_asset_id;
+    const sourceRef = (assetRow as any)?.source_ref || assetCode;
+    const pageUrl = `https://learn.surviveaccounting.com/solutions/${encodeURIComponent(assetCode)}`;
     // ── SNAPSHOT: Get current values before fix ──
     if (action === "snapshot") {
       if (!sections?.length) throw new Error("Missing sections");
@@ -222,11 +224,9 @@ serve(async (req) => {
       }
 
       // Trigger 2 — Slack: Fix started
-      const reviewer_email = body.reviewer_name || "Admin";
       const sectionLabels = sections.join(", ");
-      const truncatedPrompt = (fix_prompt || "").slice(0, 300);
       postToSlack(
-        `🔁 *Fix in progress*\nAsset: ${assetCode}\nSections: ${sectionLabels}\nPrompt: ${truncatedPrompt}\nStarted by: ${reviewer_email}`
+        `🔁 *Fix in progress*\nAsset: ${sourceRef}\nSections: ${sectionLabels}\n<${pageUrl}|View Page>`
       ).catch(() => {});
 
       return new Response(JSON.stringify({ results, after }), {
@@ -252,9 +252,8 @@ serve(async (req) => {
       if (error) throw new Error("Failed to save: " + error.message);
 
       // Trigger 3 — Slack: Fix approved
-      const approvedSections = body.approved_sections || sections || [];
       postToSlack(
-        `✅ *Fix approved*\nAsset: ${assetCode}\nSections fixed: ${Array.isArray(approvedSections) ? approvedSections.join(", ") : approvedSections}\nFixed by: ${reviewer_name}\n\n→ https://learn.surviveaccounting.com/solutions/${encodeURIComponent(assetCode)}`
+        `✅ *Fix approved*\nAsset: ${sourceRef}\n<${pageUrl}|View Page>`
       ).catch(() => {});
 
       return new Response(JSON.stringify({ success: true }), {
@@ -277,9 +276,8 @@ serve(async (req) => {
       if (error) throw new Error("Restore failed: " + error.message);
 
       // Trigger 4 — Slack: Fix rejected
-      const rejecter = body.reviewer_name || "Admin";
       postToSlack(
-        `❌ *Fix rejected — reverted*\nAsset: ${assetCode}\nBy: ${rejecter}`
+        `❌ *Fix rejected — reverted*\nAsset: ${sourceRef}\n<${pageUrl}|View Page>`
       ).catch(() => {});
 
       return new Response(JSON.stringify({ success: true }), {
