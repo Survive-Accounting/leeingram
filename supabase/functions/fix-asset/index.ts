@@ -71,7 +71,7 @@ async function rewriteTextField(
   }
 }
 
-async function callAnthropic(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+async function callAnthropic(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<{ text: string; usage?: { input_tokens: number; output_tokens: number } }> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -91,7 +91,7 @@ async function callAnthropic(apiKey: string, model: string, systemPrompt: string
   const data = await res.json();
   const text = data.content?.[0]?.text?.trim();
   if (!text) throw new Error("AI returned empty response");
-  return text;
+  return { text, usage: data.usage };
 }
 
 const DIRECT_REWRITE_SECTIONS = new Set(["problem_text", "instructions", "solution"]);
