@@ -474,6 +474,46 @@ function QAFixAssetModal({
   const [sectionReverted, setSectionReverted] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<Record<string, "before" | "after">>({});
 
+  // JE Suggestion helper
+  const [jeSuggestOpen, setJeSuggestOpen] = useState(false);
+  const [jeSuggestLoading, setJeSuggestLoading] = useState(false);
+  const [jeSuggestions, setJeSuggestions] = useState<{ label: string; description: string }[]>([]);
+  const [jeSelected, setJeSelected] = useState<Set<number>>(new Set());
+
+  const analyzeMissingJE = async () => {
+    setJeSuggestLoading(true);
+    setJeSuggestions([]);
+    setJeSelected(new Set());
+    try {
+      const res = await supabase.functions.invoke("suggest-missing-je", {
+        body: { teaching_asset_id: teachingAssetId },
+      });
+      if (res.error) throw new Error(res.error.message);
+      const entries = res.data?.suggested_entries || [];
+      setJeSuggestions(entries);
+    } catch (err: any) {
+      toast.error("Analysis failed: " + err.message);
+    } finally {
+      setJeSuggestLoading(false);
+    }
+  };
+
+  const appendSelectedToPrompt = () => {
+    const labels = jeSuggestions.filter((_, i) => jeSelected.has(i)).map(s => s.label);
+    if (labels.length === 0) { toast.error("Select at least one suggestion"); return; }
+    const appendText = `\n\nAlso add these missing journal entries: ${labels.join(", ")}.`;
+    setFixPrompt(prev => prev + appendText);
+    // Auto-check supplementary JE section
+    setSelectedSections(prev => {
+      const next = new Set(prev);
+      const suppKey = FIX_SECTIONS.find(s => s.label.toLowerCase().includes("supplementary"))?.key;
+      if (suppKey) next.add(suppKey);
+      return next;
+    });
+    setJeSuggestOpen(false);
+    toast.success("Added to fix description");
+  };
+
   const canRun = fixPrompt.trim().length >= 20 && selectedSections.size > 0;
 
   const toggleSection = (key: string) => {
