@@ -3164,11 +3164,14 @@ export default function SolutionsViewer() {
   const problemTitle = asset._problemTitle || "";
   const sourceRef = asset.source_ref || "";
 
+  // Strip parenthetical role hints like "(the issuer)", "(the borrower)" from student-facing text
+  const stripRoleHints = (text: string) => text.replace(/\s*\(the\s+[a-z]+(?:\s+[a-z]+)?\)/gi, "");
+
   // Instructions
   let instructions: string[] = (asset._instructions || [])
     .sort((a: any, b: any) => a.instruction_number - b.instruction_number)
     .filter((i: any) => i.instruction_text?.trim())
-    .map((i: any) => i.instruction_text);
+    .map((i: any) => stripRoleHints(i.instruction_text));
   if (instructions.length === 0) {
     const i1 = asset.instruction_1;
     if (i1?.trim()) {
@@ -3185,15 +3188,16 @@ export default function SolutionsViewer() {
   const hasCanonicalJE = jeData && isCanonicalJE(typeof jeData === "string" ? JSON.parse(jeData) : jeData);
   const hasJE = hasCanonicalJE || jeBlock.trim();
 
-  const answerSummary = asset.survive_solution_text || "";
+
+  const answerSummary = stripRoleHints(asset.survive_solution_text || "");
   const formulas = asset.important_formulas || "";
   const conceptNotes = asset.concept_notes || "";
   const examTraps = asset.exam_traps || "";
 
   const hasHighlights = !!asset.problem_text_ht_backup?.trim();
-  const rawProblemText = showHighlights && hasHighlights
+  const rawProblemText = stripRoleHints(showHighlights && hasHighlights
     ? asset.problem_text_ht_backup!
-    : asset.problem_context || "";
+    : asset.problem_context || "");
   // Don't split problem text — splitLongText can break KV blocks across paragraphs
   const dissectorHighlights: DissectorHighlight[] = (!isPreview && showDissectorHighlights && asset._dissectorHighlights) || [];
 
@@ -3624,7 +3628,6 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
             </div>
-
 
 
 
