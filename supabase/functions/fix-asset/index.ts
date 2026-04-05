@@ -224,11 +224,9 @@ serve(async (req) => {
       }
 
       // Trigger 2 — Slack: Fix started
-      const reviewer_email = body.reviewer_name || "Admin";
       const sectionLabels = sections.join(", ");
-      const truncatedPrompt = (fix_prompt || "").slice(0, 300);
       postToSlack(
-        `🔁 *Fix in progress*\nAsset: ${assetCode}\nSections: ${sectionLabels}\nPrompt: ${truncatedPrompt}\nStarted by: ${reviewer_email}`
+        `🔁 *Fix in progress*\nAsset: ${sourceRef}\nSections: ${sectionLabels}\n<${pageUrl}|View Page>`
       ).catch(() => {});
 
       return new Response(JSON.stringify({ results, after }), {
