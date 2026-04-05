@@ -1034,6 +1034,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_approved: boolean
+          is_rejected: boolean | null
           sort_order: number
           updated_at: string
         }
@@ -1047,6 +1048,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_approved?: boolean
+          is_rejected?: boolean | null
           sort_order?: number
           updated_at?: string
         }
@@ -1060,6 +1062,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_approved?: boolean
+          is_rejected?: boolean | null
           sort_order?: number
           updated_at?: string
         }
