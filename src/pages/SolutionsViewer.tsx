@@ -3486,7 +3486,30 @@ export default function SolutionsViewer() {
                   onReveal={handleReveal}
                   onBuyClick={handleBuyClick}
                 >
-                  <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
+                  {isQaMode && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <QAEditButton onClick={() => setQaEditingField(qaEditingField === "solution" ? null : "solution")} />
+                    </div>
+                  )}
+                  {qaEditingField === "solution" && isQaMode ? (
+                    <QAInlineEditorPanel
+                      initialValue={asset.survive_solution_text || ""}
+                      label="Solution Text"
+                      rows={20}
+                      onSave={async (newVal) => {
+                        const { error } = await supabase
+                          .from("teaching_assets")
+                          .update({ survive_solution_text: newVal })
+                          .eq("id", asset.id);
+                        if (error) throw error;
+                        setQaEditingField(null);
+                        refetchAsset();
+                      }}
+                      onCancel={() => setQaEditingField(null)}
+                    />
+                  ) : (
+                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
+                  )}
                 </RevealToggle>
               )}
 
