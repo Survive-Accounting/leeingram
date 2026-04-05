@@ -647,7 +647,26 @@ export default function ChapterCramTool() {
     },
   });
 
-  const sectionConfigMap = useMemo(() => {
+  // Chapter-level journal entries
+  const { data: chapterJEData } = useQuery({
+    queryKey: ["cram-chapter-je", chapterId],
+    enabled: !!chapterId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data: cats } = await supabase
+        .from("chapter_je_categories")
+        .select("id, category_name, sort_order")
+        .eq("chapter_id", chapterId!)
+        .order("sort_order");
+      const { data: entries } = await supabase
+        .from("chapter_journal_entries")
+        .select("id, category_id, transaction_label, je_lines, sort_order")
+        .eq("chapter_id", chapterId!)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return { categories: cats || [], entries: entries || [] };
+    },
+  });
     const map: Record<string, SectionConfigRow> = {};
     sectionConfigs.forEach((config) => {
       map[config.section_name] = config;
