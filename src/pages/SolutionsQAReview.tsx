@@ -27,6 +27,7 @@ import {
   SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List, Info, Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import SmartTextRenderer from "@/components/SmartTextRenderer";
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -730,16 +731,9 @@ function QAFixAssetModal({
                     </div>
                   </div>
                   {!reverted && (
-                    <ScrollArea className="max-h-[200px]">
-                      <div className="p-3 space-y-1">
-                        {Object.entries(data).map(([col, val]) => (
-                          <div key={col}>
-                            <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
-                            <pre className={`text-[11px] whitespace-pre-wrap break-words ${mode === "after" ? "text-emerald-700" : "text-foreground"}`}>
-                              {formatValue(val)}
-                            </pre>
-                          </div>
-                        ))}
+                    <ScrollArea className="max-h-[300px]">
+                      <div className="p-3">
+                        <RenderedSectionPreview sectionKey={result.key} data={data} mode={mode} />
                       </div>
                     </ScrollArea>
                   )}
