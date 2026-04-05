@@ -3340,6 +3340,28 @@ export default function SolutionsViewer() {
                 {/* Problem text */}
                 {rawProblemText.trim() && (
                   <div>
+                    {isQaMode && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <QAEditButton onClick={() => setQaEditingField(qaEditingField === "problem" ? null : "problem")} />
+                      </div>
+                    )}
+                    {qaEditingField === "problem" && isQaMode && (
+                      <QAInlineEditorPanel
+                        initialValue={asset.problem_context || ""}
+                        label="Problem Text"
+                        rows={16}
+                        onSave={async (newVal) => {
+                          const { error } = await supabase
+                            .from("teaching_assets")
+                            .update({ problem_context: newVal })
+                            .eq("id", asset.id);
+                          if (error) throw error;
+                          setQaEditingField(null);
+                          refetchAsset();
+                        }}
+                        onCancel={() => setQaEditingField(null)}
+                      />
+                    )}
                     {hasHighlights && (
                       <div className="flex items-center gap-2 mb-3">
                         <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
