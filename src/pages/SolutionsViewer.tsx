@@ -3168,7 +3168,7 @@ export default function SolutionsViewer() {
   let instructions: string[] = (asset._instructions || [])
     .sort((a: any, b: any) => a.instruction_number - b.instruction_number)
     .filter((i: any) => i.instruction_text?.trim())
-    .map((i: any) => i.instruction_text);
+    .map((i: any) => stripRoleHints(i.instruction_text));
   if (instructions.length === 0) {
     const i1 = asset.instruction_1;
     if (i1?.trim()) {
