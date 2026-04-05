@@ -10,6 +10,9 @@ const corsHeaders = {
 };
 
 const SECTION_COLUMNS: Record<string, string[]> = {
+  problem_text: ["survive_problem_text", "problem_context"],
+  instructions: ["instruction_list"],
+  solution: ["survive_solution_text"],
   solution_je: ["journal_entry_completed_json"],
   supplementary_je: ["supplementary_je_json"],
   dissector: ["dissector_highlights_json"],
@@ -18,6 +21,79 @@ const SECTION_COLUMNS: Record<string, string[]> = {
   traps: ["exam_traps"],
   flowchart: ["flowchart_image_url", "flowchart_image_id"],
 };
+
+// Direct AI rewrite for text fields — returns the updated text
+async function rewriteTextField(
+  sb: any,
+  teachingAssetId: string,
+  sectionKey: string,
+  fixPrompt: string,
+  useStrongModel: boolean,
+): Promise<void> {
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+
+  const { data: asset, error } = await sb
+    .from("teaching_assets")
+    .select("id, asset_name, survive_problem_text, problem_context, survive_solution_text, instruction_list")
+    .eq("id", teachingAssetId)
+    .single();
+  if (error || !asset) throw new Error("Asset not found");
+
+  const model = useStrongModel ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
+
+  if (sectionKey === "problem_text") {
+    const currentText = asset.survive_problem_text || asset.problem_context || "";
+    const systemPrompt = `You are an accounting educator. You will be given a problem text and instructions on how to fix it. Apply the fix and return ONLY the corrected problem text. Do not add explanations.`;
+    const userPrompt = `Current problem text:\n${currentText}\n\nFix instructions:\n${fixPrompt}`;
+
+    const aiText = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
+    await sb.from("teaching_assets").update({
+      survive_problem_text: aiText,
+      problem_context: aiText,
+    }).eq("id", teachingAssetId);
+  } else if (sectionKey === "instructions") {
+    const currentText = asset.instruction_list || "";
+    const systemPrompt = `You are an accounting educator. You will be given instruction text for an accounting problem and instructions on how to fix it. Apply the fix and return ONLY the corrected instruction text. Do not add explanations.`;
+    const userPrompt = `Current instructions:\n${currentText}\n\nFix instructions:\n${fixPrompt}`;
+
+    const aiText = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
+    await sb.from("teaching_assets").update({ instruction_list: aiText }).eq("id", teachingAssetId);
+  } else if (sectionKey === "solution") {
+    const currentText = asset.survive_solution_text || "";
+    const problemText = asset.survive_problem_text || asset.problem_context || "";
+    const systemPrompt = `You are an accounting educator. You will be given a solution text for an accounting problem and instructions on how to fix it. Apply the fix and return ONLY the corrected solution text. Maintain the same format and structure. Do not add explanations or preamble.`;
+    const userPrompt = `Problem:\n${problemText.slice(0, 2000)}\n\nCurrent solution text:\n${currentText}\n\nFix instructions:\n${fixPrompt}`;
+
+    const aiText = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
+    await sb.from("teaching_assets").update({ survive_solution_text: aiText }).eq("id", teachingAssetId);
+  }
+}
+
+async function callAnthropic(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+      max_tokens: 4096,
+      temperature: 0.1,
+    }),
+  });
+  if (!res.ok) throw new Error(`Anthropic API error: ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  const text = data.content?.[0]?.text?.trim();
+  if (!text) throw new Error("AI returned empty response");
+  return text;
+}
+
+const DIRECT_REWRITE_SECTIONS = new Set(["problem_text", "instructions", "solution"]);
 
 function sectionToInvocation(key: string, teachingAssetId: string, fixPrompt: string) {
   const map: Record<string, { fn: string; body: Record<string, unknown> }> = {
@@ -86,13 +162,20 @@ serve(async (req) => {
       const results: { key: string; ok: boolean; error?: string }[] = [];
 
       for (const sectionKey of sections) {
-        const inv = sectionToInvocation(sectionKey, teaching_asset_id, fix_prompt);
-        if (!inv) { results.push({ key: sectionKey, ok: false, error: "Unknown section" }); continue; }
-
-        // Use strong model on retry attempts (attempt 2+) or explicit flag
-        inv.body.use_strong_model = attempt_number > 1;
-
         try {
+          // Direct text rewrite for problem_text, instructions, solution
+          if (DIRECT_REWRITE_SECTIONS.has(sectionKey)) {
+            await rewriteTextField(sb, teaching_asset_id, sectionKey, fix_prompt, attempt_number > 1);
+            results.push({ key: sectionKey, ok: true });
+            continue;
+          }
+
+          const inv = sectionToInvocation(sectionKey, teaching_asset_id, fix_prompt);
+          if (!inv) { results.push({ key: sectionKey, ok: false, error: "Unknown section" }); continue; }
+
+          // Use strong model on retry attempts (attempt 2+) or explicit flag
+          inv.body.use_strong_model = attempt_number > 1;
+
           const res = await fetch(`${supabaseUrl}/functions/v1/${inv.fn}`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
