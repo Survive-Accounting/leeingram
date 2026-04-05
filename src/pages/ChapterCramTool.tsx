@@ -286,6 +286,88 @@ function SectionHeaderWithToggle({
   );
 }
 
+function CramChapterJEAccordion({ categories, entries }: { categories: { id: string; category_name: string; sort_order: number }[]; entries: { id: string; category_id: string | null; transaction_label: string; je_lines: any; sort_order: number }[] }) {
+  const [openCat, setOpenCat] = useState<string | null>(null);
+  const [openEntry, setOpenEntry] = useState<string | null>(null);
+
+  const grouped = categories.map(cat => ({
+    ...cat,
+    entries: entries.filter(e => e.category_id === cat.id).sort((a, b) => a.sort_order - b.sort_order),
+  })).filter(cat => cat.entries.length > 0);
+
+  return (
+    <div className="space-y-1">
+      {grouped.map(cat => {
+        const catOpen = openCat === cat.id;
+        return (
+          <div key={cat.id}>
+            <button
+              onClick={() => setOpenCat(catOpen ? null : cat.id)}
+              className="w-full flex items-center justify-between px-2 py-2 rounded-md text-left transition-colors text-[13px] font-semibold"
+              style={{ color: theme.text, background: catOpen ? theme.mutedBg : "transparent" }}
+            >
+              <span>{cat.category_name} <span className="text-[11px] font-normal" style={{ color: theme.textMuted }}>({cat.entries.length})</span></span>
+              <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>{catOpen ? "▼" : "▶"}</span>
+            </button>
+            {catOpen && (
+              <div className="ml-2 space-y-0.5 mt-1 mb-2">
+                {cat.entries.map(entry => {
+                  const entryOpen = openEntry === entry.id;
+                  const lines = (Array.isArray(entry.je_lines) ? entry.je_lines : []) as { account: string; account_tooltip: string; side: string; amount: string }[];
+                  return (
+                    <div key={entry.id}>
+                      <button
+                        onClick={() => setOpenEntry(entryOpen ? null : entry.id)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left transition-colors text-[12px] font-medium"
+                        style={{ color: theme.text, background: entryOpen ? theme.mutedBg : "transparent" }}
+                      >
+                        <span>{entry.transaction_label}</span>
+                        <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>{entryOpen ? "▲" : "▼"}</span>
+                      </button>
+                      {entryOpen && (
+                        <div className="overflow-x-auto rounded-md mt-1 mb-2 mx-1" style={{ border: `1px solid ${theme.border}` }}>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr style={{ background: theme.navy }}>
+                                <th className="text-left px-3 py-1.5 text-white font-bold text-[11px]">Account</th>
+                                <th className="text-right px-3 py-1.5 text-white font-bold text-[11px] w-20">Debit</th>
+                                <th className="text-right px-3 py-1.5 text-white font-bold text-[11px] w-20">Credit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {lines.map((line, ri) => {
+                                const isCredit = line.side === "credit";
+                                return (
+                                  <tr key={ri} style={{ background: ri % 2 === 0 ? theme.cardBg : theme.mutedBg }}>
+                                    <td className={`px-3 py-1.5 text-[12px] ${isCredit ? "pl-8" : ""}`} style={{ color: theme.text }}>
+                                      {line.account}
+                                      {line.account_tooltip && <JETooltip text={line.account_tooltip} variant="solutions" />}
+                                    </td>
+                                    <td className="text-right px-3 py-1.5 text-[12px] font-mono" style={{ color: theme.textMuted }}>
+                                      {!isCredit ? "???" : ""}
+                                    </td>
+                                    <td className="text-right px-3 py-1.5 text-[12px] font-mono" style={{ color: theme.textMuted }}>
+                                      {isCredit ? "???" : ""}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TieredPaywallCard({
   enrollUrl,
   chapterNumber,
