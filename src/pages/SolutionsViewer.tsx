@@ -3188,8 +3188,6 @@ export default function SolutionsViewer() {
   const hasCanonicalJE = jeData && isCanonicalJE(typeof jeData === "string" ? JSON.parse(jeData) : jeData);
   const hasJE = hasCanonicalJE || jeBlock.trim();
 
-  // Strip parenthetical role hints like "(the issuer)", "(the borrower)" etc. from student-facing text
-  const stripRoleHints = (text: string) => text.replace(/\s*\(the\s+[a-z]+(?:\s+[a-z]+)?\)/gi, "");
 
   const answerSummary = stripRoleHints(asset.survive_solution_text || "");
   const formulas = asset.important_formulas || "";
