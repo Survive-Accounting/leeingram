@@ -26,12 +26,13 @@ serve(async (req) => {
     // Fetch asset data
     const { data: asset, error: fetchErr } = await sb
       .from("teaching_assets")
-      .select("problem_text, instructions, asset_code, source_ref")
+      .select("problem_context, survive_problem_text, instruction_list, asset_name, source_ref")
       .eq("id", teaching_asset_id)
       .single();
 
     if (fetchErr || !asset) {
-      return new Response(JSON.stringify({ error: "Asset not found" }), {
+      console.error("Fetch error:", JSON.stringify(fetchErr), "asset:", asset);
+      return new Response(JSON.stringify({ error: "Asset not found", detail: fetchErr?.message }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -59,9 +60,9 @@ Return ONLY valid JSON, no markdown, no backticks:
 
 Return 2–6 suggestions maximum. Keep labels short (4–6 words). Descriptions one sentence.`;
 
-    const userPrompt = `Problem text: ${asset.problem_text || "(none)"}
+    const userPrompt = `Problem text: ${asset.problem_context || asset.survive_problem_text || "(none)"}
 
-Instructions: ${asset.instructions || "(none)"}
+Instructions: ${asset.instruction_list || "(none)"}
 
 What journal entries should a complete solution include for this problem? List only entries directly relevant to this specific scenario.`;
 
