@@ -11,7 +11,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { teaching_asset_id } = await req.json();
+    const { teaching_asset_id, context_hint } = await req.json();
     if (!teaching_asset_id) {
       return new Response(JSON.stringify({ error: "teaching_asset_id required" }), {
         status: 400,
