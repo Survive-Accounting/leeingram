@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { postToSlack } from "../_shared/slack.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,6 +70,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Trigger 1 — Slack notification for new issue
+    const assetCode = source_ref || asset_name || "Unknown";
+    const fromLabel = student_email || "Anonymous";
+    const chapterLabel = chapter_name ? `Ch ${chapter_number || "?"} — ${chapter_name}` : "Unknown";
+    const truncatedMsg = (message || "").slice(0, 200);
+
+    await postToSlack(
+      `🔴 *New Issue Report*\nAsset: ${assetCode}\nFrom: ${fromLabel}\nChapter: ${chapterLabel}\n\nMessage: ${truncatedMsg}\n\n→ https://learn.surviveaccounting.com/solutions-qa?asset=${encodeURIComponent(assetCode)}`
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
