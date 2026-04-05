@@ -375,12 +375,9 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 // ── Fix Sections Config ──────────────────────────────────────────────
 
 const FIX_SECTIONS = [
-  { key: "solution_je", label: "Solution text + JE reasons" },
-  { key: "supplementary_je", label: "Supplementary journal entries" },
-  { key: "dissector", label: "Problem dissector highlights" },
-  { key: "formulas", label: "Important formulas" },
-  { key: "concepts", label: "Key concepts" },
-  { key: "traps", label: "Exam traps" },
+  { key: "problem_text", label: "Problem text" },
+  { key: "instructions", label: "Instructions text" },
+  { key: "solution_je", label: "Solution" },
 ];
 
 // ── Fix Asset Modal ──────────────────────────────────────────────────
@@ -541,186 +538,208 @@ function QAFixAssetModal({
   const successfulSections = runResults.filter(r => r.ok && !sectionReverted[r.key]);
   const allApproved = successfulSections.length > 0 && successfulSections.every(r => sectionApproved[r.key]);
 
+  const fixDrag = useDraggable({ x: window.innerWidth - 460, y: 80 });
+
   return (
-    <Dialog open onOpenChange={() => { if (step !== "running") onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-          <div>
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Wrench className="h-4 w-4" /> Fix This Asset
-            </h2>
-            <p className="text-xs text-muted-foreground font-mono mt-0.5">{assetName}</p>
-          </div>
+    <div
+      ref={fixDrag.containerRef}
+      onPointerMove={fixDrag.onPointerMove}
+      onPointerUp={fixDrag.onPointerUp}
+      onPointerCancel={fixDrag.onPointerCancel}
+      className="fixed z-[60] w-[420px] max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+      style={{ left: 0, top: 0, transform: `translate3d(${fixDrag.pos.x}px, ${fixDrag.pos.y}px, 0)` }}
+    >
+      <div
+        onPointerDown={fixDrag.onPointerDown}
+        className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0 cursor-grab active:cursor-grabbing select-none bg-muted/30"
+      >
+        <div>
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Wrench className="h-4 w-4" /> Fix This Asset
+          </h2>
+          <p className="text-xs text-muted-foreground font-mono mt-0.5">{assetName}</p>
+        </div>
+        <div className="flex items-center gap-2">
           {attemptNumber > 1 && (
-            <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber} (stronger model)</Badge>
+            <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber}</Badge>
           )}
+          <button onClick={() => { if (step !== "running") onClose(); }} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
         </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {/* Step 1: Describe the fix */}
-          {step === "input" && (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">What's wrong and how should it be fixed?</label>
-                <Textarea
-                  value={fixPrompt}
-                  onChange={e => setFixPrompt(e.target.value)}
-                  placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable as a credit. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit."
-                  className="text-xs min-h-[100px]"
-                  autoFocus
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"}
-                </p>
-              </div>
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {/* Step 1: Describe the fix */}
+        {step === "input" && (
+          <>
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-2.5">
+              <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                <strong>💡 Tip:</strong> Take a screenshot of the issue and paste it into ChatGPT with a description of what's wrong. Ask it to suggest a fix prompt you can paste here for the best results.
+              </p>
+            </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-foreground">Select what to regenerate</label>
-                  <button onClick={selectAll} className="text-[10px] text-primary hover:underline font-medium">
-                    {selectedSections.size === FIX_SECTIONS.length ? "Deselect All" : "Select All"}
-                  </button>
-                </div>
-                <div className="space-y-1.5">
-                  {FIX_SECTIONS.map(sec => (
-                    <label key={sec.key} className="flex items-center gap-2 cursor-pointer group">
-                      <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
-                      <span className="text-xs text-foreground group-hover:text-primary transition-colors">{sec.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground">What's wrong and how should it be fixed?</label>
+              <Textarea
+                value={fixPrompt}
+                onChange={e => setFixPrompt(e.target.value)}
+                placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable as a credit. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit."
+                className="text-xs min-h-[80px]"
+                autoFocus
+              />
+              <p className="text-[10px] text-muted-foreground">
+                {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"}
+              </p>
+            </div>
 
-              <Button onClick={runFix} disabled={!canRun} className="w-full">
-                <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
-              </Button>
-            </>
-          )}
-
-          {/* Step 2: Running */}
-          {step === "running" && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-foreground">Running fix on {assetName}...</p>
-              {FIX_SECTIONS.filter(s => selectedSections.has(s.key)).map(sec => {
-                const status = runProgress[sec.key] || "pending";
-                return (
-                  <div key={sec.key} className="flex items-center gap-2 text-xs">
-                    {status === "running" || status === "pending" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                    ) : status === "done" ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    ) : (
-                      <X className="h-3.5 w-3.5 text-destructive" />
-                    )}
-                    <span className={status === "done" ? "text-muted-foreground" : "text-foreground"}>
-                      {status === "done" ? `✓ ${sec.label} updated` : sec.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Step 3: Before/After review */}
-          {step === "compare" && snapshot && afterData && (
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-foreground">Review Changes</p>
-
-              {runResults.filter(r => !r.ok).length > 0 && (
-                <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
-                  <p className="text-[10px] font-bold text-destructive">Some sections failed:</p>
-                  {runResults.filter(r => !r.ok).map(r => (
-                    <p key={r.key} className="text-[10px] text-destructive">{r.key}: {r.error}</p>
-                  ))}
-                </div>
-              )}
-
-              {runResults.filter(r => r.ok).map(result => {
-                const sec = FIX_SECTIONS.find(s => s.key === result.key);
-                const before = snapshot[result.key] || {};
-                const after = afterData[result.key] || {};
-                const mode = viewMode[result.key] || "after";
-                const approved = sectionApproved[result.key] || false;
-                const reverted = sectionReverted[result.key] || false;
-                const data = mode === "before" ? before : after;
-
-                return (
-                  <div key={result.key} className={`border rounded-lg overflow-hidden ${reverted ? "border-muted opacity-50" : approved ? "border-emerald-500/40" : "border-border"}`}>
-                    <div className="flex items-center justify-between px-3 py-2 bg-muted/30">
-                      <span className="text-xs font-bold text-foreground">{sec?.label || result.key}</span>
-                      <div className="flex items-center gap-2">
-                        {!reverted && (
-                          <>
-                            <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5">
-                              <button
-                                onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "before" }))}
-                                className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "before" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
-                              >
-                                Before
-                              </button>
-                              <button
-                                onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "after" }))}
-                                className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "after" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
-                              >
-                                After
-                              </button>
-                            </div>
-                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px]">
-                              <Checkbox
-                                checked={approved}
-                                onCheckedChange={(checked) => setSectionApproved(prev => ({ ...prev, [result.key]: !!checked }))}
-                              />
-                              <span className={approved ? "text-emerald-500 font-medium" : "text-muted-foreground"}>Approve</span>
-                            </label>
-                          </>
-                        )}
-                        {!reverted ? (
-                          <button
-                            onClick={() => revertSection(result.key)}
-                            className="text-[10px] text-destructive/70 hover:text-destructive font-medium"
-                          >
-                            Revert
-                          </button>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground italic">Reverted</span>
-                        )}
-                      </div>
-                    </div>
-                    {!reverted && (
-                      <ScrollArea className="max-h-[200px]">
-                        <div className="p-3 space-y-1">
-                          {Object.entries(data).map(([col, val]) => (
-                            <div key={col}>
-                              <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
-                              <pre className={`text-[11px] whitespace-pre-wrap break-words ${mode === "after" ? "text-emerald-700" : "text-foreground"}`}>
-                                {formatValue(val)}
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    )}
-                  </div>
-                );
-              })}
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  onClick={approveAll}
-                  disabled={successfulSections.length === 0}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Check className="h-3.5 w-3.5 mr-1" /> Approve All & Save
-                </Button>
-                <Button onClick={rejectAll} variant="outline" className="flex-1">
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reject All
-                </Button>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground">Select what to regenerate</label>
+                <button onClick={selectAll} className="text-[10px] text-primary hover:underline font-medium">
+                  {selectedSections.size === FIX_SECTIONS.length ? "Deselect All" : "Select All"}
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {FIX_SECTIONS.map(sec => (
+                  <label key={sec.key} className="flex items-center gap-2 cursor-pointer group">
+                    <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
+                    <span className="text-xs text-foreground group-hover:text-primary transition-colors">{sec.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+
+            <Button onClick={runFix} disabled={!canRun} className="w-full" size="sm">
+              <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
+            </Button>
+          </>
+        )}
+
+        {/* Step 2: Running */}
+        {step === "running" && (
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-foreground">Running fix on {assetName}...</p>
+            {FIX_SECTIONS.filter(s => selectedSections.has(s.key)).map(sec => {
+              const status = runProgress[sec.key] || "pending";
+              return (
+                <div key={sec.key} className="flex items-center gap-2 text-xs">
+                  {status === "running" || status === "pending" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  ) : status === "done" ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-destructive" />
+                  )}
+                  <span className={status === "done" ? "text-muted-foreground" : "text-foreground"}>
+                    {status === "done" ? `✓ ${sec.label} updated` : sec.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Step 3: Before/After review */}
+        {step === "compare" && snapshot && afterData && (
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-foreground">Review Changes</p>
+
+            {runResults.filter(r => !r.ok).length > 0 && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
+                <p className="text-[10px] font-bold text-destructive">Some sections failed:</p>
+                {runResults.filter(r => !r.ok).map(r => (
+                  <p key={r.key} className="text-[10px] text-destructive">{r.key}: {r.error}</p>
+                ))}
+              </div>
+            )}
+
+            {runResults.filter(r => r.ok).map(result => {
+              const sec = FIX_SECTIONS.find(s => s.key === result.key);
+              const before = snapshot[result.key] || {};
+              const after = afterData[result.key] || {};
+              const mode = viewMode[result.key] || "after";
+              const approved = sectionApproved[result.key] || false;
+              const reverted = sectionReverted[result.key] || false;
+              const data = mode === "before" ? before : after;
+
+              return (
+                <div key={result.key} className={`border rounded-lg overflow-hidden ${reverted ? "border-muted opacity-50" : approved ? "border-emerald-500/40" : "border-border"}`}>
+                  <div className="flex items-center justify-between px-3 py-2 bg-muted/30">
+                    <span className="text-xs font-bold text-foreground">{sec?.label || result.key}</span>
+                    <div className="flex items-center gap-2">
+                      {!reverted && (
+                        <>
+                          <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5">
+                            <button
+                              onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "before" }))}
+                              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "before" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                            >
+                              Before
+                            </button>
+                            <button
+                              onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "after" }))}
+                              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "after" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                            >
+                              After
+                            </button>
+                          </div>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-[10px]">
+                            <Checkbox
+                              checked={approved}
+                              onCheckedChange={(checked) => setSectionApproved(prev => ({ ...prev, [result.key]: !!checked }))}
+                            />
+                            <span className={approved ? "text-emerald-500 font-medium" : "text-muted-foreground"}>Approve</span>
+                          </label>
+                        </>
+                      )}
+                      {!reverted ? (
+                        <button
+                          onClick={() => revertSection(result.key)}
+                          className="text-[10px] text-destructive/70 hover:text-destructive font-medium"
+                        >
+                          Revert
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground italic">Reverted</span>
+                      )}
+                    </div>
+                  </div>
+                  {!reverted && (
+                    <ScrollArea className="max-h-[200px]">
+                      <div className="p-3 space-y-1">
+                        {Object.entries(data).map(([col, val]) => (
+                          <div key={col}>
+                            <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
+                            <pre className={`text-[11px] whitespace-pre-wrap break-words ${mode === "after" ? "text-emerald-700" : "text-foreground"}`}>
+                              {formatValue(val)}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={approveAll}
+                disabled={successfulSections.length === 0}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                size="sm"
+              >
+                <Check className="h-3.5 w-3.5 mr-1" /> Approve All & Save
+              </Button>
+              <Button onClick={rejectAll} variant="outline" className="flex-1" size="sm">
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reject All
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1886,36 +1905,15 @@ export default function SolutionsQAReview() {
                   )}
                 </>
               )}
-              {current?.teaching_asset_id && canUseFixer && (() => {
-                const fixDisabled = screenshotStep !== "done" || issueCount === 0;
-                const tooltipMsg = screenshotStep !== "done"
-                  ? "Complete the review steps first"
-                  : issueCount === 0
-                  ? "Log at least one issue before fixing — document what's wrong first, then use this tool to fix it."
-                  : "";
-                const btn = (
-                  <Button
-                    variant="outline"
-                    className={`w-full text-xs h-7 ${fixDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                    onClick={() => { if (!fixDisabled) setFixAssetOpen(true); }}
-                    disabled={fixDisabled}
-                  >
-                    <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
-                  </Button>
-                );
-                return fixDisabled ? (
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="w-full">{btn}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[240px] text-xs text-center">
-                        <p>⚠️ {tooltipMsg}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : btn;
-              })()}
+              {current?.teaching_asset_id && canUseFixer && (
+                <Button
+                  variant="outline"
+                  className="w-full text-xs h-7"
+                  onClick={() => setFixAssetOpen(true)}
+                >
+                  <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
+                </Button>
+              )}
             </div>
           </>
         )}
