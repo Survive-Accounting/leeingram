@@ -3726,6 +3726,13 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
+              {/* 4b. Ch [N] — Important Formulas (chapter-level, not paywalled) */}
+              {chapterFormulas && chapterFormulas.length > 0 && (
+                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Important Formulas`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
+                  <ChapterFormulaCarousel formulas={chapterFormulas} />
+                </RevealToggle>
+              )}
+
               {/* 5. Key Concepts — hidden in QA mode */}
               {conceptNotes.trim() && !isQaMode && (
                 <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
