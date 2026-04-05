@@ -2978,7 +2978,28 @@ export default function SolutionsViewer() {
     enabled: isPreview,
   });
 
-  // Track page view
+  // Fetch chapter-level journal entries (replaces per-asset Related JEs)
+  const chapterIdForJE = data?.chapter_id;
+  const { data: chapterJEData } = useQuery({
+    queryKey: ["chapter-je-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return { categories: [], entries: [] };
+      const { data: cats } = await supabase
+        .from("chapter_je_categories")
+        .select("id, category_name, sort_order")
+        .eq("chapter_id", chapterIdForJE)
+        .order("sort_order");
+      const { data: entries } = await supabase
+        .from("chapter_journal_entries")
+        .select("id, category_id, transaction_label, je_lines, sort_order")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return { categories: cats || [], entries: entries || [] };
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
   useEffect(() => {
     if (!data?.id) return;
     const key = `solutions_viewed_${data.id}`;
@@ -3581,13 +3602,10 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 3b. Supplementary JEs — always show when available */}
-              {asset.supplementary_je_json && (
-                <RevealToggle label="Reveal Related Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
-                  <SupplementaryJESection
-                    data={typeof asset.supplementary_je_json === "string" ? JSON.parse(asset.supplementary_je_json) : asset.supplementary_je_json}
-                    theme={t}
-                  />
+              {/* 3b. Chapter-Level Journal Entries — replaces per-asset Related JEs */}
+              {chapterJEData && chapterJEData.entries.length > 0 && (
+                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Journal Entries`} theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
+                  <ChapterJEAccordion categories={chapterJEData.categories} entries={chapterJEData.entries} theme={t} />
                 </RevealToggle>
               )}
 
