@@ -1943,11 +1943,15 @@ export default function SolutionsQAReview() {
                         {issueCount} issue{issueCount !== 1 ? "s" : ""}
                       </p>
                       {currentIssues?.map(issue => (
-                        <div key={issue.id} className="flex items-center gap-1 text-[10px] bg-amber-500/5 rounded px-1.5 py-0.5">
+                        <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-amber-500/5 rounded px-1.5 py-1">
                           <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
                           <span className="truncate text-foreground/80">{issue.issue_description}</span>
-                          <button onClick={() => deleteIssueMutation.mutate(issue.id)} className="ml-auto shrink-0 text-destructive/60 hover:text-destructive">
-                            <X className="h-2.5 w-2.5" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteIssueMutation.mutate(issue.id); }}
+                            className="ml-auto shrink-0 p-1 -mr-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
+                            title="Remove issue"
+                          >
+                            <X className="h-3 w-3" />
                           </button>
                         </div>
                       ))}
