@@ -336,6 +336,20 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
     }
 
     const aiData = await aiResp.json();
+
+    // Log cost for quiz generation
+    if (aiData.usage) {
+      logCost(sb, {
+        operation_type: "quiz_generation",
+        topic_id: topic_id,
+        chapter_id: topic.chapter_id,
+        model: "claude-sonnet-4-20250514",
+        input_tokens: aiData.usage.input_tokens,
+        output_tokens: aiData.usage.output_tokens,
+        metadata: { topic_name: topic.topic_name },
+      });
+    }
+
     let questions: any[] = [];
 
     // Extract from Anthropic tool use response
