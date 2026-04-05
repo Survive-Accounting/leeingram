@@ -3412,6 +3412,20 @@ export default function SolutionsViewer() {
                 )}
 
                 {/* INSTRUCTIONS */}
+                {isQaMode && (
+                  <div className="flex items-center gap-2 mt-4 mb-1">
+                    <QAEditButton onClick={() => setQaEditingField(qaEditingField === "instructions" ? null : "instructions")} />
+                    {!instructions.length && <span className="text-[11px]" style={{ color: t.textMuted }}>No instructions yet</span>}
+                  </div>
+                )}
+                {qaEditingField === "instructions" && isQaMode && (
+                  <QAInstructionsEditor
+                    instructions={asset._instructions || []}
+                    teachingAssetId={asset.id}
+                    onSaved={() => { setQaEditingField(null); refetchAsset(); }}
+                    onCancel={() => setQaEditingField(null)}
+                  />
+                )}
                 {instructions.length > 0 && (() => {
                   // Detect repeated leading verb phrases across parts
                   const deduped = deduplicateInstructions(instructions);
