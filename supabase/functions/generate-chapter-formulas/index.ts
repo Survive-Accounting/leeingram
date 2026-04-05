@@ -128,6 +128,19 @@ ${assetSummaries}`;
     }
 
     const anthropicData = await anthropicRes.json();
+
+    // Log cost
+    if (anthropicData.usage) {
+      logCost(sb, {
+        operation_type: "chapter_formula_generation",
+        chapter_id: chapter_id,
+        model: "claude-sonnet-4-20250514",
+        input_tokens: anthropicData.usage.input_tokens,
+        output_tokens: anthropicData.usage.output_tokens,
+        metadata: { chapter_name: chapter.chapter_name },
+      });
+    }
+
     const toolBlock = anthropicData.content?.find((b: any) => b.type === "tool_use");
     if (!toolBlock?.input) throw new Error("No tool response from Claude");
 

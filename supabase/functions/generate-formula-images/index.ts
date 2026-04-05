@@ -197,6 +197,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Log HCTI cost
+    if (generated > 0) {
+      logCost(sb, {
+        operation_type: "image_generation",
+        chapter_id: chapter_id,
+        image_count: generated,
+        metadata: { total_formulas: formulas.length, skipped, errors: errors.length },
+      });
+    }
+
     return new Response(
       JSON.stringify({ generated, skipped, errors, total: formulas.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
