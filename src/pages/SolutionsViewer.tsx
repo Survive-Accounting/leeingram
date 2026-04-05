@@ -1537,6 +1537,97 @@ function FlowchartSubToggle({
   );
 }
 
+// ── Chapter-Level JE Accordion (categories → entries → tables) ──────
+
+function ChapterJEAccordion({ categories, entries, theme }: { categories: { id: string; category_name: string; sort_order: number }[]; entries: { id: string; category_id: string | null; transaction_label: string; je_lines: any; sort_order: number }[]; theme: Theme }) {
+  const [openCat, setOpenCat] = useState<string | null>(null);
+  const [openEntry, setOpenEntry] = useState<string | null>(null);
+
+  const grouped = categories.map(cat => ({
+    ...cat,
+    entries: entries.filter(e => e.category_id === cat.id).sort((a, b) => a.sort_order - b.sort_order),
+  })).filter(cat => cat.entries.length > 0);
+
+  return (
+    <div className="space-y-1">
+      <p className="text-[12px] leading-[1.5] rounded-md px-3 py-2 mb-2" style={{ background: theme.cardBg, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+        💡 Master these journal entries to build a strong foundation for this chapter. Tap a category to expand, then tap a transaction to see the entry.
+      </p>
+      {grouped.map(cat => {
+        const catOpen = openCat === cat.id;
+        return (
+          <div key={cat.id}>
+            <button
+              onClick={() => setOpenCat(catOpen ? null : cat.id)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-left transition-colors text-[14px] font-semibold"
+              style={{
+                color: theme.text,
+                background: catOpen ? theme.cardBg : "transparent",
+                border: `1px solid ${catOpen ? theme.border : "transparent"}`,
+              }}
+            >
+              <span>{cat.category_name} <span className="text-[11px] font-normal" style={{ color: theme.textMuted }}>({cat.entries.length})</span></span>
+              <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>{catOpen ? "▼" : "▶"}</span>
+            </button>
+            {catOpen && (
+              <div className="ml-2 space-y-0.5 mt-1 mb-2">
+                {cat.entries.map(entry => {
+                  const entryOpen = openEntry === entry.id;
+                  const lines = (Array.isArray(entry.je_lines) ? entry.je_lines : []) as { account: string; account_tooltip: string; side: string; amount: string }[];
+                  return (
+                    <div key={entry.id}>
+                      <button
+                        onClick={() => setOpenEntry(entryOpen ? null : entry.id)}
+                        className="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-left transition-colors text-[13px] font-medium"
+                        style={{ color: theme.text, background: entryOpen ? theme.cardBg : "transparent" }}
+                      >
+                        <span>{entry.transaction_label}</span>
+                        <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>{entryOpen ? "▲" : "▼"}</span>
+                      </button>
+                      {entryOpen && (
+                        <div className="overflow-x-auto rounded-md mt-1 mb-2 mx-1" style={{ border: `1px solid ${theme.border}` }}>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr style={{ background: theme.tableHeaderBg }}>
+                                <th className="text-left px-3 py-1.5 text-white font-bold text-[12px]">Account</th>
+                                <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Debit</th>
+                                <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Credit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {lines.map((line, ri) => {
+                                const isCredit = line.side === "credit";
+                                return (
+                                  <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : (theme as any).tableAltBg || theme.cardBg }}>
+                                    <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
+                                      {line.account}
+                                      {line.account_tooltip && <JETooltip text={line.account_tooltip} variant="solutions" />}
+                                    </td>
+                                    <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
+                                      {!isCredit ? "???" : ""}
+                                    </td>
+                                    <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
+                                      {isCredit ? "???" : ""}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Supplementary JE Display (accounts only, ??? amounts) ───────────
 
 function SupplementaryJESection({ data, theme }: { data: { entries: { label: string; rows: { account_name: string; side: "debit" | "credit"; debit_credit_reason?: string; amount_source?: string }[] }[] }; theme: Theme }) {
