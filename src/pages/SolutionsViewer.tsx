@@ -1537,6 +1537,39 @@ function FlowchartSubToggle({
   );
 }
 
+// ── Chapter-Level Formula Carousel ──────────────────────────────────
+
+function ChapterFormulaCarousel({ formulas }: { formulas: { id: string; formula_name: string; formula_expression: string; image_url: string | null }[] }) {
+  const [idx, setIdx] = useState(0);
+  const f = formulas[idx];
+  if (!f) return null;
+  return (
+    <div className="space-y-3">
+      {f.image_url ? (
+        <img
+          src={f.image_url}
+          alt={f.formula_name}
+          className="w-full rounded-lg"
+          style={{ aspectRatio: "2/1", objectFit: "contain", background: "#14213D" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      ) : (
+        <div className="w-full rounded-lg flex items-center justify-center py-8" style={{ aspectRatio: "2/1", background: "#14213D" }}>
+          <span className="text-white/70 text-sm">{f.formula_name}</span>
+        </div>
+      )}
+      <p className="text-xs text-center font-medium" style={{ color: "var(--foreground, #333)" }}>{f.formula_name}</p>
+      {formulas.length > 1 && (
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <button onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0} className="disabled:opacity-30 hover:text-foreground transition-colors">← Prev</button>
+          <span>{idx + 1} / {formulas.length}</span>
+          <button onClick={() => setIdx(Math.min(formulas.length - 1, idx + 1))} disabled={idx === formulas.length - 1} className="disabled:opacity-30 hover:text-foreground transition-colors">Next →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Chapter-Level JE Accordion (categories → entries → tables) ──────
 
 function ChapterJEAccordion({ categories, entries, theme }: { categories: { id: string; category_name: string; sort_order: number }[]; entries: { id: string; category_id: string | null; transaction_label: string; je_lines: any; sort_order: number }[]; theme: Theme }) {
@@ -3091,6 +3124,25 @@ export default function SolutionsViewer() {
     staleTime: 5 * 60 * 1000,
     enabled: !!chapterIdForJE,
   });
+
+  // Fetch chapter-level formulas (approved with images)
+  const { data: chapterFormulas } = useQuery({
+    queryKey: ["chapter-formulas-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return [];
+      const { data: rows } = await supabase
+        .from("chapter_formulas")
+        .select("id, formula_name, formula_expression, image_url")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .not("image_url", "is", null)
+        .order("sort_order");
+      return rows || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
   useEffect(() => {
     if (!data?.id) return;
     const key = `solutions_viewed_${data.id}`;
@@ -3704,6 +3756,13 @@ export default function SolutionsViewer() {
               {formulas.trim() && !isQaMode && (
                 <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <GroupedFormulas text={formulas} theme={t} />
+                </RevealToggle>
+              )}
+
+              {/* 4b. Ch [N] — Important Formulas (chapter-level, not paywalled) */}
+              {chapterFormulas && chapterFormulas.length > 0 && (
+                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Important Formulas`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
+                  <ChapterFormulaCarousel formulas={chapterFormulas} />
                 </RevealToggle>
               )}
 
