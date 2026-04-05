@@ -63,7 +63,7 @@ Return 2–6 suggestions maximum. Keep labels short (4–6 words). Descriptions 
     const userPrompt = `Problem text: ${asset.problem_context || asset.survive_problem_text || "(none)"}
 
 Instructions: ${asset.instruction_list || "(none)"}
-
+${context_hint ? `\nAdditional context from reviewer: ${context_hint}` : ""}
 What journal entries should a complete solution include for this problem? List only entries directly relevant to this specific scenario.`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
