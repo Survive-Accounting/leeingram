@@ -375,12 +375,9 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 // ── Fix Sections Config ──────────────────────────────────────────────
 
 const FIX_SECTIONS = [
-  { key: "solution_je", label: "Solution text + JE reasons" },
-  { key: "supplementary_je", label: "Supplementary journal entries" },
-  { key: "dissector", label: "Problem dissector highlights" },
-  { key: "formulas", label: "Important formulas" },
-  { key: "concepts", label: "Key concepts" },
-  { key: "traps", label: "Exam traps" },
+  { key: "problem_text", label: "Problem text" },
+  { key: "instructions", label: "Instructions text" },
+  { key: "solution_je", label: "Solution" },
 ];
 
 // ── Fix Asset Modal ──────────────────────────────────────────────────
