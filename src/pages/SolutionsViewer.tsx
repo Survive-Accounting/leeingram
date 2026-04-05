@@ -3628,6 +3628,8 @@ export default function SolutionsViewer() {
               )}
             </div>
 
+  // Strip parenthetical role hints like "(the issuer)", "(the borrower)" etc. from student-facing text
+  const stripRoleHints = (text: string) => text.replace(/\s*\(the\s+[a-z]+(?:\s+[a-z]+)?\)/gi, "");
 
 
 
