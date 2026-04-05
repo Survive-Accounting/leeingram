@@ -2651,6 +2651,9 @@ export default function SolutionsViewer() {
   const isQaMode = searchParams.get("qa") === "1";
   const enrollUrl = useEnrollUrl();
 
+  // ── QA inline editing state ──
+  const [qaEditingField, setQaEditingField] = useState<"problem" | "instructions" | "solution" | null>(null);
+
   // ── LW params ref (stable across renders) ──
   const lwParams = useRef({
     ref: searchParams.get("ref") || "",
