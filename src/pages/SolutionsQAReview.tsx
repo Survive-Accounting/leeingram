@@ -379,6 +379,7 @@ const FIX_SECTIONS = [
   { key: "problem_text", label: "Problem text" },
   { key: "instructions", label: "Instructions text" },
   { key: "solution", label: "Solution" },
+  { key: "supplementary_je", label: "Supplementary journal entries" },
 ];
 
 // ── Rendered Section Preview ─────────────────────────────────────────
@@ -479,6 +480,7 @@ function QAFixAssetModal({
   const [jeSuggestLoading, setJeSuggestLoading] = useState(false);
   const [jeSuggestions, setJeSuggestions] = useState<{ label: string; description: string }[]>([]);
   const [jeSelected, setJeSelected] = useState<Set<number>>(new Set());
+  const [jeContextPrompt, setJeContextPrompt] = useState("");
 
   const analyzeMissingJE = async () => {
     setJeSuggestLoading(true);
@@ -486,7 +488,7 @@ function QAFixAssetModal({
     setJeSelected(new Set());
     try {
       const res = await supabase.functions.invoke("suggest-missing-je", {
-        body: { teaching_asset_id: teachingAssetId },
+        body: { teaching_asset_id: teachingAssetId, context_hint: jeContextPrompt.trim() || undefined },
       });
       if (res.error) throw new Error(res.error.message);
       const entries = res.data?.suggested_entries || [];
@@ -743,13 +745,19 @@ function QAFixAssetModal({
             <div className="border border-border rounded-lg overflow-hidden">
               <label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors">
                 <Checkbox checked={jeSuggestOpen} onCheckedChange={(c) => setJeSuggestOpen(!!c)} />
-                <span className="text-xs font-medium text-foreground">Related journal entries are missing</span>
+                <span className="text-xs font-medium text-foreground">Related journal entries toggle is missing</span>
               </label>
               {jeSuggestOpen && (
                 <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
                     I'll read this problem and suggest which related journal entries should be added.
                   </p>
+                  <Textarea
+                    value={jeContextPrompt}
+                    onChange={e => setJeContextPrompt(e.target.value)}
+                    placeholder="Optional: guide the AI — e.g. 'This is a bond problem, include entries for issuance, interest, and retirement'"
+                    className="text-xs min-h-[50px]"
+                  />
                   {jeSuggestions.length === 0 && !jeSuggestLoading && (
                     <Button variant="outline" size="sm" className="w-full text-xs" onClick={analyzeMissingJE}>
                       Analyze Problem →
