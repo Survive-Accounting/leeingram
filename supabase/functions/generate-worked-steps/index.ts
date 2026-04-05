@@ -106,6 +106,19 @@ Extract the step-by-step worked solution.`;
     }
 
     const data = await res.json();
+
+    // Log cost
+    if (data.usage) {
+      logCost(sb, {
+        operation_type: "asset_fix",
+        asset_code: asset.asset_name,
+        model: "claude-sonnet-4-20250514",
+        input_tokens: data.usage.input_tokens,
+        output_tokens: data.usage.output_tokens,
+        metadata: { type: "worked_steps" },
+      });
+    }
+
     if (!data.content || !data.content[0]?.text) {
       throw new Error("Empty response from Anthropic API");
     }

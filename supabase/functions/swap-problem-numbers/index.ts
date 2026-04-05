@@ -100,6 +100,19 @@ Rules:
     }
 
     const aiData = await aiResponse.json();
+
+    // Log cost
+    if (aiData.usage) {
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      logCost(sb, {
+        operation_type: "asset_fix",
+        model: "claude-sonnet-4-20250514",
+        input_tokens: aiData.usage.input_tokens,
+        output_tokens: aiData.usage.output_tokens,
+        metadata: { type: "swap_problem_numbers", teaching_asset_id },
+      });
+    }
+
     const newText = aiData.content?.[0]?.text?.trim() || "";
 
     if (!newText) {
