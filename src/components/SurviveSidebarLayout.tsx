@@ -769,7 +769,18 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                       : "text-white/70 hover:text-white hover:bg-muted/30"
                   )}
                 >
-                  <ClipboardCheck className="h-3.5 w-3.5" /> QA Admin
+                 <ClipboardCheck className="h-3.5 w-3.5" /> QA Admin
+                </Link>
+                <Link
+                  to="/admin/chapter-qa"
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+                    isActive("/admin/chapter-qa")
+                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
+                      : "text-white/70 hover:text-white hover:bg-muted/30"
+                  )}
+                >
+                  <BookOpen className="h-3.5 w-3.5" /> Chapter QA
                 </Link>
                 <Link
                   to="/accy304-admin"
