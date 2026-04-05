@@ -559,10 +559,34 @@ function QAFixAssetModal({
           </h2>
           <p className="text-xs text-muted-foreground font-mono mt-0.5">{assetName}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {attemptNumber > 1 && (
             <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber}</Badge>
           )}
+          <button
+            title="Copy Debug Info"
+            onClick={() => {
+              const debugInfo = {
+                teachingAssetId,
+                assetName,
+                step,
+                attemptNumber,
+                fixPrompt,
+                selectedSections: [...selectedSections],
+                snapshot,
+                afterData,
+                runResults,
+                sectionApproved,
+                sectionReverted,
+                timestamp: new Date().toISOString(),
+              };
+              navigator.clipboard.writeText(JSON.stringify(debugInfo, null, 2));
+              toast.success("Debug info copied to clipboard");
+            }}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
           <button onClick={() => { if (step !== "running") onClose(); }} className="text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
