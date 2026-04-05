@@ -31,7 +31,8 @@ serve(async (req) => {
       .single();
 
     if (fetchErr || !asset) {
-      return new Response(JSON.stringify({ error: "Asset not found" }), {
+      console.error("Fetch error:", JSON.stringify(fetchErr), "asset:", asset);
+      return new Response(JSON.stringify({ error: "Asset not found", detail: fetchErr?.message }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
