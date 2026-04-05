@@ -276,9 +276,8 @@ serve(async (req) => {
       if (error) throw new Error("Restore failed: " + error.message);
 
       // Trigger 4 — Slack: Fix rejected
-      const rejecter = body.reviewer_name || "Admin";
       postToSlack(
-        `❌ *Fix rejected — reverted*\nAsset: ${assetCode}\nBy: ${rejecter}`
+        `❌ *Fix rejected — reverted*\nAsset: ${sourceRef}\n<${pageUrl}|View Page>`
       ).catch(() => {});
 
       return new Response(JSON.stringify({ success: true }), {
