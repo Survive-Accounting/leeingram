@@ -743,12 +743,12 @@ function QAFixAssetModal({
             <div className="border border-border rounded-lg overflow-hidden">
               <label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors">
                 <Checkbox checked={jeSuggestOpen} onCheckedChange={(c) => setJeSuggestOpen(!!c)} />
-                <span className="text-xs font-medium text-foreground">Suggest missing or incomplete journal entries</span>
+                <span className="text-xs font-medium text-foreground">Related journal entries are missing</span>
               </label>
               {jeSuggestOpen && (
                 <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    I'll read this problem and suggest journal entries that may be missing from the solution.
+                    I'll read this problem and suggest which related journal entries should be added.
                   </p>
                   {jeSuggestions.length === 0 && !jeSuggestLoading && (
                     <Button variant="outline" size="sm" className="w-full text-xs" onClick={analyzeMissingJE}>
