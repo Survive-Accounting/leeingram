@@ -12,66 +12,46 @@ function buildFormulaHtml(name: string, expression: string, explanation: string 
 <html>
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  width: 800px; height: 400px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Inter', sans-serif;
-  color: #fff;
-  overflow: hidden;
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap');
+body { margin:0; padding:0; background:#14213D; }
 .card {
-  width: 720px;
-  padding: 48px 56px;
-  text-align: center;
-}
-.label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 20px;
+  width:800px; height:400px; background:#14213D;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  padding:48px; box-sizing:border-box; position:relative;
 }
 .name {
-  font-family: 'DM Serif Display', serif;
-  font-size: 28px;
-  color: #e2e8f0;
-  margin-bottom: 24px;
-  line-height: 1.3;
+  font-family:'DM Serif Display',serif;
+  font-size:28px; color:#ffffff;
+  text-align:center; margin-bottom:20px;
 }
 .expression {
-  font-family: 'Inter', monospace;
-  font-size: 32px;
-  font-weight: 600;
-  color: #60a5fa;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(96,165,250,0.2);
-  border-radius: 12px;
-  padding: 20px 32px;
-  margin-bottom: 20px;
-  display: inline-block;
-  max-width: 100%;
-  word-wrap: break-word;
+  font-family:'Inter',monospace; font-weight:600;
+  font-size:22px; color:#CE1126;
+  text-align:center; margin-bottom:16px;
+  letter-spacing:0.02em;
 }
 .explanation {
-  font-size: 14px;
-  color: rgba(255,255,255,0.6);
-  line-height: 1.6;
-  max-width: 600px;
-  margin: 0 auto;
+  font-family:'Inter',sans-serif; font-size:14px;
+  color:rgba(255,255,255,0.65);
+  text-align:center; max-width:620px; line-height:1.6;
 }
+.footer {
+  position:absolute; bottom:24px; right:32px;
+}
+.logo { height:28px; opacity:0.7; }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="label">Formula to memorize</div>
   <div class="name">${escapeHtml(name)}</div>
   <div class="expression">${escapeHtml(expression)}</div>
   ${explanation ? `<div class="explanation">${escapeHtml(explanation)}</div>` : ""}
+  <div class="footer">
+    <img class="logo" src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg" alt="SA" />
+  </div>
 </div>
 </body>
 </html>`;
@@ -94,8 +74,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { chapter_id, formula_id } = await req.json();
-    if (!chapter_id) throw new Error("chapter_id is required");
+    const body = await req.json();
+    // Support both camelCase and snake_case
+    const chapterId = body.chapterId || body.chapter_id;
+    const formulaId = body.formulaId || body.formula_id;
+
+    if (!chapterId && !formulaId) throw new Error("Provide chapterId or formulaId");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -106,36 +90,39 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Build query for formulas
-    let query = sb
-      .from("chapter_formulas")
-      .select("id, formula_name, formula_expression, formula_explanation, image_url, is_approved")
-      .eq("chapter_id", chapter_id)
-      .eq("is_approved", true)
-      .order("sort_order");
+    let formulas: any[] = [];
 
-    // If single formula_id provided, only process that one
-    if (formula_id) {
-      query = query.eq("id", formula_id);
+    if (formulaId) {
+      // Single formula regen — fetch just that one
+      const { data, error } = await sb
+        .from("chapter_formulas")
+        .select("id, chapter_id, formula_name, formula_expression, formula_explanation, image_url, is_approved")
+        .eq("id", formulaId)
+        .single();
+      if (error || !data) throw new Error(`Formula not found: ${error?.message}`);
+      // Clear image_url for regen
+      await sb.from("chapter_formulas").update({ image_url: null }).eq("id", formulaId);
+      formulas = [data];
+    } else {
+      // All approved formulas in chapter missing image_url
+      const { data, error } = await sb
+        .from("chapter_formulas")
+        .select("id, chapter_id, formula_name, formula_expression, formula_explanation, image_url, is_approved")
+        .eq("chapter_id", chapterId)
+        .eq("is_approved", true)
+        .order("sort_order");
+      if (error) throw new Error(`Failed to fetch formulas: ${error.message}`);
+      formulas = data || [];
     }
 
-    const { data: formulas, error: fErr } = await query;
-    if (fErr) throw new Error(`Failed to fetch formulas: ${fErr.message}`);
-    if (!formulas?.length) {
+    if (!formulas.length) {
       return new Response(
-        JSON.stringify({ error: "No approved formulas found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ generated: 0, skipped: 0, errors: [], total: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // If single formula regeneration, clear image_url first
-    if (formula_id) {
-      await sb.from("chapter_formulas").update({ image_url: null }).eq("id", formula_id);
-    }
-
-    const toGenerate = formula_id
-      ? formulas
-      : formulas.filter((f: any) => !f.image_url);
+    const toGenerate = formulaId ? formulas : formulas.filter((f: any) => !f.image_url);
     const skipped = formulas.length - toGenerate.length;
 
     let generated = 0;
@@ -198,10 +185,11 @@ Deno.serve(async (req) => {
     }
 
     // Log HCTI cost
-    if (generated > 0) {
+    const effectiveChapterId = chapterId || formulas[0]?.chapter_id;
+    if (generated > 0 && effectiveChapterId) {
       logCost(sb, {
         operation_type: "image_generation",
-        chapter_id: chapter_id,
+        chapter_id: effectiveChapterId,
         image_count: generated,
         metadata: { total_formulas: formulas.length, skipped, errors: errors.length },
       });

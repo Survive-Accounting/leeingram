@@ -122,19 +122,30 @@ export default function ChapterFormulasManager() {
   };
 
   const generateImages = async () => {
-    const approved = formulas?.filter(f => f.is_approved && !f.image_url) || [];
-    if (approved.length === 0) { toast.info("No approved formulas missing images."); return; }
-    setGenImagesProgress(`Generating 0 of ${approved.length}...`);
-    let done = 0;
-    for (const f of approved) {
+    if (!selectedChapter) return;
+    setGenImagesProgress("Generating images...");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-formula-images", { body: { chapterId: selectedChapter } });
+      if (error) throw error;
+      toast.success(`${data.generated} formula images generated, ${data.skipped} skipped.`);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setGenImagesProgress(""); invalidate(); }
+  };
+
+  const generateAllImages = async () => {
+    if (!chapters?.length) return;
+    setGenImagesProgress("Starting...");
+    let totalGen = 0;
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      setGenImagesProgress(`Ch ${ch.chapter_number}: ${i + 1}/${chapters.length}...`);
       try {
-        await supabase.functions.invoke("generate-formula-images", { body: { formulaId: f.id } });
-        done++;
-        setGenImagesProgress(`Generating ${done} of ${approved.length}...`);
+        const { data, error } = await supabase.functions.invoke("generate-formula-images", { body: { chapterId: ch.id } });
+        if (!error && data) totalGen += data.generated || 0;
       } catch { /* continue */ }
     }
     setGenImagesProgress("");
-    toast.success(`${done} formula images generated.`);
+    toast.success(`${totalGen} images generated across all chapters.`);
     invalidate();
   };
 
@@ -170,6 +181,10 @@ export default function ChapterFormulasManager() {
           </Select>
 
           <div className="flex gap-2 ml-auto">
+            <Button size="sm" variant="outline" onClick={generateAllImages} disabled={generating || !!genImagesProgress}>
+              {genImagesProgress && !selectedChapter ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
+              Generate All Images
+            </Button>
             <Button size="sm" variant="outline" onClick={() => handleGenerate(true)} disabled={generating}>
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Generate All
@@ -181,7 +196,7 @@ export default function ChapterFormulasManager() {
           </div>
         </div>
 
-        {genProgress && <p className="text-xs text-muted-foreground animate-pulse">{genProgress}</p>}
+        {(genProgress || genImagesProgress) && <p className="text-xs text-muted-foreground animate-pulse">{genProgress || genImagesProgress}</p>}
 
         {/* Summary + bulk actions */}
         {selectedChapter && formulas && formulas.length > 0 && (
