@@ -2896,7 +2896,7 @@ export default function SolutionsViewer() {
   }, [isQaMode]);
 
   // Fetch asset
-  const { data, isLoading: dataLoading, isError: dataError } = useQuery({
+  const { data, isLoading: dataLoading, isError: dataError, refetch: refetchAsset } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
     queryFn: async () => {
       const { data: assets, error: assetErr } = await (supabase
