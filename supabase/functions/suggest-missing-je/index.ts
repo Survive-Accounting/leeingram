@@ -59,9 +59,9 @@ Return ONLY valid JSON, no markdown, no backticks:
 
 Return 2–6 suggestions maximum. Keep labels short (4–6 words). Descriptions one sentence.`;
 
-    const userPrompt = `Problem text: ${asset.problem_text || "(none)"}
+    const userPrompt = `Problem text: ${asset.problem_context || asset.survive_problem_text || "(none)"}
 
-Instructions: ${asset.instructions || "(none)"}
+Instructions: ${asset.instruction_list || "(none)"}
 
 What journal entries should a complete solution include for this problem? List only entries directly relevant to this specific scenario.`;
 
