@@ -1559,7 +1559,7 @@ function SupplementaryJESection({ data, theme }: { data: { entries: { label: str
                 border: `1px solid ${isOpen ? theme.border : "transparent"}`,
               }}
             >
-              <span>{entry.label}</span>
+              <span>{entry.label?.replace(/^How to record\s*/i, "") || entry.label}</span>
               <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>
                 {isOpen ? "▲" : "▼"}
               </span>
