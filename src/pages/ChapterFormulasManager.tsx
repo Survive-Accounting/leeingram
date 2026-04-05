@@ -181,6 +181,10 @@ export default function ChapterFormulasManager() {
           </Select>
 
           <div className="flex gap-2 ml-auto">
+            <Button size="sm" variant="outline" onClick={generateAllImages} disabled={generating || !!genImagesProgress}>
+              {genImagesProgress && !selectedChapter ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
+              Generate All Images
+            </Button>
             <Button size="sm" variant="outline" onClick={() => handleGenerate(true)} disabled={generating}>
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Generate All
@@ -192,7 +196,7 @@ export default function ChapterFormulasManager() {
           </div>
         </div>
 
-        {genProgress && <p className="text-xs text-muted-foreground animate-pulse">{genProgress}</p>}
+        {(genProgress || genImagesProgress) && <p className="text-xs text-muted-foreground animate-pulse">{genProgress || genImagesProgress}</p>}
 
         {/* Summary + bulk actions */}
         {selectedChapter && formulas && formulas.length > 0 && (
