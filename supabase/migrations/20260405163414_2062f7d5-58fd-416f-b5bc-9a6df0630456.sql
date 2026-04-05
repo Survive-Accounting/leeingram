@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_formulas ADD COLUMN IF NOT EXISTS is_rejected boolean DEFAULT false;
