@@ -1055,6 +1055,29 @@ export default function ChapterCramTool() {
             </section>
           )}
 
+          {/* ──── Chapter-Level All Journal Entries ──── */}
+          {showChapterJESection && (
+            <section style={{ opacity: isSectionVisible("chapter_je_reference") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle
+                label={`CH ${chapter?.chapter_number || "?"} — ALL JOURNAL ENTRIES`}
+                count={chapterJEEntries.length}
+                isAdmin={isAdmin}
+                sectionName="chapter_je_reference"
+                isVisible={isSectionVisible("chapter_je_reference")}
+                onToggle={toggleSectionVisibility}
+              />
+              <div className="rounded-xl border px-4 py-4 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                {chapterJEEntries.length > 0 ? (
+                  <CramChapterJEAccordion categories={chapterJECategories} entries={chapterJEEntries} />
+                ) : (
+                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                    No chapter journal entries available yet.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* ──── Journal Entries to Memorize (Flashcard Mode) ──── */}
           {showJournalSection && (
             <section id="je-cram-tool" className="scroll-mt-16" style={{ opacity: isSectionVisible("journal_entries") ? 1 : 0.4 }}>
