@@ -660,36 +660,26 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
                     )}
 
 
-                    {/* Responded / Resolved toggle */}
-                    {!readOnly && (
-                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={!!row.responded}
-                          onChange={() => handleToggleResponded(row)}
-                          className="rounded"
-                        />
-                        {isQA
-                          ? (row.responded ? "Resolved" : "Mark resolved")
-                          : (row.responded ? "Responded" : "Mark responded")
-                        }
-                      </label>
-                    )}
-
-                    {/* Fixed / Fix Applied checkbox */}
+                    {/* Mark Fixed CTA — prominent button */}
                     {!readOnly && (isIssueType || isQA) && (
-                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={!!row.fixed}
-                          onChange={() => handleToggleFixed(row)}
-                          className="rounded accent-emerald-600"
-                        />
-                        {isIssueType
-                          ? (row.fixed ? "✓ Fix Applied" : "Fix Applied")
-                          : (row.fixed ? "✓ Fixed" : "Mark fixed")
-                        }
-                      </label>
+                      row.fixed ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs border-emerald-500 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-semibold px-4"
+                          onClick={() => handleToggleFixed(row)}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Fixed ✓
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4"
+                          onClick={() => handleToggleFixed(row)}
+                        >
+                          <Wrench className="h-3.5 w-3.5 mr-1.5" /> Mark Fixed
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
