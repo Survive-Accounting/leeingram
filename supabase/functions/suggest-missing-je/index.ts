@@ -26,7 +26,7 @@ serve(async (req) => {
     // Fetch asset data
     const { data: asset, error: fetchErr } = await sb
       .from("teaching_assets")
-      .select("problem_text, instructions, asset_code, source_ref")
+      .select("problem_context, survive_problem_text, instruction_list, asset_code, source_ref")
       .eq("id", teaching_asset_id)
       .single();
 
