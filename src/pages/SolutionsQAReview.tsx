@@ -377,7 +377,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 const FIX_SECTIONS = [
   { key: "problem_text", label: "Problem text" },
   { key: "instructions", label: "Instructions text" },
-  { key: "solution_je", label: "Solution" },
+  { key: "solution", label: "Solution" },
 ];
 
 // ── Fix Asset Modal ──────────────────────────────────────────────────
