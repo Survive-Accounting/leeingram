@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logCost } from "../_shared/cost.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -194,6 +195,16 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         errors.push(`${formula.formula_name}: ${e.message}`);
       }
+    }
+
+    // Log HCTI cost
+    if (generated > 0) {
+      logCost(sb, {
+        operation_type: "image_generation",
+        chapter_id: chapter_id,
+        image_count: generated,
+        metadata: { total_formulas: formulas.length, skipped, errors: errors.length },
+      });
     }
 
     return new Response(

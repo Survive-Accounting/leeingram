@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logCost } from "../_shared/cost.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -143,6 +144,19 @@ serve(async (req) => {
       }
 
       const data = await res.json();
+
+      // Log cost
+      if (data.usage) {
+        logCost(sb, {
+          operation_type: "asset_fix",
+          asset_code: asset.asset_name,
+          model: selectedModel,
+          input_tokens: data.usage.input_tokens,
+          output_tokens: data.usage.output_tokens,
+          metadata: { mode, json_field: jsonField },
+        });
+      }
+
       if (!data.content || !data.content[0]?.text) {
         throw new Error("Empty response from Anthropic API");
       }

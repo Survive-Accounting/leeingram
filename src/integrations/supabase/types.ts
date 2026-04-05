@@ -113,6 +113,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_cost_log: {
+        Row: {
+          asset_code: string | null
+          chapter_id: string | null
+          created_at: string
+          estimated_cost_usd: number | null
+          id: string
+          image_count: number | null
+          input_tokens: number | null
+          metadata: Json | null
+          model: string | null
+          operation_type: string
+          output_tokens: number | null
+          topic_id: string | null
+        }
+        Insert: {
+          asset_code?: string | null
+          chapter_id?: string | null
+          created_at?: string
+          estimated_cost_usd?: number | null
+          id?: string
+          image_count?: number | null
+          input_tokens?: number | null
+          metadata?: Json | null
+          model?: string | null
+          operation_type: string
+          output_tokens?: number | null
+          topic_id?: string | null
+        }
+        Update: {
+          asset_code?: string | null
+          chapter_id?: string | null
+          created_at?: string
+          estimated_cost_usd?: number | null
+          id?: string
+          image_count?: number | null
+          input_tokens?: number | null
+          metadata?: Json | null
+          model?: string | null
+          operation_type?: string
+          output_tokens?: number | null
+          topic_id?: string | null
+        }
+        Relationships: []
+      }
       answer_packages: {
         Row: {
           answer_payload: Json

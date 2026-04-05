@@ -47,6 +47,7 @@ const QC_ITEMS = [
   { label: "Asset Page QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
   { label: "QA Admin", path: "/solutions-qa-admin", icon: ClipboardCheck, adminOnly: true },
   { label: "Asset Page Fixer", path: "/inbox", icon: Inbox, adminOnly: false },
+  { label: "QA Costs", path: "/qa-costs", icon: TrendingUp, adminOnly: false },
 ];
 
 export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
