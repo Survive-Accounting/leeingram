@@ -1872,6 +1872,8 @@ export default function SolutionsQAReview() {
                   variant="outline"
                   className="w-full text-xs h-7"
                   onClick={() => setFixAssetOpen(true)}
+                  disabled={screenshotStep !== "done"}
+                  title={screenshotStep !== "done" ? "Complete the review steps first" : ""}
                 >
                   <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
                 </Button>
