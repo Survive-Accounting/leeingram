@@ -1627,6 +1627,12 @@ export default function SolutionsQAReview() {
           <span>How This Works</span>
           <ChevronDown className={`h-3 w-3 transition-transform ${sopOpen ? "rotate-180" : ""}`} />
         </button>
+        <a
+          href="/inbox"
+          className="flex items-center gap-1 text-[10px] font-medium text-primary hover:underline shrink-0"
+        >
+          Go to Issues →
+        </a>
         <span className="text-[10px] text-muted-foreground shrink-0">👤 {reviewerName}</span>
         <button
           onClick={() => { localStorage.removeItem("qa-reviewer-name"); setReviewerName(""); }}
