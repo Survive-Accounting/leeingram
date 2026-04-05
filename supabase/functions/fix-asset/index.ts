@@ -252,9 +252,8 @@ serve(async (req) => {
       if (error) throw new Error("Failed to save: " + error.message);
 
       // Trigger 3 — Slack: Fix approved
-      const approvedSections = body.approved_sections || sections || [];
       postToSlack(
-        `✅ *Fix approved*\nAsset: ${assetCode}\nSections fixed: ${Array.isArray(approvedSections) ? approvedSections.join(", ") : approvedSections}\nFixed by: ${reviewer_name}\n\n→ https://learn.surviveaccounting.com/solutions/${encodeURIComponent(assetCode)}`
+        `✅ *Fix approved*\nAsset: ${sourceRef}\n<${pageUrl}|View Page>`
       ).catch(() => {});
 
       return new Response(JSON.stringify({ success: true }), {
