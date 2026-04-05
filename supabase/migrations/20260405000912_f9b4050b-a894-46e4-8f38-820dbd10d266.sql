@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_questions ADD COLUMN slack_thread_ts text;
