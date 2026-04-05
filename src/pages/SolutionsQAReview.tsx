@@ -381,6 +381,70 @@ const FIX_SECTIONS = [
   { key: "solution", label: "Solution" },
 ];
 
+// ── Rendered Section Preview ─────────────────────────────────────────
+
+function RenderedSectionPreview({
+  sectionKey,
+  data,
+  mode,
+}: {
+  sectionKey: string;
+  data: Record<string, unknown>;
+  mode: "before" | "after";
+}) {
+  const highlight = mode === "after" ? "ring-1 ring-emerald-500/30 bg-emerald-500/5" : "";
+
+  if (sectionKey === "solution") {
+    const text = String(data.survive_solution_text || "");
+    if (!text.trim()) return <p className="text-xs text-muted-foreground italic">Empty</p>;
+    return (
+      <div className={`rounded-md p-3 ${highlight}`}>
+        <SmartTextRenderer text={text} className="text-xs leading-relaxed text-foreground" />
+      </div>
+    );
+  }
+
+  if (sectionKey === "problem_text") {
+    const text = String(data.survive_problem_text || data.problem_context || "");
+    if (!text.trim()) return <p className="text-xs text-muted-foreground italic">Empty</p>;
+    return (
+      <div className={`rounded-md p-3 ${highlight}`}>
+        <SmartTextRenderer text={text} className="text-xs leading-relaxed text-foreground" />
+      </div>
+    );
+  }
+
+  if (sectionKey === "instructions") {
+    const raw = String(data.instruction_list || "");
+    if (!raw.trim()) return <p className="text-xs text-muted-foreground italic">Empty</p>;
+    const parts = raw.split(/[\n|]/).map(s => s.trim()).filter(Boolean);
+    return (
+      <div className={`rounded-md p-3 space-y-1.5 ${highlight}`}>
+        {parts.map((part, i) => (
+          <p key={i} className="text-xs text-foreground">
+            <span className="font-semibold text-muted-foreground mr-1">({String.fromCharCode(97 + i)})</span>
+            {part}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  // Fallback for unknown sections
+  return (
+    <div className="space-y-1">
+      {Object.entries(data).map(([col, val]) => (
+        <div key={col}>
+          <p className="text-[9px] font-mono text-muted-foreground">{col}</p>
+          <pre className={`text-[11px] whitespace-pre-wrap break-words ${mode === "after" ? "text-emerald-700" : "text-foreground"}`}>
+            {typeof val === "object" ? JSON.stringify(val, null, 2) : String(val ?? "")}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Fix Asset Modal ──────────────────────────────────────────────────
 
 type FixStep = "input" | "running" | "compare" | "done";
