@@ -46,6 +46,13 @@ serve(async (req) => {
 
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
 
+    // Fetch asset_name for Slack messages
+    const { data: assetRow } = await sb
+      .from("teaching_assets")
+      .select("asset_name")
+      .eq("id", teaching_asset_id)
+      .single();
+    const assetCode = (assetRow as any)?.asset_name || teaching_asset_id;
     // ── SNAPSHOT: Get current values before fix ──
     if (action === "snapshot") {
       if (!sections?.length) throw new Error("Missing sections");
