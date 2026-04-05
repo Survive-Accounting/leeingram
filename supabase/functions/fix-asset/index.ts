@@ -125,6 +125,14 @@ serve(async (req) => {
         }
       }
 
+      // Trigger 2 — Slack: Fix started
+      const reviewer_email = body.reviewer_name || "Admin";
+      const sectionLabels = sections.join(", ");
+      const truncatedPrompt = (fix_prompt || "").slice(0, 300);
+      postToSlack(
+        `🔁 *Fix in progress*\nAsset: ${assetCode}\nSections: ${sectionLabels}\nPrompt: ${truncatedPrompt}\nStarted by: ${reviewer_email}`
+      ).catch(() => {});
+
       return new Response(JSON.stringify({ results, after }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
