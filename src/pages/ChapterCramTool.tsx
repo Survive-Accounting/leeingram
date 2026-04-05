@@ -667,6 +667,8 @@ export default function ChapterCramTool() {
       return { categories: cats || [], entries: entries || [] };
     },
   });
+
+  const sectionConfigMap = useMemo(() => {
     const map: Record<string, SectionConfigRow> = {};
     sectionConfigs.forEach((config) => {
       map[config.section_name] = config;
