@@ -3292,7 +3292,7 @@ export default function SolutionsViewer() {
             className="inline-block text-[11px] px-3 py-1 rounded-full"
             style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
           >
-            ✦ Survive your exam with insider accounting prep.
+            ✦ Survive the exam by thinking like an accountant
           </span>
         </div>
 
