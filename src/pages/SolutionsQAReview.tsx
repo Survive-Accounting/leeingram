@@ -474,6 +474,46 @@ function QAFixAssetModal({
   const [sectionReverted, setSectionReverted] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<Record<string, "before" | "after">>({});
 
+  // JE Suggestion helper
+  const [jeSuggestOpen, setJeSuggestOpen] = useState(false);
+  const [jeSuggestLoading, setJeSuggestLoading] = useState(false);
+  const [jeSuggestions, setJeSuggestions] = useState<{ label: string; description: string }[]>([]);
+  const [jeSelected, setJeSelected] = useState<Set<number>>(new Set());
+
+  const analyzeMissingJE = async () => {
+    setJeSuggestLoading(true);
+    setJeSuggestions([]);
+    setJeSelected(new Set());
+    try {
+      const res = await supabase.functions.invoke("suggest-missing-je", {
+        body: { teaching_asset_id: teachingAssetId },
+      });
+      if (res.error) throw new Error(res.error.message);
+      const entries = res.data?.suggested_entries || [];
+      setJeSuggestions(entries);
+    } catch (err: any) {
+      toast.error("Analysis failed: " + err.message);
+    } finally {
+      setJeSuggestLoading(false);
+    }
+  };
+
+  const appendSelectedToPrompt = () => {
+    const labels = jeSuggestions.filter((_, i) => jeSelected.has(i)).map(s => s.label);
+    if (labels.length === 0) { toast.error("Select at least one suggestion"); return; }
+    const appendText = `\n\nAlso add these missing journal entries: ${labels.join(", ")}.`;
+    setFixPrompt(prev => prev + appendText);
+    // Auto-check supplementary JE section
+    setSelectedSections(prev => {
+      const next = new Set(prev);
+      const suppKey = FIX_SECTIONS.find(s => s.label.toLowerCase().includes("supplementary"))?.key;
+      if (suppKey) next.add(suppKey);
+      return next;
+    });
+    setJeSuggestOpen(false);
+    toast.success("Added to fix description");
+  };
+
   const canRun = fixPrompt.trim().length >= 20 && selectedSections.size > 0;
 
   const toggleSection = (key: string) => {
@@ -697,6 +737,63 @@ function QAFixAssetModal({
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Suggest Missing JE Helper */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors">
+                <Checkbox checked={jeSuggestOpen} onCheckedChange={(c) => setJeSuggestOpen(!!c)} />
+                <span className="text-xs font-medium text-foreground">Suggest missing or incomplete journal entries</span>
+              </label>
+              {jeSuggestOpen && (
+                <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    I'll read this problem and suggest journal entries that may be missing from the solution.
+                  </p>
+                  {jeSuggestions.length === 0 && !jeSuggestLoading && (
+                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={analyzeMissingJE}>
+                      Analyze Problem →
+                    </Button>
+                  )}
+                  {jeSuggestLoading && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading problem...
+                    </div>
+                  )}
+                  {jeSuggestions.length > 0 && (
+                    <div className="space-y-1.5">
+                      {jeSuggestions.map((s, i) => (
+                        <label key={i} className="flex items-start gap-2 cursor-pointer group p-1.5 rounded hover:bg-muted/30">
+                          <Checkbox
+                            checked={jeSelected.has(i)}
+                            onCheckedChange={() => {
+                              setJeSelected(prev => {
+                                const next = new Set(prev);
+                                if (next.has(i)) next.delete(i); else next.add(i);
+                                return next;
+                              });
+                            }}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <span className="text-xs font-medium text-foreground">{s.label}</span>
+                            <p className="text-[10px] text-muted-foreground leading-snug">{s.description}</p>
+                          </div>
+                        </label>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs mt-1"
+                        disabled={jeSelected.size === 0}
+                        onClick={appendSelectedToPrompt}
+                      >
+                        Add Selected to Fix Description →
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <Button onClick={runFix} disabled={!canRun} className="w-full" size="sm">
