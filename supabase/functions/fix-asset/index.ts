@@ -42,32 +42,44 @@ async function rewriteTextField(
   if (error || !asset) throw new Error("Asset not found");
 
   const model = useStrongModel ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
+  let result: { text: string; usage?: { input_tokens: number; output_tokens: number } };
 
   if (sectionKey === "problem_text") {
     const currentText = asset.survive_problem_text || asset.problem_context || "";
     const systemPrompt = `You are an accounting educator. You will be given a problem text and instructions on how to fix it. Apply the fix and return ONLY the corrected problem text. Do not add explanations.`;
     const userPrompt = `Current problem text:\n${currentText}\n\nFix instructions:\n${fixPrompt}`;
-
-    const aiText = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
+    result = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
     await sb.from("teaching_assets").update({
-      survive_problem_text: aiText,
-      problem_context: aiText,
+      survive_problem_text: result.text,
+      problem_context: result.text,
     }).eq("id", teachingAssetId);
   } else if (sectionKey === "instructions") {
     const currentText = asset.instruction_list || "";
     const systemPrompt = `You are an accounting educator. You will be given instruction text for an accounting problem and instructions on how to fix it. Apply the fix and return ONLY the corrected instruction text. Do not add explanations.`;
     const userPrompt = `Current instructions:\n${currentText}\n\nFix instructions:\n${fixPrompt}`;
-
-    const aiText = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
-    await sb.from("teaching_assets").update({ instruction_list: aiText }).eq("id", teachingAssetId);
+    result = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
+    await sb.from("teaching_assets").update({ instruction_list: result.text }).eq("id", teachingAssetId);
   } else if (sectionKey === "solution") {
     const currentText = asset.survive_solution_text || "";
     const problemText = asset.survive_problem_text || asset.problem_context || "";
     const systemPrompt = `You are an accounting educator. You will be given a solution text for an accounting problem and instructions on how to fix it. Apply the fix and return ONLY the corrected solution text. Maintain the same format and structure. Do not add explanations or preamble.`;
     const userPrompt = `Problem:\n${problemText.slice(0, 2000)}\n\nCurrent solution text:\n${currentText}\n\nFix instructions:\n${fixPrompt}`;
+    result = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
+    await sb.from("teaching_assets").update({ survive_solution_text: result.text }).eq("id", teachingAssetId);
+  } else {
+    return;
+  }
 
-    const aiText = await callAnthropic(ANTHROPIC_API_KEY, model, systemPrompt, userPrompt);
-    await sb.from("teaching_assets").update({ survive_solution_text: aiText }).eq("id", teachingAssetId);
+  // Log cost
+  if (result.usage) {
+    logCost(sb, {
+      operation_type: "asset_fix",
+      asset_code: asset.asset_name,
+      model,
+      input_tokens: result.usage.input_tokens,
+      output_tokens: result.usage.output_tokens,
+      metadata: { section: sectionKey },
+    });
   }
 }
 
