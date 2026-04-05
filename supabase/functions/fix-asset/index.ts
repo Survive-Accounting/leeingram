@@ -155,6 +155,12 @@ serve(async (req) => {
       }).eq("id", teaching_asset_id);
       if (error) throw new Error("Failed to save: " + error.message);
 
+      // Trigger 3 — Slack: Fix approved
+      const approvedSections = body.approved_sections || sections || [];
+      postToSlack(
+        `✅ *Fix approved*\nAsset: ${assetCode}\nSections fixed: ${Array.isArray(approvedSections) ? approvedSections.join(", ") : approvedSections}\nFixed by: ${reviewer_name}\n\n→ https://learn.surviveaccounting.com/solutions/${encodeURIComponent(assetCode)}`
+      ).catch(() => {});
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -173,6 +179,12 @@ serve(async (req) => {
 
       const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
       if (error) throw new Error("Restore failed: " + error.message);
+
+      // Trigger 4 — Slack: Fix rejected
+      const rejecter = body.reviewer_name || "Admin";
+      postToSlack(
+        `❌ *Fix rejected — reverted*\nAsset: ${assetCode}\nBy: ${rejecter}`
+      ).catch(() => {});
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
