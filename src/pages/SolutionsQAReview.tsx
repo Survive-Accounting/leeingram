@@ -1057,16 +1057,32 @@ export default function SolutionsQAReview() {
       status: a.qa_status,
     }));
 
+    // Natural sort helper: sorts by numeric parts within source refs
+    const naturalSort = (a: RefItem, b: RefItem) => {
+      const extract = (s: string) => {
+        const m = s.match(/(\d+)\.(\d+)([A-Z]?)$/i);
+        if (m) return [parseInt(m[1]), parseInt(m[2]), m[3].toUpperCase()] as const;
+        const m2 = s.match(/(\d+)([A-Z]?)$/i);
+        if (m2) return [parseInt(m2[1]), 0, m2[2].toUpperCase()] as const;
+        return [0, 0, ""] as const;
+      };
+      const [a1, a2, a3] = extract(a.sourceRef);
+      const [b1, b2, b3] = extract(b.sourceRef);
+      if (a1 !== b1) return a1 - b1;
+      if (a2 !== b2) return a2 - b2;
+      return a3.localeCompare(b3);
+    };
+
     // Categorize by source ref prefix
     const categories: { label: string; items: RefItem[] }[] = [];
-    const beItems = items.filter(i => /^BE/i.test(i.sourceRef));
-    const qsItems = items.filter(i => /^QS/i.test(i.sourceRef));
-    const eItems = items.filter(i => /^E\d/i.test(i.sourceRef));
-    const pItems = items.filter(i => /^P\d/i.test(i.sourceRef));
+    const beItems = items.filter(i => /^BE/i.test(i.sourceRef)).sort(naturalSort);
+    const qsItems = items.filter(i => /^QS/i.test(i.sourceRef)).sort(naturalSort);
+    const eItems = items.filter(i => /^E\d/i.test(i.sourceRef)).sort(naturalSort);
+    const pItems = items.filter(i => /^P\d/i.test(i.sourceRef)).sort(naturalSort);
     const other = items.filter(i => 
       !/^BE/i.test(i.sourceRef) && !/^QS/i.test(i.sourceRef) && 
       !/^E\d/i.test(i.sourceRef) && !/^P\d/i.test(i.sourceRef)
-    );
+    ).sort(naturalSort);
 
     if (isIntro) {
       if (qsItems.length) categories.push({ label: "Quick Studies", items: qsItems });
