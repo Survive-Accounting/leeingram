@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { postToSlack } from "../_shared/slack.ts";
 
 const corsHeaders = {
@@ -71,15 +72,36 @@ serve(async (req) => {
       });
     }
 
-    // Trigger 1 — Slack notification for new issue
-    const assetCode = source_ref || asset_name || "Unknown";
-    const fromLabel = student_email || "Anonymous";
-    const chapterLabel = chapter_name ? `Ch ${chapter_number || "?"} — ${chapter_name}` : "Unknown";
-    const truncatedMsg = (message || "").slice(0, 200);
+    // Only send Slack notification for student reports (not VAs/admins)
+    const ADMIN_EMAILS = ["lee@survivestudios.com"];
+    const emailLower = (student_email || "").toLowerCase();
+    let isStudent = true;
 
-    await postToSlack(
-      `🔴 *New Issue Report*\nAsset: ${assetCode}\nFrom: ${fromLabel}\nChapter: ${chapterLabel}\n\nMessage: ${truncatedMsg}\n\n→ https://learn.surviveaccounting.com/solutions-qa?asset=${encodeURIComponent(assetCode)}`
-    );
+    if (ADMIN_EMAILS.includes(emailLower)) {
+      isStudent = false;
+    } else {
+      const sb = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: vaMatch } = await sb
+        .from("va_accounts")
+        .select("id")
+        .eq("email", emailLower)
+        .maybeSingle();
+      if (vaMatch) isStudent = false;
+    }
+
+    if (isStudent) {
+      const assetCode = source_ref || asset_name || "Unknown";
+      const fromLabel = student_email || "Anonymous";
+      const chapterLabel = chapter_name ? `Ch ${chapter_number || "?"} — ${chapter_name}` : "Unknown";
+      const truncatedMsg = (message || "").slice(0, 200);
+
+      await postToSlack(
+        `🔴 *New Issue Report*\nAsset: ${assetCode}\nFrom: ${fromLabel}\nChapter: ${chapterLabel}\n\nMessage: ${truncatedMsg}\n\n→ https://learn.surviveaccounting.com/solutions-qa?asset=${encodeURIComponent(assetCode)}`
+      );
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
