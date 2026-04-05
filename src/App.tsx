@@ -88,6 +88,7 @@ const AssetStatsDashboard = lazy(() => import("./pages/AssetStatsDashboard"));
 const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging"));
 const ChapterCramTool = lazy(() => import("./pages/ChapterCramTool"));
 const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
+const ChapterJEManager = lazy(() => import("./pages/ChapterJEManager"));
 const QuizExplanation = lazy(() => import("./pages/QuizExplanation"));
 const QuizQuestion = lazy(() => import("./pages/QuizQuestion"));
 const QuizChoice = lazy(() => import("./pages/QuizChoice"));
@@ -220,6 +221,7 @@ const AppRoutes = () => {
         <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
         <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
         <Route path="/survive-chapter" element={<ProtectedRoute><SurviveChapterAdmin /></ProtectedRoute>} />
+        <Route path="/chapter-je" element={<ProtectedRoute><ChapterJEManager /></ProtectedRoute>} />
         <Route path="/study-tools/flashcards" element={<ProtectedRoute><StudyToolsFlashcards /></ProtectedRoute>} />
         <Route path="/study-tools/formula-recall" element={<ProtectedRoute><StudyToolsFormulaRecall /></ProtectedRoute>} />
         <Route path="/study-tools/entry-builder" element={<ProtectedRoute><StudyToolsEntryBuilder /></ProtectedRoute>} />

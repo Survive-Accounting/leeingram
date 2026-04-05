@@ -66,7 +66,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
   const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
   const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
   const qcPaths = QC_ITEMS.map(i => i.path);
-  const phase3Paths = ["/survive-chapter"];
+  const phase3Paths = ["/survive-chapter", "/chapter-je"];
 
   const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
 
@@ -631,6 +631,18 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                         >
                           <BookOpen className="h-4 w-4 shrink-0" />
                           {!sidebarCollapsed && <span className="text-sm">Survive This Chapter</span>}
+                        </Link>
+                        <Link
+                          to="/chapter-je"
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                            isActive("/chapter-je")
+                              ? "bg-primary/20 text-white font-medium border border-primary/30"
+                              : "text-white/70 hover:text-white hover:bg-muted/30"
+                          )}
+                        >
+                          <Calculator className="h-4 w-4 shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm">Journal Entries</span>}
                         </Link>
                       </div>
                     )}

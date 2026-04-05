@@ -286,6 +286,88 @@ function SectionHeaderWithToggle({
   );
 }
 
+function CramChapterJEAccordion({ categories, entries }: { categories: { id: string; category_name: string; sort_order: number }[]; entries: { id: string; category_id: string | null; transaction_label: string; je_lines: any; sort_order: number }[] }) {
+  const [openCat, setOpenCat] = useState<string | null>(null);
+  const [openEntry, setOpenEntry] = useState<string | null>(null);
+
+  const grouped = categories.map(cat => ({
+    ...cat,
+    entries: entries.filter(e => e.category_id === cat.id).sort((a, b) => a.sort_order - b.sort_order),
+  })).filter(cat => cat.entries.length > 0);
+
+  return (
+    <div className="space-y-1">
+      {grouped.map(cat => {
+        const catOpen = openCat === cat.id;
+        return (
+          <div key={cat.id}>
+            <button
+              onClick={() => setOpenCat(catOpen ? null : cat.id)}
+              className="w-full flex items-center justify-between px-2 py-2 rounded-md text-left transition-colors text-[13px] font-semibold"
+              style={{ color: theme.text, background: catOpen ? theme.mutedBg : "transparent" }}
+            >
+              <span>{cat.category_name} <span className="text-[11px] font-normal" style={{ color: theme.textMuted }}>({cat.entries.length})</span></span>
+              <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>{catOpen ? "▼" : "▶"}</span>
+            </button>
+            {catOpen && (
+              <div className="ml-2 space-y-0.5 mt-1 mb-2">
+                {cat.entries.map(entry => {
+                  const entryOpen = openEntry === entry.id;
+                  const lines = (Array.isArray(entry.je_lines) ? entry.je_lines : []) as { account: string; account_tooltip: string; side: string; amount: string }[];
+                  return (
+                    <div key={entry.id}>
+                      <button
+                        onClick={() => setOpenEntry(entryOpen ? null : entry.id)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left transition-colors text-[12px] font-medium"
+                        style={{ color: theme.text, background: entryOpen ? theme.mutedBg : "transparent" }}
+                      >
+                        <span>{entry.transaction_label}</span>
+                        <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>{entryOpen ? "▲" : "▼"}</span>
+                      </button>
+                      {entryOpen && (
+                        <div className="overflow-x-auto rounded-md mt-1 mb-2 mx-1" style={{ border: `1px solid ${theme.border}` }}>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr style={{ background: theme.navy }}>
+                                <th className="text-left px-3 py-1.5 text-white font-bold text-[11px]">Account</th>
+                                <th className="text-right px-3 py-1.5 text-white font-bold text-[11px] w-20">Debit</th>
+                                <th className="text-right px-3 py-1.5 text-white font-bold text-[11px] w-20">Credit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {lines.map((line, ri) => {
+                                const isCredit = line.side === "credit";
+                                return (
+                                  <tr key={ri} style={{ background: ri % 2 === 0 ? theme.cardBg : theme.mutedBg }}>
+                                    <td className={`px-3 py-1.5 text-[12px] ${isCredit ? "pl-8" : ""}`} style={{ color: theme.text }}>
+                                      {line.account}
+                                      {line.account_tooltip && <JETooltip text={line.account_tooltip} variant="solutions" />}
+                                    </td>
+                                    <td className="text-right px-3 py-1.5 text-[12px] font-mono" style={{ color: theme.textMuted }}>
+                                      {!isCredit ? "???" : ""}
+                                    </td>
+                                    <td className="text-right px-3 py-1.5 text-[12px] font-mono" style={{ color: theme.textMuted }}>
+                                      {isCredit ? "???" : ""}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TieredPaywallCard({
   enrollUrl,
   chapterNumber,
@@ -647,6 +729,27 @@ export default function ChapterCramTool() {
     },
   });
 
+  // Chapter-level journal entries
+  const { data: chapterJEData } = useQuery({
+    queryKey: ["cram-chapter-je", chapterId],
+    enabled: !!chapterId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data: cats } = await supabase
+        .from("chapter_je_categories")
+        .select("id, category_name, sort_order")
+        .eq("chapter_id", chapterId!)
+        .order("sort_order");
+      const { data: entries } = await supabase
+        .from("chapter_journal_entries")
+        .select("id, category_id, transaction_label, je_lines, sort_order")
+        .eq("chapter_id", chapterId!)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return { categories: cats || [], entries: entries || [] };
+    },
+  });
+
   const sectionConfigMap = useMemo(() => {
     const map: Record<string, SectionConfigRow> = {};
     sectionConfigs.forEach((config) => {
@@ -895,6 +998,9 @@ export default function ChapterCramTool() {
   const showSolutionsSection = isAdmin || isSectionVisible("solutions_library");
   const showJournalSection = (visibleJournalCards.length > 0 || isAdmin) && (isAdmin || isSectionVisible("journal_entries"));
   const showFormulasSection = (structuredFormulas.length > 0 || isAdmin) && (isAdmin || isSectionVisible("formulas"));
+  const chapterJEEntries = chapterJEData?.entries || [];
+  const chapterJECategories = chapterJEData?.categories || [];
+  const showChapterJESection = (chapterJEEntries.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_je_reference"));
 
   const isTabExpanded = (key: string) => !!expandedTabs[key];
   const toggleTab = (key: string) => setExpandedTabs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1026,6 +1132,29 @@ export default function ChapterCramTool() {
                       No solutions in this tab yet.
                     </p>
                   </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* ──── Chapter-Level All Journal Entries ──── */}
+          {showChapterJESection && (
+            <section style={{ opacity: isSectionVisible("chapter_je_reference") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle
+                label={`CH ${chapter?.chapter_number || "?"} — ALL JOURNAL ENTRIES`}
+                count={chapterJEEntries.length}
+                isAdmin={isAdmin}
+                sectionName="chapter_je_reference"
+                isVisible={isSectionVisible("chapter_je_reference")}
+                onToggle={toggleSectionVisibility}
+              />
+              <div className="rounded-xl border px-4 py-4 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                {chapterJEEntries.length > 0 ? (
+                  <CramChapterJEAccordion categories={chapterJECategories} entries={chapterJEEntries} />
+                ) : (
+                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                    No chapter journal entries available yet.
+                  </p>
                 )}
               </div>
             </section>
