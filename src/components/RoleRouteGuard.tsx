@@ -30,13 +30,27 @@ export function RoleRouteGuard() {
   const effectiveRole = resolveEffectiveRole(impersonating?.role, vaAccount?.role, isVa);
   const isRestricted = effectiveRole !== "admin";
 
+  /** Routes restricted to admin only — even lead_va cannot access */
+  const ADMIN_ONLY_PATHS = ["/solutions-qa-admin"];
+
   useEffect(() => {
     if (!isRestricted) return;
 
+    const path = location.pathname;
+
+    // Admin-only routes block all VAs including lead_va
+    if (ADMIN_ONLY_PATHS.some(p => path === p || path.startsWith(p + "/"))) {
+      if (!shown) {
+        toast.error("This page is admin-only.");
+        setShown(true);
+        setTimeout(() => setShown(false), 3000);
+      }
+      navigate("/va-dashboard", { replace: true });
+      return;
+    }
+
     // Lead VA has full navigation access — never redirect
     if (effectiveRole === "lead_va") return;
-
-    const path = location.pathname;
 
     // Check always-allowed paths
     if (ALWAYS_ALLOWED.some(p => path === p || path.startsWith(p + "/"))) return;
