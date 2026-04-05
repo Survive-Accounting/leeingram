@@ -480,6 +480,7 @@ function QAFixAssetModal({
   const [jeSuggestLoading, setJeSuggestLoading] = useState(false);
   const [jeSuggestions, setJeSuggestions] = useState<{ label: string; description: string }[]>([]);
   const [jeSelected, setJeSelected] = useState<Set<number>>(new Set());
+  const [jeContextPrompt, setJeContextPrompt] = useState("");
 
   const analyzeMissingJE = async () => {
     setJeSuggestLoading(true);
@@ -487,7 +488,7 @@ function QAFixAssetModal({
     setJeSelected(new Set());
     try {
       const res = await supabase.functions.invoke("suggest-missing-je", {
-        body: { teaching_asset_id: teachingAssetId },
+        body: { teaching_asset_id: teachingAssetId, context_hint: jeContextPrompt.trim() || undefined },
       });
       if (res.error) throw new Error(res.error.message);
       const entries = res.data?.suggested_entries || [];
