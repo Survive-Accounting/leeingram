@@ -103,6 +103,18 @@ serve(async (req) => {
       let calcMc = 3, conceptualMc = 2, reasoning = "default fallback";
       if (splitResp.ok) {
         const splitData = await splitResp.json();
+        // Log cost for split decision
+        if (splitData.usage) {
+          logCost(sb, {
+            operation_type: "split_decision",
+            topic_id: topic_id,
+            chapter_id: topic.chapter_id,
+            model: "claude-sonnet-4-20250514",
+            input_tokens: splitData.usage.input_tokens,
+            output_tokens: splitData.usage.output_tokens,
+            metadata: { topic_name: topic.topic_name },
+          });
+        }
         const toolBlock = splitData.content?.find((b: any) => b.type === "tool_use");
         if (toolBlock?.input) {
           const inp = toolBlock.input;
