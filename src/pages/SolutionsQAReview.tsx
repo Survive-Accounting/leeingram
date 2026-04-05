@@ -90,8 +90,6 @@ function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   return [
     { key: "solution", label: "Solution", hasContent: true },
     { key: "je", label: "Journal Entries", hasContent: !!asset.journal_entry_completed_json },
-    { key: "howto", label: "How to Solve", hasContent: !!asset.flowchart_image_url },
-    { key: "related_je", label: "Related JE", hasContent: !!asset.supplementary_je_json },
   ].filter(s => s.hasContent);
 }
 
