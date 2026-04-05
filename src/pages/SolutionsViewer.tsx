@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu } from "lucide-react";
+import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 
 import { naturalSortRef } from "@/lib/utils";
@@ -2650,6 +2651,9 @@ export default function SolutionsViewer() {
   const isQaMode = searchParams.get("qa") === "1";
   const enrollUrl = useEnrollUrl();
 
+  // ── QA inline editing state ──
+  const [qaEditingField, setQaEditingField] = useState<"problem" | "instructions" | "solution" | null>(null);
+
   // ── LW params ref (stable across renders) ──
   const lwParams = useRef({
     ref: searchParams.get("ref") || "",
@@ -2892,7 +2896,7 @@ export default function SolutionsViewer() {
   }, [isQaMode]);
 
   // Fetch asset
-  const { data, isLoading: dataLoading, isError: dataError } = useQuery({
+  const { data, isLoading: dataLoading, isError: dataError, refetch: refetchAsset } = useQuery({
     queryKey: ["solutions-viewer", assetCode],
     queryFn: async () => {
       const { data: assets, error: assetErr } = await (supabase
@@ -3336,6 +3340,28 @@ export default function SolutionsViewer() {
                 {/* Problem text */}
                 {rawProblemText.trim() && (
                   <div>
+                    {isQaMode && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <QAEditButton onClick={() => setQaEditingField(qaEditingField === "problem" ? null : "problem")} />
+                      </div>
+                    )}
+                    {qaEditingField === "problem" && isQaMode && (
+                      <QAInlineEditorPanel
+                        initialValue={asset.problem_context || ""}
+                        label="Problem Text"
+                        rows={16}
+                        onSave={async (newVal) => {
+                          const { error } = await supabase
+                            .from("teaching_assets")
+                            .update({ problem_context: newVal })
+                            .eq("id", asset.id);
+                          if (error) throw error;
+                          setQaEditingField(null);
+                          refetchAsset();
+                        }}
+                        onCancel={() => setQaEditingField(null)}
+                      />
+                    )}
                     {hasHighlights && (
                       <div className="flex items-center gap-2 mb-3">
                         <Switch checked={showHighlights} onCheckedChange={setShowHighlights} className="h-5 w-9" />
@@ -3386,6 +3412,20 @@ export default function SolutionsViewer() {
                 )}
 
                 {/* INSTRUCTIONS */}
+                {isQaMode && (
+                  <div className="flex items-center gap-2 mt-4 mb-1">
+                    <QAEditButton onClick={() => setQaEditingField(qaEditingField === "instructions" ? null : "instructions")} />
+                    {!instructions.length && <span className="text-[11px]" style={{ color: t.textMuted }}>No instructions yet</span>}
+                  </div>
+                )}
+                {qaEditingField === "instructions" && isQaMode && (
+                  <QAInstructionsEditor
+                    instructions={asset._instructions || []}
+                    teachingAssetId={asset.id}
+                    onSaved={() => { setQaEditingField(null); refetchAsset(); }}
+                    onCancel={() => setQaEditingField(null)}
+                  />
+                )}
                 {instructions.length > 0 && (() => {
                   // Detect repeated leading verb phrases across parts
                   const deduped = deduplicateInstructions(instructions);
@@ -3446,7 +3486,30 @@ export default function SolutionsViewer() {
                   onReveal={handleReveal}
                   onBuyClick={handleBuyClick}
                 >
-                  <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
+                  {isQaMode && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <QAEditButton onClick={() => setQaEditingField(qaEditingField === "solution" ? null : "solution")} />
+                    </div>
+                  )}
+                  {qaEditingField === "solution" && isQaMode ? (
+                    <QAInlineEditorPanel
+                      initialValue={asset.survive_solution_text || ""}
+                      label="Solution Text"
+                      rows={20}
+                      onSave={async (newVal) => {
+                        const { error } = await supabase
+                          .from("teaching_assets")
+                          .update({ survive_solution_text: newVal })
+                          .eq("id", asset.id);
+                        if (error) throw error;
+                        setQaEditingField(null);
+                        refetchAsset();
+                      }}
+                      onCancel={() => setQaEditingField(null)}
+                    />
+                  ) : (
+                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
+                  )}
                 </RevealToggle>
               )}
 
