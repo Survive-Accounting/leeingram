@@ -3091,6 +3091,25 @@ export default function SolutionsViewer() {
     staleTime: 5 * 60 * 1000,
     enabled: !!chapterIdForJE,
   });
+
+  // Fetch chapter-level formulas (approved with images)
+  const { data: chapterFormulas } = useQuery({
+    queryKey: ["chapter-formulas-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return [];
+      const { data: rows } = await supabase
+        .from("chapter_formulas")
+        .select("id, formula_name, formula_expression, image_url")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .not("image_url", "is", null)
+        .order("sort_order");
+      return rows || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
   useEffect(() => {
     if (!data?.id) return;
     const key = `solutions_viewed_${data.id}`;
