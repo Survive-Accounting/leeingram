@@ -1853,28 +1853,30 @@ export default function SolutionsQAReview() {
             </div>
 
             {/* Sticky bottom action */}
-            {screenshotStep === "done" && (
-              <div className="shrink-0 border-t border-border bg-card px-2.5 py-2 space-y-1">
-                {issueCount === 0 ? (
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Good — Next →
-                  </Button>
-                ) : (
-                  <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance("reviewed_issues")}>
-                    <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
-                  </Button>
-                )}
-                {current?.teaching_asset_id && canUseFixer && (
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs h-7"
-                    onClick={() => setFixAssetOpen(true)}
-                  >
-                    <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="shrink-0 border-t border-border bg-card px-2.5 py-2 space-y-1">
+              {screenshotStep === "done" && (
+                <>
+                  {issueCount === 0 ? (
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Good — Next →
+                    </Button>
+                  ) : (
+                    <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance("reviewed_issues")}>
+                      <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
+                    </Button>
+                  )}
+                </>
+              )}
+              {current?.teaching_asset_id && canUseFixer && (
+                <Button
+                  variant="outline"
+                  className="w-full text-xs h-7"
+                  onClick={() => setFixAssetOpen(true)}
+                >
+                  <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
+                </Button>
+              )}
+            </div>
           </>
         )}
       </div>
