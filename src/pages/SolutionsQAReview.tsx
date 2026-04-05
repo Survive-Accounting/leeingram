@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -1885,17 +1886,36 @@ export default function SolutionsQAReview() {
                   )}
                 </>
               )}
-              {current?.teaching_asset_id && canUseFixer && (
-                <Button
-                  variant="outline"
-                  className="w-full text-xs h-7"
-                  onClick={() => setFixAssetOpen(true)}
-                  disabled={screenshotStep !== "done"}
-                  title={screenshotStep !== "done" ? "Complete the review steps first" : ""}
-                >
-                  <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
-                </Button>
-              )}
+              {current?.teaching_asset_id && canUseFixer && (() => {
+                const fixDisabled = screenshotStep !== "done" || issueCount === 0;
+                const tooltipMsg = screenshotStep !== "done"
+                  ? "Complete the review steps first"
+                  : issueCount === 0
+                  ? "Log at least one issue before fixing — document what's wrong first, then use this tool to fix it."
+                  : "";
+                const btn = (
+                  <Button
+                    variant="outline"
+                    className={`w-full text-xs h-7 ${fixDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    onClick={() => { if (!fixDisabled) setFixAssetOpen(true); }}
+                    disabled={fixDisabled}
+                  >
+                    <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
+                  </Button>
+                );
+                return fixDisabled ? (
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="w-full">{btn}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[240px] text-xs text-center">
+                        <p>⚠️ {tooltipMsg}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : btn;
+              })()}
             </div>
           </>
         )}
