@@ -1540,46 +1540,65 @@ function FlowchartSubToggle({
 // ── Supplementary JE Display (accounts only, ??? amounts) ───────────
 
 function SupplementaryJESection({ data, theme }: { data: { entries: { label: string; rows: { account_name: string; side: "debit" | "credit"; debit_credit_reason?: string; amount_source?: string }[] }[] }; theme: Theme }) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
   return (
-    <div className="space-y-4">
-      <p className="text-[12px] leading-[1.5] rounded-md px-3 py-2" style={{ background: theme.cardBg, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
-        💡 These journal entries aren't explicitly required by the problem — but understanding the underlying entries helps you master the topic.
+    <div className="space-y-1">
+      <p className="text-[12px] leading-[1.5] rounded-md px-3 py-2 mb-2" style={{ background: theme.cardBg, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+        💡 These entries aren't required by the problem — but understanding them helps you master the topic. Tap a transaction to see the entry.
       </p>
-      {data.entries.map((entry, ei) => (
-        <div key={ei}>
-          <p className="font-semibold text-[13px] mb-1.5" style={{ color: theme.text }}>{entry.label}</p>
-          <div className="overflow-x-auto rounded-md" style={{ border: `1px solid ${theme.border}` }}>
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: theme.tableHeaderBg }}>
-                  <th className="text-left px-3 py-1.5 text-white font-bold text-[12px]">Account</th>
-                  <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Debit</th>
-                  <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Credit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entry.rows.map((row, ri) => {
-                  const isCredit = row.side === "credit";
-                  return (
-                    <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
-                      <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
-                        {row.account_name}
-                        {row.debit_credit_reason && <JETooltip text={row.debit_credit_reason} variant="solutions" />}
-                      </td>
-                      <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
-                        {!isCredit ? "???" : ""}
-                      </td>
-                      <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
-                        {isCredit ? "???" : ""}
-                      </td>
+      {data.entries.map((entry, ei) => {
+        const isOpen = openIdx === ei;
+        return (
+          <div key={ei}>
+            <button
+              onClick={() => setOpenIdx(isOpen ? null : ei)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors text-[13px] font-medium"
+              style={{
+                color: theme.text,
+                background: isOpen ? theme.cardBg : "transparent",
+                border: `1px solid ${isOpen ? theme.border : "transparent"}`,
+              }}
+            >
+              <span>{entry.label}</span>
+              <span className="text-[10px] shrink-0 ml-2" style={{ color: theme.textMuted }}>
+                {isOpen ? "▲" : "▼"}
+              </span>
+            </button>
+            {isOpen && (
+              <div className="overflow-x-auto rounded-md mt-1 mb-2 mx-1" style={{ border: `1px solid ${theme.border}` }}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: theme.tableHeaderBg }}>
+                      <th className="text-left px-3 py-1.5 text-white font-bold text-[12px]">Account</th>
+                      <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Debit</th>
+                      <th className="text-right px-3 py-1.5 text-white font-bold text-[12px] w-24">Credit</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {entry.rows.map((row, ri) => {
+                      const isCredit = row.side === "credit";
+                      return (
+                        <tr key={ri} style={{ background: ri % 2 === 0 ? theme.pageBg : theme.tableAltBg }}>
+                          <td className={`px-3 py-1.5 text-[13px] ${isCredit ? "pl-10" : ""}`} style={{ color: theme.text }}>
+                            {row.account_name}
+                            {row.debit_credit_reason && <JETooltip text={row.debit_credit_reason} variant="solutions" />}
+                          </td>
+                          <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
+                            {!isCredit ? "???" : ""}
+                          </td>
+                          <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.textMuted }}>
+                            {isCredit ? "???" : ""}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
