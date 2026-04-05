@@ -122,19 +122,30 @@ export default function ChapterFormulasManager() {
   };
 
   const generateImages = async () => {
-    const approved = formulas?.filter(f => f.is_approved && !f.image_url) || [];
-    if (approved.length === 0) { toast.info("No approved formulas missing images."); return; }
-    setGenImagesProgress(`Generating 0 of ${approved.length}...`);
-    let done = 0;
-    for (const f of approved) {
+    if (!selectedChapter) return;
+    setGenImagesProgress("Generating images...");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-formula-images", { body: { chapterId: selectedChapter } });
+      if (error) throw error;
+      toast.success(`${data.generated} formula images generated, ${data.skipped} skipped.`);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setGenImagesProgress(""); invalidate(); }
+  };
+
+  const generateAllImages = async () => {
+    if (!chapters?.length) return;
+    setGenImagesProgress("Starting...");
+    let totalGen = 0;
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      setGenImagesProgress(`Ch ${ch.chapter_number}: ${i + 1}/${chapters.length}...`);
       try {
-        await supabase.functions.invoke("generate-formula-images", { body: { formulaId: f.id } });
-        done++;
-        setGenImagesProgress(`Generating ${done} of ${approved.length}...`);
+        const { data, error } = await supabase.functions.invoke("generate-formula-images", { body: { chapterId: ch.id } });
+        if (!error && data) totalGen += data.generated || 0;
       } catch { /* continue */ }
     }
     setGenImagesProgress("");
-    toast.success(`${done} formula images generated.`);
+    toast.success(`${totalGen} images generated across all chapters.`);
     invalidate();
   };
 
