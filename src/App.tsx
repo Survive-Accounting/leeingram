@@ -89,6 +89,7 @@ const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging
 const ChapterCramTool = lazy(() => import("./pages/ChapterCramTool"));
 const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
 const ChapterJEManager = lazy(() => import("./pages/ChapterJEManager"));
+const ChapterContentQA = lazy(() => import("./pages/ChapterContentQA"));
 const QuizExplanation = lazy(() => import("./pages/QuizExplanation"));
 const QuizQuestion = lazy(() => import("./pages/QuizQuestion"));
 const QuizChoice = lazy(() => import("./pages/QuizChoice"));
@@ -229,6 +230,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
         <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
+        <Route path="/admin/chapter-qa" element={<ProtectedRoute><ChapterContentQA /></ProtectedRoute>} />
         <Route path="/qa-costs" element={<ProtectedRoute><QACosts /></ProtectedRoute>} />
         <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
