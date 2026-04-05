@@ -1073,6 +1073,95 @@ export type Database = {
           },
         ]
       }
+      chapter_je_categories: {
+        Row: {
+          category_name: string
+          chapter_id: string
+          created_at: string | null
+          id: string
+          sort_order: number | null
+        }
+        Insert: {
+          category_name: string
+          chapter_id: string
+          created_at?: string | null
+          id?: string
+          sort_order?: number | null
+        }
+        Update: {
+          category_name?: string
+          chapter_id?: string
+          created_at?: string | null
+          id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_je_categories_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapter_journal_entries: {
+        Row: {
+          category_id: string | null
+          chapter_id: string
+          created_at: string | null
+          generated_at: string | null
+          id: string
+          is_approved: boolean | null
+          is_rejected: boolean | null
+          je_lines: Json
+          sort_order: number | null
+          transaction_label: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          chapter_id: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          je_lines?: Json
+          sort_order?: number | null
+          transaction_label: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          chapter_id?: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          je_lines?: Json
+          sort_order?: number | null
+          transaction_label?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_journal_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_je_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_journal_entries_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_problems: {
         Row: {
           build_run_id: string | null
