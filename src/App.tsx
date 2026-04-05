@@ -82,6 +82,7 @@ const ProblemDissectorTool = lazy(() => import("./pages/ProblemDissectorTool"));
 const StudyToolsProblemDissector = lazy(() => import("./pages/StudyToolsProblemDissector"));
 const SolutionsQAReview = lazy(() => import("./pages/SolutionsQAReview"));
 const SolutionsQAAdmin = lazy(() => import("./pages/SolutionsQAAdmin"));
+const QACosts = lazy(() => import("./pages/QACosts"));
 const JEDebug = lazy(() => import("./pages/JEDebug"));
 const AssetStatsDashboard = lazy(() => import("./pages/AssetStatsDashboard"));
 const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging"));
@@ -226,6 +227,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
         <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
+        <Route path="/qa-costs" element={<ProtectedRoute><QACosts /></ProtectedRoute>} />
         <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
         <Route path="/share-leaderboard" element={<Navigate to="/asset-stats" replace />} />
