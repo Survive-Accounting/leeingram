@@ -1208,6 +1208,7 @@ export type Database = {
           respond_by_at: string | null
           responded: boolean
           responded_at: string | null
+          slack_thread_ts: string | null
           source_ref: string | null
           status: string
           student_email: string
@@ -1225,6 +1226,7 @@ export type Database = {
           respond_by_at?: string | null
           responded?: boolean
           responded_at?: string | null
+          slack_thread_ts?: string | null
           source_ref?: string | null
           status?: string
           student_email: string
@@ -1242,6 +1244,7 @@ export type Database = {
           respond_by_at?: string | null
           responded?: boolean
           responded_at?: string | null
+          slack_thread_ts?: string | null
           source_ref?: string | null
           status?: string
           student_email?: string

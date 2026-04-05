@@ -526,7 +526,7 @@ function QAFixAssetModal({
     if (!snapshot) return;
     try {
       const res = await supabase.functions.invoke("fix-asset", {
-        body: { teaching_asset_id: teachingAssetId, snapshot, action: "restore" },
+        body: { teaching_asset_id: teachingAssetId, snapshot, action: "restore", reviewer_name: reviewerName },
       });
       if (res.error) throw new Error(res.error.message);
       toast.info("All changes reverted");

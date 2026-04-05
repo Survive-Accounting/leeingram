@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { postToSlack } from "../_shared/slack.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +46,13 @@ serve(async (req) => {
 
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
 
+    // Fetch asset_name for Slack messages
+    const { data: assetRow } = await sb
+      .from("teaching_assets")
+      .select("asset_name")
+      .eq("id", teaching_asset_id)
+      .single();
+    const assetCode = (assetRow as any)?.asset_name || teaching_asset_id;
     // ── SNAPSHOT: Get current values before fix ──
     if (action === "snapshot") {
       if (!sections?.length) throw new Error("Missing sections");
@@ -117,6 +125,14 @@ serve(async (req) => {
         }
       }
 
+      // Trigger 2 — Slack: Fix started
+      const reviewer_email = body.reviewer_name || "Admin";
+      const sectionLabels = sections.join(", ");
+      const truncatedPrompt = (fix_prompt || "").slice(0, 300);
+      postToSlack(
+        `🔁 *Fix in progress*\nAsset: ${assetCode}\nSections: ${sectionLabels}\nPrompt: ${truncatedPrompt}\nStarted by: ${reviewer_email}`
+      ).catch(() => {});
+
       return new Response(JSON.stringify({ results, after }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -139,6 +155,12 @@ serve(async (req) => {
       }).eq("id", teaching_asset_id);
       if (error) throw new Error("Failed to save: " + error.message);
 
+      // Trigger 3 — Slack: Fix approved
+      const approvedSections = body.approved_sections || sections || [];
+      postToSlack(
+        `✅ *Fix approved*\nAsset: ${assetCode}\nSections fixed: ${Array.isArray(approvedSections) ? approvedSections.join(", ") : approvedSections}\nFixed by: ${reviewer_name}\n\n→ https://learn.surviveaccounting.com/solutions/${encodeURIComponent(assetCode)}`
+      ).catch(() => {});
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -157,6 +179,12 @@ serve(async (req) => {
 
       const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
       if (error) throw new Error("Restore failed: " + error.message);
+
+      // Trigger 4 — Slack: Fix rejected
+      const rejecter = body.reviewer_name || "Admin";
+      postToSlack(
+        `❌ *Fix rejected — reverted*\nAsset: ${assetCode}\nBy: ${rejecter}`
+      ).catch(() => {});
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
