@@ -916,6 +916,9 @@ export default function ChapterCramTool() {
   const showSolutionsSection = isAdmin || isSectionVisible("solutions_library");
   const showJournalSection = (visibleJournalCards.length > 0 || isAdmin) && (isAdmin || isSectionVisible("journal_entries"));
   const showFormulasSection = (structuredFormulas.length > 0 || isAdmin) && (isAdmin || isSectionVisible("formulas"));
+  const chapterJEEntries = chapterJEData?.entries || [];
+  const chapterJECategories = chapterJEData?.categories || [];
+  const showChapterJESection = (chapterJEEntries.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_je_reference"));
 
   const isTabExpanded = (key: string) => !!expandedTabs[key];
   const toggleTab = (key: string) => setExpandedTabs((prev) => ({ ...prev, [key]: !prev[key] }));
