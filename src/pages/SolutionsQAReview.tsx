@@ -379,7 +379,6 @@ const FIX_SECTIONS = [
   { key: "problem_text", label: "Problem text" },
   { key: "instructions", label: "Instructions text" },
   { key: "solution", label: "Solution" },
-  { key: "supplementary_je", label: "Supplementary journal entries" },
 ];
 
 // ── Rendered Section Preview ─────────────────────────────────────────
