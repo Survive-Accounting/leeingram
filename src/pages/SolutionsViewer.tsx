@@ -744,20 +744,35 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
   );
 }
 
-function CanonicalJESection({ data, theme }: { data: CanonicalJEPayload; theme: Theme }) {
+function CanonicalJESection({ data, theme, instructions }: { data: CanonicalJEPayload; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
   const hasMultipleScenarios = data.scenario_sections.length > 1;
   return (
     <div className="space-y-6">
-      {data.scenario_sections.map((section, si) => (
-        <div key={si}>
-          {hasMultipleScenarios && (
-            <p className="font-bold text-[13px] mb-2 pb-1" style={{ color: theme.text, borderBottom: `1px solid ${theme.border}` }}>
-              {section.label}
-            </p>
-          )}
-          <JETable entries={section.entries_by_date} theme={theme} scenarioLabel={section.label} />
-        </div>
-      ))}
+      {data.scenario_sections.map((section, si) => {
+        // Try to extract a meaningful label from matched instruction
+        let displayLabel = section.label;
+        if (hasMultipleScenarios && instructions) {
+          const partMatch = section.label.match(/^Part\s+([a-z])/i);
+          if (partMatch) {
+            const letterIndex = partMatch[1].toLowerCase().charCodeAt(0) - 96;
+            const matchedInstr = instructions.find(ins => ins.instruction_number === letterIndex);
+            if (matchedInstr) {
+              const extracted = extractJEPartLabel(matchedInstr.instruction_text);
+              if (extracted) displayLabel = extracted;
+            }
+          }
+        }
+        return (
+          <div key={si}>
+            {hasMultipleScenarios && (
+              <p className="font-bold text-[13px] mb-2 pb-1" style={{ color: theme.text, borderBottom: `1px solid ${theme.border}` }}>
+                {displayLabel}
+              </p>
+            )}
+            <JETable entries={section.entries_by_date} theme={theme} scenarioLabel={section.label} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -915,7 +930,12 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
             : `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`
           : null;
         const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        const contentLines = content.split("\n").filter(l => l.trim());
+        let contentLines = content.split("\n").filter(l => l.trim());
+
+        // For JE-only problems, filter to calculation lines only
+        if (isJEOnly) {
+          contentLines = contentLines.filter(l => isCalculationLine(l.trim()));
+        }
 
         // Group lines into segments: plain text vs inline JE blocks
         type TextSeg = { type: "text"; lines: { text: string; idx: number }[] };
@@ -957,18 +977,27 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
           }
         }
 
+        // For JE-only, skip rendering if no calculation content remains
+        if (isJEOnly && segs.every(s => s.type === "text" && s.lines.length === 0)) return null;
+
         return (
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
             {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
             {segs.map((seg, segIdx) => {
               if (seg.type === "je") {
+                // For JE-only problems, skip inline JE in explanation (they're in the JE accordion)
+                if (isJEOnly) return null;
                 return <InlineJETable key={`je-${segIdx}`} rows={seg.rows} heading={seg.heading} theme={theme} />;
               }
               return seg.lines.map((line) => {
                 const trimmed = line.text.trim();
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 const isNumberedStep = /^\d+\.\s/.test(trimmed);
+                if (isJEOnly) {
+                  // Render calculation lines in semi-bold monospace
+                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
+                }
                 if (isYearLabel) {
                   return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
                 }
