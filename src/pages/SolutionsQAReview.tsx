@@ -525,6 +525,27 @@ function QAFixAssetModal({
   const [viewMode, setViewMode] = useState<Record<string, "before" | "after">>({});
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [pastedScreenshots, setPastedScreenshots] = useState<string[]>([]);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            setPastedScreenshots(prev => [...prev, reader.result as string]);
+            toast.success("Screenshot attached");
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }, []);
 
   // JE Suggestion helper
   const [jeSuggestOpen, setJeSuggestOpen] = useState(false);
@@ -766,12 +787,29 @@ function QAFixAssetModal({
               <Textarea
                 value={fixPrompt}
                 onChange={e => setFixPrompt(e.target.value)}
-                placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable as a credit. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit."
+                onPaste={handlePaste}
+                placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable as a credit. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit. (Paste screenshots here!)"
                 className="text-xs min-h-[80px]"
                 autoFocus
               />
+              {pastedScreenshots.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {pastedScreenshots.map((src, i) => (
+                    <div key={i} className="relative group">
+                      <img src={src} alt={`Screenshot ${i + 1}`} className="h-16 rounded border border-border object-cover" />
+                      <button
+                        onClick={() => setPastedScreenshots(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1 -right-1 bg-destructive text-white rounded-full h-4 w-4 flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-muted-foreground self-end">📎 {pastedScreenshots.length} screenshot{pastedScreenshots.length !== 1 ? "s" : ""}</p>
+                </div>
+              )}
               <p className="text-[10px] text-muted-foreground">
-                {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"}
+                {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"} · Paste screenshots with ⌘V
               </p>
             </div>
 
@@ -934,7 +972,7 @@ function QAFixAssetModal({
                       </div>
                     </div>
                   ) : !reverted ? (
-                    <ScrollArea className="max-h-[300px]">
+                    <ScrollArea className="max-h-[60vh]">
                       <div className="p-3">
                         <RenderedSectionPreview sectionKey={result.key} data={data} mode={mode} />
                       </div>
@@ -2241,16 +2279,34 @@ export default function SolutionsQAReview() {
           assetName={current.asset_name}
           reviewerName={reviewerName}
           onClose={() => setFixAssetOpen(false)}
-          onComplete={() => {
+          onComplete={async () => {
             setFixAssetOpen(false);
             qc.invalidateQueries({ queryKey: ["qa-asset-detail", current.teaching_asset_id] });
             qc.invalidateQueries({ queryKey: ["qa-assets"] });
-            // Mark as clean if no remaining issues
-            if (issueCount === 0) {
-              supabase.from("solutions_qa_assets" as any)
-                .update({ qa_status: "reviewed_clean", reviewed_at: new Date().toISOString(), reviewed_by: reviewerName })
-                .eq("id", current.id);
+            qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
+
+            // Mark asset as clean after a successful fix
+            await supabase.from("solutions_qa_assets" as any)
+              .update({ qa_status: "reviewed_clean", reviewed_at: new Date().toISOString(), reviewed_by: reviewerName || "VA" })
+              .eq("id", current.id);
+
+            // Clear any existing issues for this asset since the fix was approved
+            await supabase.from("solutions_qa_issues" as any)
+              .update({ fix_status: "fixed" })
+              .eq("qa_asset_id", current.id)
+              .eq("fix_status", "pending");
+
+            // Clear local flagged state
+            setFlaggedSections(new Set());
+
+            // Reload the iframe to reflect changes
+            if (iframeRef.current) {
+              iframeRef.current.src = iframeRef.current.src;
             }
+
+            qc.invalidateQueries({ queryKey: ["qa-assets"] });
+            qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
+            toast.success("Asset marked clean");
           }}
         />
       )}
