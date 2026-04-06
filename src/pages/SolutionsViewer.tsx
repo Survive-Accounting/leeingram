@@ -1014,10 +1014,13 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
               }
               return seg.lines.map((line) => {
                 const trimmed = line.text.trim();
+                // Empty line = paragraph break spacer
+                if (!trimmed) {
+                  return <div key={`spacer-${line.idx}`} className="h-3" />;
+                }
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 const isNumberedStep = /^\d+\.\s/.test(trimmed);
                 if (isJEOnly) {
-                  // Render calculation lines in semi-bold monospace
                   return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
                 }
                 if (isYearLabel) {
