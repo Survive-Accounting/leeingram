@@ -1318,6 +1318,7 @@ export default function SolutionsQAReview() {
       return data as unknown as TeachingAssetDetail;
     },
     enabled: !!current?.teaching_asset_id,
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── Prefetch next 2 assets' detail + screenshot data ────────────
