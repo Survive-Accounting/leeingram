@@ -1479,11 +1479,24 @@ export default function SolutionsQAReview() {
     }
   }, [allAssets, urlAssetParam]);
 
-  // ── Reset state on asset change ─────────────────────────────────
+  // ── Reset state on asset change — restore flags from saved issues ──
   useEffect(() => {
-    setFlaggedSections(new Set());
     setActiveSectionIndex(0);
-  }, [current?.id]);
+    // Pre-populate flagged sections from existing issues
+    if (currentIssues && currentIssues.length > 0 && sections.length > 0) {
+      const flagged = new Set<string>();
+      for (const issue of currentIssues) {
+        // Match issue.section (label) back to section key
+        const matched = sections.find(s => s.label === issue.section || 
+          (issue.section === "Solution" && s.key === "solution") ||
+          (issue.section === "Explanation" && s.key === "solution"));
+        if (matched) flagged.add(matched.key);
+      }
+      setFlaggedSections(flagged);
+    } else {
+      setFlaggedSections(new Set());
+    }
+  }, [current?.id, currentIssues, sections]);
 
   useEffect(() => {
     if (iframeRef.current) {
