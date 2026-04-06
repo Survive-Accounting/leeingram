@@ -3436,7 +3436,10 @@ export default function SolutionsViewer() {
 
 
   const answerSummary = stripRoleHints(asset.survive_solution_text || "");
-  const isJEOnly = detectJEOnly(asset._instructions);
+  // JE-only: instructions all match JE patterns AND explanation is short (simple problems only)
+  const jeOnlyByInstructions = detectJEOnly(asset._instructions);
+  const explanationLineCount = answerSummary.split("\n").filter(l => l.trim()).length;
+  const isJEOnly = jeOnlyByInstructions && explanationLineCount <= 8;
   const formulas = asset.important_formulas || "";
   const conceptNotes = asset.concept_notes || "";
   const examTraps = asset.exam_traps || "";
