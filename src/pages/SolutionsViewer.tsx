@@ -3225,6 +3225,21 @@ export default function SolutionsViewer() {
     enabled: !!chapterIdForJE,
   });
 
+  // ── QA status gate: only show reviewed_clean assets to students ──
+  const { data: qaStatusData } = useQuery({
+    queryKey: ["solutions-qa-status", data?.id],
+    queryFn: async () => {
+      const { data: row } = await supabase
+        .from("solutions_qa_assets" as any)
+        .select("qa_status")
+        .eq("teaching_asset_id", data!.id)
+        .maybeSingle();
+      return (row as unknown as { qa_status: string }) || null;
+    },
+    enabled: !!data?.id,
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
     if (!data?.id) return;
     const key = `solutions_viewed_${data.id}`;
@@ -3379,6 +3394,9 @@ export default function SolutionsViewer() {
     );
   }
 
+
+
+
   if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: t.pageBg }}>
@@ -3386,6 +3404,34 @@ export default function SolutionsViewer() {
           <p className="text-2xl font-bold" style={{ color: t.text }}>Problem not found</p>
           <p className="mt-2" style={{ color: t.textMuted }}>Check the asset code and try again.</p>
         </div>
+      </div>
+    );
+  }
+
+  // If asset has QA issues (not clean), show "in development" screen for non-admin users
+  const qaStatus = qaStatusData?.qa_status;
+  const assetIsClean = !qaStatus || qaStatus === "reviewed_clean";
+  if (!assetIsClean && !isAdmin && !isQaMode) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#14213D",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <img
+          src={LEE_HERO_URL}
+          alt="Survive Accounting"
+          style={{ width: 360, maxWidth: "80vw", borderRadius: 12, opacity: 0.9, marginBottom: 28, objectFit: "cover" }}
+        />
+        <p style={{ fontSize: 20, color: "rgba(255,255,255,0.9)", textAlign: "center", maxWidth: 400, lineHeight: 1.7, fontWeight: 500 }}>
+          This practice problem is still in development. Check back soon!
+        </p>
+        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", marginTop: 12 }}>– Lee</p>
       </div>
     );
   }
