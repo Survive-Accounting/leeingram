@@ -3225,7 +3225,22 @@ export default function SolutionsViewer() {
     enabled: !!chapterIdForJE,
   });
 
-  useEffect(() => {
+  // ── QA status gate: only show reviewed_clean assets to students ──
+  const { data: qaStatusData } = useQuery({
+    queryKey: ["solutions-qa-status", data?.id],
+    queryFn: async () => {
+      const { data: row } = await supabase
+        .from("solutions_qa_assets" as any)
+        .select("qa_status")
+        .eq("teaching_asset_id", data!.id)
+        .maybeSingle();
+      return (row as unknown as { qa_status: string }) || null;
+    },
+    enabled: !!data?.id,
+    staleTime: 60 * 1000,
+  });
+
+
     if (!data?.id) return;
     const key = `solutions_viewed_${data.id}`;
     if (sessionStorage.getItem(key)) return;
