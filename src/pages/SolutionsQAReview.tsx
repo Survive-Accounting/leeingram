@@ -1591,13 +1591,18 @@ export default function SolutionsQAReview() {
   const restoredRef = useRef(false);
   useEffect(() => {
     if (restoredRef.current || !allAssets.length) return;
-    restoredRef.current = true;
     // Priority: URL ?asset= param > localStorage last viewed
     const target = urlAssetParam || localStorage.getItem("qa_last_asset_id");
     if (target) {
       const idx = allAssets.findIndex(a => a.asset_name === target);
-      if (idx >= 0) setCurrentIndex(idx);
+      if (idx >= 0) {
+        setCurrentIndex(idx);
+        restoredRef.current = true;
+        return;
+      }
     }
+    // No target or not found yet — only mark restored if we had no target to look for
+    if (!target) restoredRef.current = true;
   }, [allAssets, urlAssetParam]);
 
   // ── Reset state on asset change — restore flags from saved issues ──
