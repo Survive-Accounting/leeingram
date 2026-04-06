@@ -636,7 +636,7 @@ export default function SolutionsQAAdmin() {
               {approvedIssues.map(r => (
                 <div key={r.id} className="flex items-center gap-2 text-xs text-muted-foreground border-b border-border pb-2">
                   <span className="font-mono font-medium text-foreground">{r.asset_name}</span>
-                  <Badge variant="outline" className="text-[9px]">{r.section}</Badge>
+                  <Badge variant="outline" className="text-[9px]">{r.section === "Solution" ? "Explanation" : r.section}</Badge>
                   {r.fix_scope === "bulk_pattern" && (
                     <Badge className="bg-amber-500/20 text-amber-400 text-[8px]">⚡ Bulk</Badge>
                   )}
