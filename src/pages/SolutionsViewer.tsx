@@ -930,9 +930,12 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
 
         // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
         let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
-        if (labelMatch && !labelSuffix && contentLines.length > 0 && !matchedInstruction) {
-          labelSuffix = contentLines[0].trim();
-          contentLines = contentLines.slice(1); // remove it from content since it's now the label
+        if (labelMatch && !labelSuffix && !matchedInstruction) {
+          const firstNonEmpty = contentLines.findIndex(l => l.trim());
+          if (firstNonEmpty >= 0) {
+            labelSuffix = contentLines[firstNonEmpty].trim();
+            contentLines = [...contentLines.slice(0, firstNonEmpty), ...contentLines.slice(firstNonEmpty + 1)];
+          }
         }
         const label = labelMatch
           ? matchedInstruction
