@@ -725,7 +725,7 @@ function QAFixAssetModal({
       onPointerMove={fixDrag.onPointerMove}
       onPointerUp={fixDrag.onPointerUp}
       onPointerCancel={fixDrag.onPointerCancel}
-      className="fixed z-[60] w-[420px] max-h-[80vh] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+      className="fixed z-[60] w-[420px] max-h-[90vh] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
       style={{ left: 0, top: 0, transform: `translate3d(${fixDrag.pos.x}px, ${fixDrag.pos.y}px, 0)` }}
     >
       <div
