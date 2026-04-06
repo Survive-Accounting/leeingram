@@ -3830,7 +3830,7 @@ export default function SolutionsViewer() {
                   {qaEditingField === "solution" && isQaMode ? (
                     <QAInlineEditorPanel
                       initialValue={asset.survive_solution_text || ""}
-                      label="Solution Text"
+                      label="Explanation Text"
                       rows={20}
                       onSave={async (newVal) => {
                         const { error } = await supabase
