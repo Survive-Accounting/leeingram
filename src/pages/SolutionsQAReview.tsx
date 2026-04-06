@@ -782,6 +782,23 @@ function QAFixAssetModal({
               </p>
             </div>
 
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground">Select what to fix</label>
+                <button onClick={selectAll} className="text-[10px] text-primary hover:underline font-medium">
+                  {selectedSections.size === FIX_SECTIONS.length ? "Deselect All" : "Select All"}
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {FIX_SECTIONS.map(sec => (
+                  <label key={sec.key} className="flex items-center gap-2 cursor-pointer group">
+                    <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
+                    <span className="text-xs text-foreground group-hover:text-primary transition-colors">{sec.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-foreground">What's wrong and how should it be fixed?</label>
               <Textarea
@@ -811,23 +828,6 @@ function QAFixAssetModal({
               <p className="text-[10px] text-muted-foreground">
                 {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"} · Paste screenshots with ⌘V
               </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-foreground">Select what to regenerate</label>
-                <button onClick={selectAll} className="text-[10px] text-primary hover:underline font-medium">
-                  {selectedSections.size === FIX_SECTIONS.length ? "Deselect All" : "Select All"}
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                {FIX_SECTIONS.map(sec => (
-                  <label key={sec.key} className="flex items-center gap-2 cursor-pointer group">
-                    <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
-                    <span className="text-xs text-foreground group-hover:text-primary transition-colors">{sec.label}</span>
-                  </label>
-                ))}
-              </div>
             </div>
 
             <Button onClick={runFix} disabled={!canRun} className="w-full" size="sm">
