@@ -764,7 +764,7 @@ function CanonicalJESection({ data, theme, instructions }: { data: CanonicalJEPa
         }
         return (
           <div key={si}>
-            {hasMultipleScenarios && (
+            {hasMultipleScenarios && !section.entries_by_date?.some((e: any) => (e.entry_date || e.date) && e.memo) && (
               <p className="font-bold text-[13px] mb-2 pb-1" style={{ color: theme.text, borderBottom: `1px solid ${theme.border}` }}>
                 {displayLabel}
               </p>
