@@ -212,7 +212,7 @@ function FixAssetModal({
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Wrench className="h-4 w-4" /> Fix This Asset
             </h2>
-            <p className="text-xs text-muted-foreground font-mono mt-0.5">{issue.asset_name} · {issue.section}</p>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{issue.asset_name} · {issue.section === "Solution" ? "Explanation" : issue.section}</p>
           </div>
           {attemptNumber > 1 && (
             <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber} (stronger model)</Badge>
