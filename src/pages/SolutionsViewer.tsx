@@ -853,9 +853,54 @@ function InlineJETable({ rows, heading, theme }: { rows: InlineJERow[]; heading?
   );
 }
 
+// ── JE-only detection helpers ────────────────────────────────────────
+
+const JE_ONLY_PATTERNS = [
+  /^prepare\s+the\s+journal\s+entr(?:y|ies)\s+to\s+record/i,
+  /^prepare\s+journal\s+entries\s+to\s+record/i,
+  /^prepare\s+journal\s+entries\s+for/i,
+  /^record\s+the\s+journal\s+entr(?:y|ies)/i,
+  /^record\s+journal\s+entries/i,
+  /^journalize/i,
+  /^prepare\s+the\s+entr(?:y|ies)\s+to\s+record/i,
+];
+
+const JE_STRIP_PATTERNS = [
+  /^prepare\s+the\s+journal\s+entr(?:y|ies)\s+to\s+record\s*/i,
+  /^prepare\s+journal\s+entries\s+to\s+record\s*/i,
+  /^prepare\s+journal\s+entries\s+for\s*/i,
+  /^record\s+the\s+journal\s+entr(?:y|ies)\s+(?:to\s+record\s+|for\s+)?/i,
+  /^record\s+journal\s+entries\s+(?:to\s+record\s+|for\s+)?/i,
+  /^journalize\s*/i,
+  /^prepare\s+the\s+entr(?:y|ies)\s+to\s+record\s*/i,
+];
+
+function detectJEOnly(instructions?: { instruction_number: number; instruction_text: string }[]): boolean {
+  if (!instructions || instructions.length === 0) return false;
+  return instructions.every(instr => {
+    const text = instr.instruction_text.trim();
+    return JE_ONLY_PATTERNS.some(p => p.test(text));
+  });
+}
+
+function extractJEPartLabel(instructionText: string): string {
+  let text = instructionText.trim();
+  for (const pattern of JE_STRIP_PATTERNS) {
+    text = text.replace(pattern, "");
+  }
+  text = text.replace(/\.\s*$/, "").trim();
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Check if a line contains calculation content */
+function isCalculationLine(line: string): boolean {
+  return /[×=÷+−%$]/.test(line) || /\b\d+\s*[×x*]\s*\d/i.test(line) || /\b\d+\s*[/÷]\s*\d/.test(line) || /×\s*rate|×\s*time|[/÷]\s*periods/i.test(line);
+}
+
 // ── Answer Summary ──────────────────────────────────────────────────
 
-function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
+function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
   const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
   return (
     <div className="rounded-md p-4 pl-5 border-l-[3px] break-words overflow-hidden" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
