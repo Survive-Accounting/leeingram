@@ -921,16 +921,24 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
     <div className="rounded-md p-4 pl-5 border-l-[3px] break-words overflow-hidden" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
       {subSections.map((section, si) => {
         const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
-        // Use instruction text from problem_instructions if available
         const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
         const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
+
+        // Extract content lines (everything after the (x) label line)
+        const rawContent = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
+        let contentLines = rawContent.split("\n").filter(l => l.trim());
+
+        // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
+        let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
+        if (labelMatch && !labelSuffix && contentLines.length > 0 && !matchedInstruction) {
+          labelSuffix = contentLines[0].trim();
+          contentLines = contentLines.slice(1); // remove it from content since it's now the label
+        }
         const label = labelMatch
           ? matchedInstruction
             ? `(${labelMatch[1]}) ${matchedInstruction.instruction_text}`
-            : `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`
+            : `(${labelMatch[1]}) ${labelSuffix}`
           : null;
-        const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        let contentLines = content.split("\n").filter(l => l.trim());
 
         // For JE-only problems, filter to calculation lines only
         if (isJEOnly) {
