@@ -1318,7 +1318,77 @@ export default function SolutionsQAReview() {
       return data as unknown as TeachingAssetDetail;
     },
     enabled: !!current?.teaching_asset_id,
+    staleTime: 5 * 60 * 1000,
   });
+
+  // ── Prefetch next 2 assets' detail + screenshot data ────────────
+  const nextAssets = useMemo(() => {
+    return [1, 2].map(offset => allAssets[currentIndex + offset]).filter(Boolean);
+  }, [allAssets, currentIndex]);
+
+  useEffect(() => {
+    for (const nextAsset of nextAssets) {
+      if (!nextAsset?.teaching_asset_id) continue;
+      const tid = nextAsset.teaching_asset_id;
+      // Prefetch asset detail
+      qc.prefetchQuery({
+        queryKey: ["qa-asset-detail", tid],
+        queryFn: async () => {
+          const { data, error } = await supabase
+            .from("teaching_assets")
+            .select(`
+              id, asset_name, source_ref, flowchart_image_url,
+              journal_entry_completed_json, supplementary_je_json,
+              important_formulas, concept_notes, exam_traps,
+              base_raw_problem_id, chapter_id,
+              chapters(chapter_number, chapter_name)
+            `)
+            .eq("id", tid)
+            .single();
+          if (error) throw error;
+          return data as unknown as TeachingAssetDetail;
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+      // Prefetch issues
+      qc.prefetchQuery({
+        queryKey: ["qa-issues", nextAsset.id],
+        queryFn: async () => {
+          const { data, error } = await supabase
+            .from("solutions_qa_issues" as any)
+            .select("*")
+            .eq("qa_asset_id", nextAsset.id)
+            .order("created_at");
+          if (error) throw error;
+          return data as any[];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [nextAssets, qc]);
+
+  // Prefetch screenshot once we have the next asset's detail
+  useEffect(() => {
+    for (const nextAsset of nextAssets) {
+      if (!nextAsset?.teaching_asset_id) continue;
+      const cached = qc.getQueryData<TeachingAssetDetail>(["qa-asset-detail", nextAsset.teaching_asset_id]);
+      if (cached?.base_raw_problem_id) {
+        qc.prefetchQuery({
+          queryKey: ["qa-screenshot", cached.base_raw_problem_id],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from("chapter_problems")
+              .select("problem_screenshot_url, problem_screenshot_urls")
+              .eq("id", cached.base_raw_problem_id!)
+              .single();
+            if (error) return null;
+            return data?.problem_screenshot_url || (data?.problem_screenshot_urls as string[])?.[0] || null;
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      }
+    }
+  }, [nextAssets, qc]);
 
   // ── Fetch screenshot ────────────────────────────────────────────
   const { data: screenshotUrl } = useQuery({
@@ -1333,6 +1403,7 @@ export default function SolutionsQAReview() {
       return data?.problem_screenshot_url || (data?.problem_screenshot_urls as string[])?.[0] || null;
     },
     enabled: !!assetDetail?.base_raw_problem_id,
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── Fetch issues ────────────────────────────────────────────────
@@ -1881,17 +1952,20 @@ export default function SolutionsQAReview() {
         />
       )}
 
-      {/* Hidden preload iframe for next asset */}
-      {allAssets[currentIndex + 1] && (
-        <iframe
-          key={`preload-${allAssets[currentIndex + 1].asset_name}`}
-          src={`/solutions/${allAssets[currentIndex + 1].asset_name}?ref=lw&qa=1`}
-          className="sr-only"
-          aria-hidden="true"
-          tabIndex={-1}
-          title="Preload next"
-        />
-      )}
+      {/* Hidden preload iframes for next 2 assets */}
+      {[1, 2].map(offset => {
+        const next = allAssets[currentIndex + offset];
+        return next ? (
+          <iframe
+            key={`preload-${next.asset_name}`}
+            src={`/solutions/${next.asset_name}?ref=lw&qa=1`}
+            className="sr-only"
+            aria-hidden="true"
+            tabIndex={-1}
+            title={`Preload +${offset}`}
+          />
+        ) : null;
+      })}
 
       {/* Lightbox */}
       {lightboxUrl && <ScreenshotLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
