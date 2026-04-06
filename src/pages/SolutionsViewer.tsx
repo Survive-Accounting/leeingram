@@ -3428,6 +3428,7 @@ export default function SolutionsViewer() {
 
 
   const answerSummary = stripRoleHints(asset.survive_solution_text || "");
+  const isJEOnly = detectJEOnly(asset._instructions);
   const formulas = asset.important_formulas || "";
   const conceptNotes = asset.concept_notes || "";
   const examTraps = asset.exam_traps || "";
