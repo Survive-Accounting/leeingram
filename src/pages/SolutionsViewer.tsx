@@ -926,13 +926,16 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
 
         // Extract content lines (everything after the (x) label line)
         const rawContent = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        let contentLines = rawContent.split("\n").filter(l => l.trim());
+        let contentLines = rawContent.split("\n");
 
         // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
         let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
-        if (labelMatch && !labelSuffix && contentLines.length > 0 && !matchedInstruction) {
-          labelSuffix = contentLines[0].trim();
-          contentLines = contentLines.slice(1); // remove it from content since it's now the label
+        if (labelMatch && !labelSuffix && !matchedInstruction) {
+          const firstNonEmpty = contentLines.findIndex(l => l.trim());
+          if (firstNonEmpty >= 0) {
+            labelSuffix = contentLines[firstNonEmpty].trim();
+            contentLines = [...contentLines.slice(0, firstNonEmpty), ...contentLines.slice(firstNonEmpty + 1)];
+          }
         }
         const label = labelMatch
           ? matchedInstruction
@@ -953,6 +956,17 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
         const segs: Seg[] = [];
 
         while (i < contentLines.length) {
+          // Empty lines become paragraph break markers
+          if (!contentLines[i].trim()) {
+            const lastSeg = segs[segs.length - 1];
+            if (lastSeg && lastSeg.type === "text") {
+              lastSeg.lines.push({ text: "", idx: i });
+            } else {
+              segs.push({ type: "text", lines: [{ text: "", idx: i }] });
+            }
+            i++;
+            continue;
+          }
           const parsed = parseInlineJELine(contentLines[i]);
           if (parsed) {
             // Check if previous line is a JE label heading
@@ -1000,10 +1014,13 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
               }
               return seg.lines.map((line) => {
                 const trimmed = line.text.trim();
+                // Empty line = paragraph break spacer
+                if (!trimmed) {
+                  return <div key={`spacer-${line.idx}`} className="h-3" />;
+                }
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 const isNumberedStep = /^\d+\.\s/.test(trimmed);
                 if (isJEOnly) {
-                  // Render calculation lines in semi-bold monospace
                   return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
                 }
                 if (isYearLabel) {
