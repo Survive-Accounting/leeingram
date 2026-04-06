@@ -1292,7 +1292,7 @@ export default function SolutionsViewerStaging() {
 
               {/* 1. Solution */}
               {answerSummary.trim() && (
-                <RevealToggle label="Reveal Solution" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Solution" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
+                <RevealToggle label="Reveal Explanation" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Explanation" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen}>
                   <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
                 </RevealToggle>
               )}

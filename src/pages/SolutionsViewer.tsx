@@ -2984,7 +2984,7 @@ export default function SolutionsViewer() {
 
   // ── Reveal toggle callback ──
   const sectionNameMap: Record<string, string> = {
-    "Solution": "solution",
+    "Explanation": "solution",
     "How to Solve This": "how_to_solve",
     "Journal Entries": "journal_entries",
     "Related Journal Entries": "related_je",
@@ -3663,7 +3663,7 @@ export default function SolutionsViewer() {
                   theme={t}
                   isPreview={isPreview}
                   enrollUrl={enrollUrl}
-                  sectionName="Solution"
+                  sectionName="Explanation"
                   assetCode={asset.asset_name}
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
