@@ -204,7 +204,7 @@ export default function QuizExplanation() {
 
   // Determine available tabs
   const availableTabs = useMemo(() => {
-    const tabs: { key: TabKey; label: string }[] = [{ key: "solution", label: "Solution" }];
+    const tabs: { key: TabKey; label: string }[] = [{ key: "solution", label: "Explanation" }];
 
     if (jeData.length > 0) tabs.push({ key: "je", label: "Journal Entries" });
     if (assets.length > 0) tabs.push({ key: "examples", label: "Examples" });

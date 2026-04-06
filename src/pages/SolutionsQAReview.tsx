@@ -89,7 +89,7 @@ function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   if (!asset) return [];
   return [
     { key: "problem_text", label: "Problem text & instructions match textbook?", hasContent: true },
-    { key: "solution", label: "Solution", hasContent: true },
+    { key: "solution", label: "Explanation", hasContent: true },
     { key: "je", label: "Journal Entries", hasContent: !!asset.journal_entry_completed_json },
   ].filter(s => s.hasContent);
 }
@@ -377,7 +377,7 @@ function ScreenshotLightbox({ url, onClose }: { url: string; onClose: () => void
 const FIX_SECTIONS = [
   { key: "problem_text", label: "Problem text" },
   { key: "instructions", label: "Instructions text" },
-  { key: "solution", label: "Solution" },
+  { key: "solution", label: "Explanation" },
 ];
 
 // ── Rendered Section Preview ─────────────────────────────────────────
