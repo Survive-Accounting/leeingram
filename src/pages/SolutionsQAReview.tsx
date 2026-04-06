@@ -24,7 +24,7 @@ import {
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
   GripHorizontal, X, ChevronDown, ChevronUp, Maximize2, Minimize2,
-  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List, Info, Copy,
+  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List, Info, Copy, Edit3, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import SmartTextRenderer from "@/components/SmartTextRenderer";
@@ -382,6 +382,57 @@ const FIX_SECTIONS = [
 
 // ── Rendered Section Preview ─────────────────────────────────────────
 
+/** Render text with **bold** markdown support */
+function renderMarkdownText(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+/** Student-facing explanation preview — mirrors AnswerSummarySection layout */
+function ExplanationPreview({ text, className }: { text: string; className?: string }) {
+  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  return (
+    <div className={`rounded-md p-3 pl-4 border-l-[3px] border-emerald-600 bg-emerald-500/5 space-y-3 ${className || ""}`}>
+      {subSections.map((section, si) => {
+        const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+        let headerText = "";
+        let contentStr = section;
+        if (labelMatch) {
+          headerText = `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`;
+          contentStr = section.slice(labelMatch[0].split("\n")[0].length);
+          // If header text is empty after letter, pull first content line
+          if (!labelMatch[2].trim()) {
+            const lines = contentStr.split("\n").filter(l => l.trim());
+            if (lines.length > 0) {
+              headerText = `(${labelMatch[1]}) ${lines[0].trim()}`;
+              contentStr = lines.slice(1).join("\n");
+            }
+          }
+        }
+        const contentLines = contentStr.split("\n").filter(l => l.trim());
+        return (
+          <div key={si}>
+            {si > 0 && <div className="border-t border-border my-2" />}
+            {headerText && (
+              <p className="font-bold text-[12px] text-foreground mb-1">{renderMarkdownText(headerText)}</p>
+            )}
+            {contentLines.map((line, li) => (
+              <p key={li} className="text-[11px] text-foreground/90 ml-2 mb-0.5 leading-relaxed">
+                {renderMarkdownText(line.trim())}
+              </p>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RenderedSectionPreview({
   sectionKey,
   data,
@@ -397,8 +448,8 @@ function RenderedSectionPreview({
     const text = String(data.survive_solution_text || "");
     if (!text.trim()) return <p className="text-xs text-muted-foreground italic">Empty</p>;
     return (
-      <div className={`rounded-md p-3 ${highlight}`}>
-        <SmartTextRenderer text={text} className="text-xs leading-relaxed text-foreground" />
+      <div className={`rounded-md ${highlight}`}>
+        <ExplanationPreview text={text} />
       </div>
     );
   }
@@ -472,6 +523,8 @@ function QAFixAssetModal({
   const [sectionApproved, setSectionApproved] = useState<Record<string, boolean>>({});
   const [sectionReverted, setSectionReverted] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<Record<string, "before" | "after">>({});
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   // JE Suggestion helper
   const [jeSuggestOpen, setJeSuggestOpen] = useState(false);
@@ -801,18 +854,30 @@ function QAFixAssetModal({
                         <>
                           <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5">
                             <button
-                              onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "before" }))}
-                              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "before" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                              onClick={() => { setEditingSection(null); setViewMode(prev => ({ ...prev, [result.key]: "before" })); }}
+                              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "before" && editingSection !== result.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
                             >
                               Before
                             </button>
                             <button
-                              onClick={() => setViewMode(prev => ({ ...prev, [result.key]: "after" }))}
-                              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "after" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                              onClick={() => { setEditingSection(null); setViewMode(prev => ({ ...prev, [result.key]: "after" })); }}
+                              className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${mode === "after" && editingSection !== result.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
                             >
                               After
                             </button>
                           </div>
+                          {result.key === "solution" && editingSection !== result.key && (
+                            <button
+                              onClick={() => {
+                                const text = String(after.survive_solution_text || "");
+                                setEditValue(text);
+                                setEditingSection(result.key);
+                              }}
+                              className="text-[10px] px-1.5 py-0.5 rounded text-blue-500 hover:text-blue-600 font-medium"
+                            >
+                              <Edit3 className="h-3 w-3 inline mr-0.5" />Edit
+                            </button>
+                          )}
                           <label className="flex items-center gap-1.5 cursor-pointer text-[10px]">
                             <Checkbox
                               checked={approved}
@@ -834,13 +899,47 @@ function QAFixAssetModal({
                       )}
                     </div>
                   </div>
-                  {!reverted && (
+                  {!reverted && editingSection === result.key ? (
+                    <div className="p-3 space-y-2">
+                      <Textarea
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        rows={14}
+                        className="text-[12px] leading-[1.7] font-mono resize-y min-h-[120px]"
+                        onKeyDown={(e) => {
+                          if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+                            e.preventDefault();
+                            // Save edit to afterData
+                            const col = result.key === "solution" ? "survive_solution_text" : "problem_context";
+                            setAfterData(prev => prev ? { ...prev, [result.key]: { ...prev[result.key], [col]: editValue } } : prev);
+                            setEditingSection(null);
+                            toast.success("Edit applied");
+                          }
+                          if (e.key === "Escape") { setEditingSection(null); }
+                        }}
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">⌘S to apply · Esc to cancel</span>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditingSection(null)}>Cancel</Button>
+                          <Button size="sm" className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
+                            const col = result.key === "solution" ? "survive_solution_text" : "problem_context";
+                            setAfterData(prev => prev ? { ...prev, [result.key]: { ...prev[result.key], [col]: editValue } } : prev);
+                            setEditingSection(null);
+                            toast.success("Edit applied");
+                          }}>
+                            <Save className="h-3 w-3 mr-1" /> Apply Edit
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : !reverted ? (
                     <ScrollArea className="max-h-[300px]">
                       <div className="p-3">
                         <RenderedSectionPreview sectionKey={result.key} data={data} mode={mode} />
                       </div>
                     </ScrollArea>
-                  )}
+                  ) : null}
                 </div>
               );
             })}

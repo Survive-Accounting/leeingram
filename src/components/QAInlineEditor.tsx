@@ -112,7 +112,11 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             className="text-[14px] leading-[1.7] whitespace-pre-wrap min-h-[80px] p-3 rounded"
             style={{ background: "#fff", border: "1px solid #E5E7EB", color: "#1A1A1A" }}
           >
-            {value || "(empty)"}
+            {value.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+              part.startsWith("**") && part.endsWith("**")
+                ? <strong key={i}>{part.slice(2, -2)}</strong>
+                : <span key={i}>{part}</span>
+            ) || "(empty)"}
           </div>
         ) : (
           <Textarea
