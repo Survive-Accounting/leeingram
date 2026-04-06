@@ -739,69 +739,6 @@ function QAFixAssetModal({
               </div>
             </div>
 
-            {/* Suggest Missing JE Helper */}
-            <div className="border border-border rounded-lg overflow-hidden">
-              <label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors">
-                <Checkbox checked={jeSuggestOpen} onCheckedChange={(c) => setJeSuggestOpen(!!c)} />
-                <span className="text-xs font-medium text-foreground">Related journal entries toggle is missing</span>
-              </label>
-              {jeSuggestOpen && (
-                <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    I'll read this problem and suggest which related journal entries should be added.
-                  </p>
-                  <Textarea
-                    value={jeContextPrompt}
-                    onChange={e => setJeContextPrompt(e.target.value)}
-                    placeholder="Optional: guide the AI — e.g. 'This is a bond problem, include entries for issuance, interest, and retirement'"
-                    className="text-xs min-h-[50px]"
-                  />
-                  {jeSuggestions.length === 0 && !jeSuggestLoading && (
-                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={analyzeMissingJE}>
-                      Analyze Problem →
-                    </Button>
-                  )}
-                  {jeSuggestLoading && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading problem...
-                    </div>
-                  )}
-                  {jeSuggestions.length > 0 && (
-                    <div className="space-y-1.5">
-                      {jeSuggestions.map((s, i) => (
-                        <label key={i} className="flex items-start gap-2 cursor-pointer group p-1.5 rounded hover:bg-muted/30">
-                          <Checkbox
-                            checked={jeSelected.has(i)}
-                            onCheckedChange={() => {
-                              setJeSelected(prev => {
-                                const next = new Set(prev);
-                                if (next.has(i)) next.delete(i); else next.add(i);
-                                return next;
-                              });
-                            }}
-                            className="mt-0.5"
-                          />
-                          <div>
-                            <span className="text-xs font-medium text-foreground">{s.label}</span>
-                            <p className="text-[10px] text-muted-foreground leading-snug">{s.description}</p>
-                          </div>
-                        </label>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs mt-1"
-                        disabled={jeSelected.size === 0}
-                        onClick={appendSelectedToPrompt}
-                      >
-                        Add Selected to Fix Description →
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
             <Button onClick={runFix} disabled={!canRun} className="w-full" size="sm">
               <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
             </Button>
