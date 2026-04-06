@@ -1516,12 +1516,11 @@ export default function SolutionsQAReview() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["qa-issues", current?.id] }); },
   });
 
-  // ── Mark and advance ────────────────────────────────────────────
-  const markAndAdvance = useCallback(async () => {
+  // ── Save issues (no navigation) ──────────────────────────────────
+  const saveIssuesOnly = useCallback(async () => {
     if (!current) return;
     const hasFlags = flaggedSections.size > 0;
 
-    // Create issue records for flagged sections (if not already logged)
     if (hasFlags) {
       for (const sectionKey of flaggedSections) {
         const sec = sections.find(s => s.key === sectionKey);
@@ -1545,10 +1544,14 @@ export default function SolutionsQAReview() {
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["qa-assets"] });
     toast.success(finalStatus === "reviewed_clean" ? "✓ Clean" : "⚠ Issues saved");
-    // Always advance to next asset in nav order
+  }, [current, reviewerName, qc, flaggedSections, sections, currentIssues]);
+
+  // ── Mark and advance ────────────────────────────────────────────
+  const markAndAdvance = useCallback(async () => {
+    await saveIssuesOnly();
     if (navPos < navOrder.length - 1) setCurrentIndex(navOrder[navPos + 1]);
     else toast.info("Last asset reached");
-  }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues, navPos, navOrder]);
+  }, [saveIssuesOnly, navPos, navOrder]);
 
   const jumpToNextPending = useCallback(() => {
     // Search forward in nav order from current position
