@@ -1297,6 +1297,23 @@ export default function SolutionsQAReview() {
     return categories;
   }, [sourceRefMap, allAssets, effectiveCourseId]);
 
+  // Flat navigation order derived from dropdown groups (source-ref sorted)
+  const navOrder = useMemo(() => {
+    if (!sourceRefGroups.length) return allAssets.map((_, i) => i);
+    return sourceRefGroups.flatMap(g => g.items.map(i => i.assetIndex));
+  }, [sourceRefGroups, allAssets]);
+
+  // Position within navOrder
+  const navPos = useMemo(() => {
+    const idx = navOrder.indexOf(currentIndex);
+    return idx >= 0 ? idx : 0;
+  }, [navOrder, currentIndex]);
+
+  const navigateByOffset = useCallback((offset: number) => {
+    const next = navPos + offset;
+    if (next >= 0 && next < navOrder.length) setCurrentIndex(navOrder[next]);
+  }, [navPos, navOrder]);
+
   const [sourceRefOpen, setSourceRefOpen] = useState(false);
 
 
