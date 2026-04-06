@@ -212,7 +212,7 @@ function FixAssetModal({
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Wrench className="h-4 w-4" /> Fix This Asset
             </h2>
-            <p className="text-xs text-muted-foreground font-mono mt-0.5">{issue.asset_name} · {issue.section}</p>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{issue.asset_name} · {issue.section === "Solution" ? "Explanation" : issue.section}</p>
           </div>
           {attemptNumber > 1 && (
             <Badge variant="outline" className="text-[10px]">Attempt #{attemptNumber} (stronger model)</Badge>
@@ -636,7 +636,7 @@ export default function SolutionsQAAdmin() {
               {approvedIssues.map(r => (
                 <div key={r.id} className="flex items-center gap-2 text-xs text-muted-foreground border-b border-border pb-2">
                   <span className="font-mono font-medium text-foreground">{r.asset_name}</span>
-                  <Badge variant="outline" className="text-[9px]">{r.section}</Badge>
+                  <Badge variant="outline" className="text-[9px]">{r.section === "Solution" ? "Explanation" : r.section}</Badge>
                   {r.fix_scope === "bulk_pattern" && (
                     <Badge className="bg-amber-500/20 text-amber-400 text-[8px]">⚡ Bulk</Badge>
                   )}

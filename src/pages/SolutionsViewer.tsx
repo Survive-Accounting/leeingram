@@ -1998,7 +1998,7 @@ function FeedbackModal({ open, onClose, asset }: { open: boolean; onClose: () =>
 // ── Fix This Now Modal ───────────────────────────────────────────────
 
 const FIX_SECTIONS = [
-  { key: "solution_je", label: "Solution text + JE reasons" },
+  { key: "solution_je", label: "Explanation text + JE reasons" },
   { key: "supplementary_je", label: "Supplementary journal entries" },
   { key: "formulas", label: "Important formulas" },
   { key: "concepts", label: "Key concepts" },
@@ -3659,7 +3659,7 @@ export default function SolutionsViewer() {
               {/* 1. Solution */}
               {answerSummary.trim() && (
                 <RevealToggle
-                  label="Reveal Solution"
+                  label="Reveal Explanation"
                   theme={t}
                   isPreview={isPreview}
                   enrollUrl={enrollUrl}

@@ -2098,7 +2098,7 @@ export default function SolutionsQAReview() {
                     </p>
                     {currentIssues?.map(issue => (
                       <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-amber-500/5 rounded px-1.5 py-1">
-                        <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
+                        <span className="text-amber-500 font-medium shrink-0">{issue.section === "Solution" ? "Explanation" : issue.section}:</span>
                         <span className="truncate text-foreground/80">{issue.issue_description}</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteIssueMutation.mutate(issue.id); }}
