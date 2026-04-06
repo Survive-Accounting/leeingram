@@ -744,20 +744,35 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
   );
 }
 
-function CanonicalJESection({ data, theme }: { data: CanonicalJEPayload; theme: Theme }) {
+function CanonicalJESection({ data, theme, instructions }: { data: CanonicalJEPayload; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
   const hasMultipleScenarios = data.scenario_sections.length > 1;
   return (
     <div className="space-y-6">
-      {data.scenario_sections.map((section, si) => (
-        <div key={si}>
-          {hasMultipleScenarios && (
-            <p className="font-bold text-[13px] mb-2 pb-1" style={{ color: theme.text, borderBottom: `1px solid ${theme.border}` }}>
-              {section.label}
-            </p>
-          )}
-          <JETable entries={section.entries_by_date} theme={theme} scenarioLabel={section.label} />
-        </div>
-      ))}
+      {data.scenario_sections.map((section, si) => {
+        // Try to extract a meaningful label from matched instruction
+        let displayLabel = section.label;
+        if (hasMultipleScenarios && instructions) {
+          const partMatch = section.label.match(/^Part\s+([a-z])/i);
+          if (partMatch) {
+            const letterIndex = partMatch[1].toLowerCase().charCodeAt(0) - 96;
+            const matchedInstr = instructions.find(ins => ins.instruction_number === letterIndex);
+            if (matchedInstr) {
+              const extracted = extractJEPartLabel(matchedInstr.instruction_text);
+              if (extracted) displayLabel = extracted;
+            }
+          }
+        }
+        return (
+          <div key={si}>
+            {hasMultipleScenarios && (
+              <p className="font-bold text-[13px] mb-2 pb-1" style={{ color: theme.text, borderBottom: `1px solid ${theme.border}` }}>
+                {displayLabel}
+              </p>
+            )}
+            <JETable entries={section.entries_by_date} theme={theme} scenarioLabel={section.label} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -853,9 +868,54 @@ function InlineJETable({ rows, heading, theme }: { rows: InlineJERow[]; heading?
   );
 }
 
+// ── JE-only detection helpers ────────────────────────────────────────
+
+const JE_ONLY_PATTERNS = [
+  /^prepare\s+the\s+journal\s+entr(?:y|ies)\s+to\s+record/i,
+  /^prepare\s+journal\s+entries\s+to\s+record/i,
+  /^prepare\s+journal\s+entries\s+for/i,
+  /^record\s+the\s+journal\s+entr(?:y|ies)/i,
+  /^record\s+journal\s+entries/i,
+  /^journalize/i,
+  /^prepare\s+the\s+entr(?:y|ies)\s+to\s+record/i,
+];
+
+const JE_STRIP_PATTERNS = [
+  /^prepare\s+the\s+journal\s+entr(?:y|ies)\s+to\s+record\s*/i,
+  /^prepare\s+journal\s+entries\s+to\s+record\s*/i,
+  /^prepare\s+journal\s+entries\s+for\s*/i,
+  /^record\s+the\s+journal\s+entr(?:y|ies)\s+(?:to\s+record\s+|for\s+)?/i,
+  /^record\s+journal\s+entries\s+(?:to\s+record\s+|for\s+)?/i,
+  /^journalize\s*/i,
+  /^prepare\s+the\s+entr(?:y|ies)\s+to\s+record\s*/i,
+];
+
+function detectJEOnly(instructions?: { instruction_number: number; instruction_text: string }[]): boolean {
+  if (!instructions || instructions.length === 0) return false;
+  return instructions.every(instr => {
+    const text = instr.instruction_text.trim();
+    return JE_ONLY_PATTERNS.some(p => p.test(text));
+  });
+}
+
+function extractJEPartLabel(instructionText: string): string {
+  let text = instructionText.trim();
+  for (const pattern of JE_STRIP_PATTERNS) {
+    text = text.replace(pattern, "");
+  }
+  text = text.replace(/\.\s*$/, "").trim();
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Check if a line contains calculation content */
+function isCalculationLine(line: string): boolean {
+  return /[×=÷+−%$]/.test(line) || /\b\d+\s*[×x*]\s*\d/i.test(line) || /\b\d+\s*[/÷]\s*\d/.test(line) || /×\s*rate|×\s*time|[/÷]\s*periods/i.test(line);
+}
+
 // ── Answer Summary ──────────────────────────────────────────────────
 
-function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
+function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
   const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
   return (
     <div className="rounded-md p-4 pl-5 border-l-[3px] break-words overflow-hidden" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
@@ -870,7 +930,12 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
             : `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`
           : null;
         const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        const contentLines = content.split("\n").filter(l => l.trim());
+        let contentLines = content.split("\n").filter(l => l.trim());
+
+        // For JE-only problems, filter to calculation lines only
+        if (isJEOnly) {
+          contentLines = contentLines.filter(l => isCalculationLine(l.trim()));
+        }
 
         // Group lines into segments: plain text vs inline JE blocks
         type TextSeg = { type: "text"; lines: { text: string; idx: number }[] };
@@ -912,18 +977,27 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
           }
         }
 
+        // For JE-only, skip rendering if no calculation content remains
+        if (isJEOnly && segs.every(s => s.type === "text" && s.lines.length === 0)) return null;
+
         return (
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
             {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
             {segs.map((seg, segIdx) => {
               if (seg.type === "je") {
+                // For JE-only problems, skip inline JE in explanation (they're in the JE accordion)
+                if (isJEOnly) return null;
                 return <InlineJETable key={`je-${segIdx}`} rows={seg.rows} heading={seg.heading} theme={theme} />;
               }
               return seg.lines.map((line) => {
                 const trimmed = line.text.trim();
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 const isNumberedStep = /^\d+\.\s/.test(trimmed);
+                if (isJEOnly) {
+                  // Render calculation lines in semi-bold monospace
+                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
+                }
                 if (isYearLabel) {
                   return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
                 }
@@ -3354,6 +3428,7 @@ export default function SolutionsViewer() {
 
 
   const answerSummary = stripRoleHints(asset.survive_solution_text || "");
+  const isJEOnly = detectJEOnly(asset._instructions);
   const formulas = asset.important_formulas || "";
   const conceptNotes = asset.concept_notes || "";
   const examTraps = asset.exam_traps || "";
@@ -3659,11 +3734,11 @@ export default function SolutionsViewer() {
               {/* 1. Solution */}
               {answerSummary.trim() && (
                 <RevealToggle
-                  label="Reveal Explanation"
+                  label={isJEOnly ? "Reveal Calculations" : "Reveal Explanation"}
                   theme={t}
                   isPreview={isPreview}
                   enrollUrl={enrollUrl}
-                  sectionName="Explanation"
+                  sectionName={isJEOnly ? "Calculations" : "Explanation"}
                   assetCode={asset.asset_name}
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
@@ -3695,7 +3770,7 @@ export default function SolutionsViewer() {
                       onCancel={() => setQaEditingField(null)}
                     />
                   ) : (
-                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
+                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} />
                   )}
                 </RevealToggle>
               )}
@@ -3737,7 +3812,7 @@ export default function SolutionsViewer() {
                     <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
                   ) : (
                     hasCanonicalJE ? (
-                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
+                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} instructions={asset._instructions} />
                     ) : (
                       <RawJEFallback text={jeBlock} theme={t} />
                     )

@@ -28,8 +28,8 @@ export function JETooltip({ text, variant = "admin" }: JETooltipProps) {
       </TooltipTrigger>
       <TooltipContent
         side="top"
-        className="max-w-[260px] text-xs leading-relaxed z-[100]"
-        style={isSolutions ? { background: "#FFFFFF", color: "#1A1A1A", border: "1px solid #E0E0E0" } : undefined}
+        className="max-w-[260px] text-xs leading-relaxed z-[100] text-left"
+        style={isSolutions ? { background: "#FFFFFF", color: "#1A1A1A", border: "1px solid #E0E0E0", textAlign: "left" } : { textAlign: "left" }}
       >
         {text}
       </TooltipContent>
