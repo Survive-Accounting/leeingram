@@ -588,7 +588,39 @@ function QAFixAssetModal({
     toast.success("Added to fix description");
   };
 
-  const canRun = fixPrompt.trim().length >= 20 && selectedSections.size > 0;
+  const ISSUE_TAGS = [
+    "Formatting has errors",
+    "Not readable / hard to follow",
+    "Should be in a table",
+    "Calculation is wrong",
+    "Missing steps",
+    "Explanation doesn't match journal entries",
+    "Wrong account names",
+    "Other",
+  ] as const;
+
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => {
+      const next = new Set(prev);
+      if (next.has(tag)) {
+        next.delete(tag);
+        // Remove the tag line from textarea
+        setFixPrompt(fp => fp.split("\n").filter(line => line.trim() !== `${tag}.`).join("\n"));
+      } else {
+        next.add(tag);
+        // Append tag line to textarea
+        setFixPrompt(fp => {
+          const trimmed = fp.trimEnd();
+          return trimmed ? `${trimmed}\n${tag}.` : `${tag}.`;
+        });
+      }
+      return next;
+    });
+  };
+
+  const canRun = selectedSections.size > 0 && (selectedTags.size > 0 || fixPrompt.trim().length > 0);
 
   const toggleSection = (key: string) => {
     setSelectedSections(prev => {
@@ -776,12 +808,6 @@ function QAFixAssetModal({
         {/* Step 1: Describe the fix */}
         {step === "input" && (
           <>
-            <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-2.5">
-              <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed">
-                <strong>💡 Tip:</strong> Take a screenshot of the issue and paste it into ChatGPT with a description of what's wrong. Ask it to suggest a fix prompt you can paste here for the best results.
-              </p>
-            </div>
-
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-foreground">Select what to fix</label>
@@ -799,14 +825,38 @@ function QAFixAssetModal({
               </div>
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[11px] font-medium text-muted-foreground">What's wrong?</label>
+              <div className="flex flex-wrap gap-1.5">
+                {ISSUE_TAGS.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                      selectedTags.has(tag)
+                        ? "bg-[hsl(var(--primary))] text-primary-foreground border-transparent"
+                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              {selectedTags.has("Should be in a table") && (
+                <p className="text-[10px] text-muted-foreground">
+                  📎 Screenshot the specific content you mean and paste it below — it helps the fix be precise.
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">What's wrong and how should it be fixed?</label>
               <Textarea
                 value={fixPrompt}
                 onChange={e => setFixPrompt(e.target.value)}
                 onPaste={handlePaste}
-                placeholder="e.g. The supplementary JE for bond issuance is missing Interest Payable as a credit. Fix it to show: Cash debit, Bonds Payable credit, Interest Payable credit. (Paste screenshots here!)"
-                className="text-xs min-h-[80px]"
+                placeholder="Add any extra detail, or paste a screenshot."
+                className="text-xs min-h-[60px]"
+                rows={3}
                 autoFocus
               />
               {pastedScreenshots.length > 0 && (
@@ -825,9 +875,6 @@ function QAFixAssetModal({
                   <p className="text-[10px] text-muted-foreground self-end">📎 {pastedScreenshots.length} screenshot{pastedScreenshots.length !== 1 ? "s" : ""}</p>
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground">
-                {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"} · Paste screenshots with ⌘V
-              </p>
             </div>
 
             <Button onClick={runFix} disabled={!canRun} className="w-full" size="sm">
