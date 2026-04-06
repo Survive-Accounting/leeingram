@@ -749,7 +749,7 @@ function QAFixAssetModal({
   const successfulSections = runResults.filter(r => r.ok && !sectionReverted[r.key]);
   const allApproved = successfulSections.length > 0 && successfulSections.every(r => sectionApproved[r.key]);
 
-  const fixDrag = useDraggable({ x: window.innerWidth - 460, y: 80 });
+  const fixDrag = useDraggable({ x: 16, y: 80 });
 
   return (
     <div
@@ -2298,7 +2298,7 @@ export default function SolutionsQAReview() {
                   {current?.teaching_asset_id && canUseFixer && (
                     <Button
                       className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
-                      onClick={async () => { await saveIssuesOnly(); setFixAssetOpen(true); }}
+                      onClick={async () => { await saveIssuesOnly(); setIsMinimized(true); setFixAssetOpen(true); }}
                     >
                       <Wrench className="h-3 w-3 mr-1" /> Save {flaggedSections.size} Issue{flaggedSections.size !== 1 ? "s" : ""} & Fix Now
                     </Button>
