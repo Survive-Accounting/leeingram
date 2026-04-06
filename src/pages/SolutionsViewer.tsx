@@ -3240,7 +3240,7 @@ export default function SolutionsViewer() {
     staleTime: 60 * 1000,
   });
 
-
+  useEffect(() => {
     if (!data?.id) return;
     const key = `solutions_viewed_${data.id}`;
     if (sessionStorage.getItem(key)) return;
