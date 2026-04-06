@@ -382,6 +382,57 @@ const FIX_SECTIONS = [
 
 // ── Rendered Section Preview ─────────────────────────────────────────
 
+/** Render text with **bold** markdown support */
+function renderMarkdownText(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+/** Student-facing explanation preview — mirrors AnswerSummarySection layout */
+function ExplanationPreview({ text, className }: { text: string; className?: string }) {
+  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  return (
+    <div className={`rounded-md p-3 pl-4 border-l-[3px] border-emerald-600 bg-emerald-500/5 space-y-3 ${className || ""}`}>
+      {subSections.map((section, si) => {
+        const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+        let headerText = "";
+        let contentStr = section;
+        if (labelMatch) {
+          headerText = `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`;
+          contentStr = section.slice(labelMatch[0].split("\n")[0].length);
+          // If header text is empty after letter, pull first content line
+          if (!labelMatch[2].trim()) {
+            const lines = contentStr.split("\n").filter(l => l.trim());
+            if (lines.length > 0) {
+              headerText = `(${labelMatch[1]}) ${lines[0].trim()}`;
+              contentStr = lines.slice(1).join("\n");
+            }
+          }
+        }
+        const contentLines = contentStr.split("\n").filter(l => l.trim());
+        return (
+          <div key={si}>
+            {si > 0 && <div className="border-t border-border my-2" />}
+            {headerText && (
+              <p className="font-bold text-[12px] text-foreground mb-1">{renderMarkdownText(headerText)}</p>
+            )}
+            {contentLines.map((line, li) => (
+              <p key={li} className="text-[11px] text-foreground/90 ml-2 mb-0.5 leading-relaxed">
+                {renderMarkdownText(line.trim())}
+              </p>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RenderedSectionPreview({
   sectionKey,
   data,
@@ -397,8 +448,8 @@ function RenderedSectionPreview({
     const text = String(data.survive_solution_text || "");
     if (!text.trim()) return <p className="text-xs text-muted-foreground italic">Empty</p>;
     return (
-      <div className={`rounded-md p-3 ${highlight}`}>
-        <SmartTextRenderer text={text} className="text-xs leading-relaxed text-foreground" />
+      <div className={`rounded-md ${highlight}`}>
+        <ExplanationPreview text={text} />
       </div>
     );
   }
