@@ -956,6 +956,17 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
         const segs: Seg[] = [];
 
         while (i < contentLines.length) {
+          // Empty lines become paragraph break markers
+          if (!contentLines[i].trim()) {
+            const lastSeg = segs[segs.length - 1];
+            if (lastSeg && lastSeg.type === "text") {
+              lastSeg.lines.push({ text: "", idx: i });
+            } else {
+              segs.push({ type: "text", lines: [{ text: "", idx: i }] });
+            }
+            i++;
+            continue;
+          }
           const parsed = parseInlineJELine(contentLines[i]);
           if (parsed) {
             // Check if previous line is a JE label heading
