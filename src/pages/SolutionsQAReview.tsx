@@ -1444,9 +1444,9 @@ export default function SolutionsQAReview() {
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["qa-assets"] });
     toast.success(finalStatus === "reviewed_clean" ? "✓ Clean" : "⚠ Issues saved");
-    const nextPending = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
-    if (nextPending >= 0) setCurrentIndex(nextPending);
-    else if (currentIndex < allAssets.length - 1) setCurrentIndex(i => i + 1);
+    // Always advance to next asset in order
+    if (currentIndex < allAssets.length - 1) setCurrentIndex(i => i + 1);
+    else toast.info("Last asset reached");
   }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues]);
 
   const jumpToNextPending = useCallback(() => {
