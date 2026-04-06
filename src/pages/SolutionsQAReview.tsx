@@ -523,6 +523,8 @@ function QAFixAssetModal({
   const [sectionApproved, setSectionApproved] = useState<Record<string, boolean>>({});
   const [sectionReverted, setSectionReverted] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<Record<string, "before" | "after">>({});
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   // JE Suggestion helper
   const [jeSuggestOpen, setJeSuggestOpen] = useState(false);
