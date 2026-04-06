@@ -88,6 +88,7 @@ type QAReviewerAssignment = { course_id: string; chapter_id: string };
 function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   if (!asset) return [];
   return [
+    { key: "problem_text", label: "Problem text & instructions match textbook?", hasContent: true },
     { key: "solution", label: "Solution", hasContent: true },
     { key: "je", label: "Journal Entries", hasContent: !!asset.journal_entry_completed_json },
   ].filter(s => s.hasContent);
@@ -939,9 +940,8 @@ export default function SolutionsQAReview() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewerName, setReviewerName] = useState(() => localStorage.getItem("qa-reviewer-name") || "");
   const [nameInput, setNameInput] = useState("");
-  const [checkedSections, setCheckedSections] = useState<Set<string>>(new Set());
-  const [openIssueSection, setOpenIssueSection] = useState<string | null>(null);
-  const [screenshotStep, setScreenshotStep] = useState<"pending" | "done">("pending");
+  const [flaggedSections, setFlaggedSections] = useState<Set<string>>(new Set());
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -1352,8 +1352,8 @@ export default function SolutionsQAReview() {
   });
 
   const sections = useMemo(() => buildSections(assetDetail ?? null), [assetDetail]);
-  const hasScreenshot = !!screenshotUrl;
   const issueCount = currentIssues?.length ?? 0;
+  const flaggedCount = flaggedSections.size;
   const isPending = current?.qa_status === "pending";
 
   // ── Assign VA to course ─────────────────────────────────────────
@@ -1393,10 +1393,9 @@ export default function SolutionsQAReview() {
 
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
-    setCheckedSections(new Set());
-    setOpenIssueSection(null);
-    setScreenshotStep(hasScreenshot ? "pending" : "done");
-  }, [current?.id, hasScreenshot]);
+    setFlaggedSections(new Set());
+    setActiveSectionIndex(0);
+  }, [current?.id]);
 
   useEffect(() => {
     if (screenshotStep === "done" && iframeRef.current) {
@@ -1417,13 +1416,27 @@ export default function SolutionsQAReview() {
   });
 
   // ── Mark and advance ────────────────────────────────────────────
-  const markAndAdvance = useCallback(async (forceStatus?: "reviewed_issues") => {
+  const markAndAdvance = useCallback(async () => {
     if (!current) return;
-    const { count } = await supabase
-      .from("solutions_qa_issues" as any)
-      .select("id", { count: "exact", head: true })
-      .eq("qa_asset_id", current.id);
-    const finalStatus = forceStatus || ((count && count > 0) ? "reviewed_issues" : "reviewed_clean");
+    const hasFlags = flaggedSections.size > 0;
+
+    // Create issue records for flagged sections (if not already logged)
+    if (hasFlags) {
+      for (const sectionKey of flaggedSections) {
+        const sec = sections.find(s => s.key === sectionKey);
+        const label = sec?.label || sectionKey;
+        const alreadyLogged = currentIssues?.some(i => i.section === label);
+        if (!alreadyLogged) {
+          await supabase.from("solutions_qa_issues" as any).insert({
+            qa_asset_id: current.id, asset_name: current.asset_name, section: label,
+            issue_description: `${label} has issues`, fix_status: "pending",
+          });
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
+    }
+
+    const finalStatus = hasFlags ? "reviewed_issues" : "reviewed_clean";
     const { error } = await supabase
       .from("solutions_qa_assets" as any)
       .update({ qa_status: finalStatus, reviewed_at: new Date().toISOString(), reviewed_by: reviewerName || "VA" })
@@ -1434,7 +1447,7 @@ export default function SolutionsQAReview() {
     const nextPending = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
     if (nextPending >= 0) setCurrentIndex(nextPending);
     else if (currentIndex < allAssets.length - 1) setCurrentIndex(i => i + 1);
-  }, [current, currentIndex, allAssets, reviewerName, qc]);
+  }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues]);
 
   const jumpToNextPending = useCallback(() => {
     const next = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
@@ -1446,21 +1459,13 @@ export default function SolutionsQAReview() {
     }
   }, [allAssets, currentIndex]);
 
-  const handleScreenshotMatch = useCallback(async (result: "yes" | "almost" | "no") => {
-    if ((result === "almost" || result === "no") && current) {
-      await supabase.from("solutions_qa_issues" as any).insert({
-        qa_asset_id: current.id, asset_name: current.asset_name, section: "Problem Text",
-        issue_description: result === "almost" ? "Problem text minor mismatch with textbook" : "Problem text does not match textbook",
-        fix_status: "pending",
-      });
-      qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
-    }
-    setScreenshotStep("done");
-  }, [current, qc]);
-
-  const checkAll = useCallback(() => {
-    setCheckedSections(new Set(sections.map(s => s.key)));
-  }, [sections]);
+  const toggleSectionFlag = useCallback((key: string) => {
+    setFlaggedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
 
   // ── Keyboard shortcuts ──────────────────────────────────────────
   useEffect(() => {
@@ -1469,36 +1474,23 @@ export default function SolutionsQAReview() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
 
-      if (screenshotStep === "pending" && hasScreenshot) {
-        if (e.key === "y" || e.key === "Y") { e.preventDefault(); handleScreenshotMatch("yes"); return; }
-        if (e.key === "a" || e.key === "A") { e.preventDefault(); handleScreenshotMatch("almost"); return; }
-        if (e.key === "n" || e.key === "N") { e.preventDefault(); handleScreenshotMatch("no"); return; }
-      }
-
       if (e.key === "ArrowRight" || e.key === ".") { e.preventDefault(); setCurrentIndex(i => Math.min(allAssets.length - 1, i + 1)); }
       else if (e.key === "ArrowLeft" || e.key === ",") { e.preventDefault(); setCurrentIndex(i => Math.max(0, i - 1)); }
       else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); markAndAdvance(); }
       else if (e.key === "s" || e.key === "S") { e.preventDefault(); jumpToNextPending(); }
-
-      if (screenshotStep === "done") {
+      else if (e.key === "ArrowDown") { e.preventDefault(); setActiveSectionIndex(i => Math.min(sections.length - 1, i + 1)); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActiveSectionIndex(i => Math.max(0, i - 1)); }
+      else {
         const num = parseInt(e.key);
         if (num >= 1 && num <= sections.length) {
           e.preventDefault();
-          if (e.shiftKey) { setOpenIssueSection(sections[num - 1].label); }
-          else {
-            setCheckedSections(prev => {
-              const next = new Set(prev);
-              if (next.has(sections[num - 1].key)) next.delete(sections[num - 1].key);
-              else next.add(sections[num - 1].key);
-              return next;
-            });
-          }
+          toggleSectionFlag(sections[num - 1].key);
         }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewerName, screenshotStep, hasScreenshot, handleScreenshotMatch, allAssets.length, markAndAdvance, jumpToNextPending, sections]);
+  }, [reviewerName, allAssets.length, markAndAdvance, jumpToNextPending, sections, toggleSectionFlag]);
 
   // ── Course change handler ───────────────────────────────────────
   const handleCourseChange = (val: string) => {
