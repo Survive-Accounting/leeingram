@@ -1538,14 +1538,16 @@ export default function SolutionsQAReview() {
   }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues, navPos, navOrder]);
 
   const jumpToNextPending = useCallback(() => {
-    const next = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
-    if (next >= 0) setCurrentIndex(next);
-    else {
-      const fromStart = allAssets.findIndex(r => r.qa_status === "pending");
-      if (fromStart >= 0) setCurrentIndex(fromStart);
-      else toast.info("All assets reviewed!");
+    // Search forward in nav order from current position
+    for (let i = navPos + 1; i < navOrder.length; i++) {
+      if (allAssets[navOrder[i]]?.qa_status === "pending") { setCurrentIndex(navOrder[i]); return; }
     }
-  }, [allAssets, currentIndex]);
+    // Wrap around from start
+    for (let i = 0; i < navPos; i++) {
+      if (allAssets[navOrder[i]]?.qa_status === "pending") { setCurrentIndex(navOrder[i]); return; }
+    }
+    toast.info("All assets reviewed!");
+  }, [allAssets, navOrder, navPos]);
 
   const toggleSectionFlag = useCallback((key: string) => {
     setFlaggedSections(prev => {
