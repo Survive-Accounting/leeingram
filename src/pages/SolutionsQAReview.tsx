@@ -1398,13 +1398,13 @@ export default function SolutionsQAReview() {
   }, [current?.id]);
 
   useEffect(() => {
-    if (screenshotStep === "done" && iframeRef.current) {
+    if (iframeRef.current) {
       const timer = setTimeout(() => {
         iframeRef.current?.contentWindow?.postMessage({ type: "QA_OPEN_ALL_TOGGLES" }, "*");
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [screenshotStep, current?.id]);
+  }, [current?.id]);
 
   // ── Delete issue ────────────────────────────────────────────────
   const deleteIssueMutation = useMutation({
