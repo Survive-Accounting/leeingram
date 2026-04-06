@@ -926,7 +926,7 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
 
         // Extract content lines (everything after the (x) label line)
         const rawContent = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        let contentLines = rawContent.split("\n").filter(l => l.trim());
+        let contentLines = rawContent.split("\n");
 
         // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
         let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
