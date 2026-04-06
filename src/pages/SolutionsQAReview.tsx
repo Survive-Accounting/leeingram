@@ -24,7 +24,7 @@ import {
 import {
   CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft,
   GripHorizontal, X, ChevronDown, ChevronUp, Maximize2, Minimize2,
-  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List, Info, Copy,
+  SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List, Info, Copy, Edit3, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import SmartTextRenderer from "@/components/SmartTextRenderer";
