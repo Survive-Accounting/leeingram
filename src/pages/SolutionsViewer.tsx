@@ -3734,11 +3734,11 @@ export default function SolutionsViewer() {
               {/* 1. Solution */}
               {answerSummary.trim() && (
                 <RevealToggle
-                  label="Reveal Explanation"
+                  label={isJEOnly ? "Reveal Calculations" : "Reveal Explanation"}
                   theme={t}
                   isPreview={isPreview}
                   enrollUrl={enrollUrl}
-                  sectionName="Explanation"
+                  sectionName={isJEOnly ? "Calculations" : "Explanation"}
                   assetCode={asset.asset_name}
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
@@ -3770,7 +3770,7 @@ export default function SolutionsViewer() {
                       onCancel={() => setQaEditingField(null)}
                     />
                   ) : (
-                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} />
+                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} />
                   )}
                 </RevealToggle>
               )}
