@@ -88,6 +88,7 @@ type QAReviewerAssignment = { course_id: string; chapter_id: string };
 function buildSections(asset: TeachingAssetDetail | null): SectionDef[] {
   if (!asset) return [];
   return [
+    { key: "problem_text", label: "Problem text & instructions match textbook?", hasContent: true },
     { key: "solution", label: "Solution", hasContent: true },
     { key: "je", label: "Journal Entries", hasContent: !!asset.journal_entry_completed_json },
   ].filter(s => s.hasContent);
@@ -939,9 +940,8 @@ export default function SolutionsQAReview() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewerName, setReviewerName] = useState(() => localStorage.getItem("qa-reviewer-name") || "");
   const [nameInput, setNameInput] = useState("");
-  const [checkedSections, setCheckedSections] = useState<Set<string>>(new Set());
-  const [openIssueSection, setOpenIssueSection] = useState<string | null>(null);
-  const [screenshotStep, setScreenshotStep] = useState<"pending" | "done">("pending");
+  const [flaggedSections, setFlaggedSections] = useState<Set<string>>(new Set());
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -1352,8 +1352,8 @@ export default function SolutionsQAReview() {
   });
 
   const sections = useMemo(() => buildSections(assetDetail ?? null), [assetDetail]);
-  const hasScreenshot = !!screenshotUrl;
   const issueCount = currentIssues?.length ?? 0;
+  const flaggedCount = flaggedSections.size;
   const isPending = current?.qa_status === "pending";
 
   // ── Assign VA to course ─────────────────────────────────────────
@@ -1393,19 +1393,18 @@ export default function SolutionsQAReview() {
 
   // ── Reset state on asset change ─────────────────────────────────
   useEffect(() => {
-    setCheckedSections(new Set());
-    setOpenIssueSection(null);
-    setScreenshotStep(hasScreenshot ? "pending" : "done");
-  }, [current?.id, hasScreenshot]);
+    setFlaggedSections(new Set());
+    setActiveSectionIndex(0);
+  }, [current?.id]);
 
   useEffect(() => {
-    if (screenshotStep === "done" && iframeRef.current) {
+    if (iframeRef.current) {
       const timer = setTimeout(() => {
         iframeRef.current?.contentWindow?.postMessage({ type: "QA_OPEN_ALL_TOGGLES" }, "*");
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [screenshotStep, current?.id]);
+  }, [current?.id]);
 
   // ── Delete issue ────────────────────────────────────────────────
   const deleteIssueMutation = useMutation({
@@ -1417,13 +1416,27 @@ export default function SolutionsQAReview() {
   });
 
   // ── Mark and advance ────────────────────────────────────────────
-  const markAndAdvance = useCallback(async (forceStatus?: "reviewed_issues") => {
+  const markAndAdvance = useCallback(async () => {
     if (!current) return;
-    const { count } = await supabase
-      .from("solutions_qa_issues" as any)
-      .select("id", { count: "exact", head: true })
-      .eq("qa_asset_id", current.id);
-    const finalStatus = forceStatus || ((count && count > 0) ? "reviewed_issues" : "reviewed_clean");
+    const hasFlags = flaggedSections.size > 0;
+
+    // Create issue records for flagged sections (if not already logged)
+    if (hasFlags) {
+      for (const sectionKey of flaggedSections) {
+        const sec = sections.find(s => s.key === sectionKey);
+        const label = sec?.label || sectionKey;
+        const alreadyLogged = currentIssues?.some(i => i.section === label);
+        if (!alreadyLogged) {
+          await supabase.from("solutions_qa_issues" as any).insert({
+            qa_asset_id: current.id, asset_name: current.asset_name, section: label,
+            issue_description: `${label} has issues`, fix_status: "pending",
+          });
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
+    }
+
+    const finalStatus = hasFlags ? "reviewed_issues" : "reviewed_clean";
     const { error } = await supabase
       .from("solutions_qa_assets" as any)
       .update({ qa_status: finalStatus, reviewed_at: new Date().toISOString(), reviewed_by: reviewerName || "VA" })
@@ -1434,7 +1447,7 @@ export default function SolutionsQAReview() {
     const nextPending = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
     if (nextPending >= 0) setCurrentIndex(nextPending);
     else if (currentIndex < allAssets.length - 1) setCurrentIndex(i => i + 1);
-  }, [current, currentIndex, allAssets, reviewerName, qc]);
+  }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues]);
 
   const jumpToNextPending = useCallback(() => {
     const next = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
@@ -1446,21 +1459,13 @@ export default function SolutionsQAReview() {
     }
   }, [allAssets, currentIndex]);
 
-  const handleScreenshotMatch = useCallback(async (result: "yes" | "almost" | "no") => {
-    if ((result === "almost" || result === "no") && current) {
-      await supabase.from("solutions_qa_issues" as any).insert({
-        qa_asset_id: current.id, asset_name: current.asset_name, section: "Problem Text",
-        issue_description: result === "almost" ? "Problem text minor mismatch with textbook" : "Problem text does not match textbook",
-        fix_status: "pending",
-      });
-      qc.invalidateQueries({ queryKey: ["qa-issues", current.id] });
-    }
-    setScreenshotStep("done");
-  }, [current, qc]);
-
-  const checkAll = useCallback(() => {
-    setCheckedSections(new Set(sections.map(s => s.key)));
-  }, [sections]);
+  const toggleSectionFlag = useCallback((key: string) => {
+    setFlaggedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
 
   // ── Keyboard shortcuts ──────────────────────────────────────────
   useEffect(() => {
@@ -1469,36 +1474,23 @@ export default function SolutionsQAReview() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
 
-      if (screenshotStep === "pending" && hasScreenshot) {
-        if (e.key === "y" || e.key === "Y") { e.preventDefault(); handleScreenshotMatch("yes"); return; }
-        if (e.key === "a" || e.key === "A") { e.preventDefault(); handleScreenshotMatch("almost"); return; }
-        if (e.key === "n" || e.key === "N") { e.preventDefault(); handleScreenshotMatch("no"); return; }
-      }
-
       if (e.key === "ArrowRight" || e.key === ".") { e.preventDefault(); setCurrentIndex(i => Math.min(allAssets.length - 1, i + 1)); }
       else if (e.key === "ArrowLeft" || e.key === ",") { e.preventDefault(); setCurrentIndex(i => Math.max(0, i - 1)); }
       else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); markAndAdvance(); }
       else if (e.key === "s" || e.key === "S") { e.preventDefault(); jumpToNextPending(); }
-
-      if (screenshotStep === "done") {
+      else if (e.key === "ArrowDown") { e.preventDefault(); setActiveSectionIndex(i => Math.min(sections.length - 1, i + 1)); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActiveSectionIndex(i => Math.max(0, i - 1)); }
+      else {
         const num = parseInt(e.key);
         if (num >= 1 && num <= sections.length) {
           e.preventDefault();
-          if (e.shiftKey) { setOpenIssueSection(sections[num - 1].label); }
-          else {
-            setCheckedSections(prev => {
-              const next = new Set(prev);
-              if (next.has(sections[num - 1].key)) next.delete(sections[num - 1].key);
-              else next.add(sections[num - 1].key);
-              return next;
-            });
-          }
+          toggleSectionFlag(sections[num - 1].key);
         }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewerName, screenshotStep, hasScreenshot, handleScreenshotMatch, allAssets.length, markAndAdvance, jumpToNextPending, sections]);
+  }, [reviewerName, allAssets.length, markAndAdvance, jumpToNextPending, sections, toggleSectionFlag]);
 
   // ── Course change handler ───────────────────────────────────────
   const handleCourseChange = (val: string) => {
@@ -1965,102 +1957,72 @@ export default function SolutionsQAReview() {
                 <span className="text-[9px] text-muted-foreground/60 font-mono">{current?.asset_name || ""}</span>
               </div>
 
-              {/* Step 1: Screenshot comparison */}
-              {screenshotStep === "pending" && hasScreenshot && (
-                <div className="px-2.5 py-2.5 border-b border-border space-y-2">
-                  <p className="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Eye className="h-3 w-3 text-destructive" /> Compare with Textbook
-                  </p>
-                  <div
-                    className="w-full max-h-[120px] rounded-lg border border-border overflow-hidden cursor-pointer bg-muted/20 hover:opacity-90 transition-opacity"
-                    onClick={() => setLightboxUrl(screenshotUrl!)}
-                  >
-                    <img src={screenshotUrl!} alt="Textbook" className="w-full h-full object-contain" />
-                  </div>
-                  <p className="text-[11px] text-foreground font-medium">Match textbook?</p>
-                  <div className="flex gap-1">
-                    <Button size="sm" className="flex-1 text-[10px] h-6 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleScreenshotMatch("yes")}>Yes [Y]</Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-[10px] h-6 border-amber-500/30 text-amber-600" onClick={() => handleScreenshotMatch("almost")}>~ish [A]</Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-[10px] h-6 border-destructive/30 text-destructive" onClick={() => handleScreenshotMatch("no")}>No [N]</Button>
-                  </div>
-                </div>
-              )}
+              {/* Section review — guided with red border */}
+              <div className="px-2.5 py-2 space-y-1">
+                <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5">
+                  Review ({sections.length - flaggedSections.size} clean · {flaggedSections.size} flagged)
+                </p>
 
-              {/* Step 2: Section checklist */}
-              {screenshotStep === "done" && (
-                <div className="px-2.5 py-2 space-y-0.5">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">
-                      Sections ({checkedSections.size}/{sections.length})
-                    </p>
-                    {sections.length > 0 && checkedSections.size < sections.length && (
-                      <button onClick={checkAll} className="text-[9px] text-emerald-500 hover:text-emerald-400 font-medium">Check All ✓</button>
-                    )}
-                  </div>
-
-                  {sections.map((sec, idx) => {
-                    const checked = checkedSections.has(sec.key);
-                    return (
-                      <div key={sec.key}>
-                        <div className="flex items-center gap-1.5 py-1 px-1 rounded group hover:bg-muted/30 transition-colors">
+                {sections.map((sec, idx) => {
+                  const isFlagged = flaggedSections.has(sec.key);
+                  const isActive = activeSectionIndex === idx;
+                  return (
+                    <div
+                      key={sec.key}
+                      className={`flex items-center gap-2 py-1.5 px-2 rounded-md transition-all ${
+                        isActive
+                          ? "border-2 border-dashed border-destructive bg-destructive/5"
+                          : "border-2 border-transparent"
+                      }`}
+                      onClick={() => setActiveSectionIndex(idx)}
+                    >
+                      <span className="text-[8px] text-muted-foreground/50 font-mono w-3 shrink-0 text-right">{idx + 1}</span>
+                      <span className={`text-[11px] flex-1 ${isFlagged ? "text-destructive font-medium" : "text-foreground"}`}>
+                        {sec.label}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!isFlagged ? (
                           <button
-                            onClick={() => {
-                              setCheckedSections(prev => {
-                                const next = new Set(prev);
-                                if (next.has(sec.key)) next.delete(sec.key); else next.add(sec.key);
-                                return next;
-                              });
-                            }}
-                            className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              checked ? "bg-emerald-600 border-emerald-600" : "border-border hover:border-foreground/50"
-                            }`}
+                            onClick={(e) => { e.stopPropagation(); toggleSectionFlag(sec.key); }}
+                            className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:text-emerald-500 px-1.5 py-0.5 rounded bg-emerald-500/10 transition-colors"
                           >
-                            {checked && <CheckCircle2 className="h-2.5 w-2.5 text-white" />}
+                            <CheckCircle2 className="h-3 w-3" /> Clean
                           </button>
-                          <span className={`text-[11px] flex-1 ${checked ? "text-muted-foreground line-through" : "text-foreground"}`}>{sec.label}</span>
-                          <span className="text-[8px] text-muted-foreground/40 font-mono">{idx + 1}</span>
+                        ) : (
                           <button
-                            onClick={() => setOpenIssueSection(openIssueSection === sec.label ? null : sec.label)}
-                            className="text-[9px] font-medium text-muted-foreground hover:text-foreground transition-colors px-1 py-0.5"
-                            title={`Report issue with ${sec.label} [Shift+${idx + 1}]`}
+                            onClick={(e) => { e.stopPropagation(); toggleSectionFlag(sec.key); }}
+                            className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:text-destructive/80 px-1.5 py-0.5 rounded bg-destructive/10 transition-colors"
                           >
-                            Add Issue
+                            <X className="h-3 w-3" /> Issue
                           </button>
-                        </div>
-                        {openIssueSection === sec.label && current && (
-                          <QuickIssueForm
-                            section={sec.label} qaAssetId={current.id} assetName={current.asset_name}
-                            onSaved={() => { setOpenIssueSection(null); qc.invalidateQueries({ queryKey: ["qa-issues", current.id] }); }}
-                            onCancel={() => setOpenIssueSection(null)}
-                          />
                         )}
                       </div>
-                    );
-                  })}
-
-                  {/* Logged issues */}
-                  {issueCount > 0 && (
-                    <div className="mt-1.5 pt-1.5 border-t border-border space-y-0.5">
-                      <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">
-                        {issueCount} issue{issueCount !== 1 ? "s" : ""}
-                      </p>
-                      {currentIssues?.map(issue => (
-                        <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-amber-500/5 rounded px-1.5 py-1">
-                          <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
-                          <span className="truncate text-foreground/80">{issue.issue_description}</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteIssueMutation.mutate(issue.id); }}
-                            className="ml-auto shrink-0 p-1 -mr-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
-                            title="Remove issue"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
                     </div>
-                  )}
-                </div>
-              )}
+                  );
+                })}
+
+                {/* Previously logged issues */}
+                {issueCount > 0 && (
+                  <div className="mt-1.5 pt-1.5 border-t border-border space-y-0.5">
+                    <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">
+                      {issueCount} saved issue{issueCount !== 1 ? "s" : ""}
+                    </p>
+                    {currentIssues?.map(issue => (
+                      <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-amber-500/5 rounded px-1.5 py-1">
+                        <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
+                        <span className="truncate text-foreground/80">{issue.issue_description}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteIssueMutation.mutate(issue.id); }}
+                          className="ml-auto shrink-0 p-1 -mr-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
+                          title="Remove issue"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Shortcuts */}
               <div className="px-2.5 py-1 border-t border-border">
@@ -2069,7 +2031,7 @@ export default function SolutionsQAReview() {
                 </button>
                 {showShortcuts && (
                   <div className="mt-0.5 text-[9px] text-muted-foreground/60 space-y-0">
-                    <p><kbd className="font-mono bg-muted px-0.5 rounded">1-7</kbd> check · <kbd className="font-mono bg-muted px-0.5 rounded">⇧+#</kbd> issue</p>
+                    <p><kbd className="font-mono bg-muted px-0.5 rounded">1-{sections.length}</kbd> toggle flag · <kbd className="font-mono bg-muted px-0.5 rounded">↑↓</kbd> move focus</p>
                     <p><kbd className="font-mono bg-muted px-0.5 rounded">→</kbd> next · <kbd className="font-mono bg-muted px-0.5 rounded">←</kbd> prev · <kbd className="font-mono bg-muted px-0.5 rounded">S</kbd> skip</p>
                     <p><kbd className="font-mono bg-muted px-0.5 rounded">Enter/Space</kbd> submit & next</p>
                   </div>
@@ -2079,18 +2041,14 @@ export default function SolutionsQAReview() {
 
             {/* Sticky bottom action */}
             <div className="shrink-0 border-t border-border bg-card px-2.5 py-2 space-y-1">
-              {screenshotStep === "done" && (
-                <>
-                  {issueCount === 0 ? (
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Good — Next →
-                    </Button>
-                  ) : (
-                    <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance("reviewed_issues")}>
-                      <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
-                    </Button>
-                  )}
-                </>
+              {flaggedSections.size === 0 ? (
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Clean — Next →
+                </Button>
+              ) : (
+                <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Save {flaggedSections.size} Issue{flaggedSections.size !== 1 ? "s" : ""} & Next →
+                </Button>
               )}
               {current?.teaching_asset_id && canUseFixer && (
                 <Button
