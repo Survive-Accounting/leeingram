@@ -1957,6 +1957,19 @@ export default function SolutionsQAReview() {
                 <span className="text-[9px] text-muted-foreground/60 font-mono">{current?.asset_name || ""}</span>
               </div>
 
+              {/* Textbook screenshot reference */}
+              {screenshotUrl && (
+                <div className="px-2.5 py-2 border-b border-border">
+                  <div
+                    className="w-full max-h-[100px] rounded-lg border border-border overflow-hidden cursor-pointer bg-muted/20 hover:opacity-90 transition-opacity"
+                    onClick={() => setLightboxUrl(screenshotUrl)}
+                  >
+                    <img src={screenshotUrl} alt="Textbook" className="w-full h-full object-contain" />
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1 text-center">Click to enlarge textbook screenshot</p>
+                </div>
+              )}
+
               {/* Section review — guided with red border */}
               <div className="px-2.5 py-2 space-y-1">
                 <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5">
@@ -1984,14 +1997,16 @@ export default function SolutionsQAReview() {
                         {!isFlagged ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleSectionFlag(sec.key); }}
-                            className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:text-emerald-500 px-1.5 py-0.5 rounded bg-emerald-500/10 transition-colors"
+                            className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:text-destructive px-1.5 py-0.5 rounded bg-emerald-500/10 hover:bg-destructive/10 transition-colors"
+                            title="Click to flag as issue"
                           >
                             <CheckCircle2 className="h-3 w-3" /> Clean
                           </button>
                         ) : (
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleSectionFlag(sec.key); }}
-                            className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:text-destructive/80 px-1.5 py-0.5 rounded bg-destructive/10 transition-colors"
+                            className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:text-emerald-600 px-1.5 py-0.5 rounded bg-destructive/10 hover:bg-emerald-500/10 transition-colors"
+                            title="Click to mark as clean"
                           >
                             <X className="h-3 w-3" /> Issue
                           </button>
