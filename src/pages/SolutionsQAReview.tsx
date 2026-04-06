@@ -1957,102 +1957,72 @@ export default function SolutionsQAReview() {
                 <span className="text-[9px] text-muted-foreground/60 font-mono">{current?.asset_name || ""}</span>
               </div>
 
-              {/* Step 1: Screenshot comparison */}
-              {screenshotStep === "pending" && hasScreenshot && (
-                <div className="px-2.5 py-2.5 border-b border-border space-y-2">
-                  <p className="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Eye className="h-3 w-3 text-destructive" /> Compare with Textbook
-                  </p>
-                  <div
-                    className="w-full max-h-[120px] rounded-lg border border-border overflow-hidden cursor-pointer bg-muted/20 hover:opacity-90 transition-opacity"
-                    onClick={() => setLightboxUrl(screenshotUrl!)}
-                  >
-                    <img src={screenshotUrl!} alt="Textbook" className="w-full h-full object-contain" />
-                  </div>
-                  <p className="text-[11px] text-foreground font-medium">Match textbook?</p>
-                  <div className="flex gap-1">
-                    <Button size="sm" className="flex-1 text-[10px] h-6 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleScreenshotMatch("yes")}>Yes [Y]</Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-[10px] h-6 border-amber-500/30 text-amber-600" onClick={() => handleScreenshotMatch("almost")}>~ish [A]</Button>
-                    <Button size="sm" variant="outline" className="flex-1 text-[10px] h-6 border-destructive/30 text-destructive" onClick={() => handleScreenshotMatch("no")}>No [N]</Button>
-                  </div>
-                </div>
-              )}
+              {/* Section review — guided with red border */}
+              <div className="px-2.5 py-2 space-y-1">
+                <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5">
+                  Review ({sections.length - flaggedSections.size} clean · {flaggedSections.size} flagged)
+                </p>
 
-              {/* Step 2: Section checklist */}
-              {screenshotStep === "done" && (
-                <div className="px-2.5 py-2 space-y-0.5">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">
-                      Sections ({checkedSections.size}/{sections.length})
-                    </p>
-                    {sections.length > 0 && checkedSections.size < sections.length && (
-                      <button onClick={checkAll} className="text-[9px] text-emerald-500 hover:text-emerald-400 font-medium">Check All ✓</button>
-                    )}
-                  </div>
-
-                  {sections.map((sec, idx) => {
-                    const checked = checkedSections.has(sec.key);
-                    return (
-                      <div key={sec.key}>
-                        <div className="flex items-center gap-1.5 py-1 px-1 rounded group hover:bg-muted/30 transition-colors">
+                {sections.map((sec, idx) => {
+                  const isFlagged = flaggedSections.has(sec.key);
+                  const isActive = activeSectionIndex === idx;
+                  return (
+                    <div
+                      key={sec.key}
+                      className={`flex items-center gap-2 py-1.5 px-2 rounded-md transition-all ${
+                        isActive
+                          ? "border-2 border-dashed border-destructive bg-destructive/5"
+                          : "border-2 border-transparent"
+                      }`}
+                      onClick={() => setActiveSectionIndex(idx)}
+                    >
+                      <span className="text-[8px] text-muted-foreground/50 font-mono w-3 shrink-0 text-right">{idx + 1}</span>
+                      <span className={`text-[11px] flex-1 ${isFlagged ? "text-destructive font-medium" : "text-foreground"}`}>
+                        {sec.label}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!isFlagged ? (
                           <button
-                            onClick={() => {
-                              setCheckedSections(prev => {
-                                const next = new Set(prev);
-                                if (next.has(sec.key)) next.delete(sec.key); else next.add(sec.key);
-                                return next;
-                              });
-                            }}
-                            className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              checked ? "bg-emerald-600 border-emerald-600" : "border-border hover:border-foreground/50"
-                            }`}
+                            onClick={(e) => { e.stopPropagation(); toggleSectionFlag(sec.key); }}
+                            className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 hover:text-emerald-500 px-1.5 py-0.5 rounded bg-emerald-500/10 transition-colors"
                           >
-                            {checked && <CheckCircle2 className="h-2.5 w-2.5 text-white" />}
+                            <CheckCircle2 className="h-3 w-3" /> Clean
                           </button>
-                          <span className={`text-[11px] flex-1 ${checked ? "text-muted-foreground line-through" : "text-foreground"}`}>{sec.label}</span>
-                          <span className="text-[8px] text-muted-foreground/40 font-mono">{idx + 1}</span>
+                        ) : (
                           <button
-                            onClick={() => setOpenIssueSection(openIssueSection === sec.label ? null : sec.label)}
-                            className="text-[9px] font-medium text-muted-foreground hover:text-foreground transition-colors px-1 py-0.5"
-                            title={`Report issue with ${sec.label} [Shift+${idx + 1}]`}
+                            onClick={(e) => { e.stopPropagation(); toggleSectionFlag(sec.key); }}
+                            className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:text-destructive/80 px-1.5 py-0.5 rounded bg-destructive/10 transition-colors"
                           >
-                            Add Issue
+                            <X className="h-3 w-3" /> Issue
                           </button>
-                        </div>
-                        {openIssueSection === sec.label && current && (
-                          <QuickIssueForm
-                            section={sec.label} qaAssetId={current.id} assetName={current.asset_name}
-                            onSaved={() => { setOpenIssueSection(null); qc.invalidateQueries({ queryKey: ["qa-issues", current.id] }); }}
-                            onCancel={() => setOpenIssueSection(null)}
-                          />
                         )}
                       </div>
-                    );
-                  })}
-
-                  {/* Logged issues */}
-                  {issueCount > 0 && (
-                    <div className="mt-1.5 pt-1.5 border-t border-border space-y-0.5">
-                      <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">
-                        {issueCount} issue{issueCount !== 1 ? "s" : ""}
-                      </p>
-                      {currentIssues?.map(issue => (
-                        <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-amber-500/5 rounded px-1.5 py-1">
-                          <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
-                          <span className="truncate text-foreground/80">{issue.issue_description}</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteIssueMutation.mutate(issue.id); }}
-                            className="ml-auto shrink-0 p-1 -mr-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
-                            title="Remove issue"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
                     </div>
-                  )}
-                </div>
-              )}
+                  );
+                })}
+
+                {/* Previously logged issues */}
+                {issueCount > 0 && (
+                  <div className="mt-1.5 pt-1.5 border-t border-border space-y-0.5">
+                    <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">
+                      {issueCount} saved issue{issueCount !== 1 ? "s" : ""}
+                    </p>
+                    {currentIssues?.map(issue => (
+                      <div key={issue.id} className="flex items-center gap-1.5 text-[10px] bg-amber-500/5 rounded px-1.5 py-1">
+                        <span className="text-amber-500 font-medium shrink-0">{issue.section}:</span>
+                        <span className="truncate text-foreground/80">{issue.issue_description}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteIssueMutation.mutate(issue.id); }}
+                          className="ml-auto shrink-0 p-1 -mr-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
+                          title="Remove issue"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Shortcuts */}
               <div className="px-2.5 py-1 border-t border-border">
@@ -2061,7 +2031,7 @@ export default function SolutionsQAReview() {
                 </button>
                 {showShortcuts && (
                   <div className="mt-0.5 text-[9px] text-muted-foreground/60 space-y-0">
-                    <p><kbd className="font-mono bg-muted px-0.5 rounded">1-7</kbd> check · <kbd className="font-mono bg-muted px-0.5 rounded">⇧+#</kbd> issue</p>
+                    <p><kbd className="font-mono bg-muted px-0.5 rounded">1-{sections.length}</kbd> toggle flag · <kbd className="font-mono bg-muted px-0.5 rounded">↑↓</kbd> move focus</p>
                     <p><kbd className="font-mono bg-muted px-0.5 rounded">→</kbd> next · <kbd className="font-mono bg-muted px-0.5 rounded">←</kbd> prev · <kbd className="font-mono bg-muted px-0.5 rounded">S</kbd> skip</p>
                     <p><kbd className="font-mono bg-muted px-0.5 rounded">Enter/Space</kbd> submit & next</p>
                   </div>
@@ -2071,18 +2041,14 @@ export default function SolutionsQAReview() {
 
             {/* Sticky bottom action */}
             <div className="shrink-0 border-t border-border bg-card px-2.5 py-2 space-y-1">
-              {screenshotStep === "done" && (
-                <>
-                  {issueCount === 0 ? (
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Good — Next →
-                    </Button>
-                  ) : (
-                    <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance("reviewed_issues")}>
-                      <AlertTriangle className="h-3 w-3 mr-1" /> Save {issueCount} Issue{issueCount !== 1 ? "s" : ""} & Next →
-                    </Button>
-                  )}
-                </>
+              {flaggedSections.size === 0 ? (
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Clean — Next →
+                </Button>
+              ) : (
+                <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
+                  <AlertTriangle className="h-3 w-3 mr-1" /> Save {flaggedSections.size} Issue{flaggedSections.size !== 1 ? "s" : ""} & Next →
+                </Button>
               )}
               {current?.teaching_asset_id && canUseFixer && (
                 <Button
