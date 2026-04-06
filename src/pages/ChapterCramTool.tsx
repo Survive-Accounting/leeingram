@@ -1285,8 +1285,7 @@ export default function ChapterCramTool() {
                   {useChapterFormulas && (
                     <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
                       <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
-                        {formulasSeenCount === visibleFormulas.length ? "✓ " : ""}
-                        {formulasSeenCount} of {visibleFormulas.length} reviewed
+                        {formulasSeenCount} ✓ / {visibleFormulas.length}
                       </p>
                     </div>
                   )}
