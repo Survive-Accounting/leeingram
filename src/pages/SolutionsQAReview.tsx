@@ -1340,8 +1340,8 @@ export default function SolutionsQAReview() {
 
   // ── Prefetch next 2 assets' detail + screenshot data ────────────
   const nextAssets = useMemo(() => {
-    return [1, 2].map(offset => allAssets[currentIndex + offset]).filter(Boolean);
-  }, [allAssets, currentIndex]);
+    return [1, 2].map(offset => navOrder[navPos + offset]).filter(i => i != null).map(i => allAssets[i]).filter(Boolean);
+  }, [allAssets, navOrder, navPos]);
 
   useEffect(() => {
     for (const nextAsset of nextAssets) {
@@ -1532,10 +1532,10 @@ export default function SolutionsQAReview() {
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["qa-assets"] });
     toast.success(finalStatus === "reviewed_clean" ? "✓ Clean" : "⚠ Issues saved");
-    // Always advance to next asset in order
-    if (currentIndex < allAssets.length - 1) setCurrentIndex(i => i + 1);
+    // Always advance to next asset in nav order
+    if (navPos < navOrder.length - 1) setCurrentIndex(navOrder[navPos + 1]);
     else toast.info("Last asset reached");
-  }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues]);
+  }, [current, currentIndex, allAssets, reviewerName, qc, flaggedSections, sections, currentIssues, navPos, navOrder]);
 
   const jumpToNextPending = useCallback(() => {
     const next = allAssets.findIndex((r, i) => i > currentIndex && r.qa_status === "pending");
@@ -1562,8 +1562,8 @@ export default function SolutionsQAReview() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
 
-      if (e.key === "ArrowRight" || e.key === ".") { e.preventDefault(); setCurrentIndex(i => Math.min(allAssets.length - 1, i + 1)); }
-      else if (e.key === "ArrowLeft" || e.key === ",") { e.preventDefault(); setCurrentIndex(i => Math.max(0, i - 1)); }
+      if (e.key === "ArrowRight" || e.key === ".") { e.preventDefault(); navigateByOffset(1); }
+      else if (e.key === "ArrowLeft" || e.key === ",") { e.preventDefault(); navigateByOffset(-1); }
       else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); markAndAdvance(); }
       else if (e.key === "s" || e.key === "S") { e.preventDefault(); jumpToNextPending(); }
       else if (e.key === "ArrowDown") { e.preventDefault(); setActiveSectionIndex(i => Math.min(sections.length - 1, i + 1)); }
@@ -2030,11 +2030,11 @@ export default function SolutionsQAReview() {
               {/* Nav row: ← Prev | counter | Next → */}
               <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border">
                 <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost" className="h-6 w-6" disabled={currentIndex <= 0} onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" disabled={navPos <= 0} onClick={() => navigateByOffset(-1)}>
                     <ChevronLeft className="h-3.5 w-3.5" />
                   </Button>
-                  <span className="text-[11px] text-muted-foreground font-mono font-medium">{currentIndex + 1} / {totalAll}</span>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" disabled={currentIndex >= allAssets.length - 1} onClick={() => setCurrentIndex(i => Math.min(allAssets.length - 1, i + 1))}>
+                  <span className="text-[11px] text-muted-foreground font-mono font-medium">{navPos + 1} / {totalAll}</span>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" disabled={navPos >= navOrder.length - 1} onClick={() => navigateByOffset(1)}>
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
