@@ -2046,11 +2046,21 @@ export default function SolutionsQAReview() {
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> All Clean — Next →
                 </Button>
               ) : (
-                <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
-                  <AlertTriangle className="h-3 w-3 mr-1" /> Save {flaggedSections.size} Issue{flaggedSections.size !== 1 ? "s" : ""} & Next →
-                </Button>
+                <>
+                  <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs h-8" onClick={() => markAndAdvance()}>
+                    <AlertTriangle className="h-3 w-3 mr-1" /> Save {flaggedSections.size} Issue{flaggedSections.size !== 1 ? "s" : ""} & Next →
+                  </Button>
+                  {current?.teaching_asset_id && canUseFixer && (
+                    <Button
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
+                      onClick={async () => { await markAndAdvance(); setFixAssetOpen(true); }}
+                    >
+                      <Wrench className="h-3 w-3 mr-1" /> Save {flaggedSections.size} Issue{flaggedSections.size !== 1 ? "s" : ""} & Fix Now
+                    </Button>
+                  )}
+                </>
               )}
-              {current?.teaching_asset_id && canUseFixer && (
+              {flaggedSections.size === 0 && current?.teaching_asset_id && canUseFixer && (
                 <Button
                   variant="outline"
                   className="w-full text-xs h-7"
