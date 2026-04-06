@@ -3812,7 +3812,7 @@ export default function SolutionsViewer() {
                     <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
                   ) : (
                     hasCanonicalJE ? (
-                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} />
+                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} instructions={asset._instructions} />
                     ) : (
                       <RawJEFallback text={jeBlock} theme={t} />
                     )
