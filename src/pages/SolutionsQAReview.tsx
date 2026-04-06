@@ -1951,17 +1951,20 @@ export default function SolutionsQAReview() {
         />
       )}
 
-      {/* Hidden preload iframe for next asset */}
-      {allAssets[currentIndex + 1] && (
-        <iframe
-          key={`preload-${allAssets[currentIndex + 1].asset_name}`}
-          src={`/solutions/${allAssets[currentIndex + 1].asset_name}?ref=lw&qa=1`}
-          className="sr-only"
-          aria-hidden="true"
-          tabIndex={-1}
-          title="Preload next"
-        />
-      )}
+      {/* Hidden preload iframes for next 2 assets */}
+      {[1, 2].map(offset => {
+        const next = allAssets[currentIndex + offset];
+        return next ? (
+          <iframe
+            key={`preload-${next.asset_name}`}
+            src={`/solutions/${next.asset_name}?ref=lw&qa=1`}
+            className="sr-only"
+            aria-hidden="true"
+            tabIndex={-1}
+            title={`Preload +${offset}`}
+          />
+        ) : null;
+      })}
 
       {/* Lightbox */}
       {lightboxUrl && <ScreenshotLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
