@@ -90,6 +90,12 @@ const ChapterCramTool = lazy(() => import("./pages/ChapterCramTool"));
 const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
 const ChapterJEManager = lazy(() => import("./pages/ChapterJEManager"));
 const ChapterFormulasManager = lazy(() => import("./pages/ChapterFormulasManager"));
+const LaunchAnalytics = lazy(() => import("./pages/LaunchAnalytics"));
+const ContentAnalytics = lazy(() => import("./pages/ContentAnalytics"));
+const AdminLandingPages = lazy(() => import("./pages/AdminLandingPages"));
+const AdminAuth = lazy(() => import("./pages/AdminAuth"));
+const AdminGreek = lazy(() => import("./pages/AdminGreek"));
+const LegacyLinks = lazy(() => import("./pages/LegacyLinks"));
 const ChapterContentQA = lazy(() => import("./pages/ChapterContentQA"));
 const QuizExplanation = lazy(() => import("./pages/QuizExplanation"));
 const QuizQuestion = lazy(() => import("./pages/QuizQuestion"));
@@ -233,6 +239,12 @@ const AppRoutes = () => {
         <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
         <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
         <Route path="/admin/chapter-qa" element={<ProtectedRoute><ChapterContentQA /></ProtectedRoute>} />
+        <Route path="/admin/analytics/launch" element={<ProtectedRoute><LaunchAnalytics /></ProtectedRoute>} />
+        <Route path="/admin/analytics/content" element={<ProtectedRoute><ContentAnalytics /></ProtectedRoute>} />
+        <Route path="/admin/landing-pages" element={<ProtectedRoute><AdminLandingPages /></ProtectedRoute>} />
+        <Route path="/admin/auth" element={<ProtectedRoute><AdminAuth /></ProtectedRoute>} />
+        <Route path="/admin/greek" element={<ProtectedRoute><AdminGreek /></ProtectedRoute>} />
+        <Route path="/admin/legacy-links" element={<ProtectedRoute><LegacyLinks /></ProtectedRoute>} />
         <Route path="/qa-costs" element={<ProtectedRoute><QACosts /></ProtectedRoute>} />
         <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
