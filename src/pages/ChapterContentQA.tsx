@@ -22,7 +22,7 @@ import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target, Info,
+  AlertCircle, Target, Info, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
@@ -673,6 +673,53 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
   const updateEntryLabel = async (id: string, label: string) => { await supabase.from("chapter_journal_entries").update({ transaction_label: label }).eq("id", id); invalidate(); };
   const updateEntryLines = async (id: string, lines: JELine[]) => { await supabase.from("chapter_journal_entries").update({ je_lines: lines as any }).eq("id", id); invalidate(); };
 
+  const moveCategoryUp = async (catId: string) => {
+    const idx = categories.findIndex(c => c.id === catId);
+    if (idx <= 0) return;
+    const above = categories[idx - 1];
+    const current = categories[idx];
+    await Promise.all([
+      supabase.from("chapter_je_categories").update({ sort_order: above.sort_order }).eq("id", current.id),
+      supabase.from("chapter_je_categories").update({ sort_order: current.sort_order }).eq("id", above.id),
+    ]);
+    invalidate();
+  };
+  const moveCategoryDown = async (catId: string) => {
+    const idx = categories.findIndex(c => c.id === catId);
+    if (idx < 0 || idx >= categories.length - 1) return;
+    const below = categories[idx + 1];
+    const current = categories[idx];
+    await Promise.all([
+      supabase.from("chapter_je_categories").update({ sort_order: below.sort_order }).eq("id", current.id),
+      supabase.from("chapter_je_categories").update({ sort_order: current.sort_order }).eq("id", below.id),
+    ]);
+    invalidate();
+  };
+  const moveEntryUp = async (entryId: string, categoryId: string) => {
+    const catEntries = entries.filter(e => e.category_id === categoryId).sort((a, b) => a.sort_order - b.sort_order);
+    const idx = catEntries.findIndex(e => e.id === entryId);
+    if (idx <= 0) return;
+    const above = catEntries[idx - 1];
+    const current = catEntries[idx];
+    await Promise.all([
+      supabase.from("chapter_journal_entries").update({ sort_order: above.sort_order }).eq("id", current.id),
+      supabase.from("chapter_journal_entries").update({ sort_order: current.sort_order }).eq("id", above.id),
+    ]);
+    invalidate();
+  };
+  const moveEntryDown = async (entryId: string, categoryId: string) => {
+    const catEntries = entries.filter(e => e.category_id === categoryId).sort((a, b) => a.sort_order - b.sort_order);
+    const idx = catEntries.findIndex(e => e.id === entryId);
+    if (idx < 0 || idx >= catEntries.length - 1) return;
+    const below = catEntries[idx + 1];
+    const current = catEntries[idx];
+    await Promise.all([
+      supabase.from("chapter_journal_entries").update({ sort_order: below.sort_order }).eq("id", current.id),
+      supabase.from("chapter_journal_entries").update({ sort_order: current.sort_order }).eq("id", below.id),
+    ]);
+    invalidate();
+  };
+
   if (entries.length === 0 && !generating) {
     return (
       <div className="text-center py-10 space-y-4">
@@ -687,7 +734,7 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
   return (
     <TooltipProvider>
       <div className="space-y-3 pb-20">
-        {grouped.map(cat => (
+        {grouped.map((cat, catIdx) => (
           <JECategoryBlock
             key={cat.id}
             category={cat}
@@ -698,6 +745,12 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
             onDeleteEntry={deleteEntry}
             onUpdateEntryLabel={updateEntryLabel}
             onUpdateEntryLines={updateEntryLines}
+            onMoveCategoryUp={() => moveCategoryUp(cat.id)}
+            onMoveCategoryDown={() => moveCategoryDown(cat.id)}
+            onMoveEntryUp={(entryId) => moveEntryUp(entryId, cat.id)}
+            onMoveEntryDown={(entryId) => moveEntryDown(entryId, cat.id)}
+            isFirst={catIdx === 0}
+            isLast={catIdx === grouped.length - 1}
           />
         ))}
 
@@ -737,6 +790,7 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
 
 function JECategoryBlock({
   category, onDeleteCategory, onUpdateCategoryName, onApproveEntry, onRejectEntry, onDeleteEntry, onUpdateEntryLabel, onUpdateEntryLines,
+  onMoveCategoryUp, onMoveCategoryDown, onMoveEntryUp, onMoveEntryDown, isFirst, isLast,
 }: {
   category: JECatRow & { entries: JEEntryRow[] };
   onDeleteCategory: () => void;
@@ -746,6 +800,12 @@ function JECategoryBlock({
   onDeleteEntry: (id: string) => void;
   onUpdateEntryLabel: (id: string, label: string) => void;
   onUpdateEntryLines: (id: string, lines: JELine[]) => void;
+  onMoveCategoryUp: () => void;
+  onMoveCategoryDown: () => void;
+  onMoveEntryUp: (entryId: string) => void;
+  onMoveEntryDown: (entryId: string) => void;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -774,14 +834,18 @@ function JECategoryBlock({
           </button>
         )}
         <Badge variant="outline" className="text-[10px] h-5">{category.entries.length} entries</Badge>
-        <button onClick={() => setConfirmDelete(true)} className="ml-auto text-muted-foreground hover:text-destructive transition-colors p-1">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5 ml-auto shrink-0">
+          <button onClick={onMoveCategoryUp} disabled={isFirst} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move up"><ArrowUp className="h-3.5 w-3.5" /></button>
+          <button onClick={onMoveCategoryDown} disabled={isLast} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move down"><ArrowDown className="h-3.5 w-3.5" /></button>
+          <button onClick={() => setConfirmDelete(true)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {open && (
         <div className="divide-y divide-border/50">
-          {category.entries.map(entry => (
+          {category.entries.map((entry, entryIdx) => (
             <JEEntryRowBlock
               key={entry.id}
               entry={entry}
@@ -790,6 +854,10 @@ function JECategoryBlock({
               onDelete={() => onDeleteEntry(entry.id)}
               onUpdateLabel={(label) => onUpdateEntryLabel(entry.id, label)}
               onUpdateLines={(lines) => onUpdateEntryLines(entry.id, lines)}
+              onMoveUp={() => onMoveEntryUp(entry.id)}
+              onMoveDown={() => onMoveEntryDown(entry.id)}
+              isFirst={entryIdx === 0}
+              isLast={entryIdx === category.entries.length - 1}
             />
           ))}
           {category.entries.length === 0 && <p className="text-xs text-muted-foreground px-3 py-3">No entries.</p>}
@@ -813,7 +881,7 @@ function JECategoryBlock({
 // ── JE Entry Row — with expandable table ────────────────────────
 
 function JEEntryRowBlock({
-  entry, onApprove, onReject, onDelete, onUpdateLabel, onUpdateLines,
+  entry, onApprove, onReject, onDelete, onUpdateLabel, onUpdateLines, onMoveUp, onMoveDown, isFirst, isLast,
 }: {
   entry: JEEntryRow;
   onApprove: () => void;
@@ -821,6 +889,10 @@ function JEEntryRowBlock({
   onDelete: () => void;
   onUpdateLabel: (label: string) => void;
   onUpdateLines: (lines: JELine[]) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
@@ -877,7 +949,9 @@ function JEEntryRowBlock({
           <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[9px] h-4 shrink-0">Suggested</Badge>
         ) : null}
         {statusPill}
-        <div className="flex items-center gap-1 ml-auto shrink-0">
+        <div className="flex items-center gap-0.5 ml-auto shrink-0">
+          <button onClick={onMoveUp} disabled={isFirst} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move up"><ArrowUp className="h-3 w-3" /></button>
+          <button onClick={onMoveDown} disabled={isLast} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move down"><ArrowDown className="h-3 w-3" /></button>
           <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
           <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Reject"><X className="h-3.5 w-3.5" /></button>
           <button onClick={() => { setLines(jeLines); setEditingLines(true); setExpanded(true); }} className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors" title="Edit JE"><Edit3 className="h-3.5 w-3.5" /></button>

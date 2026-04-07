@@ -89,8 +89,9 @@ Rules:
 - Max 3 purpose bullets, max 2 consequence bullets
 - Each bullet: one concise sentence, no fluff
 - Bullets should flow logically — each leads to next
-- Purpose bullets: explain what accountants are trying to accomplish in this chapter and why it matters
-- Consequence bullets: what goes wrong for a business that gets this wrong`,
+- Write in second-person ("you") tutor voice. Address the student directly. Example: "You're learning how to record what actually happened in a transaction so the books stay accurate." NOT "This chapter covers recording transactions."
+- Purpose bullets: explain what the student is learning to do and why it matters for their exam/career
+- Consequence bullets: what goes wrong if YOU get this wrong — make it personal and specific`,
     `Chapter: ${chapterName} (${courseCode})`
   );
   const purposeBullets = json.purpose_bullets || [];
@@ -153,15 +154,15 @@ async function generateCollection(chapterId: string, chapterName: string, course
 
 async function generateKeyTerms(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_key_terms",
-    `Return ONLY valid JSON: { "terms": [{ "term": "Bond Premium", "definition": "Plain-English one sentence. No textbook language. Write like a tutor explaining to a confused student.", "sort_order": 1 }] }`,
-    `Generate 6-10 key terms a student must know for exams in: ${chapterName} (${courseCode}). Only terms introduced or heavily used in this chapter.`,
+    `Return ONLY valid JSON: { "terms": [{ "term": "Bond Premium", "definition": "Plain-English one sentence in second-person tutor voice. Address the student as 'you'. Example: 'You're recording the extra amount above face value that investors paid because the stated rate was higher than the market rate.' NOT 'A bond premium is the excess of the issue price over face value.'", "sort_order": 1 }] }`,
+    `Generate 6-10 key terms a student must know for exams in: ${chapterName} (${courseCode}). Only terms introduced or heavily used in this chapter. Write every definition in second-person "you" voice — the student is doing the work.`,
     "terms", extraPrompt, "term"
   );
 }
 
 async function generateExamMistakes(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_exam_mistakes",
-    `Return ONLY valid JSON: { "mistakes": [{ "mistake": "Short label for the mistake (8 words max)", "explanation": "One sentence explaining why students make this mistake and what to do instead.", "sort_order": 1 }] }`,
+    `Return ONLY valid JSON: { "mistakes": [{ "mistake": "Short label for the mistake (8 words max)", "explanation": "One sentence in second-person 'you' voice explaining why YOU make this mistake and what to do instead. Example: 'You forget to reverse the discount when the bond is redeemed early, so your gain/loss calculation is off.' NOT 'Students often forget to reverse the discount.'", "sort_order": 1 }] }`,
     `Generate exactly 3 common exam mistakes for: ${chapterName} (${courseCode}).
 
 Rank them:
@@ -169,7 +170,7 @@ Rank them:
 #2 — Most common: students make this constantly even when they think they understand the material
 #3 — Most subtle: easy to overlook, hard to catch without really understanding the concept
 
-Each mistake: short label (8 words max) + one sentence explanation of why students make it and what to do instead. Be specific to this chapter — not generic accounting advice.
+Each mistake: short label (8 words max) + one sentence explanation in second-person "you" voice. Tell the student what THEY do wrong and what to do instead. Be specific to this chapter — not generic accounting advice.
 
 Return sort_order 1 for #1, 2 for #2, 3 for #3.`,
     "mistakes", extraPrompt, "mistake"
@@ -178,7 +179,7 @@ Return sort_order 1 for #1, 2 for #2, 3 for #3.`,
 
 async function generateFormulas(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_formulas",
-    `Return ONLY valid JSON: { "formulas": [{ "formula_name": "Present Value of Annuity", "formula_expression": "PV = PMT × [(1 - (1+r)^-n) / r]", "formula_explanation": "One sentence plain-English explanation of when students use this formula.", "sort_order": 1 }] }`,
+    `Return ONLY valid JSON: { "formulas": [{ "formula_name": "Present Value of Annuity", "formula_expression": "PV = PMT × [(1 - (1+r)^-n) / r]", "formula_explanation": "Write in second-person ('you') tutor voice — e.g. 'Use this when you need to...' or 'You're checking that...' Keep it to 1-2 sentences, specific and actionable, not textbook-generic.", "sort_order": 1 }] }`,
     `Generate 3-12 key formulas students must memorize for exams in: ${chapterName} (${courseCode}). Focus on calculation-heavy formulas, not conceptual rules. Only formulas introduced or heavily used in this chapter.`,
     "formulas", extraPrompt, "formula_name"
   );
