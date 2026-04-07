@@ -1096,6 +1096,11 @@ export default function SolutionsQAReview() {
   const rightStartX = typeof window !== "undefined" ? window.innerWidth - 320 : 700;
   const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, resetPos } = useDraggable({ x: rightStartX, y: 60 });
 
+  // Reset QA panel to right side on asset change
+  useEffect(() => {
+    resetPos({ x: typeof window !== "undefined" ? window.innerWidth - 320 : 700, y: 60 });
+  }, [currentIndex, resetPos]);
+
   const [sopOpen, setSopOpen] = useState(false);
 
   // ── Fetch VAs ───────────────────────────────────────────────────
