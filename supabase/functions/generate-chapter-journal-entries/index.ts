@@ -30,9 +30,7 @@ serve(async (req) => {
         .from("chapters")
         .select("id, chapter_name, chapter_number, course_id")
         .order("chapter_number");
-      const { data: courses } = await supabase
-        .from("courses")
-        .select("id, code");
+      const { data: courses } = await supabase.from("courses").select("id, code");
       const courseMap = Object.fromEntries((courses || []).map((c: any) => [c.id, c.code]));
       chapters = (allChapters || []).map((ch: any) => ({
         id: ch.id,
@@ -53,7 +51,65 @@ serve(async (req) => {
 
     for (const ch of chapters) {
       try {
-        const systemPrompt = `You are an accounting expert building a master reference list of journal entries for a college accounting chapter.
+        // ── Step 1: Extract JE structures from real teaching assets ──
+        const { data: assets } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, journal_entry_completed_json")
+          .eq("chapter_id", ch.id)
+          .not("journal_entry_completed_json", "is", null);
+
+        const uniqueStructures: { accounts: string[]; sides: string[]; assetName: string }[] = [];
+        const seenKeys = new Set<string>();
+
+        for (const asset of (assets || [])) {
+          const jeJson = asset.journal_entry_completed_json;
+          if (!jeJson) continue;
+
+          const payload = typeof jeJson === "string" ? JSON.parse(jeJson) : jeJson;
+
+          // Handle canonical format: { scenario_sections: [{ entries_by_date: [{ rows }] }] }
+          const sections = payload?.scenario_sections || [];
+          for (const section of sections) {
+            for (const dateGroup of (section.entries_by_date || [])) {
+              const rows = dateGroup.rows || [];
+              if (rows.length === 0) continue;
+
+              const accounts = rows.map((r: any) => r.account_name || r.account || "").filter(Boolean);
+              const sides = rows.map((r: any) => {
+                if (r.debit !== null && r.debit !== undefined && r.debit !== 0) return "debit";
+                if (r.credit !== null && r.credit !== undefined && r.credit !== 0) return "credit";
+                return r.side || "debit";
+              });
+
+              // Deduplicate by sorted account set + sides
+              const key = accounts.map((a: string, i: number) => `${a}:${sides[i]}`).sort().join("|");
+              if (seenKeys.has(key)) continue;
+              seenKeys.add(key);
+
+              uniqueStructures.push({ accounts, sides, assetName: asset.asset_name });
+            }
+          }
+
+          // Handle legacy flat format: array of { account, side, debit, credit }
+          if (!sections.length && Array.isArray(payload)) {
+            const accounts = payload.map((r: any) => r.account_name || r.account || "").filter(Boolean);
+            const sides = payload.map((r: any) => {
+              if (r.debit) return "debit";
+              if (r.credit) return "credit";
+              return r.side || "debit";
+            });
+            if (accounts.length > 0) {
+              const key = accounts.map((a: string, i: number) => `${a}:${sides[i]}`).sort().join("|");
+              if (!seenKeys.has(key)) {
+                seenKeys.add(key);
+                uniqueStructures.push({ accounts, sides, assetName: asset.asset_name });
+              }
+            }
+          }
+        }
+
+        // ── Step 2: Send to Claude for enrichment ──
+        const systemPrompt = `You are an accounting expert enriching a list of journal entry structures extracted from real textbook problems.
 
 Return ONLY valid JSON, no markdown, no backticks:
 {
@@ -65,16 +121,17 @@ Return ONLY valid JSON, no markdown, no backticks:
         {
           "transaction_label": "Bond issuance at face value",
           "sort_order": 1,
+          "source": "extracted",
           "je_lines": [
             {
               "account": "Cash",
-              "account_tooltip": "Asset — increases with debit",
+              "account_tooltip": "Asset — increases with debit because you're receiving cash",
               "side": "debit",
               "amount": "???"
             },
             {
               "account": "Bonds Payable",
-              "account_tooltip": "Long-term liability — increases with credit",
+              "account_tooltip": "Long-term liability — increases with credit because you owe bondholders",
               "side": "credit",
               "amount": "???"
             }
@@ -86,16 +143,34 @@ Return ONLY valid JSON, no markdown, no backticks:
 }
 
 Rules:
-- Use ??? for all amounts — never use numbers
-- Keep transaction_label short (4–7 words)
-- account_tooltip: one sentence explaining the account and why it increases/decreases here
-- 2–5 categories max, 2–6 entries per category
-- Cover every major transaction type for the chapter
-- Do NOT include entries from other chapters`;
+1. Group the extracted entries into 2-5 logical categories
+2. Write a short transaction_label for each (4-7 words, plain English)
+3. Write an account_tooltip for each account line (one sentence: what the account is and why it increases/decreases here)
+4. Use EXACTLY the account names from the extracted data — do NOT rename or reword any account names
+5. Use ??? for all amounts — never use numbers
+6. For entries from the extracted data, set source: "extracted"
+7. If there are clearly missing entries for a complete chapter treatment, add them with source: "suggested"
+8. Keep suggested entries minimal — only add what's truly missing
+9. Do NOT include entries from other chapters`;
 
-        let userPrompt = `Generate a complete master list of journal entries for: ${ch.chapter_name} (${ch.course_code}).
+        let userPrompt: string;
 
-Include every major transaction type a student needs to know for exams in this chapter. Group into logical categories (e.g. Bond Issuance, Interest Payments, Bond Retirement).`;
+        if (uniqueStructures.length > 0) {
+          userPrompt = `Chapter: ${ch.chapter_name} (${ch.course_code})
+
+Extracted journal entries from ${uniqueStructures.length} real problems in this chapter:
+
+${JSON.stringify(uniqueStructures, null, 2)}
+
+Enrich these with categories, labels, and tooltips. Suggest any clearly missing transaction types.`;
+        } else {
+          // No assets with JE data — fall back to generation
+          userPrompt = `Chapter: ${ch.chapter_name} (${ch.course_code})
+
+No journal entry data was found in existing assets for this chapter. Generate a complete master list of journal entries for this chapter. Mark all entries as source: "suggested".
+
+Include every major transaction type a student needs to know for exams. Group into logical categories (2-5 categories, 2-6 entries each).`;
+        }
 
         if (extraPrompt) {
           userPrompt += `\n\nAdditional instructions from admin: ${extraPrompt}. Incorporate these additions without removing existing approved entries.`;
@@ -113,9 +188,7 @@ Include every major transaction type a student needs to know for exams in this c
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514",
             max_tokens: 4096,
-            messages: [
-              { role: "user", content: userPrompt },
-            ],
+            messages: [{ role: "user", content: userPrompt }],
             system: systemPrompt,
           }),
         });
@@ -127,8 +200,8 @@ Include every major transaction type a student needs to know for exams in this c
 
         const aiData = await aiRes.json();
         const rawText = aiData.content?.[0]?.text || "";
-        
-        // Parse JSON - try to extract from potential markdown
+
+        // Parse JSON
         let parsed: any;
         try {
           parsed = JSON.parse(rawText);
@@ -140,51 +213,39 @@ Include every major transaction type a student needs to know for exams in this c
 
         const categories = parsed.categories || [];
 
+        // ── Clean up old non-approved data ──
         if (!extraPrompt) {
-          // Delete existing non-approved entries for fresh generation
-          // First get category IDs
-          const { data: existingCats } = await supabase
-            .from("chapter_je_categories")
-            .select("id")
-            .eq("chapter_id", ch.id);
-          const catIds = (existingCats || []).map((c: any) => c.id);
-          
-          if (catIds.length > 0) {
-            // Delete non-approved entries in these categories
-            await supabase
-              .from("chapter_journal_entries")
-              .delete()
-              .eq("chapter_id", ch.id)
-              .eq("is_approved", false);
-          }
-          // Delete categories that have no remaining entries
-          // Actually for clean generation, delete all categories and entries
+          // Delete non-approved entries
           await supabase
             .from("chapter_journal_entries")
             .delete()
             .eq("chapter_id", ch.id)
             .eq("is_approved", false);
+
           // Delete empty categories
-          const { data: remainingEntries } = await supabase
-            .from("chapter_journal_entries")
-            .select("category_id")
+          const { data: existingCats } = await supabase
+            .from("chapter_je_categories")
+            .select("id")
             .eq("chapter_id", ch.id);
-          const usedCatIds = new Set((remainingEntries || []).map((e: any) => e.category_id));
+          const catIds = (existingCats || []).map((c: any) => c.id);
+
           if (catIds.length > 0) {
+            const { data: remainingEntries } = await supabase
+              .from("chapter_journal_entries")
+              .select("category_id")
+              .eq("chapter_id", ch.id);
+            const usedCatIds = new Set((remainingEntries || []).map((e: any) => e.category_id));
             const emptyCats = catIds.filter((id: string) => !usedCatIds.has(id));
             if (emptyCats.length > 0) {
-              await supabase
-                .from("chapter_je_categories")
-                .delete()
-                .in("id", emptyCats);
+              await supabase.from("chapter_je_categories").delete().in("id", emptyCats);
             }
           }
         }
 
-        // Insert new categories and entries
+        // ── Step 3: Insert results ──
         for (const cat of categories) {
-          // For extraPrompt: check if category exists
           let categoryId: string;
+
           if (extraPrompt) {
             const { data: existing } = await supabase
               .from("chapter_je_categories")
@@ -212,7 +273,6 @@ Include every major transaction type a student needs to know for exams in this c
           }
 
           for (const entry of cat.entries || []) {
-            // Deduplicate by transaction_label if extraPrompt
             if (extraPrompt) {
               const { data: dup } = await supabase
                 .from("chapter_journal_entries")
@@ -220,8 +280,10 @@ Include every major transaction type a student needs to know for exams in this c
                 .eq("chapter_id", ch.id)
                 .eq("transaction_label", entry.transaction_label)
                 .maybeSingle();
-              if (dup) continue; // skip duplicate
+              if (dup) continue;
             }
+
+            const entrySource = entry.source === "extracted" ? "extracted" : "suggested";
 
             await supabase
               .from("chapter_journal_entries")
@@ -232,6 +294,7 @@ Include every major transaction type a student needs to know for exams in this c
                 je_lines: entry.je_lines,
                 sort_order: entry.sort_order || 0,
                 is_approved: false,
+                source: entrySource,
                 generated_at: new Date().toISOString(),
               });
           }
