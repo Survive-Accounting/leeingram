@@ -173,7 +173,7 @@ export default function ChapterFormulasManager() {
 
           <Select value={selectedChapter} onValueChange={setSelectedChapter}>
             <SelectTrigger className="w-64"><SelectValue placeholder="Select chapter" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-50 max-h-80">
               {chapters?.map((ch) => (
                 <SelectItem key={ch.id} value={ch.id}>Ch {ch.chapter_number} — {ch.chapter_name}</SelectItem>
               ))}
