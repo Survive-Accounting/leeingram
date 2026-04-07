@@ -326,6 +326,7 @@ export default function ChapterContentQA() {
                 Generate All Formula Images
               </Button>
             </div>
+            <CourseZipExporter />
             <BatchSuiteOrchestrator />
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
