@@ -834,9 +834,13 @@ function JECategoryBlock({
           </button>
         )}
         <Badge variant="outline" className="text-[10px] h-5">{category.entries.length} entries</Badge>
-        <button onClick={() => setConfirmDelete(true)} className="ml-auto text-muted-foreground hover:text-destructive transition-colors p-1">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5 ml-auto shrink-0">
+          <button onClick={onMoveCategoryUp} disabled={isFirst} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move up"><ArrowUp className="h-3.5 w-3.5" /></button>
+          <button onClick={onMoveCategoryDown} disabled={isLast} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move down"><ArrowDown className="h-3.5 w-3.5" /></button>
+          <button onClick={() => setConfirmDelete(true)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {open && (
