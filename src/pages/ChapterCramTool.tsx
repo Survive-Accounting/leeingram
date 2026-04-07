@@ -841,7 +841,7 @@ function CramKeyTermsSection({ terms, chapterId }: { terms: any[]; chapterId: st
 // ── Sticky ToC Sidebar (Desktop) ──
 function TocSidebar({ activeSections, activeId }: { activeSections: typeof TOC_SECTIONS; activeId: string }) {
   return (
-    <nav className="hidden lg:block fixed w-[200px] top-[72px]" style={{ left: "max(16px, calc((100vw - 920px - 200px - 48px) / 2))" }}>
+    <nav className="hidden lg:block fixed w-[200px] top-[16px]" style={{ left: "max(16px, calc((100vw - 780px - 200px - 48px) / 2))" }}>
       <ul className="space-y-0.5">
         {activeSections.map(s => (
           <li key={s.id}>
@@ -880,7 +880,7 @@ function MobileAnchorBar({ activeSections, activeId }: { activeSections: typeof 
   }, [activeId]);
 
   return (
-    <div className="lg:hidden sticky z-20 bg-white border-b" style={{ top: 56, borderColor: theme.border }}>
+    <div className="lg:hidden sticky z-20 bg-white border-b" style={{ top: 0, borderColor: theme.border }}>
       <div ref={scrollRef} className="flex overflow-x-auto gap-0 px-2 py-1.5 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {activeSections.map(s => (
           <a
