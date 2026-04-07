@@ -913,6 +913,18 @@ function isCalculationLine(line: string): boolean {
   return /[×=÷+−%$]/.test(line) || /\b\d+\s*[×x*]\s*\d/i.test(line) || /\b\d+\s*[/÷]\s*\d/.test(line) || /×\s*rate|×\s*time|[/÷]\s*periods/i.test(line);
 }
 
+/** Render inline **bold** markdown as <strong> elements */
+function renderBoldMarkdown(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
@@ -1021,15 +1033,15 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 const isNumberedStep = /^\d+\.\s/.test(trimmed);
                 if (isJEOnly) {
-                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
+                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{renderBoldMarkdown(trimmed)}</p>;
                 }
                 if (isYearLabel) {
-                  return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
+                  return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{renderBoldMarkdown(trimmed)}</p>;
                 }
                 if (isNumberedStep) {
-                  return <p key={line.idx} className="font-semibold text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text, marginTop: 14 }}>{trimmed}</p>;
+                  return <p key={line.idx} className="font-semibold text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text, marginTop: 14 }}>{renderBoldMarkdown(trimmed)}</p>;
                 }
-                return <p key={line.idx} className="text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
+                return <p key={line.idx} className="text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{renderBoldMarkdown(trimmed)}</p>;
               });
             })}
           </div>
