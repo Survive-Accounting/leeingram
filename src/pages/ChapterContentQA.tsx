@@ -845,7 +845,7 @@ function JECategoryBlock({
 
       {open && (
         <div className="divide-y divide-border/50">
-          {category.entries.map(entry => (
+          {category.entries.map((entry, entryIdx) => (
             <JEEntryRowBlock
               key={entry.id}
               entry={entry}
@@ -854,6 +854,10 @@ function JECategoryBlock({
               onDelete={() => onDeleteEntry(entry.id)}
               onUpdateLabel={(label) => onUpdateEntryLabel(entry.id, label)}
               onUpdateLines={(lines) => onUpdateEntryLines(entry.id, lines)}
+              onMoveUp={() => onMoveEntryUp(entry.id)}
+              onMoveDown={() => onMoveEntryDown(entry.id)}
+              isFirst={entryIdx === 0}
+              isLast={entryIdx === category.entries.length - 1}
             />
           ))}
           {category.entries.length === 0 && <p className="text-xs text-muted-foreground px-3 py-3">No entries.</p>}
