@@ -1226,6 +1226,7 @@ export type Database = {
       }
       chapter_key_terms: {
         Row: {
+          category: string | null
           chapter_id: string
           created_at: string | null
           definition: string
@@ -1238,6 +1239,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
           chapter_id: string
           created_at?: string | null
           definition: string
@@ -1250,6 +1252,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
           chapter_id?: string
           created_at?: string | null
           definition?: string
