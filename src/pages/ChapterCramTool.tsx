@@ -1149,7 +1149,7 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
         </button>
       </div>
       <div className="hidden sm:block fixed z-30" style={{ top: 64, right: 16 }}>
-        <div className="rounded-xl overflow-hidden" style={{ background: "#FFFFFF", border: `1px solid ${theme.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)" }}>
           <div className="flex items-center">
             {!collapsed && (
               <>
