@@ -929,124 +929,246 @@ function renderBoldMarkdown(text: string): React.ReactNode {
 
 function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
   const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
-  return (
-    <div className="rounded-md p-4 pl-5 border-l-[3px] break-words overflow-hidden" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
-      {subSections.map((section, si) => {
-        const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
-        const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
-        const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
 
-        // Extract content lines (everything after the (x) label line)
-        const rawContent = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        let contentLines = rawContent.split("\n");
+  // Dark mode detection: if pageBg is dark, use dark-optimised colors
+  const isDark = theme.pageBg === "#FFFFFF" ? false : true;
 
-        // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
-        let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
-        if (labelMatch && !labelSuffix && !matchedInstruction) {
-          const firstNonEmpty = contentLines.findIndex(l => l.trim());
-          if (firstNonEmpty >= 0) {
-            labelSuffix = contentLines[firstNonEmpty].trim();
-            contentLines = [...contentLines.slice(0, firstNonEmpty), ...contentLines.slice(firstNonEmpty + 1)];
+  const partCardBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)";
+  const partCardBorder = isDark ? "rgba(255,255,255,0.1)" : "#14213D";
+  const calcLineBg = isDark ? "rgba(206,17,38,0.08)" : "rgba(206,17,38,0.05)";
+  const calcLineBorder = "#CE1126";
+  const headerColor = isDark ? "rgba(255,255,255,0.9)" : "#14213D";
+  const narrativeColor = isDark ? "rgba(255,255,255,0.7)" : theme.textMuted;
+  const subtitleColor = isDark ? "rgba(255,255,255,0.4)" : theme.textMuted;
+
+  // Build part cards
+  const partCards = subSections.map((section, si) => {
+    const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+    const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
+    const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
+
+    // Extract content lines (everything after the (x) label line)
+    const rawContent = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
+    let contentLines = rawContent.split("\n");
+
+    // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
+    let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
+    if (labelMatch && !labelSuffix && !matchedInstruction) {
+      const firstNonEmpty = contentLines.findIndex(l => l.trim());
+      if (firstNonEmpty >= 0) {
+        labelSuffix = contentLines[firstNonEmpty].trim();
+        contentLines = [...contentLines.slice(0, firstNonEmpty), ...contentLines.slice(firstNonEmpty + 1)];
+      }
+    }
+
+    // For JE-only problems, filter to calculation lines only
+    if (isJEOnly) {
+      contentLines = contentLines.filter(l => isCalculationLine(l.trim()));
+    }
+
+    // Determine header text
+    let headerText: string | null = null;
+    if (labelMatch) {
+      if (matchedInstruction) {
+        // Use the transaction label from the instruction
+        headerText = matchedInstruction.instruction_text;
+      } else if (labelSuffix) {
+        headerText = labelSuffix;
+      } else {
+        headerText = `PART ${labelMatch[1].toUpperCase()}`;
+      }
+    }
+
+    // Group lines into segments: plain text vs inline JE blocks
+    type TextSeg = { type: "text"; lines: { text: string; idx: number }[] };
+    type JESeg = { type: "je"; rows: InlineJERow[]; heading?: string };
+    type Seg = TextSeg | JESeg;
+    let i = 0;
+    const segs: Seg[] = [];
+
+    while (i < contentLines.length) {
+      if (!contentLines[i].trim()) {
+        const lastSeg = segs[segs.length - 1];
+        if (lastSeg && lastSeg.type === "text") {
+          lastSeg.lines.push({ text: "", idx: i });
+        } else {
+          segs.push({ type: "text", lines: [{ text: "", idx: i }] });
+        }
+        i++;
+        continue;
+      }
+      const parsed = parseInlineJELine(contentLines[i]);
+      if (parsed) {
+        let heading: string | undefined;
+        const lastSeg = segs[segs.length - 1];
+        if (lastSeg && lastSeg.type === "text") {
+          const lastLine = lastSeg.lines[lastSeg.lines.length - 1];
+          if (lastLine && /^journal\s+entr(y|ies)\s*:/i.test(lastLine.text.trim())) {
+            heading = lastLine.text.trim();
+            lastSeg.lines.pop();
+            if (lastSeg.lines.length === 0) segs.pop();
           }
         }
-        const label = labelMatch
-          ? matchedInstruction
-            ? `(${labelMatch[1]}) ${matchedInstruction.instruction_text}`
-            : `(${labelMatch[1]}) ${labelSuffix}`
-          : null;
-
-        // For JE-only problems, filter to calculation lines only
-        if (isJEOnly) {
-          contentLines = contentLines.filter(l => isCalculationLine(l.trim()));
-        }
-
-        // Group lines into segments: plain text vs inline JE blocks
-        type TextSeg = { type: "text"; lines: { text: string; idx: number }[] };
-        type JESeg = { type: "je"; rows: InlineJERow[]; heading?: string };
-        type Seg = TextSeg | JESeg;
-        let i = 0;
-        const segs: Seg[] = [];
-
+        const jeRows: InlineJERow[] = [parsed];
+        i++;
         while (i < contentLines.length) {
-          // Empty lines become paragraph break markers
-          if (!contentLines[i].trim()) {
-            const lastSeg = segs[segs.length - 1];
-            if (lastSeg && lastSeg.type === "text") {
-              lastSeg.lines.push({ text: "", idx: i });
-            } else {
-              segs.push({ type: "text", lines: [{ text: "", idx: i }] });
-            }
-            i++;
-            continue;
-          }
-          const parsed = parseInlineJELine(contentLines[i]);
-          if (parsed) {
-            // Check if previous line is a JE label heading
-            let heading: string | undefined;
-            const lastSeg = segs[segs.length - 1];
-            if (lastSeg && lastSeg.type === "text") {
-              const lastLine = lastSeg.lines[lastSeg.lines.length - 1];
-              if (lastLine && /^journal\s+entr(y|ies)\s*:/i.test(lastLine.text.trim())) {
-                heading = lastLine.text.trim();
-                lastSeg.lines.pop();
-                if (lastSeg.lines.length === 0) segs.pop();
-              }
-            }
-            // Collect consecutive debit/credit lines
-            const jeRows: InlineJERow[] = [parsed];
-            i++;
-            while (i < contentLines.length) {
-              const next = parseInlineJELine(contentLines[i]);
-              if (next) { jeRows.push(next); i++; } else break;
-            }
-            segs.push({ type: "je", rows: jeRows, heading });
-          } else {
-            const lastSeg = segs[segs.length - 1];
-            if (lastSeg && lastSeg.type === "text") {
-              lastSeg.lines.push({ text: contentLines[i], idx: i });
-            } else {
-              segs.push({ type: "text", lines: [{ text: contentLines[i], idx: i }] });
-            }
-            i++;
-          }
+          const next = parseInlineJELine(contentLines[i]);
+          if (next) { jeRows.push(next); i++; } else break;
         }
+        segs.push({ type: "je", rows: jeRows, heading });
+      } else {
+        const lastSeg = segs[segs.length - 1];
+        if (lastSeg && lastSeg.type === "text") {
+          lastSeg.lines.push({ text: contentLines[i], idx: i });
+        } else {
+          segs.push({ type: "text", lines: [{ text: contentLines[i], idx: i }] });
+        }
+        i++;
+      }
+    }
 
-        // For JE-only, skip rendering if no calculation content remains
-        if (isJEOnly && segs.every(s => s.type === "text" && s.lines.length === 0)) return null;
+    // For JE-only, skip rendering if no calculation content remains
+    if (isJEOnly && segs.every(s => s.type === "text" && s.lines.length === 0)) return null;
 
-        return (
-          <div key={si}>
-            {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
-            {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
-            {segs.map((seg, segIdx) => {
-              if (seg.type === "je") {
-                // For JE-only problems, skip inline JE in explanation (they're in the JE accordion)
-                if (isJEOnly) return null;
-                return <InlineJETable key={`je-${segIdx}`} rows={seg.rows} heading={seg.heading} theme={theme} />;
-              }
-              return seg.lines.map((line) => {
-                const trimmed = line.text.trim();
-                // Empty line = paragraph break spacer
-                if (!trimmed) {
-                  return <div key={`spacer-${line.idx}`} className="h-3" />;
-                }
-                const isYearLabel = /^\d{4}\s*:/.test(trimmed);
-                const isNumberedStep = /^\d+\.\s/.test(trimmed);
-                if (isJEOnly) {
-                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{renderBoldMarkdown(trimmed)}</p>;
-                }
-                if (isYearLabel) {
-                  return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{renderBoldMarkdown(trimmed)}</p>;
-                }
-                if (isNumberedStep) {
-                  return <p key={line.idx} className="font-semibold text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text, marginTop: 14 }}>{renderBoldMarkdown(trimmed)}</p>;
-                }
-                return <p key={line.idx} className="text-[13px] ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{renderBoldMarkdown(trimmed)}</p>;
-              });
-            })}
-          </div>
-        );
-      })}
+    // Check if any visible content exists
+    const hasContent = segs.some(s => {
+      if (s.type === "je") return !isJEOnly;
+      return s.lines.some(l => l.text.trim());
+    });
+    if (!hasContent && !headerText) return null;
+
+    return (
+      <div
+        key={si}
+        className="rounded-lg break-words overflow-hidden"
+        style={{
+          background: partCardBg,
+          borderLeft: `3px solid ${partCardBorder}`,
+          padding: 16,
+        }}
+      >
+        {/* Part header */}
+        {headerText && (
+          <p
+            style={{
+              fontFamily: "Inter, system-ui, sans-serif",
+              fontWeight: 600,
+              fontSize: 13,
+              color: headerColor,
+              letterSpacing: "0.04em",
+              textTransform: matchedInstruction ? "none" : "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            {matchedInstruction ? headerText : headerText}
+          </p>
+        )}
+
+        {/* Content segments */}
+        {segs.map((seg, segIdx) => {
+          if (seg.type === "je") {
+            if (isJEOnly) return null;
+            return <InlineJETable key={`je-${segIdx}`} rows={seg.rows} heading={seg.heading} theme={theme} />;
+          }
+          return seg.lines.map((line) => {
+            const trimmed = line.text.trim();
+            if (!trimmed) {
+              return <div key={`spacer-${line.idx}`} className="h-3" />;
+            }
+            const isYearLabel = /^\d{4}\s*:/.test(trimmed);
+            const isNumberedStep = /^\d+\.\s/.test(trimmed);
+            const isCalc = isCalculationLine(trimmed);
+
+            // Calculation lines — monospace with red left accent
+            if (isCalc || isJEOnly) {
+              return (
+                <p
+                  key={line.idx}
+                  className="font-mono break-words"
+                  style={{
+                    fontSize: 14,
+                    color: isDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.87)",
+                    paddingLeft: 8,
+                    borderLeft: `2px solid ${calcLineBorder}`,
+                    background: calcLineBg,
+                    borderRadius: 2,
+                    marginBottom: 4,
+                    lineHeight: 1.7,
+                    fontWeight: 500,
+                  }}
+                >
+                  {renderBoldMarkdown(trimmed)}
+                </p>
+              );
+            }
+
+            // Year labels
+            if (isYearLabel) {
+              return (
+                <p
+                  key={line.idx}
+                  className="font-bold break-words"
+                  style={{
+                    fontSize: 14,
+                    color: headerColor,
+                    marginTop: 10,
+                    marginBottom: 4,
+                  }}
+                >
+                  {renderBoldMarkdown(trimmed)}
+                </p>
+              );
+            }
+
+            // Numbered steps
+            if (isNumberedStep) {
+              return (
+                <p
+                  key={line.idx}
+                  className="font-semibold break-words"
+                  style={{
+                    fontSize: 14,
+                    color: isDark ? "rgba(255,255,255,0.85)" : theme.text,
+                    marginTop: 14,
+                    marginBottom: 6,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {renderBoldMarkdown(trimmed)}
+                </p>
+              );
+            }
+
+            // Narrative / explanation lines
+            return (
+              <p
+                key={line.idx}
+                className="break-words"
+                style={{
+                  fontSize: 14,
+                  color: narrativeColor,
+                  marginBottom: 6,
+                  lineHeight: 1.6,
+                }}
+              >
+                {renderBoldMarkdown(trimmed)}
+              </p>
+            );
+          });
+        })}
+      </div>
+    );
+  }).filter(Boolean);
+
+  return (
+    <div className="space-y-3">
+      {/* JE-only subtitle */}
+      {isJEOnly && (
+        <p style={{ fontSize: 11, color: subtitleColor, fontStyle: "italic", marginBottom: 12 }}>
+          How the amounts were derived
+        </p>
+      )}
+      {partCards}
     </div>
   );
 }
