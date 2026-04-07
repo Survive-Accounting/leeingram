@@ -17,6 +17,7 @@ const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1
 const PREVIEW_LIMIT = 3;
 const SOLUTIONS_INITIAL_SHOW = 8;
 const LEE_HERO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
+const LEE_HEADSHOT_BG = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg";
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 
 const theme = {
