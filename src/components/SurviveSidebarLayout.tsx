@@ -238,13 +238,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // ── Role detection ──────────────────────────────────────────────
+  // ── Role detection (kept for VA tools panel) ─────────────────────
   const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
-  const isAdmin = !effectiveRole || effectiveRole === "admin";
-  const isLeadVa = effectiveRole === "lead_va";
-  const isAdminOrLead = isAdmin || isLeadVa;
-  const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
-  const isSheetPrepVa = effectiveRole === "sheet_prep_va";
 
   // ── Nav item renderer ──────────────────────────────────────────
   const renderItem = (label: string, path: string, Icon: any, opts?: { badge?: number | null; dimmed?: boolean; indent?: boolean }) => {
