@@ -191,6 +191,11 @@ export default function ChapterContentQA() {
 
   const [bulkGenerating, setBulkGenerating] = useState<string | null>(null);
   const [bulkProgress, setBulkProgress] = useState("");
+  const [lastBulkDebug, setLastBulkDebug] = useState<{ operation: string; timestamp: string; result?: any; error?: string } | null>(null);
+
+  const captureBulkDebug = (operation: string, result?: any, error?: string) => {
+    setLastBulkDebug({ operation, timestamp: new Date().toISOString(), result: result ?? null, error: error ?? null });
+  };
 
   const runBulkJE = async () => {
     setBulkGenerating("je");
@@ -199,8 +204,9 @@ export default function ChapterContentQA() {
       const { data, error } = await supabase.functions.invoke("generate-chapter-journal-entries", { body: { all: true } });
       if (error) throw error;
       toast.success(`JEs generated: ${data.completed}/${data.total}. ${data.errors?.length || 0} errors.`);
+      captureBulkDebug("Generate All Chapter JEs", data);
       qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) { toast.error(err.message); captureBulkDebug("Generate All Chapter JEs", null, err.message); }
     finally { setBulkGenerating(null); setBulkProgress(""); }
   };
 
@@ -211,8 +217,9 @@ export default function ChapterContentQA() {
       const { data, error } = await supabase.functions.invoke("generate-chapter-formulas", { body: { all: true } });
       if (error) throw error;
       toast.success(`Formulas generated: ${data.completed}/${data.total}. ${data.errors?.length || 0} errors.`);
+      captureBulkDebug("Generate All Chapter Formulas", data);
       qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) { toast.error(err.message); captureBulkDebug("Generate All Chapter Formulas", null, err.message); }
     finally { setBulkGenerating(null); setBulkProgress(""); }
   };
 
@@ -223,7 +230,8 @@ export default function ChapterContentQA() {
       const { data, error } = await supabase.functions.invoke("generate-formula-images", { body: { all: true } });
       if (error) throw error;
       toast.success("Formula images generated.");
-    } catch (err: any) { toast.error(err.message); }
+      captureBulkDebug("Generate All Formula Images", data);
+    } catch (err: any) { toast.error(err.message); captureBulkDebug("Generate All Formula Images", null, err.message); }
     finally { setBulkGenerating(null); setBulkProgress(""); }
   };
 
