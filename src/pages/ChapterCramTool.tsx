@@ -633,6 +633,12 @@ export default function ChapterCramTool() {
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch { return new Set(); }
   });
+  const [checklistChecked, setChecklistChecked] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem(`sa_checklist_${chapterId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const { data: isAdmin = false } = useQuery({
     queryKey: ["cram-admin-check", user?.id],
     enabled: !authLoading,
