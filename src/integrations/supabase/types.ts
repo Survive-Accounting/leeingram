@@ -780,40 +780,46 @@ export type Database = {
       }
       chapter_accounts: {
         Row: {
+          account_description: string
           account_name: string
           account_type: string
           chapter_id: string
           created_at: string
-          credit_effect: string
-          debit_effect: string
+          generated_at: string | null
           id: string
           is_approved: boolean
+          is_rejected: boolean | null
           normal_balance: string
-          source: string
+          sort_order: number | null
+          updated_at: string | null
         }
         Insert: {
+          account_description?: string
           account_name: string
           account_type?: string
           chapter_id: string
           created_at?: string
-          credit_effect?: string
-          debit_effect?: string
+          generated_at?: string | null
           id?: string
           is_approved?: boolean
+          is_rejected?: boolean | null
           normal_balance?: string
-          source?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Update: {
+          account_description?: string
           account_name?: string
           account_type?: string
           chapter_id?: string
           created_at?: string
-          credit_effect?: string
-          debit_effect?: string
+          generated_at?: string | null
           id?: string
           is_approved?: boolean
+          is_rejected?: boolean | null
           normal_balance?: string
-          source?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1023,6 +1029,97 @@ export type Database = {
           },
         ]
       }
+      chapter_exam_checklist: {
+        Row: {
+          chapter_id: string
+          checklist_item: string
+          created_at: string | null
+          generated_at: string | null
+          id: string
+          is_approved: boolean | null
+          is_rejected: boolean | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id: string
+          checklist_item: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          checklist_item?: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_exam_checklist_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapter_exam_mistakes: {
+        Row: {
+          chapter_id: string
+          created_at: string | null
+          explanation: string | null
+          generated_at: string | null
+          id: string
+          is_approved: boolean | null
+          is_rejected: boolean | null
+          mistake: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string | null
+          explanation?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          mistake: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string | null
+          explanation?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          mistake?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_exam_mistakes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_formulas: {
         Row: {
           chapter_id: string
@@ -1158,6 +1255,53 @@ export type Database = {
           },
           {
             foreignKeyName: "chapter_journal_entries_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapter_key_terms: {
+        Row: {
+          chapter_id: string
+          created_at: string | null
+          definition: string
+          generated_at: string | null
+          id: string
+          is_approved: boolean | null
+          is_rejected: boolean | null
+          sort_order: number | null
+          term: string
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string | null
+          definition: string
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          sort_order?: number | null
+          term: string
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string | null
+          definition?: string
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          sort_order?: number | null
+          term?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_key_terms_chapter_id_fkey"
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
@@ -1328,6 +1472,47 @@ export type Database = {
             columns: ["solution_pdf_file_id"]
             isOneToOne: false
             referencedRelation: "uploaded_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chapter_purpose: {
+        Row: {
+          chapter_id: string
+          consequence_text: string
+          created_at: string | null
+          generated_at: string | null
+          id: string
+          is_approved: boolean | null
+          purpose_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id: string
+          consequence_text: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          purpose_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          consequence_text?: string
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          purpose_text?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_purpose_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: true
+            referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
         ]
