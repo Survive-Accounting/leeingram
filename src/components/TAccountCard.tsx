@@ -132,6 +132,19 @@ export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
   );
 }
 
+/**
+ * Shared T-account body renderer.
+ * Debit-normal layout:
+ *   Row 1: ⓘ ???  Dr  |            (normal side = beginning bal in nums)
+ *   Row 2:             |  ??? ⓘ Cr
+ *   Row 3: ⓘ ???  End |            (ending balance)
+ *
+ * Credit-normal layout:
+ *   Row 1:             |  ??? ⓘ Cr  (normal side = beginning bal in nums)
+ *   Row 2: ⓘ ???  Dr  |
+ *   Row 3:             |  ??? ⓘ End (ending balance)
+ */
+
 // ── Admin version ──
 function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, showFs, setShowFs, hasExample, hasFs, signLabel }: {
   account: TAccountData; isDebit: boolean; contra: boolean;
@@ -146,10 +159,6 @@ function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, 
   const dr = account.example_debit_amount;
   const cr = account.example_credit_amount;
   const end = account.example_ending_balance;
-  const dateLabel = account.example_date_label || "";
-  const dateParts = dateLabel.match(/^(.+?)\s*[–—-]\s*(.+)$/);
-  const startDate = dateParts ? dateParts[1].trim() : "";
-  const endDate = dateParts ? dateParts[2].trim() : "";
 
   const calcStr = isDebit
     ? `${fmt(beg)} + ${fmt(dr)} − ${fmt(cr)} = ${fmt(end)}`
@@ -170,107 +179,76 @@ function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, 
             {account.contra_tooltip && <SmallTooltip text={account.contra_tooltip} />}
           </span>
         )}
-        {nums && dateLabel && (
-          <span className="text-[10px] text-muted-foreground ml-2">{dateLabel}</span>
+      </div>
+
+      {/* T-account body — 3 rows, staggered */}
+      <div className="grid grid-cols-2">
+        {isDebit ? (
+          <>
+            {/* Debit-normal: Row1=Dr(beg), Row2=Cr */}
+            <div className="flex items-center justify-center gap-1 py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+              {nums ? (
+                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-foreground">{fmt(beg)}</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+              ) : (
+                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-muted-foreground">???</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+              )}
+            </div>
+            <div className="py-1.5" />
+
+            <div className="py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
+            <div className="flex items-center justify-center gap-1 py-1.5">
+              {nums ? (
+                <><span className="text-xs font-mono text-foreground">{fmt(cr)}</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Cr</span></>
+              ) : (
+                <><span className="text-xs font-mono text-muted-foreground">???</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Cr</span></>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Credit-normal: Row1=Cr(beg), Row2=Dr */}
+            <div className="py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
+            <div className="flex items-center justify-center gap-1 py-1.5">
+              {nums ? (
+                <><span className="text-xs font-mono text-foreground">{fmt(beg)}</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Cr</span></>
+              ) : (
+                <><span className="text-xs font-mono text-muted-foreground">???</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Cr</span></>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-1 py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+              {nums ? (
+                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-foreground">{fmt(dr)}</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+              ) : (
+                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-muted-foreground">???</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+              )}
+            </div>
+            <div className="py-1.5" style={{}} />
+          </>
         )}
       </div>
 
-      {/* T-account body — staggered layout, fixed 4 rows */}
-      <div className="grid grid-cols-2">
-        {/* Row 1: debit side (beginning bal if debit-normal in nums mode, else debit ???/transaction) */}
-        <div className="flex items-center justify-center gap-1 py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
-          {nums ? (
-            isDebit && beg != null ? (
-              <>
-                <span className="text-xs font-mono text-foreground">{fmt(beg)}</span>
-                <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
-              </>
-            ) : (
-              <span className="text-xs font-mono text-muted-foreground invisible">???</span>
-            )
-          ) : (
-            <>
-              {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} />}
-              <span className="text-xs font-mono text-muted-foreground">???</span>
-            </>
-          )}
-        </div>
-        <div className="flex items-center justify-center gap-1 py-1">
-          {nums && !isDebit && beg != null ? (
-            <>
-              <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
-              <span className="text-xs font-mono text-foreground">{fmt(beg)}</span>
-            </>
-          ) : null}
-        </div>
-
-        {/* Row 2: credit side (credit ???/transaction) */}
-        <div className="py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
-          {nums && dr != null ? (
-            <div className="flex items-center justify-center">
-              <span className="text-xs font-mono text-foreground">{fmt(dr)}</span>
-            </div>
-          ) : null}
-        </div>
-        <div className="flex items-center justify-center gap-1 py-1">
-          {nums ? (
-            cr != null ? (
-              <span className="text-xs font-mono text-foreground">{fmt(cr)}</span>
-            ) : null
-          ) : (
-            <>
-              <span className="text-xs font-mono text-muted-foreground">???</span>
-              {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} />}
-            </>
-          )}
-        </div>
-
-        {/* Row 3: spacer / extra stagger */}
-        <div className="py-0.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
-          {nums && !isDebit && dr != null ? (
-            <div className="flex items-center justify-center py-0.5">
-              <span className="text-xs font-mono text-foreground invisible">{fmt(dr)}</span>
-            </div>
-          ) : null}
-        </div>
-        <div className="py-0.5" />
-      </div>
-
       {/* Balance row */}
-      <div className="py-1 grid grid-cols-2" style={{ borderTop: `${lw}px solid ${lineColor}` }}>
+      <div className="py-1.5 grid grid-cols-2" style={{ borderTop: `${lw}px solid ${lineColor}` }}>
         {isDebit ? (
           <>
-            <div className="flex items-center justify-center gap-1">
+            <div className="flex items-center justify-center gap-1" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
               {nums ? (
-                <>
-                  <SmallTooltip text={balCalcTooltip} />
-                  <span className="text-xs font-mono text-foreground font-semibold">{fmt(end)}</span>
-                  <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
-                </>
+                <><SmallTooltip text={balCalcTooltip} /><span className="text-xs font-mono text-foreground font-semibold">{fmt(end)}</span><span className="text-[10px] text-muted-foreground">End</span></>
               ) : (
-                <>
-                  <SmallTooltip text={account.balance_tooltip || ""} />
-                  <span className="text-xs font-mono text-foreground font-semibold">???</span>
-                </>
+                <><SmallTooltip text={account.balance_tooltip || ""} /><span className="text-xs font-mono text-foreground font-semibold">???</span><span className="text-[10px] text-muted-foreground">End</span></>
               )}
             </div>
             <div />
           </>
         ) : (
           <>
-            <div />
+            <div style={{ borderRight: `${lw}px solid ${lineColor}` }} />
             <div className="flex items-center justify-center gap-1">
               {nums ? (
-                <>
-                  <SmallTooltip text={balCalcTooltip} />
-                  <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
-                  <span className="text-xs font-mono text-foreground font-semibold">{fmt(end)}</span>
-                </>
+                <><SmallTooltip text={balCalcTooltip} /><span className="text-xs font-mono text-foreground font-semibold">{fmt(end)}</span><span className="text-[10px] text-muted-foreground">End</span></>
               ) : (
-                <>
-                  <SmallTooltip text={account.balance_tooltip || ""} />
-                  <span className="text-xs font-mono text-foreground font-semibold">???</span>
-                </>
+                <><SmallTooltip text={account.balance_tooltip || ""} /><span className="text-xs font-mono text-foreground font-semibold">???</span><span className="text-[10px] text-muted-foreground">End</span></>
               )}
             </div>
           </>
@@ -282,7 +260,7 @@ function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, 
         {hasExample && (
           <button onClick={() => setShowNumbers(!showNumbers)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
             <ChevronRight className="h-3 w-3" />
-            {showNumbers ? "Show ??? version →" : "Show example with numbers →"}
+            {showNumbers ? "Show ??? version →" : "Show numbers →"}
           </button>
         )}
         {hasFs && (
@@ -315,10 +293,6 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
   const dr = account.example_debit_amount;
   const cr = account.example_credit_amount;
   const end = account.example_ending_balance;
-  const dateLabel = account.example_date_label || "";
-  const dateParts = dateLabel.match(/^(.+?)\s*[–—-]\s*(.+)$/);
-  const startDate = dateParts ? dateParts[1].trim() : "";
-  const endDate = dateParts ? dateParts[2].trim() : "";
 
   const calcStr = isDebit
     ? `${fmt(beg)} + ${fmt(dr)} − ${fmt(cr)} = ${fmt(end)}`
@@ -328,6 +302,7 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
   const nums = showNumbers && hasExample;
 
   const cellCenter: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 4 };
+  const labelStyle: React.CSSProperties = { fontSize: 10, color: textMuted };
 
   return (
     <div style={{ maxWidth: 380 }}>
@@ -341,97 +316,76 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
             {account.contra_tooltip && <SmallTooltip text={account.contra_tooltip} style={{ color: textMuted }} />}
           </span>
         )}
-        {nums && dateLabel && (
-          <span style={{ fontSize: 10, color: textMuted, marginLeft: 8 }}>{dateLabel}</span>
+      </div>
+
+      {/* T-body — 3 rows staggered */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+        {isDebit ? (
+          <>
+            {/* Debit-normal: Row1=Dr(beg), Row2=Cr */}
+            <div style={{ ...cellCenter, padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }}>
+              {nums ? (
+                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span><span style={labelStyle}>Dr</span></>
+              ) : (
+                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><span style={labelStyle}>Dr</span></>
+              )}
+            </div>
+            <div style={{ padding: "6px 0" }} />
+
+            <div style={{ padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+            <div style={{ ...cellCenter, padding: "6px 0" }}>
+              {nums ? (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(cr)}</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Cr</span></>
+              ) : (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Cr</span></>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Credit-normal: Row1=Cr(beg), Row2=Dr */}
+            <div style={{ padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+            <div style={{ ...cellCenter, padding: "6px 0" }}>
+              {nums ? (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Cr</span></>
+              ) : (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Cr</span></>
+              )}
+            </div>
+
+            <div style={{ ...cellCenter, padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }}>
+              {nums ? (
+                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(dr)}</span><span style={labelStyle}>Dr</span></>
+              ) : (
+                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><span style={labelStyle}>Dr</span></>
+              )}
+            </div>
+            <div style={{ padding: "6px 0" }} />
+          </>
         )}
       </div>
 
-      {/* T-body — staggered, fixed rows */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-        {/* Row 1 */}
-        <div style={{ ...cellCenter, padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }}>
-          {nums ? (
-            isDebit && beg != null ? (
-              <>
-                <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span>
-                <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
-              </>
-            ) : null
-          ) : (
-            <>
-              {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} style={{ color: textMuted }} />}
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
-            </>
-          )}
-        </div>
-        <div style={{ ...cellCenter, padding: "4px 0" }}>
-          {nums && !isDebit && beg != null ? (
-            <>
-              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span>
-            </>
-          ) : null}
-        </div>
-
-        {/* Row 2 */}
-        <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}`, ...cellCenter }}>
-          {nums && dr != null ? (
-            <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(dr)}</span>
-          ) : null}
-        </div>
-        <div style={{ ...cellCenter, padding: "4px 0" }}>
-          {nums ? (
-            cr != null ? (
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(cr)}</span>
-            ) : null
-          ) : (
-            <>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
-              {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} style={{ color: textMuted }} />}
-            </>
-          )}
-        </div>
-
-        {/* Row 3: spacer */}
-        <div style={{ padding: "2px 0", borderRight: `${lw}px solid ${lineColor}` }} />
-        <div style={{ padding: "2px 0" }} />
-      </div>
-
-      {/* Balance */}
-      <div style={{ borderTop: `${lw}px solid ${lineColor}`, padding: "4px 0", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+      {/* Balance row */}
+      <div style={{ borderTop: `${lw}px solid ${lineColor}`, padding: "6px 0", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         {isDebit ? (
           <>
-            <div style={cellCenter}>
+            <div style={{ ...cellCenter, borderRight: `${lw}px solid ${lineColor}` }}>
               {nums ? (
-                <>
-                  <SmallTooltip text={balCalcTooltip} style={{ color: textMuted }} />
-                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
-                  <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
-                </>
+                <><SmallTooltip text={balCalcTooltip} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span><span style={labelStyle}>End</span></>
               ) : (
-                <>
-                  <SmallTooltip text={account.balance_tooltip || ""} style={{ color: textMuted }} />
-                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
-                </>
+                <><SmallTooltip text={account.balance_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span><span style={labelStyle}>End</span></>
               )}
             </div>
             <div />
           </>
         ) : (
           <>
-            <div />
+            <div style={{ borderRight: `${lw}px solid ${lineColor}` }} />
             <div style={cellCenter}>
               {nums ? (
-                <>
-                  <SmallTooltip text={balCalcTooltip} style={{ color: textMuted }} />
-                  <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
-                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
-                </>
+                <><SmallTooltip text={balCalcTooltip} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span><span style={labelStyle}>End</span></>
               ) : (
-                <>
-                  <SmallTooltip text={account.balance_tooltip || ""} style={{ color: textMuted }} />
-                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
-                </>
+                <><SmallTooltip text={account.balance_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span><span style={labelStyle}>End</span></>
               )}
             </div>
           </>
@@ -444,7 +398,7 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
           {hasExample && (
             <button onClick={() => setShowNumbers(!showNumbers)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
               <ChevronRight className="h-3 w-3" />
-              {showNumbers ? "Show ??? version →" : "Show example with numbers →"}
+              {showNumbers ? "Show ??? version →" : "Show numbers →"}
             </button>
           )}
           {hasFs && (
