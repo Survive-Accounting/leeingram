@@ -3946,7 +3946,7 @@ export default function SolutionsViewer() {
                   theme={t}
                   isPreview={isPreview}
                   enrollUrl={enrollUrl}
-                  sectionName={isJEOnly ? "Calculations" : "Explanation"}
+                  sectionName="Explanation"
                   assetCode={asset.asset_name}
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
