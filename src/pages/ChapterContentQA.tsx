@@ -881,7 +881,7 @@ function JECategoryBlock({
 // ── JE Entry Row — with expandable table ────────────────────────
 
 function JEEntryRowBlock({
-  entry, onApprove, onReject, onDelete, onUpdateLabel, onUpdateLines,
+  entry, onApprove, onReject, onDelete, onUpdateLabel, onUpdateLines, onMoveUp, onMoveDown, isFirst, isLast,
 }: {
   entry: JEEntryRow;
   onApprove: () => void;
@@ -889,6 +889,10 @@ function JEEntryRowBlock({
   onDelete: () => void;
   onUpdateLabel: (label: string) => void;
   onUpdateLines: (lines: JELine[]) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
