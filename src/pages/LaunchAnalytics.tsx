@@ -38,6 +38,7 @@ export default function LaunchAnalytics() {
           These will populate automatically once Auth &amp; Payments are live.
         </p>
       </div>
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }
