@@ -967,6 +967,14 @@ export default function ChapterCramTool() {
           </div>
         </section>
 
+        {/* ──── Testimonials ──── */}
+        <section className="mb-10">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: theme.label, letterSpacing: "0.18em" }}>
+            WHAT STUDENTS ARE SAYING
+          </p>
+          <TestimonialEmbed />
+        </section>
+
         {/* ──── Feedback ──── */}
         <section id="feedback" className="mb-10">
           <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1" style={{ color: theme.label, letterSpacing: "0.18em" }}>GET IN TOUCH</p>
