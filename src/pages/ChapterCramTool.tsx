@@ -17,12 +17,14 @@ const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1
 const PREVIEW_LIMIT = 3;
 const SOLUTIONS_INITIAL_SHOW = 8;
 const LEE_HERO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/f10e00cd3462ea2638b6e6161236a92b.png";
+const LEE_HEADSHOT_BG = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg";
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 
 const theme = {
-  pageBg: "#FFFFFF",
+  pageBg: "#F8F8FA",
   cardBg: "#FFFFFF",
   mutedBg: "#F8FAFC",
+  toolsBg: "#F0F0F4",
   text: "#0F172A",
   textMuted: "#64748B",
   label: "#94A3B8",
@@ -39,6 +41,10 @@ const theme = {
   amberBorder: "#FDE68A",
   amberText: "#92400E",
   red: "#CE1126",
+  cardShadow: "0 4px 20px rgba(0,0,0,0.35)",
+  cardHoverShadow: "0 8px 32px rgba(0,0,0,0.5)",
+  cardBorder: "1px solid rgba(255,255,255,0.08)",
+  cardHoverGlow: "inset 0 0 0 1px rgba(206,17,38,0.4)",
 };
 
 type SupplementaryRow = {
@@ -89,12 +95,12 @@ type SectionConfigRow = {
 
 // ── Card definitions ──
 const TOOL_CARDS = [
-  { key: "whats-the-point", title: "What's the Point", icon: Target, countLabel: "bullets" },
-  { key: "key-terms", title: "Key Terms", icon: BookOpen, countLabel: "terms" },
-  { key: "accounts", title: "Accounts", icon: LayoutGrid, countLabel: "accounts" },
-  { key: "journal-entries", title: "Journal Entries", icon: FileText, countLabel: "entries" },
-  { key: "formulas", title: "Formulas", icon: Calculator, countLabel: "formulas" },
-  { key: "exam-mistakes", title: "Exam Mistakes", icon: AlertTriangle, countLabel: "mistakes" },
+  { key: "whats-the-point", title: "What's the Point", icon: Target, countLabel: "entry", countLabelPlural: "entries" },
+  { key: "key-terms", title: "Key Terms", icon: BookOpen, countLabel: "term", countLabelPlural: "terms" },
+  { key: "accounts", title: "Accounts", icon: LayoutGrid, countLabel: "account", countLabelPlural: "accounts" },
+  { key: "journal-entries", title: "Journal Entries", icon: FileText, countLabel: "entry", countLabelPlural: "entries" },
+  { key: "formulas", title: "Formulas", icon: Calculator, countLabel: "formula", countLabelPlural: "formulas" },
+  { key: "exam-mistakes", title: "Exam Mistakes", icon: AlertTriangle, countLabel: "mistake", countLabelPlural: "mistakes" },
 ] as const;
 
 type CardKey = typeof TOOL_CARDS[number]["key"];
@@ -681,20 +687,36 @@ export default function ChapterCramTool() {
   const visibleFormulas = useMemo(() => structuredFormulas.filter((f) => isAdmin || !isItemHidden("formulas", f.id)), [structuredFormulas, isAdmin, isItemHidden]);
 
   // Solutions
+  const categorizeAsset = useCallback((asset: any) => {
+    const assetType = (asset.asset_type || "").toLowerCase();
+    const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
+    const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+    const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+    const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
+    return { isBE, isEX, isP };
+  }, []);
+
+  const solutionCounts = useMemo(() => {
+    let be = 0, ex = 0, p = 0;
+    approvedAssets.forEach((asset) => {
+      const cat = categorizeAsset(asset);
+      if (cat.isEX) ex++;
+      else if (cat.isP) p++;
+      else be++;
+    });
+    return { be, ex, p };
+  }, [approvedAssets, categorizeAsset]);
+
   const solutionsFiltered = useMemo(() => {
     if (!solutionsTab) return [];
     const sorted = [...approvedAssets].sort(sortBySourceRef);
     return sorted.filter((asset) => {
-      const assetType = (asset.asset_type || "").toLowerCase();
-      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
-      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
-      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
-      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
-      if (solutionsTab === "be") return isBE || (!isEX && !isP);
-      if (solutionsTab === "ex") return isEX;
-      return isP;
+      const cat = categorizeAsset(asset);
+      if (solutionsTab === "be") return cat.isBE || (!cat.isEX && !cat.isP);
+      if (solutionsTab === "ex") return cat.isEX;
+      return cat.isP;
     });
-  }, [approvedAssets, solutionsTab]);
+  }, [approvedAssets, solutionsTab, categorizeAsset]);
 
   const purpose = contentSuite?.purpose;
   const keyTerms = contentSuite?.keyTerms || [];
@@ -788,15 +810,31 @@ export default function ChapterCramTool() {
         </div>
       </header>
 
-      {/* ── Hero Header ── */}
-      <div style={{ background: theme.navy }}>
-        <div className="mx-auto max-w-[780px] px-4 py-8 sm:px-6 sm:py-10">
+      {/* ── Hero Header — Full-bleed photo ── */}
+      <div className="relative" style={{ height: "clamp(200px, 30vw, 280px)" }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${LEE_HEADSHOT_BG})`,
+            backgroundSize: "cover",
+            backgroundPosition: "right center",
+          }}
+        />
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px" }} />
+        {/* Dark gradient overlay — left side only */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.88) 40%, rgba(20,33,61,0.2) 100%)" }}
+        />
+        {/* Text content */}
+        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center">
           {courseDisplayName && (
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-[11px] font-medium uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em" }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="mt-2 text-[28px] sm:text-[32px] font-bold text-white leading-tight">
+          <h1 className="mt-2 text-[26px] sm:text-[34px] font-bold text-white leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
             Ch {chapterNum} — {chapter?.chapter_name}
           </h1>
           <div className="mt-3">
@@ -811,12 +849,12 @@ export default function ChapterCramTool() {
       <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
         {/* ──── Practice Problems ──── */}
         <section className="mb-8">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-3" style={{ color: theme.label }}>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: theme.label, letterSpacing: "0.18em" }}>
             PRACTICE PROBLEMS · CH {chapterNum || "?"}
           </p>
 
           <div className="flex flex-wrap gap-2">
-            {([["be", beLabel], ["ex", "Exercises"], ["p", "Problems"]] as const).map(([key, label]) => (
+            {([["be", beLabel, solutionCounts.be], ["ex", "Exercises", solutionCounts.ex], ["p", "Problems", solutionCounts.p]] as const).map(([key, label, count]) => (
               <button
                 key={key}
                 type="button"
@@ -824,7 +862,7 @@ export default function ChapterCramTool() {
                 className="rounded-full px-4 py-1.5 text-[12px] font-semibold transition-colors"
                 style={{ background: solutionsTab === key ? theme.navy : theme.mutedBg, color: solutionsTab === key ? "#FFFFFF" : theme.textMuted, border: "none" }}
               >
-                {label}
+                {label} · {count}
               </button>
             ))}
           </div>
@@ -872,46 +910,57 @@ export default function ChapterCramTool() {
 
         {/* ──── Chapter Tools Card Grid ──── */}
         <section className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-4" style={{ color: theme.label }}>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: theme.label, letterSpacing: "0.18em" }}>
             CHAPTER TOOLS
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TOOL_CARDS.map((card) => {
-              const Icon = card.icon;
-              const count = cardCounts[card.key];
-              return (
-                <button
-                  key={card.key}
-                  type="button"
-                  onClick={() => setOpenDrawer(card.key)}
-                  className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
-                  style={{
-                    background: theme.navy,
-                    border: "2px solid transparent",
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = theme.red; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent"; }}
-                >
-                  <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
-                  <p className="text-[14px] font-bold text-white">{card.title}</p>
-                  {count > 0 && (
-                    <span
-                      className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
-                      style={{ background: theme.red }}
-                    >
-                      {count} {card.countLabel}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="rounded-xl p-6" style={{ background: theme.toolsBg }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {TOOL_CARDS.map((card) => {
+                const Icon = card.icon;
+                const count = cardCounts[card.key];
+                return (
+                  <button
+                    key={card.key}
+                    type="button"
+                    onClick={() => setOpenDrawer(card.key)}
+                    className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
+                    style={{
+                      background: theme.navy,
+                      border: theme.cardBorder,
+                      boxShadow: theme.cardShadow,
+                    }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.boxShadow = `${theme.cardHoverShadow}, ${theme.cardHoverGlow}`;
+                      el.style.transform = "translateY(-3px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.boxShadow = theme.cardShadow;
+                      el.style.transform = "translateY(0)";
+                    }}
+                  >
+                    <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
+                    <p className="text-[14px] font-bold text-white">{card.title}</p>
+                    {count > 0 && (
+                      <span
+                        className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
+                        style={{ background: theme.red }}
+                      >
+                        {count} {count === 1 ? card.countLabel : card.countLabelPlural}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
         {/* ──── Feedback ──── */}
         <section id="feedback" className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-3" style={{ color: theme.label }}>SHARE FEEDBACK</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: theme.label, letterSpacing: "0.18em" }}>SHARE FEEDBACK</p>
           <CramFeedbackForm
             chapterId={chapterId}
             chapterNumber={chapter?.chapter_number}
@@ -1100,7 +1149,7 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
         </button>
       </div>
       <div className="hidden sm:block fixed z-30" style={{ top: 64, right: 16 }}>
-        <div className="rounded-xl overflow-hidden" style={{ background: "#FFFFFF", border: `1px solid ${theme.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)" }}>
           <div className="flex items-center">
             {!collapsed && (
               <>
