@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Check, X, GripVertical, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Check, X, GripVertical, Loader2, Sparkles, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 type MistakeRow = {
   id: string; chapter_id: string; mistake: string; explanation: string | null;
+  example_text: string | null;
   sort_order: number; is_approved: boolean; is_rejected: boolean | null;
 };
 
@@ -97,6 +98,9 @@ function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdat
   const [label, setLabel] = useState(mistake.mistake);
   const [editExpl, setEditExpl] = useState(false);
   const [expl, setExpl] = useState(mistake.explanation || "");
+  const [showExample, setShowExample] = useState(false);
+  const [editExample, setEditExample] = useState(false);
+  const [exampleText, setExampleText] = useState(mistake.example_text || "");
 
   const rankBadge = RANK_BADGES[rank];
   const statusPill = mistake.is_approved
@@ -127,6 +131,23 @@ function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdat
       ) : (
         <button onClick={() => setEditExpl(true)} className="text-[11px] text-muted-foreground hover:underline text-left block ml-6">{mistake.explanation || "Add explanation..."}</button>
       )}
+      <div className="ml-6">
+        <button onClick={() => setShowExample(!showExample)} className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 mt-0.5">
+          {showExample ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          See an example
+        </button>
+        {showExample && (
+          <div className="mt-1 pl-4 border-l-2 border-primary/20">
+            {editExample ? (
+              <Textarea value={exampleText} onChange={(e) => setExampleText(e.target.value)} onBlur={() => { onUpdate(mistake.id, "example_text", exampleText); setEditExample(false); }} className="text-[11px] text-muted-foreground min-h-[60px]" autoFocus rows={3} />
+            ) : (
+              <button onClick={() => setEditExample(true)} className="text-[11px] text-muted-foreground/80 hover:underline text-left block italic">
+                {mistake.example_text || "Click to add an example..."}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
