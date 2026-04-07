@@ -3376,6 +3376,40 @@ export default function SolutionsViewer() {
     enabled: !!chapterIdForJE,
   });
 
+  // Fetch chapter-level accounts (approved)
+  const { data: chapterAccounts } = useQuery({
+    queryKey: ["chapter-accounts-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return [];
+      const { data: rows } = await supabase
+        .from("chapter_accounts")
+        .select("id, account_name, account_type, normal_balance, account_description, sort_order")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return rows || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
+  // Fetch chapter-level key terms (approved)
+  const { data: chapterKeyTerms } = useQuery({
+    queryKey: ["chapter-terms-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return [];
+      const { data: rows } = await supabase
+        .from("chapter_key_terms")
+        .select("id, term, definition, sort_order")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return rows || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
   // ── QA status gate: only show reviewed_clean assets to students ──
   const { data: qaStatusData } = useQuery({
     queryKey: ["solutions-qa-status", data?.id],
