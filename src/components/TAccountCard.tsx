@@ -80,6 +80,22 @@ function SmallTooltip({ text, side = "top", style }: { text: string; side?: "top
   );
 }
 
+function CategoryTooltip({ text, style }: { text: string; style?: React.CSSProperties }) {
+  if (!text) return null;
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>
+        <button type="button" className="inline-flex items-center justify-center opacity-40 hover:opacity-80 transition-opacity" style={style} onClick={(e) => e.stopPropagation()}>
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="max-w-[300px] text-xs leading-relaxed z-[100] text-left whitespace-pre-line">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
   const [showExample, setShowExample] = useState(false);
   const [showFs, setShowFs] = useState(false);
