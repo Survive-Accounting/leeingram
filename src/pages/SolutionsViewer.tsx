@@ -3573,7 +3573,7 @@ export default function SolutionsViewer() {
       if (!chapterIdForJE) return [];
       const { data: rows } = await supabase
         .from("chapter_key_terms")
-        .select("id, term, definition, sort_order")
+        .select("id, term, definition, category, sort_order")
         .eq("chapter_id", chapterIdForJE)
         .eq("is_approved", true)
         .order("sort_order");
