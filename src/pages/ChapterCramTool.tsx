@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, EyeOff, ExternalLink, Calendar, Lock, Share2, Shuffle, X } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, EyeOff, ExternalLink, Calendar, Lock, Share2, Shuffle, X, AlertTriangle, Info } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
@@ -612,6 +612,144 @@ function getBELabel(courseCode: string) {
   return "Brief Exercises";
 }
 
+const ACCOUNT_TYPE_ORDER = [
+  "Current Asset", "Long-Term Asset", "Contra Asset",
+  "Current Liability", "Long-Term Liability", "Equity",
+  "Revenue", "Expense", "Contra Revenue",
+];
+
+const DEBIT_GROUPS = new Set(["Current Asset", "Long-Term Asset", "Contra Revenue", "Expense"]);
+
+function TAccountTooltip({ account }: { account: any }) {
+  const isDebit = account.normal_balance === "Debit";
+  const isCredit = account.normal_balance === "Credit";
+  const isBoth = account.normal_balance === "Both";
+
+  return (
+    <div className="text-left" style={{ minWidth: 200 }}>
+      <table className="w-full text-[11px] border-collapse" style={{ borderColor: theme.border }}>
+        <thead>
+          <tr><th colSpan={2} className="text-center py-1 font-bold border-b" style={{ borderColor: theme.border, color: theme.heading }}>{account.account_name}</th></tr>
+          <tr style={{ borderBottom: `2px solid ${theme.heading}` }}>
+            <th className="text-center py-1 w-1/2 font-semibold" style={{ color: theme.text }}>Debit</th>
+            <th className="text-center py-1 w-1/2 font-semibold border-l" style={{ borderColor: theme.heading, color: theme.text }}>Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="text-center py-1 text-[10px]" style={{ color: theme.textMuted }}>{isDebit ? "(+)" : isCredit ? "(−)" : "(±)"}</td>
+            <td className="text-center py-1 text-[10px] border-l" style={{ borderColor: theme.border, color: theme.textMuted }}>{isCredit ? "(+)" : isDebit ? "(−)" : "(±)"}</td>
+          </tr>
+          <tr>
+            <td className="text-center py-1 font-mono text-[11px]" style={{ color: theme.textMuted }}>{(isDebit || isBoth) ? "???" : ""}</td>
+            <td className="text-center py-1 font-mono text-[11px] border-l" style={{ borderColor: theme.border, color: theme.textMuted }}>{(isCredit || isBoth) ? "???" : ""}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style={{ borderTop: `1px solid ${theme.border}` }}>
+            <td colSpan={2} className="text-center py-1 text-[10px] font-semibold" style={{ color: theme.heading }}>
+              {isBoth ? "Can have either normal balance" : `Normal Balance: ${account.normal_balance}`}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+      {account.account_description && (
+        <p className="mt-1.5 text-[10px] leading-[1.5]" style={{ color: theme.textMuted }}>{account.account_description}</p>
+      )}
+    </div>
+  );
+}
+
+function CramAccountsSection({ accounts }: { accounts: any[] }) {
+  const [openGroup, setOpenGroup] = useState<string | null>(ACCOUNT_TYPE_ORDER[0]);
+  const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+  const [tooltipAccount, setTooltipAccount] = useState<any>(null);
+
+  const grouped = ACCOUNT_TYPE_ORDER.map(type => ({
+    type,
+    items: accounts.filter(a => a.account_type === type),
+    isDebitNormal: DEBIT_GROUPS.has(type),
+  })).filter(g => g.items.length > 0);
+
+  const handleHover = (e: React.MouseEvent, account: any) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setTooltipPos({ top: rect.bottom + 8, left: Math.min(rect.left, window.innerWidth - 260) });
+    setTooltipAccount(account);
+    setHoveredAccount(account.id);
+  };
+
+  return (
+    <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+      {grouped.map((group, gi) => {
+        const isOpen = openGroup === group.type;
+        const balanceLabel = group.isDebitNormal ? "(Dr + / Cr −)" : "(Dr − / Cr +)";
+        return (
+          <div key={group.type} style={{ borderTop: gi > 0 ? `1px solid ${theme.border}` : undefined }}>
+            <button onClick={() => setOpenGroup(isOpen ? null : group.type)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
+              <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+              <span className="text-[13px] font-semibold" style={{ color: theme.heading }}>{group.type}</span>
+              <span className="text-[11px]" style={{ color: theme.label }}>{balanceLabel}</span>
+              <span className="ml-auto text-[11px] font-semibold rounded-full px-2 py-0.5" style={{ background: theme.mutedBg, color: theme.textMuted }}>({group.items.length})</span>
+            </button>
+            {isOpen && (
+              <div className="px-4 pb-3 space-y-1">
+                {group.items.map((acc: any) => (
+                  <div key={acc.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md" style={{ background: theme.mutedBg }}>
+                    <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{acc.account_name}</span>
+                    <button
+                      onMouseEnter={(e) => handleHover(e, acc)}
+                      onMouseLeave={() => { setHoveredAccount(null); setTooltipAccount(null); }}
+                      className="shrink-0"
+                    >
+                      <Info className="h-3.5 w-3.5" style={{ color: theme.label }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Tooltip portal */}
+      {tooltipAccount && tooltipPos && (
+        <div style={{ position: "fixed", top: tooltipPos.top, left: tooltipPos.left, zIndex: 9999, background: "#FFFFFF", border: `1px solid ${theme.border}`, borderRadius: 8, padding: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", maxWidth: 260 }}
+          onMouseEnter={() => {}}
+          onMouseLeave={() => { setHoveredAccount(null); setTooltipAccount(null); }}
+        >
+          <TAccountTooltip account={tooltipAccount} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CramKeyTermsSection({ terms }: { terms: any[] }) {
+  const [openTerm, setOpenTerm] = useState<string | null>(null);
+
+  return (
+    <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+      {terms.map((term: any, ti: number) => {
+        const isOpen = openTerm === term.id;
+        return (
+          <div key={term.id} style={{ borderTop: ti > 0 ? `1px solid ${theme.border}` : undefined }}>
+            <button onClick={() => setOpenTerm(isOpen ? null : term.id)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
+              <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+              <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{term.term}</span>
+            </button>
+            {isOpen && (
+              <div className="px-4 pb-3 pl-8">
+                <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted }}>{term.definition}</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChapterCramTool() {
   const { chapterId: routeChapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
@@ -630,6 +768,12 @@ export default function ChapterCramTool() {
   const [formulasSeenSet, setFormulasSeenSet] = useState<Set<string>>(() => {
     try {
       const stored = sessionStorage.getItem(`sa_formulas_seen_${chapterId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [checklistChecked, setChecklistChecked] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem(`sa_checklist_${chapterId}`);
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch { return new Set(); }
   });
@@ -747,6 +891,29 @@ export default function ChapterCramTool() {
         .eq("is_approved", true)
         .order("sort_order");
       return { categories: cats || [], entries: entries || [] };
+    },
+  });
+
+  // Content suite data
+  const { data: contentSuite } = useQuery({
+    queryKey: ["cram-content-suite", chapterId],
+    enabled: !!chapterId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const [purposeRes, termsRes, mistakesRes, checklistRes, accountsRes] = await Promise.all([
+        supabase.from("chapter_purpose").select("*").eq("chapter_id", chapterId!).maybeSingle(),
+        supabase.from("chapter_key_terms").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_exam_mistakes").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_exam_checklist").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_accounts").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+      ]);
+      return {
+        purpose: purposeRes.data as any,
+        keyTerms: (termsRes.data || []) as any[],
+        examMistakes: (mistakesRes.data || []) as any[],
+        examChecklist: (checklistRes.data || []) as any[],
+        accounts: (accountsRes.data || []) as any[],
+      };
     },
   });
 
@@ -952,6 +1119,15 @@ export default function ChapterCramTool() {
     setReviewedSet((previous) => new Set(previous).add(cardId));
   }, []);
 
+  const handleChecklistToggle = useCallback((itemId: string) => {
+    setChecklistChecked(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
+      try { sessionStorage.setItem(`sa_checklist_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [chapterId]);
+
   useEffect(() => {
     if (!chapter) return;
     document.title = `Survive This Chapter — Ch ${chapter.chapter_number} — Survive Accounting`;
@@ -1002,6 +1178,19 @@ export default function ChapterCramTool() {
   const chapterJECategories = chapterJEData?.categories || [];
   const showChapterJESection = (chapterJEEntries.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_je_reference"));
 
+  // Content suite visibility
+  const purpose = contentSuite?.purpose;
+  const keyTerms = contentSuite?.keyTerms || [];
+  const examMistakes = contentSuite?.examMistakes || [];
+  const examChecklist = contentSuite?.examChecklist || [];
+  const chapterAccounts = contentSuite?.accounts || [];
+
+  const showPurpose = (!!purpose || isAdmin) && (isAdmin || isSectionVisible("chapter_purpose"));
+  const showAccounts = (chapterAccounts.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_accounts"));
+  const showKeyTerms = (keyTerms.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_key_terms"));
+  const showMistakes = (examMistakes.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_exam_mistakes"));
+  const showChecklist = (examChecklist.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_exam_checklist"));
+
   const isTabExpanded = (key: string) => !!expandedTabs[key];
   const toggleTab = (key: string) => setExpandedTabs((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -1037,6 +1226,36 @@ export default function ChapterCramTool() {
         </div>
 
         <div className="space-y-10">
+          {/* ──── What's the Point? ──── */}
+          {showPurpose && purpose && (
+            <section style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="WHAT'S THE POINT?" isAdmin={isAdmin} sectionName="chapter_purpose" isVisible={isSectionVisible("chapter_purpose")} onToggle={toggleSectionVisibility} />
+              <div className="rounded-xl border p-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{purpose.purpose_text}</p>
+                <div className="mt-4">
+                  <p className="text-[11px] font-semibold mb-1" style={{ color: "rgba(206,17,38,0.8)" }}>⚠ What goes wrong if you don't:</p>
+                  <p className="text-[13px] leading-[1.6] italic" style={{ color: "rgba(206,17,38,0.8)" }}>{purpose.consequence_text}</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ──── Accounts in This Chapter ──── */}
+          {showAccounts && chapterAccounts.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_accounts") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="ACCOUNTS IN THIS CHAPTER" count={chapterAccounts.length} isAdmin={isAdmin} sectionName="chapter_accounts" isVisible={isSectionVisible("chapter_accounts")} onToggle={toggleSectionVisibility} />
+              <CramAccountsSection accounts={chapterAccounts} />
+            </section>
+          )}
+
+          {/* ──── Key Terms ──── */}
+          {showKeyTerms && keyTerms.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_key_terms") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="KEY TERMS" count={keyTerms.length} isAdmin={isAdmin} sectionName="chapter_key_terms" isVisible={isSectionVisible("chapter_key_terms")} onToggle={toggleSectionVisibility} />
+              <CramKeyTermsSection terms={keyTerms} />
+            </section>
+          )}
+
           {/* ──── Solutions Library ──── */}
           {showSolutionsSection && (
             <section style={{ opacity: isSectionVisible("solutions_library") ? 1 : 0.4 }}>
@@ -1435,6 +1654,56 @@ export default function ChapterCramTool() {
                   </p>
                 </div>
               )}
+            </section>
+          )}
+
+          {/* ──── Common Exam Mistakes ──── */}
+          {showMistakes && examMistakes.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_exam_mistakes") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="COMMON EXAM MISTAKES" count={examMistakes.length} isAdmin={isAdmin} sectionName="chapter_exam_mistakes" isVisible={isSectionVisible("chapter_exam_mistakes")} onToggle={toggleSectionVisibility} />
+              <div className="space-y-2">
+                {examMistakes.map((m: any) => (
+                  <div key={m.id} className="rounded-xl border-l-4 px-4 py-3" style={{ borderLeftColor: "#CE1126", borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.cardBg }}>
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#CE1126" }} />
+                      <div>
+                        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{m.mistake}</p>
+                        {m.explanation && <p className="text-[12px] mt-1 leading-[1.6]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ──── Exam Prep Checklist ──── */}
+          {showChecklist && examChecklist.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_exam_checklist") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="EXAM PREP CHECKLIST" count={examChecklist.length} isAdmin={isAdmin} sectionName="chapter_exam_checklist" isVisible={isSectionVisible("chapter_exam_checklist")} onToggle={toggleSectionVisibility} />
+              <div className="rounded-xl border p-4" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                    {examChecklist.filter((i: any) => checklistChecked.has(i.id)).length} / {examChecklist.length} complete
+                  </p>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full mb-4" style={{ background: "#E5E7EB" }}>
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(examChecklist.filter((i: any) => checklistChecked.has(i.id)).length / examChecklist.length) * 100}%`, background: examChecklist.filter((i: any) => checklistChecked.has(i.id)).length === examChecklist.length ? "#22C55E" : theme.navy }} />
+                </div>
+                <div className="space-y-2">
+                  {examChecklist.map((item: any) => {
+                    const checked = checklistChecked.has(item.id);
+                    return (
+                      <button key={item.id} onClick={() => handleChecklistToggle(item.id)} className="w-full flex items-start gap-3 text-left rounded-lg px-3 py-2 transition-colors" style={{ background: checked ? theme.successBg : "transparent" }}>
+                        <div className="mt-0.5 shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center" style={{ borderColor: checked ? "#22C55E" : theme.border, background: checked ? "#22C55E" : "transparent" }}>
+                          {checked && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                        </div>
+                        <span className="text-[13px] leading-[1.5]" style={{ color: checked ? theme.textMuted : theme.text, textDecoration: checked ? "line-through" : "none" }}>{item.checklist_item}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </section>
           )}
 
