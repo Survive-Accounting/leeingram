@@ -1431,7 +1431,7 @@ export default function ChapterCramTool() {
           <div className="space-y-10">
             {/* ──── What's the Point? ──── */}
             {showPurpose && purpose && (
-              <section id="purpose" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
+              <section id="whats-the-point" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
                 <SectionHeaderWithToggle label="WHAT'S THE POINT?" isAdmin={isAdmin} sectionName="chapter_purpose" isVisible={isSectionVisible("chapter_purpose")} onToggle={toggleSectionVisibility} />
                 <div className="rounded-xl border p-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
                   <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{Array.isArray(purpose.purpose_bullets) ? purpose.purpose_bullets[0] : (purpose.purpose_text || "")}</p>
