@@ -326,8 +326,6 @@ export default function ChapterContentQA() {
               </Button>
             </div>
             <BatchSuiteOrchestrator />
-            <div className="flex gap-2 flex-wrap">
-            </div>
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
               <div className={cn(
