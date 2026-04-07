@@ -3939,14 +3939,14 @@ export default function SolutionsViewer() {
               }}
             >
 
-              {/* 1. Solution */}
-              {answerSummary.trim() && (
+              {/* 1. Solution — hidden for JE-only problems since tooltips cover it */}
+              {answerSummary.trim() && !isJEOnly && (
                 <RevealToggle
-                  label={isJEOnly ? "Reveal Calculations" : "Reveal Explanation"}
+                  label="Reveal Explanation"
                   theme={t}
                   isPreview={isPreview}
                   enrollUrl={enrollUrl}
-                  sectionName={isJEOnly ? "Calculations" : "Explanation"}
+                  sectionName="Explanation"
                   assetCode={asset.asset_name}
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
