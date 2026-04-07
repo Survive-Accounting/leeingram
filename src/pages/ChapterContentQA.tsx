@@ -986,6 +986,12 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
 
   return (
     <div className="space-y-2 pb-20">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" className="text-xs" onClick={generateImages} disabled={!!genImagesProgress}>
+          {genImagesProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
+          {genImagesProgress || "Generate Images →"}
+        </Button>
+      </div>
       {formulas?.map(f => (
         <FormulaRowBlock key={f.id} formula={f} onApprove={() => approveFormula(f.id)} onReject={() => rejectFormula(f.id)} onDelete={() => deleteFormula(f.id)} onUpdate={updateFormula} onRegenImage={async () => {
           try {
