@@ -750,6 +750,29 @@ export default function ChapterCramTool() {
     },
   });
 
+  // Content suite data
+  const { data: contentSuite } = useQuery({
+    queryKey: ["cram-content-suite", chapterId],
+    enabled: !!chapterId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const [purposeRes, termsRes, mistakesRes, checklistRes, accountsRes] = await Promise.all([
+        supabase.from("chapter_purpose").select("*").eq("chapter_id", chapterId!).maybeSingle(),
+        supabase.from("chapter_key_terms").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_exam_mistakes").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_exam_checklist").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_accounts").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+      ]);
+      return {
+        purpose: purposeRes.data as any,
+        keyTerms: (termsRes.data || []) as any[],
+        examMistakes: (mistakesRes.data || []) as any[],
+        examChecklist: (checklistRes.data || []) as any[],
+        accounts: (accountsRes.data || []) as any[],
+      };
+    },
+  });
+
   const sectionConfigMap = useMemo(() => {
     const map: Record<string, SectionConfigRow> = {};
     sectionConfigs.forEach((config) => {
