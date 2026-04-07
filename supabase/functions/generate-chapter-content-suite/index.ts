@@ -135,13 +135,6 @@ async function generateExamMistakes(chapterId: string, chapterName: string, cour
   );
 }
 
-async function generateExamChecklist(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
-  return generateCollection(chapterId, chapterName, courseCode, "chapter_exam_checklist",
-    `Return ONLY valid JSON: { "items": [{ "checklist_item": "Before your exam, make sure you can: [specific skill or task]", "sort_order": 1 }] }`,
-    `Generate 5-8 exam prep checklist items for: ${chapterName} (${courseCode}). Each item starts with 'Before your exam, make sure you can:' followed by a specific, testable skill. Focus on what actually appears on exams.`,
-    "items", extraPrompt
-  );
-}
 
 async function generateFormulas(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_formulas",
@@ -366,7 +359,7 @@ Deno.serve(async (req) => {
             if (only === "purpose") return generatePurpose(ch.id, ch.chapter_name, ch.courseCode);
             if (only === "key_terms") return generateKeyTerms(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "exam_mistakes") return generateExamMistakes(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
-            if (only === "exam_checklist") return generateExamChecklist(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
+            
             if (only === "accounts") return generateAccounts(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "formulas") return generateFormulas(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "journal_entries") return generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
@@ -376,7 +369,7 @@ Deno.serve(async (req) => {
             ["purpose", () => generatePurpose(ch.id, ch.chapter_name, ch.courseCode)],
             ["key_terms", () => generateKeyTerms(ch.id, ch.chapter_name, ch.courseCode)],
             ["exam_mistakes", () => generateExamMistakes(ch.id, ch.chapter_name, ch.courseCode)],
-            ["exam_checklist", () => generateExamChecklist(ch.id, ch.chapter_name, ch.courseCode)],
+            
             ["accounts", () => generateAccounts(ch.id, ch.chapter_name, ch.courseCode)],
             ["formulas", () => generateFormulas(ch.id, ch.chapter_name, ch.courseCode)],
             ["journal_entries", () => generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode)],
