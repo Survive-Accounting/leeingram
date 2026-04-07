@@ -687,20 +687,36 @@ export default function ChapterCramTool() {
   const visibleFormulas = useMemo(() => structuredFormulas.filter((f) => isAdmin || !isItemHidden("formulas", f.id)), [structuredFormulas, isAdmin, isItemHidden]);
 
   // Solutions
+  const categorizeAsset = useCallback((asset: any) => {
+    const assetType = (asset.asset_type || "").toLowerCase();
+    const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
+    const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
+    const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
+    const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
+    return { isBE, isEX, isP };
+  }, []);
+
+  const solutionCounts = useMemo(() => {
+    let be = 0, ex = 0, p = 0;
+    approvedAssets.forEach((asset) => {
+      const cat = categorizeAsset(asset);
+      if (cat.isEX) ex++;
+      else if (cat.isP) p++;
+      else be++;
+    });
+    return { be, ex, p };
+  }, [approvedAssets, categorizeAsset]);
+
   const solutionsFiltered = useMemo(() => {
     if (!solutionsTab) return [];
     const sorted = [...approvedAssets].sort(sortBySourceRef);
     return sorted.filter((asset) => {
-      const assetType = (asset.asset_type || "").toLowerCase();
-      const parsed = parseSourceRef((asset.source_ref || "").toUpperCase());
-      const isBE = assetType === "be" || assetType === "qs" || assetType === "brief_exercise" || assetType === "brief exercise" || parsed.prefix === "BE" || parsed.prefix === "QS";
-      const isEX = assetType === "e" || assetType === "ex" || assetType === "exercise" || parsed.prefix === "E" || parsed.prefix === "EX";
-      const isP = assetType === "p" || assetType === "problem" || parsed.prefix === "P";
-      if (solutionsTab === "be") return isBE || (!isEX && !isP);
-      if (solutionsTab === "ex") return isEX;
-      return isP;
+      const cat = categorizeAsset(asset);
+      if (solutionsTab === "be") return cat.isBE || (!cat.isEX && !cat.isP);
+      if (solutionsTab === "ex") return cat.isEX;
+      return cat.isP;
     });
-  }, [approvedAssets, solutionsTab]);
+  }, [approvedAssets, solutionsTab, categorizeAsset]);
 
   const purpose = contentSuite?.purpose;
   const keyTerms = contentSuite?.keyTerms || [];
