@@ -817,7 +817,7 @@ export default function ChapterCramTool() {
           style={{
             backgroundImage: `url(${LEE_HEADSHOT_BG})`,
             backgroundSize: "cover",
-            backgroundPosition: "right center",
+            backgroundPosition: "center center",
           }}
         />
         {/* Noise texture overlay */}
@@ -825,7 +825,7 @@ export default function ChapterCramTool() {
         {/* Dark gradient overlay — left side only */}
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.88) 40%, rgba(20,33,61,0.2) 100%)" }}
+          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.75) 30%, rgba(20,33,61,0.4) 100%)" }}
         />
         {/* Text content */}
         <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center">
