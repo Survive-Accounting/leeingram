@@ -15,11 +15,11 @@ import { isContraAccount } from "@/lib/contraDetection";
 
 // ── Hardcoded category tooltips ──
 const CATEGORY_TOOLTIPS: Record<string, string> = {
-  Assets: "You use asset accounts to track everything your business owns or is owed.",
-  Liabilities: "You use liability accounts to track everything your business owes to others.",
-  Equity: "You use equity accounts to track the owner's stake in the business.",
-  Revenue: "You use revenue accounts to track everything your business earns.",
-  Expenses: "You use expense accounts to track everything your business spends to operate.",
+  Assets: "Everything your business owns that\nwill benefit you in the future.\n\nAll assets work like this:  (Dr +  |  Cr −)\nNormal Balance: Debit\n\n→ Shows up on the Balance Sheet",
+  Liabilities: "Everything your business owes\nto someone else.\n\nAll liabilities work like this:  (Dr −  |  Cr +)\nNormal Balance: Credit\n\n→ Shows up on the Balance Sheet",
+  Equity: "The owner's stake in the business —\nwhat's left after subtracting liabilities from assets.\n\nAll equity accounts work like this:  (Dr −  |  Cr +)\nNormal Balance: Credit\n\n→ Shows up on the Balance Sheet",
+  Revenue: "Everything your business earns\nby doing what it's in business to do.\n\nAll revenue accounts work like this:  (Dr −  |  Cr +)\nNormal Balance: Credit\n\n→ Shows up on the Income Statement",
+  Expenses: "Everything your business spends\nto keep operating and earn revenue.\n\nAll expense accounts work like this:  (Dr +  |  Cr −)\nNormal Balance: Debit\n\n→ Shows up on the Income Statement",
 };
 
 // ── 5-group mapping ──
