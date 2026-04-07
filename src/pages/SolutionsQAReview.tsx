@@ -122,13 +122,6 @@ function useDraggable(initialPos: { x: number; y: number }) {
   const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
   const pendingPosRef = useRef(initialPos);
   const initialPosRef = useRef(initialPos);
-
-  const resetPos = useCallback(() => {
-    const p = initialPosRef.current;
-    posRef.current = p;
-    pendingPosRef.current = p;
-    setPos(p);
-  }, []);
   const frameRef = useRef<number | null>(null);
 
   const paint = useCallback((next: { x: number; y: number }) => {
