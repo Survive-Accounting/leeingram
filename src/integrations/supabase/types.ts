@@ -783,8 +783,18 @@ export type Database = {
           account_description: string
           account_name: string
           account_type: string
+          balance_tooltip: string | null
           chapter_id: string
+          contra_tooltip: string | null
           created_at: string
+          credit_tooltip: string | null
+          debit_tooltip: string | null
+          example_beginning_balance: number | null
+          example_credit_amount: number | null
+          example_date_label: string | null
+          example_debit_amount: number | null
+          example_ending_balance: number | null
+          fs_placement_tooltip: string | null
           generated_at: string | null
           id: string
           is_approved: boolean
@@ -797,8 +807,18 @@ export type Database = {
           account_description?: string
           account_name: string
           account_type?: string
+          balance_tooltip?: string | null
           chapter_id: string
+          contra_tooltip?: string | null
           created_at?: string
+          credit_tooltip?: string | null
+          debit_tooltip?: string | null
+          example_beginning_balance?: number | null
+          example_credit_amount?: number | null
+          example_date_label?: string | null
+          example_debit_amount?: number | null
+          example_ending_balance?: number | null
+          fs_placement_tooltip?: string | null
           generated_at?: string | null
           id?: string
           is_approved?: boolean
@@ -811,8 +831,18 @@ export type Database = {
           account_description?: string
           account_name?: string
           account_type?: string
+          balance_tooltip?: string | null
           chapter_id?: string
+          contra_tooltip?: string | null
           created_at?: string
+          credit_tooltip?: string | null
+          debit_tooltip?: string | null
+          example_beginning_balance?: number | null
+          example_credit_amount?: number | null
+          example_date_label?: string | null
+          example_debit_amount?: number | null
+          example_ending_balance?: number | null
+          fs_placement_tooltip?: string | null
           generated_at?: string | null
           id?: string
           is_approved?: boolean
