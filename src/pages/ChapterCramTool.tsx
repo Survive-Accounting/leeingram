@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,6 +38,20 @@ const theme = {
   amberBorder: "#FDE68A",
   amberText: "#92400E",
 };
+
+// ── ToC section definitions ──
+const TOC_SECTIONS = [
+  { id: "purpose", label: "What's the Point?", short: "Purpose" },
+  { id: "accounts", label: "Accounts", short: "Accounts" },
+  { id: "key-terms", label: "Key Terms", short: "Terms" },
+  { id: "practice-problems", label: "Practice Problems", short: "Problems" },
+  { id: "chapter-je", label: "Journal Entries", short: "JEs" },
+  { id: "je-memorize", label: "JEs to Memorize", short: "Memorize" },
+  { id: "formulas", label: "Formulas", short: "Formulas" },
+  { id: "mistakes", label: "Exam Mistakes", short: "Mistakes" },
+  { id: "feedback", label: "Feedback", short: "Feedback" },
+  { id: "about-lee", label: "About Lee", short: "About" },
+];
 
 type SupplementaryRow = {
   account_name: string;
@@ -228,10 +242,6 @@ function parseImportantFormulas(raw: unknown): FormulaCard[] {
   return formulas.filter((formula) => formula.name.trim() && formula.expression.trim());
 }
 
-function slugify(text: string) {
-  return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-}
-
 function SectionHeaderWithToggle({
   label,
   count,
@@ -282,6 +292,22 @@ function SectionHeaderWithToggle({
           {isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
         </button>
       )}
+    </div>
+  );
+}
+
+/** Report an issue link at bottom-right of each section */
+function SectionReportLink({ sectionLabel, onClick }: { sectionLabel: string; onClick: (section: string) => void }) {
+  return (
+    <div className="flex justify-end mt-2">
+      <button
+        type="button"
+        onClick={() => onClick(sectionLabel)}
+        className="text-[11px] transition-colors hover:underline"
+        style={{ color: theme.label, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      >
+        Report an issue →
+      </button>
     </div>
   );
 }
@@ -697,6 +723,101 @@ function CramKeyTermsSection({ terms }: { terms: any[] }) {
   );
 }
 
+// ── Sticky ToC Sidebar (Desktop) ──
+function TocSidebar({ activeSections, activeId }: { activeSections: typeof TOC_SECTIONS; activeId: string }) {
+  return (
+    <nav className="hidden lg:block fixed w-[200px] top-[72px]" style={{ left: "max(16px, calc((100vw - 920px - 200px - 48px) / 2))" }}>
+      <ul className="space-y-0.5">
+        {activeSections.map(s => (
+          <li key={s.id}>
+            <a
+              href={`#${s.id}`}
+              className="block px-3 py-1.5 rounded-md text-[12px] transition-colors"
+              style={{
+                color: activeId === s.id ? theme.navy : theme.textMuted,
+                fontWeight: activeId === s.id ? 700 : 500,
+                background: activeId === s.id ? theme.navySoft : "transparent",
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              {s.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+// ── Mobile Anchor Bar ──
+function MobileAnchorBar({ activeSections, activeId }: { activeSections: typeof TOC_SECTIONS; activeId: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const activeEl = scrollRef.current.querySelector(`[data-section="${activeId}"]`) as HTMLElement | null;
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [activeId]);
+
+  return (
+    <div className="lg:hidden sticky z-20 bg-white border-b" style={{ top: 56, borderColor: theme.border }}>
+      <div ref={scrollRef} className="flex overflow-x-auto gap-0 px-2 py-1.5 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        {activeSections.map(s => (
+          <a
+            key={s.id}
+            data-section={s.id}
+            href={`#${s.id}`}
+            className="shrink-0 px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors"
+            style={{
+              color: activeId === s.id ? "#FFFFFF" : theme.textMuted,
+              background: activeId === s.id ? theme.navy : "transparent",
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          >
+            {s.short}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Intersection observer hook for active section ──
+function useActiveSection(sectionIds: string[]): string {
+  const [activeId, setActiveId] = useState(sectionIds[0] || "");
+
+  useEffect(() => {
+    if (sectionIds.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-80px 0px -60% 0px", threshold: 0 }
+    );
+
+    for (const id of sectionIds) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, [sectionIds]);
+
+  return activeId;
+}
+
 export default function ChapterCramTool() {
   const { chapterId: routeChapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
@@ -712,6 +833,7 @@ export default function ChapterCramTool() {
   const [expandedTabs, setExpandedTabs] = useState<Record<string, boolean>>({});
   const [formulaIndex, setFormulaIndex] = useState(0);
   const [jeIndex, setJeIndex] = useState(0);
+  const [feedbackSection, setFeedbackSection] = useState("");
   const [formulasSeenSet, setFormulasSeenSet] = useState<Set<string>>(() => {
     try {
       const stored = sessionStorage.getItem(`sa_formulas_seen_${chapterId}`);
@@ -1058,10 +1180,15 @@ export default function ChapterCramTool() {
     setReviewedSet((previous) => new Set(previous).add(cardId));
   }, []);
 
+  const openFeedbackForSection = useCallback((sectionLabel: string) => {
+    setFeedbackSection(sectionLabel);
+    document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
 
   useEffect(() => {
     if (!chapter) return;
-    document.title = `Survive This Chapter — Ch ${chapter.chapter_number} — Survive Accounting`;
+    document.title = `Ch ${chapter.chapter_number} — ${chapter.chapter_name} — Survive Accounting`;
     return () => {
       document.title = "Survive Accounting";
     };
@@ -1131,140 +1258,307 @@ export default function ChapterCramTool() {
   const currentJeCard = visibleJournalCards[jeIndex];
   const currentJeHidden = currentJeCard ? isItemHidden("journal_entries", currentJeCard.id) : false;
 
+  // Build active ToC sections
+  const activeTocSections = TOC_SECTIONS.filter(s => {
+    if (s.id === "purpose") return showPurpose;
+    if (s.id === "accounts") return showAccounts;
+    if (s.id === "key-terms") return showKeyTerms;
+    if (s.id === "practice-problems") return showSolutionsSection;
+    if (s.id === "chapter-je") return showChapterJESection;
+    if (s.id === "je-memorize") return showJournalSection;
+    if (s.id === "formulas") return showFormulasSection;
+    if (s.id === "mistakes") return showMistakes;
+    return true;
+  });
+
+  const chapterNum = chapter?.chapter_number;
+
   return (
     <div className="min-h-screen" style={{ background: theme.pageBg }}>
-      <header style={{ background: theme.navy, height: 48 }}>
-        <div className="mx-auto flex h-full max-w-[920px] items-center px-4 sm:px-6">
+      {/* ── Sticky Nav Bar ── */}
+      <header className="sticky top-0 z-30" style={{ background: theme.navy, height: 56 }}>
+        <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
           <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8" />
+          <span className="hidden sm:block text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Created by Lee Ingram · Tutor since 2015
+          </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[920px] px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mb-8">
+      {/* ── Mobile Anchor Bar ── */}
+      <MobileAnchorBarWrapper activeSections={activeTocSections} />
+
+      {/* ── Hero Header ── */}
+      <div style={{ background: theme.navy }}>
+        <div className="mx-auto max-w-[920px] px-4 py-8 sm:px-6 sm:py-10 lg:ml-[232px] lg:mr-auto">
           {courseDisplayName && (
-            <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: theme.label }}>
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.5)" }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="mt-1 text-[26px] font-bold" style={{ color: theme.heading }}>
-            Survive This Chapter
+          <h1 className="mt-2 text-[28px] sm:text-[32px] font-bold text-white leading-tight">
+            Ch {chapterNum} — {chapter?.chapter_name}
           </h1>
-          <p className="mt-1 text-[15px] font-semibold" style={{ color: theme.heading }}>
-            Ch {chapter?.chapter_number} — {chapter?.chapter_name}
-          </p>
+          <div className="mt-3">
+            <span className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "rgba(34,197,94,0.15)", color: "#4ADE80" }}>
+              Your exam is coming. Let's survive it.
+            </span>
+          </div>
         </div>
+      </div>
 
-        <div className="space-y-10">
-          {/* ──── What's the Point? ──── */}
-          {showPurpose && purpose && (
-            <section style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle label="WHAT'S THE POINT?" isAdmin={isAdmin} sectionName="chapter_purpose" isVisible={isSectionVisible("chapter_purpose")} onToggle={toggleSectionVisibility} />
-              <div className="rounded-xl border p-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{Array.isArray(purpose.purpose_bullets) ? purpose.purpose_bullets[0] : (purpose.purpose_text || "")}</p>
-                <div className="mt-4">
-                  <p className="text-[11px] font-semibold mb-1" style={{ color: "rgba(206,17,38,0.8)" }}>⚠ What goes wrong if you don't:</p>
-                  <p className="text-[13px] leading-[1.6] italic" style={{ color: "rgba(206,17,38,0.8)" }}>{Array.isArray(purpose.consequence_bullets) ? purpose.consequence_bullets[0] : (purpose.consequence_text || "")}</p>
+      {/* ── Layout: ToC Sidebar + Content ── */}
+      <div className="relative">
+        <TocSidebarWrapper activeSections={activeTocSections} />
+
+        <main className="mx-auto max-w-[920px] px-4 py-6 sm:px-6 sm:py-8 lg:ml-[232px] lg:mr-auto">
+          <div className="space-y-10">
+            {/* ──── What's the Point? ──── */}
+            {showPurpose && purpose && (
+              <section id="purpose" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
+                <SectionHeaderWithToggle label="WHAT'S THE POINT?" isAdmin={isAdmin} sectionName="chapter_purpose" isVisible={isSectionVisible("chapter_purpose")} onToggle={toggleSectionVisibility} />
+                <div className="rounded-xl border p-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                  <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{Array.isArray(purpose.purpose_bullets) ? purpose.purpose_bullets[0] : (purpose.purpose_text || "")}</p>
+                  <div className="mt-4">
+                    <p className="text-[11px] font-semibold mb-1" style={{ color: "rgba(206,17,38,0.8)" }}>⚠ What goes wrong if you don't:</p>
+                    <p className="text-[13px] leading-[1.6] italic" style={{ color: "rgba(206,17,38,0.8)" }}>{Array.isArray(purpose.consequence_bullets) ? purpose.consequence_bullets[0] : (purpose.consequence_text || "")}</p>
+                  </div>
                 </div>
-              </div>
-            </section>
-          )}
+                <SectionReportLink sectionLabel="What's the Point?" onClick={openFeedbackForSection} />
+              </section>
+            )}
 
-          {/* ──── Accounts in This Chapter ──── */}
-          {showAccounts && chapterAccounts.length > 0 && (
-            <section style={{ opacity: isSectionVisible("chapter_accounts") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle label="ACCOUNTS IN THIS CHAPTER" count={chapterAccounts.length} isAdmin={isAdmin} sectionName="chapter_accounts" isVisible={isSectionVisible("chapter_accounts")} onToggle={toggleSectionVisibility} />
-              <CramAccountsSection accounts={chapterAccounts} />
-            </section>
-          )}
+            {/* ──── Accounts in This Chapter ──── */}
+            {showAccounts && chapterAccounts.length > 0 && (
+              <section id="accounts" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_accounts") ? 1 : 0.4 }}>
+                <SectionHeaderWithToggle label="ACCOUNTS IN THIS CHAPTER" count={chapterAccounts.length} isAdmin={isAdmin} sectionName="chapter_accounts" isVisible={isSectionVisible("chapter_accounts")} onToggle={toggleSectionVisibility} />
+                <CramAccountsSection accounts={chapterAccounts} />
+                <SectionReportLink sectionLabel="Accounts" onClick={openFeedbackForSection} />
+              </section>
+            )}
 
-          {/* ──── Key Terms ──── */}
-          {showKeyTerms && keyTerms.length > 0 && (
-            <section style={{ opacity: isSectionVisible("chapter_key_terms") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle label="KEY TERMS" count={keyTerms.length} isAdmin={isAdmin} sectionName="chapter_key_terms" isVisible={isSectionVisible("chapter_key_terms")} onToggle={toggleSectionVisibility} />
-              <CramKeyTermsSection terms={keyTerms} />
-            </section>
-          )}
+            {/* ──── Key Terms ──── */}
+            {showKeyTerms && keyTerms.length > 0 && (
+              <section id="key-terms" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_key_terms") ? 1 : 0.4 }}>
+                <SectionHeaderWithToggle label="KEY TERMS" count={keyTerms.length} isAdmin={isAdmin} sectionName="chapter_key_terms" isVisible={isSectionVisible("chapter_key_terms")} onToggle={toggleSectionVisibility} />
+                <CramKeyTermsSection terms={keyTerms} />
+                <SectionReportLink sectionLabel="Key Terms" onClick={openFeedbackForSection} />
+              </section>
+            )}
 
-          {/* ──── Solutions Library ──── */}
-          {showSolutionsSection && (
-            <section style={{ opacity: isSectionVisible("solutions_library") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle
-                label="SOLUTIONS LIBRARY"
-                isAdmin={isAdmin}
-                sectionName="solutions_library"
-                isVisible={isSectionVisible("solutions_library")}
-                onToggle={toggleSectionVisibility}
-              />
+            {/* ──── Practice Problems ──── */}
+            {showSolutionsSection && (
+              <section id="practice-problems" className="scroll-mt-28" style={{ opacity: isSectionVisible("solutions_library") ? 1 : 0.4 }}>
+                <SectionHeaderWithToggle
+                  label={`PRACTICE PROBLEMS · CH ${chapterNum || "?"}`}
+                  isAdmin={isAdmin}
+                  sectionName="solutions_library"
+                  isVisible={isSectionVisible("solutions_library")}
+                  onToggle={toggleSectionVisibility}
+                />
 
-              <div className="mb-4 flex flex-wrap gap-2">
-                {([
-                  ["be", beLabel],
-                  ["ex", "Exercises"],
-                  ["p", "Problems"],
-                ] as const).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSolutionsTab(key)}
-                    className="rounded-full px-4 py-1.5 text-[12px] font-semibold"
-                    style={{
-                      background: solutionsTab === key ? theme.navy : theme.mutedBg,
-                      color: solutionsTab === key ? "#FFFFFF" : theme.textMuted,
-                      border: "none",
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {([
+                    ["be", beLabel],
+                    ["ex", "Exercises"],
+                    ["p", "Problems"],
+                  ] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSolutionsTab(key)}
+                      className="rounded-full px-4 py-1.5 text-[12px] font-semibold"
+                      style={{
+                        background: solutionsTab === key ? theme.navy : theme.mutedBg,
+                        color: solutionsTab === key ? "#FFFFFF" : theme.textMuted,
+                        border: "none",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
 
-              <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                {solutionsFiltered.length > 0 ? (
-                  <div>
-                    {solutionsFiltered.map((asset, index) => {
-                      if (isPreview && index >= PREVIEW_LIMIT) return null;
-                      if (!isTabExpanded(solutionsTab) && index >= SOLUTIONS_INITIAL_SHOW) return null;
+                <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                  {solutionsFiltered.length > 0 ? (
+                    <div>
+                      {solutionsFiltered.map((asset, index) => {
+                        if (isPreview && index >= PREVIEW_LIMIT) return null;
+                        if (!isTabExpanded(solutionsTab) && index >= SOLUTIONS_INITIAL_SHOW) return null;
 
-                      return (
-                        <div
-                          key={asset.id}
-                          className="flex items-center gap-3 px-4 py-3 text-[12px] sm:px-5"
-                          style={{ borderBottom: index < Math.min(solutionsFiltered.length, isTabExpanded(solutionsTab) ? solutionsFiltered.length : SOLUTIONS_INITIAL_SHOW) - 1 ? `1px solid ${theme.border}` : "none" }}
-                        >
-                          <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>
-                            {asset.source_ref || "—"}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>
-                            {asset.problem_title || asset.asset_name}
-                          </span>
-                          <a
-                            href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 text-[12px] font-semibold"
-                            style={{ color: "#2563EB" }}
+                        return (
+                          <div
+                            key={asset.id}
+                            className="flex items-center gap-3 px-4 py-3 text-[12px] sm:px-5"
+                            style={{ borderBottom: index < Math.min(solutionsFiltered.length, isTabExpanded(solutionsTab) ? solutionsFiltered.length : SOLUTIONS_INITIAL_SHOW) - 1 ? `1px solid ${theme.border}` : "none" }}
                           >
-                            View →
-                          </a>
-                        </div>
-                      );
-                    })}
+                            <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>
+                              {asset.source_ref || "—"}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>
+                              {asset.problem_title || asset.asset_name}
+                            </span>
+                            <a
+                              href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-[12px] font-semibold"
+                              style={{ color: "#2563EB" }}
+                            >
+                              View →
+                            </a>
+                          </div>
+                        );
+                      })}
 
-                    {!isPreview && solutionsFiltered.length > SOLUTIONS_INITIAL_SHOW && (
-                      <div className="px-4 py-3 sm:px-5" style={{ borderTop: `1px solid ${theme.border}` }}>
+                      {!isPreview && solutionsFiltered.length > SOLUTIONS_INITIAL_SHOW && (
+                        <div className="px-4 py-3 sm:px-5" style={{ borderTop: `1px solid ${theme.border}` }}>
+                          <button
+                            type="button"
+                            onClick={() => toggleTab(solutionsTab)}
+                            className="text-[12px] font-semibold"
+                            style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer" }}
+                          >
+                            {isTabExpanded(solutionsTab) ? "Show less ↑" : `Show more → (${solutionsFiltered.length - SOLUTIONS_INITIAL_SHOW} more)`}
+                          </button>
+                        </div>
+                      )}
+
+                      {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
+                        <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
+                          <TieredPaywallCard
+                            enrollUrl={enrollUrl}
+                            chapterNumber={chapter?.chapter_number || null}
+                            fullPassLink={fullPassLink}
+                            chapterLink={chapterLink}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-5 sm:px-5">
+                      <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                        No solutions in this tab yet.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <SectionReportLink sectionLabel="Practice Problems" onClick={openFeedbackForSection} />
+              </section>
+            )}
+
+            {/* ──── Chapter-Level All Journal Entries ──── */}
+            {showChapterJESection && (
+              <section id="chapter-je" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_je_reference") ? 1 : 0.4 }}>
+                <SectionHeaderWithToggle
+                  label={`CH ${chapterNum || "?"} — ALL JOURNAL ENTRIES`}
+                  count={chapterJEEntries.length}
+                  isAdmin={isAdmin}
+                  sectionName="chapter_je_reference"
+                  isVisible={isSectionVisible("chapter_je_reference")}
+                  onToggle={toggleSectionVisibility}
+                />
+                <div className="rounded-xl border px-4 py-4 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                  {chapterJEEntries.length > 0 ? (
+                    <CramChapterJEAccordion categories={chapterJECategories} entries={chapterJEEntries} />
+                  ) : (
+                    <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                      No chapter journal entries available yet.
+                    </p>
+                  )}
+                </div>
+                <SectionReportLink sectionLabel="Journal Entries" onClick={openFeedbackForSection} />
+              </section>
+            )}
+
+            {/* ──── Journal Entries to Memorize (Flashcard Mode) ──── */}
+            {showJournalSection && (
+              <section id="je-memorize" className="scroll-mt-28" style={{ opacity: isSectionVisible("journal_entries") ? 1 : 0.4 }}>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <SectionHeaderWithToggle
+                    label="JOURNAL ENTRIES TO MEMORIZE"
+                    count={visibleJournalCards.length}
+                    isAdmin={isAdmin}
+                    sectionName="journal_entries"
+                    isVisible={isSectionVisible("journal_entries")}
+                    onToggle={toggleSectionVisibility}
+                  />
+
+                  {visibleJournalCards.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={handleShuffle}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold"
+                      style={{ background: theme.navySoft, color: "#2563EB", border: `1px solid #BFDBFE` }}
+                    >
+                      <Shuffle className="h-3 w-3" />
+                      Shuffle
+                    </button>
+                  )}
+                </div>
+
+                {visibleJournalCards.length > 0 ? (
+                  <>
+                    <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                          {reviewedCount} of {visibleJournalCards.length} reviewed
+                        </p>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full" style={{ background: "#E5E7EB" }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${progressPercent}%`, background: progressPercent === 100 ? "#22C55E" : "#3B82F6" }}
+                        />
+                      </div>
+                    </div>
+
+                    {currentJeCard && (
+                      <div style={{ opacity: currentJeHidden ? 0.5 : 1 }}>
+                        {isAdmin && currentJeHidden && (
+                          <div className="mb-2 rounded-md px-3 py-1.5 text-[11px] font-semibold" style={{ background: theme.warningBg, color: theme.warningText }}>
+                            Hidden from students
+                          </div>
+                        )}
+                        <JournalEntryCard
+                          card={currentJeCard}
+                          hidden={currentJeHidden}
+                          isAdmin={isAdmin}
+                          isReviewed={reviewedSet.has(currentJeCard.id)}
+                          onReview={() => handleReview(currentJeCard.id)}
+                          onToggleHidden={() => toggleItemHidden("journal_entries", currentJeCard.id)}
+                        />
+                      </div>
+                    )}
+
+                    {visibleJournalCards.length > 1 && (
+                      <div className="mt-4 flex items-center justify-between">
                         <button
                           type="button"
-                          onClick={() => toggleTab(solutionsTab)}
-                          className="text-[12px] font-semibold"
-                          style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer" }}
+                          disabled={jeIndex === 0}
+                          onClick={() => setJeIndex((i) => i - 1)}
+                          className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                          style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
                         >
-                          {isTabExpanded(solutionsTab) ? "Show less ↑" : `Show more → (${solutionsFiltered.length - SOLUTIONS_INITIAL_SHOW} more)`}
+                          <ChevronLeft className="h-4 w-4" /> Prev
+                        </button>
+                        <span className="text-[13px]" style={{ color: theme.textMuted }}>
+                          {jeIndex + 1} of {visibleJournalCards.length}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={jeIndex >= visibleJournalCards.length - 1}
+                          onClick={() => setJeIndex((i) => i + 1)}
+                          className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                          style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                        >
+                          Next <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
                     )}
 
-                    {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
-                      <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
+                    {isPreview && visibleJournalCards.length > PREVIEW_LIMIT && (
+                      <div className="mt-4">
                         <TieredPaywallCard
                           enrollUrl={enrollUrl}
                           chapterNumber={chapter?.chapter_number || null}
@@ -1273,422 +1567,296 @@ export default function ChapterCramTool() {
                         />
                       </div>
                     )}
-                  </div>
+                  </>
                 ) : (
-                  <div className="px-4 py-5 sm:px-5">
+                  <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
                     <p className="text-[13px]" style={{ color: theme.textMuted }}>
-                      No solutions in this tab yet.
+                      No journal entries to memorize yet.
                     </p>
                   </div>
                 )}
-              </div>
-            </section>
-          )}
+                <SectionReportLink sectionLabel="JEs to Memorize" onClick={openFeedbackForSection} />
+              </section>
+            )}
 
-          {/* ──── Chapter-Level All Journal Entries ──── */}
-          {showChapterJESection && (
-            <section style={{ opacity: isSectionVisible("chapter_je_reference") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle
-                label={`CH ${chapter?.chapter_number || "?"} — ALL JOURNAL ENTRIES`}
-                count={chapterJEEntries.length}
-                isAdmin={isAdmin}
-                sectionName="chapter_je_reference"
-                isVisible={isSectionVisible("chapter_je_reference")}
-                onToggle={toggleSectionVisibility}
-              />
-              <div className="rounded-xl border px-4 py-4 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                {chapterJEEntries.length > 0 ? (
-                  <CramChapterJEAccordion categories={chapterJECategories} entries={chapterJEEntries} />
-                ) : (
-                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
-                    No chapter journal entries available yet.
-                  </p>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* ──── Journal Entries to Memorize (Flashcard Mode) ──── */}
-          {showJournalSection && (
-            <section id="je-cram-tool" className="scroll-mt-16" style={{ opacity: isSectionVisible("journal_entries") ? 1 : 0.4 }}>
-              <div className="mb-3 flex items-start justify-between gap-3">
+            {/* ──── Formulas to Memorize (Flashcard Mode) ──── */}
+            {showFormulasSection && (
+              <section id="formulas" className="scroll-mt-28" style={{ opacity: isSectionVisible("formulas") ? 1 : 0.4 }}>
                 <SectionHeaderWithToggle
-                  label="JOURNAL ENTRIES TO MEMORIZE"
-                  count={visibleJournalCards.length}
+                  label="FORMULAS TO MEMORIZE"
+                  count={visibleFormulas.length}
                   isAdmin={isAdmin}
-                  sectionName="journal_entries"
-                  isVisible={isSectionVisible("journal_entries")}
+                  sectionName="formulas"
+                  isVisible={isSectionVisible("formulas")}
                   onToggle={toggleSectionVisibility}
                 />
 
-                {visibleJournalCards.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={handleShuffle}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold"
-                    style={{ background: theme.navySoft, color: "#2563EB", border: `1px solid #BFDBFE` }}
-                  >
-                    <Shuffle className="h-3 w-3" />
-                    Shuffle
-                  </button>
-                )}
-              </div>
-
-              {visibleJournalCards.length > 0 ? (
-                <>
-                  <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
-                        {reviewedCount} of {visibleJournalCards.length} reviewed
-                      </p>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full" style={{ background: "#E5E7EB" }}>
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${progressPercent}%`, background: progressPercent === 100 ? "#22C55E" : "#3B82F6" }}
-                      />
-                    </div>
-                  </div>
-
-                  {currentJeCard && (
-                    <div style={{ opacity: currentJeHidden ? 0.5 : 1 }}>
-                      {isAdmin && currentJeHidden && (
-                        <div className="mb-2 rounded-md px-3 py-1.5 text-[11px] font-semibold" style={{ background: theme.warningBg, color: theme.warningText }}>
-                          Hidden from students
-                        </div>
-                      )}
-                      <JournalEntryCard
-                        card={currentJeCard}
-                        hidden={currentJeHidden}
-                        isAdmin={isAdmin}
-                        isReviewed={reviewedSet.has(currentJeCard.id)}
-                        onReview={() => handleReview(currentJeCard.id)}
-                        onToggleHidden={() => toggleItemHidden("journal_entries", currentJeCard.id)}
-                      />
-                    </div>
-                  )}
-
-                  {visibleJournalCards.length > 1 && (
-                    <div className="mt-4 flex items-center justify-between">
-                      <button
-                        type="button"
-                        disabled={jeIndex === 0}
-                        onClick={() => setJeIndex((i) => i - 1)}
-                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
-                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
-                      >
-                        <ChevronLeft className="h-4 w-4" /> Prev
-                      </button>
-                      <span className="text-[13px]" style={{ color: theme.textMuted }}>
-                        {jeIndex + 1} of {visibleJournalCards.length}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={jeIndex >= visibleJournalCards.length - 1}
-                        onClick={() => setJeIndex((i) => i + 1)}
-                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
-                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
-                      >
-                        Next <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  {isPreview && visibleJournalCards.length > PREVIEW_LIMIT && (
-                    <div className="mt-4">
-                      <TieredPaywallCard
-                        enrollUrl={enrollUrl}
-                        chapterNumber={chapter?.chapter_number || null}
-                        fullPassLink={fullPassLink}
-                        chapterLink={chapterLink}
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
-                    No journal entries to memorize yet.
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ──── Formulas to Memorize (Flashcard Mode) ──── */}
-          {showFormulasSection && (
-            <section style={{ opacity: isSectionVisible("formulas") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle
-                label="FORMULAS TO MEMORIZE"
-                count={visibleFormulas.length}
-                isAdmin={isAdmin}
-                sectionName="formulas"
-                isVisible={isSectionVisible("formulas")}
-                onToggle={toggleSectionVisibility}
-              />
-
-              {visibleFormulas.length > 0 && currentFormula ? (
-                <>
-                  {/* Seen progress */}
-                  {useChapterFormulas && (
-                    <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
-                      <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
-                        {formulasSeenCount} ✓ / {visibleFormulas.length}
-                      </p>
-                    </div>
-                  )}
-
-                  <div
-                    className="relative mx-auto flex flex-col rounded-xl overflow-hidden"
-                    style={{
-                      background: theme.cardBg,
-                      boxShadow: "0 4px 20px rgba(15,23,42,0.06)",
-                      border: `1px solid ${theme.border}`,
-                      opacity: currentFormulaHidden ? 0.5 : 1,
-                    }}
-                  >
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => toggleItemHidden("formulas", currentFormula.id)}
-                        className="absolute right-3 top-3 z-10 inline-flex h-6 w-6 items-center justify-center rounded-md"
-                        style={{
-                          background: currentFormulaHidden ? theme.warningBg : "rgba(255,255,255,0.9)",
-                          color: currentFormulaHidden ? theme.warningText : theme.textMuted,
-                          border: `1px solid ${theme.border}`,
-                        }}
-                        title={currentFormulaHidden ? "Show to students" : "Hide from students"}
-                      >
-                        <EyeOff className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-
-                    {isAdmin && currentFormulaHidden && (
-                      <span
-                        className="absolute left-3 top-3 z-10 rounded-full px-2 py-0.5 text-[9px] font-semibold"
-                        style={{ background: theme.warningBg, color: theme.warningText }}
-                      >
-                        Hidden from students
-                      </span>
-                    )}
-
-                    {currentFormula.image_url ? (
-                      <>
-                        {/* Formula name heading above image */}
-                        <div className="px-5 pt-4 pb-2">
-                          <p className="text-[13px] font-semibold" style={{ color: theme.heading }}>
-                            {currentFormula.name}
-                          </p>
-                        </div>
-                        <div className="px-4 pb-4">
-                          <img
-                            src={currentFormula.image_url}
-                            alt={currentFormula.name}
-                            style={{
-                              width: "100%",
-                              maxWidth: 800,
-                              aspectRatio: "2 / 1",
-                              objectFit: "contain",
-                              margin: "0 auto",
-                              borderRadius: 12,
-                              display: "block",
-                            }}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ padding: "24px 32px" }}>
-                        <p
-                          className="text-[11px] font-semibold uppercase"
-                          style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
-                        >
-                          {currentFormula.name}
+                {visibleFormulas.length > 0 && currentFormula ? (
+                  <>
+                    {/* Seen progress */}
+                    {useChapterFormulas && (
+                      <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
+                        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                          {formulasSeenCount} ✓ / {visibleFormulas.length}
                         </p>
-                        <p
-                          className="text-[20px] font-medium"
-                          style={{
-                            color: theme.heading,
-                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
-                          }}
-                        >
-                          {currentFormula.expression}
-                        </p>
-                        {currentFormula.explanation && (
-                          <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
-                            {currentFormula.explanation}
-                          </p>
-                        )}
-                        <span
-                          className="mt-3 inline-block rounded-full px-2 py-0.5 text-[10px]"
-                          style={{ background: theme.mutedBg, color: theme.textMuted }}
-                        >
-                          Image coming soon
-                        </span>
                       </div>
                     )}
 
-                    {/* Got It button row */}
-                    {useChapterFormulas && (
-                      <div className="flex items-center gap-3 px-5 pb-4">
+                    <div
+                      className="relative mx-auto flex flex-col rounded-xl overflow-hidden"
+                      style={{
+                        background: theme.cardBg,
+                        boxShadow: "0 4px 20px rgba(15,23,42,0.06)",
+                        border: `1px solid ${theme.border}`,
+                        opacity: currentFormulaHidden ? 0.5 : 1,
+                      }}
+                    >
+                      {isAdmin && (
                         <button
                           type="button"
-                          onClick={() => handleFormulaSeen(currentFormula.id)}
-                          disabled={formulasSeenSet.has(currentFormula.id)}
-                          className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold"
+                          onClick={() => toggleItemHidden("formulas", currentFormula.id)}
+                          className="absolute right-3 top-3 z-10 inline-flex h-6 w-6 items-center justify-center rounded-md"
                           style={{
-                            background: formulasSeenSet.has(currentFormula.id) ? theme.successBg : "#DCFCE7",
-                            color: formulasSeenSet.has(currentFormula.id) ? "#15803D" : theme.successText,
-                            border: `1px solid ${formulasSeenSet.has(currentFormula.id) ? theme.successBorder : "#86EFAC"}`,
-                            cursor: formulasSeenSet.has(currentFormula.id) ? "default" : "pointer",
+                            background: currentFormulaHidden ? theme.warningBg : "rgba(255,255,255,0.9)",
+                            color: currentFormulaHidden ? theme.warningText : theme.textMuted,
+                            border: `1px solid ${theme.border}`,
                           }}
+                          title={currentFormulaHidden ? "Show to students" : "Hide from students"}
                         >
-                          <CheckCircle className="h-3.5 w-3.5" />
-                          {formulasSeenSet.has(currentFormula.id) ? "Got It ✓" : "Got It"}
+                          <EyeOff className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+
+                      {isAdmin && currentFormulaHidden && (
+                        <span
+                          className="absolute left-3 top-3 z-10 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                          style={{ background: theme.warningBg, color: theme.warningText }}
+                        >
+                          Hidden from students
+                        </span>
+                      )}
+
+                      {currentFormula.image_url ? (
+                        <>
+                          {/* Formula name heading above image */}
+                          <div className="px-5 pt-4 pb-2">
+                            <p className="text-[13px] font-semibold" style={{ color: theme.heading }}>
+                              {currentFormula.name}
+                            </p>
+                          </div>
+                          <div className="px-4 pb-4">
+                            <img
+                              src={currentFormula.image_url}
+                              alt={currentFormula.name}
+                              style={{
+                                width: "100%",
+                                maxWidth: 800,
+                                aspectRatio: "2 / 1",
+                                objectFit: "contain",
+                                margin: "0 auto",
+                                borderRadius: 12,
+                                display: "block",
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ padding: "24px 32px" }}>
+                          <p
+                            className="text-[11px] font-semibold uppercase"
+                            style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
+                          >
+                            {currentFormula.name}
+                          </p>
+                          <p
+                            className="text-[20px] font-medium"
+                            style={{
+                              color: theme.heading,
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+                            }}
+                          >
+                            {currentFormula.expression}
+                          </p>
+                          {currentFormula.explanation && (
+                            <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
+                              {currentFormula.explanation}
+                            </p>
+                          )}
+                          <span
+                            className="mt-3 inline-block rounded-full px-2 py-0.5 text-[10px]"
+                            style={{ background: theme.mutedBg, color: theme.textMuted }}
+                          >
+                            Image coming soon
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Got It button row */}
+                      {useChapterFormulas && (
+                        <div className="flex items-center gap-3 px-5 pb-4">
+                          <button
+                            type="button"
+                            onClick={() => handleFormulaSeen(currentFormula.id)}
+                            disabled={formulasSeenSet.has(currentFormula.id)}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold"
+                            style={{
+                              background: formulasSeenSet.has(currentFormula.id) ? theme.successBg : "#DCFCE7",
+                              color: formulasSeenSet.has(currentFormula.id) ? "#15803D" : theme.successText,
+                              border: `1px solid ${formulasSeenSet.has(currentFormula.id) ? theme.successBorder : "#86EFAC"}`,
+                              cursor: formulasSeenSet.has(currentFormula.id) ? "default" : "pointer",
+                            }}
+                          >
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            {formulasSeenSet.has(currentFormula.id) ? "Got It ✓" : "Got It"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {visibleFormulas.length > 1 && (
+                      <div className="mt-4 flex items-center justify-between">
+                        <button
+                          type="button"
+                          disabled={formulaIndex === 0}
+                          onClick={() => setFormulaIndex((i) => i - 1)}
+                          className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                          style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                        >
+                          <ChevronLeft className="h-4 w-4" /> Prev
+                        </button>
+                        <span className="text-[13px]" style={{ color: theme.textMuted }}>
+                          {formulasSeenSet.has(currentFormula.id) ? "✓ " : ""}
+                          {formulaIndex + 1} / {visibleFormulas.length}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={formulaIndex >= visibleFormulas.length - 1}
+                          onClick={() => setFormulaIndex((i) => i + 1)}
+                          className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+                          style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                        >
+                          Next <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
                     )}
+                  </>
+                ) : (
+                  <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                    <p className="text-[13px]" style={{ color: theme.textMuted }}>
+                      No formulas to memorize yet.
+                    </p>
                   </div>
+                )}
+                <SectionReportLink sectionLabel="Formulas" onClick={openFeedbackForSection} />
+              </section>
+            )}
 
-                  {visibleFormulas.length > 1 && (
-                    <div className="mt-4 flex items-center justify-between">
-                      <button
-                        type="button"
-                        disabled={formulaIndex === 0}
-                        onClick={() => setFormulaIndex((i) => i - 1)}
-                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
-                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
-                      >
-                        <ChevronLeft className="h-4 w-4" /> Prev
-                      </button>
-                      <span className="text-[13px]" style={{ color: theme.textMuted }}>
-                        {formulasSeenSet.has(currentFormula.id) ? "✓ " : ""}
-                        {formulaIndex + 1} / {visibleFormulas.length}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={formulaIndex >= visibleFormulas.length - 1}
-                        onClick={() => setFormulaIndex((i) => i + 1)}
-                        className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
-                        style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
-                      >
-                        Next <ChevronRight className="h-4 w-4" />
-                      </button>
+            {/* ──── Common Exam Mistakes ──── */}
+            {showMistakes && examMistakes.length > 0 && (
+              <section id="mistakes" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_exam_mistakes") ? 1 : 0.4 }}>
+                <SectionHeaderWithToggle label="COMMON EXAM MISTAKES" count={examMistakes.length} isAdmin={isAdmin} sectionName="chapter_exam_mistakes" isVisible={isSectionVisible("chapter_exam_mistakes")} onToggle={toggleSectionVisibility} />
+                <div className="space-y-2">
+                  {examMistakes.map((m: any) => (
+                    <div key={m.id} className="rounded-xl border-l-4 px-4 py-3" style={{ borderLeftColor: "#CE1126", borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.cardBg }}>
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#CE1126" }} />
+                        <div>
+                          <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{m.mistake}</p>
+                          {m.explanation && <p className="text-[12px] mt-1 leading-[1.6]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-xl border px-4 py-5 sm:px-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                  <p className="text-[13px]" style={{ color: theme.textMuted }}>
-                    No formulas to memorize yet.
-                  </p>
+                  ))}
+                </div>
+                <SectionReportLink sectionLabel="Exam Mistakes" onClick={openFeedbackForSection} />
+              </section>
+            )}
+
+
+            {/* ──── Share Feedback / Report Issue ──── */}
+            <section id="feedback" className="scroll-mt-28">
+              <SectionHeaderWithToggle
+                label="SHARE FEEDBACK"
+                isAdmin={isAdmin}
+                sectionName="ask_lee"
+                isVisible={isSectionVisible("ask_lee")}
+                onToggle={toggleSectionVisibility}
+              />
+              {(isAdmin || isSectionVisible("ask_lee")) && (
+                <CramFeedbackForm
+                  chapterId={chapterId}
+                  chapterNumber={chapter?.chapter_number}
+                  chapterName={chapter?.chapter_name || ""}
+                  courseDisplayName={courseDisplayName}
+                  isVisible={isSectionVisible("ask_lee")}
+                  prefillSection={feedbackSection}
+                />
+              )}
+            </section>
+
+            {/* ──── About Lee ──── */}
+            <section id="about-lee" className="scroll-mt-28">
+              <SectionHeaderWithToggle
+                label="ABOUT LEE"
+                isAdmin={isAdmin}
+                sectionName="about_lee"
+                isVisible={isSectionVisible("about_lee")}
+                onToggle={toggleSectionVisibility}
+              />
+              {(isAdmin || isSectionVisible("about_lee")) && (
+                <div
+                  className="rounded-xl border p-6"
+                  style={{ borderColor: theme.border, background: theme.cardBg, opacity: isSectionVisible("about_lee") ? 1 : 0.4 }}
+                >
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <img
+                      src={LEE_HERO_URL}
+                      alt="Lee Ingram"
+                      className="w-full"
+                      style={{ objectFit: "contain", borderRadius: 12, maxHeight: 240 }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <div className="max-w-[400px]">
+                      <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
+                        Creator of{" "}
+                        <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
+                          SurviveAccounting.com
+                        </a>.
+                        <br />
+                        Accounting tutor since 2015.
+                        <br />
+                        Loves helping students.
+                        <br /><br />
+                        Thanks for trying my study tools. Best of luck on your exam!
+                        <br />
+                        <span className="italic">— Lee</span>
+                      </p>
+                      <p className="text-[12px] leading-[1.6] mt-2" style={{ color: theme.textMuted }}>
+                        Ole Miss Alum<br />
+                        B.A. &amp; M.Acc. in Accounting • 3.75 GPA
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1.5 text-[12px]">
+                      <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
+                        <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
+                      </a>
+                      <a
+                        href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1 hover:underline font-semibold"
+                        style={{ color: "#3B82F6" }}
+                      >
+                        <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
+                      </a>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
-          )}
-
-          {/* ──── Common Exam Mistakes ──── */}
-          {showMistakes && examMistakes.length > 0 && (
-            <section style={{ opacity: isSectionVisible("chapter_exam_mistakes") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle label="COMMON EXAM MISTAKES" count={examMistakes.length} isAdmin={isAdmin} sectionName="chapter_exam_mistakes" isVisible={isSectionVisible("chapter_exam_mistakes")} onToggle={toggleSectionVisibility} />
-              <div className="space-y-2">
-                {examMistakes.map((m: any) => (
-                  <div key={m.id} className="rounded-xl border-l-4 px-4 py-3" style={{ borderLeftColor: "#CE1126", borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.cardBg }}>
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#CE1126" }} />
-                      <div>
-                        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{m.mistake}</p>
-                        {m.explanation && <p className="text-[12px] mt-1 leading-[1.6]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-
-          {/* ──── Share Feedback / Report Issue ──── */}
-          <section>
-            <SectionHeaderWithToggle
-              label="SHARE FEEDBACK"
-              isAdmin={isAdmin}
-              sectionName="ask_lee"
-              isVisible={isSectionVisible("ask_lee")}
-              onToggle={toggleSectionVisibility}
-            />
-            {(isAdmin || isSectionVisible("ask_lee")) && (
-              <CramFeedbackForm
-                chapterId={chapterId}
-                chapterNumber={chapter?.chapter_number}
-                chapterName={chapter?.chapter_name || ""}
-                courseDisplayName={courseDisplayName}
-                isVisible={isSectionVisible("ask_lee")}
-              />
-            )}
-          </section>
-
-          {/* ──── About Lee ──── */}
-          <section>
-            <SectionHeaderWithToggle
-              label="ABOUT LEE"
-              isAdmin={isAdmin}
-              sectionName="about_lee"
-              isVisible={isSectionVisible("about_lee")}
-              onToggle={toggleSectionVisibility}
-            />
-            {(isAdmin || isSectionVisible("about_lee")) && (
-              <div
-                className="rounded-xl border p-6"
-                style={{ borderColor: theme.border, background: theme.cardBg, opacity: isSectionVisible("about_lee") ? 1 : 0.4 }}
-              >
-                <div className="flex flex-col items-center text-center gap-4">
-                  <img
-                    src={LEE_HERO_URL}
-                    alt="Lee Ingram"
-                    className="w-full"
-                    style={{ objectFit: "contain", borderRadius: 12, maxHeight: 240 }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                  <div className="max-w-[400px]">
-                    <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-                      Creator of{" "}
-                      <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
-                        SurviveAccounting.com
-                      </a>.
-                      <br />
-                      Accounting tutor since 2015.
-                      <br />
-                      Loves helping students.
-                      <br /><br />
-                      Thanks for trying my study tools. Best of luck on your exam!
-                      <br />
-                      <span className="italic">— Lee</span>
-                    </p>
-                    <p className="text-[12px] leading-[1.6] mt-2" style={{ color: theme.textMuted }}>
-                      Ole Miss Alum<br />
-                      B.A. &amp; M.Acc. in Accounting • 3.75 GPA
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1.5 text-[12px]">
-                    <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
-                      <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
-                    </a>
-                    <a
-                      href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1 hover:underline font-semibold"
-                      style={{ color: "#3B82F6" }}
-                    >
-                      <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
 
       {/* Floating Action Bar */}
       <CramFloatingActionBar
@@ -1699,6 +1867,17 @@ export default function ChapterCramTool() {
       />
     </div>
   );
+}
+
+// ── ToC wrapper components that use the intersection observer hook ──
+function TocSidebarWrapper({ activeSections }: { activeSections: typeof TOC_SECTIONS }) {
+  const activeId = useActiveSection(activeSections.map(s => s.id));
+  return <TocSidebar activeSections={activeSections} activeId={activeId} />;
+}
+
+function MobileAnchorBarWrapper({ activeSections }: { activeSections: typeof TOC_SECTIONS }) {
+  const activeId = useActiveSection(activeSections.map(s => s.id));
+  return <MobileAnchorBar activeSections={activeSections} activeId={activeId} />;
 }
 
 // ── Feedback Form (Report Issue style with .edu validation) ─────────
@@ -1717,12 +1896,14 @@ function CramFeedbackForm({
   chapterName,
   courseDisplayName,
   isVisible,
+  prefillSection = "",
 }: {
   chapterId: string;
   chapterNumber?: number;
   chapterName: string;
   courseDisplayName: string;
   isVisible: boolean;
+  prefillSection?: string;
 }) {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -1732,6 +1913,14 @@ function CramFeedbackForm({
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Pre-fill message when a section report link is clicked
+  useEffect(() => {
+    if (prefillSection) {
+      setMessage(prev => prev ? prev : `Issue in "${prefillSection}" section: `);
+      setIssueType("Something looks wrong");
+    }
+  }, [prefillSection]);
 
   const handleSubmit = async () => {
     const trimmedEmail = email.trim().toLowerCase();
@@ -1924,16 +2113,8 @@ function CramFloatingActionBar({
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(() => {
-    try { return localStorage.getItem("sa_cram_feedback_banner_dismissed") === "true"; } catch { return false; }
-  });
 
   const shareUrl = `${STUDENT_BASE_URL}/cram/${chapterId}?preview=true`;
-
-  const dismissBanner = () => {
-    setBannerDismissed(true);
-    try { localStorage.setItem("sa_cram_feedback_banner_dismissed", "true"); } catch {}
-  };
 
   return (
     <>
@@ -1949,7 +2130,7 @@ function CramFloatingActionBar({
       </div>
 
       {/* Desktop: full action bar */}
-      <div className="hidden sm:block fixed z-30" style={{ top: 56, right: 16 }}>
+      <div className="hidden sm:block fixed z-30" style={{ top: 64, right: 16 }}>
         <div
           className="rounded-xl overflow-hidden"
           style={{
@@ -1958,9 +2139,6 @@ function CramFloatingActionBar({
             boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)",
           }}
         >
-
-
-
           {/* Button row */}
           <div className="flex items-center">
             {!collapsed && (
@@ -2026,6 +2204,7 @@ function CramFloatingActionBar({
     </>
   );
 }
+
 
 // ── Inline Feedback Form (for modal in floating bar) ────────────────
 

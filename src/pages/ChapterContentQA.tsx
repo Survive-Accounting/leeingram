@@ -616,12 +616,12 @@ function ChapterQAModal({
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
             <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
-              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
+              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
+              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
               <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
               <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
-              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
-              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
               <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
+              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
