@@ -960,7 +960,8 @@ export default function ChapterCramTool() {
 
         {/* ──── Feedback ──── */}
         <section id="feedback" className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: theme.label, letterSpacing: "0.18em" }}>SHARE FEEDBACK</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1" style={{ color: theme.label, letterSpacing: "0.18em" }}>GET IN TOUCH</p>
+          <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
           <CramFeedbackForm
             chapterId={chapterId}
             chapterNumber={chapter?.chapter_number}
@@ -1027,13 +1028,13 @@ export default function ChapterCramTool() {
 }
 
 // ── Feedback Form ──
-const CRAM_ISSUE_TYPES = ["Something looks wrong", "Missing content", "I have a question", "Just saying hello", "Other"];
+const CRAM_ISSUE_TYPES = ["I have a question about this chapter", "Something looks wrong", "There's content missing", "Just saying hello", "Other"];
 
 function CramFeedbackForm({ chapterId, chapterNumber, chapterName, courseDisplayName, isVisible, prefillSection = "" }: { chapterId: string; chapterNumber?: number; chapterName: string; courseDisplayName: string; isVisible: boolean; prefillSection?: string }) {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [name, setName] = useState("");
-  const [issueType, setIssueType] = useState(CRAM_ISSUE_TYPES[0]);
+  const [issueType, setIssueType] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -1058,7 +1059,7 @@ function CramFeedbackForm({ chapterId, chapterNumber, chapterName, courseDisplay
   };
 
   return (
-    <div className="rounded-xl border p-4 sm:p-5" style={{ borderColor: theme.border, background: theme.cardBg, opacity: isVisible ? 1 : 0.4 }}>
+    <div className="rounded-xl border p-4 sm:p-5" style={{ borderColor: "rgba(226,232,240,0.6)", background: "#FDFCFA", opacity: isVisible ? 1 : 0.4 }}>
       {sent ? (
         <div className="text-center py-5">
           <CheckCircle className="h-6 w-6 mx-auto" style={{ color: "#22c55e" }} />
@@ -1068,16 +1069,14 @@ function CramFeedbackForm({ chapterId, chapterNumber, chapterName, courseDisplay
         </div>
       ) : (
         <>
-          <p className="text-[14px] font-semibold" style={{ color: theme.heading }}>Share Feedback</p>
-          <p className="mt-0.5 text-[12px]" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello.</p>
-          <p className="mt-1 mb-3 text-[12px] italic" style={{ color: theme.label }}>I read and reply to every message personally.</p>
           <div className="space-y-2.5">
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text }} />
             <div>
               <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailError(""); }} placeholder="your@university.edu" className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={{ border: `1px solid ${emailError ? "#dc2626" : theme.border}`, background: theme.pageBg, color: theme.text }} />
               {emailError && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{emailError}</p>}
             </div>
-            <select value={issueType} onChange={e => setIssueType(e.target.value)} className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text }}>
+            <select value={issueType} onChange={e => setIssueType(e.target.value)} className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: issueType ? theme.text : theme.label }}>
+              <option value="" disabled>What's this about?</option>
               {CRAM_ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <textarea value={message} onChange={e => { setMessage(e.target.value); setSubmitError(""); }} placeholder="What's on your mind?" rows={3} className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text, resize: "vertical" }} />
