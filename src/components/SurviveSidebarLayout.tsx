@@ -29,59 +29,27 @@ import { toast } from "sonner";
 // ── Routes that should NOT show the pipeline progress strip ────────
 const HIDE_PROGRESS_ROUTES = ["/dashboard", "/va-dashboard", "/va-admin", "/accy304-admin"];
 
-// ── Sidebar Nav Items ──────────────────────────────────────────────
-const PHASE_1_ITEMS = [
-  { label: "Import", path: "/problem-bank", icon: Inbox },
-  { label: "Generate", path: "/content", icon: Factory },
-  { label: "Review", path: "/review", icon: FileCheck },
-  { label: "Teaching Assets", altLabel: "Sheet Prep", path: "/assets-library", icon: Library },
-];
+// ── Sidebar section keys for localStorage persistence ──
+const NAV_SECTIONS = ["launch", "qc", "chapter_wide", "quizzes", "settings"] as const;
+type NavSection = typeof NAV_SECTIONS[number];
 
-const PHASE_2_ITEMS = [
-  { label: "Topic Generator", path: "/phase2-review", icon: CheckCircle2, adminOnly: true },
-  { label: "Quiz Queue", path: "/quiz-queue", icon: Package },
-  { label: "Quiz Deployment", path: "/quizzes-ready", icon: Rocket },
-];
-
-const QC_ITEMS = [
-  { label: "Asset Page QA", path: "/solutions-qa", icon: ClipboardCheck, adminOnly: false },
-  { label: "QA Admin", path: "/solutions-qa-admin", icon: ClipboardCheck, adminOnly: true },
-  { label: "Asset Page Fixer", path: "/inbox", icon: Inbox, adminOnly: false },
-  { label: "QA Costs", path: "/qa-costs", icon: TrendingUp, adminOnly: false },
-];
-
-export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { signOut, user } = useAuth();
-  const { workspace, setWorkspace } = useActiveWorkspace();
-  const { vaAccount, isVa } = useVaAccount();
-  const { impersonating } = useImpersonation();
-  const qc = useQueryClient();
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
-  const [completeOpen, setCompleteOpen] = useState(false);
-
-  // Phase section collapse state — auto-expand if current route is inside that phase
-  const phase1Paths = PHASE_1_ITEMS.map(i => i.path);
-  const phase2Paths = PHASE_2_ITEMS.map(i => i.path);
-  const qcPaths = QC_ITEMS.map(i => i.path);
-  const phase3Paths = ["/survive-chapter", "/chapter-je", "/chapter-formulas"];
-
-  const isInPhase = (paths: string[]) => paths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"));
-
-  const [phase1Open, setPhase1Open] = useState(() => isInPhase(PHASE_1_ITEMS.map(i => i.path)));
-  const [phase2Open, setPhase2Open] = useState(() => isInPhase(PHASE_2_ITEMS.map(i => i.path)));
-  const [qcOpen, setQcOpen] = useState(() => isInPhase(qcPaths));
-  const [phase3Open, setPhase3Open] = useState(false);
-
-  // Auto-expand active phase section on route change
-  useEffect(() => {
-    if (isInPhase(phase1Paths)) setPhase1Open(true);
-    if (isInPhase(phase2Paths)) setPhase2Open(true);
-    if (isInPhase(qcPaths)) setQcOpen(true);
-    if (isInPhase(phase3Paths)) setPhase3Open(true);
-  }, [location.pathname]);
+function useNavCollapse(section: NavSection, activePaths: string[], pathname: string) {
+  const storageKey = `admin_nav_${section}_expanded`;
+  const isChildActive = activePaths.some(p => pathname === p || pathname.startsWith(p + "/"));
+  const [open, setOpen] = useState(() => {
+    if (isChildActive) return true;
+    return localStorage.getItem(storageKey) === "true";
+  });
+  useEffect(() => { if (isChildActive) setOpen(true); }, [pathname]);
+  const toggle = useCallback(() => {
+    setOpen(prev => {
+      const next = !prev;
+      localStorage.setItem(storageKey, String(next));
+      return next;
+    });
+  }, [storageKey]);
+  return { open, toggle };
+}
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
