@@ -981,6 +981,15 @@ export default function ChapterCramTool() {
     setReviewedSet((previous) => new Set(previous).add(cardId));
   }, []);
 
+  const handleChecklistToggle = useCallback((itemId: string) => {
+    setChecklistChecked(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
+      try { sessionStorage.setItem(`sa_checklist_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [chapterId]);
+
   useEffect(() => {
     if (!chapter) return;
     document.title = `Survive This Chapter — Ch ${chapter.chapter_number} — Survive Accounting`;
