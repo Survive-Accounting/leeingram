@@ -465,6 +465,51 @@ function ChapterQAModal({
   const qc = useQueryClient();
   const courseCode = course?.code || "???";
 
+  const SUITE_STEPS = [
+    { key: "purpose", label: "Purpose" },
+    { key: "key_terms", label: "Key Terms" },
+    { key: "exam_mistakes", label: "Mistakes" },
+    { key: "accounts", label: "Accounts" },
+    { key: "formulas", label: "Formulas" },
+    { key: "journal_entries", label: "JEs" },
+  ] as const;
+
+  const [suiteRunning, setSuiteRunning] = useState(false);
+  const [suiteStep, setSuiteStep] = useState("");
+  const [suiteResults, setSuiteResults] = useState<Record<string, "ok" | "error" | "pending">>({});
+
+  const runFullSuite = async () => {
+    setSuiteRunning(true);
+    const results: Record<string, "ok" | "error" | "pending"> = {};
+    SUITE_STEPS.forEach(s => { results[s.key] = "pending"; });
+    setSuiteResults({ ...results });
+
+    for (const step of SUITE_STEPS) {
+      setSuiteStep(step.label);
+      results[step.key] = "pending";
+      setSuiteResults({ ...results });
+      try {
+        const { error } = await supabase.functions.invoke("generate-chapter-content-suite", {
+          body: { chapterId: chapter.id, chapterName: chapter.chapter_name, courseCode, only: step.key },
+        });
+        if (error) throw error;
+        results[step.key] = "ok";
+      } catch {
+        results[step.key] = "error";
+      }
+      setSuiteResults({ ...results });
+    }
+
+    setSuiteStep("");
+    setSuiteRunning(false);
+    const errors = Object.values(results).filter(v => v === "error").length;
+    if (errors === 0) toast.success("All content generated!");
+    else toast.error(`Done with ${errors} error(s).`);
+    qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
+    qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
+    qc.invalidateQueries({ queryKey: ["cqa-je-detail", chapter.id] });
+  };
+
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
@@ -494,6 +539,36 @@ function ChapterQAModal({
               </a>
             </div>
           </DialogHeader>
+
+          {/* Generate All Content button */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" onClick={runFullSuite} disabled={suiteRunning} className="text-xs">
+              {suiteRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {suiteRunning ? `Generating ${suiteStep}…` : "Generate All Content →"}
+            </Button>
+            {Object.keys(suiteResults).length > 0 && (
+              <div className="flex gap-1 items-center">
+                {SUITE_STEPS.map(s => {
+                  const status = suiteResults[s.key];
+                  if (!status) return null;
+                  return (
+                    <Badge
+                      key={s.key}
+                      variant="secondary"
+                      className={cn(
+                        "text-[9px] h-4 px-1.5",
+                        status === "ok" && "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+                        status === "error" && "bg-destructive/20 text-destructive border-destructive/30",
+                        status === "pending" && suiteStep === s.label && "bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse",
+                      )}
+                    >
+                      {status === "ok" ? "✓" : status === "error" ? "✗" : "…"} {s.label}
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
             <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
