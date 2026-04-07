@@ -30,6 +30,21 @@ const SYSTEM_REWRITE_AMOUNTS = `You are rewriting accounting tooltip text that e
 Return JSON: { "rows": [ { "amount_source": "..." } ] }
 Rules: Return rows in SAME ORDER as provided. Return ONLY valid JSON.`;
 
+const SYSTEM_GENERATE_FORMULAS = `You are an accounting tutor adding calculation formulas to journal entry tooltips. For each journal entry row, generate a concise mathematical formula showing exactly how the dollar amount was calculated using numbers from the problem.
+
+Rules:
+- Use the ACTUAL numbers from the problem (e.g. "$180,000 × 8% = $14,400")
+- Use × for multiplication, ÷ for division, + for addition, − for subtraction
+- Format dollar amounts with $ and commas (e.g. $180,000)
+- Format percentages as % (e.g. 8%)
+- If the amount is given directly in the problem (not calculated), write "Given in the problem" 
+- If the amount is a balancing figure, write "Balancing figure" or show the subtraction
+- Keep it to ONE line — the formula only, no explanation
+- For time-weighted calculations, show the fraction (e.g. "× 6/12")
+
+Return JSON: { "rows": [ { "calculation_formula": "..." } ] }
+Rules: Return rows in SAME ORDER as provided. Return ONLY valid JSON.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -48,8 +63,8 @@ serve(async (req) => {
     const { teaching_asset_id, mode, use_strong_model } = await req.json();
     const selectedModel = use_strong_model ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
-    if (!["enrich", "rewrite_reasons", "rewrite_amounts"].includes(mode)) {
-      throw new Error("Invalid mode. Must be 'enrich', 'rewrite_reasons', or 'rewrite_amounts'");
+    if (!["enrich", "rewrite_reasons", "rewrite_amounts", "generate_formulas"].includes(mode)) {
+      throw new Error("Invalid mode. Must be 'enrich', 'rewrite_reasons', 'rewrite_amounts', or 'generate_formulas'");
     }
 
     const { data: asset, error: aErr } = await sb
@@ -114,9 +129,13 @@ serve(async (req) => {
         if (!hasMissing) continue;
       }
 
+      // For generate_formulas on supplementary JEs, skip (they have masked amounts)
+      if (mode === "generate_formulas" && isSupplementary) continue;
+
       const systemPrompt = mode === "enrich" ? SYSTEM_ENRICH
         : mode === "rewrite_reasons" ? SYSTEM_REWRITE_REASONS
-        : SYSTEM_REWRITE_AMOUNTS;
+        : mode === "rewrite_amounts" ? SYSTEM_REWRITE_AMOUNTS
+        : SYSTEM_GENERATE_FORMULAS;
 
       const userPrompt = `Problem:\n${asset.problem_context || asset.survive_problem_text || "N/A"}\n\nSolution:\n${asset.survive_solution_text || "N/A"}\n\nJE rows (${rowSummaries.length}):\n${rowSummaries.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}`;
 
@@ -192,6 +211,7 @@ serve(async (req) => {
               } else if (mode === "rewrite_amounts" && parsed.rows[rowIdx].amount_source) {
                 row.amount_source = parsed.rows[rowIdx].amount_source;
               }
+              // generate_formulas skipped for supplementary
             }
             rowIdx++;
           }
@@ -212,6 +232,8 @@ serve(async (req) => {
                   row.debit_credit_reason = parsed.rows[rowIdx].debit_credit_reason;
                 } else if (mode === "rewrite_amounts" && parsed.rows[rowIdx].amount_source) {
                   row.amount_source = parsed.rows[rowIdx].amount_source;
+                } else if (mode === "generate_formulas" && parsed.rows[rowIdx].calculation_formula) {
+                  row.calculation_formula = parsed.rows[rowIdx].calculation_formula;
                 }
               }
               rowIdx++;
