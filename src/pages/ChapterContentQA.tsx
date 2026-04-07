@@ -329,9 +329,10 @@ export default function ChapterContentQA() {
                   const { data, error } = await supabase.functions.invoke("generate-chapter-content-suite", { body: { all: true } });
                   if (error) throw error;
                   toast.success(`Full suite generated: ${data.completed}/${data.total}. ${data.errors?.length || 0} errors.`);
+                  captureBulkDebug("Generate Full Suite — All Chapters", data);
                   qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
                   qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
-                } catch (err: any) { toast.error(err.message); }
+                } catch (err: any) { toast.error(err.message); captureBulkDebug("Generate Full Suite — All Chapters", null, err.message); }
                 finally { setBulkGenerating(null); setBulkProgress(""); }
               }} disabled={!!bulkGenerating}>
                 {bulkGenerating === "suite" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Layers className="h-3.5 w-3.5 mr-1" />}
@@ -339,6 +340,24 @@ export default function ChapterContentQA() {
               </Button>
             </div>
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
+            {lastBulkDebug && !bulkGenerating && (
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md border text-xs",
+                lastBulkDebug.error ? "border-destructive/30 bg-destructive/5" : "border-emerald-500/30 bg-emerald-500/5"
+              )}>
+                <span className="font-medium">{lastBulkDebug.operation}</span>
+                <span className="text-muted-foreground">
+                  {lastBulkDebug.error ? `❌ ${lastBulkDebug.error.slice(0, 80)}` : `✅ ${lastBulkDebug.result?.completed ?? "done"}/${lastBulkDebug.result?.total ?? "?"} chapters • ${lastBulkDebug.result?.errors?.length ?? 0} errors`}
+                </span>
+                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 ml-auto" onClick={async () => {
+                  const ok = await copyToClipboard(JSON.stringify(lastBulkDebug, null, 2));
+                  if (ok) toast.success("Debug info copied");
+                  else toast.error("Copy failed");
+                }}>
+                  Copy Debug Info
+                </Button>
+              </div>
+            )}
             <p className="text-[10px] text-destructive/70">
               <AlertTriangle className="h-3 w-3 inline mr-1" />
               These operations affect all chapters. Run one at a time and monitor for errors.
