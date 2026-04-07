@@ -3636,7 +3636,7 @@ export default function SolutionsViewer() {
   // JE-only: instructions all match JE patterns AND explanation is short (simple problems only)
   const jeOnlyByInstructions = detectJEOnly(asset._instructions);
   const explanationLineCount = answerSummary.split("\n").filter(l => l.trim()).length;
-  const isJEOnly = jeOnlyByInstructions && explanationLineCount <= 8;
+  const isJEOnly = jeOnlyByInstructions && explanationLineCount <= 30;
   const formulas = asset.important_formulas || "";
   const conceptNotes = asset.concept_notes || "";
   const examTraps = asset.exam_traps || "";
