@@ -1216,6 +1216,7 @@ export type Database = {
           is_rejected: boolean | null
           je_lines: Json
           sort_order: number | null
+          source: string
           transaction_label: string
           updated_at: string | null
         }
@@ -1229,6 +1230,7 @@ export type Database = {
           is_rejected?: boolean | null
           je_lines?: Json
           sort_order?: number | null
+          source?: string
           transaction_label: string
           updated_at?: string | null
         }
@@ -1242,6 +1244,7 @@ export type Database = {
           is_rejected?: boolean | null
           je_lines?: Json
           sort_order?: number | null
+          source?: string
           transaction_label?: string
           updated_at?: string | null
         }
