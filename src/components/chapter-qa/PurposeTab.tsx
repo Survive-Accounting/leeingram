@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Check, Loader2, Sparkles, RefreshCw, Plus, Trash2, GripVertical } from "lucide-react";
+import { Check, Loader2, Sparkles, RefreshCw } from "lucide-react";
 
 type PurposeRow = {
   id: string; chapter_id: string;
@@ -16,7 +16,6 @@ type PurposeRow = {
 };
 
 export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: string; chapterName: string; courseCode: string }) {
-  const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
 
   const { data: purpose, refetch } = useQuery({
@@ -32,12 +31,13 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
     },
   });
 
-  const [purposeBullets, setPurposeBullets] = useState<string[]>([]);
-  const [consequenceBullets, setConsequenceBullets] = useState<string[]>([]);
+  // Single sentence = first element of each array
+  const [purposeText, setPurposeText] = useState("");
+  const [consequenceText, setConsequenceText] = useState("");
 
   useEffect(() => {
-    setPurposeBullets(purpose?.purpose_bullets || []);
-    setConsequenceBullets(purpose?.consequence_bullets || []);
+    setPurposeText(purpose?.purpose_bullets?.[0] || "");
+    setConsequenceText(purpose?.consequence_bullets?.[0] || "");
   }, [purpose]);
 
   const invalidate = () => { refetch(); };
@@ -58,8 +58,8 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
   const handleSave = async () => {
     if (!purpose) return;
     const { error } = await supabase.from("chapter_purpose").update({
-      purpose_bullets: purposeBullets as any,
-      consequence_bullets: consequenceBullets as any,
+      purpose_bullets: [purposeText] as any,
+      consequence_bullets: [consequenceText] as any,
     }).eq("id", purpose.id);
     if (error) { toast.error("Save failed"); return; }
     toast.success("Purpose saved.");
@@ -74,8 +74,8 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
   };
 
   const hasChanges = purpose && (
-    JSON.stringify(purposeBullets) !== JSON.stringify(purpose.purpose_bullets) ||
-    JSON.stringify(consequenceBullets) !== JSON.stringify(purpose.consequence_bullets)
+    purposeText !== (purpose.purpose_bullets?.[0] || "") ||
+    consequenceText !== (purpose.consequence_bullets?.[0] || "")
   );
 
   if (!purpose && !generating) {
@@ -91,13 +91,6 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
     return <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   }
 
-  const updateBullet = (arr: string[], setArr: (a: string[]) => void, idx: number, val: string) => {
-    const n = [...arr]; n[idx] = val; setArr(n);
-  };
-  const removeBullet = (arr: string[], setArr: (a: string[]) => void, idx: number) => {
-    setArr(arr.filter((_, i) => i !== idx));
-  };
-
   return (
     <div className="space-y-4 pb-10">
       <Card className="border-border">
@@ -110,36 +103,14 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
             }
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className="text-[11px] font-medium text-muted-foreground">Why this chapter matters:</label>
-            {purposeBullets.map((b, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
-                <Input value={b} onChange={(e) => updateBullet(purposeBullets, setPurposeBullets, i, e.target.value)} className="text-sm flex-1" />
-                <button onClick={() => removeBullet(purposeBullets, setPurposeBullets, i)} className="p-1 text-destructive hover:bg-destructive/10 rounded"><Trash2 className="h-3.5 w-3.5" /></button>
-              </div>
-            ))}
-            {purposeBullets.length < 3 && (
-              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setPurposeBullets([...purposeBullets, ""])}>
-                <Plus className="h-3 w-3 mr-1" /> Add bullet
-              </Button>
-            )}
+            <Input value={purposeText} onChange={(e) => setPurposeText(e.target.value)} className="text-sm" placeholder="One impactful sentence..." />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className="text-[11px] font-medium text-muted-foreground">What goes wrong if ignored:</label>
-            {consequenceBullets.map((b, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
-                <Input value={b} onChange={(e) => updateBullet(consequenceBullets, setConsequenceBullets, i, e.target.value)} className="text-sm flex-1" />
-                <button onClick={() => removeBullet(consequenceBullets, setConsequenceBullets, i)} className="p-1 text-destructive hover:bg-destructive/10 rounded"><Trash2 className="h-3.5 w-3.5" /></button>
-              </div>
-            ))}
-            {consequenceBullets.length < 2 && (
-              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setConsequenceBullets([...consequenceBullets, ""])}>
-                <Plus className="h-3 w-3 mr-1" /> Add bullet
-              </Button>
-            )}
+            <Input value={consequenceText} onChange={(e) => setConsequenceText(e.target.value)} className="text-sm" placeholder="One impactful sentence..." />
           </div>
 
           <div className="flex items-center gap-2">
