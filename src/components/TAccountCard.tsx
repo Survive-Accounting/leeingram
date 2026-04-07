@@ -64,6 +64,12 @@ function fmt(n: number | null | undefined): string {
   return Math.abs(n).toLocaleString("en-US");
 }
 
+/** Format with dollar sign — only for FS excerpts */
+function fmtDollar(n: number | null | undefined): string {
+  if (n == null) return "$0";
+  return "$" + Math.abs(n).toLocaleString("en-US");
+}
+
 function SmallTooltip({ text, side = "top", style }: { text: string; side?: "top" | "bottom" | "left" | "right"; style?: React.CSSProperties }) {
   if (!text) return null;
   return (
@@ -317,7 +323,6 @@ function ExampleSection({ account, isDebit, mode, theme: t }: { account: TAccoun
   const end = account.example_ending_balance;
   const dateLabel = account.example_date_label || "";
 
-  // Parse start/end dates from label like "Jan 1 – Dec 31, 2024"
   const dateParts = dateLabel.match(/^(.+?)\s*[–—-]\s*(.+)$/);
   const startDate = dateParts ? dateParts[1].trim() : "";
   const endDate = dateParts ? dateParts[2].trim() : "";
@@ -327,68 +332,81 @@ function ExampleSection({ account, isDebit, mode, theme: t }: { account: TAccoun
     : `${fmt(beg)} − ${fmt(dr)} + ${fmt(cr)} = ${fmt(end)}`;
   const balTooltip = (account.balance_tooltip || "") + `\n${calcStr}`;
 
+  const signLabel = isDebit ? "(+/−)" : "(−/+)";
+
   if (mode === "admin") {
+    const lineColor = "hsl(var(--foreground))";
+    const lw = 2;
+
     return (
-      <div className="max-w-[400px] mt-2">
+      <div className="max-w-[380px] mt-3">
         {/* Header */}
-        <div className="text-center border-b-2 border-foreground pb-1">
+        <div className="text-center pb-1" style={{ borderBottom: `${lw}px solid ${lineColor}` }}>
           <span className="text-sm font-bold text-foreground">{account.account_name}</span>
-          <span className="text-xs text-muted-foreground ml-1.5">{isDebit ? "(+/−)" : "(−/+)"}</span>
+          <span className="text-xs text-muted-foreground ml-1.5">{signLabel}</span>
+          <span className="text-[10px] text-muted-foreground ml-2">{dateLabel}</span>
         </div>
 
-        {/* T-body rows */}
-        <div className="grid grid-cols-[auto_1fr_1fr] min-h-[20px]">
-          {/* Beginning balance row */}
-          {beg != null && (
+        {/* T-body — staggered rows */}
+        <div className="grid grid-cols-2">
+          {/* Row 1: beginning balance on normal side */}
+          {beg != null && isDebit && (
             <>
-              <div className="text-[10px] text-muted-foreground font-mono pr-2 py-0.5 flex items-center">{startDate}</div>
-              {isDebit ? (
-                <>
-                  <div className="text-xs font-mono text-foreground py-0.5 border-r border-foreground/30 pl-1">{fmt(beg)}</div>
-                  <div className="py-0.5" />
-                </>
-              ) : (
-                <>
-                  <div className="py-0.5 border-r border-foreground/30" />
-                  <div className="text-xs font-mono text-foreground py-0.5 text-right pr-1">{fmt(beg)}</div>
-                </>
-              )}
+              <div className="flex items-center gap-1.5 py-1 pl-2" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+                <span className="text-xs font-mono text-foreground text-right flex-1">{fmt(beg)}</span>
+                <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
+              </div>
+              <div className="py-1" />
             </>
           )}
-          {/* Debit transaction */}
+          {beg != null && !isDebit && (
+            <>
+              <div className="py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
+              <div className="flex items-center gap-1.5 py-1 justify-end pr-2">
+                <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
+                <span className="text-xs font-mono text-foreground">{fmt(beg)}</span>
+              </div>
+            </>
+          )}
+
+          {/* Row 2: debit transaction (staggered to debit side) */}
           {dr != null && (
             <>
-              <div className="py-0.5" />
-              <div className="text-xs font-mono text-foreground py-0.5 border-r border-foreground/30 pl-3">{fmt(dr)}</div>
-              <div className="py-0.5" />
+              <div className="flex items-center py-1 pl-2" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+                <span className="text-xs font-mono text-foreground text-right flex-1">{fmt(dr)}</span>
+              </div>
+              <div className="py-1" />
             </>
           )}
-          {/* Credit transaction */}
+
+          {/* Row 3: credit transaction (staggered to credit side) */}
           {cr != null && (
             <>
-              <div className="py-0.5" />
-              <div className="py-0.5 border-r border-foreground/30" />
-              <div className="text-xs font-mono text-foreground py-0.5 text-right pr-1">{fmt(cr)}</div>
+              <div className="py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
+              <div className="flex items-center py-1 justify-end pr-2">
+                <span className="text-xs font-mono text-foreground">{fmt(cr)}</span>
+              </div>
             </>
           )}
         </div>
 
         {/* Ending balance */}
-        <div className="border-t border-foreground/30 py-0.5 grid grid-cols-[auto_1fr_1fr]">
-          <div className="text-[10px] text-muted-foreground font-mono pr-2 flex items-center">{endDate}</div>
+        <div className="py-1 grid grid-cols-2" style={{ borderTop: `${lw}px solid ${lineColor}` }}>
           {isDebit ? (
             <>
-              <div className="flex items-center gap-1 pl-1">
-                <span className="text-xs font-mono font-semibold text-foreground">{fmt(end)}</span>
+              <div className="flex items-center gap-1.5 pl-2">
+                <span className="text-xs font-mono font-semibold text-foreground text-right flex-1">{fmt(end)}</span>
+                <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
                 <SmallTooltip text={balTooltip} />
               </div>
               <div />
             </>
           ) : (
             <>
-              <div className="border-r border-foreground/30" />
-              <div className="flex items-center gap-1 justify-end pr-1">
+              <div />
+              <div className="flex items-center gap-1.5 justify-end pr-2">
                 <SmallTooltip text={balTooltip} />
+                <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
                 <span className="text-xs font-mono font-semibold text-foreground">{fmt(end)}</span>
               </div>
             </>
@@ -402,63 +420,78 @@ function ExampleSection({ account, isDebit, mode, theme: t }: { account: TAccoun
   const text = t?.text || "#0F172A";
   const textMuted = t?.textMuted || "#64748B";
   const heading = t?.heading || "#14213D";
-  const divider = t?.border || "#334155";
+  const lineColor = heading;
+  const lw = 2;
 
   return (
-    <div style={{ maxWidth: 400, marginTop: 8 }}>
-      <div style={{ textAlign: "center", borderBottom: `2px solid ${heading}`, paddingBottom: 4 }}>
+    <div style={{ maxWidth: 380, marginTop: 12 }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", borderBottom: `${lw}px solid ${lineColor}`, paddingBottom: 4 }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: heading }}>{account.account_name}</span>
-        <span style={{ fontSize: 12, color: textMuted, marginLeft: 6 }}>{isDebit ? "(+/−)" : "(−/+)"}</span>
+        <span style={{ fontSize: 12, color: textMuted, marginLeft: 6 }}>{signLabel}</span>
+        <span style={{ fontSize: 10, color: textMuted, marginLeft: 8 }}>{dateLabel}</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr" }}>
-        {beg != null && (
+      {/* T-body staggered */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+        {/* Beginning balance */}
+        {beg != null && isDebit && (
           <>
-            <div style={{ fontSize: 10, fontFamily: "monospace", color: textMuted, paddingRight: 8, padding: "2px 8px 2px 0", display: "flex", alignItems: "center" }}>{startDate}</div>
-            {isDebit ? (
-              <>
-                <div style={{ fontSize: 12, fontFamily: "monospace", color: text, padding: "2px 0 2px 4px", borderRight: `1px solid ${divider}40` }}>{fmt(beg)}</div>
-                <div style={{ padding: "2px 0" }} />
-              </>
-            ) : (
-              <>
-                <div style={{ padding: "2px 0", borderRight: `1px solid ${divider}40` }} />
-                <div style={{ fontSize: 12, fontFamily: "monospace", color: text, padding: "2px 4px 2px 0", textAlign: "right" }}>{fmt(beg)}</div>
-              </>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0 4px 8px", borderRight: `${lw}px solid ${lineColor}` }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: text, textAlign: "right", flex: 1 }}>{fmt(beg)}</span>
+              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
+            </div>
+            <div style={{ padding: "4px 0" }} />
           </>
         )}
+        {beg != null && !isDebit && (
+          <>
+            <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end", padding: "4px 8px 4px 0" }}>
+              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span>
+            </div>
+          </>
+        )}
+
+        {/* Debit transaction */}
         {dr != null && (
           <>
-            <div style={{ padding: "2px 0" }} />
-            <div style={{ fontSize: 12, fontFamily: "monospace", color: text, padding: "2px 0 2px 12px", borderRight: `1px solid ${divider}40` }}>{fmt(dr)}</div>
-            <div style={{ padding: "2px 0" }} />
+            <div style={{ display: "flex", alignItems: "center", padding: "4px 0 4px 8px", borderRight: `${lw}px solid ${lineColor}` }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: text, textAlign: "right", flex: 1 }}>{fmt(dr)}</span>
+            </div>
+            <div style={{ padding: "4px 0" }} />
           </>
         )}
+
+        {/* Credit transaction */}
         {cr != null && (
           <>
-            <div style={{ padding: "2px 0" }} />
-            <div style={{ padding: "2px 0", borderRight: `1px solid ${divider}40` }} />
-            <div style={{ fontSize: 12, fontFamily: "monospace", color: text, padding: "2px 4px 2px 0", textAlign: "right" }}>{fmt(cr)}</div>
+            <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "4px 8px 4px 0" }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(cr)}</span>
+            </div>
           </>
         )}
       </div>
 
-      <div style={{ borderTop: `1px solid ${divider}40`, padding: "2px 0", display: "grid", gridTemplateColumns: "auto 1fr 1fr" }}>
-        <div style={{ fontSize: 10, fontFamily: "monospace", color: textMuted, paddingRight: 8, display: "flex", alignItems: "center" }}>{endDate}</div>
+      {/* Ending balance */}
+      <div style={{ borderTop: `${lw}px solid ${lineColor}`, padding: "4px 0", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         {isDebit ? (
           <>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 8 }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text, textAlign: "right", flex: 1 }}>{fmt(end)}</span>
+              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
               <SmallTooltip text={balTooltip} style={{ color: textMuted }} />
             </div>
             <div />
           </>
         ) : (
           <>
-            <div style={{ borderRight: `1px solid ${divider}40` }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", paddingRight: 4 }}>
+            <div />
+            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end", paddingRight: 8 }}>
               <SmallTooltip text={balTooltip} style={{ color: textMuted }} />
+              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
               <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
             </div>
           </>
@@ -498,19 +531,19 @@ function generateFsExcerpt(account: TAccountData): string {
     const parentVal = 50000;
     const contraVal = end != null ? Math.abs(end) : 12000;
     const net = parentVal - contraVal;
-    return `Property, Plant & Equipment        ${fmt(parentVal)}\n  Less: ${name}   (${fmt(contraVal)})\n  ─────────────────────────────────────\n  Book Value (Net)                 ${fmt(net)}`;
+    return `Property, Plant & Equipment        ${fmtDollar(parentVal)}\n  Less: ${name}   (${fmtDollar(contraVal)})\n  ─────────────────────────────────────\n  Book Value (Net)                 ${fmtDollar(net)}`;
   }
   if (account.account_type === "Contra Revenue") {
     const parentVal = 100000;
     const contraVal = end != null ? Math.abs(end) : 5000;
     const net = parentVal - contraVal;
-    return `Sales Revenue                      ${fmt(parentVal)}\n  Less: ${name}   (${fmt(contraVal)})\n  ─────────────────────────────────────\n  Net Sales                        ${fmt(net)}`;
+    return `Sales Revenue                      ${fmtDollar(parentVal)}\n  Less: ${name}   (${fmtDollar(contraVal)})\n  ─────────────────────────────────────\n  Net Sales                        ${fmtDollar(net)}`;
   }
   if (account.account_type === "Contra Liability") {
     const parentVal = 200000;
     const contraVal = end != null ? Math.abs(end) : 8000;
     const net = parentVal - contraVal;
-    return `Bonds Payable                      ${fmt(parentVal)}\n  Less: ${name}   (${fmt(contraVal)})\n  ─────────────────────────────────────\n  Carrying Value                   ${fmt(net)}`;
+    return `Bonds Payable                      ${fmtDollar(parentVal)}\n  Less: ${name}   (${fmtDollar(contraVal)})\n  ─────────────────────────────────────\n  Carrying Value                   ${fmtDollar(net)}`;
   }
   return `${name} — see financial statements for placement`;
 }
