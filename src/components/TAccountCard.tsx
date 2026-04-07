@@ -457,7 +457,6 @@ export function AccountGroupHeader({ label, count, isDebitNormal, onClick, isOpe
   onClick: () => void; isOpen: boolean;
   mode: StyleMode; theme?: Record<string, string>;
 }) {
-  const signLabel = isDebitNormal ? "(+/−)" : "(−/+)";
   const tooltip = CATEGORY_TOOLTIPS[label];
 
   if (mode === "admin") {
@@ -465,8 +464,7 @@ export function AccountGroupHeader({ label, count, isDebitNormal, onClick, isOpe
       <button onClick={onClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors text-left">
         {isOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
         <span className="text-xs font-bold text-foreground uppercase tracking-wider">{label}</span>
-        <span className="text-[10px] text-muted-foreground font-mono">{signLabel}</span>
-        {tooltip && <SmallTooltip text={tooltip} />}
+        {tooltip && <CategoryTooltip text={tooltip} />}
         <span className="ml-auto text-[9px] bg-muted text-muted-foreground rounded-full px-1.5 py-0.5">{count}</span>
       </button>
     );
@@ -477,8 +475,7 @@ export function AccountGroupHeader({ label, count, isDebitNormal, onClick, isOpe
     <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
       <span style={{ fontSize: 10, color: th.textMuted || "#64748B" }}>{isOpen ? "▼" : "▶"}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: th.heading || "#14213D", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>{label}</span>
-      <span style={{ fontSize: 10, fontFamily: "monospace", color: th.textMuted || "#64748B" }}>{signLabel}</span>
-      {tooltip && <SmallTooltip text={tooltip} style={{ color: th.textMuted || "#64748B" }} />}
+      {tooltip && <CategoryTooltip text={tooltip} style={{ color: th.textMuted || "#64748B" }} />}
       <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "1px 8px", background: th.mutedBg || "#F8FAFC", color: th.textMuted || "#64748B" }}>({count})</span>
     </button>
   );
