@@ -3143,31 +3143,48 @@ function ChapterAccountsSection({ accounts, theme }: { accounts: { id: string; a
 
 // ── Chapter Key Terms Section ────────────────────────────────────────
 
-function ChapterKeyTermsSection({ terms, theme }: { terms: { id: string; term: string; definition: string }[]; theme: Theme }) {
+function ChapterKeyTermsSection({ terms, theme }: { terms: { id: string; term: string; definition: string; category?: string | null }[]; theme: Theme }) {
   const [openId, setOpenId] = useState<string | null>(null);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof terms>();
+    for (const t of terms) {
+      const cat = t.category || "General";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(t);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [terms]);
 
   return (
     <div className="space-y-0.5">
-      {terms.map(t => {
-        const isOpen = openId === t.id;
-        return (
-          <div key={t.id}>
-            <button
-              onClick={() => setOpenId(isOpen ? null : t.id)}
-              className="w-full flex items-center gap-2 text-left py-1.5"
-              style={{ background: "none", border: "none", cursor: "pointer" }}
-            >
-              <span style={{ fontSize: 10, color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: theme.text }}>{t.term}</span>
-            </button>
-            {isOpen && (
-              <p className="pl-5 pb-2" style={{ fontSize: 13, color: theme.textMuted, lineHeight: 1.6 }}>
-                {t.definition}
-              </p>
-            )}
-          </div>
-        );
-      })}
+      {grouped.map(([category, catTerms]) => (
+        <div key={category}>
+          {grouped.length > 1 && (
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: theme.textMuted, margin: "8px 0 2px" }}>{category}</p>
+          )}
+          {catTerms.map(t => {
+            const isOpen = openId === t.id;
+            return (
+              <div key={t.id}>
+                <button
+                  onClick={() => setOpenId(isOpen ? null : t.id)}
+                  className="w-full flex items-center gap-2 text-left py-1.5"
+                  style={{ background: "none", border: "none", cursor: "pointer" }}
+                >
+                  <span style={{ fontSize: 10, color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: theme.text }}>{t.term}</span>
+                </button>
+                {isOpen && (
+                  <p className="pl-5 pb-2" style={{ fontSize: 13, color: theme.textMuted, lineHeight: 1.6 }}>
+                    {t.definition}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -3556,7 +3573,7 @@ export default function SolutionsViewer() {
       if (!chapterIdForJE) return [];
       const { data: rows } = await supabase
         .from("chapter_key_terms")
-        .select("id, term, definition, sort_order")
+        .select("id, term, definition, category, sort_order")
         .eq("chapter_id", chapterIdForJE)
         .eq("is_approved", true)
         .order("sort_order");

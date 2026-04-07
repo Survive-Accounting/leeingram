@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_key_terms ADD COLUMN category text;

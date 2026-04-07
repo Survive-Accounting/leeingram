@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Check, X, GripVertical, Loader2, Sparkles, Trash2 } from "lucide-react"
 
 type TermRow = {
   id: string; chapter_id: string; term: string; definition: string;
+  category: string | null;
   sort_order: number; is_approved: boolean; is_rejected: boolean | null;
 };
 
@@ -25,6 +26,17 @@ export function KeyTermsTab({ chapterId, chapterName, courseCode }: { chapterId:
       return (data || []) as TermRow[];
     },
   });
+
+  const grouped = useMemo(() => {
+    if (!terms?.length) return [];
+    const map = new Map<string, TermRow[]>();
+    for (const t of terms) {
+      const cat = t.category || "General";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(t);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [terms]);
 
   const invalidate = () => { refetch(); };
 
@@ -58,9 +70,16 @@ export function KeyTermsTab({ chapterId, chapterName, courseCode }: { chapterId:
   }
 
   return (
-    <div className="space-y-1 pb-20">
-      {terms?.map(t => (
-        <TermRowBlock key={t.id} term={t} onApprove={() => approve(t.id)} onReject={() => reject(t.id)} onDelete={() => remove(t.id)} onUpdate={update} />
+    <div className="space-y-3 pb-20">
+      {grouped.map(([category, catTerms]) => (
+        <div key={category}>
+          <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 px-1">{category}</h4>
+          <div className="space-y-1">
+            {catTerms.map(t => (
+              <TermRowBlock key={t.id} term={t} onApprove={() => approve(t.id)} onReject={() => reject(t.id)} onDelete={() => remove(t.id)} onUpdate={update} />
+            ))}
+          </div>
+        </div>
       ))}
 
       <div className="rounded-lg border border-border p-4 space-y-3 mt-3">
@@ -107,6 +126,7 @@ function TermRowBlock({ term, onApprove, onReject, onDelete, onUpdate }: {
         ) : (
           <button onClick={() => setEditTerm(true)} className="text-xs font-semibold text-foreground hover:underline">{term.term}</button>
         )}
+        {term.category && <Badge variant="outline" className="text-[9px] h-4">{term.category}</Badge>}
         {statusPill}
         <div className="flex items-center gap-1 ml-auto shrink-0">
           <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors"><Check className="h-3.5 w-3.5" /></button>
