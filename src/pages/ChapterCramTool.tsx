@@ -810,15 +810,31 @@ export default function ChapterCramTool() {
         </div>
       </header>
 
-      {/* ── Hero Header ── */}
-      <div style={{ background: theme.navy }}>
-        <div className="mx-auto max-w-[780px] px-4 py-8 sm:px-6 sm:py-10">
+      {/* ── Hero Header — Full-bleed photo ── */}
+      <div className="relative" style={{ height: "clamp(200px, 30vw, 280px)" }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${LEE_HEADSHOT_BG})`,
+            backgroundSize: "cover",
+            backgroundPosition: "right center",
+          }}
+        />
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px" }} />
+        {/* Dark gradient overlay — left side only */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.88) 40%, rgba(20,33,61,0.2) 100%)" }}
+        />
+        {/* Text content */}
+        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center">
           {courseDisplayName && (
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-[11px] font-medium uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em" }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="mt-2 text-[28px] sm:text-[32px] font-bold text-white leading-tight">
+          <h1 className="mt-2 text-[26px] sm:text-[34px] font-bold text-white leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
             Ch {chapterNum} — {chapter?.chapter_name}
           </h1>
           <div className="mt-3">
@@ -833,12 +849,12 @@ export default function ChapterCramTool() {
       <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
         {/* ──── Practice Problems ──── */}
         <section className="mb-8">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-3" style={{ color: theme.label }}>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: theme.label, letterSpacing: "0.18em" }}>
             PRACTICE PROBLEMS · CH {chapterNum || "?"}
           </p>
 
           <div className="flex flex-wrap gap-2">
-            {([["be", beLabel], ["ex", "Exercises"], ["p", "Problems"]] as const).map(([key, label]) => (
+            {([["be", beLabel, solutionCounts.be], ["ex", "Exercises", solutionCounts.ex], ["p", "Problems", solutionCounts.p]] as const).map(([key, label, count]) => (
               <button
                 key={key}
                 type="button"
@@ -846,7 +862,7 @@ export default function ChapterCramTool() {
                 className="rounded-full px-4 py-1.5 text-[12px] font-semibold transition-colors"
                 style={{ background: solutionsTab === key ? theme.navy : theme.mutedBg, color: solutionsTab === key ? "#FFFFFF" : theme.textMuted, border: "none" }}
               >
-                {label}
+                {label} · {count}
               </button>
             ))}
           </div>
@@ -894,40 +910,51 @@ export default function ChapterCramTool() {
 
         {/* ──── Chapter Tools Card Grid ──── */}
         <section className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-4" style={{ color: theme.label }}>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: theme.label, letterSpacing: "0.18em" }}>
             CHAPTER TOOLS
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TOOL_CARDS.map((card) => {
-              const Icon = card.icon;
-              const count = cardCounts[card.key];
-              return (
-                <button
-                  key={card.key}
-                  type="button"
-                  onClick={() => setOpenDrawer(card.key)}
-                  className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
-                  style={{
-                    background: theme.navy,
-                    border: "2px solid transparent",
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = theme.red; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent"; }}
-                >
-                  <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
-                  <p className="text-[14px] font-bold text-white">{card.title}</p>
-                  {count > 0 && (
-                    <span
-                      className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
-                      style={{ background: theme.red }}
-                    >
-                      {count} {card.countLabel}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="rounded-xl p-6" style={{ background: theme.toolsBg }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {TOOL_CARDS.map((card) => {
+                const Icon = card.icon;
+                const count = cardCounts[card.key];
+                return (
+                  <button
+                    key={card.key}
+                    type="button"
+                    onClick={() => setOpenDrawer(card.key)}
+                    className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
+                    style={{
+                      background: theme.navy,
+                      border: theme.cardBorder,
+                      boxShadow: theme.cardShadow,
+                    }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.boxShadow = `${theme.cardHoverShadow}, ${theme.cardHoverGlow}`;
+                      el.style.transform = "translateY(-3px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.boxShadow = theme.cardShadow;
+                      el.style.transform = "translateY(0)";
+                    }}
+                  >
+                    <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
+                    <p className="text-[14px] font-bold text-white">{card.title}</p>
+                    {count > 0 && (
+                      <span
+                        className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
+                        style={{ background: theme.red }}
+                      >
+                        {count} {count === 1 ? card.countLabel : card.countLabelPlural}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
