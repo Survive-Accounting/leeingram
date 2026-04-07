@@ -1,4 +1,5 @@
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Link } from "react-router-dom";
 
 const LEGACY_LINKS = [
