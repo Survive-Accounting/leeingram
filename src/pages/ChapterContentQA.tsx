@@ -55,7 +55,7 @@ type CourseRow = {
 };
 
 type JECatRow = { id: string; category_name: string; sort_order: number; chapter_id: string };
-type JEEntryRow = { id: string; category_id: string | null; transaction_label: string; je_lines: any; is_approved: boolean; is_rejected: boolean; sort_order: number; chapter_id: string };
+type JEEntryRow = { id: string; category_id: string | null; transaction_label: string; je_lines: any; is_approved: boolean; is_rejected: boolean; sort_order: number; chapter_id: string; source?: string };
 type FormulaRow = { id: string; chapter_id: string; formula_name: string; formula_expression: string; formula_explanation: string | null; image_url: string | null; is_approved: boolean; sort_order: number };
 
 // ── Main ─────────────────────────────────────────────────────────
@@ -760,6 +760,11 @@ function JEEntryRow({
           </button>
         )}
         <div className="flex gap-1 flex-wrap">{chips}</div>
+        {entry.source === "extracted" ? (
+          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] h-4 shrink-0">Extracted</Badge>
+        ) : entry.source === "suggested" ? (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[9px] h-4 shrink-0">Suggested</Badge>
+        ) : null}
         {statusPill}
         <div className="flex items-center gap-1 ml-auto shrink-0">
           <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
