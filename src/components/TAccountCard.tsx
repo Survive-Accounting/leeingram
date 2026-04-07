@@ -64,6 +64,12 @@ function fmt(n: number | null | undefined): string {
   return Math.abs(n).toLocaleString("en-US");
 }
 
+/** Format with dollar sign — only for FS excerpts */
+function fmtDollar(n: number | null | undefined): string {
+  if (n == null) return "$0";
+  return "$" + Math.abs(n).toLocaleString("en-US");
+}
+
 function SmallTooltip({ text, side = "top", style }: { text: string; side?: "top" | "bottom" | "left" | "right"; style?: React.CSSProperties }) {
   if (!text) return null;
   return (
