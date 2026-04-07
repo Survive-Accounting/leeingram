@@ -502,6 +502,42 @@ function DrawerMistakesContent({ mistakes }: { mistakes: any[] }) {
 }
 
 // ── Paywall Card ──
+
+// ── Testimonial Embed ──
+function TestimonialEmbed() {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    const scriptId = "testimonial-iframe-resizer";
+    if (document.getElementById(scriptId)) {
+      // Script already loaded, just resize
+      if ((window as any).iFrameResize && iframeRef.current) {
+        (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+      }
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://testimonial.to/js/iframeResizer.min.js";
+    script.onload = () => {
+      if ((window as any).iFrameResize && iframeRef.current) {
+        (window as any).iFrameResize({ log: false, checkOrigin: false }, iframeRef.current);
+      }
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      src="https://embed-v2.testimonial.to/w/survive-accounting-with-lee-ingram?id=5258c545-f02e-48d2-a6b2-1c03ec71ec77"
+      frameBorder="0"
+      scrolling="no"
+      width="100%"
+      style={{ border: "none" }}
+    />
+  );
+}
+
 function TieredPaywallCard({ enrollUrl, chapterNumber, fullPassLink, chapterLink }: { enrollUrl: string; chapterNumber: number | null; fullPassLink?: any; chapterLink?: any }) {
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at ? now < new Date(fullPassLink.sale_expires_at) : false;
