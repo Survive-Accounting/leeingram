@@ -1160,10 +1160,10 @@ export default function ChapterCramTool() {
             <section style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
               <SectionHeaderWithToggle label="WHAT'S THE POINT?" isAdmin={isAdmin} sectionName="chapter_purpose" isVisible={isSectionVisible("chapter_purpose")} onToggle={toggleSectionVisibility} />
               <div className="rounded-xl border p-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{purpose.purpose_text}</p>
+                <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{Array.isArray(purpose.purpose_bullets) ? purpose.purpose_bullets[0] : (purpose.purpose_text || "")}</p>
                 <div className="mt-4">
                   <p className="text-[11px] font-semibold mb-1" style={{ color: "rgba(206,17,38,0.8)" }}>⚠ What goes wrong if you don't:</p>
-                  <p className="text-[13px] leading-[1.6] italic" style={{ color: "rgba(206,17,38,0.8)" }}>{purpose.consequence_text}</p>
+                  <p className="text-[13px] leading-[1.6] italic" style={{ color: "rgba(206,17,38,0.8)" }}>{Array.isArray(purpose.consequence_bullets) ? purpose.consequence_bullets[0] : (purpose.consequence_text || "")}</p>
                 </div>
               </div>
             </section>
