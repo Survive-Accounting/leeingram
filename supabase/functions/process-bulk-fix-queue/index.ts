@@ -79,6 +79,16 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
     fn: "rewrite-je-tooltips",
     bodyFn: (id) => ({ teaching_asset_id: id, mode: "enrich" }),
   },
+  generate_calculation_formulas: {
+    fn: "rewrite-je-tooltips",
+    bodyFn: (id) => ({ teaching_asset_id: id, mode: "generate_formulas" }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb.from("teaching_assets").select("journal_entry_completed_json").eq("id", id).single();
+      if (!data?.journal_entry_completed_json) return true;
+      const json = JSON.stringify(data.journal_entry_completed_json);
+      return json.includes("calculation_formula");
+    },
+  },
 };
 
 /**
@@ -143,7 +153,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const needsJeJson = ["rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_tooltips", "enrich_je_rows"].includes(opKey);
+    const needsJeJson = ["rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_tooltips", "enrich_je_rows", "generate_calculation_formulas"].includes(opKey);
 
     // Paginated fetch to avoid Supabase 1000-row default limit
     const PAGE_SIZE = 1000;
