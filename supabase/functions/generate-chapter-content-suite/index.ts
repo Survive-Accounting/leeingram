@@ -29,8 +29,16 @@ async function callAnthropic(system: string, user: string): Promise<any> {
   if (!res.ok) throw new Error(`Anthropic API error: ${res.status} ${await res.text()}`);
   const data = await res.json();
   const text = data.content?.[0]?.text || "";
-  const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-  return JSON.parse(cleaned);
+  // Strip markdown fences
+  let cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  // Try direct parse first
+  try { return JSON.parse(cleaned); } catch {}
+  // Extract first JSON object or array from text
+  const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+  if (jsonMatch) {
+    try { return JSON.parse(jsonMatch[1]); } catch {}
+  }
+  throw new Error(`Could not parse JSON from AI response: ${cleaned.substring(0, 200)}`);
 }
 
 // ── Helper: extract unique JE structures from teaching assets ──
