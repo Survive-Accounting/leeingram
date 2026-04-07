@@ -234,7 +234,13 @@ Rules:
   }
 
   if (extraPrompt) {
-    userPrompt += `\n\nAdditional instructions from admin: ${extraPrompt}. Incorporate these additions without removing existing approved entries.`;
+    // Fetch existing entries so AI only generates NEW ones
+    const { data: existingEntries } = await supabase.from("chapter_journal_entries").select("transaction_label, category_id").eq("chapter_id", chapterId);
+    const { data: existingCats } = await supabase.from("chapter_je_categories").select("id, category_name").eq("chapter_id", chapterId);
+    const catMap = Object.fromEntries((existingCats || []).map((c: any) => [c.id, c.category_name]));
+    const existingList = (existingEntries || []).map((e: any) => `• [${catMap[e.category_id] || "Uncategorized"}] ${e.transaction_label}`).join("\n");
+
+    userPrompt += `\n\nIMPORTANT — These journal entries already exist (do NOT regenerate them):\n${existingList}\n\nAdditional instructions from admin: ${extraPrompt}\n\nGenerate ONLY the new entries requested above. Do not include any entries from the existing list. All new entries should be marked suggested: true.`;
   }
 
   userPrompt += "\n\nReturn valid JSON only.";
@@ -273,10 +279,12 @@ Rules:
       categoryId = newCat!.id;
     }
 
+    let skipped = 0;
     for (const entry of cat.entries || []) {
       if (extraPrompt) {
-        const { data: dup } = await supabase.from("chapter_journal_entries").select("id").eq("chapter_id", chapterId).eq("transaction_label", entry.transaction_label).maybeSingle();
-        if (dup) continue;
+        // Case-insensitive dedup on transaction_label
+        const { data: dup } = await supabase.from("chapter_journal_entries").select("id").eq("chapter_id", chapterId).ilike("transaction_label", entry.transaction_label).maybeSingle();
+        if (dup) { skipped++; continue; }
       }
       const entrySource = entry.suggested ? "suggested" : "extracted";
       await supabase.from("chapter_journal_entries").insert({
@@ -291,6 +299,7 @@ Rules:
       });
       totalEntries++;
     }
+    if (skipped > 0) console.log(`[JE] Skipped ${skipped} duplicate entries in category "${cat.category_name}"`);
   }
   return totalEntries;
 }
