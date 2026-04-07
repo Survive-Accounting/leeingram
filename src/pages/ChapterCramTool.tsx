@@ -41,16 +41,13 @@ const theme = {
 
 // ── ToC section definitions ──
 const TOC_SECTIONS = [
-  { id: "purpose", label: "What's the Point?", short: "Purpose" },
+  { id: "whats-the-point", label: "What's the Point", short: "Purpose" },
   { id: "accounts", label: "Accounts", short: "Accounts" },
   { id: "key-terms", label: "Key Terms", short: "Terms" },
-  { id: "practice-problems", label: "Practice Problems", short: "Problems" },
-  { id: "chapter-je", label: "Journal Entries", short: "JEs" },
-  { id: "je-memorize", label: "JEs to Memorize", short: "Memorize" },
   { id: "formulas", label: "Formulas", short: "Formulas" },
-  { id: "mistakes", label: "Exam Mistakes", short: "Mistakes" },
-  { id: "feedback", label: "Feedback", short: "Feedback" },
-  { id: "about-lee", label: "About Lee", short: "About" },
+  { id: "journal-entries", label: "Journal Entries", short: "JEs" },
+  { id: "exam-mistakes", label: "Exam Mistakes", short: "Mistakes" },
+  { id: "practice-problems", label: "Practice Problems", short: "Problems" },
 ];
 
 type SupplementaryRow = {
