@@ -22,8 +22,9 @@ import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target, Info, ArrowUp, ArrowDown,
+  AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown,
 } from "lucide-react";
+import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
@@ -529,14 +530,57 @@ function ChapterQAModal({
                   Next <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <a
-                href={`/cram/${chapter.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] text-primary hover:underline flex items-center gap-1"
-              >
-                View Survive This Chapter <ExternalLink className="h-3 w-3" />
-              </a>
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={async () => {
+                    toast.loading("Building PDF…", { id: "pdf" });
+                    try {
+                      const [purposeRes, termsRes, accRes, formRes, catRes, jeRes, mistRes] = await Promise.all([
+                        supabase.from("chapter_purpose").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).maybeSingle(),
+                        supabase.from("chapter_key_terms").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
+                        supabase.from("chapter_accounts").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
+                        supabase.from("chapter_formulas").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
+                        supabase.from("chapter_je_categories").select("*").eq("chapter_id", chapter.id).order("sort_order"),
+                        supabase.from("chapter_journal_entries").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
+                        supabase.from("chapter_exam_mistakes").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
+                      ]);
+                      const pdfData: ChapterPdfData = {
+                        chapterName: chapter.chapter_name,
+                        chapterNumber: chapter.chapter_number,
+                        courseCode,
+                        courseName: course?.course_name || "",
+                        purpose: purposeRes.data ? {
+                          purpose_bullets: Array.isArray(purposeRes.data.purpose_bullets) ? purposeRes.data.purpose_bullets as string[] : null,
+                          consequence_bullets: Array.isArray(purposeRes.data.consequence_bullets) ? purposeRes.data.consequence_bullets as string[] : null,
+                        } : null,
+                        keyTerms: (termsRes.data || []).map((t: any) => ({ term: t.term, definition: t.definition, category: t.category })),
+                        accounts: (accRes.data || []).map((a: any) => ({ account_name: a.account_name, account_type: a.account_type, normal_balance: a.normal_balance, account_description: a.account_description })),
+                        formulas: (formRes.data || []).map((f: any) => ({ formula_name: f.formula_name, formula_expression: f.formula_expression, formula_explanation: f.formula_explanation, sort_order: f.sort_order })),
+                        jeCategories: (catRes.data || []).map((c: any) => ({ id: c.id, category_name: c.category_name, sort_order: c.sort_order ?? 0 })),
+                        jeEntries: (jeRes.data || []).map((j: any) => ({ transaction_label: j.transaction_label, category_id: j.category_id, je_lines: j.je_lines, sort_order: j.sort_order ?? 0 })),
+                        mistakes: (mistRes.data || []).map((m: any) => ({ mistake: m.mistake, explanation: m.explanation, sort_order: m.sort_order ?? 0 })),
+                      };
+                      generateChapterPdf(pdfData);
+                      toast.success("PDF downloaded!", { id: "pdf" });
+                    } catch (err: any) {
+                      toast.error(err.message || "PDF failed", { id: "pdf" });
+                    }
+                  }}
+                >
+                  <FileDown className="h-3 w-3 mr-1" /> Export PDF
+                </Button>
+                <a
+                  href={`/cram/${chapter.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                >
+                  View Survive This Chapter <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
             </div>
           </DialogHeader>
 
