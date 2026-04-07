@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas";
 
 interface HistoryEntry {
   label: string;
@@ -62,6 +62,7 @@ const OPERATION_LABELS: Record<string, string> = {
   enrich_je_tooltips: "Enrich JE Tooltips (fill gaps)",
   rewrite_je_reasons: "Rewrite JE Reasons (YOU Format)",
   rewrite_je_amounts: "Rewrite Amount Sources (Plain English)",
+  generate_calculation_formulas: "Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
