@@ -847,7 +847,7 @@ export default function ChapterCramTool() {
       </header>
 
       {/* ── Hero Header — Full-bleed photo ── */}
-      <div className="relative" style={{ height: "clamp(200px, 30vw, 280px)" }}>
+      <div className="relative" style={{ height: "clamp(260px, 35vw, 380px)" }}>
         <div
           className="absolute inset-0"
           style={{
