@@ -19,8 +19,14 @@ import { toast } from "sonner";
 import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
-  ExternalLink, AlertTriangle, Image as ImageIcon,
+  ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
+  AlertCircle, CheckSquare, Target,
 } from "lucide-react";
+import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
+import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
+import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
+import { ChecklistTab } from "@/components/chapter-qa/ChecklistTab";
+import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useNavigate } from "react-router-dom";
@@ -69,7 +75,7 @@ export default function ChapterContentQA() {
   }, [isVa, navigate]);
 
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
-  const [modalTab, setModalTab] = useState<"je" | "formulas">("je");
+  const [modalTab, setModalTab] = useState<string>("je");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(
     () => localStorage.getItem("chapter_qa_onboarding_dismissed") === "true"
@@ -316,6 +322,21 @@ export default function ChapterContentQA() {
                 {bulkGenerating === "images" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
                 Generate All Formula Images
               </Button>
+              <Button size="sm" variant="outline" onClick={async () => {
+                setBulkGenerating("suite");
+                setBulkProgress("Starting full suite generation...");
+                try {
+                  const { data, error } = await supabase.functions.invoke("generate-chapter-content-suite", { body: { all: true } });
+                  if (error) throw error;
+                  toast.success(`Full suite generated: ${data.completed}/${data.total}. ${data.errors?.length || 0} errors.`);
+                  qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
+                  qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
+                } catch (err: any) { toast.error(err.message); }
+                finally { setBulkGenerating(null); setBulkProgress(""); }
+              }} disabled={!!bulkGenerating}>
+                {bulkGenerating === "suite" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Layers className="h-3.5 w-3.5 mr-1" />}
+                Generate Full Suite — All Chapters
+              </Button>
             </div>
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             <p className="text-[10px] text-destructive/70">
@@ -420,8 +441,8 @@ function ChapterQAModal({
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
-  tab: "je" | "formulas";
-  onTabChange: (t: "je" | "formulas") => void;
+  tab: string;
+  onTabChange: (t: string) => void;
 }) {
   const qc = useQueryClient();
   const courseCode = course?.code || "???";
@@ -454,10 +475,15 @@ function ChapterQAModal({
           </div>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => onTabChange(v as "je" | "formulas")} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="bg-secondary shrink-0">
-            <TabsTrigger value="je" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" /> Journal Entries</TabsTrigger>
-            <TabsTrigger value="formulas" className="gap-1.5 text-xs"><FlaskConical className="h-3.5 w-3.5" /> Formulas</TabsTrigger>
+        <Tabs value={tab} onValueChange={onTabChange} className="flex-1 overflow-hidden flex flex-col">
+          <TabsList className="bg-secondary shrink-0 flex-wrap h-auto gap-0.5 p-1">
+            <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
+            <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
+            <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
+            <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
+            <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
+            <TabsTrigger value="checklist" className="gap-1 text-[11px]"><CheckSquare className="h-3 w-3" /> Checklist</TabsTrigger>
+            <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
           </TabsList>
           <ScrollArea className="flex-1 mt-3">
             <TabsContent value="je" className="mt-0">
@@ -465,6 +491,21 @@ function ChapterQAModal({
             </TabsContent>
             <TabsContent value="formulas" className="mt-0">
               <FormulasTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="accounts" className="mt-0">
+              <AccountsTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="terms" className="mt-0">
+              <KeyTermsTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="mistakes" className="mt-0">
+              <MistakesTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="checklist" className="mt-0">
+              <ChecklistTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="purpose" className="mt-0">
+              <PurposeTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
