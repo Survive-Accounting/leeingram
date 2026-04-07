@@ -4049,7 +4049,21 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 5. Key Concepts — hidden in QA mode */}
+              {/* 5. Ch [N] — Accounts */}
+              {chapterAccounts && chapterAccounts.length > 0 && (
+                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Accounts`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Accounts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
+                  <ChapterAccountsSection accounts={chapterAccounts} theme={t} />
+                </RevealToggle>
+              )}
+
+              {/* 6. Ch [N] — Key Terms */}
+              {chapterKeyTerms && chapterKeyTerms.length > 0 && (
+                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Key Terms`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Key Terms" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
+                  <ChapterKeyTermsSection terms={chapterKeyTerms} theme={t} />
+                </RevealToggle>
+              )}
+
+              {/* 7. Key Concepts — hidden in QA mode */}
               {conceptNotes.trim() && !isQaMode && (
                 <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)}>
                   <ul className="space-y-3">
