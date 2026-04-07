@@ -1,8 +1,12 @@
 /**
  * BatchSuiteOrchestrator — Client-side polling loop for generating
- * the full content suite across all chapters, one at a time.
+ * the full content suite across all chapters, one type at a time.
+ * 
+ * Instead of calling run-content-suite-batch (which times out),
+ * we call generate-chapter-content-suite directly with `only: type`
+ * for each content type, keeping each call short (~15s).
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,6 +26,8 @@ const CONTENT_LABELS: Record<string, string> = {
   formulas: "Formulas",
   journal_entries: "JEs",
 };
+
+const INTER_CALL_DELAY_MS = 1500;
 
 // Hardcoded skip list
 const SKIP_CHAPTERS: { courseCode: string; chapterNumber: number }[] = [
@@ -59,6 +65,10 @@ function clearProgress() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export function BatchSuiteOrchestrator() {
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
@@ -73,7 +83,7 @@ export function BatchSuiteOrchestrator() {
   const [finished, setFinished] = useState(false);
   const [savedProgress, setSavedProgress] = useState<BatchProgress | null>(loadProgress);
 
-  // Fetch all chapters with course info for skip-list matching
+  // Fetch all chapters with course info
   const { data: allChapters } = useQuery({
     queryKey: ["batch-suite-chapters"],
     queryFn: async () => {
@@ -115,10 +125,6 @@ export function BatchSuiteOrchestrator() {
       const hasApproved = (rows: any[] | null, chId: string) =>
         (rows || []).some(r => r.chapter_id === chId && r.is_approved);
 
-      const result: Record<string, boolean> = {};
-      for (const ch of (purposes || [])) {
-        // We'll build this per-chapter below
-      }
       return { purposes, accounts, terms, formulas, jes, mistakes, hasApproved };
     },
   });
@@ -139,17 +145,60 @@ export function BatchSuiteOrchestrator() {
   const getEligibleChapters = useCallback((skipCompleted: string[] = []) => {
     if (!allChapters) return [];
     return allChapters.filter(ch => {
-      // Skip hardcoded exclusions
       if (SKIP_CHAPTERS.some(s => s.courseCode === ch.courseCode && s.chapterNumber === ch.chapter_number)) {
         return false;
       }
-      // Skip already-completed in this run
       if (skipCompleted.includes(ch.id)) return false;
-      // Skip fully approved chapters
       if (isFullyApproved(ch.id)) return false;
       return true;
     });
   }, [allChapters, isFullyApproved]);
+
+  /**
+   * Process a single chapter by calling generate-chapter-content-suite
+   * once per content type from the CLIENT side (avoids edge function timeout).
+   */
+  const processChapter = async (chapterId: string, chapterName: string, courseCode: string): Promise<ChapterResult> => {
+    const completedTypes: string[] = [];
+    const failedTypes: { type: string; error: string }[] = [];
+
+    for (let i = 0; i < CONTENT_TYPES.length; i++) {
+      const contentType = CONTENT_TYPES[i];
+      setCurrentType(CONTENT_LABELS[contentType]);
+
+      // Delay between calls (not before first)
+      if (i > 0) await delay(INTER_CALL_DELAY_MS);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-chapter-content-suite", {
+          body: {
+            chapterId,
+            chapterName,
+            courseCode,
+            only: contentType,
+          },
+        });
+
+        if (error) throw error;
+        if (data?.errors?.length) throw new Error(data.errors.join("; "));
+
+        completedTypes.push(contentType);
+        setCompletedTypesInCurrent(prev => [...prev, contentType]);
+      } catch (err: any) {
+        failedTypes.push({ type: contentType, error: err?.message || "Unknown error" });
+      }
+    }
+
+    setCurrentType("");
+
+    return {
+      chapterId,
+      chapterName,
+      status: failedTypes.length === 0 ? "success" : completedTypes.length > 0 ? "partial" : "failed",
+      completedTypes,
+      failedTypes,
+    };
+  };
 
   const runBatch = useCallback(async (resumeFrom?: BatchProgress) => {
     setRunning(true);
@@ -165,6 +214,10 @@ export function BatchSuiteOrchestrator() {
     setTotalChapters(alreadyDone.length + eligible.length);
     setCurrentChapterIndex(alreadyDone.length);
 
+    // Need course info for chapter calls
+    const { data: courses } = await supabase.from("courses").select("id, code");
+    const courseMap = Object.fromEntries((courses || []).map(c => [c.id, c.code]));
+
     const progress: BatchProgress = {
       completedChapterIds: [...alreadyDone],
       results: [...priorResults],
@@ -172,7 +225,6 @@ export function BatchSuiteOrchestrator() {
     };
 
     for (let i = 0; i < eligible.length; i++) {
-      // Check pause
       if (pauseRef.current) {
         saveProgress(progress);
         setSavedProgress(progress);
@@ -186,62 +238,17 @@ export function BatchSuiteOrchestrator() {
       setCurrentChapterIndex(globalIdx);
       setCurrentChapterName(`Ch ${ch.chapter_number} — ${ch.chapter_name}`);
       setCompletedTypesInCurrent([]);
-      setCurrentType(CONTENT_LABELS[CONTENT_TYPES[0]]);
 
-      try {
-        // Start a progress simulation — the edge function processes types sequentially
-        // We'll update the UI optimistically as time passes
-        const typeSimulator = setInterval(() => {
-          setCompletedTypesInCurrent(prev => {
-            if (prev.length < CONTENT_TYPES.length - 1) {
-              const nextIdx = prev.length;
-              setCurrentType(CONTENT_LABELS[CONTENT_TYPES[nextIdx + 1]] || "");
-              return [...prev, CONTENT_TYPES[nextIdx]];
-            }
-            return prev;
-          });
-        }, 12000); // ~12s per type (AI call + 1.5s delay)
+      const courseCode = courseMap[ch.course_id] || "UNK";
+      const result = await processChapter(ch.id, ch.chapter_name, courseCode);
+      result.chapterName = `Ch ${ch.chapter_number} — ${ch.chapter_name}`;
 
-        const { data, error } = await supabase.functions.invoke("run-content-suite-batch", {
-          body: { chapterId: ch.id },
-        });
-
-        clearInterval(typeSimulator);
-
-        if (error) throw error;
-
-        const result: ChapterResult = {
-          chapterId: ch.id,
-          chapterName: `Ch ${ch.chapter_number} — ${ch.chapter_name}`,
-          status: data.failedTypes?.length === 0 ? "success" :
-                  data.completedTypes?.length > 0 ? "partial" : "failed",
-          completedTypes: data.completedTypes || [],
-          failedTypes: data.failedTypes || [],
-        };
-
-        setCompletedTypesInCurrent(data.completedTypes || CONTENT_TYPES.slice());
-        setCurrentType("");
-
-        progress.completedChapterIds.push(ch.id);
-        progress.results.push(result);
-        setResults([...progress.results]);
-        saveProgress(progress);
-      } catch (err: any) {
-        const result: ChapterResult = {
-          chapterId: ch.id,
-          chapterName: `Ch ${ch.chapter_number} — ${ch.chapter_name}`,
-          status: "failed",
-          completedTypes: [],
-          failedTypes: [{ type: "all", error: err?.message || "Unknown error" }],
-        };
-        progress.completedChapterIds.push(ch.id);
-        progress.results.push(result);
-        setResults([...progress.results]);
-        saveProgress(progress);
-      }
+      progress.completedChapterIds.push(ch.id);
+      progress.results.push(result);
+      setResults([...progress.results]);
+      saveProgress(progress);
     }
 
-    // Done
     setFinished(true);
     setRunning(false);
     setCurrentChapterName("");
@@ -273,6 +280,16 @@ export function BatchSuiteOrchestrator() {
     setPaused(false);
     pauseRef.current = false;
 
+    const { data: courses } = await supabase.from("courses").select("id, code");
+    const courseMap = Object.fromEntries((courses || []).map(c => [c.id, c.code]));
+
+    // Find chapter details for retries
+    const { data: chapters } = await supabase
+      .from("chapters")
+      .select("id, chapter_number, chapter_name, course_id")
+      .in("id", failedChapters.map(f => f.chapterId));
+    const chapterMap = Object.fromEntries((chapters || []).map(c => [c.id, c]));
+
     const retryResults: ChapterResult[] = results.filter(r => r.status === "success" || r.status === "skipped");
     setResults([...retryResults]);
     setTotalChapters(failedChapters.length);
@@ -281,31 +298,17 @@ export function BatchSuiteOrchestrator() {
       if (pauseRef.current) break;
 
       const ch = failedChapters[i];
+      const chData = chapterMap[ch.chapterId];
       setCurrentChapterIndex(i);
       setCurrentChapterName(ch.chapterName);
       setCompletedTypesInCurrent([]);
-      setCurrentType(CONTENT_LABELS[CONTENT_TYPES[0]]);
 
-      try {
-        const { data, error } = await supabase.functions.invoke("run-content-suite-batch", {
-          body: { chapterId: ch.chapterId },
-        });
-        if (error) throw error;
+      const courseCode = chData ? courseMap[chData.course_id] || "UNK" : "UNK";
+      const chapterName = chData?.chapter_name || ch.chapterName;
+      const result = await processChapter(ch.chapterId, chapterName, courseCode);
+      result.chapterName = ch.chapterName;
 
-        retryResults.push({
-          ...ch,
-          status: data.failedTypes?.length === 0 ? "success" : "partial",
-          completedTypes: data.completedTypes || [],
-          failedTypes: data.failedTypes || [],
-        });
-      } catch (err: any) {
-        retryResults.push({
-          ...ch,
-          status: "failed",
-          completedTypes: [],
-          failedTypes: [{ type: "all", error: err?.message || "Unknown error" }],
-        });
-      }
+      retryResults.push(result);
       setResults([...retryResults]);
     }
 
@@ -476,8 +479,8 @@ export function BatchSuiteOrchestrator() {
         )}
 
         <p className="text-[10px] text-muted-foreground">
-          Processes one chapter at a time with 1.5s delay between AI calls. Skips chapters with all content types approved. 
-          ACCY201 Ch1–2 excluded.
+          Processes one chapter at a time, one content type per call (no timeout risk). 1.5s delay between AI calls.
+          Skips chapters with all content types approved. ACCY201 Ch1–2 excluded.
         </p>
       </CardContent>
     </Card>

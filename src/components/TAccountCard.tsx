@@ -2,6 +2,12 @@
  * TAccountCard — Renders a visual T-account with tooltips,
  * example toggle, and financial statement placement for contra accounts.
  *
+ * Layout (4 rows for debit-normal):
+ *   Row 1 (Dr side): Beginning balance
+ *   Row 2 (Dr side): Debit amount (increase)
+ *   Row 3 (Cr side): Credit amount (decrease)
+ *   Balance row:     Ending balance
+ *
  * Used in AccountsTab (admin), ChapterCramTool, and SolutionsViewer.
  */
 import { useState } from "react";
@@ -133,16 +139,16 @@ export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
 }
 
 /**
- * Shared T-account body renderer.
- * Debit-normal layout:
- *   Row 1: ⓘ ???  Dr  |            (normal side = beginning bal in nums)
- *   Row 2:             |  ??? ⓘ Cr
- *   Row 3: ⓘ ???  End |            (ending balance)
+ * T-account body — 4 data rows + balance row.
  *
- * Credit-normal layout:
- *   Row 1:             |  ??? ⓘ Cr  (normal side = beginning bal in nums)
- *   Row 2: ⓘ ???  Dr  |
- *   Row 3:             |  ??? ⓘ End (ending balance)
+ * Debit-normal layout:
+ *   Row 1: Beg Dr  |            (beginning balance on normal side)
+ *   Row 2: +Dr     |            (debit increase)
+ *   Row 3:         |  Cr        (credit decrease)
+ *   ─────────────────────────
+ *   Row 4: End     |            (ending balance on normal side)
+ *
+ * Credit-normal layout mirrors (normal side = right).
  */
 
 // ── Admin version ──
@@ -181,20 +187,31 @@ function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, 
         )}
       </div>
 
-      {/* T-account body — 3 rows, staggered */}
+      {/* T-account body — 4 rows */}
       <div className="grid grid-cols-2">
         {isDebit ? (
           <>
-            {/* Debit-normal: Row1=Dr(beg), Row2=Cr */}
+            {/* Debit-normal: Row1=Beg(Dr), Row2=+Dr, Row3=Cr */}
             <div className="flex items-center justify-center gap-1 py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
               {nums ? (
-                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-foreground">{fmt(beg)}</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-foreground">{fmt(beg)}</span><span className="text-[10px] text-muted-foreground">Beg</span></>
               ) : (
-                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-muted-foreground">???</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+                <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-muted-foreground">???</span><span className="text-[10px] text-muted-foreground">Beg</span></>
               )}
             </div>
             <div className="py-1.5" />
 
+            {/* Row 2: Debit increase */}
+            <div className="flex items-center justify-center gap-1 py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+              {nums ? (
+                <><span className="text-xs font-mono text-foreground">{fmt(dr)}</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+              ) : (
+                <><span className="text-xs font-mono text-muted-foreground">???</span><span className="text-[10px] text-muted-foreground">Dr</span></>
+              )}
+            </div>
+            <div className="py-1.5" />
+
+            {/* Row 3: Credit decrease */}
             <div className="py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
             <div className="flex items-center justify-center gap-1 py-1.5">
               {nums ? (
@@ -206,16 +223,17 @@ function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, 
           </>
         ) : (
           <>
-            {/* Credit-normal: Row1=Cr(beg), Row2=Dr */}
+            {/* Credit-normal: Row1=Beg(Cr), Row2=Dr, Row3=+Cr */}
             <div className="py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
             <div className="flex items-center justify-center gap-1 py-1.5">
               {nums ? (
-                <><span className="text-xs font-mono text-foreground">{fmt(beg)}</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Cr</span></>
+                <><span className="text-xs font-mono text-foreground">{fmt(beg)}</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Beg</span></>
               ) : (
-                <><span className="text-xs font-mono text-muted-foreground">???</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Cr</span></>
+                <><span className="text-xs font-mono text-muted-foreground">???</span><SmallTooltip text={account.credit_tooltip || ""} /><span className="text-[10px] text-muted-foreground">Beg</span></>
               )}
             </div>
 
+            {/* Row 2: Debit decrease */}
             <div className="flex items-center justify-center gap-1 py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
               {nums ? (
                 <><SmallTooltip text={account.debit_tooltip || ""} /><span className="text-xs font-mono text-foreground">{fmt(dr)}</span><span className="text-[10px] text-muted-foreground">Dr</span></>
@@ -224,6 +242,16 @@ function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, 
               )}
             </div>
             <div className="py-1.5" style={{}} />
+
+            {/* Row 3: Credit increase */}
+            <div className="py-1.5" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
+            <div className="flex items-center justify-center gap-1 py-1.5">
+              {nums ? (
+                <><span className="text-xs font-mono text-foreground">{fmt(cr)}</span><span className="text-[10px] text-muted-foreground">Cr</span></>
+              ) : (
+                <><span className="text-xs font-mono text-muted-foreground">???</span><span className="text-[10px] text-muted-foreground">Cr</span></>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -318,20 +346,31 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
         )}
       </div>
 
-      {/* T-body — 3 rows staggered */}
+      {/* T-body — 4 rows */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         {isDebit ? (
           <>
-            {/* Debit-normal: Row1=Dr(beg), Row2=Cr */}
+            {/* Debit-normal: Row1=Beg, Row2=+Dr, Row3=Cr */}
             <div style={{ ...cellCenter, padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }}>
               {nums ? (
-                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span><span style={labelStyle}>Dr</span></>
+                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span><span style={labelStyle}>Beg</span></>
               ) : (
-                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><span style={labelStyle}>Dr</span></>
+                <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><span style={labelStyle}>Beg</span></>
               )}
             </div>
             <div style={{ padding: "6px 0" }} />
 
+            {/* Row 2: Debit increase */}
+            <div style={{ ...cellCenter, padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }}>
+              {nums ? (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(dr)}</span><span style={labelStyle}>Dr</span></>
+              ) : (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><span style={labelStyle}>Dr</span></>
+              )}
+            </div>
+            <div style={{ padding: "6px 0" }} />
+
+            {/* Row 3: Credit decrease */}
             <div style={{ padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }} />
             <div style={{ ...cellCenter, padding: "6px 0" }}>
               {nums ? (
@@ -343,16 +382,17 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
           </>
         ) : (
           <>
-            {/* Credit-normal: Row1=Cr(beg), Row2=Dr */}
+            {/* Credit-normal: Row1=Beg(Cr), Row2=Dr, Row3=+Cr */}
             <div style={{ padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }} />
             <div style={{ ...cellCenter, padding: "6px 0" }}>
               {nums ? (
-                <><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Cr</span></>
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Beg</span></>
               ) : (
-                <><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Cr</span></>
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><SmallTooltip text={account.credit_tooltip || ""} style={{ color: textMuted }} /><span style={labelStyle}>Beg</span></>
               )}
             </div>
 
+            {/* Row 2: Debit decrease */}
             <div style={{ ...cellCenter, padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }}>
               {nums ? (
                 <><SmallTooltip text={account.debit_tooltip || ""} style={{ color: textMuted }} /><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(dr)}</span><span style={labelStyle}>Dr</span></>
@@ -361,6 +401,16 @@ function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers
               )}
             </div>
             <div style={{ padding: "6px 0" }} />
+
+            {/* Row 3: Credit increase */}
+            <div style={{ padding: "6px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+            <div style={{ ...cellCenter, padding: "6px 0" }}>
+              {nums ? (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(cr)}</span><span style={labelStyle}>Cr</span></>
+              ) : (
+                <><span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span><span style={labelStyle}>Cr</span></>
+              )}
+            </div>
           </>
         )}
       </div>
