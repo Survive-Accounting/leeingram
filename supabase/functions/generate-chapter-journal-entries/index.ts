@@ -273,11 +273,12 @@ Include every major transaction type a student needs to know for exams. Group in
               categoryId = newCat!.id;
             }
           } else {
-            const { data: newCat } = await supabase
+            const { data: newCat, error: catErr } = await supabase
               .from("chapter_je_categories")
               .insert({ chapter_id: ch.id, category_name: cat.category_name, sort_order: cat.sort_order || 0 })
               .select("id")
               .single();
+            if (catErr) { console.error(`[JE] Category insert error:`, catErr); throw catErr; }
             categoryId = newCat!.id;
           }
 
