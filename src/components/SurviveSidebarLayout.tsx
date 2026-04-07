@@ -238,13 +238,8 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // ── Role detection ──────────────────────────────────────────────
+  // ── Role detection (kept for VA tools panel) ─────────────────────
   const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
-  const isAdmin = !effectiveRole || effectiveRole === "admin";
-  const isLeadVa = effectiveRole === "lead_va";
-  const isAdminOrLead = isAdmin || isLeadVa;
-  const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
-  const isSheetPrepVa = effectiveRole === "sheet_prep_va";
 
   // ── Nav item renderer ──────────────────────────────────────────
   const renderItem = (label: string, path: string, Icon: any, opts?: { badge?: number | null; dimmed?: boolean; indent?: boolean }) => {
@@ -500,18 +495,15 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
           )}
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
-          {/* VA My Dashboard link */}
-          {(isVa || impersonating) && !sidebarCollapsed && effectiveRole !== "sheet_prep_va" && (
-            renderItem("My Dashboard", "/va-dashboard", LayoutDashboard)
+          {/* My Dashboard */}
+          {!sidebarCollapsed && (
+            (isVa || impersonating)
+              ? renderItem("My Dashboard", "/va-dashboard", LayoutDashboard)
+              : renderItem("My Dashboard", "/dashboard", BarChart3)
           )}
 
-          {/* Admin: My Dashboard */}
-          {isAdmin && !isVa && !impersonating && !sidebarCollapsed && (
-            renderItem("My Dashboard", "/dashboard", BarChart3)
-          )}
-
-          {/* ═══════ LAUNCH (admin only) ═══════ */}
-          {isAdmin && !isVa && !impersonating && !sidebarCollapsed && (
+          {/* ═══════ LAUNCH ═══════ */}
+          {!sidebarCollapsed && (
             <>
               <div className="border-t border-border my-3" />
               {renderTopLabel("Launch")}
@@ -530,11 +522,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {renderTopLabel("Content")}
             <div className="space-y-0.5">
               {renderItem("Problem Library", "/assets-library", Library)}
-
-              {/* Content Analytics — admin only */}
-              {isAdmin && !isVa && !impersonating && (
-                renderItem("Content Analytics", "/admin/analytics/content", BarChart3)
-              )}
+              {renderItem("Content Analytics", "/admin/analytics/content", BarChart3)}
 
               {/* Quality Control — collapsible */}
               {renderSectionHeader("Quality Control", qcSection)}
@@ -542,23 +530,17 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 <div className="space-y-0.5">
                   {renderItem("Asset QA", "/solutions-qa", ClipboardCheck, { indent: true, badge: qaPendingCount || null })}
                   {renderItem("Fix Assets", "/inbox", Inbox, { indent: true, badge: openIssueCount || null })}
-                  {isAdmin && !isVa && !impersonating && (
-                    renderItem("QA Costs", "/qa-costs", TrendingUp, { indent: true })
-                  )}
+                  {renderItem("QA Costs", "/qa-costs", TrendingUp, { indent: true })}
                 </div>
               )}
 
-              {/* Chapter Wide — admin only, collapsible */}
-              {isAdmin && !isVa && !impersonating && (
-                <>
-                  {renderSectionHeader("Chapter Wide", chapterWideSection)}
-                  {(sidebarCollapsed || chapterWideSection.open) && (
-                    <div className="space-y-0.5">
-                      {renderItem("Chapter QA", "/admin/chapter-qa", BookOpen, { indent: true })}
-                      {renderItem("Chapter Content", "/survive-chapter", BookOpen, { indent: true })}
-                    </div>
-                  )}
-                </>
+              {/* Chapter Wide — collapsible */}
+              {renderSectionHeader("Chapter Wide", chapterWideSection)}
+              {(sidebarCollapsed || chapterWideSection.open) && (
+                <div className="space-y-0.5">
+                  {renderItem("Chapter QA", "/admin/chapter-qa", BookOpen, { indent: true })}
+                  {renderItem("Chapter Content", "/survive-chapter", BookOpen, { indent: true })}
+                </div>
               )}
 
               {/* Quizzes — collapsible */}
@@ -579,23 +561,15 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             {renderTopLabel("Admin")}
             <div className="space-y-0.5">
               {renderItem("VA Admin", "/va-admin", Users)}
+              {renderItem("Payment Links", "/payment-links-admin", CreditCard)}
 
-              {/* Payment Links — admin only */}
-              {isAdmin && !isVa && !impersonating && (
-                renderItem("Payment Links", "/payment-links-admin", CreditCard)
-              )}
-
-              {/* Settings — admin only, collapsible */}
-              {isAdmin && !isVa && !impersonating && (
-                <>
-                  {renderSectionHeader("Settings", settingsSection)}
-                  {(sidebarCollapsed || settingsSection.open) && (
-                    <div className="space-y-0.5">
-                      {renderItem("Asset Stats", "/asset-stats", BarChart3, { indent: true })}
-                      {renderItem("Legacy Links", "/admin/legacy-links", LinkIcon, { indent: true })}
-                    </div>
-                  )}
-                </>
+              {/* Settings — collapsible */}
+              {renderSectionHeader("Settings", settingsSection)}
+              {(sidebarCollapsed || settingsSection.open) && (
+                <div className="space-y-0.5">
+                  {renderItem("Asset Stats", "/asset-stats", BarChart3, { indent: true })}
+                  {renderItem("Legacy Links", "/admin/legacy-links", LinkIcon, { indent: true })}
+                </div>
               )}
             </div>
           </>

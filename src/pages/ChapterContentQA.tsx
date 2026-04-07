@@ -6,6 +6,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -254,6 +255,7 @@ export default function ChapterContentQA() {
 
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Chapter Content QA</h1>
 
@@ -364,6 +366,7 @@ export default function ChapterContentQA() {
           onTabChange={setModalTab}
         />
       )}
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }

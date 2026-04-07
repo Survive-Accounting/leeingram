@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -382,6 +383,7 @@ export default function AssetStatsDashboard() {
 
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">Teaching Asset Stats</h1>
@@ -768,6 +770,7 @@ export default function AssetStatsDashboard() {
           )}
         </DialogContent>
       </Dialog>
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }

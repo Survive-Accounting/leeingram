@@ -1,4 +1,5 @@
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +42,7 @@ export default function ContentAnalytics() {
 
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-6">
         <h1 className="text-xl font-bold text-foreground">Content Analytics</h1>
 
@@ -63,6 +65,7 @@ export default function ContentAnalytics() {
           Engagement metrics will populate once student auth is live.
         </p>
       </div>
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }
