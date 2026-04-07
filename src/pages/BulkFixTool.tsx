@@ -974,6 +974,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="enrich_je_tooltips">Enrich JE Tooltips (fill gaps)</SelectItem>
                 <SelectItem value="rewrite_je_reasons">Rewrite JE Reasons (YOU Format)</SelectItem>
                 <SelectItem value="rewrite_je_amounts">Rewrite Amount Sources (Plain English)</SelectItem>
+                <SelectItem value="generate_calculation_formulas">Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)</SelectItem>
               </SelectContent>
             </Select>
 
