@@ -531,19 +531,19 @@ function generateFsExcerpt(account: TAccountData): string {
     const parentVal = 50000;
     const contraVal = end != null ? Math.abs(end) : 12000;
     const net = parentVal - contraVal;
-    return `Property, Plant & Equipment        ${fmt(parentVal)}\n  Less: ${name}   (${fmt(contraVal)})\n  ─────────────────────────────────────\n  Book Value (Net)                 ${fmt(net)}`;
+    return `Property, Plant & Equipment        ${fmtDollar(parentVal)}\n  Less: ${name}   (${fmtDollar(contraVal)})\n  ─────────────────────────────────────\n  Book Value (Net)                 ${fmtDollar(net)}`;
   }
   if (account.account_type === "Contra Revenue") {
     const parentVal = 100000;
     const contraVal = end != null ? Math.abs(end) : 5000;
     const net = parentVal - contraVal;
-    return `Sales Revenue                      ${fmt(parentVal)}\n  Less: ${name}   (${fmt(contraVal)})\n  ─────────────────────────────────────\n  Net Sales                        ${fmt(net)}`;
+    return `Sales Revenue                      ${fmtDollar(parentVal)}\n  Less: ${name}   (${fmtDollar(contraVal)})\n  ─────────────────────────────────────\n  Net Sales                        ${fmtDollar(net)}`;
   }
   if (account.account_type === "Contra Liability") {
     const parentVal = 200000;
     const contraVal = end != null ? Math.abs(end) : 8000;
     const net = parentVal - contraVal;
-    return `Bonds Payable                      ${fmt(parentVal)}\n  Less: ${name}   (${fmt(contraVal)})\n  ─────────────────────────────────────\n  Carrying Value                   ${fmt(net)}`;
+    return `Bonds Payable                      ${fmtDollar(parentVal)}\n  Less: ${name}   (${fmtDollar(contraVal)})\n  ─────────────────────────────────────\n  Carrying Value                   ${fmtDollar(net)}`;
   }
   return `${name} — see financial statements for placement`;
 }
