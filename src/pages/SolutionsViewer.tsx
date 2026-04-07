@@ -913,6 +913,18 @@ function isCalculationLine(line: string): boolean {
   return /[×=÷+−%$]/.test(line) || /\b\d+\s*[×x*]\s*\d/i.test(line) || /\b\d+\s*[/÷]\s*\d/.test(line) || /×\s*rate|×\s*time|[/÷]\s*periods/i.test(line);
 }
 
+/** Render inline **bold** markdown as <strong> elements */
+function renderBoldMarkdown(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
