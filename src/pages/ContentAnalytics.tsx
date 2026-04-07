@@ -42,6 +42,7 @@ export default function ContentAnalytics() {
 
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-6">
         <h1 className="text-xl font-bold text-foreground">Content Analytics</h1>
 
@@ -64,6 +65,7 @@ export default function ContentAnalytics() {
           Engagement metrics will populate once student auth is live.
         </p>
       </div>
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }

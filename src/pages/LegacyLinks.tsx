@@ -19,6 +19,7 @@ const LEGACY_LINKS = [
 export default function LegacyLinks() {
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-4">
         <div>
           <h1 className="text-xl font-bold text-foreground">Legacy Links</h1>
@@ -38,6 +39,7 @@ export default function LegacyLinks() {
           ))}
         </div>
       </div>
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }
