@@ -1,47 +1,15 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { Check, X, ChevronDown, ChevronRight, Loader2, Sparkles, Trash2 } from "lucide-react";
-import { isContraAccount } from "@/lib/contraDetection";
-
-type AccountRow = {
-  id: string; chapter_id: string; account_name: string; account_type: string;
-  normal_balance: string; account_description: string; sort_order: number;
-  is_approved: boolean; is_rejected: boolean | null;
-};
-
-const FIVE_GROUPS = [
-  {
-    label: "Assets",
-    subGroups: ["Current Asset", "Long-Term Asset", "Contra Asset"],
-  },
-  {
-    label: "Liabilities",
-    subGroups: ["Current Liability", "Long-Term Liability", "Contra Liability"],
-  },
-  {
-    label: "Equity",
-    subGroups: ["Equity"],
-  },
-  {
-    label: "Revenue",
-    subGroups: ["Revenue", "Contra Revenue"],
-  },
-  {
-    label: "Expenses",
-    subGroups: ["Expense"],
-  },
-];
+import { Check, Loader2, Sparkles, Trash2, X } from "lucide-react";
+import { TAccountCard, AccountGroupHeader, FIVE_GROUPS, DEBIT_NORMAL_TYPES, type TAccountData } from "@/components/TAccountCard";
 
 export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId: string; chapterName: string; courseCode: string }) {
-  const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState("");
 
@@ -49,7 +17,7 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
     queryKey: ["cqa-accounts", chapterId],
     queryFn: async () => {
       const { data } = await supabase.from("chapter_accounts").select("*").eq("chapter_id", chapterId).order("sort_order");
-      return (data || []) as AccountRow[];
+      return (data || []) as TAccountData[];
     },
   });
 
@@ -72,7 +40,6 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
   const approve = async (id: string) => { await supabase.from("chapter_accounts").update({ is_approved: true, is_rejected: false }).eq("id", id); invalidate(); };
   const reject = async (id: string) => { await supabase.from("chapter_accounts").update({ is_rejected: true, is_approved: false }).eq("id", id); invalidate(); };
   const remove = async (id: string) => { await supabase.from("chapter_accounts").delete().eq("id", id); invalidate(); };
-  const update = async (id: string, field: string, value: string) => { await supabase.from("chapter_accounts").update({ [field]: value }).eq("id", id); invalidate(); };
   const approveAll = async () => { await supabase.from("chapter_accounts").update({ is_approved: true, is_rejected: false }).eq("chapter_id", chapterId); invalidate(); toast.success("All accounts approved"); };
 
   if (!accounts?.length && !generating) {
@@ -87,9 +54,14 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
   return (
     <TooltipProvider>
       <div className="space-y-2 pb-20">
-        {FIVE_GROUPS.map((group) => (
-          <TopLevelGroup key={group.label} group={group} accounts={accounts || []} onApprove={approve} onReject={reject} onDelete={remove} onUpdate={update} />
-        ))}
+        {FIVE_GROUPS.map((group) => {
+          const groupAccounts = (accounts || []).filter(a => group.subTypes.includes(a.account_type));
+          if (groupAccounts.length === 0) return null;
+          const isDebitNormal = group.subTypes.some(st => DEBIT_NORMAL_TYPES.has(st));
+          return (
+            <AdminAccountGroup key={group.label} label={group.label} accounts={groupAccounts} isDebitNormal={isDebitNormal} onApprove={approve} onReject={reject} onDelete={remove} />
+          );
+        })}
 
         <div className="rounded-lg border border-border p-4 space-y-3">
           <p className="text-sm font-semibold text-foreground">Something missing? Add a prompt:</p>
@@ -112,105 +84,29 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
   );
 }
 
-function TopLevelGroup({ group, accounts, onApprove, onReject, onDelete, onUpdate }: {
-  group: { label: string; subGroups: string[] };
-  accounts: AccountRow[];
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  onDelete: (id: string) => void;
-  onUpdate: (id: string, field: string, value: string) => void;
+function AdminAccountGroup({ label, accounts, isDebitNormal, onApprove, onReject, onDelete }: {
+  label: string; accounts: TAccountData[]; isDebitNormal: boolean;
+  onApprove: (id: string) => void; onReject: (id: string) => void; onDelete: (id: string) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const groupAccounts = accounts.filter(a => group.subGroups.includes(a.account_type));
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors text-left">
-        {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-        <span className="text-xs font-bold text-foreground uppercase tracking-wider">{group.label}</span>
-        <Badge variant="secondary" className="text-[9px] h-4 ml-auto">{groupAccounts.length}</Badge>
+      <CollapsibleTrigger asChild>
+        <AccountGroupHeader label={label} count={accounts.length} isDebitNormal={isDebitNormal} onClick={() => setOpen(!open)} isOpen={open} mode="admin" />
       </CollapsibleTrigger>
-      <CollapsibleContent className="mt-1 pl-2 space-y-1">
-        {groupAccounts.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic px-3 py-3">No {group.label.toLowerCase()} accounts used in this chapter.</p>
-        ) : (
-          group.subGroups.map(subType => {
-            const subAccounts = groupAccounts.filter(a => a.account_type === subType);
-            if (subAccounts.length === 0) return null;
-            return (
-              <div key={subType} className="space-y-0.5">
-                {group.subGroups.length > 1 && (
-                  <p className="text-[10px] font-medium text-muted-foreground px-3 pt-1">{subType}</p>
-                )}
-                {subAccounts.map(acc => (
-                  <AccountRowBlock key={acc.id} account={acc} onApprove={() => onApprove(acc.id)} onReject={() => onReject(acc.id)} onDelete={() => onDelete(acc.id)} onUpdate={onUpdate} />
-                ))}
-              </div>
-            );
-          })
-        )}
+      <CollapsibleContent className="mt-1 pl-2 space-y-2">
+        {accounts.map(acc => (
+          <div key={acc.id} className="relative">
+            <TAccountCard account={acc} mode="admin" />
+            <div className="absolute top-2 right-2 flex items-center gap-1">
+              <button onClick={() => onApprove(acc.id)} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors"><Check className="h-3.5 w-3.5" /></button>
+              <button onClick={() => onReject(acc.id)} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
+              <button onClick={() => onDelete(acc.id)} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+            </div>
+          </div>
+        ))}
       </CollapsibleContent>
     </Collapsible>
-  );
-}
-
-function AccountRowBlock({ account, onApprove, onReject, onDelete, onUpdate }: {
-  account: AccountRow;
-  onApprove: () => void;
-  onReject: () => void;
-  onDelete: () => void;
-  onUpdate: (id: string, field: string, value: string) => void;
-}) {
-  const [editName, setEditName] = useState(false);
-  const [name, setName] = useState(account.account_name);
-  const [editDesc, setEditDesc] = useState(false);
-  const [desc, setDesc] = useState(account.account_description);
-
-  const contra = isContraAccount(account.account_name, account.account_type);
-
-  const balancePill = account.normal_balance === "Debit"
-    ? <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] h-5">Dr +</Badge>
-    : account.normal_balance === "Credit"
-    ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">Cr +</Badge>
-    : <Badge variant="secondary" className="text-[10px] h-5">Both</Badge>;
-
-  const statusPill = account.is_approved
-    ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">✓</Badge>
-    : account.is_rejected
-    ? <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] h-5">✗</Badge>
-    : <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge>;
-
-  return (
-    <div className="rounded-md border border-border px-3 py-2 space-y-1">
-      <div className="flex items-center gap-2 flex-wrap">
-        {editName ? (
-          <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => { onUpdate(account.id, "account_name", name); setEditName(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(account.id, "account_name", name); setEditName(false); } }} className="h-6 text-xs w-48 font-semibold" autoFocus />
-        ) : (
-          <button onClick={() => setEditName(true)} className="text-xs font-semibold text-foreground hover:underline">{account.account_name}</button>
-        )}
-        {contra && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[10px] h-5 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30">Contra</Badge>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs max-w-[200px]">
-              Contra account — has opposite normal balance to its paired account type
-            </TooltipContent>
-          </Tooltip>
-        )}
-        {balancePill}
-        {statusPill}
-        <div className="flex items-center gap-1 ml-auto shrink-0">
-          <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors"><Check className="h-3.5 w-3.5" /></button>
-          <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
-          <button onClick={onDelete} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
-        </div>
-      </div>
-      {editDesc ? (
-        <Input value={desc} onChange={(e) => setDesc(e.target.value)} onBlur={() => { onUpdate(account.id, "account_description", desc); setEditDesc(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(account.id, "account_description", desc); setEditDesc(false); } }} className="h-6 text-[11px] text-muted-foreground" autoFocus />
-      ) : (
-        <button onClick={() => setEditDesc(true)} className="text-[11px] text-muted-foreground hover:underline text-left block">{account.account_description || "Add description..."}</button>
-      )}
-    </div>
   );
 }
