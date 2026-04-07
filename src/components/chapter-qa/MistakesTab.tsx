@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Check, X, GripVertical, Loader2, Sparkles, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Check, X, ArrowUp, ArrowDown, Loader2, Sparkles, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 type MistakeRow = {
   id: string; chapter_id: string; mistake: string; explanation: string | null;
@@ -21,7 +21,6 @@ const RANK_BADGES: Record<number, { label: string; className: string }> = {
 };
 
 export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId: string; chapterName: string; courseCode: string }) {
-  const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState("");
 
@@ -55,6 +54,14 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
   const update = async (id: string, field: string, value: string) => { await supabase.from("chapter_exam_mistakes").update({ [field]: value }).eq("id", id); invalidate(); };
   const approveAll = async () => { await supabase.from("chapter_exam_mistakes").update({ is_approved: true, is_rejected: false }).eq("chapter_id", chapterId); invalidate(); toast.success("All mistakes approved"); };
 
+  const swap = async (a: MistakeRow, b: MistakeRow) => {
+    await Promise.all([
+      supabase.from("chapter_exam_mistakes").update({ sort_order: b.sort_order }).eq("id", a.id),
+      supabase.from("chapter_exam_mistakes").update({ sort_order: a.sort_order }).eq("id", b.id),
+    ]);
+    invalidate();
+  };
+
   if (!mistakes?.length && !generating) {
     return (
       <div className="text-center py-10 space-y-4">
@@ -67,7 +74,11 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
   return (
     <div className="space-y-1 pb-20">
       {mistakes?.map((m, idx) => (
-        <MistakeRowBlock key={m.id} mistake={m} rank={idx + 1} onApprove={() => approve(m.id)} onReject={() => reject(m.id)} onDelete={() => remove(m.id)} onUpdate={update} />
+        <MistakeRowBlock key={m.id} mistake={m} rank={idx + 1}
+          onApprove={() => approve(m.id)} onReject={() => reject(m.id)} onDelete={() => remove(m.id)} onUpdate={update}
+          onMoveUp={idx > 0 ? () => swap(m, mistakes[idx - 1]) : undefined}
+          onMoveDown={idx < mistakes.length - 1 ? () => swap(m, mistakes[idx + 1]) : undefined}
+        />
       ))}
 
       <div className="rounded-lg border border-border p-4 space-y-3 mt-3">
@@ -90,9 +101,10 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
   );
 }
 
-function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdate }: {
+function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdate, onMoveUp, onMoveDown }: {
   mistake: MistakeRow; rank: number; onApprove: () => void; onReject: () => void; onDelete: () => void;
   onUpdate: (id: string, field: string, value: string) => void;
+  onMoveUp?: () => void; onMoveDown?: () => void;
 }) {
   const [editLabel, setEditLabel] = useState(false);
   const [label, setLabel] = useState(mistake.mistake);
@@ -112,7 +124,10 @@ function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdat
   return (
     <div className="rounded-md border border-border px-3 py-2 space-y-1">
       <div className="flex items-center gap-2 flex-wrap">
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
+        <div className="flex flex-col gap-0 shrink-0">
+          <button onClick={onMoveUp} disabled={!onMoveUp} className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-20 transition-colors"><ArrowUp className="h-3 w-3" /></button>
+          <button onClick={onMoveDown} disabled={!onMoveDown} className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-20 transition-colors"><ArrowDown className="h-3 w-3" /></button>
+        </div>
         {rankBadge && <Badge className={`${rankBadge.className} text-[9px] h-4 shrink-0`}>{rankBadge.label}</Badge>}
         {editLabel ? (
           <Input value={label} onChange={(e) => setLabel(e.target.value)} onBlur={() => { onUpdate(mistake.id, "mistake", label); setEditLabel(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(mistake.id, "mistake", label); setEditLabel(false); } }} className="h-6 text-xs w-64 font-semibold" autoFocus />

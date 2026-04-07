@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Check, X, GripVertical, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Check, X, ArrowUp, ArrowDown, Loader2, Sparkles, Trash2 } from "lucide-react";
 
 type TermRow = {
   id: string; chapter_id: string; term: string; definition: string;
@@ -15,7 +15,6 @@ type TermRow = {
 };
 
 export function KeyTermsTab({ chapterId, chapterName, courseCode }: { chapterId: string; chapterName: string; courseCode: string }) {
-  const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState("");
 
@@ -60,6 +59,14 @@ export function KeyTermsTab({ chapterId, chapterName, courseCode }: { chapterId:
   const update = async (id: string, field: string, value: string) => { await supabase.from("chapter_key_terms").update({ [field]: value }).eq("id", id); invalidate(); };
   const approveAll = async () => { await supabase.from("chapter_key_terms").update({ is_approved: true, is_rejected: false }).eq("chapter_id", chapterId); invalidate(); toast.success("All terms approved"); };
 
+  const swap = async (a: TermRow, b: TermRow) => {
+    await Promise.all([
+      supabase.from("chapter_key_terms").update({ sort_order: b.sort_order }).eq("id", a.id),
+      supabase.from("chapter_key_terms").update({ sort_order: a.sort_order }).eq("id", b.id),
+    ]);
+    invalidate();
+  };
+
   if (!terms?.length && !generating) {
     return (
       <div className="text-center py-10 space-y-4">
@@ -75,8 +82,12 @@ export function KeyTermsTab({ chapterId, chapterName, courseCode }: { chapterId:
         <div key={category}>
           <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 px-1">{category}</h4>
           <div className="space-y-1">
-            {catTerms.map(t => (
-              <TermRowBlock key={t.id} term={t} onApprove={() => approve(t.id)} onReject={() => reject(t.id)} onDelete={() => remove(t.id)} onUpdate={update} />
+            {catTerms.map((t, idx) => (
+              <TermRowBlock key={t.id} term={t}
+                onApprove={() => approve(t.id)} onReject={() => reject(t.id)} onDelete={() => remove(t.id)} onUpdate={update}
+                onMoveUp={idx > 0 ? () => swap(t, catTerms[idx - 1]) : undefined}
+                onMoveDown={idx < catTerms.length - 1 ? () => swap(t, catTerms[idx + 1]) : undefined}
+              />
             ))}
           </div>
         </div>
@@ -102,9 +113,10 @@ export function KeyTermsTab({ chapterId, chapterName, courseCode }: { chapterId:
   );
 }
 
-function TermRowBlock({ term, onApprove, onReject, onDelete, onUpdate }: {
+function TermRowBlock({ term, onApprove, onReject, onDelete, onUpdate, onMoveUp, onMoveDown }: {
   term: TermRow; onApprove: () => void; onReject: () => void; onDelete: () => void;
   onUpdate: (id: string, field: string, value: string) => void;
+  onMoveUp?: () => void; onMoveDown?: () => void;
 }) {
   const [editTerm, setEditTerm] = useState(false);
   const [termVal, setTermVal] = useState(term.term);
@@ -120,7 +132,10 @@ function TermRowBlock({ term, onApprove, onReject, onDelete, onUpdate }: {
   return (
     <div className="rounded-md border border-border px-3 py-2 space-y-1">
       <div className="flex items-center gap-2 flex-wrap">
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
+        <div className="flex flex-col gap-0 shrink-0">
+          <button onClick={onMoveUp} disabled={!onMoveUp} className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-20 transition-colors"><ArrowUp className="h-3 w-3" /></button>
+          <button onClick={onMoveDown} disabled={!onMoveDown} className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-20 transition-colors"><ArrowDown className="h-3 w-3" /></button>
+        </div>
         {editTerm ? (
           <Input value={termVal} onChange={(e) => setTermVal(e.target.value)} onBlur={() => { onUpdate(term.id, "term", termVal); setEditTerm(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(term.id, "term", termVal); setEditTerm(false); } }} className="h-6 text-xs w-48 font-semibold" autoFocus />
         ) : (
