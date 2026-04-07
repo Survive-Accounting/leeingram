@@ -949,7 +949,9 @@ function JEEntryRowBlock({
           <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[9px] h-4 shrink-0">Suggested</Badge>
         ) : null}
         {statusPill}
-        <div className="flex items-center gap-1 ml-auto shrink-0">
+        <div className="flex items-center gap-0.5 ml-auto shrink-0">
+          <button onClick={onMoveUp} disabled={isFirst} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move up"><ArrowUp className="h-3 w-3" /></button>
+          <button onClick={onMoveDown} disabled={isLast} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 transition-colors" title="Move down"><ArrowDown className="h-3 w-3" /></button>
           <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
           <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Reject"><X className="h-3.5 w-3.5" /></button>
           <button onClick={() => { setLines(jeLines); setEditingLines(true); setExpanded(true); }} className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors" title="Edit JE"><Edit3 className="h-3.5 w-3.5" /></button>
