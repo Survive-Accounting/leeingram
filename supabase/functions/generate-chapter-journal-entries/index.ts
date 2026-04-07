@@ -173,7 +173,13 @@ Include every major transaction type a student needs to know for exams. Group in
         }
 
         if (extraPrompt) {
-          userPrompt += `\n\nAdditional instructions from admin: ${extraPrompt}. Incorporate these additions without removing existing approved entries.`;
+          // Fetch existing entries so AI only generates NEW ones
+          const { data: existingEntries } = await supabase.from("chapter_journal_entries").select("transaction_label, category_id").eq("chapter_id", ch.id);
+          const { data: existingCatsForCtx } = await supabase.from("chapter_je_categories").select("id, category_name").eq("chapter_id", ch.id);
+          const catMap = Object.fromEntries((existingCatsForCtx || []).map((c: any) => [c.id, c.category_name]));
+          const existingList = (existingEntries || []).map((e: any) => `• [${catMap[e.category_id] || "Uncategorized"}] ${e.transaction_label}`).join("\n");
+
+          userPrompt += `\n\nIMPORTANT — These journal entries already exist (do NOT regenerate them):\n${existingList}\n\nAdditional instructions from admin: ${extraPrompt}\n\nGenerate ONLY the new entries requested above. Do not include any entries from the existing list. All new entries should be marked source: "suggested".`;
         }
 
         userPrompt += "\n\nReturn valid JSON only.";
@@ -273,14 +279,18 @@ Include every major transaction type a student needs to know for exams. Group in
           }
 
           for (const entry of cat.entries || []) {
-            if (extraPrompt) {
+          if (extraPrompt) {
+              // Case-insensitive dedup
               const { data: dup } = await supabase
                 .from("chapter_journal_entries")
                 .select("id")
                 .eq("chapter_id", ch.id)
-                .eq("transaction_label", entry.transaction_label)
+                .ilike("transaction_label", entry.transaction_label)
                 .maybeSingle();
-              if (dup) continue;
+              if (dup) {
+                console.log(`[JE] Skipped duplicate: "${entry.transaction_label}"`);
+                continue;
+              }
             }
 
             const entrySource = entry.source === "extracted" ? "extracted" : "suggested";
