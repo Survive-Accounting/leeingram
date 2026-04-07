@@ -1758,7 +1758,7 @@ export default function ChapterCramTool() {
                         <>
                           {/* Formula name heading above image */}
                           <div className="px-5 pt-4 pb-2">
-                            <p className="text-[13px] font-semibold" style={{ color: theme.heading }}>
+                            <p className="text-[16px] font-bold" style={{ color: theme.heading, fontFamily: "'DM Serif Display', serif" }}>
                               {currentFormula.name}
                             </p>
                           </div>
