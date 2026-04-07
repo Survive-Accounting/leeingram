@@ -817,7 +817,7 @@ export default function ChapterCramTool() {
           style={{
             backgroundImage: `url(${LEE_HEADSHOT_BG})`,
             backgroundSize: "cover",
-            backgroundPosition: "center center",
+            backgroundPosition: "40% center",
           }}
         />
         {/* Noise texture overlay */}
@@ -825,20 +825,20 @@ export default function ChapterCramTool() {
         {/* Dark gradient overlay — left side only */}
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.75) 30%, rgba(20,33,61,0.4) 100%)" }}
+          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.82) 25%, rgba(20,33,61,0.35) 65%, rgba(20,33,61,0.6) 100%)" }}
         />
         {/* Text content */}
         <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center">
           {courseDisplayName && (
-            <p className="text-[11px] font-medium uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em" }}>
+            <p className="text-[11px] uppercase" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em", fontWeight: 500 }}>
               {courseDisplayName}
             </p>
           )}
-          <h1 className="mt-2 text-[26px] sm:text-[34px] font-bold text-white leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+          <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800 }}>
             Ch {chapterNum} — {chapter?.chapter_name}
           </h1>
           <div className="mt-3">
-            <span className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "rgba(34,197,94,0.15)", color: "#4ADE80" }}>
+            <span className="inline-block rounded-full px-3 py-1 text-[11px]" style={{ background: "rgba(34,197,94,0.15)", color: "#4ADE80", fontWeight: 500 }}>
               Your exam is coming. Let's survive it.
             </span>
           </div>
