@@ -1033,6 +1033,7 @@ export type Database = {
         Row: {
           chapter_id: string
           created_at: string | null
+          example_text: string | null
           explanation: string | null
           generated_at: string | null
           id: string
@@ -1045,6 +1046,7 @@ export type Database = {
         Insert: {
           chapter_id: string
           created_at?: string | null
+          example_text?: string | null
           explanation?: string | null
           generated_at?: string | null
           id?: string
@@ -1057,6 +1059,7 @@ export type Database = {
         Update: {
           chapter_id?: string
           created_at?: string | null
+          example_text?: string | null
           explanation?: string | null
           generated_at?: string | null
           id?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_exam_mistakes ADD COLUMN example_text text;
