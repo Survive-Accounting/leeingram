@@ -853,7 +853,7 @@ export default function ChapterCramTool() {
           style={{
             backgroundImage: `url(${LEE_HEADSHOT_BG})`,
             backgroundSize: "cover",
-            backgroundPosition: "40% center",
+            backgroundPosition: "40% 20%",
           }}
         />
         {/* Noise texture overlay */}
