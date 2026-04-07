@@ -1519,6 +1519,56 @@ export default function ChapterCramTool() {
             </section>
           )}
 
+          {/* ──── Common Exam Mistakes ──── */}
+          {showMistakes && examMistakes.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_exam_mistakes") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="COMMON EXAM MISTAKES" count={examMistakes.length} isAdmin={isAdmin} sectionName="chapter_exam_mistakes" isVisible={isSectionVisible("chapter_exam_mistakes")} onToggle={toggleSectionVisibility} />
+              <div className="space-y-2">
+                {examMistakes.map((m: any) => (
+                  <div key={m.id} className="rounded-xl border-l-4 px-4 py-3" style={{ borderLeftColor: "#CE1126", borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.cardBg }}>
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#CE1126" }} />
+                      <div>
+                        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{m.mistake}</p>
+                        {m.explanation && <p className="text-[12px] mt-1 leading-[1.6]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ──── Exam Prep Checklist ──── */}
+          {showChecklist && examChecklist.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_exam_checklist") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="EXAM PREP CHECKLIST" count={examChecklist.length} isAdmin={isAdmin} sectionName="chapter_exam_checklist" isVisible={isSectionVisible("chapter_exam_checklist")} onToggle={toggleSectionVisibility} />
+              <div className="rounded-xl border p-4" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                    {examChecklist.filter((i: any) => checklistChecked.has(i.id)).length} / {examChecklist.length} complete
+                  </p>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full mb-4" style={{ background: "#E5E7EB" }}>
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(examChecklist.filter((i: any) => checklistChecked.has(i.id)).length / examChecklist.length) * 100}%`, background: examChecklist.filter((i: any) => checklistChecked.has(i.id)).length === examChecklist.length ? "#22C55E" : theme.navy }} />
+                </div>
+                <div className="space-y-2">
+                  {examChecklist.map((item: any) => {
+                    const checked = checklistChecked.has(item.id);
+                    return (
+                      <button key={item.id} onClick={() => handleChecklistToggle(item.id)} className="w-full flex items-start gap-3 text-left rounded-lg px-3 py-2 transition-colors" style={{ background: checked ? theme.successBg : "transparent" }}>
+                        <div className="mt-0.5 shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center" style={{ borderColor: checked ? "#22C55E" : theme.border, background: checked ? "#22C55E" : "transparent" }}>
+                          {checked && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                        </div>
+                        <span className="text-[13px] leading-[1.5]" style={{ color: checked ? theme.textMuted : theme.text, textDecoration: checked ? "line-through" : "none" }}>{item.checklist_item}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* ──── Share Feedback / Report Issue ──── */}
           <section>
             <SectionHeaderWithToggle
