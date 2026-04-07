@@ -723,12 +723,12 @@ function JETable({ entries, theme, scenarioLabel }: { entries: any[]; theme: The
                         </td>
                         <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.text }}>
                           {!isCredit && row.debit != null && row.debit !== 0 ? (
-                            <span>{Number(row.debit).toLocaleString("en-US")}{row.amount_source && <JETooltip text={row.amount_source} amount={Number(row.debit)} variant="solutions" />}</span>
+                            <span>{Number(row.debit).toLocaleString("en-US")}{row.amount_source && <JETooltip text={row.amount_source} calculationFormula={row.calculation_formula} amount={Number(row.debit)} variant="solutions" />}</span>
                           ) : ""}
                         </td>
                         <td className="text-right px-3 py-1.5 text-[13px] font-mono" style={{ color: theme.text }}>
                           {isCredit && row.credit != null ? (
-                            <span>{Number(row.credit).toLocaleString("en-US")}{row.amount_source && <JETooltip text={row.amount_source} amount={Number(row.credit)} variant="solutions" />}</span>
+                            <span>{Number(row.credit).toLocaleString("en-US")}{row.amount_source && <JETooltip text={row.amount_source} calculationFormula={row.calculation_formula} amount={Number(row.credit)} variant="solutions" />}</span>
                           ) : ""}
                         </td>
                       </tr>
