@@ -1033,7 +1033,7 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
                 const isYearLabel = /^\d{4}\s*:/.test(trimmed);
                 const isNumberedStep = /^\d+\.\s/.test(trimmed);
                 if (isJEOnly) {
-                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{trimmed}</p>;
+                  return <p key={line.idx} className="text-[13px] font-mono font-semibold ml-2 sm:ml-4 mb-1 leading-[1.6] break-words" style={{ color: theme.text }}>{renderBoldMarkdown(trimmed)}</p>;
                 }
                 if (isYearLabel) {
                   return <p key={line.idx} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
