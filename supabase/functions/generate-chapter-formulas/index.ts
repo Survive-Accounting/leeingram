@@ -123,7 +123,7 @@ Rules:
 - Return between 3 and 12 formulas depending on chapter complexity
 - formula_name: short descriptive name
 - formula_expression: the actual formula using standard notation
-- formula_explanation: 1-2 sentences explaining when/why a student uses this
+- formula_explanation: Write in second-person ("you") tutor voice — e.g. "Use this when you need to..." or "You're checking that..." Keep it to 1-2 sentences, specific and actionable, not textbook-generic.
 - sort_order: integer starting at 1, most important first
 - Only include formulas actually used in calculations, not just definitions
 - Do NOT include formulas from other chapters`;
