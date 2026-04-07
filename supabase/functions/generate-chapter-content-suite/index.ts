@@ -65,14 +65,12 @@ async function extractJEStructures(chapterId: string) {
       uniqueStructures.push({ accounts, sides });
     };
 
-    // Canonical format
     const sections = payload?.scenario_sections || [];
     for (const section of sections) {
       for (const dateGroup of (section.entries_by_date || [])) {
         extractFromRows(dateGroup.rows || []);
       }
     }
-    // Legacy flat format
     if (!sections.length && Array.isArray(payload)) {
       extractFromRows(payload);
     }
@@ -81,18 +79,28 @@ async function extractJEStructures(chapterId: string) {
   return { uniqueStructures, allAccountNames: Array.from(allAccountNames) };
 }
 
-// ── AI-only generators (unchanged) ──
+// ── AI-only generators ──
 
 async function generatePurpose(chapterId: string, chapterName: string, courseCode: string) {
   const json = await callAnthropic(
-    `Return ONLY valid JSON: { "purpose_text": "2-3 sentence paragraph explaining what accountants are trying to accomplish in this chapter and why it matters in the real world.", "consequence_text": "1-2 sentences describing the biggest consequence for a business that gets this wrong or ignores it entirely. Be specific and concrete — what actually goes wrong?" }`,
+    `Return ONLY valid JSON: { "purpose_bullets": ["First bullet — leads logically to second", "Second bullet — builds on first", "Third bullet — conclusion or payoff"], "consequence_bullets": ["First consequence — most immediate", "Second consequence — downstream effect"] }
+
+Rules:
+- Max 3 purpose bullets, max 2 consequence bullets
+- Each bullet: one concise sentence, no fluff
+- Bullets should flow logically — each leads to next
+- Purpose bullets: explain what accountants are trying to accomplish in this chapter and why it matters
+- Consequence bullets: what goes wrong for a business that gets this wrong`,
     `Chapter: ${chapterName} (${courseCode})`
   );
+  const purposeBullets = json.purpose_bullets || [];
+  const consequenceBullets = json.consequence_bullets || [];
+  
   const existing = await supabase.from("chapter_purpose").select("id").eq("chapter_id", chapterId).maybeSingle();
   if (existing.data) {
-    await supabase.from("chapter_purpose").update({ purpose_text: json.purpose_text, consequence_text: json.consequence_text, generated_at: new Date().toISOString(), is_approved: false }).eq("id", existing.data.id);
+    await supabase.from("chapter_purpose").update({ purpose_bullets: purposeBullets, consequence_bullets: consequenceBullets, generated_at: new Date().toISOString(), is_approved: false }).eq("id", existing.data.id);
   } else {
-    await supabase.from("chapter_purpose").insert({ chapter_id: chapterId, purpose_text: json.purpose_text, consequence_text: json.consequence_text, generated_at: new Date().toISOString() });
+    await supabase.from("chapter_purpose").insert({ chapter_id: chapterId, purpose_bullets: purposeBullets, consequence_bullets: consequenceBullets, generated_at: new Date().toISOString() });
   }
   return "ok";
 }
@@ -130,11 +138,19 @@ async function generateKeyTerms(chapterId: string, chapterName: string, courseCo
 async function generateExamMistakes(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_exam_mistakes",
     `Return ONLY valid JSON: { "mistakes": [{ "mistake": "Short label for the mistake (8 words max)", "explanation": "One sentence explaining why students make this mistake and what to do instead.", "sort_order": 1 }] }`,
-    `Generate 4-6 common exam mistakes students make in: ${chapterName} (${courseCode}). Focus on mistakes that cost exam points. Be specific — not generic accounting advice.`,
+    `Generate exactly 3 common exam mistakes for: ${chapterName} (${courseCode}).
+
+Rank them:
+#1 — Most dangerous: the mistake that costs the most points and trips up the most students
+#2 — Most common: students make this constantly even when they think they understand the material
+#3 — Most subtle: easy to overlook, hard to catch without really understanding the concept
+
+Each mistake: short label (8 words max) + one sentence explanation of why students make it and what to do instead. Be specific to this chapter — not generic accounting advice.
+
+Return sort_order 1 for #1, 2 for #2, 3 for #3.`,
     "mistakes", extraPrompt
   );
 }
-
 
 async function generateFormulas(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_formulas",
@@ -202,7 +218,6 @@ Rules:
   const parsed = await callAnthropic(systemPrompt, userPrompt);
   const categories = parsed.categories || [];
 
-  // Clean up old non-approved data
   if (!extraPrompt) {
     await supabase.from("chapter_journal_entries").delete().eq("chapter_id", chapterId).eq("is_approved", false);
 
@@ -300,7 +315,6 @@ normal_balance must be: Debit | Credit | Both`;
   }
 
   if (items.length > 0) {
-    const extractedNames = new Set(allAccountNames);
     const rows = items.map((item: any, i: number) => ({
       chapter_id: chapterId,
       account_name: item.account_name,
@@ -359,7 +373,6 @@ Deno.serve(async (req) => {
             if (only === "purpose") return generatePurpose(ch.id, ch.chapter_name, ch.courseCode);
             if (only === "key_terms") return generateKeyTerms(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "exam_mistakes") return generateExamMistakes(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
-            
             if (only === "accounts") return generateAccounts(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "formulas") return generateFormulas(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "journal_entries") return generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
@@ -369,7 +382,6 @@ Deno.serve(async (req) => {
             ["purpose", () => generatePurpose(ch.id, ch.chapter_name, ch.courseCode)],
             ["key_terms", () => generateKeyTerms(ch.id, ch.chapter_name, ch.courseCode)],
             ["exam_mistakes", () => generateExamMistakes(ch.id, ch.chapter_name, ch.courseCode)],
-            
             ["accounts", () => generateAccounts(ch.id, ch.chapter_name, ch.courseCode)],
             ["formulas", () => generateFormulas(ch.id, ch.chapter_name, ch.courseCode)],
             ["journal_entries", () => generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode)],

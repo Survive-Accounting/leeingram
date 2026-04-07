@@ -13,6 +13,12 @@ type MistakeRow = {
   sort_order: number; is_approved: boolean; is_rejected: boolean | null;
 };
 
+const RANK_BADGES: Record<number, { label: string; className: string }> = {
+  1: { label: "#1 Most Dangerous", className: "bg-red-500/20 text-red-400 border-red-500/30" },
+  2: { label: "#2 Most Common", className: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+  3: { label: "#3 Most Subtle", className: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+};
+
 export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId: string; chapterName: string; courseCode: string }) {
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
@@ -59,8 +65,8 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
 
   return (
     <div className="space-y-1 pb-20">
-      {mistakes?.map(m => (
-        <MistakeRowBlock key={m.id} mistake={m} onApprove={() => approve(m.id)} onReject={() => reject(m.id)} onDelete={() => remove(m.id)} onUpdate={update} />
+      {mistakes?.map((m, idx) => (
+        <MistakeRowBlock key={m.id} mistake={m} rank={idx + 1} onApprove={() => approve(m.id)} onReject={() => reject(m.id)} onDelete={() => remove(m.id)} onUpdate={update} />
       ))}
 
       <div className="rounded-lg border border-border p-4 space-y-3 mt-3">
@@ -83,8 +89,8 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
   );
 }
 
-function MistakeRowBlock({ mistake, onApprove, onReject, onDelete, onUpdate }: {
-  mistake: MistakeRow; onApprove: () => void; onReject: () => void; onDelete: () => void;
+function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdate }: {
+  mistake: MistakeRow; rank: number; onApprove: () => void; onReject: () => void; onDelete: () => void;
   onUpdate: (id: string, field: string, value: string) => void;
 }) {
   const [editLabel, setEditLabel] = useState(false);
@@ -92,6 +98,7 @@ function MistakeRowBlock({ mistake, onApprove, onReject, onDelete, onUpdate }: {
   const [editExpl, setEditExpl] = useState(false);
   const [expl, setExpl] = useState(mistake.explanation || "");
 
+  const rankBadge = RANK_BADGES[rank];
   const statusPill = mistake.is_approved
     ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">✓</Badge>
     : mistake.is_rejected
@@ -102,6 +109,7 @@ function MistakeRowBlock({ mistake, onApprove, onReject, onDelete, onUpdate }: {
     <div className="rounded-md border border-border px-3 py-2 space-y-1">
       <div className="flex items-center gap-2 flex-wrap">
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
+        {rankBadge && <Badge className={`${rankBadge.className} text-[9px] h-4 shrink-0`}>{rankBadge.label}</Badge>}
         {editLabel ? (
           <Input value={label} onChange={(e) => setLabel(e.target.value)} onBlur={() => { onUpdate(mistake.id, "mistake", label); setEditLabel(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(mistake.id, "mistake", label); setEditLabel(false); } }} className="h-6 text-xs w-64 font-semibold" autoFocus />
         ) : (

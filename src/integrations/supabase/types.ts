@@ -1438,32 +1438,32 @@ export type Database = {
       chapter_purpose: {
         Row: {
           chapter_id: string
-          consequence_text: string
+          consequence_bullets: Json | null
           created_at: string | null
           generated_at: string | null
           id: string
           is_approved: boolean | null
-          purpose_text: string
+          purpose_bullets: Json | null
           updated_at: string | null
         }
         Insert: {
           chapter_id: string
-          consequence_text: string
+          consequence_bullets?: Json | null
           created_at?: string | null
           generated_at?: string | null
           id?: string
           is_approved?: boolean | null
-          purpose_text: string
+          purpose_bullets?: Json | null
           updated_at?: string | null
         }
         Update: {
           chapter_id?: string
-          consequence_text?: string
+          consequence_bullets?: Json | null
           created_at?: string | null
           generated_at?: string | null
           id?: string
           is_approved?: boolean | null
-          purpose_text?: string
+          purpose_bullets?: Json | null
           updated_at?: string | null
         }
         Relationships: [

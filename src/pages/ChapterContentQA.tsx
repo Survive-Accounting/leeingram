@@ -13,24 +13,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target,
+  AlertCircle, Target, Info,
 } from "lucide-react";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
-
 import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { isContraAccount } from "@/lib/contraDetection";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -99,7 +99,6 @@ export default function ChapterContentQA() {
     },
   });
 
-  // Count queries using head:true (efficient)
   const { data: jeCounts } = useQuery({
     queryKey: ["cqa-je-counts"],
     queryFn: async () => {
@@ -132,14 +131,12 @@ export default function ChapterContentQA() {
     },
   });
 
-  // Summary pills
   const totalChapters = chapters?.length || 0;
   const pendingJEChapters = chapters?.filter(ch => !jeCounts?.[ch.id]?.approved).length || 0;
   const approvedJEChapters = chapters?.filter(ch => (jeCounts?.[ch.id]?.approved || 0) > 0).length || 0;
   const pendingFormulaChapters = chapters?.filter(ch => !formulaCounts?.[ch.id]?.approved).length || 0;
   const approvedFormulaChapters = chapters?.filter(ch => (formulaCounts?.[ch.id]?.approved || 0) > 0).length || 0;
 
-  // Group chapters by course
   const courseGroups = useMemo(() => {
     if (!courses || !chapters) return [];
     return courses.map(c => ({
@@ -148,7 +145,6 @@ export default function ChapterContentQA() {
     }));
   }, [courses, chapters]);
 
-  // Flat ordered list for keyboard nav
   const flatChapters = useMemo(() => chapters || [], [chapters]);
   const selectedIndex = flatChapters.findIndex(ch => ch.id === selectedChapterId);
   const selectedChapter = selectedIndex >= 0 ? flatChapters[selectedIndex] : null;
@@ -161,7 +157,6 @@ export default function ChapterContentQA() {
     if (selectedIndex > 0) setSelectedChapterId(flatChapters[selectedIndex - 1].id);
   }, [selectedIndex, flatChapters]);
 
-  // Keyboard nav
   useEffect(() => {
     if (!selectedChapterId) return;
     const handler = (e: KeyboardEvent) => {
@@ -173,7 +168,6 @@ export default function ChapterContentQA() {
     return () => window.removeEventListener("keydown", handler);
   }, [selectedChapterId, goNext, goPrev]);
 
-  // JE status for a chapter
   const jeStatus = (chId: string) => {
     const c = jeCounts?.[chId];
     if (!c || c.total === 0) return "none";
@@ -193,7 +187,6 @@ export default function ChapterContentQA() {
     return <Badge className="text-[9px] h-4 px-1.5 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Approved ✓</Badge>;
   };
 
-  // ── Bulk ops state ─────────────────────────────────────────────
   const [bulkGenerating, setBulkGenerating] = useState<string | null>(null);
   const [bulkProgress, setBulkProgress] = useState("");
 
@@ -232,7 +225,6 @@ export default function ChapterContentQA() {
     finally { setBulkGenerating(null); setBulkProgress(""); }
   };
 
-  // Onboarding: generate Ch 13 IA2
   const handleOnboardingGenerate = async () => {
     const ia2Course = courses?.find(c => c.code === "ACCY304" || c.course_name.includes("Intermediate Accounting 2"));
     const ch13 = chapters?.find(ch => ch.chapter_number === 13 && ch.course_id === ia2Course?.id);
@@ -265,7 +257,6 @@ export default function ChapterContentQA() {
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Chapter Content QA</h1>
 
-        {/* Onboarding banner */}
         {!onboardingDismissed && (
           <Card className="border-primary/40 bg-primary/5">
             <CardContent className="p-4 flex items-center justify-between gap-3">
@@ -283,7 +274,6 @@ export default function ChapterContentQA() {
           </Card>
         )}
 
-        {/* Count pills */}
         <div className="grid grid-cols-5 gap-2">
           {[
             { label: "Total Chapters", value: totalChapters, color: "text-foreground" },
@@ -301,7 +291,6 @@ export default function ChapterContentQA() {
           ))}
         </div>
 
-        {/* Bulk operations */}
         <Collapsible open={bulkOpen} onOpenChange={setBulkOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" size="sm" className="w-full justify-between text-xs">
@@ -346,7 +335,6 @@ export default function ChapterContentQA() {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Chapter list grouped by course */}
         <div className="space-y-2">
           {courseGroups.map(cg => (
             <CourseGroupBlock
@@ -363,7 +351,6 @@ export default function ChapterContentQA() {
         </div>
       </div>
 
-      {/* Modal */}
       {selectedChapter && (
         <ChapterQAModal
           chapter={selectedChapter}
@@ -449,43 +436,49 @@ function ChapterQAModal({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="text-base">
-            {courseCode} — Ch {chapter.chapter_number}: {chapter.chapter_name}
-          </DialogTitle>
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onPrev} disabled={index <= 0}>
-                <ChevronLeft className="h-3.5 w-3.5" /> Prev
-              </Button>
-              <span className="text-xs text-muted-foreground">{index + 1} / {total}</span>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onNext} disabled={index >= total - 1}>
-                Next <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+        {/* Fixed header */}
+        <div className="shrink-0 px-6 pt-6 pb-0 space-y-2">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {courseCode} — Ch {chapter.chapter_number}: {chapter.chapter_name}
+            </DialogTitle>
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onPrev} disabled={index <= 0}>
+                  <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                </Button>
+                <span className="text-xs text-muted-foreground">{index + 1} / {total}</span>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onNext} disabled={index >= total - 1}>
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <a
+                href={`/cram/${chapter.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-primary hover:underline flex items-center gap-1"
+              >
+                View Survive This Chapter <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
-            <a
-              href={`/cram/${chapter.id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[11px] text-primary hover:underline flex items-center gap-1"
-            >
-              View Survive This Chapter <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
 
-        <Tabs value={tab} onValueChange={onTabChange} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="bg-secondary shrink-0 flex-wrap h-auto gap-0.5 p-1">
-            <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
-            <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
-            <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
-            <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
-            <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
-            
-            <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
-          </TabsList>
-          <ScrollArea className="flex-1 mt-3">
+          <Tabs value={tab} onValueChange={onTabChange} className="w-full">
+            <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
+              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
+              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
+              <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
+              <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
+              <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
+              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-3">
+          <Tabs value={tab} onValueChange={onTabChange}>
             <TabsContent value="je" className="mt-0">
               <JETab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
@@ -504,8 +497,8 @@ function ChapterQAModal({
             <TabsContent value="purpose" className="mt-0">
               <PurposeTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
-          </ScrollArea>
-        </Tabs>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -586,51 +579,51 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
   }
 
   return (
-    <div className="space-y-3 pb-20">
-      {grouped.map(cat => (
-        <JECategoryBlock
-          key={cat.id}
-          category={cat}
-          onDeleteCategory={() => deleteCategory(cat.id)}
-          onUpdateCategoryName={(name) => updateCategoryName(cat.id, name)}
-          onApproveEntry={approveEntry}
-          onRejectEntry={rejectEntry}
-          onDeleteEntry={deleteEntry}
-          onUpdateEntryLabel={updateEntryLabel}
-          onUpdateEntryLines={updateEntryLines}
-        />
-      ))}
+    <TooltipProvider>
+      <div className="space-y-3 pb-20">
+        {grouped.map(cat => (
+          <JECategoryBlock
+            key={cat.id}
+            category={cat}
+            onDeleteCategory={() => deleteCategory(cat.id)}
+            onUpdateCategoryName={(name) => updateCategoryName(cat.id, name)}
+            onApproveEntry={approveEntry}
+            onRejectEntry={rejectEntry}
+            onDeleteEntry={deleteEntry}
+            onUpdateEntryLabel={updateEntryLabel}
+            onUpdateEntryLines={updateEntryLines}
+          />
+        ))}
 
-      {/* Extra prompt */}
-      <div className="rounded-lg border border-border p-4 space-y-3">
-        <p className="text-sm font-semibold text-foreground">Something missing? Add a prompt:</p>
-        <Textarea
-          value={extraPrompt}
-          onChange={(e) => setExtraPrompt(e.target.value)}
-          placeholder="e.g. Add entries for convertible bond conversion and early retirement at a loss."
-          className="text-sm"
-          rows={3}
-        />
-        <Button size="sm" onClick={() => handleGenerate(extraPrompt.trim())} disabled={generating || !extraPrompt.trim()}>
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
-          Run Again with This Prompt →
-        </Button>
-      </div>
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <p className="text-sm font-semibold text-foreground">Something missing? Add a prompt:</p>
+          <Textarea
+            value={extraPrompt}
+            onChange={(e) => setExtraPrompt(e.target.value)}
+            placeholder="e.g. Add entries for convertible bond conversion and early retirement at a loss."
+            className="text-sm"
+            rows={3}
+          />
+          <Button size="sm" onClick={() => handleGenerate(extraPrompt.trim())} disabled={generating || !extraPrompt.trim()}>
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+            Run Again with This Prompt →
+          </Button>
+        </div>
 
-      {/* Sticky bulk actions */}
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-2 px-3 flex gap-2 -mx-3">
-        <Button size="sm" variant="outline" className="text-xs" onClick={approveAll}>
-          <Check className="h-3 w-3 mr-1" /> Approve All ✓
-        </Button>
-        <Button size="sm" variant="outline" className="text-xs text-destructive" onClick={rejectAll}>
-          <X className="h-3 w-3 mr-1" /> Reject All ✗
-        </Button>
-        <Button size="sm" variant="ghost" className="text-xs ml-auto" onClick={() => handleGenerate()} disabled={generating}>
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
-          Regenerate All
-        </Button>
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-2 px-3 flex gap-2 -mx-3">
+          <Button size="sm" variant="outline" className="text-xs" onClick={approveAll}>
+            <Check className="h-3 w-3 mr-1" /> Approve All ✓
+          </Button>
+          <Button size="sm" variant="outline" className="text-xs text-destructive" onClick={rejectAll}>
+            <X className="h-3 w-3 mr-1" /> Reject All ✗
+          </Button>
+          <Button size="sm" variant="ghost" className="text-xs ml-auto" onClick={() => handleGenerate()} disabled={generating}>
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+            Regenerate All
+          </Button>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -683,7 +676,7 @@ function JECategoryBlock({
       {open && (
         <div className="divide-y divide-border/50">
           {category.entries.map(entry => (
-            <JEEntryRow
+            <JEEntryRowBlock
               key={entry.id}
               entry={entry}
               onApprove={() => onApproveEntry(entry.id)}
@@ -711,9 +704,9 @@ function JECategoryBlock({
   );
 }
 
-// ── JE Entry Row ────────────────────────────────────────────────
+// ── JE Entry Row — with expandable table ────────────────────────
 
-function JEEntryRow({
+function JEEntryRowBlock({
   entry, onApprove, onReject, onDelete, onUpdateLabel, onUpdateLines,
 }: {
   entry: JEEntryRow;
@@ -723,6 +716,7 @@ function JEEntryRow({
   onUpdateLabel: (label: string) => void;
   onUpdateLines: (lines: JELine[]) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
   const [label, setLabel] = useState(entry.transaction_label);
   const [editingLines, setEditingLines] = useState(false);
@@ -735,17 +729,18 @@ function JEEntryRow({
     ? <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] h-5">Rejected ✗</Badge>
     : <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge>;
 
-  // Compact chips preview
-  const chips = jeLines.map((l, i) => (
-    <span key={i} className={cn("text-[10px] px-1.5 py-0.5 rounded-sm", l.side === "debit" ? "bg-blue-500/10 text-blue-400" : "bg-amber-500/10 text-amber-400")}>
-      {l.side === "debit" ? "Dr" : "Cr"}: {l.account}
-    </span>
-  ));
+  // Compact chip preview for collapsed state
+  const debitAccounts = jeLines.filter(l => l.side === "debit").map(l => l.account);
+  const creditAccounts = jeLines.filter(l => l.side === "credit").map(l => l.account);
 
   return (
     <div className="px-3 py-2 space-y-2">
+      {/* Collapsed row */}
       <div className="flex items-center gap-2 flex-wrap">
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
+        <button onClick={() => setExpanded(!expanded)} className="shrink-0">
+          {expanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        </button>
         {editingLabel ? (
           <Input value={label} onChange={(e) => setLabel(e.target.value)}
             onBlur={() => { onUpdateLabel(label); setEditingLabel(false); }}
@@ -756,7 +751,20 @@ function JEEntryRow({
             {entry.transaction_label}
           </button>
         )}
-        <div className="flex gap-1 flex-wrap">{chips}</div>
+        {!expanded && (
+          <div className="flex gap-1 flex-wrap">
+            {debitAccounts.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-400">
+                Dr: {debitAccounts.join(" | ")}
+              </span>
+            )}
+            {creditAccounts.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-amber-500/10 text-amber-400">
+                Cr: {creditAccounts.join(" | ")}
+              </span>
+            )}
+          </div>
+        )}
         {entry.source === "extracted" ? (
           <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] h-4 shrink-0">Extracted</Badge>
         ) : entry.source === "suggested" ? (
@@ -766,13 +774,69 @@ function JEEntryRow({
         <div className="flex items-center gap-1 ml-auto shrink-0">
           <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
           <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Reject"><X className="h-3.5 w-3.5" /></button>
-          <button onClick={() => { setLines(jeLines); setEditingLines(true); }} className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors" title="Edit JE"><Edit3 className="h-3.5 w-3.5" /></button>
+          <button onClick={() => { setLines(jeLines); setEditingLines(true); setExpanded(true); }} className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors" title="Edit JE"><Edit3 className="h-3.5 w-3.5" /></button>
           <button onClick={onDelete} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
+      {/* Expanded JE table */}
+      {expanded && !editingLines && (
+        <div className="ml-8 rounded-md border border-border overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-muted/30 border-b border-border">
+                <th className="text-left py-1.5 px-3 font-medium text-muted-foreground">Account</th>
+                <th className="text-center py-1.5 px-3 font-medium text-muted-foreground w-20">Debit</th>
+                <th className="text-center py-1.5 px-3 font-medium text-muted-foreground w-20">Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jeLines.map((line, i) => {
+                const contra = isContraAccount(line.account);
+                return (
+                  <tr key={i} className="border-b border-border/30 last:border-0">
+                    <td className="py-1.5 px-3">
+                      <span className="flex items-center gap-1.5">
+                        <span className={cn(line.side === "credit" && "pl-4")}>{line.account}</span>
+                        {contra && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[9px] h-4 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30 cursor-help">Contra</Badge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs max-w-[200px]">
+                              Contra account — has opposite normal balance to its paired account type
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {line.account_tooltip && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3 w-3 text-muted-foreground/50 cursor-help shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs max-w-[250px]">
+                              {line.account_tooltip}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </span>
+                    </td>
+                    <td className="text-center py-1.5 px-3 font-mono text-muted-foreground">
+                      {line.side === "debit" ? "???" : ""}
+                    </td>
+                    <td className="text-center py-1.5 px-3 font-mono text-muted-foreground">
+                      {line.side === "credit" ? "???" : ""}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Edit mode */}
       {editingLines && (
-        <div className="ml-6 space-y-2 p-3 rounded-md border border-border bg-muted/20">
+        <div className="ml-8 space-y-2 p-3 rounded-md border border-border bg-muted/20">
           <table className="w-full text-xs">
             <thead>
               <tr className="text-muted-foreground">
@@ -901,7 +965,6 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
         }} />
       ))}
 
-      {/* Extra prompt */}
       <div className="rounded-lg border border-border p-4 space-y-3">
         <p className="text-sm font-semibold text-foreground">Something missing? Add a prompt:</p>
         <Textarea value={extraPrompt} onChange={(e) => setExtraPrompt(e.target.value)} placeholder="e.g. Also include the effective interest method formula and partial period accrual formula." className="text-sm" rows={3} />
@@ -911,7 +974,6 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
         </Button>
       </div>
 
-      {/* Sticky bulk actions */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-2 px-3 flex gap-2 -mx-3">
         <Button size="sm" variant="outline" className="text-xs" onClick={approveAll}><Check className="h-3 w-3 mr-1" /> Approve All ✓</Button>
         <Button size="sm" variant="outline" className="text-xs text-destructive" onClick={rejectAll}><X className="h-3 w-3 mr-1" /> Reject All ✗</Button>
