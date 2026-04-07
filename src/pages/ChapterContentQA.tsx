@@ -790,6 +790,7 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
 
 function JECategoryBlock({
   category, onDeleteCategory, onUpdateCategoryName, onApproveEntry, onRejectEntry, onDeleteEntry, onUpdateEntryLabel, onUpdateEntryLines,
+  onMoveCategoryUp, onMoveCategoryDown, onMoveEntryUp, onMoveEntryDown, isFirst, isLast,
 }: {
   category: JECatRow & { entries: JEEntryRow[] };
   onDeleteCategory: () => void;
@@ -799,6 +800,12 @@ function JECategoryBlock({
   onDeleteEntry: (id: string) => void;
   onUpdateEntryLabel: (id: string, label: string) => void;
   onUpdateEntryLines: (id: string, lines: JELine[]) => void;
+  onMoveCategoryUp: () => void;
+  onMoveCategoryDown: () => void;
+  onMoveEntryUp: (entryId: string) => void;
+  onMoveEntryDown: (entryId: string) => void;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState(false);
