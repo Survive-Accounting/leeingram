@@ -1341,7 +1341,7 @@ export default function ChapterCramTool() {
             {showKeyTerms && keyTerms.length > 0 && (
               <section id="key-terms" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_key_terms") ? 1 : 0.4 }}>
                 <SectionHeaderWithToggle label="KEY TERMS" count={keyTerms.length} isAdmin={isAdmin} sectionName="chapter_key_terms" isVisible={isSectionVisible("chapter_key_terms")} onToggle={toggleSectionVisibility} />
-                <CramKeyTermsSection terms={keyTerms} />
+                <CramKeyTermsSection terms={keyTerms} chapterId={chapterId} />
                 <SectionReportLink sectionLabel="Key Terms" onClick={openFeedbackForSection} />
               </section>
             )}
@@ -1663,31 +1663,25 @@ export default function ChapterCramTool() {
                       ) : (
                         <div style={{ padding: "24px 32px" }}>
                           <p
-                            className="text-[11px] font-semibold uppercase"
-                            style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
+                            className="text-[18px] font-bold"
+                            style={{ color: theme.heading, marginBottom: 12, fontFamily: "'DM Serif Display', serif" }}
                           >
                             {currentFormula.name}
                           </p>
                           <p
                             className="text-[20px] font-medium"
                             style={{
-                              color: theme.heading,
+                              color: "#CE1126",
                               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
                             }}
                           >
                             {currentFormula.expression}
                           </p>
                           {currentFormula.explanation && (
-                            <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
+                            <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted, marginTop: 12 }}>
                               {currentFormula.explanation}
                             </p>
                           )}
-                          <span
-                            className="mt-3 inline-block rounded-full px-2 py-0.5 text-[10px]"
-                            style={{ background: theme.mutedBg, color: theme.textMuted }}
-                          >
-                            Image coming soon
-                          </span>
                         </div>
                       )}
 
@@ -1755,18 +1749,41 @@ export default function ChapterCramTool() {
             {showMistakes && examMistakes.length > 0 && (
               <section id="mistakes" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_exam_mistakes") ? 1 : 0.4 }}>
                 <SectionHeaderWithToggle label="COMMON EXAM MISTAKES" count={examMistakes.length} isAdmin={isAdmin} sectionName="chapter_exam_mistakes" isVisible={isSectionVisible("chapter_exam_mistakes")} onToggle={toggleSectionVisibility} />
-                <div className="space-y-2">
-                  {examMistakes.map((m: any) => (
-                    <div key={m.id} className="rounded-xl border-l-4 px-4 py-3" style={{ borderLeftColor: "#CE1126", borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.cardBg }}>
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#CE1126" }} />
-                        <div>
-                          <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{m.mistake}</p>
-                          {m.explanation && <p className="text-[12px] mt-1 leading-[1.6]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                <div className="space-y-3">
+                  {examMistakes.map((m: any, mi: number) => {
+                    const borderColors = ["#CE1126", "#F59E0B", "#FBBF24"];
+                    const rankLabels = ["#1 · Most Dangerous", "#2 · Common", "#3 · Subtle"];
+                    const rankBgColors = ["#FEF2F2", "#FFFBEB", "#FFFBEB"];
+                    const rankTextColors = ["#CE1126", "#92400E", "#92400E"];
+                    const borderColor = borderColors[mi] || borderColors[2];
+                    return (
+                      <div
+                        key={m.id}
+                        className="rounded-xl border-l-4 px-5 py-4"
+                        style={{
+                          borderLeftColor: borderColor,
+                          borderTop: `1px solid ${theme.border}`,
+                          borderRight: `1px solid ${theme.border}`,
+                          borderBottom: `1px solid ${theme.border}`,
+                          background: theme.cardBg,
+                          boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className="shrink-0 mt-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                            style={{ background: rankBgColors[mi] || rankBgColors[2], color: rankTextColors[mi] || rankTextColors[2] }}
+                          >
+                            {rankLabels[mi] || `#${mi + 1}`}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[14px] font-bold leading-[1.4]" style={{ color: theme.text }}>{m.mistake}</p>
+                            {m.explanation && <p className="text-[13px] mt-1.5 leading-[1.7]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <SectionReportLink sectionLabel="Exam Mistakes" onClick={openFeedbackForSection} />
               </section>
