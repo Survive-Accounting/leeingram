@@ -1088,6 +1088,36 @@ export default function ChapterCramTool() {
         </div>
 
         <div className="space-y-10">
+          {/* ──── What's the Point? ──── */}
+          {showPurpose && purpose && (
+            <section style={{ opacity: isSectionVisible("chapter_purpose") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="WHAT'S THE POINT?" isAdmin={isAdmin} sectionName="chapter_purpose" isVisible={isSectionVisible("chapter_purpose")} onToggle={toggleSectionVisibility} />
+              <div className="rounded-xl border p-5" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                <p className="text-[14px] leading-[1.7]" style={{ color: theme.text }}>{purpose.purpose_text}</p>
+                <div className="mt-4">
+                  <p className="text-[11px] font-semibold mb-1" style={{ color: "rgba(206,17,38,0.8)" }}>⚠ What goes wrong if you don't:</p>
+                  <p className="text-[13px] leading-[1.6] italic" style={{ color: "rgba(206,17,38,0.8)" }}>{purpose.consequence_text}</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ──── Accounts in This Chapter ──── */}
+          {showAccounts && chapterAccounts.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_accounts") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="ACCOUNTS IN THIS CHAPTER" count={chapterAccounts.length} isAdmin={isAdmin} sectionName="chapter_accounts" isVisible={isSectionVisible("chapter_accounts")} onToggle={toggleSectionVisibility} />
+              <CramAccountsSection accounts={chapterAccounts} />
+            </section>
+          )}
+
+          {/* ──── Key Terms ──── */}
+          {showKeyTerms && keyTerms.length > 0 && (
+            <section style={{ opacity: isSectionVisible("chapter_key_terms") ? 1 : 0.4 }}>
+              <SectionHeaderWithToggle label="KEY TERMS" count={keyTerms.length} isAdmin={isAdmin} sectionName="chapter_key_terms" isVisible={isSectionVisible("chapter_key_terms")} onToggle={toggleSectionVisibility} />
+              <CramKeyTermsSection terms={keyTerms} />
+            </section>
+          )}
+
           {/* ──── Solutions Library ──── */}
           {showSolutionsSection && (
             <section style={{ opacity: isSectionVisible("solutions_library") ? 1 : 0.4 }}>
