@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/clipboardFallback";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
