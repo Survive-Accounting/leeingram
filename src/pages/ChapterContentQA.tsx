@@ -255,6 +255,7 @@ export default function ChapterContentQA() {
 
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Chapter Content QA</h1>
 
@@ -365,6 +366,7 @@ export default function ChapterContentQA() {
           onTabChange={setModalTab}
         />
       )}
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }

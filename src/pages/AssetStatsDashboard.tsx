@@ -383,6 +383,7 @@ export default function AssetStatsDashboard() {
 
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">Teaching Asset Stats</h1>
@@ -769,6 +770,7 @@ export default function AssetStatsDashboard() {
           )}
         </DialogContent>
       </Dialog>
+      </AccessRestrictedGuard>
     </SurviveSidebarLayout>
   );
 }
