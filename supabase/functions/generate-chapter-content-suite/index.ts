@@ -33,6 +33,56 @@ async function callAnthropic(system: string, user: string): Promise<any> {
   return JSON.parse(cleaned);
 }
 
+// ── Helper: extract unique JE structures from teaching assets ──
+async function extractJEStructures(chapterId: string) {
+  const { data: assets } = await supabase
+    .from("teaching_assets")
+    .select("id, asset_name, journal_entry_completed_json")
+    .eq("chapter_id", chapterId)
+    .not("journal_entry_completed_json", "is", null);
+
+  const uniqueStructures: { accounts: string[]; sides: string[] }[] = [];
+  const allAccountNames = new Set<string>();
+  const seenKeys = new Set<string>();
+
+  for (const asset of (assets || [])) {
+    const jeJson = asset.journal_entry_completed_json;
+    if (!jeJson) continue;
+    const payload = typeof jeJson === "string" ? JSON.parse(jeJson) : jeJson;
+
+    const extractFromRows = (rows: any[]) => {
+      if (!rows || rows.length === 0) return;
+      const accounts = rows.map((r: any) => r.account_name || r.account || "").filter(Boolean);
+      const sides = rows.map((r: any) => {
+        if (r.debit !== null && r.debit !== undefined && r.debit !== 0) return "debit";
+        if (r.credit !== null && r.credit !== undefined && r.credit !== 0) return "credit";
+        return r.side || "debit";
+      });
+      accounts.forEach((a: string) => allAccountNames.add(a));
+      const key = accounts.map((a: string, i: number) => `${a}:${sides[i]}`).sort().join("|");
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      uniqueStructures.push({ accounts, sides });
+    };
+
+    // Canonical format
+    const sections = payload?.scenario_sections || [];
+    for (const section of sections) {
+      for (const dateGroup of (section.entries_by_date || [])) {
+        extractFromRows(dateGroup.rows || []);
+      }
+    }
+    // Legacy flat format
+    if (!sections.length && Array.isArray(payload)) {
+      extractFromRows(payload);
+    }
+  }
+
+  return { uniqueStructures, allAccountNames: Array.from(allAccountNames) };
+}
+
+// ── AI-only generators (unchanged) ──
+
 async function generatePurpose(chapterId: string, chapterName: string, courseCode: string) {
   const json = await callAnthropic(
     `Return ONLY valid JSON: { "purpose_text": "2-3 sentence paragraph explaining what accountants are trying to accomplish in this chapter and why it matters in the real world.", "consequence_text": "1-2 sentences describing the biggest consequence for a business that gets this wrong or ignores it entirely. Be specific and concrete — what actually goes wrong?" }`,
@@ -93,22 +143,184 @@ async function generateExamChecklist(chapterId: string, chapterName: string, cou
   );
 }
 
-async function generateAccounts(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
-  return generateCollection(chapterId, chapterName, courseCode, "chapter_accounts",
-    `Return ONLY valid JSON: { "accounts": [{ "account_name": "Bonds Payable", "account_type": "Long-Term Liability", "normal_balance": "Credit", "account_description": "One sentence. Plain English. What does this account represent and when is it used in this chapter?", "sort_order": 1 }] }
-account_type must be one of exactly: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Equity | Revenue | Expense | Contra Revenue
-normal_balance must be: Debit | Credit | Both`,
-    `List every account used in journal entries in: ${chapterName} (${courseCode}). Include ALL accounts that appear in any journal entry in this chapter. Order by account_type following A = L + E hierarchy: Current Asset → Long-Term Asset → Contra Asset → Current Liability → Long-Term Liability → Equity → Revenue → Expense → Contra Revenue.`,
-    "accounts", extraPrompt
-  );
-}
-
 async function generateFormulas(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_formulas",
     `Return ONLY valid JSON: { "formulas": [{ "formula_name": "Present Value of Annuity", "formula_expression": "PV = PMT × [(1 - (1+r)^-n) / r]", "formula_explanation": "One sentence plain-English explanation of when students use this formula.", "sort_order": 1 }] }`,
     `Generate 3-12 key formulas students must memorize for exams in: ${chapterName} (${courseCode}). Focus on calculation-heavy formulas, not conceptual rules. Only formulas introduced or heavily used in this chapter.`,
     "formulas", extraPrompt
   );
+}
+
+// ── EXTRACTION-FIRST: Journal Entries ──
+async function generateJournalEntries(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
+  const { uniqueStructures } = await extractJEStructures(chapterId);
+
+  const systemPrompt = `You are an accounting expert enriching a list of journal entry structures extracted from real textbook problems.
+
+Return ONLY valid JSON, no markdown, no backticks:
+{
+  "categories": [
+    {
+      "category_name": "Bond Issuance",
+      "sort_order": 1,
+      "entries": [
+        {
+          "transaction_label": "Bond issuance at face value",
+          "sort_order": 1,
+          "suggested": false,
+          "je_lines": [
+            {
+              "account": "Cash",
+              "account_tooltip": "Asset — increases with debit because you're receiving cash",
+              "side": "debit",
+              "amount": "???"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+1. Group the extracted entries into 2-5 logical categories
+2. Write a short transaction_label for each (4-7 words, plain English)
+3. Write an account_tooltip for each account line (one sentence: what the account is and why it increases/decreases here)
+4. Use EXACTLY the account names from the extracted data — do NOT rename or reword any account names
+5. Use ??? for all amounts — never use numbers
+6. For entries from the extracted data, set suggested: false
+7. If there are clearly missing entries for a complete chapter treatment, add them with suggested: true
+8. Keep suggested entries minimal — only add what's truly missing
+9. Do NOT include entries from other chapters`;
+
+  let userPrompt: string;
+  if (uniqueStructures.length > 0) {
+    userPrompt = `Chapter: ${chapterName} (${courseCode})\n\nExtracted journal entries from ${uniqueStructures.length} approved problems in this chapter:\n\n${JSON.stringify(uniqueStructures, null, 2)}\n\nEnrich these entries and suggest any that are clearly missing for complete chapter coverage.`;
+  } else {
+    userPrompt = `Chapter: ${chapterName} (${courseCode})\n\nNo journal entry data was found in existing assets for this chapter. Generate a complete master list of journal entries for this chapter. Mark all entries as suggested: true.\n\nInclude every major transaction type a student needs to know for exams. Group into logical categories (2-5 categories, 2-6 entries each).`;
+  }
+
+  if (extraPrompt) {
+    userPrompt += `\n\nAdditional instructions from admin: ${extraPrompt}. Incorporate these additions without removing existing approved entries.`;
+  }
+
+  userPrompt += "\n\nReturn valid JSON only.";
+
+  const parsed = await callAnthropic(systemPrompt, userPrompt);
+  const categories = parsed.categories || [];
+
+  // Clean up old non-approved data
+  if (!extraPrompt) {
+    await supabase.from("chapter_journal_entries").delete().eq("chapter_id", chapterId).eq("is_approved", false);
+
+    const { data: existingCats } = await supabase.from("chapter_je_categories").select("id").eq("chapter_id", chapterId);
+    const catIds = (existingCats || []).map((c: any) => c.id);
+    if (catIds.length > 0) {
+      const { data: remainingEntries } = await supabase.from("chapter_journal_entries").select("category_id").eq("chapter_id", chapterId);
+      const usedCatIds = new Set((remainingEntries || []).map((e: any) => e.category_id));
+      const emptyCats = catIds.filter((id: string) => !usedCatIds.has(id));
+      if (emptyCats.length > 0) {
+        await supabase.from("chapter_je_categories").delete().in("id", emptyCats);
+      }
+    }
+  }
+
+  let totalEntries = 0;
+  for (const cat of categories) {
+    let categoryId: string;
+    if (extraPrompt) {
+      const { data: existing } = await supabase.from("chapter_je_categories").select("id").eq("chapter_id", chapterId).eq("category_name", cat.category_name).maybeSingle();
+      if (existing) {
+        categoryId = existing.id;
+      } else {
+        const { data: newCat } = await supabase.from("chapter_je_categories").insert({ chapter_id: chapterId, category_name: cat.category_name, sort_order: cat.sort_order || 0 }).select("id").single();
+        categoryId = newCat!.id;
+      }
+    } else {
+      const { data: newCat } = await supabase.from("chapter_je_categories").insert({ chapter_id: chapterId, category_name: cat.category_name, sort_order: cat.sort_order || 0 }).select("id").single();
+      categoryId = newCat!.id;
+    }
+
+    for (const entry of cat.entries || []) {
+      if (extraPrompt) {
+        const { data: dup } = await supabase.from("chapter_journal_entries").select("id").eq("chapter_id", chapterId).eq("transaction_label", entry.transaction_label).maybeSingle();
+        if (dup) continue;
+      }
+      const entrySource = entry.suggested ? "suggested" : "extracted";
+      await supabase.from("chapter_journal_entries").insert({
+        chapter_id: chapterId,
+        category_id: categoryId,
+        transaction_label: entry.transaction_label,
+        je_lines: entry.je_lines,
+        sort_order: entry.sort_order || 0,
+        is_approved: false,
+        source: entrySource,
+        generated_at: new Date().toISOString(),
+      });
+      totalEntries++;
+    }
+  }
+  return totalEntries;
+}
+
+// ── EXTRACTION-FIRST: Accounts ──
+async function generateAccounts(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
+  const { allAccountNames } = await extractJEStructures(chapterId);
+
+  let systemPrompt: string;
+  let userPrompt: string;
+
+  if (allAccountNames.length > 0) {
+    systemPrompt = `You are an accounting expert. You are given a list of account names extracted from real journal entries in a chapter's approved teaching assets.
+
+Return ONLY valid JSON: { "accounts": [{ "account_name": "Bonds Payable", "account_type": "Long-Term Liability", "normal_balance": "Credit", "account_description": "One sentence. Plain English. What does this account represent and when is it used in this chapter?", "sort_order": 1 }] }
+
+account_type must be one of exactly: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Equity | Revenue | Expense | Contra Revenue
+normal_balance must be: Debit | Credit | Both
+
+Rules:
+1. Use EXACTLY the account names provided — do NOT rename, reword, or abbreviate
+2. Classify each account with the correct account_type and normal_balance
+3. Write a plain-English account_description for each
+4. Order by A = L + E hierarchy: Current Asset → Long-Term Asset → Contra Asset → Current Liability → Long-Term Liability → Equity → Revenue → Expense → Contra Revenue
+5. If any accounts are clearly missing for complete chapter coverage, add them with suggested: true
+6. Extracted accounts should have suggested: false`;
+
+    userPrompt = `Chapter: ${chapterName} (${courseCode})\n\nAccount names extracted from approved teaching assets in this chapter:\n\n${JSON.stringify(allAccountNames, null, 2)}\n\nClassify each account and suggest any that are clearly missing.`;
+  } else {
+    systemPrompt = `Return ONLY valid JSON: { "accounts": [{ "account_name": "Bonds Payable", "account_type": "Long-Term Liability", "normal_balance": "Credit", "account_description": "One sentence. Plain English. What does this account represent and when is it used in this chapter?", "sort_order": 1, "suggested": true }] }
+account_type must be one of exactly: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Equity | Revenue | Expense | Contra Revenue
+normal_balance must be: Debit | Credit | Both`;
+
+    userPrompt = `No teaching asset data found. List every account used in journal entries in: ${chapterName} (${courseCode}). Include ALL accounts that appear in any journal entry in this chapter. Mark all as suggested: true. Order by account_type following A = L + E hierarchy.`;
+  }
+
+  if (extraPrompt) {
+    userPrompt += `\n\nAdditional instructions: ${extraPrompt}`;
+  }
+
+  const json = await callAnthropic(systemPrompt, userPrompt);
+  const items = json.accounts || [];
+
+  if (!extraPrompt) {
+    await supabase.from("chapter_accounts").delete().eq("chapter_id", chapterId).or("is_approved.eq.false,is_approved.is.null");
+  }
+
+  if (items.length > 0) {
+    const extractedNames = new Set(allAccountNames);
+    const rows = items.map((item: any, i: number) => ({
+      chapter_id: chapterId,
+      account_name: item.account_name,
+      account_type: item.account_type,
+      normal_balance: item.normal_balance,
+      account_description: item.account_description,
+      sort_order: item.sort_order ?? i + 1,
+      generated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from("chapter_accounts").insert(rows);
+    if (error) throw error;
+  }
+  return items.length;
 }
 
 Deno.serve(async (req) => {
@@ -157,6 +369,7 @@ Deno.serve(async (req) => {
             if (only === "exam_checklist") return generateExamChecklist(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "accounts") return generateAccounts(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "formulas") return generateFormulas(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
+            if (only === "journal_entries") return generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             throw new Error(`Unknown only: ${only}`);
           }]]
         : [
@@ -166,6 +379,7 @@ Deno.serve(async (req) => {
             ["exam_checklist", () => generateExamChecklist(ch.id, ch.chapter_name, ch.courseCode)],
             ["accounts", () => generateAccounts(ch.id, ch.chapter_name, ch.courseCode)],
             ["formulas", () => generateFormulas(ch.id, ch.chapter_name, ch.courseCode)],
+            ["journal_entries", () => generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode)],
           ];
 
       for (const [key, fn] of generators) {
