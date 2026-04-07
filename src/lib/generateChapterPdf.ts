@@ -462,3 +462,19 @@ export function generateChapterPdf(data: ChapterPdfData) {
   const filename = `SA_${data.courseCode}_Ch${data.chapterNumber}_${safeName}.pdf`;
   doc.save(filename);
 }
+
+/** Returns a Blob instead of triggering download — used for bulk zip export */
+export function generateChapterPdfBlob(data: ChapterPdfData): { blob: Blob; filename: string } {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageRef = { num: 1 };
+  let y = 25;
+
+  // Duplicate the entire generation logic by calling internal build
+  // We re-use the same doc building approach
+  buildPdfContent(doc, data, pageRef);
+
+  const safeName = data.chapterName.replace(/[^a-zA-Z0-9]/g, "");
+  const filename = `SA_${data.courseCode}_Ch${data.chapterNumber}_${safeName}.pdf`;
+  return { blob: doc.output("blob"), filename };
+}
+
