@@ -1093,7 +1093,8 @@ export default function SolutionsQAReview() {
   const [fixAssetOpen, setFixAssetOpen] = useState(false);
 
 
-  const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: typeof window !== "undefined" ? window.innerWidth - 320 : 700, y: 60 });
+  const rightStartX = typeof window !== "undefined" ? window.innerWidth - 320 : 700;
+  const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, resetPos } = useDraggable({ x: rightStartX, y: 60 });
 
   const [sopOpen, setSopOpen] = useState(false);
 
