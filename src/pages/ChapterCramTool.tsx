@@ -728,24 +728,43 @@ function CramAccountsSection({ accounts }: { accounts: any[] }) {
 function CramKeyTermsSection({ terms }: { terms: any[] }) {
   const [openTerm, setOpenTerm] = useState<string | null>(null);
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const t of terms) {
+      const cat = t.category || "General";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(t);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [terms]);
+
   return (
     <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
-      {terms.map((term: any, ti: number) => {
-        const isOpen = openTerm === term.id;
-        return (
-          <div key={term.id} style={{ borderTop: ti > 0 ? `1px solid ${theme.border}` : undefined }}>
-            <button onClick={() => setOpenTerm(isOpen ? null : term.id)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
-              <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
-              <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{term.term}</span>
-            </button>
-            {isOpen && (
-              <div className="px-4 pb-3 pl-8">
-                <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted }}>{term.definition}</p>
+      {grouped.map(([category, catTerms], gi) => (
+        <div key={category}>
+          {grouped.length > 1 && (
+            <div className="px-4 pt-3 pb-1" style={{ borderTop: gi > 0 ? `1px solid ${theme.border}` : undefined }}>
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>{category}</span>
+            </div>
+          )}
+          {catTerms.map((term: any, ti: number) => {
+            const isOpen = openTerm === term.id;
+            return (
+              <div key={term.id} style={{ borderTop: (gi === 0 && ti > 0) || (gi > 0 && (grouped.length <= 1 || ti > 0)) ? `1px solid ${theme.border}` : undefined }}>
+                <button onClick={() => setOpenTerm(isOpen ? null : term.id)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
+                  <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+                  <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{term.term}</span>
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-3 pl-8">
+                    <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted }}>{term.definition}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
