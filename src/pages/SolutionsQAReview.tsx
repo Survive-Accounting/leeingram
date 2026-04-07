@@ -121,6 +121,7 @@ function useDraggable(initialPos: { x: number; y: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
   const pendingPosRef = useRef(initialPos);
+  const initialPosRef = useRef(initialPos);
   const frameRef = useRef<number | null>(null);
 
   const paint = useCallback((next: { x: number; y: number }) => {
@@ -1092,7 +1093,13 @@ export default function SolutionsQAReview() {
   const [fixAssetOpen, setFixAssetOpen] = useState(false);
 
 
-  const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useDraggable({ x: typeof window !== "undefined" ? window.innerWidth - 320 : 700, y: 60 });
+  const rightStartX = typeof window !== "undefined" ? window.innerWidth - 320 : 700;
+  const { pos, containerRef, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, resetPos } = useDraggable({ x: rightStartX, y: 60 });
+
+  // Reset QA panel to right side on asset change
+  useEffect(() => {
+    resetPos({ x: typeof window !== "undefined" ? window.innerWidth - 320 : 700, y: 60 });
+  }, [currentIndex, resetPos]);
 
   const [sopOpen, setSopOpen] = useState(false);
 
