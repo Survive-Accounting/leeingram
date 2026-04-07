@@ -15,6 +15,7 @@ const PLACEHOLDER_CARDS = [
 export default function LaunchAnalytics() {
   return (
     <SurviveSidebarLayout>
+      <AccessRestrictedGuard>
       <div className="space-y-6">
         <h1 className="text-xl font-bold text-foreground">Launch Analytics</h1>
 
