@@ -1029,50 +1029,6 @@ export type Database = {
           },
         ]
       }
-      chapter_exam_checklist: {
-        Row: {
-          chapter_id: string
-          checklist_item: string
-          created_at: string | null
-          generated_at: string | null
-          id: string
-          is_approved: boolean | null
-          is_rejected: boolean | null
-          sort_order: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          chapter_id: string
-          checklist_item: string
-          created_at?: string | null
-          generated_at?: string | null
-          id?: string
-          is_approved?: boolean | null
-          is_rejected?: boolean | null
-          sort_order?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          chapter_id?: string
-          checklist_item?: string
-          created_at?: string | null
-          generated_at?: string | null
-          id?: string
-          is_approved?: boolean | null
-          is_rejected?: boolean | null
-          sort_order?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chapter_exam_checklist_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapters"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       chapter_exam_mistakes: {
         Row: {
           chapter_id: string
