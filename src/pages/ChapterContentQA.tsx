@@ -673,6 +673,53 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
   const updateEntryLabel = async (id: string, label: string) => { await supabase.from("chapter_journal_entries").update({ transaction_label: label }).eq("id", id); invalidate(); };
   const updateEntryLines = async (id: string, lines: JELine[]) => { await supabase.from("chapter_journal_entries").update({ je_lines: lines as any }).eq("id", id); invalidate(); };
 
+  const moveCategoryUp = async (catId: string) => {
+    const idx = categories.findIndex(c => c.id === catId);
+    if (idx <= 0) return;
+    const above = categories[idx - 1];
+    const current = categories[idx];
+    await Promise.all([
+      supabase.from("chapter_je_categories").update({ sort_order: above.sort_order }).eq("id", current.id),
+      supabase.from("chapter_je_categories").update({ sort_order: current.sort_order }).eq("id", above.id),
+    ]);
+    invalidate();
+  };
+  const moveCategoryDown = async (catId: string) => {
+    const idx = categories.findIndex(c => c.id === catId);
+    if (idx < 0 || idx >= categories.length - 1) return;
+    const below = categories[idx + 1];
+    const current = categories[idx];
+    await Promise.all([
+      supabase.from("chapter_je_categories").update({ sort_order: below.sort_order }).eq("id", current.id),
+      supabase.from("chapter_je_categories").update({ sort_order: current.sort_order }).eq("id", below.id),
+    ]);
+    invalidate();
+  };
+  const moveEntryUp = async (entryId: string, categoryId: string) => {
+    const catEntries = entries.filter(e => e.category_id === categoryId).sort((a, b) => a.sort_order - b.sort_order);
+    const idx = catEntries.findIndex(e => e.id === entryId);
+    if (idx <= 0) return;
+    const above = catEntries[idx - 1];
+    const current = catEntries[idx];
+    await Promise.all([
+      supabase.from("chapter_journal_entries").update({ sort_order: above.sort_order }).eq("id", current.id),
+      supabase.from("chapter_journal_entries").update({ sort_order: current.sort_order }).eq("id", above.id),
+    ]);
+    invalidate();
+  };
+  const moveEntryDown = async (entryId: string, categoryId: string) => {
+    const catEntries = entries.filter(e => e.category_id === categoryId).sort((a, b) => a.sort_order - b.sort_order);
+    const idx = catEntries.findIndex(e => e.id === entryId);
+    if (idx < 0 || idx >= catEntries.length - 1) return;
+    const below = catEntries[idx + 1];
+    const current = catEntries[idx];
+    await Promise.all([
+      supabase.from("chapter_journal_entries").update({ sort_order: below.sort_order }).eq("id", current.id),
+      supabase.from("chapter_journal_entries").update({ sort_order: current.sort_order }).eq("id", below.id),
+    ]);
+    invalidate();
+  };
+
   if (entries.length === 0 && !generating) {
     return (
       <div className="text-center py-10 space-y-4">
