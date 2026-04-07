@@ -95,12 +95,12 @@ type SectionConfigRow = {
 
 // ── Card definitions ──
 const TOOL_CARDS = [
-  { key: "whats-the-point", title: "What's the Point", icon: Target, countLabel: "bullets" },
-  { key: "key-terms", title: "Key Terms", icon: BookOpen, countLabel: "terms" },
-  { key: "accounts", title: "Accounts", icon: LayoutGrid, countLabel: "accounts" },
-  { key: "journal-entries", title: "Journal Entries", icon: FileText, countLabel: "entries" },
-  { key: "formulas", title: "Formulas", icon: Calculator, countLabel: "formulas" },
-  { key: "exam-mistakes", title: "Exam Mistakes", icon: AlertTriangle, countLabel: "mistakes" },
+  { key: "whats-the-point", title: "What's the Point", icon: Target, countLabel: "entry", countLabelPlural: "entries" },
+  { key: "key-terms", title: "Key Terms", icon: BookOpen, countLabel: "term", countLabelPlural: "terms" },
+  { key: "accounts", title: "Accounts", icon: LayoutGrid, countLabel: "account", countLabelPlural: "accounts" },
+  { key: "journal-entries", title: "Journal Entries", icon: FileText, countLabel: "entry", countLabelPlural: "entries" },
+  { key: "formulas", title: "Formulas", icon: Calculator, countLabel: "formula", countLabelPlural: "formulas" },
+  { key: "exam-mistakes", title: "Exam Mistakes", icon: AlertTriangle, countLabel: "mistake", countLabelPlural: "mistakes" },
 ] as const;
 
 type CardKey = typeof TOOL_CARDS[number]["key"];
