@@ -334,10 +334,10 @@ For each account, generate ALL of the following fields:
 - account_type — one of: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Contra Liability | Equity | Revenue | Expense | Contra Revenue
 - normal_balance — Debit | Credit | Both
 - account_description — one sentence, plain English, what this account represents
-- debit_tooltip — one sentence, "you" format: what does debiting this account mean? What causes it to go up? (e.g. "You debit Cash every time money comes in — it increases your asset.")
-- credit_tooltip — one sentence, "you" format: what does crediting this account mean?
-- balance_tooltip — one sentence, "you" format: what does the ending balance represent in plain English? (e.g. "Your ending balance is the net cash you have on hand after all inflows and outflows this period.")
-- contra_tooltip — FOR CONTRA ACCOUNTS ONLY (null otherwise): 2-3 sentences, "you" format. Explain what this account is contra to, why it exists as a separate account, and how they work inverse of each other. Be specific.
+- debit_tooltip — what action causes a debit on this account, what that does to the balance, one-line intuition. Write like a tutor talking to a confused student. Short sentences. Cause and effect. Never start with "This account..." Never sound like a textbook. Example style for Cash: "Every time cash comes in, you debit this account. Debiting an asset increases it. Money in, Cash goes up."
+- credit_tooltip — same pattern for crediting. Example style for Cash: "Anytime you pay cash, you credit this account. Crediting any asset decreases it. Money out, Cash goes down."
+- balance_tooltip — what the balance represents, grounded simply. Example style: "This is your beginning balance of Cash. Where it stands on day one." Keep it conversational, cause-and-effect, no jargon.
+- contra_tooltip — FOR CONTRA ACCOUNTS ONLY (null otherwise): explain the big picture — what this account is contra to, why it exists separately, and how they move inverse of each other. Conversational, cause and effect, no jargon. 2-3 sentences max.
 - fs_placement_tooltip — FOR CONTRA ACCOUNTS ONLY (null otherwise): 2 sentences, "you" format. Where does this appear on the financial statements, what is it subtracted from, and what does the net figure represent?
 - example_date_label — e.g. "Jan 1 – Dec 31, 2024"
 - example_beginning_balance — a round, realistic number for this account type (not $1 or $1,000,000 — think like a tutor setting up a clean example)
@@ -346,7 +346,9 @@ For each account, generate ALL of the following fields:
 - example_ending_balance — correctly calculated: for debit-normal accounts = beginning + debits - credits; for credit-normal accounts = beginning - debits + credits
 - sort_order — integer
 
-All tooltips must be second-person ("you") tutor voice, powerfully concise, specific to THIS account — never generic.`;
+TOOLTIP VOICE RULES — Critical:
+Write each tooltip like a tutor explaining this out loud to a student who's confused. Short sentences. Cause and effect. No jargon. Never start with "This account..." Never sound like a textbook. Let it feel natural and human. Use "you" throughout.
+All tooltips must be specific to THIS account — never generic.`;
 
   if (allAccountNames.length > 0) {
     systemPrompt = `You are an accounting expert. You are given a list of account names extracted from real journal entries in a chapter's approved teaching assets.
