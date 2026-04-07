@@ -105,8 +105,17 @@ Rules:
   return "ok";
 }
 
-async function generateCollection(chapterId: string, chapterName: string, courseCode: string, table: string, systemPrompt: string, userPrompt: string, arrayKey: string, extraPrompt?: string) {
-  const finalUser = extraPrompt ? `${userPrompt}\n\nAdditional instructions: ${extraPrompt}` : userPrompt;
+async function generateCollection(chapterId: string, chapterName: string, courseCode: string, table: string, systemPrompt: string, userPrompt: string, arrayKey: string, extraPrompt?: string, nameField: string = "term") {
+  let finalUser = userPrompt;
+
+  if (extraPrompt) {
+    // Fetch existing items so AI knows what's already there
+    const { data: existingRows } = await supabase.from(table).select("*").eq("chapter_id", chapterId);
+    const existingNames = (existingRows || []).map((r: any) => r[nameField] || r.term || r.formula_name || r.mistake || "");
+
+    finalUser += `\n\nIMPORTANT — These items already exist (do NOT regenerate them, only generate NEW ones):\n${existingNames.map((n: string) => `• ${n}`).join("\n")}\n\nAdditional instructions: ${extraPrompt}\n\nReturn ONLY the new items to add. Do not include any items from the existing list above.`;
+  }
+
   const json = await callAnthropic(systemPrompt, finalUser);
   const items = json[arrayKey] || [];
 
@@ -114,8 +123,21 @@ async function generateCollection(chapterId: string, chapterName: string, course
     await supabase.from(table).delete().eq("chapter_id", chapterId).or("is_approved.eq.false,is_approved.is.null");
   }
 
-  if (items.length > 0) {
-    const rows = items.map((item: any, i: number) => ({
+  // Dedup on extra prompt: skip items that match existing names (case-insensitive)
+  let toInsert = items;
+  let skipped = 0;
+  if (extraPrompt && items.length > 0) {
+    const { data: existingRows } = await supabase.from(table).select("*").eq("chapter_id", chapterId);
+    const existingSet = new Set((existingRows || []).map((r: any) => (r[nameField] || r.term || r.formula_name || r.mistake || "").toLowerCase().trim()));
+    toInsert = items.filter((item: any) => {
+      const itemName = (item[nameField] || item.term || item.formula_name || item.mistake || "").toLowerCase().trim();
+      if (existingSet.has(itemName)) { skipped++; return false; }
+      return true;
+    });
+  }
+
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((item: any, i: number) => ({
       chapter_id: chapterId,
       ...item,
       sort_order: item.sort_order ?? i + 1,
@@ -124,14 +146,16 @@ async function generateCollection(chapterId: string, chapterName: string, course
     const { error } = await supabase.from(table).insert(rows);
     if (error) throw error;
   }
-  return items.length;
+
+  console.log(`[${table}] extra=${!!extraPrompt} generated=${items.length} inserted=${toInsert.length} skipped=${skipped}`);
+  return { added: toInsert.length, skipped, generated: items.length };
 }
 
 async function generateKeyTerms(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_key_terms",
     `Return ONLY valid JSON: { "terms": [{ "term": "Bond Premium", "definition": "Plain-English one sentence. No textbook language. Write like a tutor explaining to a confused student.", "sort_order": 1 }] }`,
     `Generate 6-10 key terms a student must know for exams in: ${chapterName} (${courseCode}). Only terms introduced or heavily used in this chapter.`,
-    "terms", extraPrompt
+    "terms", extraPrompt, "term"
   );
 }
 
@@ -148,7 +172,7 @@ Rank them:
 Each mistake: short label (8 words max) + one sentence explanation of why students make it and what to do instead. Be specific to this chapter — not generic accounting advice.
 
 Return sort_order 1 for #1, 2 for #2, 3 for #3.`,
-    "mistakes", extraPrompt
+    "mistakes", extraPrompt, "mistake"
   );
 }
 
@@ -156,7 +180,7 @@ async function generateFormulas(chapterId: string, chapterName: string, courseCo
   return generateCollection(chapterId, chapterName, courseCode, "chapter_formulas",
     `Return ONLY valid JSON: { "formulas": [{ "formula_name": "Present Value of Annuity", "formula_expression": "PV = PMT × [(1 - (1+r)^-n) / r]", "formula_explanation": "One sentence plain-English explanation of when students use this formula.", "sort_order": 1 }] }`,
     `Generate 3-12 key formulas students must memorize for exams in: ${chapterName} (${courseCode}). Focus on calculation-heavy formulas, not conceptual rules. Only formulas introduced or heavily used in this chapter.`,
-    "formulas", extraPrompt
+    "formulas", extraPrompt, "formula_name"
   );
 }
 
