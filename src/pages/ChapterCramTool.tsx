@@ -651,24 +651,41 @@ function CramAccountsSection({ accounts }: { accounts: TAccountData[] }) {
   })).filter(g => g.items.length > 0);
 
   return (
-    <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
-      {grouped.map((group, gi) => {
+    <div className="space-y-3">
+      {grouped.map((group) => {
         const isOpen = openGroup === group.label;
         return (
-          <div key={group.label} style={{ borderTop: gi > 0 ? `1px solid ${theme.border}` : undefined }}>
-            <AccountGroupHeader
-              label={group.label}
-              count={group.items.length}
-              isDebitNormal={group.isDebitNormal}
+          <div key={group.label}>
+            <button
               onClick={() => setOpenGroup(isOpen ? null : group.label)}
-              isOpen={isOpen}
-              mode="student"
-              theme={theme}
-            />
+              className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors"
+              style={{
+                background: isOpen ? theme.navy : theme.mutedBg,
+                color: isOpen ? "#FFFFFF" : theme.heading,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-[0.1em]">{group.label}</span>
+                <span className="text-[10px] font-normal" style={{ opacity: 0.6 }}>
+                  ({group.items.length}) · {group.isDebitNormal ? "Dr normal" : "Cr normal"}
+                </span>
+              </div>
+              <span className="text-[10px]">{isOpen ? "▼" : "▶"}</span>
+            </button>
             {isOpen && (
-              <div className="px-4 pb-3 space-y-2">
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {group.items.map((acc: TAccountData) => (
-                  <TAccountCard key={acc.id} account={acc} mode="student" theme={theme} />
+                  <div
+                    key={acc.id}
+                    className="rounded-xl p-3"
+                    style={{
+                      background: theme.cardBg,
+                      border: `1px solid ${theme.border}`,
+                      boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+                    }}
+                  >
+                    <TAccountCard account={acc} mode="student" theme={theme} />
+                  </div>
                 ))}
               </div>
             )}
@@ -679,46 +696,147 @@ function CramAccountsSection({ accounts }: { accounts: TAccountData[] }) {
   );
 }
 
-function CramKeyTermsSection({ terms }: { terms: any[] }) {
-  const [openTerm, setOpenTerm] = useState<string | null>(null);
+function CramKeyTermsSection({ terms, chapterId }: { terms: any[]; chapterId: string }) {
+  const [termIndex, setTermIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [seenSet, setSeenSet] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem(`sa_terms_seen_${chapterId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, any[]>();
-    for (const t of terms) {
-      const cat = t.category || "General";
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(t);
-    }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [terms]);
+  const currentTerm = terms[termIndex];
+  const seenCount = terms.filter(t => seenSet.has(t.id)).length;
+
+  const handleSeen = useCallback((termId: string) => {
+    setSeenSet(prev => {
+      const next = new Set(prev).add(termId);
+      try { sessionStorage.setItem(`sa_terms_seen_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [chapterId]);
+
+  useEffect(() => { setFlipped(false); }, [termIndex]);
+
+  if (!currentTerm) return null;
 
   return (
-    <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
-      {grouped.map(([category, catTerms], gi) => (
-        <div key={category}>
-          {grouped.length > 1 && (
-            <div className="px-4 pt-3 pb-1" style={{ borderTop: gi > 0 ? `1px solid ${theme.border}` : undefined }}>
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>{category}</span>
-            </div>
-          )}
-          {catTerms.map((term: any, ti: number) => {
-            const isOpen = openTerm === term.id;
-            return (
-              <div key={term.id} style={{ borderTop: (gi === 0 && ti > 0) || (gi > 0 && (grouped.length <= 1 || ti > 0)) ? `1px solid ${theme.border}` : undefined }}>
-                <button onClick={() => setOpenTerm(isOpen ? null : term.id)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
-                  <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
-                  <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{term.term}</span>
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-3 pl-8">
-                    <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted }}>{term.definition}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+    <div>
+      {/* Progress counter */}
+      <div className="mb-3 rounded-xl border px-4 py-2.5" style={{ background: theme.mutedBg, borderColor: theme.border }}>
+        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
+          {seenCount} ✓ / {terms.length}
+        </p>
+      </div>
+
+      {/* Category label */}
+      {currentTerm.category && (
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: theme.textMuted }}>
+          {currentTerm.category}
+        </p>
+      )}
+
+      {/* Flip card */}
+      <div
+        className="relative cursor-pointer"
+        style={{ perspective: 1000, minHeight: 200 }}
+        onClick={() => setFlipped(f => !f)}
+      >
+        <div
+          style={{
+            transformStyle: "preserve-3d",
+            transition: "transform 0.5s ease",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+            position: "relative",
+            minHeight: 200,
+          }}
+        >
+          {/* Front */}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl px-8 py-10"
+            style={{
+              backfaceVisibility: "hidden",
+              background: theme.navy,
+              border: `1px solid ${theme.border}`,
+              boxShadow: "0 4px 20px rgba(15,23,42,0.08)",
+            }}
+          >
+            <p className="text-[22px] sm:text-[26px] font-bold text-white text-center leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+              {currentTerm.term}
+            </p>
+            <p className="mt-3 text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+              Tap to reveal definition
+            </p>
+          </div>
+
+          {/* Back */}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl px-8 py-10"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              background: theme.cardBg,
+              border: `1px solid ${theme.border}`,
+              boxShadow: "0 4px 20px rgba(15,23,42,0.08)",
+            }}
+          >
+            <p className="text-[12px] font-bold uppercase tracking-wider mb-3" style={{ color: theme.textMuted }}>
+              {currentTerm.term}
+            </p>
+            <p className="text-[15px] leading-[1.7] text-center" style={{ color: theme.text }}>
+              {currentTerm.definition}
+            </p>
+            <p className="mt-3 text-[11px]" style={{ color: theme.label }}>
+              Tap to flip back
+            </p>
+          </div>
         </div>
-      ))}
+      </div>
+
+      {/* Got It + Nav */}
+      <div className="mt-4 flex items-center justify-between">
+        <button
+          type="button"
+          disabled={termIndex === 0}
+          onClick={() => setTermIndex(i => i - 1)}
+          className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+          style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+        >
+          <ChevronLeft className="h-4 w-4" /> Prev
+        </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => handleSeen(currentTerm.id)}
+            disabled={seenSet.has(currentTerm.id)}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold"
+            style={{
+              background: seenSet.has(currentTerm.id) ? theme.successBg : "#DCFCE7",
+              color: seenSet.has(currentTerm.id) ? "#15803D" : theme.successText,
+              border: `1px solid ${seenSet.has(currentTerm.id) ? theme.successBorder : "#86EFAC"}`,
+              cursor: seenSet.has(currentTerm.id) ? "default" : "pointer",
+            }}
+          >
+            <CheckCircle className="h-3.5 w-3.5" />
+            {seenSet.has(currentTerm.id) ? "Got It ✓" : "Got It"}
+          </button>
+          <span className="text-[13px]" style={{ color: theme.textMuted }}>
+            {termIndex + 1} / {terms.length}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          disabled={termIndex >= terms.length - 1}
+          onClick={() => setTermIndex(i => i + 1)}
+          className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30"
+          style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+        >
+          Next <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1341,7 +1459,7 @@ export default function ChapterCramTool() {
             {showKeyTerms && keyTerms.length > 0 && (
               <section id="key-terms" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_key_terms") ? 1 : 0.4 }}>
                 <SectionHeaderWithToggle label="KEY TERMS" count={keyTerms.length} isAdmin={isAdmin} sectionName="chapter_key_terms" isVisible={isSectionVisible("chapter_key_terms")} onToggle={toggleSectionVisibility} />
-                <CramKeyTermsSection terms={keyTerms} />
+                <CramKeyTermsSection terms={keyTerms} chapterId={chapterId} />
                 <SectionReportLink sectionLabel="Key Terms" onClick={openFeedbackForSection} />
               </section>
             )}
@@ -1640,7 +1758,7 @@ export default function ChapterCramTool() {
                         <>
                           {/* Formula name heading above image */}
                           <div className="px-5 pt-4 pb-2">
-                            <p className="text-[13px] font-semibold" style={{ color: theme.heading }}>
+                            <p className="text-[16px] font-bold" style={{ color: theme.heading, fontFamily: "'DM Serif Display', serif" }}>
                               {currentFormula.name}
                             </p>
                           </div>
@@ -1663,31 +1781,25 @@ export default function ChapterCramTool() {
                       ) : (
                         <div style={{ padding: "24px 32px" }}>
                           <p
-                            className="text-[11px] font-semibold uppercase"
-                            style={{ color: theme.heading, letterSpacing: "0.05em", marginBottom: 8 }}
+                            className="text-[18px] font-bold"
+                            style={{ color: theme.heading, marginBottom: 12, fontFamily: "'DM Serif Display', serif" }}
                           >
                             {currentFormula.name}
                           </p>
                           <p
                             className="text-[20px] font-medium"
                             style={{
-                              color: theme.heading,
+                              color: "#CE1126",
                               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
                             }}
                           >
                             {currentFormula.expression}
                           </p>
                           {currentFormula.explanation && (
-                            <p className="text-[13px]" style={{ color: theme.textMuted, marginTop: 10 }}>
+                            <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted, marginTop: 12 }}>
                               {currentFormula.explanation}
                             </p>
                           )}
-                          <span
-                            className="mt-3 inline-block rounded-full px-2 py-0.5 text-[10px]"
-                            style={{ background: theme.mutedBg, color: theme.textMuted }}
-                          >
-                            Image coming soon
-                          </span>
                         </div>
                       )}
 
@@ -1755,18 +1867,41 @@ export default function ChapterCramTool() {
             {showMistakes && examMistakes.length > 0 && (
               <section id="mistakes" className="scroll-mt-28" style={{ opacity: isSectionVisible("chapter_exam_mistakes") ? 1 : 0.4 }}>
                 <SectionHeaderWithToggle label="COMMON EXAM MISTAKES" count={examMistakes.length} isAdmin={isAdmin} sectionName="chapter_exam_mistakes" isVisible={isSectionVisible("chapter_exam_mistakes")} onToggle={toggleSectionVisibility} />
-                <div className="space-y-2">
-                  {examMistakes.map((m: any) => (
-                    <div key={m.id} className="rounded-xl border-l-4 px-4 py-3" style={{ borderLeftColor: "#CE1126", borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.cardBg }}>
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#CE1126" }} />
-                        <div>
-                          <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{m.mistake}</p>
-                          {m.explanation && <p className="text-[12px] mt-1 leading-[1.6]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                <div className="space-y-3">
+                  {examMistakes.map((m: any, mi: number) => {
+                    const borderColors = ["#CE1126", "#F59E0B", "#FBBF24"];
+                    const rankLabels = ["#1 · Most Dangerous", "#2 · Common", "#3 · Subtle"];
+                    const rankBgColors = ["#FEF2F2", "#FFFBEB", "#FFFBEB"];
+                    const rankTextColors = ["#CE1126", "#92400E", "#92400E"];
+                    const borderColor = borderColors[mi] || borderColors[2];
+                    return (
+                      <div
+                        key={m.id}
+                        className="rounded-xl border-l-4 px-5 py-4"
+                        style={{
+                          borderLeftColor: borderColor,
+                          borderTop: `1px solid ${theme.border}`,
+                          borderRight: `1px solid ${theme.border}`,
+                          borderBottom: `1px solid ${theme.border}`,
+                          background: theme.cardBg,
+                          boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className="shrink-0 mt-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                            style={{ background: rankBgColors[mi] || rankBgColors[2], color: rankTextColors[mi] || rankTextColors[2] }}
+                          >
+                            {rankLabels[mi] || `#${mi + 1}`}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[14px] font-bold leading-[1.4]" style={{ color: theme.text }}>{m.mistake}</p>
+                            {m.explanation && <p className="text-[13px] mt-1.5 leading-[1.7]" style={{ color: theme.textMuted }}>{m.explanation}</p>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <SectionReportLink sectionLabel="Exam Mistakes" onClick={openFeedbackForSection} />
               </section>
