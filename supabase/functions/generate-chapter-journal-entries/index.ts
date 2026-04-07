@@ -207,6 +207,7 @@ Include every major transaction type a student needs to know for exams. Group in
 
         const aiData = await aiRes.json();
         const rawText = aiData.content?.[0]?.text || "";
+        console.log(`[JE] ${ch.chapter_name}: AI response length=${rawText.length}`);
 
         // Parse JSON
         let parsed: any;
@@ -219,6 +220,7 @@ Include every major transaction type a student needs to know for exams. Group in
         }
 
         const categories = parsed.categories || [];
+        console.log(`[JE] ${ch.chapter_name}: ${categories.length} categories, ${categories.reduce((s: number, c: any) => s + (c.entries?.length || 0), 0)} entries`);
 
         // ── Clean up old non-approved data ──
         if (!extraPrompt) {
@@ -271,11 +273,12 @@ Include every major transaction type a student needs to know for exams. Group in
               categoryId = newCat!.id;
             }
           } else {
-            const { data: newCat } = await supabase
+            const { data: newCat, error: catErr } = await supabase
               .from("chapter_je_categories")
               .insert({ chapter_id: ch.id, category_name: cat.category_name, sort_order: cat.sort_order || 0 })
               .select("id")
               .single();
+            if (catErr) { console.error(`[JE] Category insert error:`, catErr); throw catErr; }
             categoryId = newCat!.id;
           }
 
@@ -296,7 +299,7 @@ Include every major transaction type a student needs to know for exams. Group in
 
             const entrySource = entry.source === "extracted" ? "extracted" : "suggested";
 
-            await supabase
+            const { error: jeErr } = await supabase
               .from("chapter_journal_entries")
               .insert({
                 chapter_id: ch.id,
@@ -308,6 +311,7 @@ Include every major transaction type a student needs to know for exams. Group in
                 source: entrySource,
                 generated_at: new Date().toISOString(),
               });
+            if (jeErr) console.error(`[JE] Entry insert error for "${entry.transaction_label}":`, jeErr);
           }
         }
 
