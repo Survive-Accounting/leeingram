@@ -181,17 +181,17 @@ export default function ChapterFormulasManager() {
           </Select>
 
           <div className="flex gap-2 ml-auto">
-            <Button size="sm" variant="outline" onClick={generateAllImages} disabled={generating || !!genImagesProgress}>
-              {genImagesProgress && !selectedChapter ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
-              Generate All Images
+            <Button size="sm" onClick={() => handleGenerate(false)} disabled={generating || !selectedChapter}>
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              Generate This Chapter
             </Button>
             <Button size="sm" variant="outline" onClick={() => handleGenerate(true)} disabled={generating}>
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Generate All
             </Button>
-            <Button size="sm" onClick={() => handleGenerate(false)} disabled={generating || !selectedChapter}>
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
-              Generate This Chapter
+            <Button size="sm" variant="outline" onClick={generateAllImages} disabled={generating || !!genImagesProgress}>
+              {genImagesProgress && !selectedChapter ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
+              Generate All Images
             </Button>
           </div>
         </div>
