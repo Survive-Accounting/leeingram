@@ -134,10 +134,13 @@ function AdminTAccount({ account, isDebit, contra, showExample, setShowExample, 
   showFs: boolean; setShowFs: (v: boolean) => void;
   hasExample: boolean; hasFs: boolean; signLabel: string;
 }) {
+  const lineColor = "hsl(var(--foreground))";
+  const lineWeight = 2;
+
   return (
-    <div className="max-w-[400px]">
-      {/* Header — centered, bold, full width with bottom border */}
-      <div className="text-center border-b-2 border-foreground pb-1 mb-0">
+    <div className="max-w-[380px]">
+      {/* Header */}
+      <div className="text-center pb-1" style={{ borderBottom: `${lineWeight}px solid ${lineColor}` }}>
         <span className="text-sm font-bold text-foreground">{account.account_name}</span>
         <span className="text-xs text-muted-foreground ml-1.5">{signLabel}</span>
         {contra && (
@@ -148,29 +151,51 @@ function AdminTAccount({ account, isDebit, contra, showExample, setShowExample, 
         )}
       </div>
 
-      {/* T-account body — two columns with center divider only */}
-      <div className="grid grid-cols-2 min-h-[28px]">
-        <div className="flex items-center justify-center gap-1 py-1 border-r border-foreground/30">
+      {/* T-account body — staggered layout */}
+      <div className="grid grid-cols-2">
+        {/* Row 1: debit side */}
+        <div className="flex items-center gap-1 py-1 pl-2" style={{ borderRight: `${lineWeight}px solid ${lineColor}` }}>
           {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} />}
           <span className="text-xs font-mono text-muted-foreground">???</span>
         </div>
-        <div className="flex items-center justify-center gap-1 py-1">
+        <div className="py-1" />
+
+        {/* Row 2: credit side */}
+        <div className="py-1" style={{ borderRight: `${lineWeight}px solid ${lineColor}` }} />
+        <div className="flex items-center gap-1 py-1 justify-end pr-2">
           <span className="text-xs font-mono text-muted-foreground">???</span>
           {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} />}
         </div>
+
+        {/* Row 3: debit side (balance placeholder row for stagger) */}
+        <div className="py-0.5" style={{ borderRight: `${lineWeight}px solid ${lineColor}` }} />
+        <div className="py-0.5" />
       </div>
 
       {/* Balance row */}
-      <div className="border-t border-foreground/30 py-1">
-        <div className={`flex items-center gap-1 ${isDebit ? "justify-start" : "justify-end"}`}>
-          <span className="text-xs font-mono text-foreground">???</span>
-          {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} />}
-        </div>
+      <div className="py-1 grid grid-cols-2" style={{ borderTop: `${lineWeight}px solid ${lineColor}` }}>
+        {isDebit ? (
+          <>
+            <div className="flex items-center gap-1 pl-2">
+              <span className="text-xs font-mono text-foreground font-semibold">???</span>
+              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} />}
+            </div>
+            <div />
+          </>
+        ) : (
+          <>
+            <div />
+            <div className="flex items-center gap-1 justify-end pr-2">
+              <span className="text-xs font-mono text-foreground font-semibold">???</span>
+              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} />}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Toggles */}
       {(hasExample || hasFs) && (
-        <div className="mt-1">
+        <div className="mt-1.5">
           {hasExample && (
             <button onClick={() => setShowExample(!showExample)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
               {showExample ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -202,12 +227,13 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
   const text = t.text || "#0F172A";
   const textMuted = t.textMuted || "#64748B";
   const heading = t.heading || "#14213D";
-  const divider = t.border || "#334155";
+  const lineColor = heading;
+  const lw = 2;
 
   return (
-    <div style={{ maxWidth: 400 }}>
+    <div style={{ maxWidth: 380 }}>
       {/* Header */}
-      <div style={{ textAlign: "center", borderBottom: `2px solid ${heading}`, paddingBottom: 4 }}>
+      <div style={{ textAlign: "center", borderBottom: `${lw}px solid ${lineColor}`, paddingBottom: 4 }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: heading }}>{account.account_name}</span>
         <span style={{ fontSize: 12, color: textMuted, marginLeft: 6 }}>{signLabel}</span>
         {contra && (
@@ -218,29 +244,51 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
         )}
       </div>
 
-      {/* T-body */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "4px 0", borderRight: `1px solid ${divider}40` }}>
+      {/* T-body — staggered */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+        {/* Row 1: debit */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 0 4px 8px", borderRight: `${lw}px solid ${lineColor}` }}>
           {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} style={{ color: textMuted }} />}
           <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "4px 0" }}>
+        <div style={{ padding: "4px 0" }} />
+
+        {/* Row 2: credit */}
+        <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", padding: "4px 8px 4px 0" }}>
           <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
           {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} style={{ color: textMuted }} />}
         </div>
+
+        {/* Row 3: spacer */}
+        <div style={{ padding: "2px 0", borderRight: `${lw}px solid ${lineColor}` }} />
+        <div style={{ padding: "2px 0" }} />
       </div>
 
       {/* Balance */}
-      <div style={{ borderTop: `1px solid ${divider}40`, padding: "4px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: isDebit ? "flex-start" : "flex-end" }}>
-          <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>???</span>
-          {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} style={{ color: textMuted }} />}
-        </div>
+      <div style={{ borderTop: `${lw}px solid ${lineColor}`, padding: "4px 0", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+        {isDebit ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
+              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} style={{ color: textMuted }} />}
+            </div>
+            <div />
+          </>
+        ) : (
+          <>
+            <div />
+            <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", paddingRight: 8 }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
+              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} style={{ color: textMuted }} />}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Toggles */}
       {(hasExample || hasFs) && (
-        <div style={{ marginTop: 4 }}>
+        <div style={{ marginTop: 6 }}>
           {hasExample && (
             <button onClick={() => setShowExample(!showExample)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
               {showExample ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
