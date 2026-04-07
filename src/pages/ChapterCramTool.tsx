@@ -612,6 +612,144 @@ function getBELabel(courseCode: string) {
   return "Brief Exercises";
 }
 
+const ACCOUNT_TYPE_ORDER = [
+  "Current Asset", "Long-Term Asset", "Contra Asset",
+  "Current Liability", "Long-Term Liability", "Equity",
+  "Revenue", "Expense", "Contra Revenue",
+];
+
+const DEBIT_GROUPS = new Set(["Current Asset", "Long-Term Asset", "Contra Revenue", "Expense"]);
+
+function TAccountTooltip({ account }: { account: any }) {
+  const isDebit = account.normal_balance === "Debit";
+  const isCredit = account.normal_balance === "Credit";
+  const isBoth = account.normal_balance === "Both";
+
+  return (
+    <div className="text-left" style={{ minWidth: 200 }}>
+      <table className="w-full text-[11px] border-collapse" style={{ borderColor: theme.border }}>
+        <thead>
+          <tr><th colSpan={2} className="text-center py-1 font-bold border-b" style={{ borderColor: theme.border, color: theme.heading }}>{account.account_name}</th></tr>
+          <tr style={{ borderBottom: `2px solid ${theme.heading}` }}>
+            <th className="text-center py-1 w-1/2 font-semibold" style={{ color: theme.text }}>Debit</th>
+            <th className="text-center py-1 w-1/2 font-semibold border-l" style={{ borderColor: theme.heading, color: theme.text }}>Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="text-center py-1 text-[10px]" style={{ color: theme.textMuted }}>{isDebit ? "(+)" : isCredit ? "(−)" : "(±)"}</td>
+            <td className="text-center py-1 text-[10px] border-l" style={{ borderColor: theme.border, color: theme.textMuted }}>{isCredit ? "(+)" : isDebit ? "(−)" : "(±)"}</td>
+          </tr>
+          <tr>
+            <td className="text-center py-1 font-mono text-[11px]" style={{ color: theme.textMuted }}>{(isDebit || isBoth) ? "???" : ""}</td>
+            <td className="text-center py-1 font-mono text-[11px] border-l" style={{ borderColor: theme.border, color: theme.textMuted }}>{(isCredit || isBoth) ? "???" : ""}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style={{ borderTop: `1px solid ${theme.border}` }}>
+            <td colSpan={2} className="text-center py-1 text-[10px] font-semibold" style={{ color: theme.heading }}>
+              {isBoth ? "Can have either normal balance" : `Normal Balance: ${account.normal_balance}`}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+      {account.account_description && (
+        <p className="mt-1.5 text-[10px] leading-[1.5]" style={{ color: theme.textMuted }}>{account.account_description}</p>
+      )}
+    </div>
+  );
+}
+
+function CramAccountsSection({ accounts }: { accounts: any[] }) {
+  const [openGroup, setOpenGroup] = useState<string | null>(ACCOUNT_TYPE_ORDER[0]);
+  const [hoveredAccount, setHoveredAccount] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+  const [tooltipAccount, setTooltipAccount] = useState<any>(null);
+
+  const grouped = ACCOUNT_TYPE_ORDER.map(type => ({
+    type,
+    items: accounts.filter(a => a.account_type === type),
+    isDebitNormal: DEBIT_GROUPS.has(type),
+  })).filter(g => g.items.length > 0);
+
+  const handleHover = (e: React.MouseEvent, account: any) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setTooltipPos({ top: rect.bottom + 8, left: Math.min(rect.left, window.innerWidth - 260) });
+    setTooltipAccount(account);
+    setHoveredAccount(account.id);
+  };
+
+  return (
+    <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+      {grouped.map((group, gi) => {
+        const isOpen = openGroup === group.type;
+        const balanceLabel = group.isDebitNormal ? "(Dr + / Cr −)" : "(Dr − / Cr +)";
+        return (
+          <div key={group.type} style={{ borderTop: gi > 0 ? `1px solid ${theme.border}` : undefined }}>
+            <button onClick={() => setOpenGroup(isOpen ? null : group.type)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
+              <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+              <span className="text-[13px] font-semibold" style={{ color: theme.heading }}>{group.type}</span>
+              <span className="text-[11px]" style={{ color: theme.label }}>{balanceLabel}</span>
+              <span className="ml-auto text-[11px] font-semibold rounded-full px-2 py-0.5" style={{ background: theme.mutedBg, color: theme.textMuted }}>({group.items.length})</span>
+            </button>
+            {isOpen && (
+              <div className="px-4 pb-3 space-y-1">
+                {group.items.map((acc: any) => (
+                  <div key={acc.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md" style={{ background: theme.mutedBg }}>
+                    <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{acc.account_name}</span>
+                    <button
+                      onMouseEnter={(e) => handleHover(e, acc)}
+                      onMouseLeave={() => { setHoveredAccount(null); setTooltipAccount(null); }}
+                      className="shrink-0"
+                    >
+                      <Info className="h-3.5 w-3.5" style={{ color: theme.label }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Tooltip portal */}
+      {tooltipAccount && tooltipPos && (
+        <div style={{ position: "fixed", top: tooltipPos.top, left: tooltipPos.left, zIndex: 9999, background: "#FFFFFF", border: `1px solid ${theme.border}`, borderRadius: 8, padding: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", maxWidth: 260 }}
+          onMouseEnter={() => {}}
+          onMouseLeave={() => { setHoveredAccount(null); setTooltipAccount(null); }}
+        >
+          <TAccountTooltip account={tooltipAccount} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CramKeyTermsSection({ terms }: { terms: any[] }) {
+  const [openTerm, setOpenTerm] = useState<string | null>(null);
+
+  return (
+    <div className="rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+      {terms.map((term: any, ti: number) => {
+        const isOpen = openTerm === term.id;
+        return (
+          <div key={term.id} style={{ borderTop: ti > 0 ? `1px solid ${theme.border}` : undefined }}>
+            <button onClick={() => setOpenTerm(isOpen ? null : term.id)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
+              <span className="text-[10px] shrink-0" style={{ color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+              <span className="text-[13px] font-semibold" style={{ color: theme.text }}>{term.term}</span>
+            </button>
+            {isOpen && (
+              <div className="px-4 pb-3 pl-8">
+                <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted }}>{term.definition}</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChapterCramTool() {
   const { chapterId: routeChapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
