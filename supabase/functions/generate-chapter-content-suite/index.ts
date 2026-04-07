@@ -91,19 +91,17 @@ async function extractJEStructures(chapterId: string) {
 
 async function generatePurpose(chapterId: string, chapterName: string, courseCode: string) {
   const json = await callAnthropic(
-    `Return ONLY valid JSON: { "purpose_bullets": ["First bullet — leads logically to second", "Second bullet — builds on first", "Third bullet — conclusion or payoff"], "consequence_bullets": ["First consequence — most immediate", "Second consequence — downstream effect"] }
+    `Return ONLY valid JSON: { "purpose": "One powerful sentence", "consequence": "One powerful sentence" }
 
 Rules:
-- Max 3 purpose bullets, max 2 consequence bullets
-- Each bullet: one concise sentence, no fluff
-- Bullets should flow logically — each leads to next
+- purpose: ONE sentence capturing the essence of why this chapter matters — what the student is learning to do and why. Make it the single most impactful statement.
+- consequence: ONE sentence capturing what goes wrong if you get this wrong — make it personal, specific, and memorable.
 - Write in second-person ("you") tutor voice. Address the student directly. Example: "You're learning how to record what actually happened in a transaction so the books stay accurate." NOT "This chapter covers recording transactions."
-- Purpose bullets: explain what the student is learning to do and why it matters for their exam/career
-- Consequence bullets: what goes wrong if YOU get this wrong — make it personal and specific`,
+- Be powerfully concise — no fluff, no filler. Every word earns its place.`,
     `Chapter: ${chapterName} (${courseCode})`
   );
-  const purposeBullets = json.purpose_bullets || [];
-  const consequenceBullets = json.consequence_bullets || [];
+  const purposeBullets = [json.purpose || json.purpose_bullets?.[0] || ""].filter(Boolean);
+  const consequenceBullets = [json.consequence || json.consequence_bullets?.[0] || ""].filter(Boolean);
   
   const existing = await supabase.from("chapter_purpose").select("id").eq("chapter_id", chapterId).maybeSingle();
   if (existing.data) {
