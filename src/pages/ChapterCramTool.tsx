@@ -21,9 +21,10 @@ const LEE_HEADSHOT_BG = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-p
 const STUDENT_BASE_URL = "https://learn.surviveaccounting.com";
 
 const theme = {
-  pageBg: "#FFFFFF",
+  pageBg: "#F8F8FA",
   cardBg: "#FFFFFF",
   mutedBg: "#F8FAFC",
+  toolsBg: "#F0F0F4",
   text: "#0F172A",
   textMuted: "#64748B",
   label: "#94A3B8",
@@ -40,6 +41,10 @@ const theme = {
   amberBorder: "#FDE68A",
   amberText: "#92400E",
   red: "#CE1126",
+  cardShadow: "0 4px 20px rgba(0,0,0,0.35)",
+  cardHoverShadow: "0 8px 32px rgba(0,0,0,0.5)",
+  cardBorder: "1px solid rgba(255,255,255,0.08)",
+  cardHoverGlow: "inset 0 0 0 1px rgba(206,17,38,0.4)",
 };
 
 type SupplementaryRow = {
