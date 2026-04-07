@@ -581,6 +581,7 @@ function ChapterQAModal({
                   View Survive This Chapter <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
+            </div>
           </DialogHeader>
 
           {/* Generate All Content button */}
