@@ -207,6 +207,7 @@ Include every major transaction type a student needs to know for exams. Group in
 
         const aiData = await aiRes.json();
         const rawText = aiData.content?.[0]?.text || "";
+        console.log(`[JE] ${ch.chapter_name}: AI response length=${rawText.length}`);
 
         // Parse JSON
         let parsed: any;
@@ -219,6 +220,7 @@ Include every major transaction type a student needs to know for exams. Group in
         }
 
         const categories = parsed.categories || [];
+        console.log(`[JE] ${ch.chapter_name}: ${categories.length} categories, ${categories.reduce((s: number, c: any) => s + (c.entries?.length || 0), 0)} entries`);
 
         // ── Clean up old non-approved data ──
         if (!extraPrompt) {
