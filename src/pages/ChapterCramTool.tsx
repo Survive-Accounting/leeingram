@@ -853,16 +853,25 @@ export default function ChapterCramTool() {
             PRACTICE PROBLEMS · CH {chapterNum || "?"}
           </p>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {([["be", beLabel, solutionCounts.be], ["ex", "Exercises", solutionCounts.ex], ["p", "Problems", solutionCounts.p]] as const).map(([key, label, count]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setSolutionsTab(prev => prev === key ? null : key)}
-                className="rounded-full px-4 py-1.5 text-[12px] font-semibold transition-colors"
-                style={{ background: solutionsTab === key ? theme.navy : theme.mutedBg, color: solutionsTab === key ? "#FFFFFF" : theme.textMuted, border: "none" }}
+                className="relative rounded-lg px-5 py-3 text-[13px] font-bold text-white transition-all duration-200"
+                style={{
+                  background: theme.navy,
+                  border: solutionsTab === key ? "2px solid rgba(255,255,255,0.25)" : theme.cardBorder,
+                  boxShadow: theme.cardShadow,
+                }}
               >
-                {label} · {count}
+                {label}
+                {count > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white" style={{ background: theme.red }}>
+                    {count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
