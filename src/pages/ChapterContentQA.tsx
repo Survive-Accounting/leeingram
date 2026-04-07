@@ -22,8 +22,9 @@ import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target, Info, ArrowUp, ArrowDown,
+  AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown,
 } from "lucide-react";
+import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
