@@ -960,7 +960,7 @@ export default function ChapterCramTool() {
 
         {/* ──── Feedback ──── */}
         <section id="feedback" className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] mb-3" style={{ color: theme.label }}>SHARE FEEDBACK</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: theme.label, letterSpacing: "0.18em" }}>SHARE FEEDBACK</p>
           <CramFeedbackForm
             chapterId={chapterId}
             chapterNumber={chapter?.chapter_number}
