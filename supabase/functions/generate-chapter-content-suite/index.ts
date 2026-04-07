@@ -154,8 +154,15 @@ async function generateCollection(chapterId: string, chapterName: string, course
 
 async function generateKeyTerms(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_key_terms",
-    `Return ONLY valid JSON: { "terms": [{ "term": "Bond Premium", "definition": "Plain-English one sentence in second-person tutor voice. Address the student as 'you'. Example: 'You're recording the extra amount above face value that investors paid because the stated rate was higher than the market rate.' NOT 'A bond premium is the excess of the issue price over face value.'", "sort_order": 1 }] }`,
-    `Generate 6-10 key terms a student must know for exams in: ${chapterName} (${courseCode}). Only terms introduced or heavily used in this chapter. Write every definition in second-person "you" voice — the student is doing the work.`,
+    `Return ONLY valid JSON: { "terms": [{ "term": "Economic Entity Assumption", "definition": "You keep the business's finances completely separate from the owner's personal finances. Mixing them would make your records meaningless.", "category": "Assumptions", "sort_order": 1 }] }`,
+    `Generate 15-25 key terms per chapter, grouped into logical categories. Every important concept, principle, assumption, account type, and financial statement a student might encounter in ${chapterName} (${courseCode}) should be included — do not arbitrarily limit the count. Missing an important term is worse than having too many.
+
+For each term, return:
+- term — the concept name
+- definition — 1-2 sentences, second-person tutor voice ("You'll use this when..." or "This tells you...")
+- category — a short category label (e.g., "Principles", "Assumptions", "Account Types", "Financial Statements", "Core Concepts", "Ratios", etc.) — use whatever categories make sense for the chapter
+
+Be specific to this chapter — not generic accounting advice.`,
     "terms", extraPrompt, "term"
   );
 }
