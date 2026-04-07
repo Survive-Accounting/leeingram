@@ -151,7 +151,8 @@ Rules:
 6. For entries from the extracted data, set source: "extracted"
 7. If there are clearly missing entries for a complete chapter treatment, add them with source: "suggested"
 8. Keep suggested entries minimal — only add what's truly missing
-9. Do NOT include entries from other chapters`;
+9. Do NOT include entries from other chapters
+10. GAIN/LOSS RULE: When a transaction type can result in either a gain or a loss depending on circumstances, you MUST generate SEPARATE entries for each outcome. For example, instead of one "Bond redemption" entry, generate "Discount bond redemption at a loss", "Discount bond redemption at a gain", "Premium bond redemption at a loss", and "Premium bond redemption at a gain". This applies to all disposals, retirements, redemptions, sales, and impairments where the outcome depends on carrying value vs. proceeds.`;
 
         let userPrompt: string;
 
