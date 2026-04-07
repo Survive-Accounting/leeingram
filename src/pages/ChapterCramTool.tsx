@@ -1002,7 +1002,7 @@ function CramFeedbackForm({ chapterId, chapterNumber, chapterName, courseDisplay
     setSubmitting(true);
     setSubmitError("");
     try {
-      await (supabase as any).from("chapter_questions").insert({ chapter_id: chapterId, student_email: email.trim(), question: message.trim(), issue_type: issueType === "General feedback" ? "feedback" : "issue", status: "new", student_name: name.trim() || null });
+      await (supabase as any).from("chapter_questions").insert({ chapter_id: chapterId, student_email: email.trim(), question: message.trim(), issue_type: issueType === "Just saying hello" ? "feedback" : "issue", status: "new", student_name: name.trim() || null });
       supabase.functions.invoke("send-issue-report", { body: { student_email: email.trim(), message: message.trim(), issue_type_label: issueType, course_name: courseDisplayName, chapter_number: chapterNumber || null, chapter_name: chapterName } }).catch(() => {});
       setSent(true);
     } catch { setSubmitError("Something went wrong — email lee@surviveaccounting.com directly"); } finally { setSubmitting(false); }
