@@ -771,12 +771,6 @@ export default function ChapterCramTool() {
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch { return new Set(); }
   });
-  const [checklistChecked, setChecklistChecked] = useState<Set<string>>(() => {
-    try {
-      const stored = sessionStorage.getItem(`sa_checklist_${chapterId}`);
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch { return new Set(); }
-  });
   const { data: isAdmin = false } = useQuery({
     queryKey: ["cram-admin-check", user?.id],
     enabled: !authLoading,
@@ -900,18 +894,16 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const [purposeRes, termsRes, mistakesRes, checklistRes, accountsRes] = await Promise.all([
+      const [purposeRes, termsRes, mistakesRes, accountsRes] = await Promise.all([
         supabase.from("chapter_purpose").select("*").eq("chapter_id", chapterId!).maybeSingle(),
         supabase.from("chapter_key_terms").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
         supabase.from("chapter_exam_mistakes").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
-        supabase.from("chapter_exam_checklist").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
         supabase.from("chapter_accounts").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
       ]);
       return {
         purpose: purposeRes.data as any,
         keyTerms: (termsRes.data || []) as any[],
         examMistakes: (mistakesRes.data || []) as any[],
-        examChecklist: (checklistRes.data || []) as any[],
         accounts: (accountsRes.data || []) as any[],
       };
     },
@@ -1119,14 +1111,6 @@ export default function ChapterCramTool() {
     setReviewedSet((previous) => new Set(previous).add(cardId));
   }, []);
 
-  const handleChecklistToggle = useCallback((itemId: string) => {
-    setChecklistChecked(prev => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
-      try { sessionStorage.setItem(`sa_checklist_${chapterId}`, JSON.stringify([...next])); } catch {}
-      return next;
-    });
-  }, [chapterId]);
 
   useEffect(() => {
     if (!chapter) return;
@@ -1182,14 +1166,12 @@ export default function ChapterCramTool() {
   const purpose = contentSuite?.purpose;
   const keyTerms = contentSuite?.keyTerms || [];
   const examMistakes = contentSuite?.examMistakes || [];
-  const examChecklist = contentSuite?.examChecklist || [];
   const chapterAccounts = contentSuite?.accounts || [];
 
   const showPurpose = (!!purpose || isAdmin) && (isAdmin || isSectionVisible("chapter_purpose"));
   const showAccounts = (chapterAccounts.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_accounts"));
   const showKeyTerms = (keyTerms.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_key_terms"));
   const showMistakes = (examMistakes.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_exam_mistakes"));
-  const showChecklist = (examChecklist.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_exam_checklist"));
 
   const isTabExpanded = (key: string) => !!expandedTabs[key];
   const toggleTab = (key: string) => setExpandedTabs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1677,35 +1659,6 @@ export default function ChapterCramTool() {
             </section>
           )}
 
-          {/* ──── Exam Prep Checklist ──── */}
-          {showChecklist && examChecklist.length > 0 && (
-            <section style={{ opacity: isSectionVisible("chapter_exam_checklist") ? 1 : 0.4 }}>
-              <SectionHeaderWithToggle label="EXAM PREP CHECKLIST" count={examChecklist.length} isAdmin={isAdmin} sectionName="chapter_exam_checklist" isVisible={isSectionVisible("chapter_exam_checklist")} onToggle={toggleSectionVisibility} />
-              <div className="rounded-xl border p-4" style={{ borderColor: theme.border, background: theme.cardBg }}>
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-[13px] font-semibold" style={{ color: theme.text }}>
-                    {examChecklist.filter((i: any) => checklistChecked.has(i.id)).length} / {examChecklist.length} complete
-                  </p>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full mb-4" style={{ background: "#E5E7EB" }}>
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(examChecklist.filter((i: any) => checklistChecked.has(i.id)).length / examChecklist.length) * 100}%`, background: examChecklist.filter((i: any) => checklistChecked.has(i.id)).length === examChecklist.length ? "#22C55E" : theme.navy }} />
-                </div>
-                <div className="space-y-2">
-                  {examChecklist.map((item: any) => {
-                    const checked = checklistChecked.has(item.id);
-                    return (
-                      <button key={item.id} onClick={() => handleChecklistToggle(item.id)} className="w-full flex items-start gap-3 text-left rounded-lg px-3 py-2 transition-colors" style={{ background: checked ? theme.successBg : "transparent" }}>
-                        <div className="mt-0.5 shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center" style={{ borderColor: checked ? "#22C55E" : theme.border, background: checked ? "#22C55E" : "transparent" }}>
-                          {checked && <CheckCircle className="h-3.5 w-3.5 text-white" />}
-                        </div>
-                        <span className="text-[13px] leading-[1.5]" style={{ color: checked ? theme.textMuted : theme.text, textDecoration: checked ? "line-through" : "none" }}>{item.checklist_item}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-          )}
 
           {/* ──── Share Feedback / Report Issue ──── */}
           <section>

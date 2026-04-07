@@ -25,7 +25,7 @@ import {
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
-import { ChecklistTab } from "@/components/chapter-qa/ChecklistTab";
+
 import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
@@ -482,7 +482,7 @@ function ChapterQAModal({
             <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
             <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
             <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
-            <TabsTrigger value="checklist" className="gap-1 text-[11px]"><CheckSquare className="h-3 w-3" /> Checklist</TabsTrigger>
+            
             <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
           </TabsList>
           <ScrollArea className="flex-1 mt-3">
@@ -500,9 +500,6 @@ function ChapterQAModal({
             </TabsContent>
             <TabsContent value="mistakes" className="mt-0">
               <MistakesTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
-            </TabsContent>
-            <TabsContent value="checklist" className="mt-0">
-              <ChecklistTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
             <TabsContent value="purpose" className="mt-0">
               <PurposeTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
