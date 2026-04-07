@@ -299,7 +299,7 @@ Include every major transaction type a student needs to know for exams. Group in
 
             const entrySource = entry.source === "extracted" ? "extracted" : "suggested";
 
-            await supabase
+            const { error: jeErr } = await supabase
               .from("chapter_journal_entries")
               .insert({
                 chapter_id: ch.id,
@@ -311,6 +311,7 @@ Include every major transaction type a student needs to know for exams. Group in
                 source: entrySource,
                 generated_at: new Date().toISOString(),
               });
+            if (jeErr) console.error(`[JE] Entry insert error for "${entry.transaction_label}":`, jeErr);
           }
         }
 
