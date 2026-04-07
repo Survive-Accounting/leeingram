@@ -330,27 +330,46 @@ async function generateAccounts(chapterId: string, chapterName: string, courseCo
   let systemPrompt: string;
   let userPrompt: string;
 
+  const accountFieldSpec = `
+For each account, generate ALL of the following fields:
+- account_name — exact account name
+- account_type — one of: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Contra Liability | Equity | Revenue | Expense | Contra Revenue
+- normal_balance — Debit | Credit | Both
+- account_description — one sentence, plain English, what this account represents
+- debit_tooltip — one sentence, "you" format: what does debiting this account mean? What causes it to go up? (e.g. "You debit Cash every time money comes in — it increases your asset.")
+- credit_tooltip — one sentence, "you" format: what does crediting this account mean?
+- balance_tooltip — one sentence, "you" format: what does the ending balance represent in plain English? (e.g. "Your ending balance is the net cash you have on hand after all inflows and outflows this period.")
+- contra_tooltip — FOR CONTRA ACCOUNTS ONLY (null otherwise): 2-3 sentences, "you" format. Explain what this account is contra to, why it exists as a separate account, and how they work inverse of each other. Be specific.
+- fs_placement_tooltip — FOR CONTRA ACCOUNTS ONLY (null otherwise): 2 sentences, "you" format. Where does this appear on the financial statements, what is it subtracted from, and what does the net figure represent?
+- example_date_label — e.g. "Jan 1 – Dec 31, 2024"
+- example_beginning_balance — a round, realistic number for this account type (not $1 or $1,000,000 — think like a tutor setting up a clean example)
+- example_debit_amount — a realistic transaction amount
+- example_credit_amount — a realistic transaction amount
+- example_ending_balance — correctly calculated: for debit-normal accounts = beginning + debits - credits; for credit-normal accounts = beginning - debits + credits
+- sort_order — integer
+
+All tooltips must be second-person ("you") tutor voice, powerfully concise, specific to THIS account — never generic.`;
+
   if (allAccountNames.length > 0) {
     systemPrompt = `You are an accounting expert. You are given a list of account names extracted from real journal entries in a chapter's approved teaching assets.
 
-Return ONLY valid JSON: { "accounts": [{ "account_name": "Bonds Payable", "account_type": "Long-Term Liability", "normal_balance": "Credit", "account_description": "One sentence. Plain English. What does this account represent and when is it used in this chapter?", "sort_order": 1 }] }
-
-account_type must be one of exactly: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Equity | Revenue | Expense | Contra Revenue
-normal_balance must be: Debit | Credit | Both
+Return ONLY valid JSON: { "accounts": [...] }
+${accountFieldSpec}
 
 Rules:
 1. Use EXACTLY the account names provided — do NOT rename, reword, or abbreviate
 2. Classify each account with the correct account_type and normal_balance
-3. Write a plain-English account_description for each
-4. Order by A = L + E hierarchy: Current Asset → Long-Term Asset → Contra Asset → Current Liability → Long-Term Liability → Equity → Revenue → Expense → Contra Revenue
-5. If any accounts are clearly missing for complete chapter coverage, add them with suggested: true
-6. Extracted accounts should have suggested: false`;
+3. Order by A = L + E hierarchy: Current Asset → Long-Term Asset → Contra Asset → Current Liability → Long-Term Liability → Contra Liability → Equity → Revenue → Expense → Contra Revenue
+4. If any accounts are clearly missing for complete chapter coverage, add them with suggested: true
+5. Extracted accounts should have suggested: false
+6. For non-contra accounts, set contra_tooltip and fs_placement_tooltip to null`;
 
     userPrompt = `Chapter: ${chapterName} (${courseCode})\n\nAccount names extracted from approved teaching assets in this chapter:\n\n${JSON.stringify(allAccountNames, null, 2)}\n\nClassify each account and suggest any that are clearly missing.`;
   } else {
-    systemPrompt = `Return ONLY valid JSON: { "accounts": [{ "account_name": "Bonds Payable", "account_type": "Long-Term Liability", "normal_balance": "Credit", "account_description": "One sentence. Plain English. What does this account represent and when is it used in this chapter?", "sort_order": 1, "suggested": true }] }
-account_type must be one of exactly: Current Asset | Long-Term Asset | Contra Asset | Current Liability | Long-Term Liability | Equity | Revenue | Expense | Contra Revenue
-normal_balance must be: Debit | Credit | Both`;
+    systemPrompt = `Return ONLY valid JSON: { "accounts": [...] }
+${accountFieldSpec}
+
+For non-contra accounts, set contra_tooltip and fs_placement_tooltip to null. Mark all as suggested: true.`;
 
     userPrompt = `No teaching asset data found. List every account used in journal entries in: ${chapterName} (${courseCode}). Include ALL accounts that appear in any journal entry in this chapter. Mark all as suggested: true. Order by account_type following A = L + E hierarchy.`;
   }
