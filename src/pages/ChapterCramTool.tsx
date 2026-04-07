@@ -1375,28 +1375,29 @@ export default function ChapterCramTool() {
 
   // Build active ToC sections
   const activeTocSections = TOC_SECTIONS.filter(s => {
-    if (s.id === "purpose") return showPurpose;
+    if (s.id === "whats-the-point") return showPurpose;
     if (s.id === "accounts") return showAccounts;
     if (s.id === "key-terms") return showKeyTerms;
-    if (s.id === "practice-problems") return showSolutionsSection;
-    if (s.id === "chapter-je") return showChapterJESection;
-    if (s.id === "je-memorize") return showJournalSection;
     if (s.id === "formulas") return showFormulasSection;
-    if (s.id === "mistakes") return showMistakes;
-    return true;
+    if (s.id === "journal-entries") return showChapterJESection;
+    if (s.id === "exam-mistakes") return showMistakes;
+    if (s.id === "practice-problems") return showSolutionsSection;
+    return false;
   });
 
   const chapterNum = chapter?.chapter_number;
 
   return (
     <div className="min-h-screen" style={{ background: theme.pageBg }}>
-      {/* ── Sticky Nav Bar ── */}
-      <header className="sticky top-0 z-30" style={{ background: theme.navy, height: 56 }}>
-        <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
-          <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8" />
-          <span className="hidden sm:block text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
-            Created by Lee Ingram · Tutor since 2015
-          </span>
+      {/* ── Static Nav Bar (not sticky) ── */}
+      <header style={{ background: theme.navy, height: 56 }}>
+        <div className="mx-auto flex h-full max-w-[1200px] items-center px-4 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
+            <span className="text-[11px] sm:text-[12px] truncate" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Created by Lee Ingram · Tutor since 2015
+            </span>
+          </div>
         </div>
       </header>
 
@@ -1405,7 +1406,7 @@ export default function ChapterCramTool() {
 
       {/* ── Hero Header ── */}
       <div style={{ background: theme.navy }}>
-        <div className="mx-auto max-w-[920px] px-4 py-8 sm:px-6 sm:py-10 lg:ml-[232px] lg:mr-auto">
+        <div className="mx-auto max-w-[780px] px-4 py-8 sm:px-6 sm:py-10 lg:ml-[232px] lg:mr-auto">
           {courseDisplayName && (
             <p className="text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.5)" }}>
               {courseDisplayName}
@@ -1426,7 +1427,7 @@ export default function ChapterCramTool() {
       <div className="relative">
         <TocSidebarWrapper activeSections={activeTocSections} />
 
-        <main className="mx-auto max-w-[920px] px-4 py-6 sm:px-6 sm:py-8 lg:ml-[232px] lg:mr-auto">
+        <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8 lg:ml-[232px] lg:mr-auto">
           <div className="space-y-10">
             {/* ──── What's the Point? ──── */}
             {showPurpose && purpose && (
