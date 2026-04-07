@@ -1044,15 +1044,6 @@ export default function ChapterCramTool() {
   const showMistakes = (examMistakes.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_exam_mistakes"));
   const showChecklist = (examChecklist.length > 0 || isAdmin) && (isAdmin || isSectionVisible("chapter_exam_checklist"));
 
-  const handleChecklistToggle = useCallback((itemId: string) => {
-    setChecklistChecked(prev => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
-      try { sessionStorage.setItem(`sa_checklist_${chapterId}`, JSON.stringify([...next])); } catch {}
-      return next;
-    });
-  }, [chapterId]);
-
   const isTabExpanded = (key: string) => !!expandedTabs[key];
   const toggleTab = (key: string) => setExpandedTabs((prev) => ({ ...prev, [key]: !prev[key] }));
 
