@@ -22,7 +22,7 @@ import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target, Info,
+  AlertCircle, Target, Info, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
