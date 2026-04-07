@@ -162,7 +162,7 @@ async function generateKeyTerms(chapterId: string, chapterName: string, courseCo
 
 async function generateExamMistakes(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
   return generateCollection(chapterId, chapterName, courseCode, "chapter_exam_mistakes",
-    `Return ONLY valid JSON: { "mistakes": [{ "mistake": "Short label for the mistake (8 words max)", "explanation": "One sentence in second-person 'you' voice explaining why YOU make this mistake and what to do instead. Example: 'You forget to reverse the discount when the bond is redeemed early, so your gain/loss calculation is off.' NOT 'Students often forget to reverse the discount.'", "sort_order": 1 }] }`,
+    `Return ONLY valid JSON: { "mistakes": [{ "mistake": "Short label for the mistake (8 words max)", "explanation": "One sentence in second-person 'you' voice explaining why YOU make this mistake and what to do instead.", "example_text": "A concise 2-3 sentence example in second-person 'you' voice that illustrates this mistake with a specific scenario a student would encounter. E.g. 'Say you buy supplies for $500 cash. You might record it as an expense right away, but you actually need to debit Supplies (asset) first. It only becomes an expense when you use them up.'", "sort_order": 1 }] }`,
     `Generate exactly 3 common exam mistakes for: ${chapterName} (${courseCode}).
 
 Rank them:
@@ -170,7 +170,10 @@ Rank them:
 #2 — Most common: students make this constantly even when they think they understand the material
 #3 — Most subtle: easy to overlook, hard to catch without really understanding the concept
 
-Each mistake: short label (8 words max) + one sentence explanation in second-person "you" voice. Tell the student what THEY do wrong and what to do instead. Be specific to this chapter — not generic accounting advice.
+Each mistake needs:
+- "mistake": short label (8 words max)
+- "explanation": one sentence in second-person "you" voice. Tell the student what THEY do wrong and what to do instead. Be specific to this chapter — not generic accounting advice.
+- "example_text": a concise 2-3 sentence example in second-person "you" voice. Use a specific dollar amount or scenario the student would see on an exam. Make it concrete and easy to follow.
 
 Return sort_order 1 for #1, 2 for #2, 3 for #3.`,
     "mistakes", extraPrompt, "mistake"
