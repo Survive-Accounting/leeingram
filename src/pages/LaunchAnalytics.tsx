@@ -1,4 +1,5 @@
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
