@@ -127,11 +127,9 @@ function wrapText(doc: jsPDF, text: string, maxWidth: number): string[] {
   return doc.splitTextToSize(text, maxWidth);
 }
 
-// ── Main Generator ───────────────────────────────────────────────
+// ── Shared builder ───────────────────────────────────────────────
 
-export function generateChapterPdf(data: ChapterPdfData) {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageRef = { num: 1 };
+function buildPdfContent(doc: jsPDF, data: ChapterPdfData, pageRef: { num: number }) {
   let y = 25;
 
   // ── Title page header ──
@@ -456,9 +454,28 @@ export function generateChapterPdf(data: ChapterPdfData) {
 
   // Final footer
   addFooter(doc, data.chapterName, pageRef.num);
+}
 
-  // ── Save ──
+// ── Public API ───────────────────────────────────────────────────
+
+export function generateChapterPdf(data: ChapterPdfData) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageRef = { num: 1 };
+  buildPdfContent(doc, data, pageRef);
+
   const safeName = data.chapterName.replace(/[^a-zA-Z0-9]/g, "");
   const filename = `SA_${data.courseCode}_Ch${data.chapterNumber}_${safeName}.pdf`;
   doc.save(filename);
 }
+
+/** Returns a Blob instead of triggering download — used for bulk zip export */
+export function generateChapterPdfBlob(data: ChapterPdfData): { blob: Blob; filename: string } {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageRef = { num: 1 };
+  buildPdfContent(doc, data, pageRef);
+
+  const safeName = data.chapterName.replace(/[^a-zA-Z0-9]/g, "");
+  const filename = `SA_${data.courseCode}_Ch${data.chapterNumber}_${safeName}.pdf`;
+  return { blob: doc.output("blob"), filename };
+}
+

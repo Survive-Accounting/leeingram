@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
+import { CourseZipExporter } from "@/components/admin-dashboard/CourseZipExporter";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
@@ -325,6 +326,7 @@ export default function ChapterContentQA() {
                 Generate All Formula Images
               </Button>
             </div>
+            <CourseZipExporter />
             <BatchSuiteOrchestrator />
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
