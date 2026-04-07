@@ -656,6 +656,18 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                           <Calculator className="h-4 w-4 shrink-0" />
                           {!sidebarCollapsed && <span className="text-sm">Chapter Formulas</span>}
                         </Link>
+                        <Link
+                          to="/admin/chapter-qa"
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+                            isActive("/admin/chapter-qa")
+                              ? "bg-primary/20 text-white font-medium border border-primary/30"
+                              : "text-white/70 hover:text-white hover:bg-muted/30"
+                          )}
+                        >
+                          <BookOpen className="h-4 w-4 shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm">Chapter QA</span>}
+                        </Link>
                       </div>
                     )}
                   </>
@@ -782,17 +794,6 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                   )}
                 >
                  <ClipboardCheck className="h-3.5 w-3.5" /> QA Admin
-                </Link>
-                <Link
-                  to="/admin/chapter-qa"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/admin/chapter-qa")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <BookOpen className="h-3.5 w-3.5" /> Chapter QA
                 </Link>
                 <Link
                   to="/accy304-admin"
