@@ -4,7 +4,7 @@ import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   Inbox, Factory, Library, FileCheck, Package,
   Rocket, Users, CheckCircle2, Loader2, BarChart3,
-  AlertTriangle, CheckSquare, MessageSquare, ExternalLink, LayoutDashboard, Wrench, Layers, Calculator, BookOpen, Search,
+  AlertTriangle, CheckSquare, MessageSquare, LayoutDashboard, Wrench, Calculator, BookOpen,
   ChevronRight, CreditCard, ClipboardCheck, TrendingUp, Lock, Building2, Globe, Link as LinkIcon, Settings,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,21 +26,17 @@ import { recordVaLogin, logVaActivity } from "@/lib/vaActivityLogger";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// ── Routes that should NOT show the pipeline progress strip ────────
 const HIDE_PROGRESS_ROUTES = ["/dashboard", "/va-dashboard", "/va-admin", "/accy304-admin"];
 
-// ── Sidebar section keys for localStorage persistence ──
-const NAV_SECTIONS = ["launch", "qc", "chapter_wide", "quizzes", "settings"] as const;
-type NavSection = typeof NAV_SECTIONS[number];
-
-function useNavCollapse(section: NavSection, activePaths: string[], pathname: string) {
-  const storageKey = `admin_nav_${section}_expanded`;
-  const isChildActive = activePaths.some(p => pathname === p || pathname.startsWith(p + "/"));
+// ── Collapsible section hook with localStorage persistence ────────
+function useNavSection(key: string, childPaths: string[], pathname: string) {
+  const storageKey = `admin_nav_${key}_expanded`;
+  const isChildActive = childPaths.some(p => pathname === p || pathname.startsWith(p + "/"));
   const [open, setOpen] = useState(() => {
     if (isChildActive) return true;
     return localStorage.getItem(storageKey) === "true";
   });
-  useEffect(() => { if (isChildActive) setOpen(true); }, [pathname]);
+  useEffect(() => { if (isChildActive) setOpen(true); }, [pathname, isChildActive]);
   const toggle = useCallback(() => {
     setOpen(prev => {
       const next = !prev;
@@ -50,6 +46,24 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
   }, [storageKey]);
   return { open, toggle };
 }
+
+export function SurviveSidebarLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+  const { workspace, setWorkspace } = useActiveWorkspace();
+  const { vaAccount, isVa } = useVaAccount();
+  const { impersonating } = useImpersonation();
+  const qc = useQueryClient();
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
+  const [completeOpen, setCompleteOpen] = useState(false);
+
+  // Collapsible nav sections
+  const qcSection = useNavSection("qc", ["/solutions-qa", "/inbox", "/bulk-fix-tool", "/qa-costs"], location.pathname);
+  const chapterWideSection = useNavSection("chapter_wide", ["/admin/chapter-qa", "/survive-chapter", "/chapter-je", "/chapter-formulas"], location.pathname);
+  const quizzesSection = useNavSection("quizzes", ["/content", "/quiz-queue", "/quizzes-ready"], location.pathname);
+  const settingsSection = useNavSection("settings", ["/asset-stats", "/admin/legacy-links"], location.pathname);
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -88,7 +102,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
     staleTime: 10 * 60 * 1000,
   });
 
-  // Fetch assigned chapters for VA or impersonated VA
   const activeVaId = impersonating?.id || (isVa ? vaAccount?.id : null);
   const { data: vaAssignments } = useQuery({
     queryKey: ["va-assignments-sidebar", activeVaId],
@@ -106,7 +119,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
 
   const isVaOrImpersonating = isVa || !!impersonating;
 
-  // For VA/impersonation: filter chapters to assigned ones only
   const vaAssignedChapterIds = useMemo(
     () => vaAssignments?.map(a => a.chapter_id) ?? [],
     [vaAssignments]
@@ -117,15 +129,11 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
     [allChapters, vaAssignedChapterIds]
   );
 
-  // Auto-set workspace for VA/impersonation to first assigned chapter
-  // Force reset when impersonation changes (so admin's workspace doesn't leak)
   const impersonatingId = impersonating?.id ?? null;
   useEffect(() => {
     if (!isVaOrImpersonating || !allChapters || !courses || !vaAssignments?.length) return;
-    // If current workspace is in assigned list, keep it — BUT only if we're not just starting impersonation
     const currentIsAssigned = workspace?.chapterId && vaAssignedChapterIds.includes(workspace.chapterId);
     if (currentIsAssigned) return;
-    // Set to first assigned chapter
     const firstAssignment = vaAssignments[0];
     const chapter = allChapters.find(c => c.id === firstAssignment.chapter_id);
     const course = courses.find(c => c.id === firstAssignment.course_id);
@@ -174,7 +182,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
     staleTime: 30 * 1000,
   });
 
-  // Open issue reports count (global)
   const { data: openIssueCount } = useQuery({
     queryKey: ["open-issue-count"],
     queryFn: async () => {
@@ -188,7 +195,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
     staleTime: 60 * 1000,
   });
 
-  // QA pending count
   const { data: qaPendingCount } = useQuery({
     queryKey: ["qa-pending-count"],
     queryFn: async () => {
@@ -232,45 +238,62 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // ── Render nav ──────────────────────────────────────────────────
+  // ── Role detection ──────────────────────────────────────────────
   const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
-  const isSheetPrepRole = effectiveRole === "sheet_prep_va";
+  const isAdmin = !effectiveRole || effectiveRole === "admin";
+  const isLeadVa = effectiveRole === "lead_va";
+  const isAdminOrLead = isAdmin || isLeadVa;
+  const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
+  const isSheetPrepVa = effectiveRole === "sheet_prep_va";
 
-  const renderNavItems = (items: typeof PHASE_1_ITEMS, dimmed = false) =>
-    items.map((item) => {
-      const Icon = item.icon;
-      const active = isActive(item.path);
-      const badge = getBadge(item.path);
-      const displayLabel = isSheetPrepRole && (item as any).altLabel ? (item as any).altLabel : item.label;
-      const issuesBadge = item.path === "/assets-library" && openIssueCount && openIssueCount > 0 ? openIssueCount : null;
-      return (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={cn(
-            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-            active
-              ? "bg-primary/20 text-white font-medium border border-primary/30"
-              : dimmed
-                ? "text-white/70 hover:text-white hover:bg-muted/30"
-                : "text-white/90 hover:text-white hover:bg-muted/30"
-          )}
-        >
-          <Icon className="h-4 w-4 shrink-0" />
-          {!sidebarCollapsed && <span className="text-sm">{displayLabel}</span>}
-          {!sidebarCollapsed && badge && !issuesBadge && (
-            <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
-              {badge}
-            </span>
-          )}
-          {!sidebarCollapsed && issuesBadge && (
-            <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
-              {issuesBadge}
-            </span>
-          )}
-        </Link>
-      );
-    });
+  // ── Nav item renderer ──────────────────────────────────────────
+  const renderItem = (label: string, path: string, Icon: any, opts?: { badge?: number | null; dimmed?: boolean; indent?: boolean }) => {
+    const active = isActive(path);
+    const badge = opts?.badge ?? getBadge(path);
+    return (
+      <Link
+        key={path}
+        to={path}
+        className={cn(
+          "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
+          opts?.indent && "pl-7",
+          active
+            ? "bg-primary/20 text-white font-medium border border-primary/30"
+            : opts?.dimmed
+              ? "text-white/70 hover:text-white hover:bg-muted/30"
+              : "text-white/90 hover:text-white hover:bg-muted/30"
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        {!sidebarCollapsed && <span className="text-sm">{label}</span>}
+        {!sidebarCollapsed && badge != null && badge > 0 && (
+          <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
+            {badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
+  const renderSectionHeader = (label: string, section: { open: boolean; toggle: () => void }) => {
+    if (sidebarCollapsed) return null;
+    return (
+      <button
+        onClick={section.toggle}
+        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 pt-1 hover:text-white/80 transition-colors"
+      >
+        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", section.open && "rotate-90")} />
+        {label}
+      </button>
+    );
+  };
+
+  const renderTopLabel = (label: string) => {
+    if (sidebarCollapsed) return null;
+    return (
+      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5 pt-1">{label}</p>
+    );
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -301,7 +324,7 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
             {isVa ? `${vaAccount?.full_name}` : "Survive"}
           </h1>
 
-          {/* Workspace Selectors — admin sees all courses+chapters, VA/impersonation sees only assigned chapters */}
+          {/* Workspace Selectors */}
           {!isVaOrImpersonating ? (
             <div className="hidden sm:flex items-center gap-2 ml-2">
               <Select value={workspace?.courseId || ""} onValueChange={handleCourseChange}>
@@ -329,7 +352,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
             </div>
           ) : (
             <div className="hidden sm:flex items-center gap-2 ml-2">
-              {/* VA course selector — derived from assigned chapters */}
               {(() => {
                 const assignedCourseIds = [...new Set(vaAssignments?.map(a => a.course_id) ?? [])];
                 const vaCourses = courses?.filter(c => assignedCourseIds.includes(c.id)) ?? [];
@@ -337,7 +359,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
                   <Select value={workspace?.courseId || ""} onValueChange={(courseId) => {
                     const course = courses?.find(c => c.id === courseId);
                     if (!course) return;
-                    // Find first assigned chapter in this course
                     const firstChapter = vaFilteredChapters.find(ch => ch.course_id === courseId);
                     if (firstChapter) {
                       setWorkspace({
@@ -391,7 +412,7 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
         </div>
       </header>
 
-      {/* Mobile workspace selector — visible only on small screens */}
+      {/* Mobile workspace selector */}
       <div
         className="relative z-10 sm:hidden border-b border-border px-3 py-2 flex items-center gap-2"
         style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.92)" }}
@@ -479,191 +500,107 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
           )}
           style={{ backdropFilter: "blur(16px)", background: "rgba(2,4,12,0.95)" }}
         >
-          {/* VA My Dashboard link — hidden for sheet_prep_va */}
+          {/* VA My Dashboard link */}
           {(isVa || impersonating) && !sidebarCollapsed && effectiveRole !== "sheet_prep_va" && (
-            <Link
-              to="/va-dashboard"
-              className={cn(
-                "flex items-center gap-2.5 rounded-md px-3 py-2.5 mb-2 transition-colors",
-                isActive("/va-dashboard")
-                  ? "bg-primary/20 text-white font-medium border border-primary/30"
-                  : "text-white/90 hover:text-white hover:bg-muted/30"
-              )}
-            >
-              <LayoutDashboard className="h-4 w-4 shrink-0" />
-              <span className="text-sm">My Dashboard</span>
-            </Link>
+            renderItem("My Dashboard", "/va-dashboard", LayoutDashboard)
           )}
 
-          {/* Determine effective role for sidebar filtering */}
-          {(() => {
-            const effectiveRole = impersonating?.role || (isVa ? vaAccount?.role : null);
-            const isContentCreationVa = effectiveRole === "content_creation_va" || effectiveRole === "va_test";
-            const isSheetPrepVa = effectiveRole === "sheet_prep_va";
-            const isLeadVa = effectiveRole === "lead_va";
-            const isLeadVaOrAdmin = isLeadVa || effectiveRole === "admin" || !effectiveRole;
+          {/* Admin: My Dashboard */}
+          {isAdmin && !isVa && !impersonating && !sidebarCollapsed && (
+            renderItem("My Dashboard", "/dashboard", BarChart3)
+          )}
 
-            // Content Creation VA: Import, Generate, Review, Teaching Assets
-            const phase1Items = isSheetPrepVa
-              ? PHASE_1_ITEMS.filter(i => i.path === "/assets-library")
-              : PHASE_1_ITEMS;
+          {/* ═══════ LAUNCH (admin only) ═══════ */}
+          {isAdmin && !isVa && !impersonating && !sidebarCollapsed && (
+            <>
+              <div className="border-t border-border my-3" />
+              {renderTopLabel("Launch")}
+              <div className="space-y-0.5">
+                {renderItem("Campus Landing Pages", "/admin/landing-pages", Globe)}
+                {renderItem("Auth & Payments", "/admin/auth", Lock)}
+                {renderItem("Greek Portal", "/admin/greek", Building2)}
+                {renderItem("Launch Analytics", "/admin/analytics/launch", BarChart3)}
+              </div>
+            </>
+          )}
 
-            // Sheet Prep VA: only Teaching Assets + Deploy Checklist
-            const showPhase2 = isLeadVaOrAdmin || isSheetPrepVa;
-             const phase2Items = isSheetPrepVa
-              ? PHASE_2_ITEMS.filter(i => i.path === "/deployment")
-              : isLeadVaOrAdmin
-                ? PHASE_2_ITEMS
-                : PHASE_2_ITEMS.filter(i => !(i as any).adminOnly);
+          {/* ═══════ CONTENT ═══════ */}
+          <>
+            <div className="border-t border-border my-3" />
+            {renderTopLabel("Content")}
+            <div className="space-y-0.5">
+              {renderItem("Problem Library", "/assets-library", Library)}
 
-            return (
-              <>
-                {/* Admin: My Dashboard at top */}
-                {isLeadVaOrAdmin && !isVa && !impersonating && !sidebarCollapsed && (
-                  <Link
-                    to="/dashboard"
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2.5 mb-3 transition-colors",
-                      isActive("/dashboard")
-                        ? "bg-primary/20 text-white font-medium border border-primary/30"
-                        : "text-white/90 hover:text-white hover:bg-muted/30"
-                    )}
-                  >
-                    <BarChart3 className="h-4 w-4 shrink-0" />
-                    <span className="text-sm">My Dashboard</span>
-                  </Link>
-                )}
+              {/* Content Analytics — admin only */}
+              {isAdmin && !isVa && !impersonating && (
+                renderItem("Content Analytics", "/admin/analytics/content", BarChart3)
+              )}
 
-                {/* Phase 1 — collapsible (hidden for Content Creation VAs) */}
-                {!isContentCreationVa && (
-                  <>
-                    {!sidebarCollapsed && (
-                      <button
-                        onClick={() => setPhase1Open(p => !p)}
-                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-primary px-3 pb-1.5 hover:text-primary/80 transition-colors"
-                      >
-                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase1Open && "rotate-90")} />
-                        Phase 1 · Teaching Asset Creation
-                      </button>
-                    )}
-                    {(sidebarCollapsed || phase1Open) && (
-                      <div className="space-y-0.5">{renderNavItems(phase1Items)}</div>
-                    )}
-                  </>
-                )}
+              {/* Quality Control — collapsible */}
+              {renderSectionHeader("Quality Control", qcSection)}
+              {(sidebarCollapsed || qcSection.open) && (
+                <div className="space-y-0.5">
+                  {renderItem("Asset QA", "/solutions-qa", ClipboardCheck, { indent: true, badge: qaPendingCount || null })}
+                  {renderItem("Fix Assets", "/inbox", Inbox, { indent: true, badge: openIssueCount || null })}
+                  {isAdmin && !isVa && !impersonating && (
+                    renderItem("QA Costs", "/qa-costs", TrendingUp, { indent: true })
+                  )}
+                </div>
+              )}
 
-                {showPhase2 && (
-                  <>
-                    <div className="border-t border-border my-3" />
-                    {!sidebarCollapsed && (
-                      <button
-                        onClick={() => setPhase2Open(p => !p)}
-                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
-                      >
-                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase2Open && "rotate-90")} />
-                        Phase 2 · Content Production
-                      </button>
-                    )}
-                    {(sidebarCollapsed || phase2Open) && (
-                      <div className="space-y-0.5">{renderNavItems(phase2Items, true)}</div>
-                    )}
-                  </>
-                )}
+              {/* Chapter Wide — admin only, collapsible */}
+              {isAdmin && !isVa && !impersonating && (
+                <>
+                  {renderSectionHeader("Chapter Wide", chapterWideSection)}
+                  {(sidebarCollapsed || chapterWideSection.open) && (
+                    <div className="space-y-0.5">
+                      {renderItem("Chapter QA", "/admin/chapter-qa", BookOpen, { indent: true })}
+                      {renderItem("Chapter Content", "/survive-chapter", BookOpen, { indent: true })}
+                    </div>
+                  )}
+                </>
+              )}
 
+              {/* Quizzes — collapsible */}
+              {renderSectionHeader("Quizzes", quizzesSection)}
+              {(sidebarCollapsed || quizzesSection.open) && (
+                <div className="space-y-0.5">
+                  {renderItem("Generate", "/content", Factory, { indent: true })}
+                  {renderItem("Quiz Queue", "/quiz-queue", Package, { indent: true })}
+                  {renderItem("Deployment", "/quizzes-ready", Rocket, { indent: true })}
+                </div>
+              )}
+            </div>
+          </>
 
+          {/* ═══════ ADMIN ═══════ */}
+          <>
+            <div className="border-t border-border my-3" />
+            {renderTopLabel("Admin")}
+            <div className="space-y-0.5">
+              {renderItem("VA Admin", "/va-admin", Users)}
 
+              {/* Payment Links — admin only */}
+              {isAdmin && !isVa && !impersonating && (
+                renderItem("Payment Links", "/payment-links-admin", CreditCard)
+              )}
 
-                {/* Phase 3 · Study Tools — admin and lead_va */}
-                {isLeadVaOrAdmin && !(isContentCreationVa || isSheetPrepVa) && (
-                  <>
-                    <div className="border-t border-border my-3" />
-                    {!sidebarCollapsed && (
-                      <button
-                        onClick={() => setPhase3Open(p => !p)}
-                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
-                      >
-                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", phase3Open && "rotate-90")} />
-                        Phase 3 · Study Tools
-                      </button>
-                    )}
-                    {(sidebarCollapsed || phase3Open) && (
-                      <div className="space-y-0.5">
-                        <Link
-                          to="/survive-chapter"
-                          className={cn(
-                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                            isActive("/survive-chapter")
-                              ? "bg-primary/20 text-white font-medium border border-primary/30"
-                              : "text-white/70 hover:text-white hover:bg-muted/30"
-                          )}
-                        >
-                          <BookOpen className="h-4 w-4 shrink-0" />
-                          {!sidebarCollapsed && <span className="text-sm">Survive This Chapter</span>}
-                        </Link>
-                        <Link
-                          to="/chapter-je"
-                          className={cn(
-                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                            isActive("/chapter-je")
-                              ? "bg-primary/20 text-white font-medium border border-primary/30"
-                              : "text-white/70 hover:text-white hover:bg-muted/30"
-                          )}
-                        >
-                          <Calculator className="h-4 w-4 shrink-0" />
-                          {!sidebarCollapsed && <span className="text-sm">Journal Entries</span>}
-                        </Link>
-                        <Link
-                          to="/chapter-formulas"
-                          className={cn(
-                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                            isActive("/chapter-formulas")
-                              ? "bg-primary/20 text-white font-medium border border-primary/30"
-                              : "text-white/70 hover:text-white hover:bg-muted/30"
-                          )}
-                        >
-                          <Calculator className="h-4 w-4 shrink-0" />
-                          {!sidebarCollapsed && <span className="text-sm">Chapter Formulas</span>}
-                        </Link>
-                        <Link
-                          to="/admin/chapter-qa"
-                          className={cn(
-                            "flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors",
-                            isActive("/admin/chapter-qa")
-                              ? "bg-primary/20 text-white font-medium border border-primary/30"
-                              : "text-white/70 hover:text-white hover:bg-muted/30"
-                          )}
-                        >
-                          <BookOpen className="h-4 w-4 shrink-0" />
-                          {!sidebarCollapsed && <span className="text-sm">Chapter QA</span>}
-                        </Link>
-                      </div>
-                    )}
-                  </>
-                )}
+              {/* Settings — admin only, collapsible */}
+              {isAdmin && !isVa && !impersonating && (
+                <>
+                  {renderSectionHeader("Settings", settingsSection)}
+                  {(sidebarCollapsed || settingsSection.open) && (
+                    <div className="space-y-0.5">
+                      {renderItem("Asset Stats", "/asset-stats", BarChart3, { indent: true })}
+                      {renderItem("Legacy Links", "/admin/legacy-links", LinkIcon, { indent: true })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </>
 
-                {/* Quality Control section — visible to all roles */}
-                {(showPhase2 || isContentCreationVa) && (
-                  <>
-                    <div className="border-t border-border my-3" />
-                    {!sidebarCollapsed && (
-                      <button
-                        onClick={() => setQcOpen(p => !p)}
-                        className="flex items-center gap-1 w-full text-[9px] font-bold uppercase tracking-[0.2em] text-white/60 px-3 pb-1.5 hover:text-white/80 transition-colors"
-                      >
-                        <ChevronRight className={cn("h-3 w-3 transition-transform shrink-0", qcOpen && "rotate-90")} />
-                        Quality Control
-                      </button>
-                    )}
-                    {(sidebarCollapsed || qcOpen) && (
-                      <div className="space-y-0.5">{renderNavItems(QC_ITEMS.filter(i => !i.adminOnly || (effectiveRole === "admin" || !effectiveRole)))}</div>
-                    )}
-                  </>
-                )}
-              </>
-            );
-          })()}
-
-          {/* VA Tools panel — show for actual VAs or when impersonating */}
+          {/* VA Tools panel */}
           {(isVa || impersonating) && !sidebarCollapsed && (() => {
             const toolsRole = impersonating?.role || (isVa ? vaAccount?.role : null);
             const showSheetPrepDone = toolsRole === "sheet_prep_va";
@@ -726,85 +663,6 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
                 ✓ Chapter Complete
               </div>
             )}
-
-            {/* Admin: VA Admin, Bulk Fix, QA Admin — admin only (not lead_va) */}
-            {!isVa && !impersonating && !sidebarCollapsed && (
-              <>
-                <Link
-                  to="/va-admin"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/va-admin")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <Users className="h-3.5 w-3.5" /> VA Admin
-                </Link>
-                <Link
-                  to="/bulk-fix-tool"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/bulk-fix-tool")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <Wrench className="h-3.5 w-3.5" /> Bulk Fix Tool
-                </Link>
-                <Link
-                  to="/solutions-qa-admin"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/solutions-qa-admin")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                 <ClipboardCheck className="h-3.5 w-3.5" /> QA Admin
-                </Link>
-                <Link
-                  to="/accy304-admin"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/accy304-admin")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <Rocket className="h-3.5 w-3.5" /> ACCY 304 Beta
-                </Link>
-              </>
-            )}
-            {/* Settings — visible to admin and lead_va */}
-            {(!isVa || effectiveRole === "lead_va") && !sidebarCollapsed && !(impersonating && impersonating.role !== "lead_va") && (
-              <>
-                <div className="border-t border-border my-2" />
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40 px-3 pb-1">Settings</p>
-                <Link
-                  to="/payment-links-admin"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/payment-links-admin")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <CreditCard className="h-3.5 w-3.5" /> Payment Links
-                </Link>
-                <Link
-                  to="/asset-stats"
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-                    isActive("/asset-stats")
-                      ? "bg-primary/20 text-foreground font-medium border border-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-muted/30"
-                  )}
-                >
-                  <BarChart3 className="h-3.5 w-3.5" /> Asset Stats
-                </Link>
-              </>
-            )}
           </div>
         </nav>
 
@@ -822,7 +680,7 @@ function useNavCollapse(section: NavSection, activePaths: string[], pathname: st
             <ErrorBoundary
               resetKey={`${location.pathname}${location.search}`}
               title="This workspace panel hit a runtime error"
-              description="Try reloading this component without losing the rest of the app shell."
+              description="Try reloading this component without leaving the app shell."
             >
               {children}
             </ErrorBoundary>
