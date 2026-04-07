@@ -3016,6 +3016,162 @@ function PracticePdfButton({
 const BORDER = "#e2e8f0";
 const NAVY = "#14213D";
 
+// ── Chapter Accounts Section ─────────────────────────────────────────
+
+const ACCOUNT_TYPE_ORDER_VIEWER = [
+  "Current Asset", "Long-Term Asset", "Contra Asset",
+  "Current Liability", "Long-Term Liability", "Equity",
+  "Revenue", "Expense", "Contra Revenue",
+];
+
+const DEBIT_NORMAL_TYPES = new Set(["Current Asset", "Long-Term Asset", "Expense", "Contra Liability"]);
+
+function TAccountTooltipViewer({ account, theme }: { account: { account_name: string; normal_balance: string; account_description: string }; theme: Theme }) {
+  const [show, setShow] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+
+  const handleEnter = useCallback(() => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setPos({ left: rect.left + rect.width / 2 - 130, top: rect.bottom + 6 });
+    }
+    setShow(true);
+  }, []);
+
+  const isDebit = account.normal_balance === "Debit";
+  const isCredit = account.normal_balance === "Credit";
+  const isBoth = !isDebit && !isCredit;
+
+  return (
+    <>
+      <button
+        ref={ref}
+        onMouseEnter={handleEnter}
+        onMouseLeave={() => setShow(false)}
+        className="inline-flex items-center justify-center ml-1"
+        style={{ color: theme.textMuted, cursor: "help", background: "none", border: "none", padding: 0 }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 600 }}>ⓘ</span>
+      </button>
+      {show && pos && (
+        <div style={{
+          position: "fixed", left: Math.max(8, pos.left), top: pos.top,
+          width: 260, background: "#1e293b", color: "#fff", borderRadius: 8,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.25)", zIndex: 9999, padding: 0,
+          fontSize: 12, lineHeight: 1.5, pointerEvents: "none",
+        }}>
+          {/* T-Account header */}
+          <div style={{ textAlign: "center", fontWeight: 700, fontSize: 13, padding: "8px 0 4px", borderBottom: "2px solid rgba(255,255,255,0.3)" }}>
+            {account.account_name}
+          </div>
+          <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
+            <div style={{ flex: 1, textAlign: "center", padding: "4px 0", fontWeight: 600, borderRight: "1px solid rgba(255,255,255,0.15)" }}>
+              Debit {isDebit ? "(+)" : isCredit ? "(−)" : "(±)"}
+            </div>
+            <div style={{ flex: 1, textAlign: "center", padding: "4px 0", fontWeight: 600 }}>
+              Credit {isCredit ? "(+)" : isDebit ? "(−)" : "(±)"}
+            </div>
+          </div>
+          <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.15)", minHeight: 28 }}>
+            <div style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRight: "1px solid rgba(255,255,255,0.15)", color: (isDebit || isBoth) ? "#fbbf24" : "rgba(255,255,255,0.3)" }}>
+              {(isDebit || isBoth) ? "???" : ""}
+            </div>
+            <div style={{ flex: 1, textAlign: "center", padding: "6px 0", color: (isCredit || isBoth) ? "#fbbf24" : "rgba(255,255,255,0.3)" }}>
+              {(isCredit || isBoth) ? "???" : ""}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", padding: "6px 0", fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
+            {isBoth ? "Can have either normal balance" : `Normal Balance: ${account.normal_balance}`}
+          </div>
+          {account.account_description && (
+            <div style={{ padding: "6px 10px 8px", fontSize: 11, color: "rgba(255,255,255,0.55)", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              {account.account_description}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+function ChapterAccountsSection({ accounts, theme }: { accounts: { id: string; account_name: string; account_type: string; normal_balance: string; account_description: string }[]; theme: Theme }) {
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const grouped = ACCOUNT_TYPE_ORDER_VIEWER
+    .map(type => ({ type, items: accounts.filter(a => a.account_type === type) }))
+    .filter(g => g.items.length > 0);
+
+  // Auto-open first group
+  useEffect(() => {
+    if (grouped.length > 0 && !openGroup) setOpenGroup(grouped[0].type);
+  }, [grouped.length]);
+
+  return (
+    <div className="space-y-1">
+      {grouped.map(group => {
+        const isOpen = openGroup === group.type;
+        const isDebitGroup = DEBIT_NORMAL_TYPES.has(group.type);
+        return (
+          <div key={group.type}>
+            <button
+              onClick={() => setOpenGroup(isOpen ? null : group.type)}
+              className="w-full flex items-center gap-2 text-left py-1.5"
+              style={{ background: "none", border: "none", cursor: "pointer" }}
+            >
+              <span style={{ fontSize: 10, color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: theme.text }}>{group.type}</span>
+              <span style={{ fontSize: 11, color: theme.textMuted, marginLeft: "auto" }}>
+                {isDebitGroup ? "(Dr + / Cr −)" : "(Dr − / Cr +)"}
+              </span>
+            </button>
+            {isOpen && (
+              <div className="pl-4 pb-2 space-y-0.5">
+                {group.items.map(acc => (
+                  <div key={acc.id} className="flex items-center gap-1 py-0.5">
+                    <span style={{ fontSize: 13, fontWeight: 500, color: theme.text }}>{acc.account_name}</span>
+                    <TAccountTooltipViewer account={acc} theme={theme} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Chapter Key Terms Section ────────────────────────────────────────
+
+function ChapterKeyTermsSection({ terms, theme }: { terms: { id: string; term: string; definition: string }[]; theme: Theme }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-0.5">
+      {terms.map(t => {
+        const isOpen = openId === t.id;
+        return (
+          <div key={t.id}>
+            <button
+              onClick={() => setOpenId(isOpen ? null : t.id)}
+              className="w-full flex items-center gap-2 text-left py-1.5"
+              style={{ background: "none", border: "none", cursor: "pointer" }}
+            >
+              <span style={{ fontSize: 10, color: theme.textMuted }}>{isOpen ? "▼" : "▶"}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: theme.text }}>{t.term}</span>
+            </button>
+            {isOpen && (
+              <p className="pl-5 pb-2" style={{ fontSize: 13, color: theme.textMuted, lineHeight: 1.6 }}>
+                {t.definition}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
