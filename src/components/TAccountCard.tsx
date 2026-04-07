@@ -103,11 +103,10 @@ function CategoryTooltip({ text, style }: { text: string; style?: React.CSSPrope
 }
 
 export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
-  const [showExample, setShowExample] = useState(false);
+  const [showNumbers, setShowNumbers] = useState(false);
   const [showFs, setShowFs] = useState(false);
 
   const isDebit = account.normal_balance === "Debit";
-  const isCredit = account.normal_balance === "Credit";
   const contra = isContraAccount(account.account_name, account.account_type);
 
   const hasExample = account.example_beginning_balance != null || account.example_debit_amount != null;
@@ -118,7 +117,7 @@ export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
   if (mode === "admin") {
     return (
       <AdminTAccount account={account} isDebit={isDebit} contra={contra}
-        showExample={showExample} setShowExample={setShowExample}
+        showNumbers={showNumbers} setShowNumbers={setShowNumbers}
         showFs={showFs} setShowFs={setShowFs}
         hasExample={hasExample} hasFs={!!hasFs} signLabel={signLabel} />
     );
@@ -126,7 +125,7 @@ export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
 
   return (
     <StudentTAccount account={account} isDebit={isDebit} contra={contra}
-      showExample={showExample} setShowExample={setShowExample}
+      showNumbers={showNumbers} setShowNumbers={setShowNumbers}
       showFs={showFs} setShowFs={setShowFs}
       hasExample={hasExample} hasFs={!!hasFs} signLabel={signLabel}
       theme={t || {}} />
@@ -134,19 +133,35 @@ export function TAccountCard({ account, mode, theme: t }: TAccountCardProps) {
 }
 
 // ── Admin version ──
-function AdminTAccount({ account, isDebit, contra, showExample, setShowExample, showFs, setShowFs, hasExample, hasFs, signLabel }: {
+function AdminTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, showFs, setShowFs, hasExample, hasFs, signLabel }: {
   account: TAccountData; isDebit: boolean; contra: boolean;
-  showExample: boolean; setShowExample: (v: boolean) => void;
+  showNumbers: boolean; setShowNumbers: (v: boolean) => void;
   showFs: boolean; setShowFs: (v: boolean) => void;
   hasExample: boolean; hasFs: boolean; signLabel: string;
 }) {
   const lineColor = "hsl(var(--foreground))";
-  const lineWeight = 2;
+  const lw = 2;
+
+  const beg = account.example_beginning_balance;
+  const dr = account.example_debit_amount;
+  const cr = account.example_credit_amount;
+  const end = account.example_ending_balance;
+  const dateLabel = account.example_date_label || "";
+  const dateParts = dateLabel.match(/^(.+?)\s*[–—-]\s*(.+)$/);
+  const startDate = dateParts ? dateParts[1].trim() : "";
+  const endDate = dateParts ? dateParts[2].trim() : "";
+
+  const calcStr = isDebit
+    ? `${fmt(beg)} + ${fmt(dr)} − ${fmt(cr)} = ${fmt(end)}`
+    : `${fmt(beg)} − ${fmt(dr)} + ${fmt(cr)} = ${fmt(end)}`;
+  const balCalcTooltip = (account.balance_tooltip || "") + `\n${calcStr}`;
+
+  const nums = showNumbers && hasExample;
 
   return (
     <div className="max-w-[380px]">
       {/* Header */}
-      <div className="text-center pb-1" style={{ borderBottom: `${lineWeight}px solid ${lineColor}` }}>
+      <div className="text-center pb-1" style={{ borderBottom: `${lw}px solid ${lineColor}` }}>
         <span className="text-sm font-bold text-foreground">{account.account_name}</span>
         <span className="text-xs text-muted-foreground ml-1.5">{signLabel}</span>
         {contra && (
@@ -155,77 +170,137 @@ function AdminTAccount({ account, isDebit, contra, showExample, setShowExample, 
             {account.contra_tooltip && <SmallTooltip text={account.contra_tooltip} />}
           </span>
         )}
+        {nums && dateLabel && (
+          <span className="text-[10px] text-muted-foreground ml-2">{dateLabel}</span>
+        )}
       </div>
 
-      {/* T-account body — staggered layout */}
+      {/* T-account body — staggered layout, fixed 4 rows */}
       <div className="grid grid-cols-2">
-        {/* Row 1: debit side */}
-        <div className="flex items-center gap-1 py-1 pl-2" style={{ borderRight: `${lineWeight}px solid ${lineColor}` }}>
-          {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} />}
-          <span className="text-xs font-mono text-muted-foreground">???</span>
+        {/* Row 1: debit side (beginning bal if debit-normal in nums mode, else debit ???/transaction) */}
+        <div className="flex items-center justify-center gap-1 py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+          {nums ? (
+            isDebit && beg != null ? (
+              <>
+                <span className="text-xs font-mono text-foreground">{fmt(beg)}</span>
+                <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
+              </>
+            ) : (
+              <span className="text-xs font-mono text-muted-foreground invisible">???</span>
+            )
+          ) : (
+            <>
+              {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} />}
+              <span className="text-xs font-mono text-muted-foreground">???</span>
+            </>
+          )}
         </div>
-        <div className="py-1" />
-
-        {/* Row 2: credit side */}
-        <div className="py-1" style={{ borderRight: `${lineWeight}px solid ${lineColor}` }} />
-        <div className="flex items-center gap-1 py-1 justify-end pr-2">
-          <span className="text-xs font-mono text-muted-foreground">???</span>
-          {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} />}
+        <div className="flex items-center justify-center gap-1 py-1">
+          {nums && !isDebit && beg != null ? (
+            <>
+              <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
+              <span className="text-xs font-mono text-foreground">{fmt(beg)}</span>
+            </>
+          ) : null}
         </div>
 
-        {/* Row 3: debit side (balance placeholder row for stagger) */}
-        <div className="py-0.5" style={{ borderRight: `${lineWeight}px solid ${lineColor}` }} />
+        {/* Row 2: credit side (credit ???/transaction) */}
+        <div className="py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+          {nums && dr != null ? (
+            <div className="flex items-center justify-center">
+              <span className="text-xs font-mono text-foreground">{fmt(dr)}</span>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex items-center justify-center gap-1 py-1">
+          {nums ? (
+            cr != null ? (
+              <span className="text-xs font-mono text-foreground">{fmt(cr)}</span>
+            ) : null
+          ) : (
+            <>
+              <span className="text-xs font-mono text-muted-foreground">???</span>
+              {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} />}
+            </>
+          )}
+        </div>
+
+        {/* Row 3: spacer / extra stagger */}
+        <div className="py-0.5" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
+          {nums && !isDebit && dr != null ? (
+            <div className="flex items-center justify-center py-0.5">
+              <span className="text-xs font-mono text-foreground invisible">{fmt(dr)}</span>
+            </div>
+          ) : null}
+        </div>
         <div className="py-0.5" />
       </div>
 
       {/* Balance row */}
-      <div className="py-1 grid grid-cols-2" style={{ borderTop: `${lineWeight}px solid ${lineColor}` }}>
+      <div className="py-1 grid grid-cols-2" style={{ borderTop: `${lw}px solid ${lineColor}` }}>
         {isDebit ? (
           <>
-            <div className="flex items-center gap-1 pl-2">
-              <span className="text-xs font-mono text-foreground font-semibold">???</span>
-              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} />}
+            <div className="flex items-center justify-center gap-1">
+              {nums ? (
+                <>
+                  <SmallTooltip text={balCalcTooltip} />
+                  <span className="text-xs font-mono text-foreground font-semibold">{fmt(end)}</span>
+                  <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
+                </>
+              ) : (
+                <>
+                  <SmallTooltip text={account.balance_tooltip || ""} />
+                  <span className="text-xs font-mono text-foreground font-semibold">???</span>
+                </>
+              )}
             </div>
             <div />
           </>
         ) : (
           <>
             <div />
-            <div className="flex items-center gap-1 justify-end pr-2">
-              <span className="text-xs font-mono text-foreground font-semibold">???</span>
-              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} />}
+            <div className="flex items-center justify-center gap-1">
+              {nums ? (
+                <>
+                  <SmallTooltip text={balCalcTooltip} />
+                  <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
+                  <span className="text-xs font-mono text-foreground font-semibold">{fmt(end)}</span>
+                </>
+              ) : (
+                <>
+                  <SmallTooltip text={account.balance_tooltip || ""} />
+                  <span className="text-xs font-mono text-foreground font-semibold">???</span>
+                </>
+              )}
             </div>
           </>
         )}
       </div>
 
       {/* Toggles */}
-      {(hasExample || hasFs) && (
-        <div className="mt-1.5">
-          {hasExample && (
-            <button onClick={() => setShowExample(!showExample)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
-              {showExample ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              Show example with numbers
-            </button>
-          )}
-          {showExample && hasExample && <ExampleSection account={account} isDebit={isDebit} mode="admin" />}
-          {hasFs && (
-            <button onClick={() => setShowFs(!showFs)} className="flex items-center gap-1 text-[10px] text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors mt-0.5">
-              {showFs ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              See financial statement placement
-            </button>
-          )}
-          {showFs && hasFs && <FsPlacementSection account={account} mode="admin" />}
-        </div>
-      )}
+      <div className="mt-1.5">
+        {hasExample && (
+          <button onClick={() => setShowNumbers(!showNumbers)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+            <ChevronRight className="h-3 w-3" />
+            {showNumbers ? "Show ??? version →" : "Show example with numbers →"}
+          </button>
+        )}
+        {hasFs && (
+          <button onClick={() => setShowFs(!showFs)} className="flex items-center gap-1 text-[10px] text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors mt-0.5">
+            {showFs ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            See financial statement placement
+          </button>
+        )}
+        {showFs && hasFs && <FsPlacementSection account={account} mode="admin" />}
+      </div>
     </div>
   );
 }
 
 // ── Student version ──
-function StudentTAccount({ account, isDebit, contra, showExample, setShowExample, showFs, setShowFs, hasExample, hasFs, signLabel, theme: t }: {
+function StudentTAccount({ account, isDebit, contra, showNumbers, setShowNumbers, showFs, setShowFs, hasExample, hasFs, signLabel, theme: t }: {
   account: TAccountData; isDebit: boolean; contra: boolean;
-  showExample: boolean; setShowExample: (v: boolean) => void;
+  showNumbers: boolean; setShowNumbers: (v: boolean) => void;
   showFs: boolean; setShowFs: (v: boolean) => void;
   hasExample: boolean; hasFs: boolean; signLabel: string;
   theme: Record<string, string>;
@@ -235,6 +310,24 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
   const heading = t.heading || "#14213D";
   const lineColor = heading;
   const lw = 2;
+
+  const beg = account.example_beginning_balance;
+  const dr = account.example_debit_amount;
+  const cr = account.example_credit_amount;
+  const end = account.example_ending_balance;
+  const dateLabel = account.example_date_label || "";
+  const dateParts = dateLabel.match(/^(.+?)\s*[–—-]\s*(.+)$/);
+  const startDate = dateParts ? dateParts[1].trim() : "";
+  const endDate = dateParts ? dateParts[2].trim() : "";
+
+  const calcStr = isDebit
+    ? `${fmt(beg)} + ${fmt(dr)} − ${fmt(cr)} = ${fmt(end)}`
+    : `${fmt(beg)} − ${fmt(dr)} + ${fmt(cr)} = ${fmt(end)}`;
+  const balCalcTooltip = (account.balance_tooltip || "") + `\n${calcStr}`;
+
+  const nums = showNumbers && hasExample;
+
+  const cellCenter: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 4 };
 
   return (
     <div style={{ maxWidth: 380 }}>
@@ -248,22 +341,55 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
             {account.contra_tooltip && <SmallTooltip text={account.contra_tooltip} style={{ color: textMuted }} />}
           </span>
         )}
+        {nums && dateLabel && (
+          <span style={{ fontSize: 10, color: textMuted, marginLeft: 8 }}>{dateLabel}</span>
+        )}
       </div>
 
-      {/* T-body — staggered */}
+      {/* T-body — staggered, fixed rows */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-        {/* Row 1: debit */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 0 4px 8px", borderRight: `${lw}px solid ${lineColor}` }}>
-          {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} style={{ color: textMuted }} />}
-          <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
+        {/* Row 1 */}
+        <div style={{ ...cellCenter, padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }}>
+          {nums ? (
+            isDebit && beg != null ? (
+              <>
+                <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span>
+                <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
+              </>
+            ) : null
+          ) : (
+            <>
+              {account.debit_tooltip && <SmallTooltip text={account.debit_tooltip} style={{ color: textMuted }} />}
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
+            </>
+          )}
         </div>
-        <div style={{ padding: "4px 0" }} />
+        <div style={{ ...cellCenter, padding: "4px 0" }}>
+          {nums && !isDebit && beg != null ? (
+            <>
+              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span>
+            </>
+          ) : null}
+        </div>
 
-        {/* Row 2: credit */}
-        <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", padding: "4px 8px 4px 0" }}>
-          <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
-          {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} style={{ color: textMuted }} />}
+        {/* Row 2 */}
+        <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}`, ...cellCenter }}>
+          {nums && dr != null ? (
+            <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(dr)}</span>
+          ) : null}
+        </div>
+        <div style={{ ...cellCenter, padding: "4px 0" }}>
+          {nums ? (
+            cr != null ? (
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(cr)}</span>
+            ) : null
+          ) : (
+            <>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: textMuted }}>???</span>
+              {account.credit_tooltip && <SmallTooltip text={account.credit_tooltip} style={{ color: textMuted }} />}
+            </>
+          )}
         </div>
 
         {/* Row 3: spacer */}
@@ -275,18 +401,38 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
       <div style={{ borderTop: `${lw}px solid ${lineColor}`, padding: "4px 0", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         {isDebit ? (
           <>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
-              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} style={{ color: textMuted }} />}
+            <div style={cellCenter}>
+              {nums ? (
+                <>
+                  <SmallTooltip text={balCalcTooltip} style={{ color: textMuted }} />
+                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
+                  <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
+                </>
+              ) : (
+                <>
+                  <SmallTooltip text={account.balance_tooltip || ""} style={{ color: textMuted }} />
+                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
+                </>
+              )}
             </div>
             <div />
           </>
         ) : (
           <>
             <div />
-            <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", paddingRight: 8 }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
-              {account.balance_tooltip && <SmallTooltip text={account.balance_tooltip} style={{ color: textMuted }} />}
+            <div style={cellCenter}>
+              {nums ? (
+                <>
+                  <SmallTooltip text={balCalcTooltip} style={{ color: textMuted }} />
+                  <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
+                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
+                </>
+              ) : (
+                <>
+                  <SmallTooltip text={account.balance_tooltip || ""} style={{ color: textMuted }} />
+                  <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>???</span>
+                </>
+              )}
             </div>
           </>
         )}
@@ -296,12 +442,11 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
       {(hasExample || hasFs) && (
         <div style={{ marginTop: 6 }}>
           {hasExample && (
-            <button onClick={() => setShowExample(!showExample)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              {showExample ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              Show example with numbers
+            <button onClick={() => setShowNumbers(!showNumbers)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              <ChevronRight className="h-3 w-3" />
+              {showNumbers ? "Show ??? version →" : "Show example with numbers →"}
             </button>
           )}
-          {showExample && hasExample && <ExampleSection account={account} isDebit={isDebit} mode="student" theme={t} />}
           {hasFs && (
             <button onClick={() => setShowFs(!showFs)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#7C3AED", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 2 }}>
               {showFs ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -311,192 +456,6 @@ function StudentTAccount({ account, isDebit, contra, showExample, setShowExample
           {showFs && hasFs && <FsPlacementSection account={account} mode="student" theme={t} />}
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Example with numbers section ──
-function ExampleSection({ account, isDebit, mode, theme: t }: { account: TAccountData; isDebit: boolean; mode: StyleMode; theme?: Record<string, string> }) {
-  const beg = account.example_beginning_balance;
-  const dr = account.example_debit_amount;
-  const cr = account.example_credit_amount;
-  const end = account.example_ending_balance;
-  const dateLabel = account.example_date_label || "";
-
-  const dateParts = dateLabel.match(/^(.+?)\s*[–—-]\s*(.+)$/);
-  const startDate = dateParts ? dateParts[1].trim() : "";
-  const endDate = dateParts ? dateParts[2].trim() : "";
-
-  const calcStr = isDebit
-    ? `${fmt(beg)} + ${fmt(dr)} − ${fmt(cr)} = ${fmt(end)}`
-    : `${fmt(beg)} − ${fmt(dr)} + ${fmt(cr)} = ${fmt(end)}`;
-  const balTooltip = (account.balance_tooltip || "") + `\n${calcStr}`;
-
-  const signLabel = isDebit ? "(+/−)" : "(−/+)";
-
-  if (mode === "admin") {
-    const lineColor = "hsl(var(--foreground))";
-    const lw = 2;
-
-    return (
-      <div className="max-w-[380px] mt-3">
-        {/* Header */}
-        <div className="text-center pb-1" style={{ borderBottom: `${lw}px solid ${lineColor}` }}>
-          <span className="text-sm font-bold text-foreground">{account.account_name}</span>
-          <span className="text-xs text-muted-foreground ml-1.5">{signLabel}</span>
-          <span className="text-[10px] text-muted-foreground ml-2">{dateLabel}</span>
-        </div>
-
-        {/* T-body — staggered rows */}
-        <div className="grid grid-cols-2">
-          {/* Row 1: beginning balance on normal side */}
-          {beg != null && isDebit && (
-            <>
-              <div className="flex items-center gap-1.5 py-1 pl-2" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
-                <span className="text-xs font-mono text-foreground text-right flex-1">{fmt(beg)}</span>
-                <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
-              </div>
-              <div className="py-1" />
-            </>
-          )}
-          {beg != null && !isDebit && (
-            <>
-              <div className="py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
-              <div className="flex items-center gap-1.5 py-1 justify-end pr-2">
-                <span className="text-[9px] text-muted-foreground italic">({startDate})</span>
-                <span className="text-xs font-mono text-foreground">{fmt(beg)}</span>
-              </div>
-            </>
-          )}
-
-          {/* Row 2: debit transaction (staggered to debit side) */}
-          {dr != null && (
-            <>
-              <div className="flex items-center py-1 pl-2" style={{ borderRight: `${lw}px solid ${lineColor}` }}>
-                <span className="text-xs font-mono text-foreground text-right flex-1">{fmt(dr)}</span>
-              </div>
-              <div className="py-1" />
-            </>
-          )}
-
-          {/* Row 3: credit transaction (staggered to credit side) */}
-          {cr != null && (
-            <>
-              <div className="py-1" style={{ borderRight: `${lw}px solid ${lineColor}` }} />
-              <div className="flex items-center py-1 justify-end pr-2">
-                <span className="text-xs font-mono text-foreground">{fmt(cr)}</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Ending balance */}
-        <div className="py-1 grid grid-cols-2" style={{ borderTop: `${lw}px solid ${lineColor}` }}>
-          {isDebit ? (
-            <>
-              <div className="flex items-center gap-1.5 pl-2">
-                <span className="text-xs font-mono font-semibold text-foreground text-right flex-1">{fmt(end)}</span>
-                <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
-                <SmallTooltip text={balTooltip} />
-              </div>
-              <div />
-            </>
-          ) : (
-            <>
-              <div />
-              <div className="flex items-center gap-1.5 justify-end pr-2">
-                <SmallTooltip text={balTooltip} />
-                <span className="text-[9px] text-muted-foreground italic">({endDate})</span>
-                <span className="text-xs font-mono font-semibold text-foreground">{fmt(end)}</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Student mode
-  const text = t?.text || "#0F172A";
-  const textMuted = t?.textMuted || "#64748B";
-  const heading = t?.heading || "#14213D";
-  const lineColor = heading;
-  const lw = 2;
-
-  return (
-    <div style={{ maxWidth: 380, marginTop: 12 }}>
-      {/* Header */}
-      <div style={{ textAlign: "center", borderBottom: `${lw}px solid ${lineColor}`, paddingBottom: 4 }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: heading }}>{account.account_name}</span>
-        <span style={{ fontSize: 12, color: textMuted, marginLeft: 6 }}>{signLabel}</span>
-        <span style={{ fontSize: 10, color: textMuted, marginLeft: 8 }}>{dateLabel}</span>
-      </div>
-
-      {/* T-body staggered */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-        {/* Beginning balance */}
-        {beg != null && isDebit && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0 4px 8px", borderRight: `${lw}px solid ${lineColor}` }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: text, textAlign: "right", flex: 1 }}>{fmt(beg)}</span>
-              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
-            </div>
-            <div style={{ padding: "4px 0" }} />
-          </>
-        )}
-        {beg != null && !isDebit && (
-          <>
-            <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end", padding: "4px 8px 4px 0" }}>
-              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({startDate})</span>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(beg)}</span>
-            </div>
-          </>
-        )}
-
-        {/* Debit transaction */}
-        {dr != null && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", padding: "4px 0 4px 8px", borderRight: `${lw}px solid ${lineColor}` }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: text, textAlign: "right", flex: 1 }}>{fmt(dr)}</span>
-            </div>
-            <div style={{ padding: "4px 0" }} />
-          </>
-        )}
-
-        {/* Credit transaction */}
-        {cr != null && (
-          <>
-            <div style={{ padding: "4px 0", borderRight: `${lw}px solid ${lineColor}` }} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "4px 8px 4px 0" }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: text }}>{fmt(cr)}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Ending balance */}
-      <div style={{ borderTop: `${lw}px solid ${lineColor}`, padding: "4px 0", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-        {isDebit ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 8 }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text, textAlign: "right", flex: 1 }}>{fmt(end)}</span>
-              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
-              <SmallTooltip text={balTooltip} style={{ color: textMuted }} />
-            </div>
-            <div />
-          </>
-        ) : (
-          <>
-            <div />
-            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end", paddingRight: 8 }}>
-              <SmallTooltip text={balTooltip} style={{ color: textMuted }} />
-              <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>({endDate})</span>
-              <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 600, color: text }}>{fmt(end)}</span>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }
@@ -513,11 +472,11 @@ function FsPlacementSection({ account, mode, theme: t }: { account: TAccountData
   }
 
   const textMuted = t?.textMuted || "#64748B";
-  const text = t?.text || "#0F172A";
+  const textColor = t?.text || "#0F172A";
 
   return (
     <div style={{ marginTop: 8, maxWidth: 400 }}>
-      <pre style={{ fontSize: 10, fontFamily: "monospace", color: text, lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{generateFsExcerpt(account)}</pre>
+      <pre style={{ fontSize: 10, fontFamily: "monospace", color: textColor, lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{generateFsExcerpt(account)}</pre>
       <p style={{ fontSize: 10, color: textMuted, lineHeight: 1.5, marginTop: 6 }}>{account.fs_placement_tooltip}</p>
     </div>
   );
