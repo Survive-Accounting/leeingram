@@ -734,7 +734,7 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
   return (
     <TooltipProvider>
       <div className="space-y-3 pb-20">
-        {grouped.map(cat => (
+        {grouped.map((cat, catIdx) => (
           <JECategoryBlock
             key={cat.id}
             category={cat}
@@ -745,6 +745,12 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
             onDeleteEntry={deleteEntry}
             onUpdateEntryLabel={updateEntryLabel}
             onUpdateEntryLines={updateEntryLines}
+            onMoveCategoryUp={() => moveCategoryUp(cat.id)}
+            onMoveCategoryDown={() => moveCategoryDown(cat.id)}
+            onMoveEntryUp={(entryId) => moveEntryUp(entryId, cat.id)}
+            onMoveEntryDown={(entryId) => moveEntryDown(entryId, cat.id)}
+            isFirst={catIdx === 0}
+            isLast={catIdx === grouped.length - 1}
           />
         ))}
 
