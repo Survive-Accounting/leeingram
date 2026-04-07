@@ -127,11 +127,9 @@ function wrapText(doc: jsPDF, text: string, maxWidth: number): string[] {
   return doc.splitTextToSize(text, maxWidth);
 }
 
-// ── Main Generator ───────────────────────────────────────────────
+// ── Shared builder ───────────────────────────────────────────────
 
-export function generateChapterPdf(data: ChapterPdfData) {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageRef = { num: 1 };
+function buildPdfContent(doc: jsPDF, data: ChapterPdfData, pageRef: { num: number }) {
   let y = 25;
 
   // ── Title page header ──
