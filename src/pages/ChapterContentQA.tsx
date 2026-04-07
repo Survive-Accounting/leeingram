@@ -25,6 +25,7 @@ import {
   AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown,
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
+import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
@@ -323,22 +324,9 @@ export default function ChapterContentQA() {
                 {bulkGenerating === "images" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
                 Generate All Formula Images
               </Button>
-              <Button size="sm" variant="outline" onClick={async () => {
-                setBulkGenerating("suite");
-                setBulkProgress("Starting full suite generation...");
-                try {
-                  const { data, error } = await supabase.functions.invoke("generate-chapter-content-suite", { body: { all: true } });
-                  if (error) throw error;
-                  toast.success(`Full suite generated: ${data.completed}/${data.total}. ${data.errors?.length || 0} errors.`);
-                  captureBulkDebug("Generate Full Suite — All Chapters", data);
-                  qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
-                  qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
-                } catch (err: any) { toast.error(err.message); captureBulkDebug("Generate Full Suite — All Chapters", null, err.message); }
-                finally { setBulkGenerating(null); setBulkProgress(""); }
-              }} disabled={!!bulkGenerating}>
-                {bulkGenerating === "suite" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Layers className="h-3.5 w-3.5 mr-1" />}
-                Generate Full Suite — All Chapters
-              </Button>
+            </div>
+            <BatchSuiteOrchestrator />
+            <div className="flex gap-2 flex-wrap">
             </div>
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
