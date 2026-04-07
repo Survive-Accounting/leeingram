@@ -513,7 +513,7 @@ export default function BulkFixTool() {
           after: `Will generate highlights for ${missing.length} assets via AI`,
         }]);
         setIsAiPreview(true);
-      } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") {
+      } else if (operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts" || operation === "generate_calculation_formulas") {
         let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
           .not("journal_entry_completed_json", "is", null);
         if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
@@ -523,12 +523,14 @@ export default function BulkFixTool() {
         const { count: jeCount } = await countQ;
         setTotalMatched(jeCount ?? 0);
 
-        const modeLabel = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : "rewrite_amounts";
+        const modeLabel = operation === "enrich_je_tooltips" ? "enrich" : operation === "rewrite_je_reasons" ? "rewrite_reasons" : operation === "rewrite_je_amounts" ? "rewrite_amounts" : "generate_formulas";
         const actionDesc = operation === "enrich_je_tooltips"
           ? "Will fill missing debit_credit_reason + amount_source fields"
           : operation === "rewrite_je_reasons"
           ? "Will rewrite ALL debit_credit_reason fields to student-friendly format"
-          : "Will rewrite ALL amount_source fields to plain English (no dollar figures)";
+          : operation === "rewrite_je_amounts"
+          ? "Will rewrite ALL amount_source fields to plain English (no dollar figures)"
+          : "Will generate calculation_formula fields (e.g. $180,000 × 8% = $14,400) for all JE rows";
 
         setPreviewRows([{
           id: "summary",
