@@ -291,6 +291,7 @@ export default function BulkFixTool() {
     if (operation === "enrich_je_tooltips") return "Enrich JE Tooltips (fill gaps)";
     if (operation === "rewrite_je_reasons") return "Rewrite JE Reasons (YOU Format)";
     if (operation === "rewrite_je_amounts") return "Rewrite Amount Sources (Plain English)";
+    if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
     return "";
   }, [operation, findText, replaceText]);
 
