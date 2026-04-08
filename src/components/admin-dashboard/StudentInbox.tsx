@@ -495,6 +495,12 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
                 ⚡ {urgentCount} Urgent
               </Badge>
             )}
+            {needsLeeAssets.length > 0 && (
+              <Badge className="text-[10px] font-bold" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>
+                🚩 {needsLeeAssets.length} Needs Lee
+              </Badge>
+            )}
+            )}
           </div>
           <span className="text-xs text-muted-foreground">{respondedThisWeek} responded this week</span>
 
