@@ -906,8 +906,8 @@ export default function ChapterCramTool() {
       <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
         {/* ──── Practice Problems ──── */}
         <section className="mb-8">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: theme.label, letterSpacing: "0.18em" }}>
-            PRACTICE PROBLEMS · CH {chapterNum || "?"}
+          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>
+            Practice Problems · Ch {chapterNum || "?"}
           </p>
 
           <div className="flex flex-wrap gap-3">
@@ -976,8 +976,8 @@ export default function ChapterCramTool() {
 
         {/* ──── Chapter Tools Card Grid ──── */}
         <section className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: theme.label, letterSpacing: "0.18em" }}>
-            CHAPTER TOOLS
+          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>
+            Chapter Tools
           </p>
 
           <div className="rounded-xl p-6" style={{ background: theme.toolsBg }}>
@@ -1033,8 +1033,8 @@ export default function ChapterCramTool() {
 
         {/* ──── Testimonials ──── */}
         <section className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: theme.label, letterSpacing: "0.18em" }}>
-            WHAT STUDENTS ARE SAYING
+          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>
+            What Students Are Saying
           </p>
           <TestimonialEmbed />
         </section>
@@ -1048,7 +1048,7 @@ export default function ChapterCramTool() {
 
         {/* ──── Feedback ──── */}
         <section id="get-in-touch" className="mb-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1" style={{ color: theme.label, letterSpacing: "0.18em" }}>GET IN TOUCH</p>
+          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>Get in Touch</p>
           <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
           <CramFeedbackForm
             chapterId={chapterId}
