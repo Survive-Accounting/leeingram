@@ -860,6 +860,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           survive_problem_text: a.problem_text_backup || "",
           last_bulk_fix_at: null,
           last_bulk_fix_label: null,
+          fix_status: "pending_fix",
         }).eq("id", asset.id);
         reverted++;
       }
