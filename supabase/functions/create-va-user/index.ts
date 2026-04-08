@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify caller is authenticated
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
@@ -23,19 +22,19 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const token = authHeader.replace("Bearer ", "");
 
-    // Verify the caller is a real authenticated user
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user: caller }, error: callerError } = await anonClient.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (callerError || !caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Allow service-role key OR authenticated user
+    if (token !== serviceRoleKey) {
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { data: { user: caller }, error: callerError } = await anonClient.auth.getUser(token);
+      if (callerError || !caller) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
-
     const { email, password, full_name, assigned_course_id, assigned_chapter_id } = await req.json();
 
     if (!email || !password || !full_name) {
@@ -69,7 +68,7 @@ Deno.serve(async (req) => {
       user_id: authData.user.id,
       full_name,
       email,
-      role: "va_test",
+      role: "content_creation_va",
       assigned_course_id: assigned_course_id || null,
       assigned_chapter_id: assigned_chapter_id || null,
       account_status: "active",
