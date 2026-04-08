@@ -981,7 +981,7 @@ export default function ChapterCramTool() {
         {/* ──── Chapter Tools Card Grid ──── */}
         <section className="mb-10">
           <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
-            Chapter Tools
+            Chapter Cram Tools
           </p>
 
           <div className="rounded-xl p-6" style={{ background: theme.toolsBg }}>
