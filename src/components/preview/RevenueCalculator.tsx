@@ -159,7 +159,7 @@ export default function RevenueCalculator() {
         {/* Coming soon placeholders */}
         <div className="mt-4 space-y-1.5">
           {["Actual Revenue", "Expense Estimator", "Actual Expenses", "Profit Estimator"].map((item) => (
-            <p key={item} className="text-[11px] italic" style={{ color: "rgba(255,255,255,0.25)" }}>{item} — Coming Soon</p>
+            <p key={item} className="text-[11px] italic" style={{ color: "rgba(255,255,255,0.25)" }}>{item} — 🚧 Coming Soon</p>
           ))}
         </div>
       </SubToggle>
