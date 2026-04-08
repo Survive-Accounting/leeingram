@@ -584,12 +584,13 @@ export default function SolutionsQAAdmin() {
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-8 gap-2">
           {[
             { label: "Total", value: safeCount.total, color: "text-foreground", bg: "" },
             { label: "Pending", value: safeCount.pending, color: "text-muted-foreground", bg: "" },
             { label: "Clean", value: safeCount.clean, color: "text-emerald-400", bg: "" },
             { label: "Issues", value: safeCount.issues, color: "text-amber-400", bg: "" },
+            { label: "Needs Lee", value: safeCount.needsLee, color: "text-amber-900", bg: "bg-amber-400/20 border-amber-500/40" },
             { label: "Fix Approved", value: safeCount.fixApproved, color: "text-blue-400", bg: "" },
             { label: "Generated", value: safeCount.generated, color: "text-purple-400", bg: "" },
             { label: "⚡ Bulk Fixes", value: bulkFixesReady, color: "text-amber-900", bg: "bg-amber-400/30 border-amber-500/40" },
