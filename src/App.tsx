@@ -161,6 +161,7 @@ const AppRoutes = () => {
         <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
         <Route path="/quiz-rating/:topicId" element={<QuizRating />} />
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
+        <Route path="/preview" element={<Preview />} />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
         <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
         <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
