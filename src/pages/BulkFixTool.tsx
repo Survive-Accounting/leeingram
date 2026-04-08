@@ -703,7 +703,25 @@ export default function BulkFixTool() {
   ) {
     let assets: any[];
     
-    if (opKey === "standardize_formatting") {
+    if (fixQueueActive && opKey !== "standardize_formatting") {
+      // Fix Queue mode: only process queued assets, ignore all scope filters
+      if (!fixQueueFoundIds.length) throw new Error("Fix queue is empty — no valid assets to process");
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+      const fields = isLightweight
+        ? "id, asset_name, fix_notes"
+        : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json, fix_notes";
+      // Fetch in chunks of 500 (Supabase .in() limit)
+      const allAssets: any[] = [];
+      for (let chunk = 0; chunk < fixQueueFoundIds.length; chunk += 500) {
+        const ids = fixQueueFoundIds.slice(chunk, chunk + 500);
+        const { data, error } = await supabase.from("teaching_assets").select(fields).in("id", ids);
+        if (error) throw error;
+        if (data) allAssets.push(...data);
+      }
+      if (!allAssets.length) throw new Error("No queued assets found in database");
+      assets = allAssets;
+      console.log(`[Fix Queue] Processing ${assets.length} queued assets`);
+    } else if (opKey === "standardize_formatting") {
       // Hard-coded single asset test: BE15.4 only
       const { data: matchingAssets, error: matchErr } = await supabase
         .from("teaching_assets")
