@@ -500,7 +500,6 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
                 🚩 {needsLeeAssets.length} Needs Lee
               </Badge>
             )}
-            )}
           </div>
           <span className="text-xs text-muted-foreground">{respondedThisWeek} responded this week</span>
 
