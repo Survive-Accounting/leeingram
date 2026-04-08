@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings, Megaphone } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings, Megaphone, Workflow } from "lucide-react";
 import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
 import RevenueCalculator from "@/components/preview/RevenueCalculator";
-import InfrastructureSection from "@/components/preview/InfrastructureSection";
+import InfrastructureSection, { ContentPipeline } from "@/components/preview/InfrastructureSection";
 import MarketingSection from "@/components/preview/MarketingSection";
 import SolutionsViewerSection from "@/components/preview/SolutionsViewerSection";
 
@@ -32,6 +32,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   "Website Page Hierarchy": <Network className="h-4 w-4" />,
   "Revenue Potential": <TrendingUp className="h-4 w-4" />,
   "Infrastructure": <Settings className="h-4 w-4" />,
+  "How Content Gets Built": <Workflow className="h-4 w-4" />,
   "Marketing": <Megaphone className="h-4 w-4" />,
   "Chapter Pages": <BookOpen className="h-4 w-4" />,
   "Solutions Viewer": <Eye className="h-4 w-4" />,
@@ -260,6 +261,11 @@ function PreviewIndex() {
         {/* ── Revenue Potential ── */}
         <CollapsibleSection title="Revenue Potential">
           <RevenueCalculator />
+        </CollapsibleSection>
+
+        {/* ── How Content Gets Built ── */}
+        <CollapsibleSection title="How Content Gets Built">
+          <ContentPipeline />
         </CollapsibleSection>
 
         {/* ── Infrastructure ── */}
