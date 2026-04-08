@@ -7,6 +7,9 @@ export const WHITELISTED_EMAILS = [
   "jking.cim@gmail.com",
   "valinonorlynmae@gmail.com",
   "theacarmellesumagaysay@gmail.com",
+  "ronavalino.26@gmail.com",
+  "noellamaniego@gmail.com",
+  "cromwellleon204@gmail.com",
 ];
 
 export function isWhitelistedEmail(email: string): boolean {
