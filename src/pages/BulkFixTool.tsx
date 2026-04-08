@@ -1859,7 +1859,15 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 </Button>
               )}
             </div>
-              </CardTitle>
+          </CardContent>
+        </Card>
+
+        {/* Section 5: Revert */}
+        {lastOp && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Undo2 className="h-4 w-4" /> Revert Last Operation
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground">
