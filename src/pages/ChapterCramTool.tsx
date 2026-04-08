@@ -850,6 +850,10 @@ export default function ChapterCramTool() {
       <header style={{ background: theme.navy, height: 56 }}>
         <div className="mx-auto flex h-full max-w-[1200px] items-center px-4 sm:px-6">
           <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
+          <div className="flex-1 flex justify-center">
+            <FinalsCountdown />
+          </div>
+          <div className="w-7 sm:w-8 shrink-0" />
         </div>
       </header>
 
