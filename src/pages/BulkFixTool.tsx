@@ -1479,6 +1479,20 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   {fixQueueValidating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                   Load Queue
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => csvInputRef.current?.click()}
+                >
+                  <Upload className="h-3 w-3 mr-1" /> Import CSV
+                </Button>
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={handleCsvImport}
+                />
                 {fixQueueItems.length > 0 && (
                   <Button variant="outline" size="sm" onClick={clearFixQueue}>
                     <Trash2 className="h-3 w-3 mr-1" /> Clear Queue
