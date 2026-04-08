@@ -5135,6 +5135,39 @@ export type Database = {
           },
         ]
       }
+      va_feedback: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          page_url: string | null
+          screenshot_url_1: string | null
+          screenshot_url_2: string | null
+          screenshot_url_3: string | null
+          va_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          page_url?: string | null
+          screenshot_url_1?: string | null
+          screenshot_url_2?: string | null
+          screenshot_url_3?: string | null
+          va_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          page_url?: string | null
+          screenshot_url_1?: string | null
+          screenshot_url_2?: string | null
+          screenshot_url_3?: string | null
+          va_name?: string | null
+        }
+        Relationships: []
+      }
       va_questions: {
         Row: {
           addressed_at: string | null

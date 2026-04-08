@@ -163,8 +163,8 @@ function ChapterDetail({ chapter }: { chapter: any }) {
         <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
           {lwUrl || `player.surviveaccounting.com/...`}
         </p>
-        <span className="inline-block rounded-full px-2 py-0.5 text-[9px] font-bold mt-1" style={{ background: "#F59E0B", color: "#000" }}>
-          Coming Soon
+        <span className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold mt-1" style={{ background: "#F59E0B", color: "#14213D" }}>
+          🚧 Coming Soon
         </span>
       </SubToggle>
 
@@ -179,8 +179,8 @@ function ChapterDetail({ chapter }: { chapter: any }) {
             <div key={item.label} className="flex items-center gap-2 text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
               <span>{item.emoji}</span>
               <span>{item.label}</span>
-              <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold ml-1" style={{ background: "#F59E0B", color: "#000" }}>
-                Coming Soon
+              <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold ml-1" style={{ background: "#F59E0B", color: "#14213D" }}>
+                🚧 Coming Soon
               </span>
             </div>
           ))}
@@ -229,8 +229,8 @@ function TreeNode({ label, subtitle, badge, depth, children, expandable, default
             {subtitle && <span className="block text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{subtitle}</span>}
           </div>
           {badge && (
-            <span className="rounded-full px-2 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "#F59E0B", color: "#000" }}>
-              {badge}
+            <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold shrink-0" style={{ background: "#F59E0B", color: "#14213D" }}>
+              🚧 {badge}
             </span>
           )}
         </button>

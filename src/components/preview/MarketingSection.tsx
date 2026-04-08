@@ -13,8 +13,8 @@ export default function MarketingSection() {
           padding: 32,
         }}
       >
-        <span className="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold mb-4" style={{ background: "#F59E0B", color: "#000" }}>
-          Coming Soon
+        <span className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold mb-4" style={{ background: "#F59E0B", color: "#14213D" }}>
+          🚧 Coming Soon
         </span>
         <h3 className="text-[22px] font-bold text-white mb-4" style={{ fontFamily: "Inter" }}>
           Marketing Tools & Strategy
@@ -45,8 +45,8 @@ export default function MarketingSection() {
           <div key={item.label} className="flex items-center gap-2 text-[12px] italic" style={{ color: "rgba(255,255,255,0.3)" }}>
             <span>{item.emoji}</span>
             <span>{item.label}</span>
-            <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold not-italic ml-1" style={{ background: "#F59E0B", color: "#000" }}>
-              Coming Soon
+            <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold not-italic ml-1" style={{ background: "#F59E0B", color: "#14213D" }}>
+              🚧 Coming Soon
             </span>
           </div>
         ))}

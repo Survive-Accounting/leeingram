@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings, Megaphone, Workflow } from "lucide-react";
-import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
+import { ExternalLink, ChevronDown, ChevronUp, ChevronRight, Monitor, TrendingUp, Settings, Megaphone, Workflow } from "lucide-react";
 import RevenueCalculator from "@/components/preview/RevenueCalculator";
 import InfrastructureSection, { ContentPipeline } from "@/components/preview/InfrastructureSection";
 import MarketingSection from "@/components/preview/MarketingSection";
@@ -11,7 +10,6 @@ import SolutionsViewerSection from "@/components/preview/SolutionsViewerSection"
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PASSWORD = "survive2026";
 const SESSION_KEY = "sa_preview_auth";
-const FALLBACK_CHAPTER_ID = "e211854f-3ff4-4d5d-ba50-c7ccba24f0bf";
 
 const COURSE_ORDER: Record<string, number> = { INTRO1: 0, INTRO2: 1, IA1: 2, IA2: 3 };
 const COURSE_LABELS: Record<string, string> = {
@@ -21,25 +19,22 @@ const COURSE_LABELS: Record<string, string> = {
   IA2: "Intermediate Accounting 2",
 };
 
-const LANDING_CARDS = [
-  { label: "Intro 1", route: "/ole-miss/accy201", ready: false },
-  { label: "Intro 2", route: "/ole-miss/accy202", ready: false },
-  { label: "IA1", route: "/ole-miss/accy303", ready: false },
-  { label: "IA2", route: "/ole-miss/accy304", ready: false },
-];
-
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  "Website Page Hierarchy": <Network className="h-4 w-4" />,
-  "Revenue Potential": <TrendingUp className="h-4 w-4" />,
-  "Infrastructure": <Settings className="h-4 w-4" />,
-  "How Content Gets Built": <Workflow className="h-4 w-4" />,
-  "Marketing": <Megaphone className="h-4 w-4" />,
-  "Chapter Pages": <BookOpen className="h-4 w-4" />,
-  "Solutions Viewer": <Eye className="h-4 w-4" />,
-  "Landing Pages": <Layout className="h-4 w-4" />,
-  "Greek Portal": <Globe className="h-4 w-4" />,
-  "Home Landing Page": <Home className="h-4 w-4" />,
+  "All Student-Facing Pages": <Monitor className="h-5 w-5" />,
+  "Revenue Potential": <TrendingUp className="h-5 w-5" />,
+  "How Content Gets Built": <Workflow className="h-5 w-5" />,
+  "Infrastructure": <Settings className="h-5 w-5" />,
+  "Marketing": <Megaphone className="h-5 w-5" />,
 };
+
+// ── Coming Soon Badge ──
+function ComingSoonBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold" style={{ background: "#F59E0B", color: "#14213D" }}>
+      🚧 Coming Soon
+    </span>
+  );
+}
 
 // ── Password Gate ──
 function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
@@ -94,9 +89,13 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
 
 // ── Feedback Form ──
 function FeedbackForm() {
-  const [page, setPage] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
   const [feedback, setFeedback] = useState("");
   const [name, setName] = useState("");
+  const [ss1, setSs1] = useState("");
+  const [ss2, setSs2] = useState("");
+  const [ss3, setSs3] = useState("");
+  const [ssCount, setSsCount] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -105,19 +104,19 @@ function FeedbackForm() {
     if (!feedback.trim()) return;
     setSubmitting(true);
     try {
-      await supabase.from("chapter_questions").insert({
-        chapter_id: FALLBACK_CHAPTER_ID,
-        issue_type: "feedback",
-        question: `Page: ${page || "(not specified)"} | Feedback: ${feedback} | From: ${name || "Anonymous"}`,
-        student_email: "preview-team@surviveaccounting.com",
-        status: "new",
-      } as any);
+      await (supabase as any).from("va_feedback").insert({
+        page_url: pageUrl.trim() || null,
+        feedback: feedback.trim(),
+        va_name: name.trim() || null,
+        screenshot_url_1: ss1.trim() || null,
+        screenshot_url_2: ss2.trim() || null,
+        screenshot_url_3: ss3.trim() || null,
+      });
       setSuccess(true);
       setTimeout(() => {
-        setPage("");
-        setFeedback("");
-        setName("");
-        setSuccess(false);
+        setPageUrl(""); setFeedback(""); setName("");
+        setSs1(""); setSs2(""); setSs3("");
+        setSsCount(1); setSuccess(false);
       }, 2000);
     } catch (err) {
       console.error("Feedback submit error:", err);
@@ -139,16 +138,29 @@ function FeedbackForm() {
 
   return (
     <div style={{ background: "#0F1D35", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 24 }}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-4" style={{ color: "#F59E0B" }}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-4" style={{ color: "#F59E0B", letterSpacing: "0.1em" }}>
         Suggest an Improvement
       </p>
       {success ? (
         <p className="text-[14px] text-center py-4" style={{ color: "rgba(255,255,255,0.8)" }}>Got it — thank you! 🙌</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input value={page} onChange={e => setPage(e.target.value)} placeholder="What page or section?" style={inputStyle} />
-          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What could be better?" rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+          <input value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="Paste the URL of the page you're reviewing" style={inputStyle} />
+          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What could be better?" rows={4} style={{ ...inputStyle, resize: "vertical" }} />
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} />
+          <input value={ss1} onChange={e => setSs1(e.target.value)} placeholder="Upload to imgur.com or imgbb.com and paste link" style={inputStyle} />
+          {ssCount < 2 ? (
+            <button type="button" onClick={() => setSsCount(2)} className="text-[12px] font-medium" style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer" }}>+ Add screenshot</button>
+          ) : (
+            <input value={ss2} onChange={e => setSs2(e.target.value)} placeholder="Screenshot 2 URL" style={inputStyle} />
+          )}
+          {ssCount >= 2 && ssCount < 3 && (
+            <button type="button" onClick={() => setSsCount(3)} className="text-[12px] font-medium" style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer" }}>+ Add screenshot</button>
+          )}
+          {ssCount >= 3 && (
+            <input value={ss3} onChange={e => setSs3(e.target.value)} placeholder="Screenshot 3 URL" style={inputStyle} />
+          )}
+          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)" }}>You can submit multiple times if you have more feedback.</p>
           <button
             type="submit"
             disabled={!feedback.trim() || submitting}
@@ -164,57 +176,62 @@ function FeedbackForm() {
 }
 
 // ── Collapsible Section ──
-function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+function CollapsibleSection({ title, children, defaultOpen, sublabel, highlight }: {
+  title: string; children: React.ReactNode; defaultOpen?: boolean; sublabel?: string; highlight?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <section>
+    <section style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full text-left mb-0 group"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        className="flex items-center gap-3 w-full text-left group"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: "20px 0" }}
       >
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.4)" }}>
-          {title}
-        </span>
-        <span style={{ color: "rgba(255,255,255,0.3)" }}>
+        <span style={{ color: "white" }}>
           {SECTION_ICONS[title]}
         </span>
-        {open ? <ChevronUp className="h-3.5 w-3.5 ml-auto" style={{ color: "rgba(255,255,255,0.3)" }} /> : <ChevronDown className="h-3.5 w-3.5 ml-auto" style={{ color: "rgba(255,255,255,0.3)" }} />}
+        <div className="flex-1 min-w-0">
+          <span className="text-[20px] font-bold text-white" style={{ letterSpacing: "0.05em" }}>
+            {title}
+          </span>
+          {sublabel && <span className="block text-[13px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{sublabel}</span>}
+        </div>
+        {open ? <ChevronUp className="h-5 w-5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} /> : <ChevronDown className="h-5 w-5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} />}
       </button>
-      {open && <div className="mt-4">{children}</div>}
+      {open && (
+        <div className={`pb-6 ${highlight ? "rounded-xl px-6 py-5 mb-4" : ""}`} style={highlight ? { background: "#1a2d4a", border: "1px solid rgba(206,17,38,0.3)", borderRadius: 12 } : undefined}>
+          {children}
+        </div>
+      )}
     </section>
   );
 }
 
-// ── Link Card ──
-function LinkCard({ href, label, badge, badgeColor, newTab }: { href: string; label: string; badge?: string; badgeColor?: string; newTab?: boolean }) {
+// ── Sub Toggle (inside mega toggle) ──
+function SubSection({ label, children, defaultOpen }: { label: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <a
-      href={href}
-      target={newTab ? "_blank" : undefined}
-      rel={newTab ? "noopener noreferrer" : undefined}
-      className="group flex items-center justify-between rounded-lg px-4 py-3 text-[13px] font-medium text-white transition-all duration-150"
-      style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.03)" }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#CE1126"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
-    >
-      <span className="flex items-center gap-2">
-        {label}
-        {badge && (
-          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: badgeColor || "#F59E0B", color: "#000" }}>
-            {badge}
-          </span>
-        )}
-      </span>
-      <ExternalLink className="h-3.5 w-3.5 opacity-30 group-hover:opacity-70 transition-opacity" />
-    </a>
+    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full text-left py-3"
+        style={{ background: "none", border: "none", cursor: "pointer" }}
+      >
+        <ChevronRight
+          className="h-3.5 w-3.5 transition-transform duration-200 shrink-0"
+          style={{ color: "rgba(255,255,255,0.3)", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
+        <span className="text-[13px] font-semibold text-white">{label}</span>
+      </button>
+      <div className="overflow-hidden transition-all duration-200" style={{ maxHeight: open ? 10000 : 0, opacity: open ? 1 : 0 }}>
+        <div className="pl-5 pb-4">{children}</div>
+      </div>
+    </div>
   );
 }
 
 // ── Main Page ──
 function PreviewIndex() {
-  
-
   const { data: chapters = [] } = useQuery({
     queryKey: ["preview-chapters"],
     staleTime: 10 * 60 * 1000,
@@ -238,112 +255,131 @@ function PreviewIndex() {
     return Object.values(map).sort((a, b) => (COURSE_ORDER[a.code] ?? 99) - (COURSE_ORDER[b.code] ?? 99));
   }, [chapters]);
 
+  const COURSE_ROUTES = [
+    { label: "ACCY 201 · Intro 1", route: "/ole-miss/accy201" },
+    { label: "ACCY 202 · Intro 2", route: "/ole-miss/accy202" },
+    { label: "ACCY 303 · IA1", route: "/ole-miss/accy303" },
+    { label: "ACCY 304 · IA2", route: "/ole-miss/accy304" },
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: "#14213D" }}>
       {/* Header */}
       <div className="pt-10 pb-2 text-center">
-        <img src={LOGO_URL} alt="Survive Accounting" className="h-8 mx-auto mb-3 object-contain" />
-        <p className="text-[11px] uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.35)" }}>
-          Internal Preview — For Team Use Only
+        <img src={LOGO_URL} alt="Survive Accounting" className="h-8 mx-auto mb-5 object-contain" />
+        <h1 className="text-[32px] font-extrabold text-white" style={{ fontFamily: "Inter" }}>The Survive Accounting Platform</h1>
+        <p className="text-[16px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>Behind the Scenes</p>
+        <p className="text-[14px] mt-3 mx-auto" style={{ color: "rgba(255,255,255,0.65)", maxWidth: 480, lineHeight: 1.6 }}>
+          Welcome to the team. Everything we're building is below — explore, test, and share your thoughts.
         </p>
-        <h1 className="mt-4 text-[28px] font-bold text-white">Staging Index</h1>
       </div>
 
-      <div className="mx-auto max-w-[700px] px-5 py-8 space-y-12">
+      <div className="mx-auto max-w-[700px] px-5 py-8 space-y-0">
         {/* ── Feedback Form ── */}
-        <FeedbackForm />
+        <div className="mb-10">
+          <FeedbackForm />
+        </div>
 
-        {/* ── Website Page Hierarchy ── */}
-        <CollapsibleSection title="Website Page Hierarchy">
-          <PlatformHierarchy />
+        {/* ── ALL STUDENT-FACING PAGES ── */}
+        <CollapsibleSection title="All Student-Facing Pages" sublabel="For review, testing, and improvement" highlight>
+          {/* Sub 1: Home Landing */}
+          <SubSection label="Home Landing Page">
+            <p className="text-[11px] font-mono mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>surviveaccounting.com</p>
+            <div className="mb-2"><ComingSoonBadge /></div>
+            <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>Main entry point. Routes students to their campus and course.</p>
+          </SubSection>
+
+          {/* Sub 2: Campus Landing Pages */}
+          <SubSection label="Campus Landing Pages">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Ole Miss card */}
+              <div className="rounded-lg p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <p className="text-[13px] font-semibold text-white mb-1">Ole Miss</p>
+                <p className="text-[11px] font-mono mb-3" style={{ color: "rgba(255,255,255,0.3)" }}>learn.surviveaccounting.com/ole-miss</p>
+                <div className="space-y-1.5 mb-3">
+                  {COURSE_ROUTES.map(cr => (
+                    <a key={cr.route} href={cr.route} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[12px] text-white hover:underline">
+                      <span>{cr.label}</span>
+                      <ComingSoonBadge />
+                      <ExternalLink className="h-3 w-3 ml-auto opacity-30" />
+                    </a>
+                  ))}
+                </div>
+                <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>Self-serve purchase page. Students land here from search or referral.</p>
+              </div>
+              {/* New Campus placeholder */}
+              <div className="rounded-lg p-4" style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.12)" }}>
+                <p className="text-[13px] italic mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>[New Campus Here]</p>
+                <p className="text-[11px] font-mono mb-2" style={{ color: "rgba(255,255,255,0.2)" }}>learn.surviveaccounting.com/campusname</p>
+                <div className="mb-2"><ComingSoonBadge /></div>
+                <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>400+ universities across the country offer rigorous accounting programs — each one a potential campus for Survive Accounting.</p>
+              </div>
+            </div>
+          </SubSection>
+
+          {/* Sub 3: Greek Portals */}
+          <SubSection label="Greek Portals">
+            <p className="text-[11px] font-mono mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>greek.surviveaccounting.com</p>
+            <div className="mb-2"><ComingSoonBadge /></div>
+            <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>Bulk study pass purchasing for Greek organizations. ~20-30 orgs per campus.</p>
+          </SubSection>
+
+          {/* Sub 4: Chapter Pages */}
+          <SubSection label="Chapter Pages">
+            <div className="space-y-4">
+              {grouped.map((group) => (
+                <div key={group.code}>
+                  <p className="text-[12px] font-semibold text-white mb-2">{group.name}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {group.chapters.map((ch: any) => (
+                      <a
+                        key={ch.id}
+                        href={`/cram/${ch.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center justify-between rounded-lg px-3 py-2 text-[12px] text-white transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderLeft: "2px solid transparent" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderLeftColor = "#CE1126"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent"; }}
+                      >
+                        <span>Ch {ch.chapter_number} — {ch.chapter_name}</span>
+                        <ExternalLink className="h-3 w-3 opacity-30 group-hover:opacity-70 transition-opacity shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          {/* Sub 5: Solutions Viewer */}
+          <SubSection label="Solutions Viewer">
+            <SolutionsViewerSection />
+          </SubSection>
         </CollapsibleSection>
 
-        {/* ── Revenue Potential ── */}
-        <CollapsibleSection title="Revenue Potential">
+        {/* ── REVENUE POTENTIAL ── */}
+        <CollapsibleSection title="Revenue Potential" defaultOpen>
           <RevenueCalculator />
         </CollapsibleSection>
 
-        {/* ── How Content Gets Built ── */}
+        {/* ── HOW CONTENT GETS BUILT ── */}
         <CollapsibleSection title="How Content Gets Built">
           <ContentPipeline />
         </CollapsibleSection>
 
-        {/* ── Infrastructure ── */}
+        {/* ── INFRASTRUCTURE ── */}
         <CollapsibleSection title="Infrastructure">
           <InfrastructureSection />
         </CollapsibleSection>
 
-        {/* ── Marketing ── */}
+        {/* ── MARKETING ── */}
         <CollapsibleSection title="Marketing">
           <MarketingSection />
         </CollapsibleSection>
 
-        {/* ── Chapter Pages ── */}
-        <CollapsibleSection title="Chapter Pages">
-          <div className="space-y-6">
-            {grouped.map((group) => (
-              <div key={group.code}>
-                <p className="text-[13px] font-semibold text-white mb-2">{group.name}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {group.chapters.map((ch: any) => (
-                    <LinkCard
-                      key={ch.id}
-                      href={`/cram/${ch.id}`}
-                      label={`Ch ${ch.chapter_number} — ${ch.chapter_name}`}
-                      newTab
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
-
-        {/* ── Solutions Viewer ── */}
-        <CollapsibleSection title="Solutions Viewer">
-          <SolutionsViewerSection />
-        </CollapsibleSection>
-
-        {/* ── Landing Pages ── */}
-        <CollapsibleSection title="Landing Pages">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {LANDING_CARDS.map((lp) => (
-              <LinkCard
-                key={lp.route}
-                href={lp.route}
-                label={lp.label}
-                badge={lp.ready ? undefined : "Coming Soon"}
-                badgeColor="#F59E0B"
-                newTab
-              />
-            ))}
-          </div>
-        </CollapsibleSection>
-
-        {/* ── Greek Portal ── */}
-        <CollapsibleSection title="Greek Portal">
-          <LinkCard
-            href="https://greek.surviveaccounting.com"
-            label="Greek Portal"
-            badge="In Progress"
-            badgeColor="#F59E0B"
-            newTab
-          />
-        </CollapsibleSection>
-
-        {/* ── Home Landing Page ── */}
-        <CollapsibleSection title="Home Landing Page">
-          <LinkCard
-            href="/"
-            label="Home Page"
-            badge="Coming Soon"
-            badgeColor="#F59E0B"
-            newTab
-          />
-        </CollapsibleSection>
-
         {/* ── Footer ── */}
-        <p className="text-center text-[11px] pt-4 pb-8" style={{ color: "rgba(255,255,255,0.25)" }}>
+        <p className="text-center text-[11px] pt-8 pb-8" style={{ color: "rgba(255,255,255,0.25)" }}>
           This page is for internal team use only. Do not share the URL publicly.
         </p>
       </div>
