@@ -29,7 +29,7 @@ const LANDING_CARDS = [
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  "Platform Hierarchy": <Network className="h-4 w-4" />,
+  "Website Page Hierarchy": <Network className="h-4 w-4" />,
   "Revenue Potential": <TrendingUp className="h-4 w-4" />,
   "Infrastructure": <Settings className="h-4 w-4" />,
   "Marketing": <Megaphone className="h-4 w-4" />,
@@ -252,8 +252,8 @@ function PreviewIndex() {
         {/* ── Feedback Form ── */}
         <FeedbackForm />
 
-        {/* ── Platform Hierarchy ── */}
-        <CollapsibleSection title="Platform Hierarchy">
+        {/* ── Website Page Hierarchy ── */}
+        <CollapsibleSection title="Website Page Hierarchy">
           <PlatformHierarchy />
         </CollapsibleSection>
 

@@ -272,10 +272,34 @@ export default function PlatformHierarchy() {
 
   return (
     <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}>
-      {/* Root */}
-      <TreeNode label="Choose Your Campus" subtitle="surviveaccounting.com" badge="Coming Soon" depth={0} expandable defaultOpen>
-        {/* Ole Miss */}
-        <TreeNode label="Ole Miss" subtitle="learn.surviveaccounting.com" depth={1} expandable>
+      {/* Choose Your Campus */}
+      <TreeNode
+        label="Choose Your Campus"
+        subtitle="surviveaccounting.com"
+        badge="Coming Soon"
+        depth={0}
+        expandable
+        defaultOpen
+      >
+        <p className="text-[11px] mb-3 px-1" style={{ color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
+          Landing page where students select their university. Each campus gets its own branded experience with course-specific content and pricing.
+        </p>
+        <p className="text-[11px] px-1" style={{ color: "rgba(255,255,255,0.25)", lineHeight: 1.6 }}>
+          400+ universities across the country offer rigorous accounting programs — each one a potential campus for Survive Accounting.
+        </p>
+      </TreeNode>
+
+      {/* Campus Page */}
+      <div className="mt-2">
+        <TreeNode
+          label="Campus Page"
+          subtitle="learn.surviveaccounting.com"
+          depth={0}
+          expandable
+        >
+          <p className="text-[11px] mb-3 px-1" style={{ color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
+            The main student hub for a campus. Hosts all 4 course pages, chapter content, practice problems, and study tools. Currently live for Ole Miss.
+          </p>
           {courseGroups.map((cg) => {
             const info = COURSE_LABELS[cg.code];
             return (
@@ -283,14 +307,14 @@ export default function PlatformHierarchy() {
                 key={cg.code}
                 label={info?.label || cg.code}
                 subtitle={info?.code}
-                depth={2}
+                depth={1}
                 expandable
               >
                 {cg.chapters.map((ch: any) => (
                   <TreeNode
                     key={ch.id}
                     label={`Ch ${ch.chapter_number} — ${ch.chapter_name}`}
-                    depth={3}
+                    depth={2}
                     expandable
                   >
                     <ChapterDetail chapter={ch} />
@@ -300,21 +324,22 @@ export default function PlatformHierarchy() {
             );
           })}
         </TreeNode>
+      </div>
 
-        {/* Greek Org */}
-        <div className="relative">
-          <div style={{ position: "absolute", left: 24, top: -8, width: 1, height: 16, borderLeft: "1px dashed rgba(255,255,255,0.15)" }} />
-          <TreeNode label="Greek Organizations" subtitle="greek.surviveaccounting.com" badge="Coming Soon" depth={1}>
-            <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>
-              ~20-30 orgs per campus · Connected to each campus's 4 courses
-            </p>
-          </TreeNode>
-        </div>
-
-        <p className="text-[11px] mt-3 px-4" style={{ color: "rgba(255,255,255,0.25)", lineHeight: 1.6 }}>
-          400+ universities across the country offer rigorous accounting programs — each one a potential campus for Survive Accounting.
-        </p>
-      </TreeNode>
+      {/* Greek Org Page */}
+      <div className="mt-2">
+        <TreeNode
+          label="Greek Org Page"
+          subtitle="greek.surviveaccounting.com"
+          badge="Coming Soon"
+          depth={0}
+          expandable
+        >
+          <p className="text-[11px] mb-3 px-1" style={{ color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
+            Group licensing portal for fraternities and sororities. Chapter presidents purchase bulk access for members at a discounted rate. ~20-30 orgs per campus.
+          </p>
+        </TreeNode>
+      </div>
     </div>
   );
 }
