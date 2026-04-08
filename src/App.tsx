@@ -104,6 +104,7 @@ const QuizStart = lazy(() => import("./pages/QuizStart"));
 const QuizEnd = lazy(() => import("./pages/QuizEnd"));
 const QuizRating = lazy(() => import("./pages/QuizRating"));
 const LegacyNotionPage = lazy(() => import("./pages/LegacyNotionPage"));
+const Preview = lazy(() => import("./pages/Preview"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
@@ -160,6 +161,7 @@ const AppRoutes = () => {
         <Route path="/quiz-end/:topicId" element={<QuizEnd />} />
         <Route path="/quiz-rating/:topicId" element={<QuizRating />} />
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
+        <Route path="/preview" element={<Preview />} />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
         <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
         <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
