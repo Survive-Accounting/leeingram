@@ -389,7 +389,9 @@ function PreviewIndex() {
         </CollapsibleSection>
 
         {/* ── Feedback Form ── */}
-        <div className="mt-10 mb-4" id="feedback-form">
+        <div className="mt-20 mb-4" id="feedback-form">
+          <p className="text-[16px] font-bold text-white mb-1">Suggest an Improvement</p>
+          <p className="text-[13px] mb-5" style={{ color: "rgba(255,255,255,0.5)" }}>All ideas are welcome and encouraged!</p>
           <FeedbackForm />
         </div>
 
