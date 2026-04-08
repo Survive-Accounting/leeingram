@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Search } from "lucide-react";
+import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home } from "lucide-react";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PASSWORD = "survive2026";
 const SESSION_KEY = "sa_preview_auth";
+const FALLBACK_CHAPTER_ID = "e211854f-3ff4-4d5d-ba50-c7ccba24f0bf";
 
 const COURSE_ORDER: Record<string, number> = { INTRO1: 0, INTRO2: 1, IA1: 2, IA2: 3 };
 const COURSE_LABELS: Record<string, string> = {
@@ -21,6 +22,14 @@ const LANDING_CARDS = [
   { label: "IA1", route: "/ole-miss/accy303", ready: false },
   { label: "IA2", route: "/ole-miss/accy304", ready: false },
 ];
+
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  "Chapter Pages": <BookOpen className="h-4 w-4" />,
+  "Solutions Viewer": <Eye className="h-4 w-4" />,
+  "Landing Pages": <Layout className="h-4 w-4" />,
+  "Greek Portal": <Globe className="h-4 w-4" />,
+  "Home Landing Page": <Home className="h-4 w-4" />,
+};
 
 // ── Password Gate ──
 function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
@@ -48,7 +57,13 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
       `}</style>
       <form onSubmit={handleSubmit} className={`w-full max-w-[340px] px-6 ${shake ? "shake-anim" : ""}`}>
         <img src={LOGO_URL} alt="Survive Accounting" className="h-8 mx-auto mb-6 object-contain" />
-        <p className="text-center text-[13px] font-semibold uppercase tracking-[0.1em] mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>Team Access</p>
+        <p className="text-center text-[13px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: "rgba(255,255,255,0.5)" }}>Team Access</p>
+        <p className="text-center text-[14px] mb-0 mx-auto" style={{ color: "rgba(255,255,255,0.75)", maxWidth: 320, lineHeight: 1.5 }}>
+          Preview all student-facing pages to test usability, conversion, and educational value. Your improvements matter.
+        </p>
+        <p className="text-center text-[13px] italic mx-auto mb-6" style={{ color: "rgba(255,255,255,0.55)", marginTop: 8 }}>
+          I couldn't build this without your help. Thank you. — Lee
+        </p>
         <input
           type="password"
           value={pw}
@@ -67,12 +82,97 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ── Section Label ──
-function SectionLabel({ children }: { children: string }) {
+// ── Feedback Form ──
+function FeedbackForm() {
+  const [page, setPage] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [name, setName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedback.trim()) return;
+    setSubmitting(true);
+    try {
+      await supabase.from("chapter_questions").insert({
+        chapter_id: FALLBACK_CHAPTER_ID,
+        issue_type: "feedback",
+        question: `Page: ${page || "(not specified)"} | Feedback: ${feedback} | From: ${name || "Anonymous"}`,
+        student_email: "preview-team@surviveaccounting.com",
+        status: "new",
+      } as any);
+      setSuccess(true);
+      setTimeout(() => {
+        setPage("");
+        setFeedback("");
+        setName("");
+        setSuccess(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Feedback submit error:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 6,
+    color: "#FFFFFF",
+    padding: "10px 12px",
+    fontSize: 13,
+    width: "100%",
+    outline: "none",
+  };
+
   return (
-    <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
-      {children}
-    </p>
+    <div style={{ background: "#0F1D35", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 24 }}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-4" style={{ color: "#F59E0B" }}>
+        Suggest an Improvement
+      </p>
+      {success ? (
+        <p className="text-[14px] text-center py-4" style={{ color: "rgba(255,255,255,0.8)" }}>Got it — thank you! 🙌</p>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input value={page} onChange={e => setPage(e.target.value)} placeholder="What page or section?" style={inputStyle} />
+          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What could be better?" rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} />
+          <button
+            type="submit"
+            disabled={!feedback.trim() || submitting}
+            className="w-full py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+            style={{ background: !feedback.trim() ? "rgba(206,17,38,0.4)" : "#CE1126", borderRadius: 6, border: "none", cursor: !feedback.trim() ? "not-allowed" : "pointer", opacity: !feedback.trim() ? 0.6 : 1 }}
+          >
+            {submitting ? "Sending…" : "Send to Lee →"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ── Collapsible Section ──
+function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full text-left mb-0 group"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      >
+        <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.4)" }}>
+          {title}
+        </span>
+        <span style={{ color: "rgba(255,255,255,0.3)" }}>
+          {SECTION_ICONS[title]}
+        </span>
+        {open ? <ChevronUp className="h-3.5 w-3.5 ml-auto" style={{ color: "rgba(255,255,255,0.3)" }} /> : <ChevronDown className="h-3.5 w-3.5 ml-auto" style={{ color: "rgba(255,255,255,0.3)" }} />}
+      </button>
+      {open && <div className="mt-4">{children}</div>}
+    </section>
   );
 }
 
@@ -138,7 +238,6 @@ function PreviewIndex() {
     },
   });
 
-  // Group chapters by course
   const grouped = useMemo(() => {
     const map: Record<string, { code: string; name: string; chapters: any[] }> = {};
     chapters.forEach((ch: any) => {
@@ -161,9 +260,11 @@ function PreviewIndex() {
       </div>
 
       <div className="mx-auto max-w-[700px] px-5 py-8 space-y-12">
+        {/* ── Feedback Form ── */}
+        <FeedbackForm />
+
         {/* ── Chapter Pages ── */}
-        <section>
-          <SectionLabel>Chapter Pages</SectionLabel>
+        <CollapsibleSection title="Chapter Pages">
           <div className="space-y-6">
             {grouped.map((group) => (
               <div key={group.code}>
@@ -181,11 +282,10 @@ function PreviewIndex() {
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ── Solutions Viewer ── */}
-        <section>
-          <SectionLabel>Solutions Viewer</SectionLabel>
+        <CollapsibleSection title="Solutions Viewer">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
             <input
@@ -212,11 +312,10 @@ function PreviewIndex() {
           <a href="/solutions-qa" target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[12px] font-semibold" style={{ color: "#3B82F6" }}>
             Browse all →
           </a>
-        </section>
+        </CollapsibleSection>
 
         {/* ── Landing Pages ── */}
-        <section>
-          <SectionLabel>Landing Pages</SectionLabel>
+        <CollapsibleSection title="Landing Pages">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {LANDING_CARDS.map((lp) => (
               <LinkCard
@@ -229,11 +328,10 @@ function PreviewIndex() {
               />
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ── Greek Portal ── */}
-        <section>
-          <SectionLabel>Greek Portal</SectionLabel>
+        <CollapsibleSection title="Greek Portal">
           <LinkCard
             href="https://greek.surviveaccounting.com"
             label="Greek Portal"
@@ -241,11 +339,10 @@ function PreviewIndex() {
             badgeColor="#F59E0B"
             newTab
           />
-        </section>
+        </CollapsibleSection>
 
         {/* ── Home Landing Page ── */}
-        <section>
-          <SectionLabel>Home Landing Page</SectionLabel>
+        <CollapsibleSection title="Home Landing Page">
           <LinkCard
             href="/"
             label="Home Page"
@@ -253,7 +350,7 @@ function PreviewIndex() {
             badgeColor="#F59E0B"
             newTab
           />
-        </section>
+        </CollapsibleSection>
 
         {/* ── Footer ── */}
         <p className="text-center text-[11px] pt-4 pb-8" style={{ color: "rgba(255,255,255,0.25)" }}>
