@@ -23,10 +23,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const token = authHeader.replace("Bearer ", "");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Allow service-role key OR authenticated user
-    if (token !== serviceRoleKey) {
-      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    // Allow service-role key, anon key (for internal tooling), or authenticated user
+    if (token !== serviceRoleKey && token !== anonKey) {
+      const anonClient = createClient(supabaseUrl, anonKey);
       const { data: { user: caller }, error: callerError } = await anonClient.auth.getUser(token);
       if (callerError || !caller) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
