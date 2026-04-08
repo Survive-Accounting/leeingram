@@ -81,14 +81,11 @@ function ToolCard({ tool }: { tool: typeof TOOLS[number] }) {
   );
 }
 
-export default function InfrastructureSection() {
+// ── Pipeline (exported separately) ──
+export function ContentPipeline() {
   return (
     <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}>
-      {/* Pipeline Flow */}
-      <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-4" style={{ color: "#F59E0B" }}>
-        How Content Gets Built
-      </p>
-      <div className="flex flex-wrap items-start gap-1 mb-6">
+      <div className="flex flex-wrap items-start gap-1">
         {PIPELINE_STEPS.map((step, i) => (
           <div key={step.label} className="flex items-start gap-1">
             <div
@@ -148,7 +145,7 @@ export default function InfrastructureSection() {
             <div className="space-y-1.5 mt-2">
               <div>
                 <span className="text-[10px] block" style={{ color: "#FFFFFF" }}>🎓 <span className="font-semibold">SurviveAccounting.com</span></span>
-                <span className="text-[9px] block pl-4" style={{ color: "rgba(255,255,255,0.35)" }}>Cost Accounting + Advanced Accounting</span>
+                <span className="text-[9px] block pl-4" style={{ color: "rgba(255,255,255,0.35)" }}>Clone for Cost Accounting + Advanced Accounting</span>
               </div>
               <div>
                 <span className="text-[10px] block" style={{ color: "#FFFFFF" }}>💰 <span className="font-semibold">SurviveTax.com</span></span>
@@ -162,8 +159,14 @@ export default function InfrastructureSection() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Tool Cards */}
+// ── Main Infrastructure (tools only) ──
+export default function InfrastructureSection() {
+  return (
+    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}>
       <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>
         Tools & Integrations
       </p>
