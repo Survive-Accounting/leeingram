@@ -9,11 +9,26 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [suspended, setSuspended] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setSuspended(false);
     try {
+      if (!isSignUp) {
+        // Check if account is suspended before attempting auth
+        const { data: vaRow } = await supabase
+          .from("va_accounts")
+          .select("account_status")
+          .eq("email", email.trim().toLowerCase())
+          .maybeSingle();
+        if (vaRow?.account_status === "suspended") {
+          setSuspended(true);
+          setLoading(false);
+          return;
+        }
+      }
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
