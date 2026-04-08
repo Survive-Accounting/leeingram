@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap, Send, Loader2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap, Send, Loader2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +113,40 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
   const { data: chaptersData } = useChaptersWithCourses();
   const chapters = chaptersData?.chapters || [];
   const courses = chaptersData?.courses || [];
+
+  // Fetch "Needs Lee" assets
+  const { data: needsLeeAssets = [], isLoading: isLoadingNeedsLee } = useQuery({
+    queryKey: ["needs-lee-assets"],
+    queryFn: async () => {
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, chapter_id, course_id, fix_notes, fix_status, updated_at")
+          .eq("fix_status", "needs_lee")
+          .order("updated_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all = all.concat(data ?? []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const handleNeedsLeeAction = async (assetId: string, newStatus: "fix_verified" | "still_has_issues") => {
+    const { error } = await supabase.from("teaching_assets").update({ fix_status: newStatus }).eq("id", assetId);
+    if (error) {
+      toast.error("Failed to update", { description: error.message });
+      return;
+    }
+    toast.success(newStatus === "fix_verified" ? "Marked as verified ✓" : "Flagged — still has issues");
+    queryClient.invalidateQueries({ queryKey: ["needs-lee-assets"] });
+  };
 
   const chapterMap = useMemo(() => {
     const m: Record<string, { chapter_number: number; chapter_name: string; course_id: string }> = {};
