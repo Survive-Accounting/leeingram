@@ -272,6 +272,13 @@ function PreviewIndex() {
         <p className="text-[14px] mt-3 mx-auto" style={{ color: "rgba(255,255,255,0.65)", maxWidth: 480, lineHeight: 1.6 }}>
           Welcome to the team. Everything we're building is below — explore, test, and share your thoughts.
         </p>
+        <a
+          href="/admin"
+          className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-all hover:brightness-110"
+          style={{ background: "#CE1126", textDecoration: "none" }}
+        >
+          Login to VA Dashboard →
+        </a>
       </div>
 
       <div className="mx-auto max-w-[700px] px-5 py-8 space-y-0">
