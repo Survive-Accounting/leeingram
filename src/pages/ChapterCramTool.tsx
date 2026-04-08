@@ -890,8 +890,8 @@ export default function ChapterCramTool() {
 
       {/* ── Divider 1: Header → Content (wave) ── */}
       <div style={{ background: "#F8F8FA", marginTop: "-2px", overflow: "hidden", lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "80px" }}>
-          <path d="M0,40 C360,80 1080,0 1440,40 L1440,0 L0,0 Z" fill="#14213D" />
+        <svg viewBox="0 0 1440 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "100px" }}>
+          <path d="M0,50 C360,100 1080,0 1440,50 L1440,0 L0,0 Z" fill="#14213D" />
         </svg>
       </div>
 
@@ -1017,10 +1017,10 @@ export default function ChapterCramTool() {
           </div>
         </section>
 
-        {/* ── Divider 2: Tools → Testimonials (diagonal) ── */}
-        <div style={{ background: "#F8F8FA", overflow: "hidden", lineHeight: 0 }}>
+        {/* ── Divider 2: Tools → Testimonials ── */}
+        <div style={{ background: "#F8F8FA", overflow: "hidden", lineHeight: 0, marginLeft: "calc(-50vw + 50%)", marginRight: "calc(-50vw + 50%)", width: "100vw" }}>
           <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "60px" }}>
-            <path d="M0,0 L1440,60 L1440,0 Z" fill="#F0F0F4" />
+            <path d="M0,30 C360,60 1080,0 1440,30 L1440,0 L0,0 Z" fill="#F0F0F4" />
           </svg>
         </div>
 
@@ -1033,7 +1033,7 @@ export default function ChapterCramTool() {
         </section>
 
         {/* ── Divider 3: Testimonials → Get in Touch (inverted wave) ── */}
-        <div style={{ background: "#F0F0F4", overflow: "hidden", lineHeight: 0 }}>
+        <div style={{ background: "#F0F0F4", overflow: "hidden", lineHeight: 0, marginLeft: "calc(-50vw + 50%)", marginRight: "calc(-50vw + 50%)", width: "100vw" }}>
           <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "80px" }}>
             <path d="M0,40 C360,0 1080,80 1440,40 L1440,80 L0,80 Z" fill="#F8F8FA" />
           </svg>
@@ -1162,7 +1162,7 @@ function CramFeedbackForm({ chapterId, chapterNumber, chapterName, courseDisplay
             </select>
             <textarea value={message} onChange={e => { setMessage(e.target.value); setSubmitError(""); }} placeholder="What's on your mind?" rows={3} className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={{ border: `1px solid ${theme.border}`, background: theme.pageBg, color: theme.text, resize: "vertical" }} />
           </div>
-          <button disabled={submitting || !email.trim() || !message.trim()} onClick={handleSubmit} className="w-full mt-3 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:brightness-95" style={{ background: theme.navy, opacity: (submitting || !email.trim() || !message.trim()) ? 0.5 : 1, cursor: submitting ? "wait" : "pointer" }}>
+          <button disabled={submitting || !email.trim() || !message.trim()} onClick={handleSubmit} className="w-full mt-3 py-2.5 text-[13px] font-bold text-white transition-all" style={{ background: theme.navy, opacity: (submitting || !email.trim() || !message.trim()) ? 0.5 : 1, cursor: submitting ? "wait" : "pointer", borderRadius: 6 }} onMouseEnter={(e) => { if (!submitting) (e.currentTarget as HTMLElement).style.background = theme.red; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = theme.navy; }}>
             {submitting ? "Sending…" : "Send to Lee →"}
           </button>
           {submitError && <p className="text-[11px] mt-2" style={{ color: "#dc2626" }}>{submitError}</p>}
