@@ -230,6 +230,14 @@ Deno.serve(async (req) => {
     console.log(`[${currentItem.operation_name}] Processing batch ${offset + 1}-${batchEnd} of ${total}`);
 
     for (const asset of batch) {
+      // Check if item was cancelled
+      const { data: freshItem } = await sb.from("bulk_fix_queue").select("status").eq("id", currentItem.id).single();
+      if (freshItem?.status !== "running") {
+        console.log(`[${currentItem.operation_name}] Cancelled — stopping`);
+        stoppedForTime = true;
+        break;
+      }
+
       if (Date.now() - invocationStartedAt >= MAX_INVOCATION_MS) {
         stoppedForTime = true;
         console.log(`[${currentItem.operation_name}] Stopping early to avoid runtime timeout at ${processed}/${total}`);

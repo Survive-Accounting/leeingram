@@ -1162,6 +1162,19 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     toast.success("Reset to pending — hit Run Queue to resume");
   }
 
+  async function stopQueue() {
+    const running = (queueItems ?? []).filter(q => q.status === "running");
+    const pending = (queueItems ?? []).filter(q => q.status === "pending");
+    for (const item of [...running, ...pending]) {
+      await supabase.from("bulk_fix_queue").update({
+        status: "failed",
+        error_summary: "Stopped manually",
+        completed_at: new Date().toISOString(),
+      } as any).eq("id", item.id);
+    }
+    refetchQueue();
+    toast.success("Queue stopped");
+  }
 
 
 
