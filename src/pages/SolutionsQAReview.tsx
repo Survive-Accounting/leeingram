@@ -2051,7 +2051,10 @@ export default function SolutionsQAReview() {
                             }`}
                           >
                             <span className="truncate">{item.sourceRef || item.assetName}</span>
-                            <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0">
+                              {fixStatusMap?.[allAssets[item.assetIndex]?.teaching_asset_id] === "needs_lee" && (
+                                <Badge className="text-[8px] h-4 px-1" style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#F59E0B" }}>Needs Lee</Badge>
+                              )}
                               <span className="w-6 text-center">{isClean ? <CheckCircle2 className="h-3 w-3 text-emerald-500 inline" /> : <span className="text-muted-foreground/20">–</span>}</span>
                               <span className="w-6 text-center">{isIssues ? <AlertTriangle className="h-3 w-3 text-amber-500 inline" /> : <span className="text-muted-foreground/20">–</span>}</span>
                               <span className="w-6 text-center">{isPend ? <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/30" /> : <span className="text-muted-foreground/20">–</span>}</span>
