@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting";
 
 interface HistoryEntry {
   label: string;
@@ -63,6 +63,7 @@ const OPERATION_LABELS: Record<string, string> = {
   rewrite_je_reasons: "Rewrite JE Reasons (YOU Format)",
   rewrite_je_amounts: "Rewrite Amount Sources (Plain English)",
   generate_calculation_formulas: "Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)",
+  standardize_formatting: "Standardize Formatting (solution text only)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
@@ -87,6 +88,24 @@ WHAT YOU MUST NOT CHANGE:
 - Do not reorder the instructions
 
 Return only the corrected text with no explanation or commentary. The output must be a drop-in replacement for the original field value.`;
+
+const STANDARDIZE_FORMATTING_PROMPT = `You are fixing the formatting of this explanation only. Do not change any numbers, calculations, or accounting conclusions. Apply these rules exactly:
+
+1. Step labels (Step 1, Step 2, Step 3) must always be narrative text OUTSIDE of calculation blocks — never inside a monospace or highlighted calculation line.
+
+2. Part headers like "Calculate the amount of proceeds allocated to the bonds" must be bold and sit as a clean header above their calculation block — not mixed inside it.
+
+3. Every calculation line stays in its monospace/highlighted format.
+
+4. One blank line between each step and its calculation block.
+
+5. One blank line between each part (a), (b), (c).
+
+6. Do not add any new content or change any values.
+
+7. Do not remove any calculations or conclusions.
+
+Output must look like a clean textbook solution with clear separation between narrative steps and calculation lines.`;
 
 /** Extract all numbers from text for comparison */
 function extractNumbers(text: string): string[] {
