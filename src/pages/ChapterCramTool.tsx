@@ -851,18 +851,13 @@ export default function ChapterCramTool() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `url(${LEE_HERO_URL})`,
+            background: `linear-gradient(to right, rgba(20,33,61,0.90) 0%, rgba(20,33,61,0.45) 40%, rgba(20,33,61,0.75) 100%), radial-gradient(ellipse at 65% 50%, rgba(20,33,61,0.0) 20%, rgba(20,33,61,0.5) 70%), url(${LEE_HERO_URL})`,
             backgroundSize: "cover",
-            backgroundPosition: "center 30%",
+            backgroundPosition: "60% 30%",
           }}
         />
         {/* Noise texture overlay */}
         <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px" }} />
-        {/* Dark gradient overlay — left side only */}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to right, rgba(20,33,61,0.82) 25%, rgba(20,33,61,0.35) 65%, rgba(20,33,61,0.6) 100%)" }}
-        />
         {/* Text content */}
         <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center">
           {courseDisplayName && (
