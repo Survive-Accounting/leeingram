@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings } from "lucide-react";
+import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings, Megaphone } from "lucide-react";
 import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
 import RevenueCalculator from "@/components/preview/RevenueCalculator";
 import InfrastructureSection from "@/components/preview/InfrastructureSection";
+import MarketingSection from "@/components/preview/MarketingSection";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PASSWORD = "survive2026";
@@ -30,6 +31,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   "Platform Hierarchy": <Network className="h-4 w-4" />,
   "Revenue Potential": <TrendingUp className="h-4 w-4" />,
   "Infrastructure": <Settings className="h-4 w-4" />,
+  "Marketing": <Megaphone className="h-4 w-4" />,
   "Chapter Pages": <BookOpen className="h-4 w-4" />,
   "Solutions Viewer": <Eye className="h-4 w-4" />,
   "Landing Pages": <Layout className="h-4 w-4" />,
@@ -282,6 +284,11 @@ function PreviewIndex() {
         {/* ── Infrastructure ── */}
         <CollapsibleSection title="Infrastructure">
           <InfrastructureSection />
+        </CollapsibleSection>
+
+        {/* ── Marketing ── */}
+        <CollapsibleSection title="Marketing">
+          <MarketingSection />
         </CollapsibleSection>
 
         {/* ── Chapter Pages ── */}
