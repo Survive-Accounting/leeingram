@@ -731,6 +731,9 @@ export default function SolutionsQAAdmin() {
                       {bulkAssetIds.has(r.id) && (
                         <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
                       )}
+                      {adminFixStatusMap?.[(r as any).teaching_asset_id] === "needs_lee" && (
+                        <Badge className="ml-1.5 text-[8px]" style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#F59E0B" }}>Needs Lee</Badge>
+                      )}
                     </td>
                     <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
                     <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
