@@ -1100,8 +1100,23 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="rewrite_je_reasons">Rewrite JE Reasons (YOU Format)</SelectItem>
                 <SelectItem value="rewrite_je_amounts">Rewrite Amount Sources (Plain English)</SelectItem>
                 <SelectItem value="generate_calculation_formulas">Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)</SelectItem>
+                <SelectItem value="standardize_formatting">Standardize Formatting (solution text only)</SelectItem>
               </SelectContent>
             </Select>
+
+            {operation === "standardize_formatting" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Fixes formatting of <code className="text-foreground">survive_solution_text</code> only — step labels outside calc blocks, bold part headers, proper spacing. Does NOT change any numbers, calculations, or conclusions.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ TEST MODE: This will only process asset BE15.4. Hard limit of 1 asset enforced. Scope filters are ignored.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Info card for JE tooltip operations */}
             {(operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && (
