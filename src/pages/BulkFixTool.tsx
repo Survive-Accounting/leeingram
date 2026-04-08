@@ -1844,21 +1844,21 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <Play className="h-4 w-4 mr-1.5" />
                 Run Queue ({pendingQueueItems.length} pending)
               </Button>
+              {hasRunningQueueItem && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={stopQueue}
+                >
+                  <Square className="h-3.5 w-3.5 mr-1.5" /> Stop Queue
+                </Button>
+              )}
               {(queueItems ?? []).some(q => ["complete", "skipped", "failed"].includes(q.status)) && (
                 <Button variant="outline" size="sm" onClick={clearCompleted} disabled={queueRunning}>
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Clear Completed
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 5: Revert */}
-        {lastOp && (
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Undo2 className="h-4 w-4" /> Revert Last Operation
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
