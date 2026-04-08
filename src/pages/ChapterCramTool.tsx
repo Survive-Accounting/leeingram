@@ -847,19 +847,31 @@ export default function ChapterCramTool() {
       </header>
 
       {/* ── Hero Header — Full-bleed photo ── */}
-      <div className="relative" style={{ height: "clamp(260px, 35vw, 380px)" }}>
+      <div className="relative overflow-hidden" style={{ height: "clamp(260px, 35vw, 380px)" }}>
+        {/* Background image — flipped & zoomed out */}
+        <img
+          src={LEE_HERO_URL}
+          alt=""
+          aria-hidden="true"
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          style={{
+            transform: "scaleX(-1) scale(0.85)",
+            objectPosition: "40% 30%",
+            zIndex: 0,
+          }}
+        />
+        {/* Gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(to right, rgba(20,33,61,0.90) 0%, rgba(20,33,61,0.45) 40%, rgba(20,33,61,0.75) 100%), radial-gradient(ellipse at 65% 50%, rgba(20,33,61,0.0) 20%, rgba(20,33,61,0.5) 70%), url(${LEE_HERO_URL})`,
-            backgroundSize: "cover",
-            backgroundPosition: "60% 30%",
+            background: "linear-gradient(to right, rgba(20,33,61,0.88) 30%, rgba(20,33,61,0.3) 70%, rgba(20,33,61,0.5) 100%)",
+            zIndex: 1,
           }}
         />
         {/* Noise texture overlay */}
-        <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px" }} />
+        <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px", zIndex: 2 }} />
         {/* Text content */}
-        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center">
+        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 3 }}>
           {courseDisplayName && (
             <p className="text-[11px] uppercase" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em", fontWeight: 500 }}>
               {courseDisplayName}
