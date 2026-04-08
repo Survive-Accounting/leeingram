@@ -842,28 +842,29 @@ export default function ChapterCramTool() {
       </header>
 
       {/* ── Hero Header — Full-bleed photo ── */}
-      <div className="relative overflow-hidden cram-hero" style={{ height: 320 }}>
-        <style>{`@media (max-width: 640px) { .cram-hero { height: 220px !important; } }`}</style>
-        <img
-          src={LEE_HERO_URL}
-          alt=""
-          aria-hidden="true"
-          className="absolute top-0 left-0 w-full h-full object-cover"
-          style={{
-            transform: "scaleX(-1) scale(0.65)",
-            objectPosition: "50% 25%",
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to right, rgba(20,33,61,0.88) 30%, rgba(20,33,61,0.2) 70%, rgba(20,33,61,0.45) 100%)",
-            zIndex: 1,
-          }}
-        />
-        <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px", zIndex: 2 }} />
-        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 3 }}>
+      <div className="relative overflow-hidden cram-hero" style={{ height: 300 }}>
+        <style>{`
+          @media (max-width: 640px) { .cram-hero { height: 220px !important; } }
+          .cram-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg');
+            background-size: 160%;
+            background-position: 85% 30%;
+            background-repeat: no-repeat;
+            transform: scaleX(-1);
+            z-index: 0;
+          }
+          .cram-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(20,33,61,0.92) 35%, rgba(20,33,61,0.25) 75%, rgba(20,33,61,0.5) 100%);
+            z-index: 1;
+          }
+        `}</style>
+        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2 }}>
           {courseDisplayName && (
             <p className="text-[11px] uppercase" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em", fontWeight: 500 }}>
               {courseDisplayName}
@@ -888,13 +889,16 @@ export default function ChapterCramTool() {
       {/* ── CTA Card ── */}
       <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginTop: 24, marginBottom: 24 }}>
         <div className="rounded-xl" style={{ background: "#FFFFFF", borderLeft: `3px solid ${theme.red}`, padding: "20px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          <p className="text-[15px] leading-[1.7]" style={{ color: theme.navy }}>
-            Your exam is coming. Find everything you need to survive it below.
+          <p className="text-[20px] leading-[1.5]" style={{ color: theme.navy, fontWeight: 700 }}>
+            Your exam is coming!
           </p>
-          <p className="text-[15px] leading-[1.7] mt-1" style={{ color: theme.navy }}>
-            <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "none" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "underline"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "none"; }}>Reach out</a> if you need anything. Best of luck!
+          <p className="text-[15px] leading-[1.7] mt-2" style={{ color: theme.navy }}>
+            Find your survival kit below. <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "underline" }}>Get in touch</a> if you need anything.
           </p>
-          <p className="text-[15px] leading-[1.7] mt-1 italic" style={{ color: theme.navy }}>— Lee</p>
+          <p className="text-[15px] leading-[1.7] mt-1" style={{ color: theme.navy, fontWeight: 600 }}>
+            You've got this!
+          </p>
+          <p className="text-[15px] leading-[1.7] mt-0.5 italic" style={{ color: theme.textMuted }}>— Lee</p>
         </div>
       </div>
 
