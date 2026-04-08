@@ -881,8 +881,8 @@ export default function ChapterCramTool() {
 
       {/* ── Divider 1: Header → Content (wave) ── */}
       <div style={{ background: "#F8F8FA", marginTop: "-2px", overflow: "hidden", lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "100px" }}>
-          <path d="M0,50 C360,100 1080,0 1440,50 L1440,0 L0,0 Z" fill="#14213D" />
+        <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "60px" }}>
+          <path d="M0,30 C240,60 480,55 720,35 C960,15 1200,50 1440,30 L1440,0 L0,0 Z" fill="#14213D" />
         </svg>
       </div>
 
@@ -905,8 +905,8 @@ export default function ChapterCramTool() {
       {/* ── Main Content ── */}
       <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
         {/* ──── Practice Problems ──── */}
-        <section className="mb-8">
-          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>
+        <section style={{ marginBottom: 48 }}>
+          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
             Practice Problems · Ch {chapterNum || "?"}
           </p>
 
@@ -976,7 +976,7 @@ export default function ChapterCramTool() {
 
         {/* ──── Chapter Tools Card Grid ──── */}
         <section className="mb-10">
-          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>
+          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
             Chapter Tools
           </p>
 
@@ -1024,31 +1024,23 @@ export default function ChapterCramTool() {
           </div>
         </section>
 
-        {/* ── Divider 2: Tools → Testimonials ── */}
-        <div style={{ background: "#F8F8FA", overflow: "hidden", lineHeight: 0, marginLeft: "calc(-50vw + 50%)", marginRight: "calc(-50vw + 50%)", width: "100vw" }}>
-          <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "60px" }}>
-            <path d="M0,30 C360,60 1080,0 1440,30 L1440,0 L0,0 Z" fill="#F0F0F4" />
-          </svg>
-        </div>
+        {/* ── Spacer: Tools → Testimonials ── */}
+        <div style={{ height: 48 }} />
 
         {/* ──── Testimonials ──── */}
         <section className="mb-10">
-          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>
+          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
             What Students Are Saying
           </p>
           <TestimonialEmbed />
         </section>
 
-        {/* ── Divider 3: Testimonials → Get in Touch (inverted wave) ── */}
-        <div style={{ background: "#F0F0F4", overflow: "hidden", lineHeight: 0, marginLeft: "calc(-50vw + 50%)", marginRight: "calc(-50vw + 50%)", width: "100vw" }}>
-          <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "80px" }}>
-            <path d="M0,40 C360,0 1080,80 1440,40 L1440,80 L0,80 Z" fill="#F8F8FA" />
-          </svg>
-        </div>
+        {/* ── Spacer: Testimonials → Get in Touch ── */}
+        <div style={{ height: 48 }} />
 
         {/* ──── Feedback ──── */}
         <section id="get-in-touch" className="mb-10">
-          <p className="text-[15px] font-semibold tracking-[0.08em] mb-4" style={{ color: theme.navy, borderLeft: `2px solid ${theme.red}`, paddingLeft: 8 }}>Get in Touch</p>
+          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>Get in Touch</p>
           <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
           <CramFeedbackForm
             chapterId={chapterId}
