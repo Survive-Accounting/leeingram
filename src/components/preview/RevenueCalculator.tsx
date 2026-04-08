@@ -99,9 +99,9 @@ const LEE_STATEMENT = "The numbers below reflect what I believe is a reasonable 
 
 export default function RevenueCalculator() {
   const [campuses, setCampuses] = useState(50);
-  const [spc, setSpc] = useState(300);
+  const [spc, setSpc] = useState(500);
   const [conv, setConv] = useState(8);
-  const [rev, setRev] = useState(400);
+  const [rev, setRev] = useState(300);
   const [greekPct, setGreekPct] = useState(60);
   const [showMix, setShowMix] = useState(false);
 
@@ -140,14 +140,27 @@ export default function RevenueCalculator() {
               Campuses
               <InputTooltip text="400+ universities have rigorous accounting programs. We're targeting SEC schools and similar first — campuses where accounting is taken seriously and word spreads fast." />
             </label>
-            <Select value={campuses} onChange={setCampuses} options={[1,5,10,25,50,100,200,400].map(v => ({ v, l: String(v) }))} />
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={campuses}
+              onChange={e => {
+                let v = parseInt(e.target.value);
+                if (isNaN(v) || v < 1) v = 1;
+                if (v > 1000) v = 1000;
+                setCampuses(v);
+              }}
+              className="rounded px-3 py-2 text-[12px] outline-none w-[70px]"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#FFFFFF" }}
+            />
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
-              Students / Campus
+              Accounting Students / Campus
               <InputTooltip text="Conservative estimate for accounting students per campus. Ole Miss alone has 600-800. We use 150 as a blended average across smaller and larger programs." />
             </label>
-            <Select value={spc} onChange={setSpc} options={[50,100,150,200,300].map(v => ({ v, l: String(v) }))} />
+            <Select value={spc} onChange={setSpc} options={Array.from({ length: 10 }, (_, i) => (i + 1) * 100).map(v => ({ v, l: String(v) }))} />
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -163,7 +176,7 @@ export default function RevenueCalculator() {
                 value={conv}
                 onChange={e => {
                   let v = parseFloat(e.target.value);
-                  if (isNaN(v)) v = 0.1;
+                  if (isNaN(v) || v < 0.1) v = 0.1;
                   if (v > 100) v = 100;
                   setConv(v);
                 }}
@@ -172,14 +185,13 @@ export default function RevenueCalculator() {
               />
               <span className="text-[12px] font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>%</span>
             </div>
-            {conv >= 100 && <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>Max 100%</p>}
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
               Avg Annual Revenue / Student
               <InputTooltip text="Semester passes are $250, so annually are $500. Greek org bulk discounts and promotions bring the blended average down. $300/year is a conservative estimate accounting for discounts and mixed pricing tiers." />
             </label>
-            <Select value={rev} onChange={setRev} options={[50,100,200,300,400,500].map(v => ({ v, l: `$${v}` }))} />
+            <Select value={rev} onChange={setRev} options={Array.from({ length: 10 }, (_, i) => (i + 1) * 100).map(v => ({ v, l: `$${v}` }))} />
           </div>
         </div>
 
