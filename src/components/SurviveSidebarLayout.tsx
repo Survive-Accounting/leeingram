@@ -543,6 +543,16 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
                 <div className="space-y-0.5">
                   {renderItem("Asset QA", "/solutions-qa", ClipboardCheck, { indent: true, badge: qaPendingCount || null })}
                   {renderItem("Fix Assets", "/inbox", Inbox, { indent: true, badge: openIssueCount || null })}
+                  {!sidebarCollapsed && needsLeeCount != null && needsLeeCount > 0 && (
+                    <Link
+                      to="/inbox"
+                      className="flex items-center gap-2 pl-7 pr-3 py-1 -mt-1"
+                    >
+                      <span className="inline-flex items-center justify-center h-4 min-w-4 px-1.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: "rgba(245,158,11,0.2)", color: "#F59E0B" }}>
+                        🚩 {needsLeeCount}
+                      </span>
+                    </Link>
+                  )}
                   {renderItem("QA Costs", "/qa-costs", TrendingUp, { indent: true })}
                 </div>
               )}
