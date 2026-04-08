@@ -1286,10 +1286,43 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         {/* Section 4: Completion */}
         {runComplete && (
           <Card className="bg-card border-border border-emerald-500/30">
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 space-y-3">
               <p className="text-sm text-emerald-400">
                 ✓ Done — {runComplete.updated} assets updated, {runComplete.skipped} skipped{runComplete.errors ? `, ${runComplete.errors} errors` : ""}.
               </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                  onClick={async () => {
+                    if (!lastOp?.label) return;
+                    const { data: assets } = await supabase
+                      .from("teaching_assets")
+                      .select("id")
+                      .eq("last_bulk_fix_label", lastOp.label as string)
+                      .eq("fix_status", "fix_applied");
+                    if (!assets?.length) { toast.info("No assets to approve"); return; }
+                    for (let i = 0; i < assets.length; i += 500) {
+                      const ids = assets.slice(i, i + 500).map(a => a.id);
+                      await supabase.from("teaching_assets").update({ fix_status: "fix_verified" } as any).in("id", ids);
+                    }
+                    toast.success(`Approved ${assets.length} assets — fix_status set to verified ✓`);
+                    refetchLastOp();
+                  }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve Changes
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 text-xs"
+                  onClick={runRevert}
+                  disabled={reverting}
+                >
+                  {reverting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Undo2 className="h-3.5 w-3.5 mr-1" />}
+                  Reject &amp; Try Again
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
