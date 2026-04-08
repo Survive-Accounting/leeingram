@@ -1186,21 +1186,33 @@ function CramAboutLeeModal({ open, onOpenChange }: { open: boolean; onOpenChange
         </DialogHeader>
         <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
           <img
-            src={LEE_HERO_URL}
+            src="https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg"
             alt="Lee Ingram"
             className="w-full sm:w-[200px] shrink-0 object-cover rounded-lg"
-            style={{ maxHeight: 220, aspectRatio: "3/4", objectPosition: "top" }}
+            style={{ maxHeight: 220, aspectRatio: "3/4", objectPosition: "center" }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
           <div className="flex-1 min-w-0">
             <p className="text-[20px] font-bold" style={{ color: theme.heading }}>Lee Ingram</p>
             <p className="text-[13px] mt-0.5" style={{ color: theme.textMuted }}>Accounting Tutor · Since 2015</p>
-            <div className="my-3 h-px" style={{ background: theme.border }} />
-            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text }}>
-              I loved accounting so much in college that I decided to become a full-time tutor. During the pandemic I went fully virtual and created SurviveAccounting.com — and haven't looked back. Now I travel the world while helping thousands of college students actually understand accounting, not just memorize it. Thanks for stopping by. Best of luck on your exam!
-            </p>
-            <p className="text-[11px] mt-3 leading-[1.5]" style={{ color: theme.label }}>
+            <p className="text-[12px] mt-1.5 leading-[1.5]" style={{ color: theme.label }}>
               B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA
+            </p>
+            <div className="my-3 h-px" style={{ background: theme.border }} />
+            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
+              I loved accounting so much in college that I became a full-time tutor. During the pandemic I went fully virtual and created SurviveAccounting.com — and it's been a blast watching it grow.
+            </p>
+            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
+              Now I travel the world helping college students all over the country actually understand accounting, not just memorize it.
+            </p>
+            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
+              Helping you feel confident on your exam is my favorite thing to do. Thanks for stopping by — it means a lot.
+            </p>
+            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 4 }}>
+              Best of luck!
+            </p>
+            <p className="text-[13px] leading-[1.7] italic" style={{ color: theme.text }}>
+              — Lee
             </p>
             <div className="mt-3 flex flex-col gap-1.5 text-[12px]">
               <a href="mailto:lee@surviveaccounting.com" className="flex items-center gap-1.5 hover:underline" style={{ color: "#3B82F6" }}>
