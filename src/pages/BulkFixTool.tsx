@@ -1180,6 +1180,24 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           </p>
         </div>
 
+        {/* Fix Queue Active Banner */}
+        {fixQueueActive && (
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-destructive">
+                Fix Queue Active — {fixQueueFoundIds.length} assets targeted
+              </p>
+              <p className="text-xs text-destructive/70 mt-0.5">
+                All chapter/course scope filters are IGNORED. Only queued assets will be affected.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={clearFixQueue} className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10">
+              <X className="h-3 w-3 mr-1" /> Clear Queue
+            </Button>
+          </div>
+        )}
+
         {/* Section 1: Operation Selector */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
