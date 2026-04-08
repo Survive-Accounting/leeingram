@@ -1,171 +1,320 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronRight, ExternalLink, Home, BookOpen, Monitor, Film, FileText, BarChart3 } from "lucide-react";
 
 const COURSE_ORDER: Record<string, number> = { INTRO1: 0, INTRO2: 1, IA1: 2, IA2: 3 };
-const COURSE_META: Record<string, { label: string; code: string }> = {
+const COURSE_LABELS: Record<string, { label: string; code: string }> = {
   INTRO1: { label: "Intro Accounting 1", code: "ACCY 201" },
   INTRO2: { label: "Intro Accounting 2", code: "ACCY 202" },
   IA1: { label: "Intermediate Accounting 1", code: "ACCY 303" },
   IA2: { label: "Intermediate Accounting 2", code: "ACCY 304" },
 };
 
-const nodeBase: React.CSSProperties = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 8,
-  padding: "12px 16px",
-  cursor: "pointer",
-  transition: "all 200ms ease",
-};
-
-const activeBorder = "2px solid #CE1126";
-const pill: React.CSSProperties = { background: "#F59E0B", color: "#000", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 };
-const muted: React.CSSProperties = { color: "rgba(255,255,255,0.4)", fontSize: 11 };
-const connector: React.CSSProperties = { borderLeft: "1px solid rgba(255,255,255,0.2)", marginLeft: 18, paddingLeft: 20 };
-const dashedConnector: React.CSSProperties = { borderLeft: "1px dashed rgba(255,255,255,0.15)", marginLeft: 18, paddingLeft: 20 };
-
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <ChevronRight
-      className="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
-      style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)", color: "rgba(255,255,255,0.4)" }}
-    />
-  );
+function classifyAsset(sourceRef: string): "qs" | "ex" | "p" {
+  if (!sourceRef) return "p";
+  const s = sourceRef.toUpperCase();
+  if (s.startsWith("BE") || s.startsWith("QS")) return "qs";
+  if (s.startsWith("E") || s.startsWith("EX")) return "ex";
+  return "p";
 }
 
-function ChapterNode({ ch }: { ch: { id: string; chapter_number: number; chapter_name: string } }) {
+function SubToggle({ label, icon, children, defaultOpen }: { label: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <a
-      href={`/cram/${ch.id}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-2 py-1.5 px-3 rounded-md text-[12px] text-white transition-all duration-150"
-      style={{ background: "transparent" }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-    >
-      <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: 700, minWidth: 28 }}>
-        Ch {ch.chapter_number}
-      </span>
-      <span className="truncate">{ch.chapter_name}</span>
-      <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity ml-auto shrink-0" />
-    </a>
-  );
-}
-
-function CourseNode({ code, chapters }: { code: string; chapters: any[] }) {
-  const [open, setOpen] = useState(false);
-  const meta = COURSE_META[code] || { label: code, code: "" };
-
-  return (
-    <div>
-      <div
+    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-3"
-        style={{ ...nodeBase, borderLeft: open ? activeBorder : nodeBase.border }}
+        className="flex items-center gap-2 w-full text-left py-2.5 px-1"
+        style={{ background: "none", border: "none", cursor: "pointer" }}
       >
-        <Chevron open={open} />
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-white">{meta.label}</p>
-          <p style={muted}>{meta.code} · {chapters.length} chapters</p>
-        </div>
+        <ChevronRight
+          className="h-3 w-3 transition-transform duration-200"
+          style={{ color: "rgba(255,255,255,0.3)", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
+        <span style={{ color: "rgba(255,255,255,0.4)" }}>{icon}</span>
+        <span className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{label}</span>
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: open ? 2000 : 0, opacity: open ? 1 : 0 }}
+      >
+        <div className="pl-6 pb-3">{children}</div>
       </div>
-      {open && (
-        <div style={connector} className="py-2 space-y-0.5">
-          {chapters.map(ch => <ChapterNode key={ch.id} ch={ch} />)}
-        </div>
-      )}
     </div>
   );
 }
 
-export default function PlatformHierarchy() {
-  const [campusOpen, setCampusOpen] = useState(false);
+// ── Chapter Detail Panel ──
+function ChapterDetail({ chapter }: { chapter: any }) {
+  const [activeTab, setActiveTab] = useState<"qs" | "ex" | "p" | null>(null);
 
-  const { data: courseData = [] } = useQuery({
-    queryKey: ["hierarchy-chapters"],
+  const { data: assets = [] } = useQuery({
+    queryKey: ["preview-ch-assets", chapter.id],
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapters")
-        .select("id, chapter_number, chapter_name, course_id, courses!chapters_course_id_fkey(code)")
-        .order("chapter_number");
+      const { data, error } = await (supabase as any)
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, problem_title, lw_activity_url, asset_approved_at")
+        .eq("chapter_id", chapter.id)
+        .not("asset_approved_at", "is", null)
+        .order("asset_name");
       if (error) throw error;
       return (data || []) as any[];
     },
   });
 
   const grouped = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    courseData.forEach((ch: any) => {
-      const code = ch.courses?.code || "OTHER";
-      if (!map[code]) map[code] = [];
-      map[code].push(ch);
+    const g: Record<string, any[]> = { qs: [], ex: [], p: [] };
+    assets.forEach((a: any) => {
+      g[classifyAsset(a.source_ref)].push(a);
     });
-    return Object.entries(map)
-      .filter(([code]) => COURSE_META[code])
-      .sort(([a], [b]) => (COURSE_ORDER[a] ?? 99) - (COURSE_ORDER[b] ?? 99));
-  }, [courseData]);
+    return g;
+  }, [assets]);
+
+  const tabs = [
+    { key: "qs" as const, label: "Quick Studies", count: grouped.qs.length },
+    { key: "ex" as const, label: "Exercises", count: grouped.ex.length },
+    { key: "p" as const, label: "Problems", count: grouped.p.length },
+  ];
+
+  const lwUrl = assets.find((a: any) => a.lw_activity_url)?.lw_activity_url;
 
   return (
-    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: "24px 20px", border: "1px solid rgba(255,255,255,0.08)" }}>
-      {/* Root node */}
-      <div style={{ ...nodeBase, background: "#14213D", cursor: "default", textAlign: "center", borderColor: "rgba(255,255,255,0.2)" }}>
-        <p className="text-[16px] font-bold text-white">Choose Your Campus</p>
-        <p style={{ ...muted, marginTop: 2 }}>surviveaccounting.com</p>
-        <span style={{ ...pill, display: "inline-block", marginTop: 6 }}>Coming Soon</span>
-      </div>
+    <div className="space-y-0">
+      {/* Sub-toggle 1: Chapter Homepage */}
+      <SubToggle label="Chapter Homepage" icon={<Home className="h-3.5 w-3.5" />}>
+        <a
+          href={`/cram/${chapter.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between rounded-md px-3 py-2 text-[12px] font-medium text-white transition-colors hover:bg-white/5"
+          style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+        >
+          <span>Ch {chapter.chapter_number} — {chapter.chapter_name}</span>
+          <ExternalLink className="h-3 w-3 opacity-40" />
+        </a>
+      </SubToggle>
 
-      {/* Vertical connector from root */}
-      <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.2)", margin: "0 auto" }} />
-
-      {/* Level 1 row: Ole Miss + Greek branch */}
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-        {/* Ole Miss branch */}
-        <div className="flex-1 min-w-0">
-          <div
-            onClick={() => setCampusOpen(!campusOpen)}
-            className="flex items-center gap-3"
-            style={{ ...nodeBase, borderLeft: campusOpen ? activeBorder : nodeBase.border }}
-          >
-            <Chevron open={campusOpen} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-bold text-white">Ole Miss</p>
-              <p style={muted}>learn.surviveaccounting.com</p>
-            </div>
+      {/* Sub-toggle 2: Practice Problems */}
+      <SubToggle label="Practice Problems" icon={<BookOpen className="h-3.5 w-3.5" />}>
+        <div className="flex gap-2 mb-3 flex-wrap">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(activeTab === t.key ? null : t.key)}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all"
+              style={{
+                background: activeTab === t.key ? "#14213D" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${activeTab === t.key ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)"}`,
+                color: activeTab === t.key ? "#FFFFFF" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {t.label}
+              <span
+                className="rounded-full px-1.5 py-0 text-[10px] font-bold"
+                style={{ background: "#CE1126", color: "#FFFFFF", minWidth: 18, textAlign: "center" }}
+              >
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+        {activeTab && (
+          <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
+            {grouped[activeTab].map((a: any, i: number) => (
+              <a
+                key={a.id}
+                href={`/solutions/${a.asset_name}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded px-3 py-2 text-[11px] transition-colors hover:bg-white/5"
+                style={{ border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <span className="flex items-center gap-2 text-white truncate" style={{ maxWidth: "70%" }}>
+                  <span className="font-mono opacity-60">{a.asset_name}</span>
+                  {a.problem_title && (
+                    <span className="opacity-40 truncate">— {a.problem_title.slice(0, 40)}</span>
+                  )}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="rounded px-1.5 py-0.5 text-[9px] font-bold"
+                    style={{
+                      background: i < 3 ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)",
+                      color: i < 3 ? "#22C55E" : "rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    {i < 3 ? "Free" : "Paid"}
+                  </span>
+                  <span style={{ color: "#CE1126", fontSize: 11, fontWeight: 600 }}>View →</span>
+                </span>
+              </a>
+            ))}
+            {grouped[activeTab].length === 0 && (
+              <p className="text-[11px] py-2 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>None yet</p>
+            )}
           </div>
+        )}
+      </SubToggle>
 
-          {campusOpen && (
-            <div style={connector} className="py-3 space-y-2">
-              {grouped.map(([code, chapters]) => (
-                <CourseNode key={code} code={code} chapters={chapters} />
-              ))}
+      {/* Sub-toggle 3: LearnWorlds Player */}
+      <SubToggle label="LearnWorlds Player" icon={<Monitor className="h-3.5 w-3.5" />}>
+        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+          {lwUrl || `player.surviveaccounting.com/...`}
+        </p>
+        <span className="inline-block rounded-full px-2 py-0.5 text-[9px] font-bold mt-1" style={{ background: "#F59E0B", color: "#000" }}>
+          Coming Soon
+        </span>
+      </SubToggle>
+
+      {/* Sub-toggle 4: Coming Soon */}
+      <SubToggle label="Coming Soon" icon={<BarChart3 className="h-3.5 w-3.5" />}>
+        <div className="space-y-2">
+          {[
+            { emoji: "🎬", label: "Video Links" },
+            { emoji: "📝", label: "Quiz Links" },
+            { emoji: "📊", label: "Analytics & Conversion %" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2 text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <span>{item.emoji}</span>
+              <span>{item.label}</span>
+              <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold ml-1" style={{ background: "#F59E0B", color: "#000" }}>
+                Coming Soon
+              </span>
             </div>
+          ))}
+        </div>
+      </SubToggle>
+    </div>
+  );
+}
+
+// ── Tree Node ──
+function TreeNode({ label, subtitle, badge, depth, children, expandable, defaultOpen, redBorder }: {
+  label: string; subtitle?: string; badge?: string; depth: number;
+  children?: React.ReactNode; expandable?: boolean; defaultOpen?: boolean; redBorder?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  return (
+    <div style={{ paddingLeft: depth > 0 ? 16 : 0 }}>
+      {depth > 0 && (
+        <div style={{ position: "relative", marginLeft: -8 }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: "50%", width: 1, background: "rgba(255,255,255,0.12)" }} />
+          <div style={{ position: "absolute", left: 0, top: "50%", width: 12, height: 1, background: "rgba(255,255,255,0.12)" }} />
+        </div>
+      )}
+      <div
+        className="rounded-lg my-1.5 transition-all"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderLeft: open && redBorder !== false ? "2px solid #CE1126" : "1px solid rgba(255,255,255,0.08)",
+          padding: "10px 14px",
+        }}
+      >
+        <button
+          onClick={expandable ? () => setOpen(!open) : undefined}
+          className="flex items-center gap-2 w-full text-left"
+          style={{ background: "none", border: "none", cursor: expandable ? "pointer" : "default", padding: 0 }}
+        >
+          {expandable && (
+            <ChevronRight
+              className="h-3.5 w-3.5 transition-transform duration-200"
+              style={{ color: "rgba(255,255,255,0.4)", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+            />
           )}
-
-          <p className="mt-3 text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.35)", maxWidth: 420 }}>
-            400+ universities across the country offer rigorous accounting programs — each one a potential campus for Survive Accounting. Campus database coming soon.
-          </p>
-        </div>
-
-        {/* Greek Org side branch */}
-        <div className="md:w-[220px] shrink-0">
-          {/* Dashed horizontal connector on desktop */}
-          <div className="hidden md:block" style={{ borderTop: "1px dashed rgba(255,255,255,0.15)", width: "100%", marginBottom: 12, marginTop: 24 }} />
-
-          <div style={{ ...nodeBase, cursor: "default" }}>
-            <p className="text-[13px] font-semibold text-white">Greek Organizations</p>
-            <p style={muted}>greek.surviveaccounting.com</p>
-            <span style={{ ...pill, display: "inline-block", marginTop: 6 }}>Coming Soon</span>
-            <p className="mt-2" style={{ ...muted, fontSize: 10 }}>~20-30 orgs per campus</p>
+          <div className="flex-1 min-w-0">
+            <span className="text-[13px] font-semibold text-white">{label}</span>
+            {subtitle && <span className="block text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{subtitle}</span>}
           </div>
-          <p className="mt-2 text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>
-            Connected to each campus's 4 courses
-          </p>
+          {badge && (
+            <span className="rounded-full px-2 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "#F59E0B", color: "#000" }}>
+              {badge}
+            </span>
+          )}
+        </button>
+        <div
+          className="overflow-hidden transition-all duration-200"
+          style={{ maxHeight: open ? 10000 : 0, opacity: open ? 1 : 0 }}
+        >
+          {open && children && <div className="mt-2">{children}</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Main Component ──
+export default function PlatformHierarchy() {
+  const { data: chapters = [] } = useQuery({
+    queryKey: ["hierarchy-chapters"],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name, course_id, courses!chapters_course_id_fkey(code, course_name)")
+        .order("chapter_number");
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const courseGroups = useMemo(() => {
+    const map: Record<string, { code: string; chapters: any[] }> = {};
+    chapters.forEach((ch: any) => {
+      const code = ch.courses?.code || "OTHER";
+      if (!map[code]) map[code] = { code, chapters: [] };
+      map[code].chapters.push(ch);
+    });
+    return Object.values(map).sort((a, b) => (COURSE_ORDER[a.code] ?? 99) - (COURSE_ORDER[b.code] ?? 99));
+  }, [chapters]);
+
+  return (
+    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}>
+      {/* Root */}
+      <TreeNode label="Choose Your Campus" subtitle="surviveaccounting.com" badge="Coming Soon" depth={0} expandable defaultOpen>
+        {/* Ole Miss */}
+        <TreeNode label="Ole Miss" subtitle="learn.surviveaccounting.com" depth={1} expandable>
+          {courseGroups.map((cg) => {
+            const info = COURSE_LABELS[cg.code];
+            return (
+              <TreeNode
+                key={cg.code}
+                label={info?.label || cg.code}
+                subtitle={info?.code}
+                depth={2}
+                expandable
+              >
+                {cg.chapters.map((ch: any) => (
+                  <TreeNode
+                    key={ch.id}
+                    label={`Ch ${ch.chapter_number} — ${ch.chapter_name}`}
+                    depth={3}
+                    expandable
+                  >
+                    <ChapterDetail chapter={ch} />
+                  </TreeNode>
+                ))}
+              </TreeNode>
+            );
+          })}
+        </TreeNode>
+
+        {/* Greek Org */}
+        <div className="relative">
+          <div style={{ position: "absolute", left: 24, top: -8, width: 1, height: 16, borderLeft: "1px dashed rgba(255,255,255,0.15)" }} />
+          <TreeNode label="Greek Organizations" subtitle="greek.surviveaccounting.com" badge="Coming Soon" depth={1}>
+            <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>
+              ~20-30 orgs per campus · Connected to each campus's 4 courses
+            </p>
+          </TreeNode>
+        </div>
+
+        <p className="text-[11px] mt-3 px-4" style={{ color: "rgba(255,255,255,0.25)", lineHeight: 1.6 }}>
+          400+ universities across the country offer rigorous accounting programs — each one a potential campus for Survive Accounting.
+        </p>
+      </TreeNode>
     </div>
   );
 }
