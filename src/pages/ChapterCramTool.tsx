@@ -842,7 +842,7 @@ export default function ChapterCramTool() {
       </header>
 
       {/* ── Hero Header — Full-bleed photo ── */}
-      <div className="relative overflow-hidden" style={{ height: 320 }}>
+      <div className="relative overflow-hidden cram-hero" style={{ height: 320 }}>
         <style>{`@media (max-width: 640px) { .cram-hero { height: 220px !important; } }`}</style>
         <img
           src={LEE_HERO_URL}
