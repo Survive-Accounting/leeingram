@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered, CheckCircle2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -369,6 +369,29 @@ export default function BulkFixTool() {
     setFixQueueInput("");
     localStorage.removeItem("sa_bulk_fix_queue");
     toast.success("Fix queue cleared");
+  }
+
+  // CSV import ref + handler
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (!text) return;
+      // Parse CSV: take first column of each row, skip empty lines
+      const codes = text
+        .split(/\r?\n/)
+        .map(line => line.split(",")[0]?.trim())
+        .filter(Boolean);
+      if (!codes.length) { toast.error("No asset codes found in CSV"); return; }
+      setFixQueueInput(codes.join("\n"));
+      toast.success(`Imported ${codes.length} codes from CSV — hit Load Queue to validate`);
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-imported
+    e.target.value = "";
   }
 
   // Build the scope query — use lightweight select for operations that only need id
@@ -1456,6 +1479,20 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   {fixQueueValidating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                   Load Queue
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => csvInputRef.current?.click()}
+                >
+                  <Upload className="h-3 w-3 mr-1" /> Import CSV
+                </Button>
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={handleCsvImport}
+                />
                 {fixQueueItems.length > 0 && (
                   <Button variant="outline" size="sm" onClick={clearFixQueue}>
                     <Trash2 className="h-3 w-3 mr-1" /> Clear Queue
