@@ -777,7 +777,7 @@ export default function ChapterCramTool() {
   const openFeedbackForSection = useCallback((sectionLabel: string) => {
     setFeedbackSection(sectionLabel);
     setOpenDrawer(null);
-    setTimeout(() => document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    setTimeout(() => document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   }, []);
 
   // Drawer navigation
