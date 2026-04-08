@@ -48,6 +48,7 @@ type StatusCounts = {
   issues: number;
   fixApproved: number;
   generated: number;
+  needsLee: number;
 };
 
 type FixStep = "input" | "running" | "compare" | "done";
@@ -426,6 +427,11 @@ export default function SolutionsQAAdmin() {
         base.select("id", { count: "exact", head: true }).eq("qa_status", "fix_approved"),
         base.select("id", { count: "exact", head: true }).eq("qa_status", "fix_generated"),
       ]);
+      // Count "needs_lee" from teaching_assets fix_status
+      const { count: needsLeeCount } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("fix_status", "needs_lee");
       return {
         total: total.count ?? 0,
         pending: pending.count ?? 0,
@@ -433,11 +439,12 @@ export default function SolutionsQAAdmin() {
         issues: issues.count ?? 0,
         fixApproved: fixApproved.count ?? 0,
         generated: generated.count ?? 0,
+        needsLee: needsLeeCount ?? 0,
       };
     },
   });
 
-  const safeCount = counts ?? { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
+  const safeCount = counts ?? { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0, needsLee: 0 };
 
   // ── Paginated assets for the "All Assets" tab ──
   const assetsQueryKey = ["qa-admin-assets-paged", allAssetsFilter, allAssetsChapter];
