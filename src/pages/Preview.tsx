@@ -295,32 +295,7 @@ function PreviewIndex() {
 
         {/* ── Solutions Viewer ── */}
         <CollapsibleSection title="Solutions Viewer">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by asset code or problem description"
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg text-[13px] outline-none"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#FFFFFF" }}
-            />
-          </div>
-          <div className="space-y-1">
-            {assets.map((a: any) => (
-              <LinkCard
-                key={a.id}
-                href={`/solutions/${a.asset_name}`}
-                label={`${a.asset_name}${a.problem_title ? ` — ${a.problem_title.slice(0, 50)}` : ""}`}
-                newTab
-              />
-            ))}
-            {assets.length === 0 && (
-              <p className="text-[12px] py-3 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>No results</p>
-            )}
-          </div>
-          <a href="/solutions-qa" target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[12px] font-semibold" style={{ color: "#3B82F6" }}>
-            Browse all →
-          </a>
+          <SolutionsViewerSection />
         </CollapsibleSection>
 
         {/* ── Landing Pages ── */}
