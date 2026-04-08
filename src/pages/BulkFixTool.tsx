@@ -324,10 +324,20 @@ export default function BulkFixTool() {
       const codes = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
       if (!codes.length) { toast.error("No codes entered"); return; }
 
-      // Fetch all teaching assets source_ref + asset_name for matching
-      const { data: allAssets } = await supabase
-        .from("teaching_assets")
-        .select("id, asset_name, source_ref");
+      // Fetch all teaching assets source_ref + asset_name for matching (paginated to avoid 1000-row limit)
+      let allAssets: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, source_ref")
+          .range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        allAssets.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
 
       const items: FixQueueItem[] = [];
       for (const code of codes) {
