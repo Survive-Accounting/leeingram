@@ -278,8 +278,8 @@ export default function BulkFixTool() {
   // Build the scope query — use lightweight select for operations that only need id
   function buildScopeQuery(lightweight = false) {
     const fields = lightweight
-      ? "id, asset_name"
-      : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json";
+      ? "id, asset_name, fix_notes"
+      : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json, fix_notes";
     let q = supabase.from("teaching_assets").select(fields) as any;
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
