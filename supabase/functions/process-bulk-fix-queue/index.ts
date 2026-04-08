@@ -89,6 +89,14 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
       return json.includes("calculation_formula");
     },
   },
+  standardize_formatting: {
+    fn: "standardize-formatting",
+    bodyFn: (id) => ({ teaching_asset_id: id }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb.from("teaching_assets").select("survive_solution_text").eq("id", id).single();
+      return !data?.survive_solution_text?.trim();
+    },
+  },
 };
 
 /**
