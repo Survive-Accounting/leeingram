@@ -151,7 +151,7 @@ function FeedbackForm() {
           <input value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="What website page, section, strategy, etc can be improved?" style={inputStyle} />
           <div>
             <p className="text-[11px] mb-1.5" style={{ color: "rgba(255,255,255,0.35)" }}>Upload screenshots to imgbb.com and paste URL here</p>
-            <input value={ss1} onChange={e => setSs1(e.target.value)} placeholder="Screenshot URL" style={inputStyle} />
+            <input value={ss1} onChange={e => setSs1(e.target.value)} placeholder="Screenshot 1 URL" style={inputStyle} />
             {ssCount >= 2 && <input value={ss2} onChange={e => setSs2(e.target.value)} placeholder="Screenshot 2 URL" style={{ ...inputStyle, marginTop: 8 }} />}
             {ssCount >= 3 && <input value={ss3} onChange={e => setSs3(e.target.value)} placeholder="Screenshot 3 URL" style={{ ...inputStyle, marginTop: 8 }} />}
             {ssCount < 3 && (
@@ -279,13 +279,16 @@ function PreviewIndex() {
         >
           Login to VA Dashboard →
         </a>
+        <a
+          href="#feedback-form"
+          className="block mt-3 text-[13px] font-medium transition-all hover:brightness-125"
+          style={{ color: "#F59E0B", textDecoration: "none" }}
+        >
+          Suggest an Improvement ↓
+        </a>
       </div>
 
       <div className="mx-auto max-w-[700px] px-5 py-8 space-y-0">
-        {/* ── Feedback Form ── */}
-        <div className="mb-10">
-          <FeedbackForm />
-        </div>
 
         {/* ── ALL STUDENT-FACING PAGES ── */}
         <CollapsibleSection title="All Student-Facing Pages" sublabel="For review, testing, and improvement" highlight>
@@ -385,8 +388,13 @@ function PreviewIndex() {
           <MarketingSection />
         </CollapsibleSection>
 
+        {/* ── Feedback Form ── */}
+        <div className="mt-10 mb-4" id="feedback-form">
+          <FeedbackForm />
+        </div>
+
         {/* ── Footer ── */}
-        <p className="text-center text-[11px] pt-8 pb-8" style={{ color: "rgba(255,255,255,0.25)" }}>
+        <p className="text-center text-[11px] pt-4 pb-8" style={{ color: "rgba(255,255,255,0.25)" }}>
           This page is for internal team use only. Do not share the URL publicly.
         </p>
       </div>
