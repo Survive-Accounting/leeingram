@@ -474,6 +474,29 @@ export default function SolutionsQAAdmin() {
 
   const allAssetsFiltered = useMemo(() => assetsPages?.pages.flatMap(p => p.rows) ?? [], [assetsPages]);
 
+  // Fetch fix_status for displayed teaching assets
+  const adminTeachingAssetIds = useMemo(() => {
+    return allAssetsFiltered.map((a: any) => a.teaching_asset_id).filter(Boolean) as string[];
+  }, [allAssetsFiltered]);
+
+  const { data: adminFixStatusMap } = useQuery({
+    queryKey: ["qa-admin-fix-status", adminTeachingAssetIds],
+    queryFn: async () => {
+      if (!adminTeachingAssetIds.length) return {} as Record<string, string | null>;
+      const map: Record<string, string | null> = {};
+      for (let i = 0; i < adminTeachingAssetIds.length; i += 200) {
+        const chunk = adminTeachingAssetIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, fix_status")
+          .in("id", chunk);
+        if (data) for (const r of data) map[r.id] = (r as any).fix_status || null;
+      }
+      return map;
+    },
+    enabled: adminTeachingAssetIds.length > 0,
+  });
+
   useEffect(() => {
     const lastAsset = localStorage.getItem("qa_last_asset_id");
     if (lastAsset && allAssetsFiltered.length > 0) {
