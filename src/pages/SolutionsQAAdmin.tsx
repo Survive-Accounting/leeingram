@@ -48,6 +48,7 @@ type StatusCounts = {
   issues: number;
   fixApproved: number;
   generated: number;
+  needsLee: number;
 };
 
 type FixStep = "input" | "running" | "compare" | "done";
@@ -426,6 +427,11 @@ export default function SolutionsQAAdmin() {
         base.select("id", { count: "exact", head: true }).eq("qa_status", "fix_approved"),
         base.select("id", { count: "exact", head: true }).eq("qa_status", "fix_generated"),
       ]);
+      // Count "needs_lee" from teaching_assets fix_status
+      const { count: needsLeeCount } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("fix_status", "needs_lee");
       return {
         total: total.count ?? 0,
         pending: pending.count ?? 0,
@@ -433,11 +439,12 @@ export default function SolutionsQAAdmin() {
         issues: issues.count ?? 0,
         fixApproved: fixApproved.count ?? 0,
         generated: generated.count ?? 0,
+        needsLee: needsLeeCount ?? 0,
       };
     },
   });
 
-  const safeCount = counts ?? { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0 };
+  const safeCount = counts ?? { total: 0, pending: 0, clean: 0, issues: 0, fixApproved: 0, generated: 0, needsLee: 0 };
 
   // ── Paginated assets for the "All Assets" tab ──
   const assetsQueryKey = ["qa-admin-assets-paged", allAssetsFilter, allAssetsChapter];
@@ -466,6 +473,29 @@ export default function SolutionsQAAdmin() {
   });
 
   const allAssetsFiltered = useMemo(() => assetsPages?.pages.flatMap(p => p.rows) ?? [], [assetsPages]);
+
+  // Fetch fix_status for displayed teaching assets
+  const adminTeachingAssetIds = useMemo(() => {
+    return allAssetsFiltered.map((a: any) => a.teaching_asset_id).filter(Boolean) as string[];
+  }, [allAssetsFiltered]);
+
+  const { data: adminFixStatusMap } = useQuery({
+    queryKey: ["qa-admin-fix-status", adminTeachingAssetIds],
+    queryFn: async () => {
+      if (!adminTeachingAssetIds.length) return {} as Record<string, string | null>;
+      const map: Record<string, string | null> = {};
+      for (let i = 0; i < adminTeachingAssetIds.length; i += 200) {
+        const chunk = adminTeachingAssetIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, fix_status")
+          .in("id", chunk);
+        if (data) for (const r of data) map[r.id] = (r as any).fix_status || null;
+      }
+      return map;
+    },
+    enabled: adminTeachingAssetIds.length > 0,
+  });
 
   useEffect(() => {
     const lastAsset = localStorage.getItem("qa_last_asset_id");
@@ -577,12 +607,13 @@ export default function SolutionsQAAdmin() {
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-8 gap-2">
           {[
             { label: "Total", value: safeCount.total, color: "text-foreground", bg: "" },
             { label: "Pending", value: safeCount.pending, color: "text-muted-foreground", bg: "" },
             { label: "Clean", value: safeCount.clean, color: "text-emerald-400", bg: "" },
             { label: "Issues", value: safeCount.issues, color: "text-amber-400", bg: "" },
+            { label: "Needs Lee", value: safeCount.needsLee, color: "text-amber-900", bg: "bg-amber-400/20 border-amber-500/40" },
             { label: "Fix Approved", value: safeCount.fixApproved, color: "text-blue-400", bg: "" },
             { label: "Generated", value: safeCount.generated, color: "text-purple-400", bg: "" },
             { label: "⚡ Bulk Fixes", value: bulkFixesReady, color: "text-amber-900", bg: "bg-amber-400/30 border-amber-500/40" },
@@ -699,6 +730,9 @@ export default function SolutionsQAAdmin() {
                       {r.asset_name}
                       {bulkAssetIds.has(r.id) && (
                         <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
+                      )}
+                      {adminFixStatusMap?.[(r as any).teaching_asset_id] === "needs_lee" && (
+                        <Badge className="ml-1.5 text-[8px]" style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#F59E0B" }}>Needs Lee</Badge>
                       )}
                     </td>
                     <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>

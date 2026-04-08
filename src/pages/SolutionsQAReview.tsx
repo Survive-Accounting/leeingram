@@ -1371,6 +1371,25 @@ export default function SolutionsQAReview() {
     enabled: teachingAssetIds.length > 0,
   });
 
+  // ── Fetch fix_status for teaching assets ────────────────────────
+  const { data: fixStatusMap } = useQuery({
+    queryKey: ["qa-teaching-asset-fix-status", teachingAssetIds],
+    queryFn: async () => {
+      if (!teachingAssetIds.length) return {} as Record<string, string | null>;
+      const map: Record<string, string | null> = {};
+      for (let i = 0; i < teachingAssetIds.length; i += 200) {
+        const chunk = teachingAssetIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, fix_status")
+          .in("id", chunk);
+        if (data) for (const r of data) map[r.id] = (r as any).fix_status || null;
+      }
+      return map;
+    },
+    enabled: teachingAssetIds.length > 0,
+  });
+
   // ── Source ref navigator data ───────────────────────────────────
   const sourceRefGroups = useMemo(() => {
     if (!sourceRefMap || !allAssets.length) return [];
@@ -2032,7 +2051,10 @@ export default function SolutionsQAReview() {
                             }`}
                           >
                             <span className="truncate">{item.sourceRef || item.assetName}</span>
-                            <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0">
+                              {fixStatusMap?.[allAssets[item.assetIndex]?.teaching_asset_id] === "needs_lee" && (
+                                <Badge className="text-[8px] h-4 px-1" style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#F59E0B" }}>Needs Lee</Badge>
+                              )}
                               <span className="w-6 text-center">{isClean ? <CheckCircle2 className="h-3 w-3 text-emerald-500 inline" /> : <span className="text-muted-foreground/20">–</span>}</span>
                               <span className="w-6 text-center">{isIssues ? <AlertTriangle className="h-3 w-3 text-amber-500 inline" /> : <span className="text-muted-foreground/20">–</span>}</span>
                               <span className="w-6 text-center">{isPend ? <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/30" /> : <span className="text-muted-foreground/20">–</span>}</span>
@@ -2316,6 +2338,29 @@ export default function SolutionsQAReview() {
                     </Button>
                   )}
                 </>
+              )}
+              {/* Needs Lee button — always visible for admin/lead VA */}
+              {current?.teaching_asset_id && canUseFixer && (
+                <Button
+                  className="w-full text-xs h-7"
+                  style={{ backgroundColor: "#F59E0B", color: "#14213D" }}
+                  onClick={async () => {
+                    // Set fix_status = 'needs_lee' on teaching_assets
+                    await supabase.from("teaching_assets").update({
+                      fix_status: "needs_lee",
+                      reviewed_issues: true,
+                    }).eq("id", current.teaching_asset_id);
+                    // Also mark QA asset as reviewed_issues
+                    await supabase.from("solutions_qa_assets" as any)
+                      .update({ qa_status: "reviewed_issues", reviewed_at: new Date().toISOString(), reviewed_by: reviewerName || "VA" })
+                      .eq("id", current.id);
+                    qc.invalidateQueries({ queryKey: ["qa-assets"] });
+                    qc.invalidateQueries({ queryKey: ["qa-teaching-asset-fix-status"] });
+                    toast.success("🚩 Flagged for Lee's review");
+                  }}
+                >
+                  🚩 Needs Lee
+                </Button>
               )}
               {flaggedSections.size === 0 && current?.teaching_asset_id && canUseFixer && (
                 <Button
