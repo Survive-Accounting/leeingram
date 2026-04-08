@@ -122,23 +122,23 @@ export function BatchSuiteOrchestrator() {
         supabase.from("chapter_exam_mistakes").select("chapter_id, is_approved"),
       ]);
 
-      const hasApproved = (rows: any[] | null, chId: string) =>
-        (rows || []).some(r => r.chapter_id === chId && r.is_approved);
+      const hasAny = (rows: any[] | null, chId: string) =>
+        (rows || []).some(r => r.chapter_id === chId);
 
-      return { purposes, accounts, terms, formulas, jes, mistakes, hasApproved };
+      return { purposes, accounts, terms, formulas, jes, mistakes, hasAny };
     },
   });
 
   const isFullyApproved = useCallback((chapterId: string) => {
     if (!approvalStatus) return false;
-    const { purposes, accounts, terms, formulas, jes, mistakes, hasApproved } = approvalStatus;
+    const { purposes, accounts, terms, formulas, jes, mistakes, hasAny } = approvalStatus;
     return (
-      hasApproved(purposes, chapterId) &&
-      hasApproved(accounts, chapterId) &&
-      hasApproved(terms, chapterId) &&
-      hasApproved(formulas, chapterId) &&
-      hasApproved(jes, chapterId) &&
-      hasApproved(mistakes, chapterId)
+      hasAny(purposes, chapterId) &&
+      hasAny(accounts, chapterId) &&
+      hasAny(terms, chapterId) &&
+      hasAny(formulas, chapterId) &&
+      hasAny(jes, chapterId) &&
+      hasAny(mistakes, chapterId)
     );
   }, [approvalStatus]);
 
