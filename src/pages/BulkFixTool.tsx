@@ -193,9 +193,28 @@ export default function BulkFixTool() {
   const [reverting, setReverting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Queue state
+  // Queue state (server-side batch queue)
   const [queueOp, setQueueOp] = useState<OperationType | "">("");
   const [queueRunning, setQueueRunning] = useState(false);
+
+  // Fix Queue state (targeted asset codes)
+  interface FixQueueItem { code: string; found: boolean; assetId?: string; assetName?: string; suggestion?: string }
+  const [fixQueueInput, setFixQueueInput] = useState("");
+  const [fixQueueItems, setFixQueueItems] = useState<FixQueueItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem("sa_bulk_fix_queue") || "[]"); } catch { return []; }
+  });
+  const [fixQueueValidating, setFixQueueValidating] = useState(false);
+  const fixQueueActive = fixQueueItems.length > 0 && fixQueueItems.some(q => q.found);
+  const fixQueueFoundIds = fixQueueItems.filter(q => q.found && q.assetId).map(q => q.assetId!);
+
+  // Persist fix queue to localStorage
+  useEffect(() => {
+    if (fixQueueItems.length > 0) {
+      localStorage.setItem("sa_bulk_fix_queue", JSON.stringify(fixQueueItems));
+    } else {
+      localStorage.removeItem("sa_bulk_fix_queue");
+    }
+  }, [fixQueueItems]);
 
   // Queries
   const { data: courses } = useQuery({
@@ -294,6 +313,63 @@ export default function BulkFixTool() {
     if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
     return "";
   }, [operation, findText, replaceText]);
+
+  // ── Fix Queue: validate asset codes against DB ──
+  async function loadFixQueue() {
+    const raw = fixQueueInput.trim();
+    if (!raw) return;
+    setFixQueueValidating(true);
+    try {
+      // Parse codes — split by newline, comma, or whitespace
+      const codes = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+      if (!codes.length) { toast.error("No codes entered"); return; }
+
+      // Fetch all teaching assets source_ref + asset_name for matching
+      const { data: allAssets } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref");
+
+      const items: FixQueueItem[] = [];
+      for (const code of codes) {
+        // Normalize: BE15.4, BE15-4, be15.4 etc
+        const normalized = code.replace(/[-_.]/g, "").toLowerCase();
+        const match = (allAssets ?? []).find(a => {
+          const ref = ((a as any).source_ref || "").replace(/[-_.]/g, "").toLowerCase();
+          const name = ((a as any).asset_name || "").replace(/[-_.]/g, "").toLowerCase();
+          return ref === normalized || name.includes(normalized);
+        });
+
+        if (match) {
+          items.push({ code, found: true, assetId: match.id, assetName: (match as any).asset_name });
+        } else {
+          // Find closest suggestion
+          const suggestion = (allAssets ?? []).find(a =>
+            ((a as any).source_ref || "").toLowerCase().includes(code.toLowerCase().replace(/[-_.]/g, ""))
+          );
+          items.push({
+            code,
+            found: false,
+            suggestion: suggestion ? (suggestion as any).source_ref || (suggestion as any).asset_name : undefined,
+          });
+        }
+      }
+
+      setFixQueueItems(items);
+      const foundCount = items.filter(i => i.found).length;
+      toast.success(`${foundCount} of ${items.length} assets found`);
+    } catch (e: any) {
+      toast.error("Validation failed: " + e.message);
+    } finally {
+      setFixQueueValidating(false);
+    }
+  }
+
+  function clearFixQueue() {
+    setFixQueueItems([]);
+    setFixQueueInput("");
+    localStorage.removeItem("sa_bulk_fix_queue");
+    toast.success("Fix queue cleared");
+  }
 
   // Build the scope query — use lightweight select for operations that only need id
   function buildScopeQuery(lightweight = false) {
@@ -627,7 +703,25 @@ export default function BulkFixTool() {
   ) {
     let assets: any[];
     
-    if (opKey === "standardize_formatting") {
+    if (fixQueueActive && opKey !== "standardize_formatting") {
+      // Fix Queue mode: only process queued assets, ignore all scope filters
+      if (!fixQueueFoundIds.length) throw new Error("Fix queue is empty — no valid assets to process");
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+      const fields = isLightweight
+        ? "id, asset_name, fix_notes"
+        : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json, fix_notes";
+      // Fetch in chunks of 500 (Supabase .in() limit)
+      const allAssets: any[] = [];
+      for (let chunk = 0; chunk < fixQueueFoundIds.length; chunk += 500) {
+        const ids = fixQueueFoundIds.slice(chunk, chunk + 500);
+        const { data, error } = await supabase.from("teaching_assets").select(fields).in("id", ids);
+        if (error) throw error;
+        if (data) allAssets.push(...data);
+      }
+      if (!allAssets.length) throw new Error("No queued assets found in database");
+      assets = allAssets;
+      console.log(`[Fix Queue] Processing ${assets.length} queued assets`);
+    } else if (opKey === "standardize_formatting") {
       // Hard-coded single asset test: BE15.4 only
       const { data: matchingAssets, error: matchErr } = await supabase
         .from("teaching_assets")
@@ -907,6 +1001,15 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
   async function runOperation() {
     if (!operation) return;
 
+    // Fix Queue confirmation
+    if (fixQueueActive) {
+      const queueCodes = fixQueueItems.filter(q => q.found).map(q => q.code);
+      const confirmed = window.confirm(
+        `⚠ Fix Queue Active — ${queueCodes.length} assets will be affected:\n\n${queueCodes.join("\n")}\n\nAll other scope filters will be IGNORED. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
     if (lastOp) {
       const confirmed = window.confirm(
         "Running this will overwrite your existing backup. Make sure you don't need to revert the previous operation first. Continue?"
@@ -1076,6 +1179,24 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
             This tool modifies teaching asset content directly. Always preview before running. Every operation is fully reversible.
           </p>
         </div>
+
+        {/* Fix Queue Active Banner */}
+        {fixQueueActive && (
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-destructive">
+                Fix Queue Active — {fixQueueFoundIds.length} assets targeted
+              </p>
+              <p className="text-xs text-destructive/70 mt-0.5">
+                All chapter/course scope filters are IGNORED. Only queued assets will be affected.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={clearFixQueue} className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10">
+              <X className="h-3 w-3 mr-1" /> Clear Queue
+            </Button>
+          </div>
+        )}
 
         {/* Section 1: Operation Selector */}
         <Card className="bg-card border-border">
@@ -1303,7 +1424,77 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           </Card>
         )}
 
-        {/* Section 3: Preview */}
+        {/* Fix Queue — Target Specific Assets */}
+        {operation && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ListOrdered className="h-4 w-4" /> Fix Queue — Target Specific Assets
+                {fixQueueActive && (
+                  <Badge variant="destructive" className="text-[10px]">{fixQueueFoundIds.length} loaded</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label className="text-xs">Paste asset codes — one per line or comma separated</Label>
+                <Textarea
+                  value={fixQueueInput}
+                  onChange={e => setFixQueueInput(e.target.value)}
+                  placeholder={"BE15.4\nBE15.11\nE17.9\nP14.3"}
+                  rows={4}
+                  className="mt-1 font-mono text-xs"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadFixQueue}
+                  disabled={fixQueueValidating || !fixQueueInput.trim()}
+                >
+                  {fixQueueValidating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Load Queue
+                </Button>
+                {fixQueueItems.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={clearFixQueue}>
+                    <Trash2 className="h-3 w-3 mr-1" /> Clear Queue
+                  </Button>
+                )}
+              </div>
+
+              {/* Validation results */}
+              {fixQueueItems.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {fixQueueItems.filter(q => q.found).length} of {fixQueueItems.length} assets found
+                  </p>
+                  <div className="max-h-48 overflow-y-auto rounded border border-border bg-muted/30 p-2 space-y-1">
+                    {fixQueueItems.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        {item.found ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        ) : (
+                          <X className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        )}
+                        <span className={`font-mono ${item.found ? "text-foreground" : "text-destructive"}`}>
+                          {item.code}
+                        </span>
+                        {item.found && item.assetName && (
+                          <span className="text-muted-foreground">→ {item.assetName}</span>
+                        )}
+                        {!item.found && item.suggestion && (
+                          <span className="text-muted-foreground italic">Did you mean: {item.suggestion}?</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {operation && (
           <div className="space-y-3">
             <Button
