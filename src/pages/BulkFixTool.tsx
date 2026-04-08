@@ -314,6 +314,63 @@ export default function BulkFixTool() {
     return "";
   }, [operation, findText, replaceText]);
 
+  // ── Fix Queue: validate asset codes against DB ──
+  async function loadFixQueue() {
+    const raw = fixQueueInput.trim();
+    if (!raw) return;
+    setFixQueueValidating(true);
+    try {
+      // Parse codes — split by newline, comma, or whitespace
+      const codes = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+      if (!codes.length) { toast.error("No codes entered"); return; }
+
+      // Fetch all teaching assets source_ref + asset_name for matching
+      const { data: allAssets } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref");
+
+      const items: FixQueueItem[] = [];
+      for (const code of codes) {
+        // Normalize: BE15.4, BE15-4, be15.4 etc
+        const normalized = code.replace(/[-_.]/g, "").toLowerCase();
+        const match = (allAssets ?? []).find(a => {
+          const ref = ((a as any).source_ref || "").replace(/[-_.]/g, "").toLowerCase();
+          const name = ((a as any).asset_name || "").replace(/[-_.]/g, "").toLowerCase();
+          return ref === normalized || name.includes(normalized);
+        });
+
+        if (match) {
+          items.push({ code, found: true, assetId: match.id, assetName: (match as any).asset_name });
+        } else {
+          // Find closest suggestion
+          const suggestion = (allAssets ?? []).find(a =>
+            ((a as any).source_ref || "").toLowerCase().includes(code.toLowerCase().replace(/[-_.]/g, ""))
+          );
+          items.push({
+            code,
+            found: false,
+            suggestion: suggestion ? (suggestion as any).source_ref || (suggestion as any).asset_name : undefined,
+          });
+        }
+      }
+
+      setFixQueueItems(items);
+      const foundCount = items.filter(i => i.found).length;
+      toast.success(`${foundCount} of ${items.length} assets found`);
+    } catch (e: any) {
+      toast.error("Validation failed: " + e.message);
+    } finally {
+      setFixQueueValidating(false);
+    }
+  }
+
+  function clearFixQueue() {
+    setFixQueueItems([]);
+    setFixQueueInput("");
+    localStorage.removeItem("sa_bulk_fix_queue");
+    toast.success("Fix queue cleared");
+  }
+
   // Build the scope query — use lightweight select for operations that only need id
   function buildScopeQuery(lightweight = false) {
     const fields = lightweight
