@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useChaptersWithCourses } from "@/hooks/useAdminDashboardData";
 import { formatDistanceToNow, format, isToday, isBefore } from "date-fns";
-import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap, Send, Loader2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, AlertTriangle, Wrench, Zap, Send, Loader2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +113,40 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
   const { data: chaptersData } = useChaptersWithCourses();
   const chapters = chaptersData?.chapters || [];
   const courses = chaptersData?.courses || [];
+
+  // Fetch "Needs Lee" assets
+  const { data: needsLeeAssets = [], isLoading: isLoadingNeedsLee } = useQuery({
+    queryKey: ["needs-lee-assets"],
+    queryFn: async () => {
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, chapter_id, course_id, fix_notes, fix_status, updated_at")
+          .eq("fix_status", "needs_lee")
+          .order("updated_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all = all.concat(data ?? []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const handleNeedsLeeAction = async (assetId: string, newStatus: "fix_verified" | "still_has_issues") => {
+    const { error } = await supabase.from("teaching_assets").update({ fix_status: newStatus }).eq("id", assetId);
+    if (error) {
+      toast.error("Failed to update", { description: error.message });
+      return;
+    }
+    toast.success(newStatus === "fix_verified" ? "Marked as verified ✓" : "Flagged — still has issues");
+    queryClient.invalidateQueries({ queryKey: ["needs-lee-assets"] });
+  };
 
   const chapterMap = useMemo(() => {
     const m: Record<string, { chapter_number: number; chapter_name: string; course_id: string }> = {};
@@ -461,6 +495,11 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
                 ⚡ {urgentCount} Urgent
               </Badge>
             )}
+            {needsLeeAssets.length > 0 && (
+              <Badge className="text-[10px] font-bold" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>
+                🚩 {needsLeeAssets.length} Needs Lee
+              </Badge>
+            )}
           </div>
           <span className="text-xs text-muted-foreground">{respondedThisWeek} responded this week</span>
 
@@ -488,6 +527,80 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
             </select>
           </div>
         </div>
+
+        {/* Needs Lee section */}
+        {needsLeeAssets.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Flag className="h-4 w-4" style={{ color: "#F59E0B" }} />
+              <span className="text-sm font-bold" style={{ color: "#F59E0B" }}>
+                NEEDS LEE — Manual Review Required
+              </span>
+              <Badge className="text-[10px] font-bold" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>
+                {needsLeeAssets.length}
+              </Badge>
+            </div>
+            {needsLeeAssets.map((asset: any) => {
+              const ch = chapterMap[asset.chapter_id];
+              const co = ch ? courseMap[ch.course_id] : null;
+              const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
+              const fixNotes = asset.fix_notes || "";
+              const truncatedNotes = fixNotes.length > 100 ? fixNotes.slice(0, 100) + "…" : fixNotes;
+
+              return (
+                <div
+                  key={asset.id}
+                  className="border border-border rounded-lg p-3 bg-card flex gap-4 border-l-4"
+                  style={{ borderLeftColor: "#F59E0B" }}
+                >
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <span className="text-xs font-bold font-mono" style={{ color: "#F59E0B" }}>
+                      {asset.asset_name}
+                    </span>
+                    {chapterLabel && (
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {chapterLabel}{co?.code ? ` · ${co.code}` : ""}
+                      </p>
+                    )}
+                    {truncatedNotes && (
+                      <p className="text-[11px] text-muted-foreground italic">{truncatedNotes}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <a
+                      href={`/solutions/${asset.asset_name}?admin=true`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
+                    >
+                      View Asset → <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                    {!readOnly && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="text-[10px] h-6 px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => handleNeedsLeeAction(asset.id, "fix_verified")}
+                        >
+                          Mark Resolved ✓
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[10px] h-6 px-2 border-amber-400 text-amber-600 hover:bg-amber-50"
+                          onClick={() => handleNeedsLeeAction(asset.id, "still_has_issues")}
+                        >
+                          Still Has Issues
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="border-t border-border my-2" />
+          </div>
+        )}
 
         {/* List */}
         {isLoading ? (
