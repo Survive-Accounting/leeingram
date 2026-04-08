@@ -851,9 +851,9 @@ export default function ChapterCramTool() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `url(${LEE_HEADSHOT_BG})`,
+            backgroundImage: `url(${LEE_HERO_URL})`,
             backgroundSize: "cover",
-            backgroundPosition: "35% 25%",
+            backgroundPosition: "center 30%",
           }}
         />
         {/* Noise texture overlay */}
