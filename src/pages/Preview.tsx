@@ -91,6 +91,7 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
 function FeedbackForm() {
   const [pageUrl, setPageUrl] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [lovablePrompt, setLovablePrompt] = useState("");
   const [name, setName] = useState("");
   const [ss1, setSs1] = useState("");
   const [ss2, setSs2] = useState("");
@@ -107,6 +108,7 @@ function FeedbackForm() {
       await (supabase as any).from("va_feedback").insert({
         page_url: pageUrl.trim() || null,
         feedback: feedback.trim(),
+        lovable_prompt: lovablePrompt.trim() || null,
         va_name: name.trim() || null,
         screenshot_url_1: ss1.trim() || null,
         screenshot_url_2: ss2.trim() || null,
@@ -114,7 +116,7 @@ function FeedbackForm() {
       });
       setSuccess(true);
       setTimeout(() => {
-        setPageUrl(""); setFeedback(""); setName("");
+        setPageUrl(""); setFeedback(""); setLovablePrompt(""); setName("");
         setSs1(""); setSs2(""); setSs3("");
         setSsCount(1); setSuccess(false);
       }, 2000);
