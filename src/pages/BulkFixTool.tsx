@@ -625,14 +625,30 @@ export default function BulkFixTool() {
     shouldStop?: () => boolean,
     startOffset?: number,
   ) {
-    const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
-    let scopeQuery = buildScopeQuery(isLightweight);
-    if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
-      scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+    let assets: any[];
+    
+    if (opKey === "standardize_formatting") {
+      // Hard-coded single asset test: BE15.4 only
+      const { data: matchingAssets, error: matchErr } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, survive_solution_text, fix_notes")
+        .or("asset_name.ilike.%BE15%4%,source_ref.eq.BE15.4");
+      if (matchErr) throw matchErr;
+      if (!matchingAssets?.length) throw new Error("No asset found matching BE15.4");
+      if (matchingAssets.length > 1) throw new Error(`Safety error: Found ${matchingAssets.length} assets matching BE15.4. Expected exactly 1. Aborting.`);
+      assets = matchingAssets;
+      console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
+    } else {
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+      let scopeQuery = buildScopeQuery(isLightweight);
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
+        scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+      }
+      const { data: scopeAssets, error } = await scopeQuery;
+      if (error) throw error;
+      if (!scopeAssets?.length) return { updated: 0, skipped: 0, errors: 0 };
+      assets = scopeAssets;
     }
-    const { data: assets, error } = await scopeQuery;
-    if (error) throw error;
-    if (!assets?.length) return { updated: 0, skipped: 0, errors: 0 };
 
     const total = assets.length;
     let updated = 0, skipped = 0, errors = 0;
