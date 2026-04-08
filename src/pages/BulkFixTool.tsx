@@ -1001,6 +1001,15 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
   async function runOperation() {
     if (!operation) return;
 
+    // Fix Queue confirmation
+    if (fixQueueActive) {
+      const queueCodes = fixQueueItems.filter(q => q.found).map(q => q.code);
+      const confirmed = window.confirm(
+        `⚠ Fix Queue Active — ${queueCodes.length} assets will be affected:\n\n${queueCodes.join("\n")}\n\nAll other scope filters will be IGNORED. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
     if (lastOp) {
       const confirmed = window.confirm(
         "Running this will overwrite your existing backup. Make sure you don't need to revert the previous operation first. Continue?"
