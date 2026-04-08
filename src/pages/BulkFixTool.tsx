@@ -1424,7 +1424,77 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           </Card>
         )}
 
-        {/* Section 3: Preview */}
+        {/* Fix Queue — Target Specific Assets */}
+        {operation && (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ListOrdered className="h-4 w-4" /> Fix Queue — Target Specific Assets
+                {fixQueueActive && (
+                  <Badge variant="destructive" className="text-[10px]">{fixQueueFoundIds.length} loaded</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label className="text-xs">Paste asset codes — one per line or comma separated</Label>
+                <Textarea
+                  value={fixQueueInput}
+                  onChange={e => setFixQueueInput(e.target.value)}
+                  placeholder={"BE15.4\nBE15.11\nE17.9\nP14.3"}
+                  rows={4}
+                  className="mt-1 font-mono text-xs"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadFixQueue}
+                  disabled={fixQueueValidating || !fixQueueInput.trim()}
+                >
+                  {fixQueueValidating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Load Queue
+                </Button>
+                {fixQueueItems.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={clearFixQueue}>
+                    <Trash2 className="h-3 w-3 mr-1" /> Clear Queue
+                  </Button>
+                )}
+              </div>
+
+              {/* Validation results */}
+              {fixQueueItems.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {fixQueueItems.filter(q => q.found).length} of {fixQueueItems.length} assets found
+                  </p>
+                  <div className="max-h-48 overflow-y-auto rounded border border-border bg-muted/30 p-2 space-y-1">
+                    {fixQueueItems.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        {item.found ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        ) : (
+                          <X className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        )}
+                        <span className={`font-mono ${item.found ? "text-foreground" : "text-destructive"}`}>
+                          {item.code}
+                        </span>
+                        {item.found && item.assetName && (
+                          <span className="text-muted-foreground">→ {item.assetName}</span>
+                        )}
+                        {!item.found && item.suggestion && (
+                          <span className="text-muted-foreground italic">Did you mean: {item.suggestion}?</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {operation && (
           <div className="space-y-3">
             <Button
