@@ -860,7 +860,7 @@ export default function ChapterCramTool() {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to right, rgba(20,33,61,0.92) 35%, rgba(20,33,61,0.25) 75%, rgba(20,33,61,0.5) 100%);
+            background: linear-gradient(to right, rgba(20,33,61,0.72) 25%, rgba(20,33,61,0.15) 55%, rgba(20,33,61,0.35) 100%);
             z-index: 1;
           }
         `}</style>
