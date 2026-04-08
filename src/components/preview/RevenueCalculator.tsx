@@ -39,7 +39,7 @@ function Select({ value, onChange, options }: { value: number; onChange: (v: num
 export default function RevenueCalculator() {
   const [campuses, setCampuses] = useState(10);
   const [spc, setSpc] = useState(150);
-  const [conv, setConv] = useState(3);
+  const [conv, setConv] = useState(2);
   const [rev, setRev] = useState(200);
   const [greekPct, setGreekPct] = useState(60);
   const [showMix, setShowMix] = useState(false);
@@ -81,10 +81,28 @@ export default function RevenueCalculator() {
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Conversion %</label>
-            <Select value={conv} onChange={setConv} options={[1,2,3,4,5].map(v => ({ v, l: `${v}%` }))} />
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={0.1}
+                max={100}
+                step={0.1}
+                value={conv}
+                onChange={e => {
+                  let v = parseFloat(e.target.value);
+                  if (isNaN(v)) v = 0.1;
+                  if (v > 100) v = 100;
+                  setConv(v);
+                }}
+                className="rounded px-3 py-2 text-[12px] outline-none w-[70px]"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#FFFFFF" }}
+              />
+              <span className="text-[12px] font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>%</span>
+            </div>
+            {conv >= 100 && <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>Max 100%</p>}
           </div>
           <div>
-            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Avg Rev / Student</label>
+            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Avg Annual Revenue / Student</label>
             <Select value={rev} onChange={setRev} options={[50,100,200,300,400,500].map(v => ({ v, l: `$${v}` }))} />
           </div>
         </div>
@@ -94,7 +112,7 @@ export default function RevenueCalculator() {
           <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.35)" }}>Converted Students: <span className="text-white font-semibold">{converted.toLocaleString()}</span></p>
         </div>
 
-        <p className="text-[11px] uppercase font-bold mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Total Potential Revenue</p>
+        <p className="text-[11px] uppercase font-bold mb-1" style={{ color: "rgba(255,255,255,0.3)" }}>Total Annual Revenue Potential</p>
         <p className="text-[40px] font-extrabold leading-none" style={{ fontFamily: "Inter" }}>
           <span style={{ color: "#CE1126" }}>$</span>
           <span className="text-white">{totalRev.toLocaleString()}</span>
