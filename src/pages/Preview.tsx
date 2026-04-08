@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Sitemap } from "lucide-react";
+import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp } from "lucide-react";
+import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
+import RevenueCalculator from "@/components/preview/RevenueCalculator";
 import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
 import RevenueCalculator from "@/components/preview/RevenueCalculator";
 
