@@ -193,9 +193,28 @@ export default function BulkFixTool() {
   const [reverting, setReverting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Queue state
+  // Queue state (server-side batch queue)
   const [queueOp, setQueueOp] = useState<OperationType | "">("");
   const [queueRunning, setQueueRunning] = useState(false);
+
+  // Fix Queue state (targeted asset codes)
+  interface FixQueueItem { code: string; found: boolean; assetId?: string; assetName?: string; suggestion?: string }
+  const [fixQueueInput, setFixQueueInput] = useState("");
+  const [fixQueueItems, setFixQueueItems] = useState<FixQueueItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem("sa_bulk_fix_queue") || "[]"); } catch { return []; }
+  });
+  const [fixQueueValidating, setFixQueueValidating] = useState(false);
+  const fixQueueActive = fixQueueItems.length > 0 && fixQueueItems.some(q => q.found);
+  const fixQueueFoundIds = fixQueueItems.filter(q => q.found && q.assetId).map(q => q.assetId!);
+
+  // Persist fix queue to localStorage
+  useEffect(() => {
+    if (fixQueueItems.length > 0) {
+      localStorage.setItem("sa_bulk_fix_queue", JSON.stringify(fixQueueItems));
+    } else {
+      localStorage.removeItem("sa_bulk_fix_queue");
+    }
+  }, [fixQueueItems]);
 
   // Queries
   const { data: courses } = useQuery({
