@@ -294,25 +294,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    const isComplete = processed >= total || creditExhausted;
-    const finalStatus = creditExhausted ? "failed" : (isComplete ? "complete" : "running");
+    // Re-check if manually stopped
+    const { data: recheckItem } = await sb.from("bulk_fix_queue").select("status").eq("id", currentItem.id).single();
+    const manuallyStopped = recheckItem?.status !== "running";
 
-    await sb.from("bulk_fix_queue").update({
-      status: finalStatus,
-      completed_at: isComplete ? new Date().toISOString() : null,
-      assets_processed: processed,
-      assets_succeeded: succeeded,
-      assets_errored: errored,
-      assets_skipped: skipped,
-      error_summary: creditExhausted ? "Stopped: AI credits exhausted (402). Resume when credits are available." : null,
-    }).eq("id", currentItem.id);
+    const isComplete = processed >= total || creditExhausted || manuallyStopped;
+    const finalStatus = manuallyStopped ? recheckItem?.status : (creditExhausted ? "failed" : (isComplete ? "complete" : "running"));
 
-    if (isComplete && !creditExhausted) {
+    if (!manuallyStopped) {
+      await sb.from("bulk_fix_queue").update({
+        status: finalStatus,
+        completed_at: isComplete ? new Date().toISOString() : null,
+        assets_processed: processed,
+        assets_succeeded: succeeded,
+        assets_errored: errored,
+        assets_skipped: skipped,
+        error_summary: creditExhausted ? "Stopped: AI credits exhausted (402). Resume when credits are available." : null,
+      }).eq("id", currentItem.id);
+    }
+
+    if (isComplete && !creditExhausted && !manuallyStopped) {
       console.log(`✓ ${currentItem.operation_name} complete: ${succeeded} ok, ${errored} errors, ${skipped} skipped`);
       await sendOperationEmail(sb, supabaseUrl, serviceKey, currentItem, processed, succeeded, errored, skipped);
     }
 
-    if (!creditExhausted) {
+    if (!creditExhausted && !manuallyStopped) {
       selfChain(supabaseUrl, serviceKey);
     } else {
       console.log("Stopping self-chain due to credit exhaustion");
