@@ -380,11 +380,13 @@ export default function BulkFixTool() {
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       if (!text) return;
-      // Parse CSV: take first column of each row, skip empty lines
+      // Parse CSV: take first column of each row, skip empty lines and common headers
+      const HEADER_PATTERNS = /^(asset[_\s]?code|source[_\s]?ref|code|asset|name)$/i;
       const codes = text
         .split(/\r?\n/)
         .map(line => line.split(",")[0]?.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+        .filter(c => !HEADER_PATTERNS.test(c));
       if (!codes.length) { toast.error("No asset codes found in CSV"); return; }
       setFixQueueInput(codes.join("\n"));
       toast.success(`Imported ${codes.length} codes from CSV — hit Load Queue to validate`);
