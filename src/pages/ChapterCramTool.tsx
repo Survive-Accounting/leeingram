@@ -882,7 +882,7 @@ export default function ChapterCramTool() {
 
   const courseCode = chapter?.courses?.code || "";
   const beLabel = getBELabel(courseCode);
-  const courseDisplayName = courseCode === "IA2" ? "Intermediate Accounting 2" : courseCode === "IA1" ? "Intermediate Accounting 1" : courseCode === "MA2" ? "Managerial Accounting" : courseCode === "FA1" ? "Financial Accounting" : chapter?.courses?.course_name || courseCode;
+  const courseDisplayName = courseCode === "IA2" ? "Intermediate Accounting 2" : courseCode === "IA1" ? "Intermediate Accounting 1" : courseCode === "INTRO1" ? "Intro Accounting 1" : courseCode === "INTRO2" ? "Intro Accounting 2" : courseCode === "MA2" ? "Managerial Accounting" : courseCode === "FA1" ? "Financial Accounting" : chapter?.courses?.course_name || courseCode;
   const chapterNum = chapter?.chapter_number;
   const fullPassLink = paymentLinks.find((link: any) => link.link_type === "full_pass" && link.course_id === chapter?.course_id);
   const chapterLink = paymentLinks.find((link: any) => link.link_type === "chapter" && link.chapter_id === chapterId);
