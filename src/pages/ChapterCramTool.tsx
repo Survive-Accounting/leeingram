@@ -849,9 +849,9 @@ export default function ChapterCramTool() {
             content: '';
             position: absolute;
             inset: 0;
-            background-image: url('https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg');
-            background-size: 160%;
-            background-position: 85% 30%;
+            background-image: url('https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg');
+            background-size: cover;
+            background-position: 60% 40%;
             background-repeat: no-repeat;
             transform: scaleX(-1);
             z-index: 0;
