@@ -147,22 +147,19 @@ function FeedbackForm() {
         <p className="text-[14px] text-center py-4" style={{ color: "rgba(255,255,255,0.8)" }}>Got it — thank you! 🙌</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="What website page, section, strategy, or anything else?" style={inputStyle} />
-          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Suggest an improvement — be as specific as possible." rows={4} style={{ ...inputStyle, resize: "vertical" }} />
-          <textarea value={lovablePrompt} onChange={e => setLovablePrompt(e.target.value)} placeholder="If you have a specific fix in mind, describe it as a prompt below (optional)." rows={3} style={{ ...inputStyle, resize: "vertical" }} />
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} />
-          <input value={ss1} onChange={e => setSs1(e.target.value)} placeholder="Upload to imgur.com or imgbb.com and paste link" style={inputStyle} />
-          {ssCount < 2 ? (
-            <button type="button" onClick={() => setSsCount(2)} className="text-[12px] font-medium" style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer" }}>+ Add screenshot</button>
-          ) : (
-            <input value={ss2} onChange={e => setSs2(e.target.value)} placeholder="Screenshot 2 URL" style={inputStyle} />
-          )}
-          {ssCount >= 2 && ssCount < 3 && (
-            <button type="button" onClick={() => setSsCount(3)} className="text-[12px] font-medium" style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer" }}>+ Add screenshot</button>
-          )}
-          {ssCount >= 3 && (
-            <input value={ss3} onChange={e => setSs3(e.target.value)} placeholder="Screenshot 3 URL" style={inputStyle} />
-          )}
+          <input value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="What website page, section, strategy, etc can be improved?" style={inputStyle} />
+          <div>
+            <p className="text-[11px] mb-1.5" style={{ color: "rgba(255,255,255,0.35)" }}>Upload screenshots to imgbb.com and paste URL here</p>
+            <input value={ss1} onChange={e => setSs1(e.target.value)} placeholder="Screenshot URL" style={inputStyle} />
+            {ssCount >= 2 && <input value={ss2} onChange={e => setSs2(e.target.value)} placeholder="Screenshot 2 URL" style={{ ...inputStyle, marginTop: 8 }} />}
+            {ssCount >= 3 && <input value={ss3} onChange={e => setSs3(e.target.value)} placeholder="Screenshot 3 URL" style={{ ...inputStyle, marginTop: 8 }} />}
+            {ssCount < 3 && (
+              <button type="button" onClick={() => setSsCount(c => c + 1)} className="text-[12px] font-medium mt-1.5" style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer" }}>+ Add screenshot</button>
+            )}
+          </div>
+          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Describe the improvement in plain english — be as specific as possible." rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+          <textarea value={lovablePrompt} onChange={e => setLovablePrompt(e.target.value)} placeholder="Describe it as a Lovable prompt we can test out (optional)." rows={3} style={{ ...inputStyle, resize: "vertical" }} />
           <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)" }}>You can submit multiple times if you have more feedback.</p>
           <button
             type="submit"
