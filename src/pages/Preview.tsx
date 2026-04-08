@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home } from "lucide-react";
+import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network } from "lucide-react";
+import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PASSWORD = "survive2026";
@@ -24,6 +25,7 @@ const LANDING_CARDS = [
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
+  "Platform Hierarchy": <Network className="h-4 w-4" />,
   "Chapter Pages": <BookOpen className="h-4 w-4" />,
   "Solutions Viewer": <Eye className="h-4 w-4" />,
   "Landing Pages": <Layout className="h-4 w-4" />,
@@ -262,6 +264,11 @@ function PreviewIndex() {
       <div className="mx-auto max-w-[700px] px-5 py-8 space-y-12">
         {/* ── Feedback Form ── */}
         <FeedbackForm />
+
+        {/* ── Platform Hierarchy ── */}
+        <CollapsibleSection title="Platform Hierarchy">
+          <PlatformHierarchy />
+        </CollapsibleSection>
 
         {/* ── Chapter Pages ── */}
         <CollapsibleSection title="Chapter Pages">
