@@ -369,8 +369,13 @@ function PreviewIndex() {
         </CollapsibleSection>
 
         {/* ── REVENUE POTENTIAL ── */}
-        <CollapsibleSection title="Revenue Potential" defaultOpen>
+        <CollapsibleSection title="Revenue Potential">
           <RevenueCalculator />
+        </CollapsibleSection>
+
+        {/* ── MARKETING ── */}
+        <CollapsibleSection title="Marketing">
+          <MarketingSection />
         </CollapsibleSection>
 
         {/* ── HOW CONTENT GETS BUILT ── */}
@@ -381,11 +386,6 @@ function PreviewIndex() {
         {/* ── INFRASTRUCTURE ── */}
         <CollapsibleSection title="Infrastructure">
           <InfrastructureSection />
-        </CollapsibleSection>
-
-        {/* ── MARKETING ── */}
-        <CollapsibleSection title="Marketing">
-          <MarketingSection />
         </CollapsibleSection>
 
         {/* ── Feedback Form ── */}

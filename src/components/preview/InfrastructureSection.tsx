@@ -85,75 +85,76 @@ function ToolCard({ tool }: { tool: typeof TOOLS[number] }) {
 export function ContentPipeline() {
   return (
     <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)" }}>
-      <div className="flex flex-wrap items-start gap-1">
+      <div className="flex flex-wrap items-start gap-1.5">
         {PIPELINE_STEPS.map((step, i) => (
-          <div key={step.label} className="flex items-start gap-1">
+          <div key={step.label} className="flex items-start gap-1.5">
             <div
-              className="rounded-lg px-3 py-2.5 text-center shrink-0"
+              className="rounded-lg px-3.5 py-3 text-center shrink-0"
               style={{
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.1)",
-                minWidth: 90,
-                maxWidth: 120,
+                minWidth: 100,
+                maxWidth: 130,
               }}
             >
-              <span className="text-base block mb-1">{step.emoji}</span>
-              <span className="text-[11px] font-semibold text-white block leading-tight">{step.label}</span>
-              <span className="text-[9px] block mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.35)" }}>{step.desc}</span>
+              <span className="text-lg block mb-1">{step.emoji}</span>
+              <span className="text-[13px] font-semibold text-white block leading-tight">{step.label}</span>
+              <span className="text-[11px] block mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>{step.desc}</span>
             </div>
             {i < PIPELINE_STEPS.length - 1 && (
-              <span className="text-[16px] font-bold self-center shrink-0 mt-3" style={{ color: "#CE1126" }}>→</span>
+              <span className="text-[18px] font-bold self-center shrink-0 mt-3" style={{ color: "#CE1126" }}>→</span>
             )}
           </div>
         ))}
 
         {/* Box 7 — Students Buy Passes */}
-        <div className="flex items-start gap-1">
-          <span className="text-[16px] font-bold self-center shrink-0 mt-3" style={{ color: "#CE1126" }}>→</span>
+        <div className="flex items-start gap-1.5">
+          <span className="text-[18px] font-bold self-center shrink-0 mt-3" style={{ color: "#CE1126" }}>→</span>
           <div
-            className="rounded-lg px-3 py-2.5 text-center shrink-0"
+            className="rounded-lg px-3.5 py-3 text-center shrink-0"
             style={{
               background: "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.1)",
-              minWidth: 90,
-              maxWidth: 120,
+              minWidth: 100,
+              maxWidth: 130,
             }}
           >
             <CreditCard className="h-4 w-4 mx-auto mb-1" style={{ color: "rgba(255,255,255,0.6)" }} />
-            <span className="text-[11px] font-semibold text-white block leading-tight">Students Buy Passes</span>
-            <span className="text-[9px] block mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.35)" }}>
+            <span className="text-[13px] font-semibold text-white block leading-tight">Students Buy Passes</span>
+            <span className="text-[11px] block mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
               Semester Study Passes expire end of semester. Students rebuy each semester — built-in recurring revenue.
             </span>
           </div>
         </div>
 
         {/* Box 8 — Future Content Plans */}
-        <div className="flex items-start gap-1">
-          <span className="text-[16px] font-bold self-center shrink-0 mt-3" style={{ color: "#CE1126", opacity: 0.5 }}>⇢</span>
+        <div className="flex items-start gap-1.5">
+          <span className="text-[18px] font-bold self-center shrink-0 mt-3" style={{ color: "#CE1126", opacity: 0.5 }}>⇢</span>
           <div
-            className="rounded-lg px-3 py-2.5 text-left shrink-0"
+            className="rounded-lg px-3.5 py-3 text-left shrink-0"
             style={{
               background: "rgba(255,255,255,0.05)",
               border: "1px dashed rgba(255,255,255,0.15)",
-              minWidth: 180,
-              maxWidth: 220,
+              minWidth: 200,
+              maxWidth: 240,
             }}
           >
             <Rocket className="h-4 w-4 mb-1" style={{ color: "rgba(255,255,255,0.6)" }} />
-            <span className="text-[11px] font-semibold text-white block leading-tight mb-2">Future Content Plans</span>
-            <span className="text-[9px] block leading-snug mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Follows the same pipeline ↑</span>
-            <div className="space-y-1.5 mt-2">
+            <span className="text-[13px] font-semibold text-white block leading-tight mb-2">Future Content Plans</span>
+            <span className="text-[11px] block leading-snug mb-1" style={{ color: "rgba(255,255,255,0.45)" }}>Follows the same pipeline ↑</span>
+            <span className="text-[11px] block leading-snug mb-2" style={{ color: "rgba(255,255,255,0.45)" }}>Four additional courses → eight total courses.</span>
+            <div className="space-y-2 mt-2">
               <div>
-                <span className="text-[10px] block" style={{ color: "#FFFFFF" }}>🎓 <span className="font-semibold">SurviveAccounting.com</span></span>
-                <span className="text-[9px] block pl-4" style={{ color: "rgba(255,255,255,0.35)" }}>Clone for Cost Accounting + Advanced Accounting</span>
+                <span className="text-[12px] block" style={{ color: "#FFFFFF" }}>🎓 <span className="font-semibold">SurviveAccounting.com</span></span>
+                <span className="text-[11px] block pl-5" style={{ color: "rgba(255,255,255,0.45)" }}>Clone for Cost Accounting + Advanced Accounting</span>
               </div>
               <div>
-                <span className="text-[10px] block" style={{ color: "#FFFFFF" }}>💰 <span className="font-semibold">SurviveTax.com</span></span>
-                <span className="text-[9px] block pl-4" style={{ color: "rgba(255,255,255,0.35)" }}>Domain acquired. Clone for undergrad Income Tax 1.</span>
+                <span className="text-[12px] block" style={{ color: "#FFFFFF" }}>💰 <span className="font-semibold">SurviveTax.com</span></span>
+                <span className="text-[11px] block pl-5" style={{ color: "rgba(255,255,255,0.45)" }}>Domain acquired. Clone for undergrad Income Tax 1.</span>
               </div>
               <div>
-                <span className="text-[10px] block" style={{ color: "#FFFFFF" }}>🔍 <span className="font-semibold">SurviveAudit.com</span></span>
-                <span className="text-[9px] block pl-4" style={{ color: "rgba(255,255,255,0.35)" }}>Domain acquired. Clone for undergrad Audit class.</span>
+                <span className="text-[12px] block" style={{ color: "#FFFFFF" }}>🔍 <span className="font-semibold">SurviveAudit.com</span></span>
+                <span className="text-[11px] block pl-5" style={{ color: "rgba(255,255,255,0.45)" }}>Domain acquired. Clone for undergrad Audit class.</span>
               </div>
             </div>
           </div>
