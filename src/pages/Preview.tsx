@@ -181,11 +181,11 @@ function CollapsibleSection({ title, children, defaultOpen, sublabel, highlight 
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <section style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+    <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-3 w-full text-left group"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: "20px 0" }}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: "20px 16px" }}
       >
         <span style={{ color: "white" }}>
           {SECTION_ICONS[title]}
@@ -199,7 +199,7 @@ function CollapsibleSection({ title, children, defaultOpen, sublabel, highlight 
         {open ? <ChevronUp className="h-5 w-5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} /> : <ChevronDown className="h-5 w-5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} />}
       </button>
       {open && (
-        <div className={`pb-6 ${highlight ? "rounded-xl px-6 py-5 mb-4" : ""}`} style={highlight ? { background: "#1a2d4a", border: "1px solid rgba(206,17,38,0.3)", borderRadius: 12 } : undefined}>
+        <div className={`pb-6 px-4 ${highlight ? "rounded-xl px-6 py-5 mb-4 mx-4" : ""}`} style={highlight ? { background: "#1a2d4a", border: "1px solid rgba(206,17,38,0.3)", borderRadius: 12 } : undefined}>
           {children}
         </div>
       )}
