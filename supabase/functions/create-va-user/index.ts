@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       user_id: authData.user.id,
       full_name,
       email,
-      role: "va_test",
+      role: "content_creation_va",
       assigned_course_id: assigned_course_id || null,
       assigned_chapter_id: assigned_chapter_id || null,
       account_status: "active",
