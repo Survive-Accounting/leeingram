@@ -147,8 +147,9 @@ function FeedbackForm() {
         <p className="text-[14px] text-center py-4" style={{ color: "rgba(255,255,255,0.8)" }}>Got it — thank you! 🙌</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="Paste the URL of the page you're reviewing" style={inputStyle} />
-          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What could be better?" rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+          <input value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="What website page, section, strategy, or anything else?" style={inputStyle} />
+          <textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Suggest an improvement — be as specific as possible." rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+          <textarea value={lovablePrompt} onChange={e => setLovablePrompt(e.target.value)} placeholder="If you have a specific fix in mind, describe it as a prompt below (optional)." rows={3} style={{ ...inputStyle, resize: "vertical" }} />
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} />
           <input value={ss1} onChange={e => setSs1(e.target.value)} placeholder="Upload to imgur.com or imgbb.com and paste link" style={inputStyle} />
           {ssCount < 2 ? (
