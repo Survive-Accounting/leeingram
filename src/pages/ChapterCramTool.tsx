@@ -535,9 +535,9 @@ function ChapterNavigator({ chapters, currentChapterId }: { chapters: { id: stri
             const truncName = ch.chapter_name.length > 20 ? ch.chapter_name.slice(0, 20) + "…" : ch.chapter_name;
             const isHovered = hoveredId === ch.id;
             return isCurrent ? (
-              <div key={ch.id} className="flex items-center gap-1 px-2 py-1.5 text-[12px]" style={{ color: "#9CA3AF" }}>
+              <div key={ch.id} className="flex items-center px-2 py-1 text-[12px] font-bold cursor-default" style={{ color: "#FFFFFF", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "4px 8px" }}>
+                <span className="shrink-0 rounded-full" style={{ width: 8, height: 8, background: "#F59E0B", marginRight: 8 }} />
                 <span>Ch {ch.chapter_number} · {truncName}</span>
-                <span className="text-[10px] italic ml-1">← you are here</span>
               </div>
             ) : (
               <a
