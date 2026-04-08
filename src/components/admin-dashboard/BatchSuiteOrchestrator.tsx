@@ -131,14 +131,14 @@ export function BatchSuiteOrchestrator() {
 
   const isFullyApproved = useCallback((chapterId: string) => {
     if (!approvalStatus) return false;
-    const { purposes, accounts, terms, formulas, jes, mistakes, hasApproved } = approvalStatus;
+    const { purposes, accounts, terms, formulas, jes, mistakes, hasAny } = approvalStatus;
     return (
-      hasApproved(purposes, chapterId) &&
-      hasApproved(accounts, chapterId) &&
-      hasApproved(terms, chapterId) &&
-      hasApproved(formulas, chapterId) &&
-      hasApproved(jes, chapterId) &&
-      hasApproved(mistakes, chapterId)
+      hasAny(purposes, chapterId) &&
+      hasAny(accounts, chapterId) &&
+      hasAny(terms, chapterId) &&
+      hasAny(formulas, chapterId) &&
+      hasAny(jes, chapterId) &&
+      hasAny(mistakes, chapterId)
     );
   }, [approvalStatus]);
 
