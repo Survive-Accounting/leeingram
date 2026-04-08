@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting";
 
 interface HistoryEntry {
   label: string;
@@ -63,6 +63,7 @@ const OPERATION_LABELS: Record<string, string> = {
   rewrite_je_reasons: "Rewrite JE Reasons (YOU Format)",
   rewrite_je_amounts: "Rewrite Amount Sources (Plain English)",
   generate_calculation_formulas: "Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)",
+  standardize_formatting: "Standardize Formatting (solution text only)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
@@ -87,6 +88,24 @@ WHAT YOU MUST NOT CHANGE:
 - Do not reorder the instructions
 
 Return only the corrected text with no explanation or commentary. The output must be a drop-in replacement for the original field value.`;
+
+const STANDARDIZE_FORMATTING_PROMPT = `You are fixing the formatting of this explanation only. Do not change any numbers, calculations, or accounting conclusions. Apply these rules exactly:
+
+1. Step labels (Step 1, Step 2, Step 3) must always be narrative text OUTSIDE of calculation blocks — never inside a monospace or highlighted calculation line.
+
+2. Part headers like "Calculate the amount of proceeds allocated to the bonds" must be bold and sit as a clean header above their calculation block — not mixed inside it.
+
+3. Every calculation line stays in its monospace/highlighted format.
+
+4. One blank line between each step and its calculation block.
+
+5. One blank line between each part (a), (b), (c).
+
+6. Do not add any new content or change any values.
+
+7. Do not remove any calculations or conclusions.
+
+Output must look like a clean textbook solution with clear separation between narrative steps and calculation lines.`;
 
 /** Extract all numbers from text for comparison */
 function extractNumbers(text: string): string[] {
@@ -272,6 +291,7 @@ export default function BulkFixTool() {
     if (operation === "enrich_je_tooltips") return "Enrich JE Tooltips (fill gaps)";
     if (operation === "rewrite_je_reasons") return "Rewrite JE Reasons (YOU Format)";
     if (operation === "rewrite_je_amounts") return "Rewrite Amount Sources (Plain English)";
+    if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -540,6 +560,55 @@ export default function BulkFixTool() {
           after: `${actionDesc} via AI (mode: ${modeLabel})`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "standardize_formatting") {
+        // Find BE15.4 specifically for test
+        const { data: matchingAssets, error: matchErr } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, source_ref, survive_solution_text")
+          .or("asset_name.ilike.%BE15%4%,source_ref.eq.BE15.4");
+        if (matchErr) throw matchErr;
+        
+        if (!matchingAssets?.length) {
+          toast.error("No asset found matching BE15.4");
+          setPreviewRows([]);
+          return;
+        }
+        if (matchingAssets.length > 1) {
+          toast.error(`Safety error: Found ${matchingAssets.length} assets matching BE15.4. Expected exactly 1. Aborting.`);
+          setPreviewRows([]);
+          return;
+        }
+        
+        const asset = matchingAssets[0];
+        const original = (asset as any).survive_solution_text || "";
+        console.log("[Standardize Formatting] Test asset:", asset.asset_name, "id:", asset.id);
+        
+        // Run AI preview
+        const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
+          body: {
+            provider: "anthropic",
+            model: "claude-sonnet-4-20250514",
+            messages: [
+              { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+              { role: "user", content: `Instruction: ${STANDARDIZE_FORMATTING_PROMPT}\n\nText to modify:\n${original}` },
+            ],
+            temperature: 0.1,
+            max_output_tokens: 4000,
+          },
+        });
+        if (aiError) throw aiError;
+        const after = aiResult?.raw || aiResult?.content || original;
+        
+        setTotalMatched(1);
+        setPreviewRows([{
+          id: asset.id,
+          asset_name: asset.asset_name,
+          field: "Solution Text",
+          before: original,
+          after: after,
+          numericWarning: hasNumericDiff(original, after),
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -556,14 +625,30 @@ export default function BulkFixTool() {
     shouldStop?: () => boolean,
     startOffset?: number,
   ) {
-    const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
-    let scopeQuery = buildScopeQuery(isLightweight);
-    if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
-      scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+    let assets: any[];
+    
+    if (opKey === "standardize_formatting") {
+      // Hard-coded single asset test: BE15.4 only
+      const { data: matchingAssets, error: matchErr } = await supabase
+        .from("teaching_assets")
+        .select("id, asset_name, source_ref, survive_solution_text, fix_notes")
+        .or("asset_name.ilike.%BE15%4%,source_ref.eq.BE15.4");
+      if (matchErr) throw matchErr;
+      if (!matchingAssets?.length) throw new Error("No asset found matching BE15.4");
+      if (matchingAssets.length > 1) throw new Error(`Safety error: Found ${matchingAssets.length} assets matching BE15.4. Expected exactly 1. Aborting.`);
+      assets = matchingAssets;
+      console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
+    } else {
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+      let scopeQuery = buildScopeQuery(isLightweight);
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
+        scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
+      }
+      const { data: scopeAssets, error } = await scopeQuery;
+      if (error) throw error;
+      if (!scopeAssets?.length) return { updated: 0, skipped: 0, errors: 0 };
+      assets = scopeAssets;
     }
-    const { data: assets, error } = await scopeQuery;
-    if (error) throw error;
-    if (!assets?.length) return { updated: 0, skipped: 0, errors: 0 };
 
     const total = assets.length;
     let updated = 0, skipped = 0, errors = 0;
@@ -767,6 +852,31 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (fnErr || !result?.success) { errors++; return; }
               changed = true;
             } catch { errors++; return; }
+          } else if (opKey === "standardize_formatting") {
+            // Only process survive_solution_text
+            const original = (asset as any).survive_solution_text || "";
+            if (!original.trim()) { skipped++; return; }
+
+            const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+              body: {
+                provider: "anthropic",
+                model: "claude-sonnet-4-20250514",
+                messages: [
+                  { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+                  { role: "user", content: `Instruction: ${STANDARDIZE_FORMATTING_PROMPT}\n\nText to modify:\n${original}` },
+                ],
+                temperature: 0.1,
+                max_output_tokens: 4000,
+              },
+            });
+            if (aiErr) { errors++; return; }
+            const after = aiResult?.raw || aiResult?.content || original;
+            if (after !== original) {
+              newValues["survive_solution_text"] = after;
+              // Also store solution backup
+              backupUpdate["solution_text_backup"] = original;
+              changed = true;
+            }
           }
 
           if (changed) {
@@ -990,8 +1100,23 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="rewrite_je_reasons">Rewrite JE Reasons (YOU Format)</SelectItem>
                 <SelectItem value="rewrite_je_amounts">Rewrite Amount Sources (Plain English)</SelectItem>
                 <SelectItem value="generate_calculation_formulas">Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)</SelectItem>
+                <SelectItem value="standardize_formatting">Standardize Formatting (solution text only)</SelectItem>
               </SelectContent>
             </Select>
+
+            {operation === "standardize_formatting" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Fixes formatting of <code className="text-foreground">survive_solution_text</code> only — step labels outside calc blocks, bold part headers, proper spacing. Does NOT change any numbers, calculations, or conclusions.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ TEST MODE: This will only process asset BE15.4. Hard limit of 1 asset enforced. Scope filters are ignored.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Info card for JE tooltip operations */}
             {(operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && (
