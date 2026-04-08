@@ -140,9 +140,8 @@ function FeedbackForm() {
 
   return (
     <div style={{ background: "#0F1D35", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 24 }}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-4" style={{ color: "#F59E0B", letterSpacing: "0.1em" }}>
-        Suggest an Improvement
-      </p>
+      <p className="text-[16px] font-bold text-white mb-1">Suggest an Improvement</p>
+      <p className="text-[13px] mb-4" style={{ color: "rgba(255,255,255,0.5)" }}>All ideas are welcome and encouraged!</p>
       {success ? (
         <p className="text-[14px] text-center py-4" style={{ color: "rgba(255,255,255,0.8)" }}>Got it — thank you! 🙌</p>
       ) : (
@@ -181,11 +180,11 @@ function CollapsibleSection({ title, children, defaultOpen, sublabel, highlight 
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <section style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+    <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-3 w-full text-left group"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: "20px 0" }}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: "20px 16px" }}
       >
         <span style={{ color: "white" }}>
           {SECTION_ICONS[title]}
@@ -199,7 +198,7 @@ function CollapsibleSection({ title, children, defaultOpen, sublabel, highlight 
         {open ? <ChevronUp className="h-5 w-5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} /> : <ChevronDown className="h-5 w-5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} />}
       </button>
       {open && (
-        <div className={`pb-6 ${highlight ? "rounded-xl px-6 py-5 mb-4" : ""}`} style={highlight ? { background: "#1a2d4a", border: "1px solid rgba(206,17,38,0.3)", borderRadius: 12 } : undefined}>
+        <div className={`pb-6 px-4 ${highlight ? "rounded-xl px-6 py-5 mb-4 mx-4" : ""}`} style={highlight ? { background: "#1a2d4a", border: "1px solid rgba(206,17,38,0.3)", borderRadius: 12 } : undefined}>
           {children}
         </div>
       )}
@@ -390,8 +389,6 @@ function PreviewIndex() {
 
         {/* ── Feedback Form ── */}
         <div className="mt-20 mb-4" id="feedback-form">
-          <p className="text-[16px] font-bold text-white mb-1">Suggest an Improvement</p>
-          <p className="text-[13px] mb-5" style={{ color: "rgba(255,255,255,0.5)" }}>All ideas are welcome and encouraged!</p>
           <FeedbackForm />
         </div>
 
