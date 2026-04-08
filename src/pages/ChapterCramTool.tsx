@@ -994,148 +994,177 @@ export default function ChapterCramTool() {
         </section>
       </div>
 
-      {/* ── Main Content ── */}
-      <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
-        {/* ──── Practice Problems ──── */}
-        <section style={{ marginBottom: 48 }}>
-          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
-            Practice Problems · Ch {chapterNum || "?"}
-          </p>
+      {/* ── Main Content with Sidebar ── */}
+      <main className="mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: 792 }}>
+        <style>{`
+          @media (min-width: 1025px) {
+            .cram-layout { display: flex; gap: 32px; }
+            .cram-content { flex: 1; max-width: 560px; }
+            .cram-nav { width: 200px; flex-shrink: 0; position: sticky; top: 80px; align-self: flex-start; }
+          }
+          @media (max-width: 1024px) {
+            .cram-layout { display: block; }
+            .cram-content { max-width: 100%; }
+            .cram-nav { display: none; }
+          }
+        `}</style>
+        <div className="cram-layout">
+          <div className="cram-content">
+            {/* ── Breadcrumb ── */}
+            <p className="text-[12px]" style={{ color: "#9CA3AF", fontWeight: 400, marginBottom: 12 }}>
+              {courseDisplayName} · Ch {chapterNum} — {chapter?.chapter_name}
+            </p>
 
-          <div className="flex flex-wrap gap-3">
-            {([["be", beLabel, solutionCounts.be], ["ex", "Exercises", solutionCounts.ex], ["p", "Problems", solutionCounts.p]] as const).map(([key, label, count]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSolutionsTab(prev => prev === key ? null : key)}
-                className="relative rounded-lg px-5 py-3 text-[13px] font-bold text-white transition-all duration-200"
-                style={{
-                  background: solutionsTab === key ? theme.red : theme.navy,
-                  border: solutionsTab === key ? "2px solid rgba(255,255,255,0.25)" : "1px solid transparent",
-                  boxShadow: theme.cardShadow,
-                  cursor: "pointer",
-                  transition: "background 150ms ease, border 150ms ease",
-                }}
-                onMouseEnter={(e) => { if (solutionsTab !== key) { e.currentTarget.style.background = "#1e3a6e"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.2)"; } }}
-                onMouseLeave={(e) => { if (solutionsTab !== key) { e.currentTarget.style.background = theme.navy; e.currentTarget.style.border = "1px solid transparent"; } }}
-              >
-                {label}
-                {count > 0 && (
-                  <span className="absolute -top-2 -right-2 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white" style={{ background: theme.red }}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+            {/* ──── Practice Problems ──── */}
+            <section style={{ marginBottom: 0 }}>
+              <div style={{ background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
+                  Practice Problems · Ch {chapterNum || "?"}
+                </p>
 
-          {solutionsTab && (
-            <div className="mt-3 rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
-              {solutionsFiltered.length > 0 ? (
-                <div>
-                  {solutionsFiltered.map((asset, index) => {
-                    if (isPreview && index >= PREVIEW_LIMIT) return null;
-                    if (!isTabExpanded(solutionsTab) && index >= SOLUTIONS_INITIAL_SHOW) return null;
-                    return (
-                      <div
-                        key={asset.id}
-                        className="flex items-center gap-3 px-4 py-3 text-[12px] sm:px-5"
-                        style={{ borderBottom: index < Math.min(solutionsFiltered.length, isTabExpanded(solutionsTab) ? solutionsFiltered.length : SOLUTIONS_INITIAL_SHOW) - 1 ? `1px solid ${theme.border}` : "none" }}
-                      >
-                        <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>{asset.source_ref || "—"}</span>
-                        <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>{asset.problem_title || asset.asset_name}</span>
-                        <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[12px] font-semibold" style={{ color: "#2563EB" }}>View →</a>
+                <div className="flex flex-wrap gap-3">
+                  {([["be", beLabel, solutionCounts.be], ["ex", "Exercises", solutionCounts.ex], ["p", "Problems", solutionCounts.p]] as const).map(([key, label, count]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSolutionsTab(prev => prev === key ? null : key)}
+                      className="relative rounded-lg px-5 py-3 text-[13px] font-bold text-white transition-all duration-200"
+                      style={{
+                        background: solutionsTab === key ? theme.red : theme.navy,
+                        border: solutionsTab === key ? "2px solid rgba(255,255,255,0.25)" : "1px solid transparent",
+                        boxShadow: theme.cardShadow,
+                        cursor: "pointer",
+                        transition: "background 150ms ease, border 150ms ease",
+                      }}
+                      onMouseEnter={(e) => { if (solutionsTab !== key) { e.currentTarget.style.background = "#1e3a6e"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.2)"; } }}
+                      onMouseLeave={(e) => { if (solutionsTab !== key) { e.currentTarget.style.background = theme.navy; e.currentTarget.style.border = "1px solid transparent"; } }}
+                    >
+                      {label}
+                      {count > 0 && (
+                        <span className="absolute -top-2 -right-2 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white" style={{ background: theme.red }}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {solutionsTab && (
+                  <div className="mt-3 rounded-xl border" style={{ borderColor: theme.border, background: theme.cardBg }}>
+                    {solutionsFiltered.length > 0 ? (
+                      <div>
+                        {solutionsFiltered.map((asset, index) => {
+                          if (isPreview && index >= PREVIEW_LIMIT) return null;
+                          if (!isTabExpanded(solutionsTab) && index >= SOLUTIONS_INITIAL_SHOW) return null;
+                          return (
+                            <div
+                              key={asset.id}
+                              className="flex items-center gap-3 px-4 py-3 text-[12px] sm:px-5"
+                              style={{ borderBottom: index < Math.min(solutionsFiltered.length, isTabExpanded(solutionsTab) ? solutionsFiltered.length : SOLUTIONS_INITIAL_SHOW) - 1 ? `1px solid ${theme.border}` : "none" }}
+                            >
+                              <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>{asset.source_ref || "—"}</span>
+                              <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>{asset.problem_title || asset.asset_name}</span>
+                              <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[12px] font-semibold" style={{ color: "#2563EB" }}>View →</a>
+                            </div>
+                          );
+                        })}
+                        {!isPreview && solutionsFiltered.length > SOLUTIONS_INITIAL_SHOW && (
+                          <div className="px-4 py-3 sm:px-5" style={{ borderTop: `1px solid ${theme.border}` }}>
+                            <button type="button" onClick={() => toggleTab(solutionsTab)} className="text-[12px] font-semibold" style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer" }}>
+                              {isTabExpanded(solutionsTab) ? "Show less ↑" : `Show more → (${solutionsFiltered.length - SOLUTIONS_INITIAL_SHOW} more)`}
+                            </button>
+                          </div>
+                        )}
+                        {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
+                          <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
+                            <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+                          </div>
+                        )}
                       </div>
+                    ) : (
+                      <div className="px-4 py-4 sm:px-5">
+                        <p className="text-[13px]" style={{ color: theme.textMuted }}>No solutions in this tab yet.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ──── Chapter Cram Tools Card Grid ──── */}
+            <section style={{ marginTop: 32 }}>
+              <div style={{ background: "#F8F8FA", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
+                  Chapter Cram Tools
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {TOOL_CARDS.map((card) => {
+                    const Icon = card.icon;
+                    const count = cardCounts[card.key];
+                    return (
+                      <button
+                        key={card.key}
+                        type="button"
+                        onClick={() => setOpenDrawer(card.key)}
+                        className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
+                        style={{
+                          background: theme.navy,
+                          border: theme.cardBorder,
+                          boxShadow: theme.cardShadow,
+                        }}
+                        onMouseEnter={(e) => {
+                          const el = e.currentTarget as HTMLElement;
+                          el.style.boxShadow = `${theme.cardHoverShadow}, ${theme.cardHoverGlow}`;
+                          el.style.transform = "translateY(-3px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          const el = e.currentTarget as HTMLElement;
+                          el.style.boxShadow = theme.cardShadow;
+                          el.style.transform = "translateY(0)";
+                        }}
+                      >
+                        <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
+                        <p className="text-[14px] font-bold text-white">{card.title}</p>
+                        {count > 0 && (
+                          <span
+                            className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
+                            style={{ background: theme.red }}
+                          >
+                            {count} {count === 1 ? card.countLabel : card.countLabelPlural}
+                          </span>
+                        )}
+                      </button>
                     );
                   })}
-                  {!isPreview && solutionsFiltered.length > SOLUTIONS_INITIAL_SHOW && (
-                    <div className="px-4 py-3 sm:px-5" style={{ borderTop: `1px solid ${theme.border}` }}>
-                      <button type="button" onClick={() => toggleTab(solutionsTab)} className="text-[12px] font-semibold" style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer" }}>
-                        {isTabExpanded(solutionsTab) ? "Show less ↑" : `Show more → (${solutionsFiltered.length - SOLUTIONS_INITIAL_SHOW} more)`}
-                      </button>
-                    </div>
-                  )}
-                  {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
-                    <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
-                      <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <div className="px-4 py-4 sm:px-5">
-                  <p className="text-[13px]" style={{ color: theme.textMuted }}>No solutions in this tab yet.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-        {/* ──── Chapter Tools Card Grid ──── */}
-        <section className="mb-10">
-          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
-            Chapter Cram Tools
-          </p>
+              </div>
+            </section>
 
-          <div className="rounded-xl p-6" style={{ background: theme.toolsBg }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TOOL_CARDS.map((card) => {
-                const Icon = card.icon;
-                const count = cardCounts[card.key];
-                return (
-                  <button
-                    key={card.key}
-                    type="button"
-                    onClick={() => setOpenDrawer(card.key)}
-                    className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
-                    style={{
-                      background: theme.navy,
-                      border: theme.cardBorder,
-                      boxShadow: theme.cardShadow,
-                    }}
-                    onMouseEnter={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.boxShadow = `${theme.cardHoverShadow}, ${theme.cardHoverGlow}`;
-                      el.style.transform = "translateY(-3px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.boxShadow = theme.cardShadow;
-                      el.style.transform = "translateY(0)";
-                    }}
-                  >
-                    <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
-                    <p className="text-[14px] font-bold text-white">{card.title}</p>
-                    {count > 0 && (
-                      <span
-                        className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
-                        style={{ background: theme.red }}
-                      >
-                        {count} {count === 1 ? card.countLabel : card.countLabelPlural}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {/* ── Horizontal Divider ── */}
+            <div style={{ margin: "48px 0", height: 1, background: "#E5E7EB" }} />
+
+            {/* ──── Feedback ──── */}
+            <section id="get-in-touch" className="mb-10">
+              <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 4 }}>Get in Touch with Lee</p>
+              <p className="text-[13px]" style={{ color: "#6B7280", fontWeight: 400, paddingLeft: 4, marginBottom: 16 }}>Founder of SurviveAccounting.com</p>
+              <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
+              <CramFeedbackForm
+                chapterId={chapterId}
+                chapterNumber={chapter?.chapter_number}
+                chapterName={chapter?.chapter_name || ""}
+                courseDisplayName={courseDisplayName}
+                isVisible={true}
+                prefillSection={feedbackSection}
+              />
+            </section>
           </div>
-        </section>
 
-        {/* ── Spacer: Tools → Get in Touch ── */}
-        <div style={{ height: 48 }} />
-
-        {/* ──── Feedback ──── */}
-        <section id="get-in-touch" className="mb-10">
-          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 4 }}>Get in Touch with Lee</p>
-          <p className="text-[13px]" style={{ color: "#6B7280", fontWeight: 400, paddingLeft: 4, marginBottom: 16 }}>Founder of SurviveAccounting.com</p>
-          <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
-          <CramFeedbackForm
-            chapterId={chapterId}
-            chapterNumber={chapter?.chapter_number}
-            chapterName={chapter?.chapter_name || ""}
-            courseDisplayName={courseDisplayName}
-            isVisible={true}
-            prefillSection={feedbackSection}
-          />
-        </section>
+          {/* ── Chapter Navigator (desktop only) ── */}
+          <div className="cram-nav">
+            <ChapterNavigator chapters={siblingChapters} currentChapterId={chapterId} />
+          </div>
+        </div>
       </main>
 
       {/* ── Content Drawer ── */}
