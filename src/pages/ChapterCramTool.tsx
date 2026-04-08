@@ -902,11 +902,21 @@ export default function ChapterCramTool() {
         </div>
       </div>
 
+      {/* ──── Testimonials ──── */}
+      <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginBottom: 24 }}>
+        <section className="mb-10">
+          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
+            What Students Are Saying
+          </p>
+          <TestimonialEmbed />
+        </section>
+      </div>
+
       {/* ── Main Content ── */}
       <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
         {/* ──── Practice Problems ──── */}
         <section style={{ marginBottom: 48 }}>
-          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
+          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
             Practice Problems · Ch {chapterNum || "?"}
           </p>
 
@@ -977,10 +987,9 @@ export default function ChapterCramTool() {
             </div>
           )}
         </section>
-
         {/* ──── Chapter Tools Card Grid ──── */}
         <section className="mb-10">
-          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
+          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
             Chapter Cram Tools
           </p>
 
@@ -1028,23 +1037,13 @@ export default function ChapterCramTool() {
           </div>
         </section>
 
-        {/* ── Spacer: Tools → Testimonials ── */}
-        <div style={{ height: 48 }} />
-
-        {/* ──── Testimonials ──── */}
-        <section className="mb-10">
-          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>
-            What Students Are Saying
-          </p>
-          <TestimonialEmbed />
-        </section>
-
-        {/* ── Spacer: Testimonials → Get in Touch ── */}
+        {/* ── Spacer: Tools → Get in Touch ── */}
         <div style={{ height: 48 }} />
 
         {/* ──── Feedback ──── */}
         <section id="get-in-touch" className="mb-10">
-          <p className="text-[18px] font-bold tracking-[0.02em]" style={{ color: theme.navy, paddingLeft: 4, marginBottom: 20 }}>Get in Touch</p>
+          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 4 }}>Get in Touch with Lee</p>
+          <p className="text-[13px]" style={{ color: "#6B7280", fontWeight: 400, paddingLeft: 4, marginBottom: 16 }}>Founder of SurviveAccounting.com</p>
           <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
           <CramFeedbackForm
             chapterId={chapterId}
