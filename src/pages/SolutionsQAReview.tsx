@@ -1371,6 +1371,25 @@ export default function SolutionsQAReview() {
     enabled: teachingAssetIds.length > 0,
   });
 
+  // ── Fetch fix_status for teaching assets ────────────────────────
+  const { data: fixStatusMap } = useQuery({
+    queryKey: ["qa-teaching-asset-fix-status", teachingAssetIds],
+    queryFn: async () => {
+      if (!teachingAssetIds.length) return {} as Record<string, string | null>;
+      const map: Record<string, string | null> = {};
+      for (let i = 0; i < teachingAssetIds.length; i += 200) {
+        const chunk = teachingAssetIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("teaching_assets")
+          .select("id, fix_status")
+          .in("id", chunk);
+        if (data) for (const r of data) map[r.id] = (r as any).fix_status || null;
+      }
+      return map;
+    },
+    enabled: teachingAssetIds.length > 0,
+  });
+
   // ── Source ref navigator data ───────────────────────────────────
   const sourceRefGroups = useMemo(() => {
     if (!sourceRefMap || !allAssets.length) return [];
