@@ -5140,6 +5140,7 @@ export type Database = {
           created_at: string
           feedback: string
           id: string
+          lovable_prompt: string | null
           page_url: string | null
           screenshot_url_1: string | null
           screenshot_url_2: string | null
@@ -5150,6 +5151,7 @@ export type Database = {
           created_at?: string
           feedback: string
           id?: string
+          lovable_prompt?: string | null
           page_url?: string | null
           screenshot_url_1?: string | null
           screenshot_url_2?: string | null
@@ -5160,6 +5162,7 @@ export type Database = {
           created_at?: string
           feedback?: string
           id?: string
+          lovable_prompt?: string | null
           page_url?: string | null
           screenshot_url_1?: string | null
           screenshot_url_2?: string | null
