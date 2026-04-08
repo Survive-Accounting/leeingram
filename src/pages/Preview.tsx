@@ -26,6 +26,8 @@ const LANDING_CARDS = [
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
+  "Platform Hierarchy": <Network className="h-4 w-4" />,
+  "Revenue Potential": <TrendingUp className="h-4 w-4" />,
   "Chapter Pages": <BookOpen className="h-4 w-4" />,
   "Solutions Viewer": <Eye className="h-4 w-4" />,
   "Landing Pages": <Layout className="h-4 w-4" />,
@@ -264,6 +266,16 @@ function PreviewIndex() {
       <div className="mx-auto max-w-[700px] px-5 py-8 space-y-12">
         {/* ── Feedback Form ── */}
         <FeedbackForm />
+
+        {/* ── Platform Hierarchy ── */}
+        <CollapsibleSection title="Platform Hierarchy">
+          <PlatformHierarchy />
+        </CollapsibleSection>
+
+        {/* ── Revenue Potential ── */}
+        <CollapsibleSection title="Revenue Potential">
+          <RevenueCalculator />
+        </CollapsibleSection>
 
         {/* ── Chapter Pages ── */}
         <CollapsibleSection title="Chapter Pages">
