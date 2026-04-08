@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -1412,6 +1412,13 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                       <span className="text-[10px] text-destructive truncate max-w-32" title={item.error_summary}>
                         {item.error_summary.slice(0, 40)}
                       </span>
+                    )}
+                    {/* fix_status badge */}
+                    {item.status === "complete" && (
+                      <Badge className="text-[9px]" style={{
+                        backgroundColor: "rgba(59,130,246,0.15)",
+                        color: "rgb(96,165,250)",
+                      }}>fix_applied</Badge>
                     )}
                     {item.status === "failed" && (
                       <Button
