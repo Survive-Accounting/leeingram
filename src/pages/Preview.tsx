@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings, Megaphone } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Settings, Megaphone } from "lucide-react";
 import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
 import RevenueCalculator from "@/components/preview/RevenueCalculator";
 import InfrastructureSection from "@/components/preview/InfrastructureSection";
 import MarketingSection from "@/components/preview/MarketingSection";
+import SolutionsViewerSection from "@/components/preview/SolutionsViewerSection";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PASSWORD = "survive2026";
@@ -211,7 +212,7 @@ function LinkCard({ href, label, badge, badgeColor, newTab }: { href: string; la
 
 // ── Main Page ──
 function PreviewIndex() {
-  const [search, setSearch] = useState("");
+  
 
   const { data: chapters = [] } = useQuery({
     queryKey: ["preview-chapters"],
@@ -221,26 +222,6 @@ function PreviewIndex() {
         .from("chapters")
         .select("id, chapter_number, chapter_name, course_id, courses!chapters_course_id_fkey(code, course_name)")
         .order("chapter_number");
-      if (error) throw error;
-      return (data || []) as any[];
-    },
-  });
-
-  const { data: assets = [] } = useQuery({
-    queryKey: ["preview-assets", search],
-    enabled: true,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      let q = (supabase as any)
-        .from("teaching_assets")
-        .select("id, asset_name, source_ref, problem_title")
-        .not("asset_approved_at", "is", null)
-        .order("asset_name")
-        .limit(10);
-      if (search.trim()) {
-        q = q.or(`asset_name.ilike.%${search.trim()}%,problem_title.ilike.%${search.trim()}%`);
-      }
-      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as any[];
     },
@@ -314,32 +295,7 @@ function PreviewIndex() {
 
         {/* ── Solutions Viewer ── */}
         <CollapsibleSection title="Solutions Viewer">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by asset code or problem description"
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg text-[13px] outline-none"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#FFFFFF" }}
-            />
-          </div>
-          <div className="space-y-1">
-            {assets.map((a: any) => (
-              <LinkCard
-                key={a.id}
-                href={`/solutions/${a.asset_name}`}
-                label={`${a.asset_name}${a.problem_title ? ` — ${a.problem_title.slice(0, 50)}` : ""}`}
-                newTab
-              />
-            ))}
-            {assets.length === 0 && (
-              <p className="text-[12px] py-3 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>No results</p>
-            )}
-          </div>
-          <a href="/solutions-qa" target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[12px] font-semibold" style={{ color: "#3B82F6" }}>
-            Browse all →
-          </a>
+          <SolutionsViewerSection />
         </CollapsibleSection>
 
         {/* ── Landing Pages ── */}
