@@ -860,7 +860,7 @@ export default function ChapterCramTool() {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to right, rgba(20,33,61,0.72) 25%, rgba(20,33,61,0.15) 55%, rgba(20,33,61,0.35) 100%);
+            background: linear-gradient(to right, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.55) 25%, rgba(20,33,61,0.12) 55%, rgba(20,33,61,0.35) 100%);
             z-index: 1;
           }
         `}</style>
@@ -892,10 +892,10 @@ export default function ChapterCramTool() {
           <p className="text-[20px] leading-[1.5]" style={{ color: theme.navy, fontWeight: 700 }}>
             Your exam is coming!
           </p>
-          <p className="text-[15px] leading-[1.7] mt-2" style={{ color: theme.navy }}>
+          <p className="text-[15px] leading-[1.7] mt-2" style={{ color: theme.navy, marginBottom: 10 }}>
             Find your survival kit below. <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "underline" }}>Get in touch</a> if you need anything.
           </p>
-          <p className="text-[15px] leading-[1.7] mt-1" style={{ color: theme.navy, fontWeight: 600 }}>
+          <p className="text-[15px] leading-[1.7]" style={{ color: theme.navy, fontWeight: 600 }}>
             You've got this!
           </p>
           <p className="text-[15px] leading-[1.7] mt-0.5 italic" style={{ color: theme.textMuted }}>— Lee</p>
@@ -918,10 +918,14 @@ export default function ChapterCramTool() {
                 onClick={() => setSolutionsTab(prev => prev === key ? null : key)}
                 className="relative rounded-lg px-5 py-3 text-[13px] font-bold text-white transition-all duration-200"
                 style={{
-                  background: theme.navy,
-                  border: solutionsTab === key ? "2px solid rgba(255,255,255,0.25)" : theme.cardBorder,
+                  background: solutionsTab === key ? theme.red : theme.navy,
+                  border: solutionsTab === key ? "2px solid rgba(255,255,255,0.25)" : "1px solid transparent",
                   boxShadow: theme.cardShadow,
+                  cursor: "pointer",
+                  transition: "background 150ms ease, border 150ms ease",
                 }}
+                onMouseEnter={(e) => { if (solutionsTab !== key) { e.currentTarget.style.background = "#1e3a6e"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.2)"; } }}
+                onMouseLeave={(e) => { if (solutionsTab !== key) { e.currentTarget.style.background = theme.navy; e.currentTarget.style.border = "1px solid transparent"; } }}
               >
                 {label}
                 {count > 0 && (
