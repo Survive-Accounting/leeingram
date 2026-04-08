@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered, CheckCircle2, Upload } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered, CheckCircle2, Upload, Square } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -1162,6 +1162,19 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     toast.success("Reset to pending — hit Run Queue to resume");
   }
 
+  async function stopQueue() {
+    const running = (queueItems ?? []).filter(q => q.status === "running");
+    const pending = (queueItems ?? []).filter(q => q.status === "pending");
+    for (const item of [...running, ...pending]) {
+      await supabase.from("bulk_fix_queue").update({
+        status: "failed",
+        error_summary: "Stopped manually",
+        completed_at: new Date().toISOString(),
+      } as any).eq("id", item.id);
+    }
+    refetchQueue();
+    toast.success("Queue stopped");
+  }
 
 
 
@@ -1831,6 +1844,15 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <Play className="h-4 w-4 mr-1.5" />
                 Run Queue ({pendingQueueItems.length} pending)
               </Button>
+              {hasRunningQueueItem && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={stopQueue}
+                >
+                  <Square className="h-3.5 w-3.5 mr-1.5" /> Stop Queue
+                </Button>
+              )}
               {(queueItems ?? []).some(q => ["complete", "skipped", "failed"].includes(q.status)) && (
                 <Button variant="outline" size="sm" onClick={clearCompleted} disabled={queueRunning}>
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Clear Completed
