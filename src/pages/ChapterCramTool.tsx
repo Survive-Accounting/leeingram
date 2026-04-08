@@ -842,30 +842,27 @@ export default function ChapterCramTool() {
       </header>
 
       {/* ── Hero Header — Full-bleed photo ── */}
-      <div className="relative overflow-hidden" style={{ height: "clamp(260px, 35vw, 380px)" }}>
-        {/* Background image — flipped & zoomed out */}
+      <div className="relative overflow-hidden" style={{ height: 320 }}>
+        <style>{`@media (max-width: 640px) { .cram-hero { height: 220px !important; } }`}</style>
         <img
           src={LEE_HERO_URL}
           alt=""
           aria-hidden="true"
           className="absolute top-0 left-0 w-full h-full object-cover"
           style={{
-            transform: "scaleX(-1) scale(0.85)",
-            objectPosition: "40% 30%",
+            transform: "scaleX(-1) scale(0.65)",
+            objectPosition: "50% 25%",
             zIndex: 0,
           }}
         />
-        {/* Gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to right, rgba(20,33,61,0.88) 30%, rgba(20,33,61,0.3) 70%, rgba(20,33,61,0.5) 100%)",
+            background: "linear-gradient(to right, rgba(20,33,61,0.88) 30%, rgba(20,33,61,0.2) 70%, rgba(20,33,61,0.45) 100%)",
             zIndex: 1,
           }}
         />
-        {/* Noise texture overlay */}
         <div className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px", zIndex: 2 }} />
-        {/* Text content */}
         <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 3 }}>
           {courseDisplayName && (
             <p className="text-[11px] uppercase" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em", fontWeight: 500 }}>
@@ -878,15 +875,6 @@ export default function ChapterCramTool() {
           <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
             Exam prep by Lee Ingram · Tutor since 2015
           </p>
-          <div className="mt-4 rounded-lg px-5 py-4" style={{ borderLeft: `3px solid ${theme.red}`, background: "rgba(255,255,255,0.06)" }}>
-            <p className="text-[13px] leading-[1.7] text-white">
-              Your exam is coming. Find everything you need to survive it below.
-            </p>
-            <p className="text-[13px] leading-[1.7] text-white mt-1">
-              <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "none" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "underline"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "none"; }}>Reach out</a> if you need anything. Best of luck!
-            </p>
-            <p className="text-[13px] leading-[1.7] text-white mt-1 italic">— Lee</p>
-          </div>
         </div>
       </div>
 
@@ -895,6 +883,19 @@ export default function ChapterCramTool() {
         <svg viewBox="0 0 1440 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "100px" }}>
           <path d="M0,50 C360,100 1080,0 1440,50 L1440,0 L0,0 Z" fill="#14213D" />
         </svg>
+      </div>
+
+      {/* ── CTA Card ── */}
+      <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginTop: 24, marginBottom: 24 }}>
+        <div className="rounded-xl" style={{ background: "#FFFFFF", borderLeft: `3px solid ${theme.red}`, padding: "20px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <p className="text-[15px] leading-[1.7]" style={{ color: theme.navy }}>
+            Your exam is coming. Find everything you need to survive it below.
+          </p>
+          <p className="text-[15px] leading-[1.7] mt-1" style={{ color: theme.navy }}>
+            <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "none" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "underline"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "none"; }}>Reach out</a> if you need anything. Best of luck!
+          </p>
+          <p className="text-[15px] leading-[1.7] mt-1 italic" style={{ color: theme.navy }}>— Lee</p>
+        </div>
       </div>
 
       {/* ── Main Content ── */}
