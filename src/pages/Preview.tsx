@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home } from "lucide-react";
+import { ExternalLink, Search, ChevronDown, ChevronUp, BookOpen, Eye, Layout, Globe, Home, Network, TrendingUp, Sitemap } from "lucide-react";
+import PlatformHierarchy from "@/components/preview/PlatformHierarchy";
+import RevenueCalculator from "@/components/preview/RevenueCalculator";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PASSWORD = "survive2026";
