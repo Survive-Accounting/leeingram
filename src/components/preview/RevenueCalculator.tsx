@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-function SubToggle({ label, children }: { label: string; children: React.ReactNode }) {
+function SubToggle({ label, children, labelTooltip }: { label: string; children: React.ReactNode; labelTooltip?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
@@ -15,11 +16,69 @@ function SubToggle({ label, children }: { label: string; children: React.ReactNo
           style={{ color: "rgba(255,255,255,0.3)", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
         />
         <span className="text-[12px] font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>{label}</span>
+        {labelTooltip && (
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center cursor-help"
+                >
+                  <Info className="h-3.5 w-3.5" style={{ color: "rgba(255,255,255,0.3)" }} />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                className="text-xs"
+                style={{
+                  background: "#14213D",
+                  color: "#FFFFFF",
+                  borderRadius: 6,
+                  maxWidth: 280,
+                  border: "1px solid rgba(255,255,255,0.15)",
+                }}
+              >
+                {labelTooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </button>
       <div className="overflow-hidden transition-all duration-200" style={{ maxHeight: open ? 5000 : 0, opacity: open ? 1 : 0 }}>
         <div className="pl-6 pb-4">{children}</div>
       </div>
     </div>
+  );
+}
+
+function InputTooltip({ text }: { text: string }) {
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.preventDefault()}
+            className="inline-flex items-center justify-center cursor-help ml-1"
+          >
+            <Info className="h-3 w-3" style={{ color: "rgba(255,255,255,0.3)" }} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="text-xs"
+          style={{
+            background: "#14213D",
+            color: "#FFFFFF",
+            borderRadius: 6,
+            maxWidth: 280,
+            border: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -36,11 +95,13 @@ function Select({ value, onChange, options }: { value: number; onChange: (v: num
   );
 }
 
+const LEE_STATEMENT = "The numbers below reflect what I believe is a reasonable estimate for where Survive Accounting can be by end of 2030. At Ole Miss alone we've hit 20-25% conversion — new campuses will start lower but grow fast with SEO, Greek org licensing, and word of mouth. Feel free to play with the assumptions yourself.\n\n— Lee";
+
 export default function RevenueCalculator() {
-  const [campuses, setCampuses] = useState(10);
-  const [spc, setSpc] = useState(150);
-  const [conv, setConv] = useState(2);
-  const [rev, setRev] = useState(200);
+  const [campuses, setCampuses] = useState(50);
+  const [spc, setSpc] = useState(300);
+  const [conv, setConv] = useState(8);
+  const [rev, setRev] = useState(400);
   const [greekPct, setGreekPct] = useState(60);
   const [showMix, setShowMix] = useState(false);
 
@@ -69,18 +130,30 @@ export default function RevenueCalculator() {
       </SubToggle>
 
       {/* Calculator */}
-      <SubToggle label="Revenue Calculator">
+      <SubToggle
+        label="Revenue Calculator"
+        labelTooltip={LEE_STATEMENT}
+      >
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Campuses</label>
+            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Campuses
+              <InputTooltip text="400+ universities have rigorous accounting programs. We're targeting SEC schools and similar first — campuses where accounting is taken seriously and word spreads fast." />
+            </label>
             <Select value={campuses} onChange={setCampuses} options={[1,5,10,25,50,100,200,400].map(v => ({ v, l: String(v) }))} />
           </div>
           <div>
-            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Students / Campus</label>
+            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Students / Campus
+              <InputTooltip text="Conservative estimate for accounting students per campus. Ole Miss alone has 600-800. We use 150 as a blended average across smaller and larger programs." />
+            </label>
             <Select value={spc} onChange={setSpc} options={[50,100,150,200,300].map(v => ({ v, l: String(v) }))} />
           </div>
           <div>
-            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Conversion %</label>
+            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Conversion %
+              <InputTooltip text="At Ole Miss, we've hit 20-25% conversion as the known local tutor. New campuses will start lower (3-5%) but grow with SEO, Greek org licensing, and word of mouth. 8% is a blended estimate across mature and newer campuses by end of 2027." />
+            </label>
             <div className="flex items-center gap-1">
               <input
                 type="number"
@@ -102,7 +175,10 @@ export default function RevenueCalculator() {
             {conv >= 100 && <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>Max 100%</p>}
           </div>
           <div>
-            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>Avg Annual Revenue / Student</label>
+            <label className="text-[10px] uppercase font-bold block mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Avg Annual Revenue / Student
+              <InputTooltip text="Semester passes are $250, so annually are $500. Greek org bulk discounts and promotions bring the blended average down. $300/year is a conservative estimate accounting for discounts and mixed pricing tiers." />
+            </label>
             <Select value={rev} onChange={setRev} options={[50,100,200,300,400,500].map(v => ({ v, l: `$${v}` }))} />
           </div>
         </div>
