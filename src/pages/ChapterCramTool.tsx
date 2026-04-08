@@ -501,6 +501,71 @@ function DrawerMistakesContent({ mistakes }: { mistakes: any[] }) {
   );
 }
 
+// ── Finals Countdown ──
+function FinalsCountdown() {
+  const finals = new Date("2026-05-04T00:00:00-06:00"); // May 4, 2026 CST
+  const now = new Date();
+  const diff = finals.getTime() - now.getTime();
+  const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+
+  if (days === 0) {
+    return <p className="text-[13px] text-white" style={{ fontFamily: "Inter, sans-serif" }}>Finals Week is here. Go get it. 🎯</p>;
+  }
+
+  return (
+    <p className="text-[13px] text-white" style={{ fontFamily: "Inter, sans-serif" }}>
+      Finals Week in <span className="text-[15px] font-bold" style={{ color: "#CE1126" }}>{days}</span> days
+    </p>
+  );
+}
+
+// ── Chapter Navigator ──
+function ChapterNavigator({ chapters, currentChapterId }: { chapters: { id: string; chapter_number: number; chapter_name: string }[]; currentChapterId: string }) {
+  const [showAll, setShowAll] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const displayed = showAll ? chapters : chapters.slice(0, 4);
+
+  return (
+    <div style={{ width: 200 }}>
+      <div style={{ borderTop: "1px solid #E5E7EB", paddingTop: 12 }}>
+        <p className="text-[12px] uppercase font-semibold" style={{ color: "#6B7280", letterSpacing: "0.08em", marginBottom: 10 }}>Other Chapters</p>
+        <div className="space-y-0.5">
+          {displayed.map((ch) => {
+            const isCurrent = ch.id === currentChapterId;
+            const truncName = ch.chapter_name.length > 20 ? ch.chapter_name.slice(0, 20) + "…" : ch.chapter_name;
+            const isHovered = hoveredId === ch.id;
+            return isCurrent ? (
+              <div key={ch.id} className="flex items-center gap-1 px-2 py-1.5 text-[12px]" style={{ color: "#9CA3AF" }}>
+                <span>Ch {ch.chapter_number} · {truncName}</span>
+                <span className="text-[10px] italic ml-1">← you are here</span>
+              </div>
+            ) : (
+              <a
+                key={ch.id}
+                href={`/cram/${ch.id}`}
+                className="block px-2 py-1.5 text-[12px] transition-all duration-150"
+                style={{
+                  color: "#14213D",
+                  borderLeft: isHovered ? "2px solid #CE1126" : "2px solid transparent",
+                }}
+                onMouseEnter={() => setHoveredId(ch.id)}
+                onMouseLeave={() => setHoveredId(null)}
+              >
+                Ch {ch.chapter_number} · {truncName}
+              </a>
+            );
+          })}
+        </div>
+        {!showAll && chapters.length > 4 && (
+          <button type="button" onClick={() => setShowAll(true)} className="mt-2 text-[11px] font-semibold" style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+            Show all →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Paywall Card ──
 
 // ── Testimonial Embed ──
