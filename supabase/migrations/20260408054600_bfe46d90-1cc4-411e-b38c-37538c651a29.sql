@@ -1,0 +1,1 @@
+ALTER TABLE public.va_feedback ADD COLUMN lovable_prompt TEXT;
