@@ -140,9 +140,8 @@ function FeedbackForm() {
 
   return (
     <div style={{ background: "#0F1D35", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 24 }}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-4" style={{ color: "#F59E0B", letterSpacing: "0.1em" }}>
-        Suggest an Improvement
-      </p>
+      <p className="text-[16px] font-bold text-white mb-1">Suggest an Improvement</p>
+      <p className="text-[13px] mb-4" style={{ color: "rgba(255,255,255,0.5)" }}>All ideas are welcome and encouraged!</p>
       {success ? (
         <p className="text-[14px] text-center py-4" style={{ color: "rgba(255,255,255,0.8)" }}>Got it — thank you! 🙌</p>
       ) : (
