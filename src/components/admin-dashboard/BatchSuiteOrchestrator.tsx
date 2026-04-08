@@ -122,10 +122,10 @@ export function BatchSuiteOrchestrator() {
         supabase.from("chapter_exam_mistakes").select("chapter_id, is_approved"),
       ]);
 
-      const hasApproved = (rows: any[] | null, chId: string) =>
-        (rows || []).some(r => r.chapter_id === chId && r.is_approved);
+      const hasAny = (rows: any[] | null, chId: string) =>
+        (rows || []).some(r => r.chapter_id === chId);
 
-      return { purposes, accounts, terms, formulas, jes, mistakes, hasApproved };
+      return { purposes, accounts, terms, formulas, jes, mistakes, hasAny };
     },
   });
 
