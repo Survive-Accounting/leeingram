@@ -523,6 +523,80 @@ export function StudentInbox({ readOnly = false }: { readOnly?: boolean }) {
           </div>
         </div>
 
+        {/* Needs Lee section */}
+        {needsLeeAssets.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Flag className="h-4 w-4" style={{ color: "#F59E0B" }} />
+              <span className="text-sm font-bold" style={{ color: "#F59E0B" }}>
+                NEEDS LEE — Manual Review Required
+              </span>
+              <Badge className="text-[10px] font-bold" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>
+                {needsLeeAssets.length}
+              </Badge>
+            </div>
+            {needsLeeAssets.map((asset: any) => {
+              const ch = chapterMap[asset.chapter_id];
+              const co = ch ? courseMap[ch.course_id] : null;
+              const chapterLabel = ch ? `Ch ${ch.chapter_number} — ${ch.chapter_name}` : "";
+              const fixNotes = asset.fix_notes || "";
+              const truncatedNotes = fixNotes.length > 100 ? fixNotes.slice(0, 100) + "…" : fixNotes;
+
+              return (
+                <div
+                  key={asset.id}
+                  className="border border-border rounded-lg p-3 bg-card flex gap-4 border-l-4"
+                  style={{ borderLeftColor: "#F59E0B" }}
+                >
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <span className="text-xs font-bold font-mono" style={{ color: "#F59E0B" }}>
+                      {asset.asset_name}
+                    </span>
+                    {chapterLabel && (
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {chapterLabel}{co?.code ? ` · ${co.code}` : ""}
+                      </p>
+                    )}
+                    {truncatedNotes && (
+                      <p className="text-[11px] text-muted-foreground italic">{truncatedNotes}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <a
+                      href={`/solutions/${asset.asset_name}?admin=true`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap flex items-center gap-1"
+                    >
+                      View Asset → <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                    {!readOnly && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="text-[10px] h-6 px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => handleNeedsLeeAction(asset.id, "fix_verified")}
+                        >
+                          Mark Resolved ✓
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[10px] h-6 px-2 border-amber-400 text-amber-600 hover:bg-amber-50"
+                          onClick={() => handleNeedsLeeAction(asset.id, "still_has_issues")}
+                        >
+                          Still Has Issues
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="border-t border-border my-2" />
+          </div>
+        )}
+
         {/* List */}
         {isLoading ? (
           <p className="text-xs text-muted-foreground">Loading…</p>
