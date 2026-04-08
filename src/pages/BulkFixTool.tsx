@@ -560,6 +560,55 @@ export default function BulkFixTool() {
           after: `${actionDesc} via AI (mode: ${modeLabel})`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "standardize_formatting") {
+        // Find BE15.4 specifically for test
+        const { data: matchingAssets, error: matchErr } = await supabase
+          .from("teaching_assets")
+          .select("id, asset_name, source_ref, survive_solution_text")
+          .or("asset_name.ilike.%BE15%4%,source_ref.eq.BE15.4");
+        if (matchErr) throw matchErr;
+        
+        if (!matchingAssets?.length) {
+          toast.error("No asset found matching BE15.4");
+          setPreviewRows([]);
+          return;
+        }
+        if (matchingAssets.length > 1) {
+          toast.error(`Safety error: Found ${matchingAssets.length} assets matching BE15.4. Expected exactly 1. Aborting.`);
+          setPreviewRows([]);
+          return;
+        }
+        
+        const asset = matchingAssets[0];
+        const original = (asset as any).survive_solution_text || "";
+        console.log("[Standardize Formatting] Test asset:", asset.asset_name, "id:", asset.id);
+        
+        // Run AI preview
+        const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
+          body: {
+            provider: "anthropic",
+            model: "claude-sonnet-4-20250514",
+            messages: [
+              { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+              { role: "user", content: `Instruction: ${STANDARDIZE_FORMATTING_PROMPT}\n\nText to modify:\n${original}` },
+            ],
+            temperature: 0.1,
+            max_output_tokens: 4000,
+          },
+        });
+        if (aiError) throw aiError;
+        const after = aiResult?.raw || aiResult?.content || original;
+        
+        setTotalMatched(1);
+        setPreviewRows([{
+          id: asset.id,
+          asset_name: asset.asset_name,
+          field: "Solution Text",
+          before: original,
+          after: after,
+          numericWarning: hasNumericDiff(original, after),
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
