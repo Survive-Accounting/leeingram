@@ -208,6 +208,19 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
     staleTime: 60 * 1000,
   });
 
+  const { data: needsLeeCount } = useQuery({
+    queryKey: ["needs-lee-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("fix_status", "needs_lee");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 60 * 1000,
+  });
+
   const getBadge = (path: string) => {
     if (!pipelineCounts) return null;
     if (path === "/problem-bank") return pipelineCounts.imported || null;
