@@ -360,8 +360,8 @@ function PreviewIndex() {
             </div>
           </SubSection>
 
-          {/* Sub 5: Solutions Viewer */}
-          <SubSection label="Solutions Viewer">
+          {/* Sub 5: Practice Problems */}
+          <SubSection label="Practice Problems">
             <SolutionsViewerSection />
           </SubSection>
         </CollapsibleSection>
