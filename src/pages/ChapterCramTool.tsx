@@ -611,6 +611,18 @@ export default function ChapterCramTool() {
     },
   });
 
+  // Fetch sibling chapters for navigator
+  const { data: siblingChapters = [] } = useQuery({
+    queryKey: ["cram-sibling-chapters", chapter?.course_id],
+    enabled: !!chapter?.course_id,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("chapters").select("id, chapter_number, chapter_name").eq("course_id", chapter!.course_id).order("chapter_number");
+      if (error) throw error;
+      return (data || []) as { id: string; chapter_number: number; chapter_name: string }[];
+    },
+  });
+
   const { data: approvedAssets = [], isLoading: assetsLoading } = useQuery({
     queryKey: ["cram-approved-assets", chapterId],
     enabled: !!chapterId,
