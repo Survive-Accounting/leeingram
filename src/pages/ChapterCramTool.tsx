@@ -1005,6 +1005,13 @@ export default function ChapterCramTool() {
           </div>
         </section>
 
+        {/* ── Divider 2: Tools → Testimonials (diagonal) ── */}
+        <div style={{ background: "#F8F8FA", overflow: "hidden", lineHeight: 0 }}>
+          <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "60px" }}>
+            <path d="M0,0 L1440,60 L1440,0 Z" fill="#F0F0F4" />
+          </svg>
+        </div>
+
         {/* ──── Testimonials ──── */}
         <section className="mb-10">
           <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: theme.label, letterSpacing: "0.18em" }}>
@@ -1012,6 +1019,13 @@ export default function ChapterCramTool() {
           </p>
           <TestimonialEmbed />
         </section>
+
+        {/* ── Divider 3: Testimonials → Get in Touch (inverted wave) ── */}
+        <div style={{ background: "#F0F0F4", overflow: "hidden", lineHeight: 0 }}>
+          <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "80px" }}>
+            <path d="M0,40 C360,0 1080,80 1440,40 L1440,80 L0,80 Z" fill="#F8F8FA" />
+          </svg>
+        </div>
 
         {/* ──── Feedback ──── */}
         <section id="feedback" className="mb-10">
