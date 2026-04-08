@@ -837,12 +837,7 @@ export default function ChapterCramTool() {
       {/* ── Static Nav Bar ── */}
       <header style={{ background: theme.navy, height: 56 }}>
         <div className="mx-auto flex h-full max-w-[1200px] items-center px-4 sm:px-6">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
-            <span className="text-[11px] sm:text-[12px] truncate" style={{ color: "rgba(255,255,255,0.5)" }}>
-              Created by Lee Ingram · Tutor since 2015
-            </span>
-          </div>
+          <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
         </div>
       </header>
 
@@ -880,6 +875,9 @@ export default function ChapterCramTool() {
           <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800 }}>
             Ch {chapterNum} — {chapter?.chapter_name}
           </h1>
+          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
+            Exam prep by Lee Ingram · Tutor since 2015
+          </p>
           <div className="mt-3">
             <span className="inline-block rounded-full px-3 py-1 text-[11px]" style={{ background: "rgba(34,197,94,0.15)", color: "#4ADE80", fontWeight: 500 }}>
               Your exam is coming. Let's survive it.
