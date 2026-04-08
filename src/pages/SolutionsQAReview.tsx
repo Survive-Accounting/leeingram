@@ -2317,6 +2317,29 @@ export default function SolutionsQAReview() {
                   )}
                 </>
               )}
+              {/* Needs Lee button — always visible for admin/lead VA */}
+              {current?.teaching_asset_id && canUseFixer && (
+                <Button
+                  className="w-full text-xs h-7"
+                  style={{ backgroundColor: "#F59E0B", color: "#14213D" }}
+                  onClick={async () => {
+                    // Set fix_status = 'needs_lee' on teaching_assets
+                    await supabase.from("teaching_assets").update({
+                      fix_status: "needs_lee",
+                      reviewed_issues: true,
+                    }).eq("id", current.teaching_asset_id);
+                    // Also mark QA asset as reviewed_issues
+                    await supabase.from("solutions_qa_assets" as any)
+                      .update({ qa_status: "reviewed_issues", reviewed_at: new Date().toISOString(), reviewed_by: reviewerName || "VA" })
+                      .eq("id", current.id);
+                    qc.invalidateQueries({ queryKey: ["qa-assets"] });
+                    qc.invalidateQueries({ queryKey: ["qa-teaching-asset-fix-status"] });
+                    toast.success("🚩 Flagged for Lee's review");
+                  }}
+                >
+                  🚩 Needs Lee
+                </Button>
+              )}
               {flaggedSections.size === 0 && current?.teaching_asset_id && canUseFixer && (
                 <Button
                   variant="outline"
