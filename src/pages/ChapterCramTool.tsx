@@ -876,6 +876,13 @@ export default function ChapterCramTool() {
         </div>
       </div>
 
+      {/* ── Divider 1: Header → Content (wave) ── */}
+      <div style={{ background: "#F8F8FA", marginTop: "-2px", overflow: "hidden", lineHeight: 0 }}>
+        <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "80px" }}>
+          <path d="M0,40 C360,80 1080,0 1440,40 L1440,0 L0,0 Z" fill="#14213D" />
+        </svg>
+      </div>
+
       {/* ── Main Content ── */}
       <main className="mx-auto max-w-[780px] px-4 py-6 sm:px-6 sm:py-8">
         {/* ──── Practice Problems ──── */}
