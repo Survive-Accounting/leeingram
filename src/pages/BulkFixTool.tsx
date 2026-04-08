@@ -836,6 +836,31 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (fnErr || !result?.success) { errors++; return; }
               changed = true;
             } catch { errors++; return; }
+          } else if (opKey === "standardize_formatting") {
+            // Only process survive_solution_text
+            const original = (asset as any).survive_solution_text || "";
+            if (!original.trim()) { skipped++; return; }
+
+            const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
+              body: {
+                provider: "anthropic",
+                model: "claude-sonnet-4-20250514",
+                messages: [
+                  { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
+                  { role: "user", content: `Instruction: ${STANDARDIZE_FORMATTING_PROMPT}\n\nText to modify:\n${original}` },
+                ],
+                temperature: 0.1,
+                max_output_tokens: 4000,
+              },
+            });
+            if (aiErr) { errors++; return; }
+            const after = aiResult?.raw || aiResult?.content || original;
+            if (after !== original) {
+              newValues["survive_solution_text"] = after;
+              // Also store solution backup
+              backupUpdate["solution_text_backup"] = original;
+              changed = true;
+            }
           }
 
           if (changed) {
