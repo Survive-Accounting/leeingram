@@ -777,7 +777,7 @@ export default function ChapterCramTool() {
   const openFeedbackForSection = useCallback((sectionLabel: string) => {
     setFeedbackSection(sectionLabel);
     setOpenDrawer(null);
-    setTimeout(() => document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    setTimeout(() => document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   }, []);
 
   // Drawer navigation
@@ -837,12 +837,7 @@ export default function ChapterCramTool() {
       {/* ── Static Nav Bar ── */}
       <header style={{ background: theme.navy, height: 56 }}>
         <div className="mx-auto flex h-full max-w-[1200px] items-center px-4 sm:px-6">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
-            <span className="text-[11px] sm:text-[12px] truncate" style={{ color: "rgba(255,255,255,0.5)" }}>
-              Created by Lee Ingram · Tutor since 2015
-            </span>
-          </div>
+          <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
         </div>
       </header>
 
@@ -880,10 +875,17 @@ export default function ChapterCramTool() {
           <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800 }}>
             Ch {chapterNum} — {chapter?.chapter_name}
           </h1>
-          <div className="mt-3">
-            <span className="inline-block rounded-full px-3 py-1 text-[11px]" style={{ background: "rgba(34,197,94,0.15)", color: "#4ADE80", fontWeight: 500 }}>
-              Your exam is coming. Let's survive it.
-            </span>
+          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
+            Exam prep by Lee Ingram · Tutor since 2015
+          </p>
+          <div className="mt-4 rounded-lg px-5 py-4" style={{ borderLeft: `3px solid ${theme.red}`, background: "rgba(255,255,255,0.06)" }}>
+            <p className="text-[13px] leading-[1.7] text-white">
+              Your exam is coming. Find everything you need to survive it below.
+            </p>
+            <p className="text-[13px] leading-[1.7] text-white mt-1">
+              <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "none" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "underline"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "none"; }}>Reach out</a> if you need anything. Best of luck!
+            </p>
+            <p className="text-[13px] leading-[1.7] text-white mt-1 italic">— Lee</p>
           </div>
         </div>
       </div>
@@ -1040,7 +1042,7 @@ export default function ChapterCramTool() {
         </div>
 
         {/* ──── Feedback ──── */}
-        <section id="feedback" className="mb-10">
+        <section id="get-in-touch" className="mb-10">
           <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1" style={{ color: theme.label, letterSpacing: "0.18em" }}>GET IN TOUCH</p>
           <p className="text-[12px] mb-3" style={{ color: theme.textMuted }}>Ask a question, share feedback, or just say hello — I read every message personally.</p>
           <CramFeedbackForm
