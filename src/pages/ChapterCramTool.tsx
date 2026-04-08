@@ -888,17 +888,18 @@ export default function ChapterCramTool() {
 
       {/* ── CTA Card ── */}
       <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginTop: 24, marginBottom: 24 }}>
-        <div className="rounded-xl" style={{ background: "#FFFFFF", borderLeft: `3px solid ${theme.red}`, padding: "20px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          <p className="text-[20px] leading-[1.5]" style={{ color: theme.navy, fontWeight: 700 }}>
+        <div style={{ background: theme.navy, borderLeft: `3px solid ${theme.red}`, padding: "28px 32px", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
+          <p className="text-[20px] leading-[1.5]" style={{ color: "#FFFFFF", fontWeight: 700 }}>
             Your exam is coming!
           </p>
-          <p className="text-[15px] leading-[1.7] mt-2" style={{ color: theme.navy, marginBottom: 10 }}>
-            Find your survival kit below. <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "underline" }}>Get in touch</a> if you need anything.
+          <p className="text-[15px] leading-[1.7] mt-2" style={{ color: "rgba(255,255,255,0.85)" }}>
+            Find your survival kit below. Everything here is built from your actual textbook problems — trusted by hundreds of students.
           </p>
-          <p className="text-[15px] leading-[1.7]" style={{ color: theme.navy, fontWeight: 600 }}>
-            You've got this!
+          <p className="text-[15px] leading-[1.7] mt-3" style={{ color: "rgba(255,255,255,0.85)" }}>
+            <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "underline" }}>Get in touch</a> if you need anything. <span style={{ fontWeight: 600, color: "#FFFFFF" }}>You've got this!</span>
           </p>
-          <p className="text-[15px] leading-[1.7] mt-0.5 italic" style={{ color: theme.textMuted }}>— Lee</p>
+          <p className="text-[15px] leading-[1.7] mt-2 italic" style={{ color: "#FFFFFF" }}>— Lee</p>
+          <p className="text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>Tutor since 2015 · B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA</p>
         </div>
       </div>
 
