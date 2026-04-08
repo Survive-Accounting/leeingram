@@ -252,8 +252,8 @@ function PreviewIndex() {
         {/* ── Feedback Form ── */}
         <FeedbackForm />
 
-        {/* ── Platform Hierarchy ── */}
-        <CollapsibleSection title="Platform Hierarchy">
+        {/* ── Website Page Hierarchy ── */}
+        <CollapsibleSection title="Website Page Hierarchy">
           <PlatformHierarchy />
         </CollapsibleSection>
 
