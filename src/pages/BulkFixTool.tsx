@@ -585,11 +585,16 @@ export default function BulkFixTool() {
 
       for (const asset of batch) {
         updates.push((async () => {
+          const now = new Date().toISOString();
+          const fixLabel = OPERATION_LABELS[opKey] || opKey;
+          const fixNoteEntry = `Bulk fix applied: ${fixLabel} — ${now}`;
           const backupUpdate: Record<string, any> = {
             problem_context_backup: (asset as any).problem_context || "",
             problem_text_backup: (asset as any).survive_problem_text || "",
-            last_bulk_fix_at: new Date().toISOString(),
-            last_bulk_fix_label: OPERATION_LABELS[opKey] || opKey,
+            last_bulk_fix_at: now,
+            last_bulk_fix_label: fixLabel,
+            fix_status: "fix_applied",
+            fix_notes: ((asset as any).fix_notes ? (asset as any).fix_notes + "\n" : "") + fixNoteEntry,
           };
 
           const newValues: Record<string, any> = {};
