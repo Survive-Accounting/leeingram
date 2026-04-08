@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered } from "lucide-react";
+import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play, Pause, Info, Plus, X, Trash2, ListOrdered, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -278,8 +278,8 @@ export default function BulkFixTool() {
   // Build the scope query — use lightweight select for operations that only need id
   function buildScopeQuery(lightweight = false) {
     const fields = lightweight
-      ? "id, asset_name"
-      : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json";
+      ? "id, asset_name, fix_notes"
+      : "id, asset_name, problem_context, survive_problem_text, survive_solution_text, journal_entry_completed_json, supplementary_je_json, fix_notes";
     let q = supabase.from("teaching_assets").select(fields) as any;
     if (courseFilter !== "all") q = q.eq("course_id", courseFilter);
     if (chapterFilter !== "all") q = q.eq("chapter_id", chapterFilter);
@@ -569,6 +569,13 @@ export default function BulkFixTool() {
     let updated = 0, skipped = 0, errors = 0;
     const offset = startOffset ?? 0;
 
+    // Set fix_status = 'pending_fix' on all assets in scope before processing
+    const assetIds = assets.map((a: any) => a.id);
+    for (let chunk = 0; chunk < assetIds.length; chunk += 500) {
+      const ids = assetIds.slice(chunk, chunk + 500);
+      await supabase.from("teaching_assets").update({ fix_status: "pending_fix" } as any).in("id", ids);
+    }
+
     const batchSize = ["enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey) ? 5 : BATCH_SIZE;
 
     for (let i = offset; i < total; i += batchSize) {
@@ -578,11 +585,16 @@ export default function BulkFixTool() {
 
       for (const asset of batch) {
         updates.push((async () => {
+          const now = new Date().toISOString();
+          const fixLabel = OPERATION_LABELS[opKey] || opKey;
+          const fixNoteEntry = `Bulk fix applied: ${fixLabel} — ${now}`;
           const backupUpdate: Record<string, any> = {
             problem_context_backup: (asset as any).problem_context || "",
             problem_text_backup: (asset as any).survive_problem_text || "",
-            last_bulk_fix_at: new Date().toISOString(),
-            last_bulk_fix_label: OPERATION_LABELS[opKey] || opKey,
+            last_bulk_fix_at: now,
+            last_bulk_fix_label: fixLabel,
+            fix_status: "fix_applied",
+            fix_notes: ((asset as any).fix_notes ? (asset as any).fix_notes + "\n" : "") + fixNoteEntry,
           };
 
           const newValues: Record<string, any> = {};
@@ -848,6 +860,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           survive_problem_text: a.problem_text_backup || "",
           last_bulk_fix_at: null,
           last_bulk_fix_label: null,
+          fix_status: "pending_fix",
         }).eq("id", asset.id);
         reverted++;
       }
@@ -1273,10 +1286,43 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
         {/* Section 4: Completion */}
         {runComplete && (
           <Card className="bg-card border-border border-emerald-500/30">
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 space-y-3">
               <p className="text-sm text-emerald-400">
                 ✓ Done — {runComplete.updated} assets updated, {runComplete.skipped} skipped{runComplete.errors ? `, ${runComplete.errors} errors` : ""}.
               </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                  onClick={async () => {
+                    if (!lastOp?.label) return;
+                    const { data: assets } = await supabase
+                      .from("teaching_assets")
+                      .select("id")
+                      .eq("last_bulk_fix_label", lastOp.label as string)
+                      .eq("fix_status", "fix_applied");
+                    if (!assets?.length) { toast.info("No assets to approve"); return; }
+                    for (let i = 0; i < assets.length; i += 500) {
+                      const ids = assets.slice(i, i + 500).map(a => a.id);
+                      await supabase.from("teaching_assets").update({ fix_status: "fix_verified" } as any).in("id", ids);
+                    }
+                    toast.success(`Approved ${assets.length} assets — fix_status set to verified ✓`);
+                    refetchLastOp();
+                  }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve Changes
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 text-xs"
+                  onClick={runRevert}
+                  disabled={reverting}
+                >
+                  {reverting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Undo2 className="h-3.5 w-3.5 mr-1" />}
+                  Reject &amp; Try Again
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -1366,6 +1412,13 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                       <span className="text-[10px] text-destructive truncate max-w-32" title={item.error_summary}>
                         {item.error_summary.slice(0, 40)}
                       </span>
+                    )}
+                    {/* fix_status badge */}
+                    {item.status === "complete" && (
+                      <Badge className="text-[9px]" style={{
+                        backgroundColor: "rgba(59,130,246,0.15)",
+                        color: "rgb(96,165,250)",
+                      }}>fix_applied</Badge>
                     )}
                     {item.status === "failed" && (
                       <Button
