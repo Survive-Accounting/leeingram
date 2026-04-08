@@ -569,6 +569,13 @@ export default function BulkFixTool() {
     let updated = 0, skipped = 0, errors = 0;
     const offset = startOffset ?? 0;
 
+    // Set fix_status = 'pending_fix' on all assets in scope before processing
+    const assetIds = assets.map((a: any) => a.id);
+    for (let chunk = 0; chunk < assetIds.length; chunk += 500) {
+      const ids = assetIds.slice(chunk, chunk + 500);
+      await supabase.from("teaching_assets").update({ fix_status: "pending_fix" } as any).in("id", ids);
+    }
+
     const batchSize = ["enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey) ? 5 : BATCH_SIZE;
 
     for (let i = offset; i < total; i += batchSize) {
