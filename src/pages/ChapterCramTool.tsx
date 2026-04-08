@@ -893,12 +893,12 @@ export default function ChapterCramTool() {
             Your exam is coming!
           </p>
           <p className="text-[15px] leading-[1.7] mt-2" style={{ color: "rgba(255,255,255,0.85)" }}>
-            Find your survival kit below. Everything here is built from your actual textbook problems — trusted by hundreds of students.
+            Everything you need to survive it is right below. Built from a decade of helping aspiring accountants.
           </p>
           <p className="text-[15px] leading-[1.7] mt-3" style={{ color: "rgba(255,255,255,0.85)" }}>
             <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "underline" }}>Get in touch</a> if you need anything. <span style={{ fontWeight: 600, color: "#FFFFFF" }}>You've got this!</span>
           </p>
-          <p className="text-[15px] leading-[1.7] mt-2 italic" style={{ color: "#FFFFFF" }}>— Lee</p>
+          <p className="text-[15px] leading-[1.7] mt-2 italic" style={{ color: "rgba(255,255,255,0.65)" }}>— Lee Ingram</p>
           <p className="text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>Tutor since 2015 · B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA</p>
         </div>
       </div>
@@ -1194,25 +1194,28 @@ function CramAboutLeeModal({ open, onOpenChange }: { open: boolean; onOpenChange
           />
           <div className="flex-1 min-w-0">
             <p className="text-[20px] font-bold" style={{ color: theme.heading }}>Lee Ingram</p>
-            <p className="text-[13px] mt-0.5" style={{ color: theme.textMuted }}>Accounting Tutor · Since 2015</p>
             <p className="text-[12px] mt-1.5 leading-[1.5]" style={{ color: theme.label }}>
               B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA
             </p>
-            <div className="my-3 h-px" style={{ background: theme.border }} />
+            <p className="text-[11px] mt-3 font-semibold uppercase" style={{ color: theme.red, letterSpacing: "0.1em" }}>About Me</p>
+            <div className="mt-2 mb-3 h-px" style={{ background: theme.border }} />
             <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
               I loved accounting so much in college that I became a full-time tutor. During the pandemic I went fully virtual and created SurviveAccounting.com — and it's been a blast watching it grow.
             </p>
             <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
-              Now I travel the world helping college students all over the country actually understand accounting, not just memorize it.
+              Now I travel the world while helping college students actually understand — and even love — accounting. Not just survive it.
             </p>
             <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
-              Helping you feel confident on your exam is my favorite thing to do. Thanks for stopping by — it means a lot.
+              I will help you ace exams, but also I hope you discover something I think is more important: <em>thinking like an accountant</em> is an incredibly valuable skill. Both now and for your career. I'm going to help you learn it. Once you think like an accountant, your exam will feel way less brutal.
             </p>
             <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 4 }}>
-              Best of luck!
+              Best of luck studying!
             </p>
-            <p className="text-[13px] leading-[1.7] italic" style={{ color: theme.text }}>
+            <p className="text-[13px] leading-[1.7] italic" style={{ color: theme.text, marginBottom: 16 }}>
               — Lee
+            </p>
+            <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted, marginBottom: 0 }}>
+              PS: A huge thanks to all the students who've enjoyed and supported my work over the years, so much so that I can work full-time on growing Survive Accounting. As a lifelong teacher, it means a lot.
             </p>
             <div className="mt-3 flex flex-col gap-1.5 text-[12px]">
               <a href="mailto:lee@surviveaccounting.com" className="flex items-center gap-1.5 hover:underline" style={{ color: "#3B82F6" }}>
