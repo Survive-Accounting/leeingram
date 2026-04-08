@@ -266,8 +266,7 @@ function PreviewIndex() {
       {/* Header */}
       <div className="pt-10 pb-2 text-center">
         <img src={LOGO_URL} alt="Survive Accounting" className="h-8 mx-auto mb-5 object-contain" />
-        <h1 className="text-[32px] font-extrabold text-white" style={{ fontFamily: "Inter" }}>The Survive Accounting Platform</h1>
-        <p className="text-[16px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>Behind the Scenes</p>
+        <h1 className="text-[32px] font-extrabold text-white" style={{ fontFamily: "Inter" }}>Behind the Scenes</h1>
         <p className="text-[14px] mt-3 mx-auto" style={{ color: "rgba(255,255,255,0.65)", maxWidth: 480, lineHeight: 1.6 }}>
           Welcome to the team. Everything we're building is below — explore, test, and share your thoughts.
         </p>
