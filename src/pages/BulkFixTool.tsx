@@ -371,6 +371,29 @@ export default function BulkFixTool() {
     toast.success("Fix queue cleared");
   }
 
+  // CSV import ref + handler
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (!text) return;
+      // Parse CSV: take first column of each row, skip empty lines
+      const codes = text
+        .split(/\r?\n/)
+        .map(line => line.split(",")[0]?.trim())
+        .filter(Boolean);
+      if (!codes.length) { toast.error("No asset codes found in CSV"); return; }
+      setFixQueueInput(codes.join("\n"));
+      toast.success(`Imported ${codes.length} codes from CSV — hit Load Queue to validate`);
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-imported
+    e.target.value = "";
+  }
+
   // Build the scope query — use lightweight select for operations that only need id
   function buildScopeQuery(lightweight = false) {
     const fields = lightweight
