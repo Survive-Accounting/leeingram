@@ -91,7 +91,7 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
   },
   standardize_formatting: {
     fn: "standardize-formatting",
-    bodyFn: (id) => ({ teaching_asset_id: id }),
+    bodyFn: (id, model) => ({ teaching_asset_id: id, model: model || "sonnet" }),
     skipCheck: async (sb, id) => {
       const { data } = await sb.from("teaching_assets").select("survive_solution_text").eq("id", id).single();
       return !data?.survive_solution_text?.trim();
