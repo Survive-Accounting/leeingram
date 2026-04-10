@@ -1650,6 +1650,60 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   </div>
                 </div>
               )}
+
+              {/* Run Fix on Targeted Assets button */}
+              {fixQueueActive && operation && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <Button
+                    onClick={runTargetedFix}
+                    disabled={targetedFixRunning || running || !operation}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {targetedFixRunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Run Fix on {fixQueueFoundIds.length} Targeted Assets
+                  </Button>
+
+                  {/* Per-asset status tracking */}
+                  {targetedFixStatuses.length > 0 && (
+                    <div className="rounded border border-border bg-muted/30 p-2 space-y-1.5 max-h-64 overflow-y-auto">
+                      {targetedFixStatuses.map((s) => (
+                        <div key={s.assetId} className="flex items-center gap-2 text-xs">
+                          {s.status === "pending" && <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground shrink-0" />}
+                          {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-400 shrink-0" />}
+                          {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />}
+                          {s.status === "error" && <X className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                          {s.status === "skipped" && <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/30 shrink-0" />}
+                          <span className="font-mono text-foreground">{s.code}</span>
+                          <span className="text-muted-foreground">→ {s.assetName}</span>
+                          {s.status === "error" && s.error && (
+                            <span className="text-destructive truncate max-w-48" title={s.error}>{s.error.slice(0, 50)}</span>
+                          )}
+                          {s.status === "done" && (
+                            <a
+                              href={`/solutions-qa?asset=${encodeURIComponent(s.assetName)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 hover:underline ml-auto"
+                            >
+                              Review QA →
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {targetedFixDone && (
+                    <p className="text-xs text-emerald-400">
+                      ✓ Targeted fix complete — {targetedFixStatuses.filter(s => s.status === "done").length} done, {targetedFixStatuses.filter(s => s.status === "error").length} errors
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
