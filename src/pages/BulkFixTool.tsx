@@ -700,7 +700,7 @@ export default function BulkFixTool() {
         // Run AI preview
         const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
           body: {
-            provider: "anthropic",
+            provider: "lovable",
             model: "claude-sonnet-4-20250514",
             messages: [
               { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
@@ -991,7 +991,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
             const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
               body: {
-                provider: "anthropic",
+                provider: "lovable",
                 model: "claude-sonnet-4-20250514",
                 messages: [
                   { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
