@@ -23,14 +23,6 @@ const PROMPT = `You are fixing the formatting of this explanation only. Do not c
 
 7. Do not remove any calculations or conclusions.
 
-PART HEADERS:
-- Each instruction part (a)(b)(c) must have its own clearly labeled section outside all code blocks.
-- Format: **(a)** bold, on its own line, before any calculation block for that part.
-- Use the format (a), (b), (c) with parentheses on BOTH sides — never a), b), c).
-- Never bury part labels inside monospace calculation blocks.
-- Every part from the instructions must appear as a header even if the calculation for it is inside a code block.
-- If the original text uses a), b), c) format (no leading paren), convert to (a), (b), (c).
-
 Output must look like a clean textbook solution with clear separation between narrative steps and calculation lines.`;
 
 Deno.serve(async (req) => {

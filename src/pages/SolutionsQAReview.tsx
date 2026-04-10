@@ -396,38 +396,26 @@ function renderMarkdownText(text: string) {
 
 /** Student-facing explanation preview — mirrors AnswerSummarySection layout */
 function ExplanationPreview({ text, className }: { text: string; className?: string }) {
-  const subSections = text.split(/(?=(?:^|\n)\s*\(?[a-z]\)\s)/im).filter(s => s.trim());
+  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
   return (
     <div className={`rounded-md p-3 pl-4 border-l-[3px] border-emerald-600 bg-emerald-500/5 space-y-3 ${className || ""}`}>
       {subSections.map((section, si) => {
-        const labelMatch = section.match(/^\s*\(?([a-z])\)\s*(.*)/i);
-        const sectionLines = section.split("\n");
-        const firstLineAfterLabel = labelMatch ? sectionLines[0].replace(/^\s*\(?[a-z]\)\s*/i, "").trim() : "";
-        const remainderLooksLikeContent = !!firstLineAfterLabel && /[$\d=÷×+\-/%]/.test(firstLineAfterLabel);
-
+        const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
         let headerText = "";
-        let contentLines = (
-          labelMatch
-            ? [
-                ...(remainderLooksLikeContent ? [firstLineAfterLabel] : []),
-                ...sectionLines.slice(1),
-              ]
-            : sectionLines
-        ).filter(l => l.trim());
-
+        let contentStr = section;
         if (labelMatch) {
-          headerText = !remainderLooksLikeContent && firstLineAfterLabel
-            ? `(${labelMatch[1]}) ${firstLineAfterLabel}`
-            : `(${labelMatch[1]})`;
-
-          if (!firstLineAfterLabel) {
-            const firstNarrativeIdx = contentLines.findIndex(l => l.trim() && !/[$\d=÷×+\-/%]/.test(l.trim()));
-            if (firstNarrativeIdx >= 0) {
-              headerText = `(${labelMatch[1]}) ${contentLines[firstNarrativeIdx].trim()}`;
-              contentLines = [...contentLines.slice(0, firstNarrativeIdx), ...contentLines.slice(firstNarrativeIdx + 1)];
+          headerText = `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`;
+          contentStr = section.slice(labelMatch[0].split("\n")[0].length);
+          // If header text is empty after letter, pull first content line
+          if (!labelMatch[2].trim()) {
+            const lines = contentStr.split("\n").filter(l => l.trim());
+            if (lines.length > 0) {
+              headerText = `(${labelMatch[1]}) ${lines[0].trim()}`;
+              contentStr = lines.slice(1).join("\n");
             }
           }
         }
+        const contentLines = contentStr.split("\n").filter(l => l.trim());
         return (
           <div key={si}>
             {si > 0 && <div className="border-t border-border my-2" />}

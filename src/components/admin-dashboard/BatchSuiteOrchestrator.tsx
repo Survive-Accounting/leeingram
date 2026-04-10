@@ -17,14 +17,13 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "sa_batch_progress";
-const CONTENT_TYPES = ["purpose", "key_terms", "exam_mistakes", "accounts", "formulas", "memory_items", "journal_entries"];
+const CONTENT_TYPES = ["purpose", "key_terms", "exam_mistakes", "accounts", "formulas", "journal_entries"];
 const CONTENT_LABELS: Record<string, string> = {
   purpose: "Purpose",
   key_terms: "Key Terms",
   exam_mistakes: "Mistakes",
   accounts: "Accounts",
   formulas: "Formulas",
-  memory_items: "Memory",
   journal_entries: "JEs",
 };
 

@@ -22,7 +22,7 @@ import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown,
+  AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown, Brain,
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
@@ -30,9 +30,9 @@ import { MemoryBatchOrchestrator } from "@/components/admin-dashboard/MemoryBatc
 import { CourseZipExporter } from "@/components/admin-dashboard/CourseZipExporter";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
+import { MemoryItemsTab } from "@/components/chapter-qa/MemoryItemsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
 import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
-import { MemoryTab } from "@/components/chapter-qa/MemoryTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useNavigate } from "react-router-dom";
@@ -138,22 +138,6 @@ export default function ChapterContentQA() {
     },
   });
 
-  const { data: memoryCounts } = useQuery({
-    queryKey: ["cqa-memory-counts"],
-    queryFn: async () => {
-      const { data: allMemory } = await supabase
-        .from("chapter_memory_items")
-        .select("chapter_id, is_approved");
-      const byChapter: Record<string, { total: number; approved: number }> = {};
-      (allMemory || []).forEach((m: any) => {
-        if (!byChapter[m.chapter_id]) byChapter[m.chapter_id] = { total: 0, approved: 0 };
-        byChapter[m.chapter_id].total++;
-        if (m.is_approved) byChapter[m.chapter_id].approved++;
-      });
-      return byChapter;
-    },
-  });
-
   const totalChapters = chapters?.length || 0;
   const pendingJEChapters = chapters?.filter(ch => !jeCounts?.[ch.id]?.approved).length || 0;
   const approvedJEChapters = chapters?.filter(ch => (jeCounts?.[ch.id]?.approved || 0) > 0).length || 0;
@@ -202,13 +186,6 @@ export default function ChapterContentQA() {
     if (!c || c.total === 0) return "none";
     if (c.approved > 0) return "approved";
     return "pending";
-  };
-  const memoryStatus = (chId: string): { status: "none" | "pending" | "approved"; pending: number } => {
-    const c = memoryCounts?.[chId];
-    if (!c || c.total === 0) return { status: "none", pending: 0 };
-    const pending = c.total - c.approved;
-    if (pending > 0) return { status: "pending", pending };
-    return { status: "approved", pending: 0 };
   };
 
   const statusPill = (status: string, type: string) => {
@@ -351,9 +328,9 @@ export default function ChapterContentQA() {
                 Generate All Formula Images
               </Button>
             </div>
-            <CourseZipExporter />
             <BatchSuiteOrchestrator />
             <MemoryBatchOrchestrator />
+            <CourseZipExporter />
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
               <div className={cn(
@@ -388,7 +365,6 @@ export default function ChapterContentQA() {
               chapters={cg.chapters}
               jeStatus={jeStatus}
               formulaStatus={formulaStatus}
-              memoryStatus={memoryStatus}
               statusPill={statusPill}
               selectedId={selectedChapterId}
               onSelect={setSelectedChapterId}
@@ -418,13 +394,12 @@ export default function ChapterContentQA() {
 // ── Course group ──────────────────────────────────────────────────
 
 function CourseGroupBlock({
-  course, chapters, jeStatus, formulaStatus, memoryStatus, statusPill, selectedId, onSelect,
+  course, chapters, jeStatus, formulaStatus, statusPill, selectedId, onSelect,
 }: {
   course: CourseRow;
   chapters: ChapterRow[];
   jeStatus: (id: string) => string;
   formulaStatus: (id: string) => string;
-  memoryStatus: (id: string) => { status: "none" | "pending" | "approved"; pending: number };
   statusPill: (status: string, type: string) => React.ReactNode;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -440,38 +415,25 @@ function CourseGroupBlock({
         <Badge variant="secondary" className="text-[9px] h-4 ml-auto">{chapters.length} chapters</Badge>
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-1 space-y-0.5">
-        {chapters.map(ch => {
-          const mem = memoryStatus(ch.id);
-          return (
-            <button
-              key={ch.id}
-              onClick={() => onSelect(ch.id)}
-              className={cn(
-                "w-full flex items-center gap-2 px-4 py-2 rounded-md text-left transition-colors text-sm",
-                selectedId === ch.id
-                  ? "bg-primary/15 text-foreground border border-primary/30"
-                  : "hover:bg-muted/30 text-foreground/80"
-              )}
-            >
-              <span className="font-medium text-xs">Ch {ch.chapter_number}</span>
-              <span className="text-xs truncate">{ch.chapter_name}</span>
-              <div className="flex gap-1 ml-auto shrink-0">
-                {mem.status === "pending" && (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-amber-500/20 text-amber-400 border-amber-500/30">
-                    Memory: {mem.pending} pending
-                  </Badge>
-                )}
-                {mem.status === "approved" && (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                    Memory ✓
-                  </Badge>
-                )}
-                {statusPill(jeStatus(ch.id), "JEs")}
-                {statusPill(formulaStatus(ch.id), "Formulas")}
-              </div>
-            </button>
-          );
-        })}
+        {chapters.map(ch => (
+          <button
+            key={ch.id}
+            onClick={() => onSelect(ch.id)}
+            className={cn(
+              "w-full flex items-center gap-2 px-4 py-2 rounded-md text-left transition-colors text-sm",
+              selectedId === ch.id
+                ? "bg-primary/15 text-foreground border border-primary/30"
+                : "hover:bg-muted/30 text-foreground/80"
+            )}
+          >
+            <span className="font-medium text-xs">Ch {ch.chapter_number}</span>
+            <span className="text-xs truncate">{ch.chapter_name}</span>
+            <div className="flex gap-1 ml-auto shrink-0">
+              {statusPill(jeStatus(ch.id), "JEs")}
+              {statusPill(formulaStatus(ch.id), "Formulas")}
+            </div>
+          </button>
+        ))}
       </CollapsibleContent>
     </Collapsible>
   );
@@ -501,8 +463,8 @@ function ChapterQAModal({
     { key: "exam_mistakes", label: "Mistakes" },
     { key: "accounts", label: "Accounts" },
     { key: "formulas", label: "Formulas" },
-    { key: "memory_items", label: "Memory" },
     { key: "journal_entries", label: "JEs" },
+    { key: "memory_items", label: "Memory Items" },
   ] as const;
 
   const [suiteRunning, setSuiteRunning] = useState(false);
@@ -539,6 +501,8 @@ function ChapterQAModal({
     qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
     qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
     qc.invalidateQueries({ queryKey: ["cqa-je-detail", chapter.id] });
+    qc.invalidateQueries({ queryKey: ["cqa-memory-counts"] });
+    qc.invalidateQueries({ queryKey: ["cqa-memory-items", chapter.id] });
   };
 
   return (
@@ -646,13 +610,13 @@ function ChapterQAModal({
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
             <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
-              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
+              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
+              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
               <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
               <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
-              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
-              <TabsTrigger value="memory" className="gap-1 text-[11px]"><Sparkles className="h-3 w-3" /> Memory</TabsTrigger>
-              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
+              <TabsTrigger value="memory" className="gap-1 text-[11px]"><Brain className="h-3 w-3" /> Memory</TabsTrigger>
               <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
+              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -672,14 +636,14 @@ function ChapterQAModal({
             <TabsContent value="terms" className="mt-0">
               <KeyTermsTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
+            <TabsContent value="memory" className="mt-0">
+              <MemoryItemsTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
             <TabsContent value="mistakes" className="mt-0">
               <MistakesTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
             <TabsContent value="purpose" className="mt-0">
               <PurposeTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
-            </TabsContent>
-            <TabsContent value="memory" className="mt-0">
-              <MemoryTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
           </Tabs>
         </div>
