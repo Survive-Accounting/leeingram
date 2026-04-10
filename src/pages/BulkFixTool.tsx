@@ -1424,6 +1424,30 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 </div>
               </div>
             )}
+
+            {/* AI Model Selector */}
+            {operation && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label className="text-xs">AI Model</Label>
+                <Select value={aiModel} onValueChange={(v) => setAiModel(v as "sonnet" | "opus")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sonnet">Claude Sonnet 4 — Fast &amp; Efficient (default)</SelectItem>
+                    <SelectItem value="opus">Claude Opus 4 — Maximum Quality (higher cost)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {aiModel === "opus" && (
+                  <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                    <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-200">
+                      ⚠️ Opus costs ~15x more than Sonnet. Recommended for complex fixes only. Check ai_cost_log after test run before applying to full batch.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
