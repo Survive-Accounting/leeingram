@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -1772,26 +1773,13 @@ function FlowchartSubToggle({
 
 // ── Chapter-Level Formula Carousel ──────────────────────────────────
 
-function ChapterFormulaCarousel({ formulas }: { formulas: { id: string; formula_name: string; formula_expression: string; image_url: string | null }[] }) {
+function ChapterFormulaCarousel({ formulas }: { formulas: { id: string; formula_name: string; formula_expression: string; formula_explanation?: string | null; components?: any }[] }) {
   const [idx, setIdx] = useState(0);
   const f = formulas[idx];
   if (!f) return null;
   return (
     <div className="space-y-3">
-      {f.image_url ? (
-        <img
-          src={f.image_url}
-          alt={f.formula_name}
-          className="w-full rounded-lg"
-          style={{ aspectRatio: "2/1", objectFit: "contain", background: "#14213D" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
-      ) : (
-        <div className="w-full rounded-lg flex items-center justify-center py-8" style={{ aspectRatio: "2/1", background: "#14213D" }}>
-          <span className="text-white/70 text-sm">{f.formula_name}</span>
-        </div>
-      )}
-      <p className="text-xs text-center font-medium" style={{ color: "var(--foreground, #333)" }}>{f.formula_name}</p>
+      <FormulaCardComponent formula={f} />
       {formulas.length > 1 && (
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <button onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0} className="disabled:opacity-30 hover:text-foreground transition-colors">← Prev</button>
