@@ -331,6 +331,7 @@ export default function ChapterContentQA() {
             </div>
             <BatchSuiteOrchestrator />
             <MemoryBatchOrchestrator />
+            <FormulaBatchRegenOrchestrator />
             <CourseZipExporter />
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
