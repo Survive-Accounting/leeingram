@@ -52,7 +52,7 @@ export function ChapterQAReportExporter() {
         supabase.from("solutions_qa_issues" as any).select("asset_name, issue_description").order("created_at"),
       ]);
 
-      const issues = (issuesRes.data || []) as { asset_name: string; issue_description: string }[];
+      const issues = (issuesRes.data || []) as unknown as { asset_name: string; issue_description: string }[];
 
       // Build issues lookup
       const issueMap: Record<string, string[]> = {};

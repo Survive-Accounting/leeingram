@@ -659,6 +659,7 @@ export default function SolutionsQAAdmin() {
     <SurviveSidebarLayout>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
+        <ChapterQAReportExporter />
 
         {/* Summary stats */}
         <div className="grid grid-cols-8 gap-2">
