@@ -638,6 +638,9 @@ function ChapterQAModal({
             <TabsContent value="purpose" className="mt-0">
               <PurposeTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
+            <TabsContent value="memory" className="mt-0">
+              <MemoryTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
           </Tabs>
         </div>
       </DialogContent>
