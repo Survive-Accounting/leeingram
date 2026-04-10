@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -364,29 +365,22 @@ function DrawerFormulasContent({ formulas, chapterId, isAdmin, isItemHidden, tog
       <div className="mb-4 rounded-xl border px-4 py-3" style={{ background: theme.mutedBg, borderColor: theme.border }}>
         <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{seenCount} ✓ / {formulas.length}</p>
       </div>
-      <div className="relative rounded-xl overflow-hidden" style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, opacity: hidden ? 0.5 : 1 }}>
+      <div className="relative" style={{ opacity: hidden ? 0.5 : 1 }}>
         {isAdmin && (
           <button type="button" onClick={() => toggleItemHidden("formulas", currentFormula.id)} className="absolute right-3 top-3 z-10 inline-flex h-6 w-6 items-center justify-center rounded-md" style={{ background: hidden ? theme.warningBg : "rgba(255,255,255,0.9)", color: hidden ? theme.warningText : theme.textMuted, border: `1px solid ${theme.border}` }}>
             <EyeOff className="h-3.5 w-3.5" />
           </button>
         )}
-        {currentFormula.image_url ? (
-          <>
-            <div className="px-5 pt-4 pb-2">
-              <p className="text-[16px] font-bold" style={{ color: theme.heading, fontFamily: "'DM Serif Display', serif" }}>{currentFormula.name}</p>
-            </div>
-            <div className="px-4 pb-4">
-              <img src={currentFormula.image_url} alt={currentFormula.name} style={{ width: "100%", maxWidth: 800, aspectRatio: "2 / 1", objectFit: "contain", margin: "0 auto", borderRadius: 12, display: "block" }} />
-            </div>
-          </>
-        ) : (
-          <div style={{ padding: "24px 32px" }}>
-            <p className="text-[18px] font-bold" style={{ color: theme.heading, marginBottom: 12, fontFamily: "'DM Serif Display', serif" }}>{currentFormula.name}</p>
-            <p className="text-[20px] font-medium" style={{ color: theme.red, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace" }}>{currentFormula.expression}</p>
-            {currentFormula.explanation && <p className="text-[13px] leading-[1.7]" style={{ color: theme.textMuted, marginTop: 12 }}>{currentFormula.explanation}</p>}
-          </div>
-        )}
-        <div className="flex items-center gap-3 px-5 pb-4">
+        <FormulaCardComponent
+          formula={{
+            id: currentFormula.id,
+            formula_name: currentFormula.name,
+            formula_expression: currentFormula.expression,
+            formula_explanation: currentFormula.explanation,
+            components: currentFormula.components,
+          }}
+        />
+        <div className="flex items-center gap-3 px-5 pb-4 -mt-2" style={{ background: "#14213D", borderRadius: "0 0 12px 12px" }}>
           <button type="button" onClick={() => handleSeen(currentFormula.id)} disabled={seenSet.has(currentFormula.id)} className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold" style={{ background: seenSet.has(currentFormula.id) ? theme.successBg : "#DCFCE7", color: seenSet.has(currentFormula.id) ? "#15803D" : theme.successText, border: `1px solid ${seenSet.has(currentFormula.id) ? theme.successBorder : "#86EFAC"}`, cursor: seenSet.has(currentFormula.id) ? "default" : "pointer" }}>
             <CheckCircle className="h-3.5 w-3.5" />
             {seenSet.has(currentFormula.id) ? "Got It ✓" : "Got It"}
