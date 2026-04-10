@@ -328,8 +328,9 @@ export default function ChapterContentQA() {
                 Generate All Formula Images
               </Button>
             </div>
-            <CourseZipExporter />
             <BatchSuiteOrchestrator />
+            <MemoryBatchOrchestrator />
+            <CourseZipExporter />
             {bulkProgress && <p className="text-xs text-muted-foreground animate-pulse">{bulkProgress}</p>}
             {lastBulkDebug && !bulkGenerating && (
               <div className={cn(
@@ -463,6 +464,7 @@ function ChapterQAModal({
     { key: "accounts", label: "Accounts" },
     { key: "formulas", label: "Formulas" },
     { key: "journal_entries", label: "JEs" },
+    { key: "memory_items", label: "Memory Items" },
   ] as const;
 
   const [suiteRunning, setSuiteRunning] = useState(false);
@@ -499,6 +501,8 @@ function ChapterQAModal({
     qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
     qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
     qc.invalidateQueries({ queryKey: ["cqa-je-detail", chapter.id] });
+    qc.invalidateQueries({ queryKey: ["cqa-memory-counts"] });
+    qc.invalidateQueries({ queryKey: ["cqa-memory-items", chapter.id] });
   };
 
   return (
@@ -610,6 +614,7 @@ function ChapterQAModal({
               <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
               <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
               <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
+              <TabsTrigger value="memory" className="gap-1 text-[11px]"><Brain className="h-3 w-3" /> Memory</TabsTrigger>
               <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
               <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
             </TabsList>
@@ -630,6 +635,9 @@ function ChapterQAModal({
             </TabsContent>
             <TabsContent value="terms" className="mt-0">
               <KeyTermsTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="memory" className="mt-0">
+              <MemoryItemsTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
             <TabsContent value="mistakes" className="mt-0">
               <MistakesTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
