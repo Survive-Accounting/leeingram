@@ -418,12 +418,13 @@ export default function ChapterContentQA() {
 // ── Course group ──────────────────────────────────────────────────
 
 function CourseGroupBlock({
-  course, chapters, jeStatus, formulaStatus, statusPill, selectedId, onSelect,
+  course, chapters, jeStatus, formulaStatus, memoryStatus, statusPill, selectedId, onSelect,
 }: {
   course: CourseRow;
   chapters: ChapterRow[];
   jeStatus: (id: string) => string;
   formulaStatus: (id: string) => string;
+  memoryStatus: (id: string) => { status: "none" | "pending" | "approved"; pending: number };
   statusPill: (status: string, type: string) => React.ReactNode;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -439,25 +440,38 @@ function CourseGroupBlock({
         <Badge variant="secondary" className="text-[9px] h-4 ml-auto">{chapters.length} chapters</Badge>
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-1 space-y-0.5">
-        {chapters.map(ch => (
-          <button
-            key={ch.id}
-            onClick={() => onSelect(ch.id)}
-            className={cn(
-              "w-full flex items-center gap-2 px-4 py-2 rounded-md text-left transition-colors text-sm",
-              selectedId === ch.id
-                ? "bg-primary/15 text-foreground border border-primary/30"
-                : "hover:bg-muted/30 text-foreground/80"
-            )}
-          >
-            <span className="font-medium text-xs">Ch {ch.chapter_number}</span>
-            <span className="text-xs truncate">{ch.chapter_name}</span>
-            <div className="flex gap-1 ml-auto shrink-0">
-              {statusPill(jeStatus(ch.id), "JEs")}
-              {statusPill(formulaStatus(ch.id), "Formulas")}
-            </div>
-          </button>
-        ))}
+        {chapters.map(ch => {
+          const mem = memoryStatus(ch.id);
+          return (
+            <button
+              key={ch.id}
+              onClick={() => onSelect(ch.id)}
+              className={cn(
+                "w-full flex items-center gap-2 px-4 py-2 rounded-md text-left transition-colors text-sm",
+                selectedId === ch.id
+                  ? "bg-primary/15 text-foreground border border-primary/30"
+                  : "hover:bg-muted/30 text-foreground/80"
+              )}
+            >
+              <span className="font-medium text-xs">Ch {ch.chapter_number}</span>
+              <span className="text-xs truncate">{ch.chapter_name}</span>
+              <div className="flex gap-1 ml-auto shrink-0">
+                {mem.status === "pending" && (
+                  <Badge className="text-[9px] h-4 px-1.5 bg-amber-500/20 text-amber-400 border-amber-500/30">
+                    Memory: {mem.pending} pending
+                  </Badge>
+                )}
+                {mem.status === "approved" && (
+                  <Badge className="text-[9px] h-4 px-1.5 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                    Memory ✓
+                  </Badge>
+                )}
+                {statusPill(jeStatus(ch.id), "JEs")}
+                {statusPill(formulaStatus(ch.id), "Formulas")}
+              </div>
+            </button>
+          );
+        })}
       </CollapsibleContent>
     </Collapsible>
   );
