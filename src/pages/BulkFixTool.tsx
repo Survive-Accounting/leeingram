@@ -1199,6 +1199,56 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     toast.success("Queue stopped");
   }
 
+  // ── Run targeted fix on queued assets ──
+  async function runTargetedFix() {
+    if (!operation || !fixQueueActive) return;
+    const foundItems = fixQueueItems.filter(q => q.found && q.assetId);
+    if (!foundItems.length) { toast.error("No valid assets in queue"); return; }
+
+    const confirmed = window.confirm(
+      `Run "${OPERATION_LABELS[operation] || operation}" on ${foundItems.length} targeted assets?\n\n${foundItems.map(q => q.code).join("\n")}`
+    );
+    if (!confirmed) return;
+
+    setTargetedFixRunning(true);
+    setTargetedFixDone(false);
+    const statuses: TargetedFixStatus[] = foundItems.map(q => ({
+      assetId: q.assetId!,
+      code: q.code,
+      assetName: q.assetName || q.code,
+      status: "pending" as const,
+    }));
+    setTargetedFixStatuses([...statuses]);
+
+    for (let i = 0; i < statuses.length; i++) {
+      statuses[i].status = "running";
+      setTargetedFixStatuses([...statuses]);
+
+      try {
+        // Call fix-asset for each targeted asset
+        const { data, error } = await supabase.functions.invoke("fix-asset", {
+          body: {
+            teaching_asset_id: statuses[i].assetId,
+            fix_description: customInstruction || OPERATION_LABELS[operation] || operation,
+            model: aiModel,
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        statuses[i].status = "done";
+      } catch (e: any) {
+        statuses[i].status = "error";
+        statuses[i].error = e?.message || "Unknown error";
+      }
+      setTargetedFixStatuses([...statuses]);
+    }
+
+    setTargetedFixRunning(false);
+    setTargetedFixDone(true);
+    const doneCount = statuses.filter(s => s.status === "done").length;
+    const errCount = statuses.filter(s => s.status === "error").length;
+    toast.success(`Targeted fix complete — ${doneCount} done, ${errCount} errors`);
+  }
 
 
   const runQueue = useCallback(async () => {
