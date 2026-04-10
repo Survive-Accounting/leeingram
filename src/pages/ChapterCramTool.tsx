@@ -76,12 +76,13 @@ type CramCard = {
   completedRows: CompletedRow[] | null;
 };
 
-type FormulaCard = {
+type FormulaCardType = {
   id: string;
   name: string;
   expression: string;
   explanation?: string;
   image_url?: string | null;
+  components?: { symbol: string; tooltip: string }[] | null;
 };
 
 type SectionConfigRow = {
@@ -702,7 +703,7 @@ export default function ChapterCramTool() {
     queryKey: ["cram-chapter-formulas", chapterId],
     enabled: !!chapterId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("chapter_formulas").select("id, formula_name, formula_expression, formula_explanation, image_url, is_approved, sort_order").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
+      const { data, error } = await (supabase as any).from("chapter_formulas").select("id, formula_name, formula_expression, formula_explanation, image_url, is_approved, sort_order, components").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
       if (error) throw error;
       return (data || []) as any[];
     },
@@ -789,14 +790,14 @@ export default function ChapterCramTool() {
   }, [chapterId, queryClient, sectionConfigMap]);
 
   // Formulas
-  const chapterImageFormulas = useMemo(() => chapterFormulas.filter((f: any) => f.image_url).map((f: any): FormulaCard => ({ id: f.id, name: f.formula_name, expression: f.formula_expression, explanation: f.formula_explanation || undefined, image_url: f.image_url })), [chapterFormulas]);
+  const chapterStructuredFormulas = useMemo(() => chapterFormulas.map((f: any): FormulaCardType => ({ id: f.id, name: f.formula_name, expression: f.formula_expression, explanation: f.formula_explanation || undefined, image_url: f.image_url, components: f.components })), [chapterFormulas]);
   const perAssetFormulas = useMemo(() => {
-    if (chapterImageFormulas.length > 0) return [];
-    const all: FormulaCard[] = [];
+    if (chapterStructuredFormulas.length > 0) return [];
+    const all: FormulaCardType[] = [];
     approvedAssets.forEach((asset) => { if (asset.important_formulas) all.push(...parseImportantFormulas(asset.important_formulas)); });
     return all;
-  }, [approvedAssets, chapterImageFormulas.length]);
-  const structuredFormulas = chapterImageFormulas.length > 0 ? chapterImageFormulas : perAssetFormulas;
+  }, [approvedAssets, chapterStructuredFormulas.length]);
+  const structuredFormulas = chapterStructuredFormulas.length > 0 ? chapterStructuredFormulas : perAssetFormulas;
   const visibleFormulas = useMemo(() => structuredFormulas.filter((f) => isAdmin || !isItemHidden("formulas", f.id)), [structuredFormulas, isAdmin, isItemHidden]);
 
   // Solutions
