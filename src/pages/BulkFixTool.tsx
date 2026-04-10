@@ -1057,7 +1057,10 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
     setRunning(true);
     setRunComplete(null);
+    setRunCostUsd(null);
+    setRunningCostUsd(0);
     pauseRef.current = false;
+    const runStartedAt = new Date().toISOString();
 
     try {
       const result = await executeOperation(
@@ -1077,6 +1080,16 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           reverted: false,
         });
         refetchLastOp();
+        // Fetch cost from ai_cost_log
+        try {
+          const { data: costRows } = await supabase
+            .from("ai_cost_log")
+            .select("estimated_cost_usd")
+            .gte("created_at", runStartedAt)
+            .eq("operation_type", "asset_fix");
+          const totalCost = (costRows ?? []).reduce((sum, r) => sum + ((r as any).estimated_cost_usd || 0), 0);
+          setRunCostUsd(totalCost);
+        } catch {}
         toast.success(`Done — ${result.updated} assets updated.`);
       }
     } catch (e: any) {
