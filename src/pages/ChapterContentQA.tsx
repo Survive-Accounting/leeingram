@@ -25,6 +25,7 @@ import {
   AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown, Brain,
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
+import { FormulaCard as FormulaCardComponent, type FormulaComponent } from "@/components/FormulaCard";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
 import { MemoryBatchOrchestrator } from "@/components/admin-dashboard/MemoryBatchOrchestrator";
 import { FormulaBatchRegenOrchestrator } from "@/components/admin-dashboard/FormulaBatchRegenOrchestrator";
@@ -64,7 +65,7 @@ type CourseRow = {
 
 type JECatRow = { id: string; category_name: string; sort_order: number; chapter_id: string };
 type JEEntryRow = { id: string; category_id: string | null; transaction_label: string; je_lines: any; is_approved: boolean; is_rejected: boolean; sort_order: number; chapter_id: string; source?: string };
-type FormulaRow = { id: string; chapter_id: string; formula_name: string; formula_expression: string; formula_explanation: string | null; image_url: string | null; is_approved: boolean; sort_order: number };
+type FormulaRow = { id: string; chapter_id: string; formula_name: string; formula_expression: string; formula_explanation: string | null; image_url: string | null; is_approved: boolean; sort_order: number; components?: any };
 
 // ── Main ─────────────────────────────────────────────────────────
 
@@ -1107,7 +1108,6 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState("");
-  const [genImagesProgress, setGenImagesProgress] = useState("");
 
   const { data: formulas, refetch } = useQuery({
     queryKey: ["cqa-formulas-detail", chapterId],
@@ -1136,7 +1136,7 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
   const approveFormula = async (id: string) => { await supabase.from("chapter_formulas").update({ is_approved: true }).eq("id", id); invalidate(); };
   const rejectFormula = async (id: string) => { await supabase.from("chapter_formulas").update({ is_approved: false }).eq("id", id); invalidate(); };
   const deleteFormula = async (id: string) => { await supabase.from("chapter_formulas").delete().eq("id", id); invalidate(); };
-  const updateFormula = async (id: string, field: string, value: string) => { await supabase.from("chapter_formulas").update({ [field]: value }).eq("id", id); invalidate(); };
+  const updateFormula = async (id: string, field: string, value: any) => { await supabase.from("chapter_formulas").update({ [field]: value }).eq("id", id); invalidate(); };
 
   const approveAll = async () => {
     await supabase.from("chapter_formulas").update({ is_approved: true }).eq("chapter_id", chapterId);
@@ -1147,23 +1147,6 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
     await supabase.from("chapter_formulas").update({ is_approved: false }).eq("chapter_id", chapterId);
     invalidate();
     toast.success("All formulas rejected");
-  };
-
-  const generateImages = async () => {
-    const approved = formulas?.filter(f => f.is_approved && !f.image_url) || [];
-    if (approved.length === 0) { toast.info("No approved formulas missing images."); return; }
-    setGenImagesProgress(`Generating 0 of ${approved.length}...`);
-    let done = 0;
-    for (const f of approved) {
-      try {
-        await supabase.functions.invoke("generate-formula-images", { body: { formulaId: f.id } });
-        done++;
-        setGenImagesProgress(`Generating ${done} of ${approved.length}...`);
-      } catch { /* continue */ }
-    }
-    setGenImagesProgress("");
-    toast.success(`${done} formula images generated.`);
-    invalidate();
   };
 
   if (!formulas?.length && !generating) {
@@ -1179,20 +1162,8 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
 
   return (
     <div className="space-y-2 pb-20">
-      <div className="flex justify-end">
-        <Button size="sm" variant="outline" className="text-xs" onClick={generateImages} disabled={!!genImagesProgress}>
-          {genImagesProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
-          {genImagesProgress || "Generate Images →"}
-        </Button>
-      </div>
       {formulas?.map(f => (
-        <FormulaRowBlock key={f.id} formula={f} onApprove={() => approveFormula(f.id)} onReject={() => rejectFormula(f.id)} onDelete={() => deleteFormula(f.id)} onUpdate={updateFormula} onRegenImage={async () => {
-          try {
-            await supabase.functions.invoke("generate-formula-images", { body: { formulaId: f.id } });
-            toast.success("Image regenerated.");
-            invalidate();
-          } catch (err: any) { toast.error(err.message); }
-        }} />
+        <FormulaRowBlock key={f.id} formula={f} onApprove={() => approveFormula(f.id)} onReject={() => rejectFormula(f.id)} onDelete={() => deleteFormula(f.id)} onUpdate={updateFormula} />
       ))}
 
       <div className="rounded-lg border border-border p-4 space-y-3">
@@ -1207,10 +1178,6 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-2 px-3 flex gap-2 -mx-3">
         <Button size="sm" variant="outline" className="text-xs" onClick={approveAll}><Check className="h-3 w-3 mr-1" /> Approve All ✓</Button>
         <Button size="sm" variant="outline" className="text-xs text-destructive" onClick={rejectAll}><X className="h-3 w-3 mr-1" /> Reject All ✗</Button>
-        <Button size="sm" variant="outline" className="text-xs ml-auto" onClick={generateImages} disabled={!!genImagesProgress}>
-          {genImagesProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
-          {genImagesProgress || "Generate Images →"}
-        </Button>
       </div>
     </div>
   );
@@ -1218,13 +1185,12 @@ function FormulasTab({ chapterId, chapterName, courseCode }: { chapterId: string
 
 // ── Formula Row ─────────────────────────────────────────────────
 
-function FormulaRowBlock({ formula, onApprove, onReject, onDelete, onUpdate, onRegenImage }: {
+function FormulaRowBlock({ formula, onApprove, onReject, onDelete, onUpdate }: {
   formula: FormulaRow;
   onApprove: () => void;
   onReject: () => void;
   onDelete: () => void;
-  onUpdate: (id: string, field: string, value: string) => void;
-  onRegenImage: () => void;
+  onUpdate: (id: string, field: string, value: any) => void;
 }) {
   const [editName, setEditName] = useState(false);
   const [name, setName] = useState(formula.formula_name);
@@ -1233,15 +1199,18 @@ function FormulaRowBlock({ formula, onApprove, onReject, onDelete, onUpdate, onR
   const [editExpl, setEditExpl] = useState(false);
   const [expl, setExpl] = useState(formula.formula_explanation || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editComponents, setEditComponents] = useState(false);
+  const [components, setComponents] = useState<FormulaComponent[]>(() => {
+    if (Array.isArray(formula.components) && formula.components.length > 0) return formula.components as FormulaComponent[];
+    return [];
+  });
 
   const statusPill = formula.is_approved
     ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">Approved ✓</Badge>
     : <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge>;
 
-  const hasImage = !!formula.image_url;
-
   return (
-    <div className="rounded-lg border border-border px-3 py-2 space-y-1.5">
+    <div className="rounded-lg border border-border px-3 py-2 space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 cursor-grab" />
         {editName ? (
@@ -1250,32 +1219,70 @@ function FormulaRowBlock({ formula, onApprove, onReject, onDelete, onUpdate, onR
           <button onClick={() => setEditName(true)} className="text-xs font-semibold text-foreground hover:underline">{formula.formula_name}</button>
         )}
         {statusPill}
-        {hasImage && <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] h-5">Has Image 🖼</Badge>}
+        {components.length > 0 && <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] h-5">{components.length} components</Badge>}
         <div className="flex items-center gap-1 ml-auto shrink-0">
           <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
           <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Reject"><X className="h-3.5 w-3.5" /></button>
-          {hasImage && <button onClick={onRegenImage} className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors" title="Regen Image">🔄</button>}
+          <button onClick={() => setEditComponents(!editComponents)} className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors" title="Edit Components"><Edit3 className="h-3.5 w-3.5" /></button>
           <button onClick={() => setConfirmDelete(true)} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
-      <div className="flex items-start gap-3">
-        <div className="flex-1 space-y-1">
-          {editExpr ? (
-            <Input value={expr} onChange={(e) => setExpr(e.target.value)} onBlur={() => { onUpdate(formula.id, "formula_expression", expr); setEditExpr(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(formula.id, "formula_expression", expr); setEditExpr(false); } }} className="h-6 text-xs font-mono text-destructive" autoFocus />
-          ) : (
-            <button onClick={() => setEditExpr(true)} className="text-xs font-mono text-destructive hover:underline text-left block">{formula.formula_expression}</button>
-          )}
-          {editExpl ? (
-            <Input value={expl} onChange={(e) => setExpl(e.target.value)} onBlur={() => { onUpdate(formula.id, "formula_explanation", expl); setEditExpl(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(formula.id, "formula_explanation", expl); setEditExpl(false); } }} className="h-6 text-xs text-muted-foreground" autoFocus />
-          ) : (
-            <button onClick={() => setEditExpl(true)} className="text-[11px] text-muted-foreground hover:underline text-left block">{formula.formula_explanation || "Add explanation..."}</button>
-          )}
-        </div>
-        {hasImage && (
-          <img src={formula.image_url!} alt={formula.formula_name} className="w-20 h-10 object-contain rounded border border-border" />
+      {/* Interactive preview card */}
+      <FormulaCardComponent formula={{ ...formula, components: components.length > 0 ? components : undefined }} />
+
+      {/* Editable fields */}
+      <div className="space-y-1">
+        {editExpr ? (
+          <Input value={expr} onChange={(e) => setExpr(e.target.value)} onBlur={() => { onUpdate(formula.id, "formula_expression", expr); setEditExpr(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(formula.id, "formula_expression", expr); setEditExpr(false); } }} className="h-6 text-xs font-mono text-destructive" autoFocus />
+        ) : (
+          <button onClick={() => setEditExpr(true)} className="text-xs font-mono text-destructive hover:underline text-left block">✏️ Edit expression: {formula.formula_expression}</button>
+        )}
+        {editExpl ? (
+          <Input value={expl} onChange={(e) => setExpl(e.target.value)} onBlur={() => { onUpdate(formula.id, "formula_explanation", expl); setEditExpl(false); }} onKeyDown={(e) => { if (e.key === "Enter") { onUpdate(formula.id, "formula_explanation", expl); setEditExpl(false); } }} className="h-6 text-xs text-muted-foreground" autoFocus />
+        ) : (
+          <button onClick={() => setEditExpl(true)} className="text-[11px] text-muted-foreground hover:underline text-left block">✏️ Edit explanation: {formula.formula_explanation || "Add explanation..."}</button>
         )}
       </div>
+
+      {/* Component editor */}
+      {editComponents && (
+        <div className="rounded-md border border-border p-3 space-y-2 bg-muted/30">
+          <p className="text-xs font-semibold text-foreground">Components (symbol → tooltip)</p>
+          {components.map((c, i) => (
+            <div key={i} className="flex gap-2 items-start">
+              <Input
+                value={c.symbol}
+                onChange={(e) => { const next = [...components]; next[i] = { ...next[i], symbol: e.target.value }; setComponents(next); }}
+                className="h-7 text-xs w-20 font-mono shrink-0"
+                placeholder="Symbol"
+              />
+              <Textarea
+                value={c.tooltip}
+                onChange={(e) => { const next = [...components]; next[i] = { ...next[i], tooltip: e.target.value }; setComponents(next); }}
+                className="text-xs min-h-[28px]"
+                rows={2}
+                placeholder="Tooltip text..."
+              />
+              <button onClick={() => setComponents(components.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-destructive/20 text-destructive shrink-0"><X className="h-3 w-3" /></button>
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setComponents([...components, { symbol: "", tooltip: "" }])}>
+              <Plus className="h-3 w-3 mr-1" /> Add Component
+            </Button>
+            <Button size="sm" className="text-xs h-7" onClick={() => {
+              const cleaned = components.filter(c => c.symbol.trim() && c.tooltip.trim());
+              onUpdate(formula.id, "components", cleaned);
+              setComponents(cleaned);
+              setEditComponents(false);
+              toast.success("Components saved");
+            }}>
+              Save Components
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent>
