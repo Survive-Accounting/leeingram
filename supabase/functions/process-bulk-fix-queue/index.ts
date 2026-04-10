@@ -13,7 +13,7 @@ const INTER_ASSET_DELAY_MS = 500;
 
 type QueueHandler = {
   fn: string;
-  bodyFn: (assetId: string) => Record<string, unknown>;
+  bodyFn: (assetId: string, model?: string) => Record<string, unknown>;
   skipCheck?: (sb: any, assetId: string) => Promise<boolean>;
 };
 
@@ -91,7 +91,7 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
   },
   standardize_formatting: {
     fn: "standardize-formatting",
-    bodyFn: (id) => ({ teaching_asset_id: id }),
+    bodyFn: (id, model) => ({ teaching_asset_id: id, model: model || "sonnet" }),
     skipCheck: async (sb, id) => {
       const { data } = await sb.from("teaching_assets").select("survive_solution_text").eq("id", id).single();
       return !data?.survive_solution_text?.trim();
@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
     }
 
     const opKey = currentItem.operation_key;
+    const queueModel = currentItem.model || "sonnet";
     const handler = DELEGATED_OPS[opKey];
 
     if (!handler) {
@@ -259,7 +260,7 @@ Deno.serve(async (req) => {
             supabaseUrl,
             serviceKey,
             handler.fn,
-            handler.bodyFn(asset.id),
+            handler.bodyFn(asset.id, queueModel),
           );
 
           if (!result.ok || result.error) {

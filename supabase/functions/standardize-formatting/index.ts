@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logCost } from "../_shared/cost.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,8 +34,9 @@ Deno.serve(async (req) => {
   const sb = createClient(supabaseUrl, serviceKey);
 
   try {
-    const { teaching_asset_id } = await req.json();
+    const { teaching_asset_id, model: requestedModel } = await req.json();
     if (!teaching_asset_id) throw new Error("teaching_asset_id required");
+    const aiModel = requestedModel === "opus" ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
 
     const { data: asset, error: fetchErr } = await sb
       .from("teaching_assets")
@@ -60,7 +62,7 @@ Deno.serve(async (req) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: aiModel,
         max_tokens: 4000,
         temperature: 0.1,
         messages: [
@@ -97,7 +99,19 @@ Deno.serve(async (req) => {
 
     if (updateErr) throw new Error(`Update failed: ${updateErr.message}`);
 
-    return new Response(JSON.stringify({ success: true }), {
+    // Log cost
+    if (aiData.usage) {
+      logCost(sb, {
+        operation_type: "asset_fix",
+        asset_code: teaching_asset_id,
+        model: aiModel,
+        input_tokens: aiData.usage.input_tokens,
+        output_tokens: aiData.usage.output_tokens,
+        metadata: { type: "standardize_formatting" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, estimated_cost_usd: aiData.usage ? undefined : null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {

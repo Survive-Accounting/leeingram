@@ -171,6 +171,9 @@ export default function BulkFixTool() {
 
   // State
   const [operation, setOperation] = useState<OperationType | "">("");
+  const [aiModel, setAiModel] = useState<"sonnet" | "opus">("sonnet");
+  const [runCostUsd, setRunCostUsd] = useState<number | null>(null);
+  const [runningCostUsd, setRunningCostUsd] = useState<number>(0);
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
   const [customInstruction, setCustomInstruction] = useState("");
@@ -1054,7 +1057,10 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
     setRunning(true);
     setRunComplete(null);
+    setRunCostUsd(null);
+    setRunningCostUsd(0);
     pauseRef.current = false;
+    const runStartedAt = new Date().toISOString();
 
     try {
       const result = await executeOperation(
@@ -1074,6 +1080,16 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           reverted: false,
         });
         refetchLastOp();
+        // Fetch cost from ai_cost_log
+        try {
+          const { data: costRows } = await supabase
+            .from("ai_cost_log")
+            .select("estimated_cost_usd")
+            .gte("created_at", runStartedAt)
+            .eq("operation_type", "asset_fix");
+          const totalCost = (costRows ?? []).reduce((sum, r) => sum + ((r as any).estimated_cost_usd || 0), 0);
+          setRunCostUsd(totalCost);
+        } catch {}
         toast.success(`Done — ${result.updated} assets updated.`);
       }
     } catch (e: any) {
@@ -1137,10 +1153,11 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       scope_course_id: courseFilter === "all" ? null : courseFilter,
       scope_chapter_id: chapterFilter === "all" ? null : chapterFilter,
       scope_status_filter: statusFilter,
+      model: aiModel,
     } as any);
     if (error) { toast.error("Failed to add to queue"); return; }
     refetchQueue();
-    toast.success(`Added "${OPERATION_LABELS[opKey]}" to queue`);
+    toast.success(`Added "${OPERATION_LABELS[opKey]}" to queue (${aiModel === "opus" ? "Opus" : "Sonnet"})`);
   }
 
   async function removeFromQueue(id: string) {
@@ -1420,6 +1437,30 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 </div>
               </div>
             )}
+
+            {/* AI Model Selector */}
+            {operation && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label className="text-xs">AI Model</Label>
+                <Select value={aiModel} onValueChange={(v) => setAiModel(v as "sonnet" | "opus")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sonnet">Claude Sonnet 4 — Fast &amp; Efficient (default)</SelectItem>
+                    <SelectItem value="opus">Claude Opus 4 — Maximum Quality (higher cost)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {aiModel === "opus" && (
+                  <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                    <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-200">
+                      ⚠️ Opus costs ~15x more than Sonnet. Recommended for complex fixes only. Check ai_cost_log after test run before applying to full batch.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1668,6 +1709,11 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               <p className="text-sm text-emerald-400">
                 ✓ Done — {runComplete.updated} assets updated, {runComplete.skipped} skipped{runComplete.errors ? `, ${runComplete.errors} errors` : ""}.
               </p>
+              {runCostUsd !== null && runCostUsd > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Estimated cost: ${runCostUsd.toFixed(4)} ({aiModel === "opus" ? "Opus" : "Sonnet"})
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -1769,6 +1815,9 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   >
                     <span className="text-xs font-mono text-muted-foreground w-5">#{item.queue_position}</span>
                     <span className="text-xs text-foreground flex-1">{item.operation_name}</span>
+                    {(item as any).model === "opus" && (
+                      <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400">Opus</Badge>
+                    )}
                     <Badge
                       variant={item.status === "complete" ? "default" : item.status === "running" ? "secondary" : item.status === "failed" ? "destructive" : "outline"}
                       className="text-[10px]"
