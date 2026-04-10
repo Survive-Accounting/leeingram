@@ -1140,10 +1140,11 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       scope_course_id: courseFilter === "all" ? null : courseFilter,
       scope_chapter_id: chapterFilter === "all" ? null : chapterFilter,
       scope_status_filter: statusFilter,
+      model: aiModel,
     } as any);
     if (error) { toast.error("Failed to add to queue"); return; }
     refetchQueue();
-    toast.success(`Added "${OPERATION_LABELS[opKey]}" to queue`);
+    toast.success(`Added "${OPERATION_LABELS[opKey]}" to queue (${aiModel === "opus" ? "Opus" : "Sonnet"})`);
   }
 
   async function removeFromQueue(id: string) {
