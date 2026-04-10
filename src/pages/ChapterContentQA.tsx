@@ -64,7 +64,7 @@ type CourseRow = {
 
 type JECatRow = { id: string; category_name: string; sort_order: number; chapter_id: string };
 type JEEntryRow = { id: string; category_id: string | null; transaction_label: string; je_lines: any; is_approved: boolean; is_rejected: boolean; sort_order: number; chapter_id: string; source?: string };
-type FormulaRow = { id: string; chapter_id: string; formula_name: string; formula_expression: string; formula_explanation: string | null; image_url: string | null; is_approved: boolean; sort_order: number };
+type FormulaRow = { id: string; chapter_id: string; formula_name: string; formula_expression: string; formula_explanation: string | null; image_url: string | null; is_approved: boolean; sort_order: number; components?: any };
 
 // ── Main ─────────────────────────────────────────────────────────
 
