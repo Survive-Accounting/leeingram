@@ -746,17 +746,19 @@ export default function ChapterCramTool() {
     enabled: !!chapterId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const [purposeRes, termsRes, mistakesRes, accountsRes] = await Promise.all([
+      const [purposeRes, termsRes, mistakesRes, accountsRes, memoryRes] = await Promise.all([
         supabase.from("chapter_purpose").select("*").eq("chapter_id", chapterId!).maybeSingle(),
         supabase.from("chapter_key_terms").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
         supabase.from("chapter_exam_mistakes").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
         supabase.from("chapter_accounts").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
+        supabase.from("chapter_memory_items").select("*").eq("chapter_id", chapterId!).eq("is_approved", true).order("sort_order"),
       ]);
       return {
         purpose: purposeRes.data as any,
         keyTerms: (termsRes.data || []) as any[],
         examMistakes: (mistakesRes.data || []) as any[],
         accounts: (accountsRes.data || []) as any[],
+        memoryItems: (memoryRes.data || []) as any[],
       };
     },
   });
