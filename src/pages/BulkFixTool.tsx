@@ -210,6 +210,12 @@ export default function BulkFixTool() {
   const fixQueueActive = fixQueueItems.length > 0 && fixQueueItems.some(q => q.found);
   const fixQueueFoundIds = fixQueueItems.filter(q => q.found && q.assetId).map(q => q.assetId!);
 
+  // Targeted fix run state
+  interface TargetedFixStatus { assetId: string; code: string; assetName: string; status: "pending" | "running" | "done" | "error" | "skipped"; error?: string }
+  const [targetedFixRunning, setTargetedFixRunning] = useState(false);
+  const [targetedFixStatuses, setTargetedFixStatuses] = useState<TargetedFixStatus[]>([]);
+  const [targetedFixDone, setTargetedFixDone] = useState(false);
+
   // Persist fix queue to localStorage
   useEffect(() => {
     if (fixQueueItems.length > 0) {
