@@ -22,13 +22,15 @@ import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
   Loader2, Sparkles, Plus, BookOpen, FlaskConical, ChevronLeft,
   ExternalLink, AlertTriangle, Image as ImageIcon, Layers, BookText,
-  AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown,
+  AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown, Brain,
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
+import { MemoryBatchOrchestrator } from "@/components/admin-dashboard/MemoryBatchOrchestrator";
 import { CourseZipExporter } from "@/components/admin-dashboard/CourseZipExporter";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
+import { MemoryItemsTab } from "@/components/chapter-qa/MemoryItemsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
 import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
 import { useAuth } from "@/contexts/AuthContext";
