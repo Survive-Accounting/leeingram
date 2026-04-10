@@ -388,6 +388,7 @@ export default function ChapterContentQA() {
               chapters={cg.chapters}
               jeStatus={jeStatus}
               formulaStatus={formulaStatus}
+              memoryStatus={memoryStatus}
               statusPill={statusPill}
               selectedId={selectedChapterId}
               onSelect={setSelectedChapterId}
