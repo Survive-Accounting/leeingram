@@ -203,6 +203,13 @@ export default function ChapterContentQA() {
     if (c.approved > 0) return "approved";
     return "pending";
   };
+  const memoryStatus = (chId: string): { status: "none" | "pending" | "approved"; pending: number } => {
+    const c = memoryCounts?.[chId];
+    if (!c || c.total === 0) return { status: "none", pending: 0 };
+    const pending = c.total - c.approved;
+    if (pending > 0) return { status: "pending", pending };
+    return { status: "approved", pending: 0 };
+  };
 
   const statusPill = (status: string, type: string) => {
     if (status === "none") return <Badge variant="secondary" className="text-[9px] h-4 px-1.5">No {type}</Badge>;
