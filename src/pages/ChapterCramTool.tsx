@@ -838,6 +838,7 @@ export default function ChapterCramTool() {
   const keyTerms = contentSuite?.keyTerms || [];
   const examMistakes = contentSuite?.examMistakes || [];
   const chapterAccounts = contentSuite?.accounts || [];
+  const memoryItems = contentSuite?.memoryItems || [];
   const chapterJEEntries = chapterJEData?.entries || [];
   const chapterJECategories = chapterJEData?.categories || [];
 
@@ -845,6 +846,7 @@ export default function ChapterCramTool() {
   const cardCounts: Record<CardKey, number> = {
     "whats-the-point": purpose ? (Array.isArray(purpose.purpose_bullets) ? purpose.purpose_bullets.length : purpose.purpose_text ? 1 : 0) : 0,
     "key-terms": keyTerms.length,
+    "memory-items": memoryItems.length,
     "accounts": chapterAccounts.length,
     "journal-entries": chapterJEEntries.length,
     "formulas": visibleFormulas.length,
@@ -897,6 +899,8 @@ export default function ChapterCramTool() {
         return <DrawerPurposeContent purpose={purpose} />;
       case "key-terms":
         return <DrawerKeyTermsContent terms={keyTerms} chapterId={chapterId} />;
+      case "memory-items":
+        return <DrawerMemoryItemsContent items={memoryItems} chapterId={chapterId} />;
       case "accounts":
         return <DrawerAccountsContent accounts={chapterAccounts} />;
       case "journal-entries":
