@@ -478,6 +478,153 @@ function DrawerJournalEntriesContent({ categories, entries }: { categories: { id
   );
 }
 
+function DrawerMemoryItemsContent({ items, chapterId }: { items: any[]; chapterId: string }) {
+  const TYPE_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
+    list: { bg: "#DBEAFE", text: "#1D4ED8" },
+    criteria: { bg: "#EDE9FE", text: "#7C3AED" },
+    classification: { bg: "#CCFBF1", text: "#0D9488" },
+    rule: { bg: "#FEF3C7", text: "#B45309" },
+    mnemonic: { bg: "#D1FAE5", text: "#059669" },
+    steps: { bg: "#E0E7FF", text: "#3730A3" },
+    mapping: { bg: "#F3F4F6", text: "#6B7280" },
+  };
+
+  // Track which cards are revealed and which individual items are revealed
+  const [revealedCards, setRevealedCards] = useState<Set<string>>(new Set());
+  const [revealedItems, setRevealedItems] = useState<Set<string>>(new Set());
+  const [toasted, setToasted] = useState(false);
+
+  // Progress: a card counts as "done" if any of its items are revealed
+  const completedCards = items.filter(item => {
+    if (revealedCards.has(item.id)) return true;
+    const subItems = Array.isArray(item.items) ? item.items : [];
+    return subItems.some((_: any, si: number) => revealedItems.has(`${item.id}-${si}`));
+  }).length;
+
+  useEffect(() => {
+    if (!toasted && items.length > 0 && completedCards === items.length) {
+      toast("Memory locked in. 🧠", { duration: 3000 });
+      setToasted(true);
+    }
+  }, [completedCards, items.length, toasted]);
+
+  const toggleCardReveal = (cardId: string) => {
+    setRevealedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId); else next.add(cardId);
+      return next;
+    });
+  };
+
+  const toggleItemReveal = (key: string) => {
+    setRevealedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  if (items.length === 0) return <p className="text-[13px]" style={{ color: theme.textMuted }}>No memory items yet.</p>;
+
+  return (
+    <div className="space-y-4">
+      {/* Progress */}
+      <div className="rounded-xl border px-4 py-2.5" style={{ background: theme.mutedBg, borderColor: theme.border }}>
+        <p className="text-[13px] font-semibold" style={{ color: theme.text }}>{completedCards} ✓ / {items.length} items reviewed</p>
+      </div>
+
+      {items.map((item: any) => {
+        const subItems = (Array.isArray(item.items) ? item.items : []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+        const isCardRevealed = revealedCards.has(item.id);
+        const badge = TYPE_BADGE_COLORS[item.item_type] || TYPE_BADGE_COLORS.mapping;
+
+        return (
+          <div key={item.id} className="rounded-lg" style={{ border: "1px solid #E5E7EB", padding: 16, background: "#FFFFFF", marginBottom: 0 }}>
+            {/* Header: always visible */}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-[18px] leading-tight" style={{ color: theme.navy, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
+                  {item.title}
+                </p>
+                {item.subtitle && (
+                  <p className="text-[14px] mt-1 italic" style={{ color: theme.textMuted }}>{item.subtitle}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold" style={{ background: badge.bg, color: badge.text }}>
+                  {item.item_type}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => toggleCardReveal(item.id)}
+                  className="text-[11px] font-semibold px-3 py-1 rounded-md transition-colors"
+                  style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}
+                >
+                  {isCardRevealed ? "Hide All" : "Reveal All"}
+                </button>
+              </div>
+            </div>
+
+            {/* Items list */}
+            <div className="mt-3 space-y-0">
+              {subItems.map((sub: any, si: number) => {
+                const itemKey = `${item.id}-${si}`;
+                const isVisible = isCardRevealed || revealedItems.has(itemKey);
+
+                return (
+                  <div key={si}>
+                    {si > 0 && <div style={{ height: 1, background: "#F3F4F6", margin: "6px 0" }} />}
+                    <div className="flex items-start gap-3 py-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleItemReveal(itemKey)}
+                        className="shrink-0 flex items-center justify-center rounded-full transition-all duration-150"
+                        style={{
+                          width: 24, height: 24, marginTop: 2,
+                          background: isVisible ? theme.navy : "#E5E7EB",
+                          color: isVisible ? "#FFFFFF" : "#9CA3AF",
+                          fontSize: 10, fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {sub.order || si + 1}
+                      </button>
+                      <div
+                        className="flex-1 min-w-0"
+                        style={{
+                          opacity: isVisible ? 1 : 0,
+                          transform: isVisible ? "translateY(0)" : "translateY(6px)",
+                          transition: "opacity 150ms ease, transform 150ms ease",
+                          pointerEvents: isVisible ? "auto" : "none",
+                          minHeight: isVisible ? undefined : 20,
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[15px]" style={{ color: theme.text, fontWeight: 600, fontFamily: "Inter, sans-serif" }}>
+                            {sub.label}
+                          </span>
+                          {sub.tooltip && (
+                            <div className="relative group">
+                              <Info className="h-3.5 w-3.5 cursor-help" style={{ color: theme.textMuted }} />
+                              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block z-50 rounded-md px-3 py-2.5 text-[12px] leading-[1.6] shadow-lg" style={{ background: theme.navy, color: "#FFFFFF", maxWidth: 280, borderRadius: 6, whiteSpace: "normal" }}>
+                                {sub.tooltip}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function DrawerMistakesContent({ mistakes }: { mistakes: any[] }) {
   if (mistakes.length === 0) return <p className="text-[13px]" style={{ color: theme.textMuted }}>No exam mistakes yet.</p>;
   const borderColors = ["#CE1126", "#F59E0B", "#FBBF24"];
