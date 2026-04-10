@@ -1,0 +1,1 @@
+ALTER TABLE public.chapter_formulas ADD COLUMN components jsonb DEFAULT '[]';
