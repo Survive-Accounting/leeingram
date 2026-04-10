@@ -2827,8 +2827,8 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
           <div className="flex items-center">
             {!collapsed && (
               <>
-                {/* Admin: Fix This Now */}
-                {isAdmin && (
+                {/* Admin: Fix This Now — only in QA mode */}
+                {isAdmin && isQaMode && (
                   <>
                     <button
                       onClick={() => setFixOpen(true)}
