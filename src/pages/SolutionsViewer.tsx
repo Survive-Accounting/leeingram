@@ -928,7 +928,7 @@ function renderBoldMarkdown(text: string): React.ReactNode {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
-  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  const subSections = text.split(/(?=(?:^|\n)\s*\(?[a-z]\)\s)/im).filter(s => s.trim());
 
   // Dark mode detection: if pageBg is dark, use dark-optimised colors
   const isDark = theme.pageBg === "#FFFFFF" ? false : true;
@@ -943,7 +943,7 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
 
   // Build part cards
   const partCards = subSections.map((section, si) => {
-    const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+    const labelMatch = section.match(/^\s*\(?([a-z])\)\s*(.*)/i);
     const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
     const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
 
