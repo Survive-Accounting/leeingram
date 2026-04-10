@@ -1815,6 +1815,9 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   >
                     <span className="text-xs font-mono text-muted-foreground w-5">#{item.queue_position}</span>
                     <span className="text-xs text-foreground flex-1">{item.operation_name}</span>
+                    {(item as any).model === "opus" && (
+                      <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400">Opus</Badge>
+                    )}
                     <Badge
                       variant={item.status === "complete" ? "default" : item.status === "running" ? "secondary" : item.status === "failed" ? "destructive" : "outline"}
                       className="text-[10px]"
