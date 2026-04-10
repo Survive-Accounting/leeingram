@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
+import { MemoryBatchOrchestrator } from "@/components/admin-dashboard/MemoryBatchOrchestrator";
 import { CourseZipExporter } from "@/components/admin-dashboard/CourseZipExporter";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
