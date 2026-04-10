@@ -461,6 +461,7 @@ function ChapterQAModal({
     { key: "exam_mistakes", label: "Mistakes" },
     { key: "accounts", label: "Accounts" },
     { key: "formulas", label: "Formulas" },
+    { key: "memory_items", label: "Memory" },
     { key: "journal_entries", label: "JEs" },
   ] as const;
 
