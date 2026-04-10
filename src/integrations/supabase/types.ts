@@ -1307,6 +1307,56 @@ export type Database = {
           },
         ]
       }
+      chapter_memory_items: {
+        Row: {
+          chapter_id: string | null
+          created_at: string | null
+          generated_at: string | null
+          id: string
+          is_approved: boolean | null
+          is_rejected: boolean | null
+          item_type: string
+          items: Json
+          sort_order: number | null
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          item_type: string
+          items?: Json
+          sort_order?: number | null
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          chapter_id?: string | null
+          created_at?: string | null
+          generated_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_rejected?: boolean | null
+          item_type?: string
+          items?: Json
+          sort_order?: number | null
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_memory_items_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_problems: {
         Row: {
           build_run_id: string | null
