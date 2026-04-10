@@ -692,6 +692,7 @@ export type Database = {
           created_at: string
           error_summary: string | null
           id: string
+          model: string
           operation_key: string
           operation_name: string
           queue_position: number
@@ -710,6 +711,7 @@ export type Database = {
           created_at?: string
           error_summary?: string | null
           id?: string
+          model?: string
           operation_key: string
           operation_name: string
           queue_position: number
@@ -728,6 +730,7 @@ export type Database = {
           created_at?: string
           error_summary?: string | null
           id?: string
+          model?: string
           operation_key?: string
           operation_name?: string
           queue_position?: number

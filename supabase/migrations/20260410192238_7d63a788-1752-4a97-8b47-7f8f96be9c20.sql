@@ -1,0 +1,1 @@
+ALTER TABLE public.bulk_fix_queue ADD COLUMN IF NOT EXISTS model text NOT NULL DEFAULT 'sonnet';
