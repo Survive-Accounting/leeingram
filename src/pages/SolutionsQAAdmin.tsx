@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { ChapterQAReportExporter } from "@/components/admin-dashboard/ChapterQAReportExporter";
 
 // ── Types ────────────────────────────────────────────────────────────
 
