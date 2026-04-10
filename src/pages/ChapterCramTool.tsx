@@ -97,6 +97,7 @@ type SectionConfigRow = {
 const TOOL_CARDS = [
   { key: "whats-the-point", title: "What's the Point", icon: Target, countLabel: "entry", countLabelPlural: "entries" },
   { key: "key-terms", title: "Key Terms", icon: BookOpen, countLabel: "term", countLabelPlural: "terms" },
+  { key: "memory-items", title: "Memory Items", icon: Brain, countLabel: "item", countLabelPlural: "items" },
   { key: "accounts", title: "Accounts", icon: LayoutGrid, countLabel: "account", countLabelPlural: "accounts" },
   { key: "journal-entries", title: "Journal Entries", icon: FileText, countLabel: "entry", countLabelPlural: "entries" },
   { key: "formulas", title: "Formulas", icon: Calculator, countLabel: "formula", countLabelPlural: "formulas" },
