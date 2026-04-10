@@ -943,7 +943,7 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
 
   // Build part cards
   const partCards = subSections.map((section, si) => {
-    const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+    const labelMatch = section.match(/^\s*\(?([a-z])\)\s*(.*)/i);
     const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
     const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
 
