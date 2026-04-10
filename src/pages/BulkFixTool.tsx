@@ -1698,12 +1698,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                           )}
                           {s.status === "done" && (
                             <a
-                              href={`/solutions-qa?asset=${encodeURIComponent(s.assetName)}`}
+                              href={`/solutions/${encodeURIComponent(s.assetName)}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 hover:underline ml-auto"
+                              className="text-blue-400 hover:text-blue-300 hover:underline ml-auto shrink-0"
                             >
-                              Review QA →
+                              Review →
                             </a>
                           )}
                         </div>
