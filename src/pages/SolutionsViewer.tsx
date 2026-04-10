@@ -928,7 +928,7 @@ function renderBoldMarkdown(text: string): React.ReactNode {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
-  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  const subSections = text.split(/(?=(?:^|\n)\s*\(?[a-z]\)\s)/im).filter(s => s.trim());
 
   // Dark mode detection: if pageBg is dark, use dark-optimised colors
   const isDark = theme.pageBg === "#FFFFFF" ? false : true;
