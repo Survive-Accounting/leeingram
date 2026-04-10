@@ -156,8 +156,8 @@ function matchCompletedEntry(suppEntry: SupplementaryEntry, completedJson: unkno
   }
 }
 
-function parseImportantFormulas(raw: unknown): FormulaCard[] {
-  const formulas: FormulaCard[] = [];
+function parseImportantFormulas(raw: unknown): FormulaCardType[] {
+  const formulas: FormulaCardType[] = [];
   const visit = (value: unknown) => {
     if (!value) return;
     if (Array.isArray(value)) { value.forEach(visit); return; }
@@ -342,7 +342,7 @@ function DrawerKeyTermsContent({ terms, chapterId }: { terms: any[]; chapterId: 
   );
 }
 
-function DrawerFormulasContent({ formulas, chapterId, isAdmin, isItemHidden, toggleItemHidden }: { formulas: FormulaCard[]; chapterId: string; isAdmin: boolean; isItemHidden: (s: string, id: string) => boolean; toggleItemHidden: (s: string, id: string) => Promise<void> }) {
+function DrawerFormulasContent({ formulas, chapterId, isAdmin, isItemHidden, toggleItemHidden }: { formulas: FormulaCardType[]; chapterId: string; isAdmin: boolean; isItemHidden: (s: string, id: string) => boolean; toggleItemHidden: (s: string, id: string) => Promise<void> }) {
   const [formulaIndex, setFormulaIndex] = useState(0);
   const [seenSet, setSeenSet] = useState<Set<string>>(() => {
     try { const stored = sessionStorage.getItem(`sa_formulas_seen_${chapterId}`); return stored ? new Set(JSON.parse(stored)) : new Set(); } catch { return new Set(); }
