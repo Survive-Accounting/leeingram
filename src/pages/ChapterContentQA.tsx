@@ -25,6 +25,7 @@ import {
   AlertCircle, Target, Info, ArrowUp, ArrowDown, FileDown, Brain,
 } from "lucide-react";
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
+import { FormulaCard as FormulaCardComponent, type FormulaComponent } from "@/components/FormulaCard";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
 import { MemoryBatchOrchestrator } from "@/components/admin-dashboard/MemoryBatchOrchestrator";
 import { FormulaBatchRegenOrchestrator } from "@/components/admin-dashboard/FormulaBatchRegenOrchestrator";
