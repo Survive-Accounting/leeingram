@@ -3461,10 +3461,9 @@ export default function SolutionsViewer() {
       if (!chapterIdForJE) return [];
       const { data: rows } = await supabase
         .from("chapter_formulas")
-        .select("id, formula_name, formula_expression, image_url")
+        .select("id, formula_name, formula_expression, formula_explanation, components")
         .eq("chapter_id", chapterIdForJE)
         .eq("is_approved", true)
-        .not("image_url", "is", null)
         .order("sort_order");
       return rows || [];
     },
