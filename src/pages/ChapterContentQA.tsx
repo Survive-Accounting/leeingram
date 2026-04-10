@@ -27,6 +27,7 @@ import {
 import { generateChapterPdf, type ChapterPdfData } from "@/lib/generateChapterPdf";
 import { BatchSuiteOrchestrator } from "@/components/admin-dashboard/BatchSuiteOrchestrator";
 import { MemoryBatchOrchestrator } from "@/components/admin-dashboard/MemoryBatchOrchestrator";
+import { FormulaBatchRegenOrchestrator } from "@/components/admin-dashboard/FormulaBatchRegenOrchestrator";
 import { CourseZipExporter } from "@/components/admin-dashboard/CourseZipExporter";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
