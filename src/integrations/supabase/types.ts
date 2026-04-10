@@ -1115,6 +1115,7 @@ export type Database = {
       chapter_formulas: {
         Row: {
           chapter_id: string
+          components: Json | null
           created_at: string
           formula_explanation: string | null
           formula_expression: string
@@ -1129,6 +1130,7 @@ export type Database = {
         }
         Insert: {
           chapter_id: string
+          components?: Json | null
           created_at?: string
           formula_explanation?: string | null
           formula_expression: string
@@ -1143,6 +1145,7 @@ export type Database = {
         }
         Update: {
           chapter_id?: string
+          components?: Json | null
           created_at?: string
           formula_explanation?: string | null
           formula_expression?: string
