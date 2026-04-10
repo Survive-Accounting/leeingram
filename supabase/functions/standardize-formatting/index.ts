@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logCost } from "../_shared/cost.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,7 +99,19 @@ Deno.serve(async (req) => {
 
     if (updateErr) throw new Error(`Update failed: ${updateErr.message}`);
 
-    return new Response(JSON.stringify({ success: true }), {
+    // Log cost
+    if (aiData.usage) {
+      logCost(sb, {
+        operation_type: "asset_fix",
+        asset_code: teaching_asset_id,
+        model: aiModel,
+        input_tokens: aiData.usage.input_tokens,
+        output_tokens: aiData.usage.output_tokens,
+        metadata: { type: "standardize_formatting" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, estimated_cost_usd: aiData.usage ? undefined : null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
