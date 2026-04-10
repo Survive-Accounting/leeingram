@@ -1225,11 +1225,25 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       setTargetedFixStatuses([...statuses]);
 
       try {
-        // Call fix-asset for each targeted asset
+        const fixPrompt = customInstruction || OPERATION_LABELS[operation] || operation;
+        const sections = ["problem_text", "instructions", "solution"];
+
+        // Snapshot first
+        await supabase.functions.invoke("fix-asset", {
+          body: {
+            teaching_asset_id: statuses[i].assetId,
+            action: "snapshot",
+            sections,
+          },
+        });
+
+        // Run fix
         const { data, error } = await supabase.functions.invoke("fix-asset", {
           body: {
             teaching_asset_id: statuses[i].assetId,
-            fix_description: customInstruction || OPERATION_LABELS[operation] || operation,
+            action: "run",
+            sections,
+            fix_prompt: fixPrompt,
             model: aiModel,
           },
         });
