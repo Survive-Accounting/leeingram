@@ -70,6 +70,58 @@ const FIX_SECTIONS: SectionOption[] = [
 
 const PAGE_SIZE = 100;
 
+const FIX_STATUS_OPTIONS = [
+  { value: "pending_fix", label: "Pending Fix", bg: "rgba(245,158,11,0.2)", text: "#D97706" },
+  { value: "fix_applied", label: "Fix Applied", bg: "rgba(59,130,246,0.2)", text: "#3B82F6" },
+  { value: "fix_verified", label: "Verified ✓", bg: "rgba(16,185,129,0.2)", text: "#10B981" },
+  { value: "still_has_issues", label: "Still Has Issues", bg: "rgba(239,68,68,0.2)", text: "#EF4444" },
+  { value: "needs_lee", label: "Needs Lee 🚩", bg: "rgba(249,115,22,0.2)", text: "#F97316" },
+] as const;
+
+function FixStatusControl({ teachingAssetId }: { teachingAssetId: string | undefined }) {
+  const [current, setCurrent] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!teachingAssetId) return;
+    supabase.from("teaching_assets").select("fix_status").eq("id", teachingAssetId).single().then(({ data }) => {
+      setCurrent((data as any)?.fix_status || null);
+      setLoaded(true);
+    });
+  }, [teachingAssetId]);
+
+  if (!teachingAssetId || !loaded) return null;
+
+  const update = async (value: string) => {
+    const next = current === value ? null : value;
+    await supabase.from("teaching_assets").update({ fix_status: next } as any).eq("id", teachingAssetId);
+    setCurrent(next);
+    toast.success("Status updated");
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold text-foreground">Mark fix status</label>
+      <div className="flex flex-wrap gap-1.5">
+        {FIX_STATUS_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => update(opt.value)}
+            className="rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all border"
+            style={{
+              backgroundColor: current === opt.value ? opt.bg : "transparent",
+              color: current === opt.value ? opt.text : "var(--muted-foreground)",
+              borderColor: current === opt.value ? opt.text : "var(--border)",
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Fix Asset Modal ──────────────────────────────────────────────────
 
 function FixAssetModal({
@@ -273,6 +325,8 @@ function FixAssetModal({
                   ))}
                 </div>
               </div>
+
+              <FixStatusControl teachingAssetId={teachingAssetId} />
 
               <Button onClick={runFix} disabled={!canRun} className="w-full">
                 <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
@@ -731,11 +785,24 @@ export default function SolutionsQAAdmin() {
                       {bulkAssetIds.has(r.id) && (
                         <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
                       )}
-                      {adminFixStatusMap?.[(r as any).teaching_asset_id] === "needs_lee" && (
-                        <Badge className="ml-1.5 text-[8px]" style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#F59E0B" }}>Needs Lee</Badge>
-                      )}
                     </td>
-                    <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
+                    <td className="px-3 py-2 flex items-center gap-1 flex-wrap">
+                      {statusBadge(r.qa_status)}
+                      {(() => {
+                        const fs = adminFixStatusMap?.[(r as any).teaching_asset_id];
+                        if (!fs) return null;
+                        const fsColors: Record<string, { bg: string; text: string; label: string }> = {
+                          pending_fix: { bg: "rgba(245,158,11,0.2)", text: "#D97706", label: "Pending Fix" },
+                          fix_applied: { bg: "rgba(59,130,246,0.2)", text: "#3B82F6", label: "Fix Applied" },
+                          fix_verified: { bg: "rgba(16,185,129,0.2)", text: "#10B981", label: "Verified ✓" },
+                          still_has_issues: { bg: "rgba(239,68,68,0.2)", text: "#EF4444", label: "Still Has Issues" },
+                          needs_lee: { bg: "rgba(249,115,22,0.2)", text: "#F97316", label: "Needs Lee 🚩" },
+                        };
+                        const style = fsColors[fs];
+                        if (!style) return null;
+                        return <Badge className="text-[8px]" style={{ backgroundColor: style.bg, color: style.text }}>{style.label}</Badge>;
+                      })()}
+                    </td>
                     <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
                     <td className="px-3 py-2 text-muted-foreground">{issueCountMap[r.id] || 0}</td>
                   </tr>
