@@ -1709,6 +1709,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               <p className="text-sm text-emerald-400">
                 ✓ Done — {runComplete.updated} assets updated, {runComplete.skipped} skipped{runComplete.errors ? `, ${runComplete.errors} errors` : ""}.
               </p>
+              {runCostUsd !== null && runCostUsd > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Estimated cost: ${runCostUsd.toFixed(4)} ({aiModel === "opus" ? "Opus" : "Sonnet"})
+                </p>
+              )}
+              </p>
               <div className="flex gap-2">
                 <Button
                   size="sm"
