@@ -1698,12 +1698,12 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                           )}
                           {s.status === "done" && (
                             <a
-                              href={`/solutions/${encodeURIComponent(s.assetName)}`}
+                              href={`/solutions/${encodeURIComponent(s.assetName)}?qa=1`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:text-blue-300 hover:underline ml-auto shrink-0"
                             >
-                              Review →
+                              Review QA →
                             </a>
                           )}
                         </div>
@@ -1712,9 +1712,60 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   )}
 
                   {targetedFixDone && (
-                    <p className="text-xs text-emerald-400">
-                      ✓ Targeted fix complete — {targetedFixStatuses.filter(s => s.status === "done").length} done, {targetedFixStatuses.filter(s => s.status === "error").length} errors
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-xs text-emerald-400">
+                        ✓ Targeted fix complete — {targetedFixStatuses.filter(s => s.status === "done").length} done, {targetedFixStatuses.filter(s => s.status === "error").length} errors
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        onClick={async () => {
+                          const bundle: any = {
+                            timestamp: new Date().toISOString(),
+                            operation: operation,
+                            operation_label: OPERATION_LABELS[operation] || operation,
+                            ai_model: aiModel,
+                            fix_prompt: customInstruction || OPERATION_LABELS[operation] || operation,
+                            sections_targeted: ["problem_text", "instructions", "solution"],
+                            assets: [],
+                          };
+                          for (const s of targetedFixStatuses) {
+                            const { data: asset } = await supabase
+                              .from("teaching_assets")
+                              .select("asset_name, source_ref, fix_status, fix_notes, survive_problem_text, survive_solution_text, updated_at")
+                              .eq("id", s.assetId)
+                              .single();
+                            const { data: costRows } = await supabase
+                              .from("ai_cost_log")
+                              .select("*")
+                              .eq("asset_code", s.assetName)
+                              .order("created_at", { ascending: false })
+                              .limit(5);
+                            bundle.assets.push({
+                              code: s.code,
+                              asset_name: s.assetName,
+                              asset_id: s.assetId,
+                              fix_result: s.status,
+                              fix_error: s.error || null,
+                              current_state: asset ? {
+                                fix_status: (asset as any).fix_status,
+                                fix_notes: (asset as any).fix_notes,
+                                updated_at: (asset as any).updated_at,
+                                problem_text_preview: ((asset as any).survive_problem_text || "").slice(0, 300),
+                                solution_text_preview: ((asset as any).survive_solution_text || "").slice(0, 300),
+                              } : null,
+                              recent_cost_logs: costRows || [],
+                            });
+                          }
+                          const text = JSON.stringify(bundle, null, 2);
+                          await navigator.clipboard.writeText(text);
+                          toast.success("Debug bundle copied to clipboard");
+                        }}
+                      >
+                        📋 Copy Debug Bundle
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
