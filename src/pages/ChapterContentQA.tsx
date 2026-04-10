@@ -138,6 +138,22 @@ export default function ChapterContentQA() {
     },
   });
 
+  const { data: memoryCounts } = useQuery({
+    queryKey: ["cqa-memory-counts"],
+    queryFn: async () => {
+      const { data: allMemory } = await supabase
+        .from("chapter_memory_items")
+        .select("chapter_id, is_approved");
+      const byChapter: Record<string, { total: number; approved: number }> = {};
+      (allMemory || []).forEach((m: any) => {
+        if (!byChapter[m.chapter_id]) byChapter[m.chapter_id] = { total: 0, approved: 0 };
+        byChapter[m.chapter_id].total++;
+        if (m.is_approved) byChapter[m.chapter_id].approved++;
+      });
+      return byChapter;
+    },
+  });
+
   const totalChapters = chapters?.length || 0;
   const pendingJEChapters = chapters?.filter(ch => !jeCounts?.[ch.id]?.approved).length || 0;
   const approvedJEChapters = chapters?.filter(ch => (jeCounts?.[ch.id]?.approved || 0) > 0).length || 0;
