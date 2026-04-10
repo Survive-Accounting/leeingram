@@ -570,6 +570,7 @@ Deno.serve(async (req) => {
             if (only === "accounts") return generateAccounts(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "formulas") return generateFormulas(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             if (only === "journal_entries") return generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
+            if (only === "memory_items") return generateMemoryItems(ch.id, ch.chapter_name, ch.courseCode, extraPrompt);
             throw new Error(`Unknown only: ${only}`);
           }]]
         : [
@@ -579,6 +580,7 @@ Deno.serve(async (req) => {
             ["accounts", () => generateAccounts(ch.id, ch.chapter_name, ch.courseCode)],
             ["formulas", () => generateFormulas(ch.id, ch.chapter_name, ch.courseCode)],
             ["journal_entries", () => generateJournalEntries(ch.id, ch.chapter_name, ch.courseCode)],
+            ["memory_items", async () => { await new Promise(r => setTimeout(r, 1500)); return generateMemoryItems(ch.id, ch.chapter_name, ch.courseCode); }],
           ];
 
       for (const [key, fn] of generators) {
