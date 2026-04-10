@@ -1714,7 +1714,6 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   Estimated cost: ${runCostUsd.toFixed(4)} ({aiModel === "opus" ? "Opus" : "Sonnet"})
                 </p>
               )}
-              </p>
               <div className="flex gap-2">
                 <Button
                   size="sm"
