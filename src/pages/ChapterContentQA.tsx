@@ -31,6 +31,7 @@ import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
 import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
+import { MemoryTab } from "@/components/chapter-qa/MemoryTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useNavigate } from "react-router-dom";
