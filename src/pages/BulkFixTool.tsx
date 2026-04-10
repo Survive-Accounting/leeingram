@@ -1698,7 +1698,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                           )}
                           {s.status === "done" && (
                             <a
-                              href={`/solutions/${encodeURIComponent(s.assetName)}?qa=1`}
+                              href={`/solutions-qa?asset=${encodeURIComponent(s.assetName)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:text-blue-300 hover:underline ml-auto shrink-0"
