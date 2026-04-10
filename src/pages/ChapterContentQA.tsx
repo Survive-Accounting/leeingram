@@ -31,6 +31,7 @@ import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MistakesTab } from "@/components/chapter-qa/MistakesTab";
 import { PurposeTab } from "@/components/chapter-qa/PurposeTab";
+import { MemoryTab } from "@/components/chapter-qa/MemoryTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { useNavigate } from "react-router-dom";
@@ -460,6 +461,7 @@ function ChapterQAModal({
     { key: "exam_mistakes", label: "Mistakes" },
     { key: "accounts", label: "Accounts" },
     { key: "formulas", label: "Formulas" },
+    { key: "memory_items", label: "Memory" },
     { key: "journal_entries", label: "JEs" },
   ] as const;
 
@@ -604,12 +606,13 @@ function ChapterQAModal({
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
             <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
-              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
-              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
+              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
               <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
               <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
+              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
+              <TabsTrigger value="memory" className="gap-1 text-[11px]"><Sparkles className="h-3 w-3" /> Memory</TabsTrigger>
+              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
               <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
-              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -634,6 +637,9 @@ function ChapterQAModal({
             </TabsContent>
             <TabsContent value="purpose" className="mt-0">
               <PurposeTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
+            </TabsContent>
+            <TabsContent value="memory" className="mt-0">
+              <MemoryTab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
             </TabsContent>
           </Tabs>
         </div>
