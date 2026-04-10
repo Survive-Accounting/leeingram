@@ -1076,9 +1076,30 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
             if (!trimmed) {
               return <div key={`spacer-${line.idx}`} className="h-3" />;
             }
+            const isStepLabel = /^step \d+/i.test(trimmed);
             const isYearLabel = /^\d{4}\s*:/.test(trimmed);
             const isNumberedStep = /^\d+\.\s/.test(trimmed);
-            const isCalc = isCalculationLine(trimmed);
+            const isCalc = !isStepLabel && isCalculationLine(trimmed);
+
+            // Step labels — always plain narrative text, never calc blocks
+            if (isStepLabel) {
+              return (
+                <p
+                  key={line.idx}
+                  className="break-words"
+                  style={{
+                    fontSize: 14,
+                    color: isDark ? "rgba(255,255,255,0.9)" : "#1A1A1A",
+                    marginTop: 12,
+                    marginBottom: 4,
+                    lineHeight: 1.6,
+                    fontWeight: 600,
+                  }}
+                >
+                  {renderBoldMarkdown(trimmed)}
+                </p>
+              );
+            }
 
             // Calculation lines — monospace with red left accent
             if (isCalc || isJEOnly) {
