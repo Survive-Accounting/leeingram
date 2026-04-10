@@ -928,7 +928,7 @@ function renderBoldMarkdown(text: string): React.ReactNode {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
-  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  const subSections = text.split(/(?=(?:^|\n)\s*\(?[a-z]\)\s)/im).filter(s => s.trim());
 
   // Dark mode detection: if pageBg is dark, use dark-optimised colors
   const isDark = theme.pageBg === "#FFFFFF" ? false : true;
@@ -943,19 +943,30 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
 
   // Build part cards
   const partCards = subSections.map((section, si) => {
-    const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+    const labelMatch = section.match(/^\s*\(?([a-z])\)\s*(.*)/i);
     const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
     const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
 
-    // Extract content lines (everything after the (x) label line)
-    const rawContent = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-    let contentLines = rawContent.split("\n");
+    const sectionLines = section.split("\n");
+    const firstLineAfterLabel = labelMatch ? sectionLines[0].replace(/^\s*\(?[a-z]\)\s*/i, "").trim() : "";
+    const remainderLooksLikeContent = !!firstLineAfterLabel && (
+      isCalculationLine(firstLineAfterLabel) ||
+      /[$\d=÷×+\-/%]/.test(firstLineAfterLabel) ||
+      (firstLineAfterLabel.includes(":") && firstLineAfterLabel.length > 24)
+    );
 
-    // Build label — if labelMatch[2] is empty (letter on its own line), pull first content line
-    let labelSuffix = labelMatch?.[2]?.split("\n")[0]?.trim() || "";
+    let contentLines = labelMatch
+      ? [
+          ...(remainderLooksLikeContent ? [firstLineAfterLabel] : []),
+          ...sectionLines.slice(1),
+        ]
+      : sectionLines;
+
+    // Build label — if label is on its own line, pull the next narrative line as the part header
+    let labelSuffix = !remainderLooksLikeContent ? firstLineAfterLabel : "";
     if (labelMatch && !labelSuffix && !matchedInstruction) {
       const firstNonEmpty = contentLines.findIndex(l => l.trim());
-      if (firstNonEmpty >= 0) {
+      if (firstNonEmpty >= 0 && !isCalculationLine(contentLines[firstNonEmpty].trim())) {
         labelSuffix = contentLines[firstNonEmpty].trim();
         contentLines = [...contentLines.slice(0, firstNonEmpty), ...contentLines.slice(firstNonEmpty + 1)];
       }

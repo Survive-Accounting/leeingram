@@ -386,20 +386,31 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
-  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  const subSections = text.split(/(?=(?:^|\n)\s*\(?[a-z]\)\s)/im).filter(s => s.trim());
   return (
     <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
       {subSections.map((section, si) => {
-        const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
+        const labelMatch = section.match(/^\s*\(?([a-z])\)\s*(.*)/i);
         const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
         const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
+        const sectionLines = section.split("\n");
+        const firstLineAfterLabel = labelMatch ? sectionLines[0].replace(/^\s*\(?[a-z]\)\s*/i, "").trim() : "";
+        const remainderLooksLikeContent = !!firstLineAfterLabel && /[$\d=÷×+\-/%]/.test(firstLineAfterLabel);
         const label = labelMatch
           ? matchedInstruction
             ? `(${labelMatch[1]}) ${matchedInstruction.instruction_text}`
-            : `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`
+            : !remainderLooksLikeContent && firstLineAfterLabel
+              ? `(${labelMatch[1]}) ${firstLineAfterLabel}`
+              : `(${labelMatch[1]})`
           : null;
-        const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        const contentLines = content.split("\n").filter(l => l.trim());
+        const contentLines = (
+          labelMatch
+            ? [
+                ...(remainderLooksLikeContent ? [firstLineAfterLabel] : []),
+                ...sectionLines.slice(1),
+              ]
+            : sectionLines
+        ).filter(l => l.trim());
         return (
           <div key={si}>
             {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
