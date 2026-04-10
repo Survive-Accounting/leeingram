@@ -274,6 +274,8 @@ function FixAssetModal({
                 </div>
               </div>
 
+              <FixStatusControl teachingAssetId={teachingAssetId} />
+
               <Button onClick={runFix} disabled={!canRun} className="w-full">
                 <Wrench className="h-3.5 w-3.5 mr-1.5" /> Run Fix →
               </Button>
@@ -731,11 +733,24 @@ export default function SolutionsQAAdmin() {
                       {bulkAssetIds.has(r.id) && (
                         <Badge className="ml-1.5 bg-amber-500/20 text-amber-400 text-[8px]">Bulk</Badge>
                       )}
-                      {adminFixStatusMap?.[(r as any).teaching_asset_id] === "needs_lee" && (
-                        <Badge className="ml-1.5 text-[8px]" style={{ backgroundColor: "rgba(245, 158, 11, 0.2)", color: "#F59E0B" }}>Needs Lee</Badge>
-                      )}
                     </td>
-                    <td className="px-3 py-2">{statusBadge(r.qa_status)}</td>
+                    <td className="px-3 py-2 flex items-center gap-1 flex-wrap">
+                      {statusBadge(r.qa_status)}
+                      {(() => {
+                        const fs = adminFixStatusMap?.[(r as any).teaching_asset_id];
+                        if (!fs) return null;
+                        const fsColors: Record<string, { bg: string; text: string; label: string }> = {
+                          pending_fix: { bg: "rgba(245,158,11,0.2)", text: "#D97706", label: "Pending Fix" },
+                          fix_applied: { bg: "rgba(59,130,246,0.2)", text: "#3B82F6", label: "Fix Applied" },
+                          fix_verified: { bg: "rgba(16,185,129,0.2)", text: "#10B981", label: "Verified ✓" },
+                          still_has_issues: { bg: "rgba(239,68,68,0.2)", text: "#EF4444", label: "Still Has Issues" },
+                          needs_lee: { bg: "rgba(249,115,22,0.2)", text: "#F97316", label: "Needs Lee 🚩" },
+                        };
+                        const style = fsColors[fs];
+                        if (!style) return null;
+                        return <Badge className="text-[8px]" style={{ backgroundColor: style.bg, color: style.text }}>{style.label}</Badge>;
+                      })()}
+                    </td>
                     <td className="px-3 py-2 text-muted-foreground">{r.reviewed_by || "—"}</td>
                     <td className="px-3 py-2 text-muted-foreground">{issueCountMap[r.id] || 0}</td>
                   </tr>
