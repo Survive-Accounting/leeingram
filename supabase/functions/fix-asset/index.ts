@@ -132,6 +132,7 @@ serve(async (req) => {
     const body = await req.json();
     const { teaching_asset_id, sections, fix_prompt, action, snapshot } = body;
     const attempt_number = body.attempt_number ?? 1;
+    const requestedModel = body.model; // 'opus' | 'sonnet' | undefined
 
     if (!teaching_asset_id) throw new Error("Missing teaching_asset_id");
 
@@ -180,7 +181,8 @@ serve(async (req) => {
         try {
           // Direct text rewrite for problem_text, instructions, solution
           if (DIRECT_REWRITE_SECTIONS.has(sectionKey)) {
-            await rewriteTextField(sb, teaching_asset_id, sectionKey, fix_prompt, attempt_number > 1);
+            const useStrong = requestedModel === "opus" || attempt_number > 1;
+            await rewriteTextField(sb, teaching_asset_id, sectionKey, fix_prompt, useStrong);
             results.push({ key: sectionKey, ok: true });
             continue;
           }
@@ -189,7 +191,7 @@ serve(async (req) => {
           if (!inv) { results.push({ key: sectionKey, ok: false, error: "Unknown section" }); continue; }
 
           // Use strong model on retry attempts (attempt 2+) or explicit flag
-          inv.body.use_strong_model = attempt_number > 1;
+          inv.body.use_strong_model = requestedModel === "opus" || attempt_number > 1;
 
           const res = await fetch(`${supabaseUrl}/functions/v1/${inv.fn}`, {
             method: "POST",

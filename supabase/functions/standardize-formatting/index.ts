@@ -33,8 +33,9 @@ Deno.serve(async (req) => {
   const sb = createClient(supabaseUrl, serviceKey);
 
   try {
-    const { teaching_asset_id } = await req.json();
+    const { teaching_asset_id, model: requestedModel } = await req.json();
     if (!teaching_asset_id) throw new Error("teaching_asset_id required");
+    const aiModel = requestedModel === "opus" ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514";
 
     const { data: asset, error: fetchErr } = await sb
       .from("teaching_assets")
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: aiModel,
         max_tokens: 4000,
         temperature: 0.1,
         messages: [

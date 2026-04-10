@@ -171,6 +171,9 @@ export default function BulkFixTool() {
 
   // State
   const [operation, setOperation] = useState<OperationType | "">("");
+  const [aiModel, setAiModel] = useState<"sonnet" | "opus">("sonnet");
+  const [runCostUsd, setRunCostUsd] = useState<number | null>(null);
+  const [runningCostUsd, setRunningCostUsd] = useState<number>(0);
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
   const [customInstruction, setCustomInstruction] = useState("");
