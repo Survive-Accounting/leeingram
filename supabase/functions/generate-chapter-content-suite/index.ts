@@ -411,6 +411,119 @@ For non-contra accounts, set contra_tooltip and fs_placement_tooltip to null. Ma
   return items.length;
 }
 
+// ── Memory Items generator ──
+async function generateMemoryItems(chapterId: string, chapterName: string, courseCode: string, extraPrompt?: string) {
+  // Skip if chapter already has approved memory items
+  const { data: approvedRows } = await supabase
+    .from("chapter_memory_items")
+    .select("id")
+    .eq("chapter_id", chapterId)
+    .eq("is_approved", true)
+    .limit(1);
+
+  if ((approvedRows || []).length > 0 && !extraPrompt) {
+    console.log(`[memory_items] Skipping — chapter already has approved memory items`);
+    return { added: 0, skipped: 0, reason: "approved_items_exist" };
+  }
+
+  const systemPrompt = `You are generating "Memory Items" for an accounting chapter.
+These are structured lists, criteria, classifications, rules,
+steps, mnemonics, and mappings that students must memorize
+for exams. This applies to ALL accounting courses from
+introductory through intermediate level.
+
+ITEM TYPES — use whichever fits:
+- list: ordered or unordered items to know cold
+- criteria: numbered tests/conditions that must be met
+- classification: categories to distinguish between
+- rule: if X then Y decision rules
+- mnemonic: memory device for ordered content
+- steps: sequential process to follow
+- mapping: what goes where (e.g. financial statement placement)
+
+FOR EACH ITEM generate:
+- title: short label, max 8 words
+- item_type: from the list above
+- subtitle: one sentence, "you" voice, why this matters on exams specifically. Never generic.
+- items: array, each with:
+  - label: concise, max 6 words
+  - tooltip: 1-2 sentences "you" voice. Like a tutor whispering the key insight. Cause and effect. Never textbook-generic. Never start with "This is..." or "This account..."
+  - order: integer starting at 1
+
+TOOLTIP VOICE EXAMPLES — match this energy exactly:
+GOOD: "You debit this every time — it always increases pension expense. No exceptions."
+GOOD: "If all 5 criteria are met, you're looking at a finance lease. Miss even one and it's operating."
+GOOD: "Rising costs mean FIFO gives you higher ending inventory and higher net income. LIFO does the opposite — and that's why companies use it for tax savings."
+BAD: "Service cost represents the actuarial present value of benefits earned by employees during the period."
+BAD: "This classification is used when..."
+
+RULES:
+- Only include real, testable accounting content
+- Never invent rules or criteria that don't exist
+- If a chapter has fewer memorizable items, generate fewer — quality over quantity
+- Prioritize items most likely to appear on exams
+- Do not include items already covered by formulas or key terms for this chapter
+- Return ONLY a valid JSON array, no preamble, no markdown fences
+
+Return format:
+[
+  {
+    "title": "5 Components of Pension Expense",
+    "item_type": "list",
+    "subtitle": "Every pension problem tests at least one of these — know all five cold.",
+    "items": [
+      { "label": "Service Cost", "tooltip": "New benefit employees earned this year by working. You always debit this — it increases pension expense.", "order": 1 }
+    ]
+  }
+]`;
+
+  let userPrompt = `Chapter: ${chapterName}\nCourse: ${courseCode}\n\nGenerate 3-8 memory items depending on chapter complexity.`;
+
+  if (extraPrompt) {
+    const { data: existingRows } = await supabase.from("chapter_memory_items").select("title").eq("chapter_id", chapterId);
+    const existingTitles = (existingRows || []).map((r: any) => r.title);
+    userPrompt += `\n\nIMPORTANT — These memory items already exist (do NOT regenerate them):\n${existingTitles.map((t: string) => `• ${t}`).join("\n")}\n\nAdditional instructions: ${extraPrompt}\n\nReturn ONLY the new items to add.`;
+  }
+
+  const items = await callAnthropic(systemPrompt, userPrompt);
+  const arr = Array.isArray(items) ? items : (items.memory_items || items.items || []);
+
+  if (!extraPrompt) {
+    // Clear unapproved items before inserting fresh set
+    await supabase.from("chapter_memory_items").delete().eq("chapter_id", chapterId).or("is_approved.eq.false,is_approved.is.null");
+  }
+
+  // Dedup
+  let toInsert = arr;
+  let skipped = 0;
+  if (extraPrompt && arr.length > 0) {
+    const { data: existingRows } = await supabase.from("chapter_memory_items").select("title").eq("chapter_id", chapterId);
+    const existingSet = new Set((existingRows || []).map((r: any) => r.title.toLowerCase().trim()));
+    toInsert = arr.filter((item: any) => {
+      if (existingSet.has(item.title.toLowerCase().trim())) { skipped++; return false; }
+      return true;
+    });
+  }
+
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((item: any, i: number) => ({
+      chapter_id: chapterId,
+      title: item.title,
+      item_type: item.item_type,
+      subtitle: item.subtitle || null,
+      items: item.items || [],
+      sort_order: i + 1,
+      is_approved: false,
+      generated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from("chapter_memory_items").insert(rows);
+    if (error) throw error;
+  }
+
+  console.log(`[memory_items] extra=${!!extraPrompt} generated=${arr.length} inserted=${toInsert.length} skipped=${skipped}`);
+  return { added: toInsert.length, skipped, generated: arr.length };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
