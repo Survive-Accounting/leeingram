@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { ChapterQAReportExporter } from "@/components/admin-dashboard/ChapterQAReportExporter";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -659,6 +660,7 @@ export default function SolutionsQAAdmin() {
     <SurviveSidebarLayout>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
+        <ChapterQAReportExporter />
 
         {/* Summary stats */}
         <div className="grid grid-cols-8 gap-2">
