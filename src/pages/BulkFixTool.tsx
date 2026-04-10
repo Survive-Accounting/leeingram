@@ -210,6 +210,12 @@ export default function BulkFixTool() {
   const fixQueueActive = fixQueueItems.length > 0 && fixQueueItems.some(q => q.found);
   const fixQueueFoundIds = fixQueueItems.filter(q => q.found && q.assetId).map(q => q.assetId!);
 
+  // Targeted fix run state
+  interface TargetedFixStatus { assetId: string; code: string; assetName: string; status: "pending" | "running" | "done" | "error" | "skipped"; error?: string }
+  const [targetedFixRunning, setTargetedFixRunning] = useState(false);
+  const [targetedFixStatuses, setTargetedFixStatuses] = useState<TargetedFixStatus[]>([]);
+  const [targetedFixDone, setTargetedFixDone] = useState(false);
+
   // Persist fix queue to localStorage
   useEffect(() => {
     if (fixQueueItems.length > 0) {
@@ -700,7 +706,7 @@ export default function BulkFixTool() {
         // Run AI preview
         const { data: aiResult, error: aiError } = await supabase.functions.invoke("generate-ai-output", {
           body: {
-            provider: "lovable",
+            provider: "anthropic",
             model: "claude-sonnet-4-20250514",
             messages: [
               { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
@@ -991,7 +997,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
 
             const { data: aiResult, error: aiErr } = await supabase.functions.invoke("generate-ai-output", {
               body: {
-                provider: "lovable",
+                provider: "anthropic",
                 model: "claude-sonnet-4-20250514",
                 messages: [
                   { role: "system", content: "You are a text editor. Apply the following instruction to the text. Return ONLY the modified text, nothing else." },
@@ -1193,6 +1199,70 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
     toast.success("Queue stopped");
   }
 
+  // ── Run targeted fix on queued assets ──
+  async function runTargetedFix() {
+    if (!operation || !fixQueueActive) return;
+    const foundItems = fixQueueItems.filter(q => q.found && q.assetId);
+    if (!foundItems.length) { toast.error("No valid assets in queue"); return; }
+
+    const confirmed = window.confirm(
+      `Run "${OPERATION_LABELS[operation] || operation}" on ${foundItems.length} targeted assets?\n\n${foundItems.map(q => q.code).join("\n")}`
+    );
+    if (!confirmed) return;
+
+    setTargetedFixRunning(true);
+    setTargetedFixDone(false);
+    const statuses: TargetedFixStatus[] = foundItems.map(q => ({
+      assetId: q.assetId!,
+      code: q.code,
+      assetName: q.assetName || q.code,
+      status: "pending" as const,
+    }));
+    setTargetedFixStatuses([...statuses]);
+
+    for (let i = 0; i < statuses.length; i++) {
+      statuses[i].status = "running";
+      setTargetedFixStatuses([...statuses]);
+
+      try {
+        const fixPrompt = customInstruction || OPERATION_LABELS[operation] || operation;
+        const sections = ["problem_text", "instructions", "solution"];
+
+        // Snapshot first
+        await supabase.functions.invoke("fix-asset", {
+          body: {
+            teaching_asset_id: statuses[i].assetId,
+            action: "snapshot",
+            sections,
+          },
+        });
+
+        // Run fix
+        const { data, error } = await supabase.functions.invoke("fix-asset", {
+          body: {
+            teaching_asset_id: statuses[i].assetId,
+            action: "run",
+            sections,
+            fix_prompt: fixPrompt,
+            model: aiModel,
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        statuses[i].status = "done";
+      } catch (e: any) {
+        statuses[i].status = "error";
+        statuses[i].error = e?.message || "Unknown error";
+      }
+      setTargetedFixStatuses([...statuses]);
+    }
+
+    setTargetedFixRunning(false);
+    setTargetedFixDone(true);
+    const doneCount = statuses.filter(s => s.status === "done").length;
+    const errCount = statuses.filter(s => s.status === "error").length;
+    toast.success(`Targeted fix complete — ${doneCount} done, ${errCount} errors`);
+  }
 
 
   const runQueue = useCallback(async () => {
@@ -1592,6 +1662,60 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Run Fix on Targeted Assets button */}
+              {fixQueueActive && operation && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <Button
+                    onClick={runTargetedFix}
+                    disabled={targetedFixRunning || running || !operation}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {targetedFixRunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Run Fix on {fixQueueFoundIds.length} Targeted Assets
+                  </Button>
+
+                  {/* Per-asset status tracking */}
+                  {targetedFixStatuses.length > 0 && (
+                    <div className="rounded border border-border bg-muted/30 p-2 space-y-1.5 max-h-64 overflow-y-auto">
+                      {targetedFixStatuses.map((s) => (
+                        <div key={s.assetId} className="flex items-center gap-2 text-xs">
+                          {s.status === "pending" && <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground shrink-0" />}
+                          {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-400 shrink-0" />}
+                          {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />}
+                          {s.status === "error" && <X className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                          {s.status === "skipped" && <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/30 shrink-0" />}
+                          <span className="font-mono text-foreground">{s.code}</span>
+                          <span className="text-muted-foreground">→ {s.assetName}</span>
+                          {s.status === "error" && s.error && (
+                            <span className="text-destructive truncate max-w-48" title={s.error}>{s.error.slice(0, 50)}</span>
+                          )}
+                          {s.status === "done" && (
+                            <a
+                              href={`/solutions/${encodeURIComponent(s.assetName)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 hover:underline ml-auto shrink-0"
+                            >
+                              Review →
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {targetedFixDone && (
+                    <p className="text-xs text-emerald-400">
+                      ✓ Targeted fix complete — {targetedFixStatuses.filter(s => s.status === "done").length} done, {targetedFixStatuses.filter(s => s.status === "error").length} errors
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

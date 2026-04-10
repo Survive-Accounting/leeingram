@@ -148,7 +148,7 @@ serve(async (req) => {
       aiResponse = outputText || "";
       tokenUsage = data.usage || {};
 
-    } else if (provider === "lovable") {
+    } else if (provider === "lovable" || provider === "anthropic") {
       // Now routes to Anthropic API directly
       const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
       if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
