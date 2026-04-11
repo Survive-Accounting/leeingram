@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Check, Loader2, RefreshCw } from "lucide-react";
+import { X, Check, Loader2, RefreshCw, Copy } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -145,17 +146,28 @@ function FindingCard({
 
 function TabPanel({
   tab,
+  tabLabel,
+  chapterLabel,
+  courseCode,
   onToggleFinding,
   notes,
   onNotesChange,
   onRetry,
 }: {
   tab: TabState;
+  tabLabel: string;
+  chapterLabel: string;
+  courseCode: string;
   onToggleFinding: (idx: number) => void;
   notes: string;
   onNotesChange: (v: string) => void;
   onRetry: () => void;
 }) {
+  const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
+  const [copied, setCopied] = useState(false);
+
   if (tab.status === "loading" || tab.status === "idle") {
     return (
       <div className="space-y-3 py-2">
@@ -181,6 +193,45 @@ function TabPanel({
 
   const { high, medium, low, total } = countBySeverity(tab.findings);
   const acceptedCount = Object.values(tab.accepted).filter(Boolean).length;
+
+  const acceptedFindings = tab.findings.filter((_, i) => tab.accepted[i]);
+
+  const generatePrompt = async () => {
+    setGenerating(true);
+    setGenError("");
+    try {
+      const findingsList = acceptedFindings
+        .map((f, i) => `${i + 1}. [${f.severity}] ${f.title}\n   ${f.description}`)
+        .join("\n");
+
+      const { data, error } = await supabase.functions.invoke("generate-audit-prompt", {
+        body: {
+          chapter_name: chapterLabel,
+          course_code: courseCode,
+          tab_name: tabLabel,
+          findings: findingsList,
+          admin_notes: notes.trim() || "None",
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      setGeneratedPrompt(data.prompt || "");
+    } catch (err: any) {
+      console.error("Generate prompt failed:", err);
+      setGenError(err.message || "Unknown error");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(generatedPrompt);
+    setCopied(true);
+    toast.success("Prompt copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="space-y-4 py-2">
@@ -223,11 +274,57 @@ function TabPanel({
           <Button
             className="w-full text-sm font-semibold text-white"
             style={{ backgroundColor: "#14213D" }}
-            disabled={acceptedCount === 0}
+            disabled={acceptedCount === 0 || generating}
+            onClick={generatePrompt}
           >
-            Generate Lovable Prompt →
+            {generating ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating...</>
+            ) : (
+              "Generate Lovable Prompt →"
+            )}
           </Button>
-          {/* Placeholder for generated prompt — hidden until prompt generated */}
+
+          {genError && (
+            <p className="text-xs text-destructive">Generation failed — try again</p>
+          )}
+
+          {/* Generated prompt display */}
+          {generating && !generatedPrompt && (
+            <Skeleton className="h-40 w-full rounded-lg" />
+          )}
+
+          {generatedPrompt && (
+            <div className="space-y-2">
+              <div className="relative rounded-lg overflow-hidden" style={{ backgroundColor: "#14213D" }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 h-7 text-[11px] text-white/70 hover:text-white hover:bg-white/10 z-10"
+                  onClick={copyPrompt}
+                >
+                  {copied ? (
+                    <><Check className="h-3 w-3 mr-1" /> Copied ✓</>
+                  ) : (
+                    <><Copy className="h-3 w-3 mr-1" /> Copy →</>
+                  )}
+                </Button>
+                <pre
+                  className="text-[13px] font-mono text-white whitespace-pre-wrap break-words p-4 pr-24 max-h-[300px] overflow-y-auto"
+                >
+                  {generatedPrompt}
+                </pre>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs gap-1.5"
+                onClick={generatePrompt}
+                disabled={generating}
+              >
+                <RefreshCw className="h-3 w-3" /> Regenerate
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -384,10 +481,13 @@ export function ChapterAuditModal({
 
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 pb-6">
-              {TAB_CONFIG.map(({ key }) => (
+              {TAB_CONFIG.map(({ key, label }) => (
                 <TabsContent key={key} value={key} className="mt-0">
                   <TabPanel
                     tab={tabs[key]}
+                    tabLabel={label}
+                    chapterLabel={`Ch ${chapterNumber} — ${chapterName}`}
+                    courseCode={courseCode}
                     onToggleFinding={(idx) => toggleFinding(key, idx)}
                     notes={tabs[key].notes}
                     onNotesChange={(v) => setNotes(key, v)}
