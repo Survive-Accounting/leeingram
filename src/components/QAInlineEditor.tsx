@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Edit3, Save, X, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Edit3, Save, X, Loader2, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +57,33 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
   };
 
   const hasChanges = value !== initialValue;
+
+  const applyBgTag = useCallback((color: "red" | "yellow" | "clear") => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    // Work on whole lines that intersect the selection
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const lineEnd = value.indexOf("\n", end);
+    const actualEnd = lineEnd === -1 ? value.length : lineEnd;
+    const selectedLines = value.substring(lineStart, actualEnd);
+
+    const transformed = selectedLines.split("\n").map(line => {
+      // Strip existing bg tags first
+      const stripped = line.replace(/<bg:(red|yellow)>(.*?)<\/bg:\1>/g, "$2");
+      if (color === "clear") return stripped;
+      return `<bg:${color}>${stripped}</bg:${color}>`;
+    }).join("\n");
+
+    const newVal = value.substring(0, lineStart) + transformed + value.substring(actualEnd);
+    setValue(newVal);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.selectionStart = lineStart;
+      ta.selectionEnd = lineStart + transformed.length;
+    });
+  }, [value]);
 
   return (
     <div
