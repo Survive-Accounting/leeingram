@@ -236,6 +236,133 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
     textareaRef.current?.focus();
   }, []);
 
+  // Cooldown timer for regenerate button
+  useEffect(() => {
+    if (regenCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setRegenCooldown((c) => {
+        if (c <= 1) { clearInterval(timer); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [regenCooldown]);
+
+  const handleRegenerate = async () => {
+    if (!teachingAssetId) return;
+    setShowRegenConfirm(false);
+    setRegenState("loading");
+
+    try {
+      // 1. Snapshot
+      const { data: snapData, error: snapErr } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "snapshot", sections: ["solution"] },
+      });
+      if (snapErr) throw new Error(snapErr.message || "Snapshot failed");
+      setRegenSnapshot(snapData.snapshot);
+
+      // 2. Run regeneration with Opus
+      const fixPrompt = `Completely rewrite this accounting explanation from scratch.
+Use ONLY the problem text and instructions as your source.
+Do not reference any previous explanation.
+Rules:
+- Company name: Survive Company
+- US GAAP only
+- Show every step — never skip to the answer
+- All calculations in monospace format
+- Journal entries must balance (debits = credits)
+- Second-person "you" voice throughout
+- No AI thinking traces, no self-correction, no hedging
+- If a figure cannot be derived from the problem text, write [NEEDS LEE — insufficient data]
+- Output must read like a confident human tutor who knew the answer immediately`;
+
+      const { data: runData, error: runErr } = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          action: "run",
+          sections: ["solution"],
+          fix_prompt: fixPrompt,
+          model: "opus",
+        },
+      });
+      if (runErr) throw new Error(runErr.message || "Regeneration failed");
+
+      const newSolution = runData?.after?.solution?.survive_solution_text;
+      if (!newSolution) throw new Error("No solution returned");
+
+      setRegenResult(newSolution);
+      setValue(newSolution);
+      setRegenState("review");
+      setRegenCooldown(60);
+    } catch (err: any) {
+      console.error("Regenerate error:", err);
+      toast.error(`Regeneration failed: ${err.message}`);
+      setRegenState("idle");
+    }
+  };
+
+  const handleRegenApprove = async () => {
+    if (!teachingAssetId) return;
+    setSaving(true);
+    try {
+      const vaName = localStorage.getItem("sa_reviewer_name") || "VA";
+      const timestamp = new Date().toISOString().slice(0, 16);
+
+      // Save + approve
+      const { error } = await supabase
+        .from("teaching_assets")
+        .update({
+          survive_solution_text: value,
+          fix_status: "fix_verified",
+          reviewed_issues: false,
+          last_reviewed_by: vaName,
+          last_reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", teachingAssetId);
+      if (error) throw error;
+
+      // Append fix note
+      await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          action: "approve",
+          fix_prompt: `VA Opus regeneration — ${vaName} — ${timestamp}`,
+          reviewer_name: vaName,
+        },
+      });
+
+      toast.success("Regenerated solution approved & saved");
+      setRegenState("idle");
+      setRegenResult(null);
+      setRegenSnapshot(null);
+      onRegenerated?.();
+    } catch (err: any) {
+      toast.error(`Approve failed: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRegenRestore = async () => {
+    if (!teachingAssetId || !regenSnapshot) return;
+    try {
+      const { error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "restore", snapshot: regenSnapshot },
+      });
+      if (error) throw new Error(typeof error === "string" ? error : error.message || "Restore failed");
+
+      const original = regenSnapshot?.solution?.survive_solution_text;
+      if (typeof original === "string") setValue(original);
+
+      toast.success("Original restored ✓");
+      setRegenState("idle");
+      setRegenResult(null);
+      setRegenSnapshot(null);
+    } catch (err: any) {
+      toast.error(`Restore failed: ${err.message}`);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
