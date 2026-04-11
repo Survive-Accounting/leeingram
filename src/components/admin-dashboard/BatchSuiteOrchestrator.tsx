@@ -156,10 +156,10 @@ export function BatchSuiteOrchestrator() {
         return false;
       }
       if (skipCompleted.includes(ch.id)) return false;
-      if (isFullyApproved(ch.id)) return false;
+      if (isFullyPopulated(ch.id)) return false;
       return true;
     });
-  }, [allChapters, isFullyApproved]);
+  }, [allChapters, isFullyPopulated]);
 
   /**
    * Process a single chapter by calling generate-chapter-content-suite
