@@ -108,7 +108,10 @@ ${RETURN_SCHEMA}`;
 
     case "accounts": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing accounts.\n\n${RETURN_SCHEMA}`;
-      const lines = data.map((a: any) => `${a.account_name} | ${a.account_type} | ${a.normal_balance} | ${a.account_description || ""}`).join("\n");
+      const lines = data.map((a: any) => {
+        const status = a.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${a.account_name} | ${a.account_type} | ${a.normal_balance} | ${a.account_description || ""}`;
+      }).join("\n");
       return `${header}
 
 Current accounts:
@@ -127,8 +130,9 @@ ${RETURN_SCHEMA}`;
     case "memory": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing memory items.\n\n${RETURN_SCHEMA}`;
       const lines = data.map((m: any) => {
+        const status = m.is_approved ? "[approved]" : "[pending]";
         const itemLabels = Array.isArray(m.items) ? m.items.map((i: any) => typeof i === "string" ? i : i.label || i.text || JSON.stringify(i)).join(", ") : "";
-        return `${m.title} | ${m.item_type} | ${m.subtitle || ""} | ${itemLabels}`;
+        return `${status} ${m.title} | ${m.item_type} | ${m.subtitle || ""} | ${itemLabels}`;
       }).join("\n");
       return `${header}
 
@@ -152,9 +156,10 @@ ${RETURN_SCHEMA}`;
       for (const c of categories) catMap[c.id] = c.category_name;
       const lines: string[] = [];
       for (const e of entries) {
+        const status = e.is_approved ? "[approved]" : "[pending]";
         const catName = e.category_id ? catMap[e.category_id] || "Uncategorized" : "Uncategorized";
         const accounts = Array.isArray(e.je_lines) ? e.je_lines.map((l: any) => `${l.side === "debit" ? "Dr" : "Cr"} ${l.account}`).join(", ") : "";
-        lines.push(`${catName}: ${e.transaction_label} | ${accounts}`);
+        lines.push(`${status} ${catName}: ${e.transaction_label} | ${accounts}`);
       }
       return `${header}
 
@@ -173,7 +178,10 @@ ${RETURN_SCHEMA}`;
 
     case "mistakes": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing exam mistakes.\n\n${RETURN_SCHEMA}`;
-      const lines = data.map((m: any) => `${m.mistake}: ${m.explanation || ""}`).join("\n");
+      const lines = data.map((m: any) => {
+        const status = m.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${m.mistake}: ${m.explanation || ""}`;
+      }).join("\n");
       return `${header}
 
 Current mistakes:
