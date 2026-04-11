@@ -545,15 +545,16 @@ export default function SolutionsQAAdmin() {
       </Dialog>
 
       {fixPanelAsset && (
-        <FixThisAssetPanel
-          assetName={fixPanelAsset.assetName}
-          assetCode={fixPanelAsset.assetName}
-          teachingAssetId={fixPanelAsset.teachingAssetId}
+        <QAToolboxModal
+          open={!!fixPanelAsset}
           onClose={() => {
             setFixPanelAsset(null);
             qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
             qc.invalidateQueries({ queryKey: ["qa-admin-counts"] });
           }}
+          assetName={fixPanelAsset.assetName}
+          assetCode={fixPanelAsset.assetName}
+          teachingAssetId={fixPanelAsset.teachingAssetId}
         />
       )}
     </SurviveSidebarLayout>
