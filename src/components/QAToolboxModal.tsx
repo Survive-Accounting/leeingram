@@ -86,14 +86,12 @@ export function QAToolboxModal({
   // ── Operation selection ──
   const selectOperation = (op: OperationType) => {
     setOperation(op);
-    if (op === "something_else") {
-      setFixPrompt("");
-    } else if (op) {
+    if (op) {
       setFixPrompt(OPERATION_PROMPTS[op] || "");
     }
   };
 
-  const canRun = fixPrompt.trim().length >= 20 && operation !== null;
+  const canRun = operation !== null;
 
   const toggleSection = (key: string) => {
     setSelectedSections(prev => {
@@ -359,7 +357,7 @@ export function QAToolboxModal({
             {view === "fix-input" && (
               <>
                 <div>
-                  <label className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>What type of fix?</label>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>What's the issue?</label>
                   <div className="grid grid-cols-2 gap-1.5 mt-2">
                     {OPERATIONS.map(op => (
                       <button
@@ -376,53 +374,17 @@ export function QAToolboxModal({
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => selectOperation("something_else")}
-                    className="w-full mt-1.5 rounded-full px-3 py-2 text-[11px] font-semibold transition-all border text-left"
-                    style={{
-                      backgroundColor: operation === "something_else" ? "#14213D" : "transparent",
-                      color: operation === "something_else" ? "#FFFFFF" : "var(--muted-foreground)",
-                      borderColor: operation === "something_else" ? "#14213D" : "var(--border)",
-                    }}
-                  >
-                    📝 Something Else
-                  </button>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>Describe the fix</label>
-                  <Textarea
-                    value={fixPrompt}
-                    onChange={e => setFixPrompt(e.target.value)}
-                    placeholder="Describe exactly what's wrong and how to fix it..."
-                    className="text-xs"
-                    style={{ minHeight: 120 }}
-                  />
-                  <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
-                    {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"}
+                  <p className="text-[10px] mt-2" style={{ color: "var(--muted-foreground)" }}>
+                    None of these fit?{" "}
+                    <button
+                      onClick={handleNeedsLee}
+                      disabled={saving}
+                      className="inline font-medium hover:underline"
+                      style={{ color: "#D97706", background: "none", border: "none", padding: 0 }}
+                    >
+                      🚩 Needs Lee
+                    </button>
                   </p>
-                </div>
-
-                {/* Advanced sections */}
-                <div className="border rounded-lg overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                  <button
-                    onClick={() => setAdvancedOpen(!advancedOpen)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-medium transition-colors"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Advanced: sections to regenerate
-                    {advancedOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </button>
-                  {advancedOpen && (
-                    <div className="px-3 pb-3 space-y-1.5">
-                      {FIX_SECTIONS.map(sec => (
-                        <label key={sec.key} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
-                          <span className="text-[11px]" style={{ color: "var(--foreground)" }}>{sec.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 <button
