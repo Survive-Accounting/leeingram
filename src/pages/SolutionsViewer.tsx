@@ -4243,6 +4243,7 @@ export default function SolutionsViewer() {
                       initialValue={asset.survive_solution_text || ""}
                       label="Explanation Text"
                       rows={20}
+                      teachingAssetId={asset.id}
                       onSave={async (newVal) => {
                         const { error } = await supabase
                           .from("teaching_assets")
@@ -4253,6 +4254,10 @@ export default function SolutionsViewer() {
                         refetchAsset();
                       }}
                       onCancel={() => setQaEditingField(null)}
+                      onRegenerated={() => {
+                        setQaEditingField(null);
+                        refetchAsset();
+                      }}
                     />
                   ) : (
                     <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} />
