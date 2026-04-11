@@ -283,21 +283,7 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             onKeyDown={(e) => {
               if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                const ta = textareaRef.current;
-                if (!ta) return;
-                const start = ta.selectionStart;
-                const end = ta.selectionEnd;
-                const selected = value.substring(start, end);
-                if (selected) {
-                  const before = value.substring(0, start);
-                  const after = value.substring(end);
-                  const newVal = `${before}**${selected}**${after}`;
-                  setValue(newVal);
-                  requestAnimationFrame(() => {
-                    ta.selectionStart = start;
-                    ta.selectionEnd = end + 4;
-                  });
-                }
+                toggleBold();
               }
               if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();

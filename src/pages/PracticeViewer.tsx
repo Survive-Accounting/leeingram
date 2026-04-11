@@ -446,7 +446,7 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
             marginBottom: 3,
             display: 'block'
           }}>
-            {trimmed}
+            {renderBoldInline(trimmed)}
           </div>
         );
       })}
