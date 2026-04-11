@@ -53,16 +53,18 @@ function makeInitialTabs(): Record<TabKey, TabState> {
 
 // ── Finding classification ────────────────────────────────────────
 
-const UI_KEYWORDS = [
-  "display", "render", "layout", "format", "formatting", "spacing",
-  "alignment", "font", "color", "style", "css", "truncat", "overflow",
-  "responsive", "mobile", "breakpoint", "animation", "visual", "ui",
-  "component", "button", "icon", "badge",
+const UI_PATTERNS = [
+  /\brender(s|ing|ed)?\b/, /\blayout\b/, /\bformatting\b/, /\bspacing\b/,
+  /\balignment\b/, /\bfont[\s-]?(size|weight|family)?\b/, /\bcss\b/,
+  /\btruncat(e[ds]?|ion)\b/, /\boverflow\b/, /\bresponsive\b/,
+  /\bbreakpoint\b/, /\banimation\b/, /\bdisplay\s*(bug|issue|error|broken|glitch)\b/,
+  /\bui\s*(bug|issue|error|broken|glitch)\b/, /\bvisual\s*(bug|issue|error|broken|glitch)\b/,
+  /\bcomponent\s*(render|break|crash|display)\b/,
 ];
 
 function classifyFinding(title: string, description: string): FindingType {
   const text = `${title} ${description}`.toLowerCase();
-  return UI_KEYWORDS.some((kw) => text.includes(kw)) ? "ui" : "content";
+  return UI_PATTERNS.some((pat) => pat.test(text)) ? "ui" : "content";
 }
 
 // ── Severity helpers ─────────────────────────────────────────────
