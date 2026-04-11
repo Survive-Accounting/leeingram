@@ -11,6 +11,8 @@ const SYSTEM_PROMPT = `You are auditing content for an accounting study platform
 
 Voice standard: second-person "you" tutor voice, concise, cause and effect, never textbook-generic.
 
+Items may be tagged [approved] or [pending]. Audit ALL items regardless of status — pending items are real content awaiting review, not placeholders. Hidden items have already been excluded.
+
 Return ONLY valid JSON. No preamble, no markdown fences.
 Return empty findings array if content is genuinely strong.
 Be specific to this chapter — never generic accounting advice.`;
@@ -36,27 +38,27 @@ async function fetchTabData(sb: any, chapterId: string, tab: TabKey) {
       return data;
     }
     case "key_terms": {
-      const { data } = await sb.from("chapter_key_terms").select("term, definition, category, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_key_terms").select("term, definition, category, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
     case "accounts": {
-      const { data } = await sb.from("chapter_accounts").select("account_name, account_type, normal_balance, account_description, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("account_type").order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_accounts").select("account_name, account_type, normal_balance, account_description, is_approved, is_rejected").eq("chapter_id", chapterId).order("account_type").order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
     case "memory": {
-      const { data } = await sb.from("chapter_memory_items").select("title, item_type, subtitle, items, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_memory_items").select("title, item_type, subtitle, items, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
     case "jes": {
       const [catRes, jeRes] = await Promise.all([
         sb.from("chapter_je_categories").select("id, category_name, sort_order").eq("chapter_id", chapterId).order("sort_order"),
-        sb.from("chapter_journal_entries").select("transaction_label, je_lines, category_id, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order"),
+        sb.from("chapter_journal_entries").select("transaction_label, je_lines, category_id, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order"),
       ]);
-      return { categories: catRes.data || [], entries: jeRes.data || [] };
+      return { categories: catRes.data || [], entries: (jeRes.data || []).filter((r: any) => !r.is_rejected) };
     }
     case "mistakes": {
-      const { data } = await sb.from("chapter_exam_mistakes").select("mistake, explanation, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_exam_mistakes").select("mistake, explanation, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
   }
 }
@@ -85,7 +87,10 @@ ${RETURN_SCHEMA}`;
 
     case "key_terms": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing key terms.\n\n${RETURN_SCHEMA}`;
-      const lines = data.map((t: any) => `${t.category ? `[${t.category}] ` : ""}${t.term}: ${t.definition}`).join("\n");
+      const lines = data.map((t: any) => {
+        const status = t.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${t.category ? `[${t.category}] ` : ""}${t.term}: ${t.definition}`;
+      }).join("\n");
       return `${header}
 
 Current terms (grouped by category):
@@ -103,7 +108,10 @@ ${RETURN_SCHEMA}`;
 
     case "accounts": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing accounts.\n\n${RETURN_SCHEMA}`;
-      const lines = data.map((a: any) => `${a.account_name} | ${a.account_type} | ${a.normal_balance} | ${a.account_description || ""}`).join("\n");
+      const lines = data.map((a: any) => {
+        const status = a.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${a.account_name} | ${a.account_type} | ${a.normal_balance} | ${a.account_description || ""}`;
+      }).join("\n");
       return `${header}
 
 Current accounts:
@@ -122,8 +130,9 @@ ${RETURN_SCHEMA}`;
     case "memory": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing memory items.\n\n${RETURN_SCHEMA}`;
       const lines = data.map((m: any) => {
+        const status = m.is_approved ? "[approved]" : "[pending]";
         const itemLabels = Array.isArray(m.items) ? m.items.map((i: any) => typeof i === "string" ? i : i.label || i.text || JSON.stringify(i)).join(", ") : "";
-        return `${m.title} | ${m.item_type} | ${m.subtitle || ""} | ${itemLabels}`;
+        return `${status} ${m.title} | ${m.item_type} | ${m.subtitle || ""} | ${itemLabels}`;
       }).join("\n");
       return `${header}
 
@@ -147,9 +156,10 @@ ${RETURN_SCHEMA}`;
       for (const c of categories) catMap[c.id] = c.category_name;
       const lines: string[] = [];
       for (const e of entries) {
+        const status = e.is_approved ? "[approved]" : "[pending]";
         const catName = e.category_id ? catMap[e.category_id] || "Uncategorized" : "Uncategorized";
         const accounts = Array.isArray(e.je_lines) ? e.je_lines.map((l: any) => `${l.side === "debit" ? "Dr" : "Cr"} ${l.account}`).join(", ") : "";
-        lines.push(`${catName}: ${e.transaction_label} | ${accounts}`);
+        lines.push(`${status} ${catName}: ${e.transaction_label} | ${accounts}`);
       }
       return `${header}
 
@@ -168,7 +178,10 @@ ${RETURN_SCHEMA}`;
 
     case "mistakes": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing exam mistakes.\n\n${RETURN_SCHEMA}`;
-      const lines = data.map((m: any) => `${m.mistake}: ${m.explanation || ""}`).join("\n");
+      const lines = data.map((m: any) => {
+        const status = m.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${m.mistake}: ${m.explanation || ""}`;
+      }).join("\n");
       return `${header}
 
 Current mistakes:
