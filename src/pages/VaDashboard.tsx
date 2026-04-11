@@ -381,6 +381,16 @@ with message "AI Fix debug report"
                   : <span className="text-muted-foreground">Running tests…</span>
               }
             </div>
+            {!testRunning && testResults.edgeFn && testResults.anthropic && testResults.apiKey && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] px-3 gap-1.5 mt-2"
+                onClick={downloadDebugZip}
+              >
+                <Download className="h-3 w-3" /> Download Debug Report
+              </Button>
+            )}
           </div>
         )}
 
