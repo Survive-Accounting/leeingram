@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
-import { FixThisAssetPanel } from "@/components/FixThisAssetPanel";
+import { QAToolboxModal } from "@/components/QAToolboxModal";
 
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
@@ -2832,7 +2832,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false, isQaMode = false, courseCode = "" }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean; isQaMode?: boolean; courseCode?: string }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, onQaToolboxClick, showShare = true, isAdmin = false, isQaMode = false, courseCode = "" }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; onQaToolboxClick?: () => void; showShare?: boolean; isAdmin?: boolean; isQaMode?: boolean; courseCode?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -2872,8 +2872,18 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
   return (
     <>
-      {/* Mobile: compact floating share button bottom-right */}
-      {showShare && (
+      {/* Mobile: QA mode → QA pill; otherwise share button */}
+      {isQaMode && isAdmin ? (
+        <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
+          <button
+            onClick={onQaToolboxClick}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg text-white"
+            style={{ background: "#14213D" }}
+          >
+            ⚙ QA Review Tools
+          </button>
+        </div>
+      ) : showShare ? (
         <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
           <button
             onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
@@ -2883,7 +2893,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
         </div>
-      )}
+      ) : null}
 
       {/* Desktop: full action bar with feedback banner */}
       <div
@@ -2927,10 +2937,19 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
           {/* Button row */}
           <div className="flex items-center">
-            {!collapsed && (
+            {/* QA mode: show single "QA Review Tools" button */}
+            {isQaMode && isAdmin ? (
               <>
-                {/* Admin: Fix This Now — only in QA mode */}
-                    {/* Fix button moved to main content area */}
+                <button
+                  onClick={onQaToolboxClick}
+                  className="text-[12px] font-bold px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-1.5 text-white"
+                  style={{ backgroundColor: "#14213D", borderRadius: 6 }}
+                >
+                  QA Review Tools ⚙
+                </button>
+              </>
+            ) : !collapsed ? (
+              <>
                 {showShare && (
                   <>
                     <button
@@ -2960,19 +2979,24 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 </button>
                 <div className="w-px h-5" style={{ background: theme.border }} />
               </>
+            ) : null}
+            {!(isQaMode && isAdmin) && (
+              <>
+                <button
+                  onClick={() => setCollapsed(!collapsed)}
+                  className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
+                  style={{ color: theme.textMuted }}
+                >
+                  {collapsed ? (
+                    <>Show <ChevronDown className="h-3 w-3" /></>
+                  ) : (
+                    <ChevronUp className="h-3 w-3" />
+                  )}
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+              </>
             )}
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
-              style={{ color: theme.textMuted }}
-            >
-              {collapsed ? (
-                <>Show <ChevronDown className="h-3 w-3" /></>
-              ) : (
-                <ChevronUp className="h-3 w-3" />
-              )}
-            </button>
-            <div className="w-px h-5" style={{ background: theme.border }} />
+            {!(isQaMode && isAdmin) && (
             <div className="relative">
               <button
                 ref={menuBtnRef}
@@ -3029,6 +3053,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
       </div>
@@ -3999,7 +4024,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible && !isQaMode} isAdmin={isAdmin} isQaMode={isQaMode} courseCode={courseCode} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} onQaToolboxClick={() => setFixOpen(true)} showShare={shareButtonsVisible && !isQaMode} isAdmin={isAdmin} isQaMode={isQaMode} courseCode={courseCode} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
@@ -4022,7 +4047,7 @@ export default function SolutionsViewer() {
                   border: `1px solid ${t.border}`,
                 }}
               >
-                {/* Admin: Fix This Page — prominent position above problem */}
+                {/* Admin: QA Toolbox button — prominent position above problem */}
                 {isAdmin && isQaMode && (
                   <button
                     onClick={() => setFixOpen(true)}
@@ -4031,7 +4056,7 @@ export default function SolutionsViewer() {
                     onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 2px 20px rgba(20,33,61,0.4)")}
                     onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 2px 12px rgba(20,33,61,0.25)")}
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> ✨ Fix This Page
+                    <Sparkles className="h-3.5 w-3.5" /> ⚙ QA Toolbox
                   </button>
                 )}
 
@@ -4338,15 +4363,15 @@ export default function SolutionsViewer() {
       </main>
 
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
-      {fixOpen && asset && (
-        <FixThisAssetPanel
-          assetName={asset.asset_name}
-          assetCode={sourceRef || asset.asset_name}
-          teachingAssetId={asset.id}
-          chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
-          onClose={() => setFixOpen(false)}
-        />
-      )}
+      <QAToolboxModal
+        open={fixOpen}
+        onClose={() => setFixOpen(false)}
+        assetName={asset.asset_name}
+        assetCode={sourceRef || asset.asset_name}
+        teachingAssetId={asset.id}
+        chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
+        chapterName={chapter?.chapter_name || undefined}
+      />
     </div>
     </>
   );
