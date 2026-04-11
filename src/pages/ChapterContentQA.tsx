@@ -45,6 +45,25 @@ import { isContraAccount } from "@/lib/contraDetection";
 import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPanel";
 import { ChapterAuditModal } from "@/components/admin-dashboard/ChapterAuditModal";
 
+/** Mobile-aware tooltip: popover on mobile, tooltip on desktop */
+function MobileTip({ children, content, side = "top", className = "" }: { children: React.ReactNode; content: React.ReactNode; side?: "top" | "bottom" | "left" | "right"; className?: string }) {
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{children}</PopoverTrigger>
+        <PopoverContent side={side} className={cn("text-sm px-3 py-2 max-w-[260px] w-auto z-[9999]", className)}>{content}</PopoverContent>
+      </Popover>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side} className={cn("text-xs", className)}>{content}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 // ── Types ────────────────────────────────────────────────────────
 
 type JELine = {
