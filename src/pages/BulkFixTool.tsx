@@ -752,6 +752,24 @@ export default function BulkFixTool() {
           after: `Will remove AI thinking traces from solution text via Claude Opus — manual review required`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "remove_duplicates") {
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_solution_text", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: totalCount } = await countQ;
+        setTotalMatched(totalCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "survive_solution_text",
+          before: `${totalCount ?? 0} assets with solution text`,
+          after: `Will remove duplicate JEs, repeated calculations, and redundant content via Claude Opus — manual review required`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -800,7 +818,7 @@ export default function BulkFixTool() {
       assets = matchingAssets;
       console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
     } else {
-      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking"].includes(opKey);
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates"].includes(opKey);
       let scopeQuery = buildScopeQuery(isLightweight);
       if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
         scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
@@ -1050,10 +1068,22 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (result?.skipped) { skipped++; return; }
               changed = true;
             } catch { errors++; return; }
+          } else if (opKey === "remove_duplicates") {
+            const original = (asset as any).survive_solution_text || "";
+            if (!original.trim()) { skipped++; return; }
+
+            try {
+              const { data: result, error: fnErr } = await supabase.functions.invoke("remove-duplicates", {
+                body: { teaching_asset_id: asset.id },
+              });
+              if (fnErr || result?.error) { errors++; return; }
+              if (result?.skipped) { skipped++; return; }
+              changed = true;
+            } catch { errors++; return; }
           }
 
           if (changed) {
-            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking"].includes(opKey)) {
+            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates"].includes(opKey)) {
               await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
             }
             updated++;
@@ -1067,7 +1097,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       onProgress?.(Math.min(i + batchSize, total), total, (batch[batch.length - 1] as any)?.asset_name || "");
 
       // Delay for AI-heavy operations
-      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking"].includes(opKey)) {
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking", "remove_duplicates"].includes(opKey)) {
         await new Promise(r => setTimeout(r, 500));
       }
     }
@@ -1425,7 +1455,21 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </div>
             )}
 
-            {/* Info card for JE tooltip operations */}
+            {operation === "remove_duplicates" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Removes duplicate journal entries, repeated calculations, near-verbatim paragraphs, and redundant restatements from <code className="text-foreground">survive_solution_text</code>. Keeps all unique content and part headers.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ Opus model — review carefully before approving. This operation uses Claude Opus (~15x cost). Never auto-approved — always snapshot + manual review.
+                  </p>
+                </div>
+              </div>
+            )}
+
+
             {(operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && (
               <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
                 <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />

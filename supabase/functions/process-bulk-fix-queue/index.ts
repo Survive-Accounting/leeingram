@@ -105,6 +105,14 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
       return !data?.survive_solution_text?.trim();
     },
   },
+  remove_duplicates: {
+    fn: "remove-duplicates",
+    bodyFn: (id) => ({ teaching_asset_id: id }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb.from("teaching_assets").select("survive_solution_text").eq("id", id).single();
+      return !data?.survive_solution_text?.trim();
+    },
+  },
 };
 
 /**
