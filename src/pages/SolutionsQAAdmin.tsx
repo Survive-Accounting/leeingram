@@ -551,6 +551,7 @@ export default function SolutionsQAAdmin() {
   const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [fixIssue, setFixIssue] = useState<QAIssue | null>(null);
+  const [fixPanelAsset, setFixPanelAsset] = useState<{ assetName: string; teachingAssetId: string } | null>(null);
   const [auditChapter, setAuditChapter] = useState<{ id: string; name: string } | null>(null);
 
   // ── Server-side COUNT queries ──
@@ -951,12 +952,13 @@ export default function SolutionsQAAdmin() {
         </DialogContent>
       </Dialog>
 
-      {fixIssue && (
-        <FixAssetModal
-          issue={fixIssue}
-          onClose={() => setFixIssue(null)}
-          onComplete={() => {
-            setFixIssue(null);
+      {fixPanelAsset && (
+        <FixThisAssetPanel
+          assetName={fixPanelAsset.assetName}
+          assetCode={fixPanelAsset.assetName}
+          teachingAssetId={fixPanelAsset.teachingAssetId}
+          onClose={() => {
+            setFixPanelAsset(null);
             qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
             qc.invalidateQueries({ queryKey: ["qa-admin-counts"] });
           }}
