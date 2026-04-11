@@ -1051,7 +1051,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
           }
 
           if (changed) {
-            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
+            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking"].includes(opKey)) {
               await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
             }
             updated++;
