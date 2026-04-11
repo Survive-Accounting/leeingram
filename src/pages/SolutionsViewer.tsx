@@ -573,6 +573,8 @@ function RevealToggle({
   onReveal,
   onBuyClick,
   onReportClick,
+  controlledOpen,
+  onControlledToggle,
 }: {
   label: string;
   children: React.ReactNode;
