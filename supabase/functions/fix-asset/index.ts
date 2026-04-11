@@ -301,7 +301,17 @@ serve(async (req) => {
       });
     }
 
-    throw new Error("Invalid action. Use: snapshot, run, approve, restore, restore_partial");
+    // ── NOTIFY_SLACK: Send a single Slack message ──
+    if (action === "notify_slack") {
+      const slackMessage = body.slack_message;
+      if (!slackMessage) throw new Error("Missing slack_message");
+      await postToSlack(slackMessage);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    throw new Error("Invalid action. Use: snapshot, run, approve, restore, restore_partial, notify_slack");
   } catch (e: any) {
     console.error("fix-asset error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
