@@ -4,24 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Sparkles, X, Loader2, RotateCcw, ExternalLink,
-  ChevronDown, ChevronUp, Flag, CheckCircle2, ArrowRight,
+  Flag, CheckCircle2, ArrowRight,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ── Constants ────────────────────────────────────────────────────────
 
 type ToolboxView = "actions" | "fix-input" | "fix-running" | "fix-result";
 
-type OperationType = "standardize" | "remove_thinking" | "remove_duplicates" | "regenerate_missing" | "something_else" | null;
+type OperationType = "standardize" | "remove_thinking" | "remove_duplicates" | "regenerate_missing" | null;
 
-const OPERATIONS: { key: OperationType; label: string; icon: string }[] = [
+const OPERATIONS: { key: Exclude<OperationType, null>; label: string; icon: string }[] = [
   { key: "standardize", label: "Formatting", icon: "🎨" },
   { key: "remove_thinking", label: "AI Thinking", icon: "🤖" },
   { key: "remove_duplicates", label: "Duplicates", icon: "♻️" },
-  { key: "regenerate_missing", label: "Missing Content", icon: "✨" },
+  { key: "regenerate_missing", label: "Missing Content", icon: "📝" },
 ];
 
 const OPERATION_PROMPTS: Record<string, string> = {
@@ -34,18 +32,6 @@ const OPERATION_PROMPTS: Record<string, string> = {
   regenerate_missing:
     "Regenerate any missing content for lettered parts (a), (b), (c) etc. that are referenced in the instructions but not addressed in the solution. For each missing part, provide a complete worked solution with calculations and journal entries where applicable. If data is insufficient to solve a part, mark it with [NEEDS LEE] and explain what's missing.",
 };
-
-type SectionOption = { key: string; label: string };
-
-const FIX_SECTIONS: SectionOption[] = [
-  { key: "solution_je", label: "Solution text + JE reasons" },
-  { key: "supplementary_je", label: "Supplementary journal entries" },
-  { key: "dissector", label: "Problem dissector highlights" },
-  { key: "formulas", label: "Important formulas" },
-  { key: "concepts", label: "Key concepts" },
-  { key: "traps", label: "Exam traps" },
-  { key: "flowchart", label: "Flowchart" },
-];
 
 // ── Props ────────────────────────────────────────────────────────────
 
@@ -73,8 +59,6 @@ export function QAToolboxModal({
   const [view, setView] = useState<ToolboxView>("actions");
   const [operation, setOperation] = useState<OperationType>(null);
   const [fixPrompt, setFixPrompt] = useState("");
-  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set(["solution_je"]));
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -98,27 +82,16 @@ export function QAToolboxModal({
   // ── Operation selection ──
   const selectOperation = (op: OperationType) => {
     setOperation(op);
-    if (op === "something_else") {
-      setFixPrompt("");
-    } else if (op) {
+    if (op) {
       setFixPrompt(OPERATION_PROMPTS[op] || "");
     }
   };
 
-  const canRun = fixPrompt.trim().length >= 20 && operation !== null;
-
-  const toggleSection = (key: string) => {
-    setSelectedSections(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+  const canRun = operation !== null;
 
   // ── Run fix ──
   const runFix = async () => {
-    const sections = [...selectedSections];
-    if (!sections.length) sections.push("solution_je");
+    const sections = ["solution_je"];
     setView("fix-running");
 
     try {
@@ -265,8 +238,6 @@ export function QAToolboxModal({
     setFixPrompt("");
     setSnapshot(null);
     setAttemptNumber(1);
-    setAdvancedOpen(false);
-    setSelectedSections(new Set(["solution_je"]));
   }, []);
 
   // Reset when modal opens
@@ -371,7 +342,7 @@ export function QAToolboxModal({
             {view === "fix-input" && (
               <>
                 <div>
-                  <label className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>What type of fix?</label>
+                  <label className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>What's the issue?</label>
                   <div className="grid grid-cols-2 gap-1.5 mt-2">
                     {OPERATIONS.map(op => (
                       <button
@@ -388,53 +359,17 @@ export function QAToolboxModal({
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => selectOperation("something_else")}
-                    className="w-full mt-1.5 rounded-full px-3 py-2 text-[11px] font-semibold transition-all border text-left"
-                    style={{
-                      backgroundColor: operation === "something_else" ? "#14213D" : "transparent",
-                      color: operation === "something_else" ? "#FFFFFF" : "var(--muted-foreground)",
-                      borderColor: operation === "something_else" ? "#14213D" : "var(--border)",
-                    }}
-                  >
-                    📝 Something Else
-                  </button>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>Describe the fix</label>
-                  <Textarea
-                    value={fixPrompt}
-                    onChange={e => setFixPrompt(e.target.value)}
-                    placeholder="Describe exactly what's wrong and how to fix it..."
-                    className="text-xs"
-                    style={{ minHeight: 120 }}
-                  />
-                  <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
-                    {fixPrompt.trim().length < 20 ? `${20 - fixPrompt.trim().length} more characters needed` : "✓ Ready"}
+                  <p className="text-[10px] mt-2" style={{ color: "var(--muted-foreground)" }}>
+                    None of these fit?{" "}
+                    <button
+                      onClick={handleNeedsLee}
+                      disabled={saving}
+                      className="inline font-medium hover:underline"
+                      style={{ color: "#D97706", background: "none", border: "none", padding: 0 }}
+                    >
+                      🚩 Needs Lee
+                    </button>
                   </p>
-                </div>
-
-                {/* Advanced sections */}
-                <div className="border rounded-lg overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                  <button
-                    onClick={() => setAdvancedOpen(!advancedOpen)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-medium transition-colors"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Advanced: sections to regenerate
-                    {advancedOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </button>
-                  {advancedOpen && (
-                    <div className="px-3 pb-3 space-y-1.5">
-                      {FIX_SECTIONS.map(sec => (
-                        <label key={sec.key} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={selectedSections.has(sec.key)} onCheckedChange={() => toggleSection(sec.key)} />
-                          <span className="text-[11px]" style={{ color: "var(--foreground)" }}>{sec.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 <button
@@ -515,7 +450,7 @@ export function QAToolboxModal({
                   className="w-full text-center text-[11px] font-medium transition-colors flex items-center justify-center gap-1"
                   style={{ color: "var(--muted-foreground)" }}
                 >
-                  <RotateCcw className="h-3 w-3" /> ↩ Try Again
+                  <RotateCcw className="h-3 w-3" /> ↩ Try a different fix type
                 </button>
               </>
             )}
