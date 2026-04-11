@@ -621,14 +621,7 @@ function ChapterQAModal({
             )}
           </div>
 
-          {/* Audit Panel */}
-          {auditOpen && (
-            <ChapterAuditPanel
-              chapterId={chapter.id}
-              chapterName={`Ch ${chapter.chapter_number} — ${chapter.chapter_name}`}
-              onDismiss={() => setAuditOpen(false)}
-            />
-          )}
+          {/* Audit panel moved to scrollable area below */}
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
             <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
@@ -645,6 +638,15 @@ function ChapterQAModal({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 pb-6 pt-3">
+          {auditOpen && (
+            <div className="mb-4">
+              <ChapterAuditPanel
+                chapterId={chapter.id}
+                chapterName={`Ch ${chapter.chapter_number} — ${chapter.chapter_name}`}
+                onDismiss={() => setAuditOpen(false)}
+              />
+            </div>
+          )}
           <Tabs value={tab} onValueChange={onTabChange}>
             <TabsContent value="je" className="mt-0">
               <JETab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
