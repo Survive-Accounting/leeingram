@@ -4,11 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Sparkles, X, Loader2, RotateCcw, ExternalLink,
-  ChevronDown, ChevronUp, Flag, CheckCircle2, ArrowRight,
+  Flag, CheckCircle2, ArrowRight,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ── Constants ────────────────────────────────────────────────────────
