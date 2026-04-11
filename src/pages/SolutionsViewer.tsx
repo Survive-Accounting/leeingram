@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
+import { FixThisAssetPanel } from "@/components/FixThisAssetPanel";
 
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
@@ -4337,7 +4338,15 @@ export default function SolutionsViewer() {
       </main>
 
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
-      {fixOpen && asset && <FixThisNowModal assetCode={asset.asset_name} teachingAssetId={asset.id} onClose={() => setFixOpen(false)} />}
+      {fixOpen && asset && (
+        <FixThisAssetPanel
+          assetName={asset.asset_name}
+          assetCode={sourceRef || asset.asset_name}
+          teachingAssetId={asset.id}
+          chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
+          onClose={() => setFixOpen(false)}
+        />
+      )}
     </div>
     </>
   );

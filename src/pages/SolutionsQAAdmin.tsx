@@ -3,6 +3,7 @@ import confetti from "canvas-confetti";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { FixThisAssetPanel } from "@/components/FixThisAssetPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -550,6 +551,7 @@ export default function SolutionsQAAdmin() {
   const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [fixIssue, setFixIssue] = useState<QAIssue | null>(null);
+  const [fixPanelAsset, setFixPanelAsset] = useState<{ assetName: string; teachingAssetId: string } | null>(null);
   const [auditChapter, setAuditChapter] = useState<{ id: string; name: string } | null>(null);
 
   // ── Server-side COUNT queries ──
@@ -950,12 +952,13 @@ export default function SolutionsQAAdmin() {
         </DialogContent>
       </Dialog>
 
-      {fixIssue && (
-        <FixAssetModal
-          issue={fixIssue}
-          onClose={() => setFixIssue(null)}
-          onComplete={() => {
-            setFixIssue(null);
+      {fixPanelAsset && (
+        <FixThisAssetPanel
+          assetName={fixPanelAsset.assetName}
+          assetCode={fixPanelAsset.assetName}
+          teachingAssetId={fixPanelAsset.teachingAssetId}
+          onClose={() => {
+            setFixPanelAsset(null);
             qc.invalidateQueries({ queryKey: ["qa-admin-issues"] });
             qc.invalidateQueries({ queryKey: ["qa-admin-counts"] });
           }}
