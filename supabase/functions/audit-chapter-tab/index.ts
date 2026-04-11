@@ -11,6 +11,8 @@ const SYSTEM_PROMPT = `You are auditing content for an accounting study platform
 
 Voice standard: second-person "you" tutor voice, concise, cause and effect, never textbook-generic.
 
+Items may be tagged [approved] or [pending]. Audit ALL items regardless of status — pending items are real content awaiting review, not placeholders. Hidden items have already been excluded.
+
 Return ONLY valid JSON. No preamble, no markdown fences.
 Return empty findings array if content is genuinely strong.
 Be specific to this chapter — never generic accounting advice.`;
