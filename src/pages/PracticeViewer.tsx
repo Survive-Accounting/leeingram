@@ -439,7 +439,7 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
               marginBottom: 6,
               fontFamily: 'Inter, sans-serif'
             }}>
-              {trimmed}
+              {renderBoldInline(trimmed)}
             </p>
           );
         }
