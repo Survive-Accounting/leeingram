@@ -2839,9 +2839,6 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  const [fixOpen, setFixOpen] = useState(() => {
-    try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
-  });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
   });
@@ -3037,7 +3034,6 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
       {asset && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} asset={asset} />}
-      {fixOpen && asset && <FixThisNowModal assetCode={assetCode} teachingAssetId={asset.id} onClose={() => setFixOpen(false)} />}
     </>
   );
 }
