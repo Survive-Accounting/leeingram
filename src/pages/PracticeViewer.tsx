@@ -407,6 +407,16 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
 
 // ── Answer Summary ──────────────────────────────────────────────────
 
+function renderBoldInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    part.startsWith("**") && part.endsWith("**")
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : <span key={i}>{part}</span>
+  );
+}
+
 function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
   const lines = text.split('\n');
 
