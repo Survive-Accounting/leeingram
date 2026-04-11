@@ -21,7 +21,7 @@ type Finding = {
   fixType: FindingType;
 };
 
-type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "jes" | "mistakes";
+type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "formulas" | "jes" | "mistakes";
 
 type TabState = {
   status: "idle" | "loading" | "done" | "error";
@@ -37,6 +37,7 @@ const TAB_CONFIG: { key: TabKey; label: string }[] = [
   { key: "key_terms", label: "Key Terms" },
   { key: "accounts", label: "Accounts" },
   { key: "memory", label: "Memory" },
+  { key: "formulas", label: "Formulas" },
   { key: "jes", label: "JEs" },
   { key: "mistakes", label: "Mistakes" },
 ];
@@ -498,7 +499,7 @@ export function ChapterAuditModal({
   useEffect(() => {
     if (open && !hasStartedRef.current) {
       hasStartedRef.current = true;
-      const allTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "jes", "mistakes"];
+      const allTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "formulas", "jes", "mistakes"];
       // Set all to loading, then fire all simultaneously
       setTabs(() => {
         const t = makeInitialTabs();
