@@ -2832,7 +2832,7 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
 
 // ── Floating Action Bar (fixed top-right) ───────────────────────────
 
-function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, showShare = true, isAdmin = false, isQaMode = false, courseCode = "" }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; showShare?: boolean; isAdmin?: boolean; isQaMode?: boolean; courseCode?: string }) {
+function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onShareClick, onReportClick, onQaToolboxClick, showShare = true, isAdmin = false, isQaMode = false, courseCode = "" }: { theme: Theme; shareUrl: string; assetCode: string; chapterId?: string; asset?: any; onShareClick?: () => void; onReportClick?: () => void; onQaToolboxClick?: () => void; showShare?: boolean; isAdmin?: boolean; isQaMode?: boolean; courseCode?: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
