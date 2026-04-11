@@ -1036,6 +1036,18 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               backupUpdate["solution_text_backup"] = original;
               changed = true;
             }
+          } else if (opKey === "remove_ai_thinking") {
+            const original = (asset as any).survive_solution_text || "";
+            if (!original.trim()) { skipped++; return; }
+
+            try {
+              const { data: result, error: fnErr } = await supabase.functions.invoke("remove-ai-thinking", {
+                body: { teaching_asset_id: asset.id },
+              });
+              if (fnErr || result?.error) { errors++; return; }
+              if (result?.skipped) { skipped++; return; }
+              changed = true;
+            } catch { errors++; return; }
           }
 
           if (changed) {
