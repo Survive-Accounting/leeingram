@@ -191,29 +191,24 @@ function SmartContent({ text, className, theme }: { text: string; className?: st
 
 // ── Strip trailing requirements ─────────────────────────────────────
 
-function stripTrailingRequirements(text: string, hasInstructions: boolean): string {
-  if (!hasInstructions || !text.trim()) return text;
+function stripTrailingRequirements(text: string): string {
+  if (!text.trim()) return text;
   const lines = text.split("\n");
-  const halfwayPoint = Math.floor(lines.length / 2);
-  let cutIndex = -1;
-  for (let i = halfwayPoint; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (!trimmed) continue;
-    if (/^required[:\s]/i.test(trimmed) || /^instructions?[:\s]/i.test(trimmed)) {
-      cutIndex = i;
+  let end = lines.length;
+  while (end > 0) {
+    const trimmed = lines[end - 1].trim();
+    if (
+      !trimmed ||
+      /^\s*\(?[a-zA-Z]\)\s+\S/.test(lines[end - 1]) ||
+      /^\s*-\s*\(?[a-zA-Z]\)\s+\S/.test(lines[end - 1])
+    ) {
+      end--;
+    } else {
       break;
     }
-    if (/^\(?[a-z]\)\s+\S/i.test(trimmed)) {
-      // Check if all remaining non-empty lines also match the pattern
-      const remaining = lines.slice(i).filter(l => l.trim());
-      if (remaining.every(l => /^\(?[a-z]\)\s+\S/i.test(l.trim()))) {
-        cutIndex = i;
-        break;
-      }
-    }
   }
-  if (cutIndex === -1) return text;
-  return lines.slice(0, cutIndex).join("\n").trimEnd();
+  if (end === lines.length) return text;
+  return lines.slice(0, end).join("\n").trimEnd();
 }
 
 // ── Split long text ─────────────────────────────────────────────────
@@ -782,7 +777,7 @@ export default function PracticeViewer() {
   const rawProblemTextRaw = showHighlights && hasHighlights
     ? asset.problem_text_ht_backup!
     : asset.problem_context || "";
-  const rawProblemText = stripTrailingRequirements(rawProblemTextRaw, instructions.length > 0);
+  const rawProblemText = stripTrailingRequirements(rawProblemTextRaw);
   const problemParagraphs = splitLongText(rawProblemText);
 
   // Reveal sections progress tracker
