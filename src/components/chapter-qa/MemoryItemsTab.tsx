@@ -122,7 +122,7 @@ export function MemoryItemsTab({
     invalidate();
   };
 
-  const reject = async (id: string) => {
+  const hide = async (id: string) => {
     await supabase.from("chapter_memory_items").update({ is_rejected: true, is_approved: false }).eq("id", id);
     invalidate();
   };
@@ -138,10 +138,10 @@ export function MemoryItemsTab({
     toast.success("All memory items approved");
   };
 
-  const rejectAll = async () => {
+  const hideAll = async () => {
     await supabase.from("chapter_memory_items").update({ is_rejected: true, is_approved: false }).eq("chapter_id", chapterId);
     invalidate();
-    toast.success("All memory items rejected");
+    toast.success("All memory items hidden");
   };
 
   const swap = async (current: MemoryItemRow, target: MemoryItemRow) => {
@@ -170,7 +170,7 @@ export function MemoryItemsTab({
           key={memoryItem.id}
           item={memoryItem}
           onApprove={() => approve(memoryItem.id)}
-          onReject={() => reject(memoryItem.id)}
+          onHide={() => hide(memoryItem.id)}
           onDelete={() => remove(memoryItem.id)}
           onMoveUp={index > 0 ? () => swap(memoryItem, memoryItems[index - 1]) : undefined}
           onMoveDown={index < memoryItems.length - 1 ? () => swap(memoryItem, memoryItems[index + 1]) : undefined}
@@ -196,8 +196,8 @@ export function MemoryItemsTab({
         <Button size="sm" variant="outline" className="text-xs" onClick={approveAll}>
           <Check className="h-3 w-3 mr-1" /> Approve All ✓
         </Button>
-        <Button size="sm" variant="outline" className="text-xs text-destructive" onClick={rejectAll}>
-          <X className="h-3 w-3 mr-1" /> Reject All ✗
+        <Button size="sm" variant="outline" className="text-xs text-amber-500" onClick={hideAll}>
+          <X className="h-3 w-3 mr-1" /> Hide All
         </Button>
         <Button size="sm" variant="ghost" className="text-xs ml-auto" onClick={() => handleGenerate()} disabled={generating}>
           {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Brain className="h-3.5 w-3.5 mr-1" />}
@@ -211,14 +211,14 @@ export function MemoryItemsTab({
 function MemoryItemRowBlock({
   item,
   onApprove,
-  onReject,
+  onHide,
   onDelete,
   onMoveUp,
   onMoveDown,
 }: {
   item: MemoryItemRow;
   onApprove: () => void;
-  onReject: () => void;
+  onHide: () => void;
   onDelete: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -227,7 +227,7 @@ function MemoryItemRowBlock({
   const statusPill = item.is_approved ? (
     <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">Approved ✓</Badge>
   ) : item.is_rejected ? (
-    <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] h-5">Rejected ✗</Badge>
+    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] h-5">Hidden</Badge>
   ) : (
     <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge>
   );
@@ -259,7 +259,7 @@ function MemoryItemRowBlock({
             <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve">
               <Check className="h-3.5 w-3.5" />
             </button>
-            <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Reject">
+            <button onClick={onHide} className="p-1 rounded hover:bg-amber-500/20 text-amber-500 transition-colors" title="Hide">
               <X className="h-3.5 w-3.5" />
             </button>
             <button onClick={onDelete} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Delete">

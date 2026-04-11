@@ -38,7 +38,7 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
   };
 
   const approve = async (id: string) => { await supabase.from("chapter_accounts").update({ is_approved: true, is_rejected: false }).eq("id", id); invalidate(); };
-  const reject = async (id: string) => { await supabase.from("chapter_accounts").update({ is_rejected: true, is_approved: false }).eq("id", id); invalidate(); };
+  const hide = async (id: string) => { await supabase.from("chapter_accounts").update({ is_rejected: true, is_approved: false }).eq("id", id); invalidate(); };
   const remove = async (id: string) => { await supabase.from("chapter_accounts").delete().eq("id", id); invalidate(); };
   const approveAll = async () => { await supabase.from("chapter_accounts").update({ is_approved: true, is_rejected: false }).eq("chapter_id", chapterId); invalidate(); toast.success("All accounts approved"); };
 
@@ -69,7 +69,7 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
           if (groupAccounts.length === 0) return null;
           const isDebitNormal = group.subTypes.some(st => DEBIT_NORMAL_TYPES.has(st));
           return (
-            <AdminAccountGroup key={group.label} label={group.label} accounts={groupAccounts} isDebitNormal={isDebitNormal} onApprove={approve} onReject={reject} onDelete={remove} onSwap={swap} />
+            <AdminAccountGroup key={group.label} label={group.label} accounts={groupAccounts} isDebitNormal={isDebitNormal} onApprove={approve} onHide={hide} onDelete={remove} onSwap={swap} />
           );
         })}
 
@@ -94,9 +94,9 @@ export function AccountsTab({ chapterId, chapterName, courseCode }: { chapterId:
   );
 }
 
-function AdminAccountGroup({ label, accounts, isDebitNormal, onApprove, onReject, onDelete, onSwap }: {
+function AdminAccountGroup({ label, accounts, isDebitNormal, onApprove, onHide, onDelete, onSwap }: {
   label: string; accounts: TAccountData[]; isDebitNormal: boolean;
-  onApprove: (id: string) => void; onReject: (id: string) => void; onDelete: (id: string) => void;
+  onApprove: (id: string) => void; onHide: (id: string) => void; onDelete: (id: string) => void;
   onSwap: (a: TAccountData, b: TAccountData) => void;
 }) {
   const [open, setOpen] = useState(true);
@@ -115,8 +115,8 @@ function AdminAccountGroup({ label, accounts, isDebitNormal, onApprove, onReject
                 <button onClick={() => idx > 0 && onSwap(acc, accounts[idx - 1])} disabled={idx === 0} className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-20 transition-colors"><ArrowUp className="h-3 w-3" /></button>
                 <button onClick={() => idx < accounts.length - 1 && onSwap(acc, accounts[idx + 1])} disabled={idx === accounts.length - 1} className="p-0.5 rounded hover:bg-muted text-muted-foreground disabled:opacity-20 transition-colors"><ArrowDown className="h-3 w-3" /></button>
               </div>
-              <button onClick={() => onApprove(acc.id)} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors"><Check className="h-3.5 w-3.5" /></button>
-              <button onClick={() => onReject(acc.id)} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
+              <button onClick={() => onApprove(acc.id)} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
+              <button onClick={() => onHide(acc.id)} className="p-1 rounded hover:bg-amber-500/20 text-amber-500 transition-colors" title="Hide"><X className="h-3.5 w-3.5" /></button>
               <button onClick={() => onDelete(acc.id)} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           </div>
