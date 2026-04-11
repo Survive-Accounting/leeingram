@@ -779,9 +779,10 @@ export default function PracticeViewer() {
   const hasFooterLinks = quizLink || whiteboardLink || videoLink;
 
   const hasHighlights = !!asset.problem_text_ht_backup?.trim();
-  const rawProblemText = showHighlights && hasHighlights
+  const rawProblemTextRaw = showHighlights && hasHighlights
     ? asset.problem_text_ht_backup!
     : asset.problem_context || "";
+  const rawProblemText = stripTrailingRequirements(rawProblemTextRaw, instructions.length > 0);
   const problemParagraphs = splitLongText(rawProblemText);
 
   // Reveal sections progress tracker
