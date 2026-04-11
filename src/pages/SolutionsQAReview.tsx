@@ -2372,6 +2372,52 @@ export default function SolutionsQAReview() {
                   <Wrench className="h-3 w-3 mr-1" /> Fix This Asset
                 </Button>
               )}
+              {/* Mark Ready for Students — final QA action */}
+              {current?.teaching_asset_id && canUseFixer && (
+                <button
+                  className="w-full mt-2 text-white font-bold text-sm rounded-[10px] px-4 py-3.5 transition-all hover:scale-[1.02] hover:brightness-110 active:scale-[0.97]"
+                  style={{
+                    background: "linear-gradient(135deg, #14213D, #1a3a6b)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    animation: "readyGlow 2s ease-in-out infinite",
+                  }}
+                  onClick={async () => {
+                    const id = current.teaching_asset_id;
+                    const now = new Date().toISOString();
+                    // Fetch current fix_notes to append
+                    const { data: existing } = await supabase
+                      .from("teaching_assets")
+                      .select("fix_notes")
+                      .eq("id", id)
+                      .single();
+                    const prev = (existing as any)?.fix_notes || "";
+                    const appendedNotes = prev
+                      ? `${prev}\nMarked Ready for Students — ${now}`
+                      : `Marked Ready for Students — ${now}`;
+                    await supabase.from("teaching_assets").update({
+                      fix_status: "ready_for_students",
+                      fix_notes: appendedNotes,
+                    } as any).eq("id", id);
+                    // Also mark QA asset as clean
+                    await supabase.from("solutions_qa_assets" as any)
+                      .update({ qa_status: "reviewed_clean", reviewed_at: now, reviewed_by: reviewerName || "VA" })
+                      .eq("id", current.id);
+                    // Confetti from both corners
+                    const colors = ["#14213D", "#CE1126", "#FFFFFF"];
+                    confetti({ particleCount: 80, spread: 60, origin: { x: 0.1, y: 1 }, colors });
+                    confetti({ particleCount: 80, spread: 60, origin: { x: 0.9, y: 1 }, colors });
+                    toast.success("🎉 Ready for students!");
+                    qc.invalidateQueries({ queryKey: ["qa-assets"] });
+                    qc.invalidateQueries({ queryKey: ["qa-teaching-asset-fix-status"] });
+                    // Auto-advance after 1.5s
+                    setTimeout(() => {
+                      if (navPos < navOrder.length - 1) setCurrentIndex(navOrder[navPos + 1]);
+                    }, 1500);
+                  }}
+                >
+                  🎉 Mark Ready for Students
+                </button>
+              )}
             </div>
           </>
         )}
