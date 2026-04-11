@@ -1377,6 +1377,20 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               </div>
             )}
 
+            {operation === "remove_ai_thinking" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Removes AI reasoning traces from <code className="text-foreground">survive_solution_text</code> — "Let me recalculate...", "Actually...", self-correction, duplicate paragraphs, meta-commentary. Leaves clean textbook-style content.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ Opus model — review carefully before approving. This operation uses Claude Opus (~15x cost). Never auto-approved — always snapshot + manual review.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Info card for JE tooltip operations */}
             {(operation === "enrich_je_tooltips" || operation === "rewrite_je_reasons" || operation === "rewrite_je_amounts") && (
               <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
