@@ -153,6 +153,29 @@ Evaluate:
 ${RETURN_SCHEMA}`;
     }
 
+    case "formulas": {
+      if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing formulas.\n\n${RETURN_SCHEMA}`;
+      const lines = data.map((f: any) => {
+        const status = f.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${f.formula_name} | ${f.formula_expression} | ${f.formula_explanation || ""}`;
+      }).join("\n");
+      return `${header}
+
+Current formulas:
+${lines}
+
+Evaluate:
+1. Are all calculation-heavy formulas students need for exams present?
+2. Are explanations in "you" voice — specific not generic?
+3. Are any formulas from the wrong chapter?
+4. Are any formulas better suited as Memory Items (no mathematical expression)?
+5. Missing any formulas students will definitely need to plug numbers into on exams?
+
+Note: do not flag memo accounts or conceptual frameworks as missing formulas — those belong in Memory Items.
+
+${RETURN_SCHEMA}`;
+    }
+
     case "jes": {
       const { categories, entries } = data;
       if (!entries?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing journal entries.\n\n${RETURN_SCHEMA}`;
@@ -217,7 +240,7 @@ Deno.serve(async (req) => {
     const { chapter_id, tab, chapter_name, course_code } = await req.json();
     if (!chapter_id || !tab) throw new Error("chapter_id and tab required");
 
-    const validTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "jes", "mistakes"];
+    const validTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "formulas", "jes", "mistakes"];
     if (!validTabs.includes(tab)) throw new Error(`Invalid tab: ${tab}`);
 
     const data = await fetchTabData(sb, chapter_id, tab as TabKey);
