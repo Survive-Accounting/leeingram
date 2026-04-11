@@ -46,6 +46,7 @@ export function ChapterAuditPanel({
 }) {
   const [state, setState] = useState<AuditState>("idle");
   const [report, setReport] = useState<AuditReport | null>(null);
+  const [inventory, setInventory] = useState<ContentInventory | null>(null);
   const [costUsd, setCostUsd] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -59,6 +60,7 @@ export function ChapterAuditPanel({
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       setReport(data.report);
+      setInventory(data.inventory || null);
       setCostUsd(data.cost_usd || null);
       setState("done");
     } catch (err: any) {
