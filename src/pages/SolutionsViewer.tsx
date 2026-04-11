@@ -962,6 +962,12 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
       }
     }
 
+    // When an instruction replaces the label, the original text on the (a) line
+    // was being discarded. Preserve it as the first content line.
+    if (matchedInstruction && labelSuffix) {
+      contentLines = [labelSuffix, ...contentLines];
+    }
+
     // For JE-only problems, filter to calculation lines only
     if (isJEOnly) {
       contentLines = contentLines.filter(l => isCalculationLine(l.trim()));
