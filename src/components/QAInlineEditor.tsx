@@ -214,15 +214,22 @@ interface QAInlineEditorProps {
   onCancel: () => void;
   label: string;
   rows?: number;
+  teachingAssetId?: string;
+  onRegenerated?: () => void;
 }
 
-export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, rows = 12 }: QAInlineEditorProps) {
+export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, rows = 12, teachingAssetId, onRegenerated }: QAInlineEditorProps) {
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [flashMsg, setFlashMsg] = useState<string | null>(null);
   const [showStripConfirm, setShowStripConfirm] = useState(false);
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [regenState, setRegenState] = useState<"idle" | "loading" | "review">("idle");
+  const [regenResult, setRegenResult] = useState<string | null>(null);
+  const [regenSnapshot, setRegenSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [regenCooldown, setRegenCooldown] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
