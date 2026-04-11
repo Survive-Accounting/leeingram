@@ -24,6 +24,15 @@ type AuditReport = {
   do_not_change: string[];
 };
 
+type ContentInventory = {
+  purpose: { exists: boolean; approved: boolean };
+  key_terms: { total: number; approved: number; hidden: number };
+  memory_items: { total: number; approved: number; hidden: number };
+  formulas: { total: number; approved: number; hidden: number };
+  mistakes: { total: number; approved: number; hidden: number };
+  je_assets: number;
+};
+
 type AuditState = "idle" | "loading" | "done" | "error";
 
 export function ChapterAuditPanel({
