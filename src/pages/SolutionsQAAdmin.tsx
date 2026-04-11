@@ -908,6 +908,8 @@ export default function SolutionsQAAdmin() {
                           fix_verified: { bg: "rgba(16,185,129,0.2)", text: "#10B981", label: "Verified ✓" },
                           still_has_issues: { bg: "rgba(239,68,68,0.2)", text: "#EF4444", label: "Still Has Issues" },
                           needs_lee: { bg: "rgba(249,115,22,0.2)", text: "#F97316", label: "Needs Lee 🚩" },
+                          pending_lee_review: { bg: "rgba(139,92,246,0.2)", text: "#8B5CF6", label: "Pending Review 🔍" },
+                          ready_for_students: { bg: "rgba(16,185,129,0.2)", text: "#10B981", label: "Ready ✓" },
                         };
                         const style = fsColors[fs];
                         if (!style) return null;
