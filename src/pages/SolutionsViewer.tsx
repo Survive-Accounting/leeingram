@@ -2932,20 +2932,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
             {!collapsed && (
               <>
                 {/* Admin: Fix This Now — only in QA mode */}
-                {isAdmin && isQaMode && (
-                  <>
-                    <button
-                      onClick={() => setFixOpen(true)}
-                      className="text-[11px] font-semibold px-3 py-2 rounded-md transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5 text-white"
-                      style={{ backgroundColor: "#14213D", boxShadow: "0 0 0 0 rgba(20,33,61,0)" }}
-                      onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 12px 2px rgba(20,33,61,0.35)")}
-                      onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 0 0 rgba(20,33,61,0)")}
-                    >
-                      <Sparkles className="h-3 w-3" /> ✨ Fix This Now
-                    </button>
-                    <div className="w-px h-5" style={{ background: theme.border }} />
-                  </>
-                )}
+                    {/* Fix button moved to main content area */}
                 {showShare && (
                   <>
                     <button
