@@ -68,6 +68,25 @@ Return ONLY valid JSON, no markdown fences.`,
 Use realistic dollar amounts. Each entry must balance (total debits = total credits).
 Return ONLY valid JSON, no markdown fences.`,
 
+  formulas: `You are adding/fixing Formulas for a chapter. Return JSON:
+{
+  "formulas": [
+    {
+      "formula_name": "Formula Name",
+      "formula_expression": "A = B + C",
+      "formula_explanation": "Explanation in you-voice",
+      "components": [
+        { "symbol": "A", "label": "What A represents" },
+        { "symbol": "B", "label": "What B represents" }
+      ]
+    }
+  ]
+}
+Only include calculation-heavy formulas with mathematical expressions.
+Do not include conceptual frameworks or memo items — those belong in Memory Items.
+Use "you" voice for explanations.
+Return ONLY valid JSON, no markdown fences.`,
+
   mistakes: `You are adding/fixing Common Exam Mistakes for a chapter. Return JSON:
 {
   "mistakes": [
