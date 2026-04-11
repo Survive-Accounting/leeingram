@@ -102,9 +102,9 @@ export function BatchSuiteOrchestrator() {
     },
   });
 
-  // Check which chapters already have all 6 content types approved
-  const { data: approvalStatus } = useQuery({
-    queryKey: ["batch-suite-approval-status"],
+  // Check which chapters already have data in all 6 content tables (skip populated)
+  const { data: populationStatus } = useQuery({
+    queryKey: ["batch-suite-population-status"],
     queryFn: async () => {
       const [
         { data: purposes },
@@ -114,33 +114,40 @@ export function BatchSuiteOrchestrator() {
         { data: jes },
         { data: mistakes },
       ] = await Promise.all([
-        supabase.from("chapter_purpose").select("chapter_id, is_approved"),
-        supabase.from("chapter_accounts").select("chapter_id, is_approved"),
-        supabase.from("chapter_key_terms").select("chapter_id, is_approved"),
-        supabase.from("chapter_formulas").select("chapter_id, is_approved"),
-        supabase.from("chapter_journal_entries").select("chapter_id, is_approved"),
-        supabase.from("chapter_exam_mistakes").select("chapter_id, is_approved"),
+        supabase.from("chapter_purpose").select("chapter_id"),
+        supabase.from("chapter_accounts").select("chapter_id"),
+        supabase.from("chapter_key_terms").select("chapter_id"),
+        supabase.from("chapter_formulas").select("chapter_id"),
+        supabase.from("chapter_journal_entries").select("chapter_id"),
+        supabase.from("chapter_exam_mistakes").select("chapter_id"),
       ]);
 
-      const hasAny = (rows: any[] | null, chId: string) =>
-        (rows || []).some(r => r.chapter_id === chId);
+      const toSet = (rows: any[] | null) =>
+        new Set((rows || []).map(r => r.chapter_id));
 
-      return { purposes, accounts, terms, formulas, jes, mistakes, hasAny };
+      return {
+        purposes: toSet(purposes),
+        accounts: toSet(accounts),
+        terms: toSet(terms),
+        formulas: toSet(formulas),
+        jes: toSet(jes),
+        mistakes: toSet(mistakes),
+      };
     },
   });
 
-  const isFullyApproved = useCallback((chapterId: string) => {
-    if (!approvalStatus) return false;
-    const { purposes, accounts, terms, formulas, jes, mistakes, hasAny } = approvalStatus;
+  const isFullyPopulated = useCallback((chapterId: string) => {
+    if (!populationStatus) return false;
+    const { purposes, accounts, terms, formulas, jes, mistakes } = populationStatus;
     return (
-      hasAny(purposes, chapterId) &&
-      hasAny(accounts, chapterId) &&
-      hasAny(terms, chapterId) &&
-      hasAny(formulas, chapterId) &&
-      hasAny(jes, chapterId) &&
-      hasAny(mistakes, chapterId)
+      purposes.has(chapterId) &&
+      accounts.has(chapterId) &&
+      terms.has(chapterId) &&
+      formulas.has(chapterId) &&
+      jes.has(chapterId) &&
+      mistakes.has(chapterId)
     );
-  }, [approvalStatus]);
+  }, [populationStatus]);
 
   const getEligibleChapters = useCallback((skipCompleted: string[] = []) => {
     if (!allChapters) return [];
@@ -149,10 +156,10 @@ export function BatchSuiteOrchestrator() {
         return false;
       }
       if (skipCompleted.includes(ch.id)) return false;
-      if (isFullyApproved(ch.id)) return false;
+      if (isFullyPopulated(ch.id)) return false;
       return true;
     });
-  }, [allChapters, isFullyApproved]);
+  }, [allChapters, isFullyPopulated]);
 
   /**
    * Process a single chapter by calling generate-chapter-content-suite
