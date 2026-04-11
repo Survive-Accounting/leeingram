@@ -643,16 +643,8 @@ function RevealToggle({
           style={{ transform: open ? "rotate(180deg)" : "rotate(0)", color: isPreview ? theme.textMuted : "#94a3b8" }}
         />
       </button>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateRows: open ? "1fr" : "0fr",
-          transition: "grid-template-rows 0.3s ease",
-        }}
-      >
-        <div style={{ overflow: "hidden" }}>
       {open && (
-        <div className="px-4 sm:px-5 pb-4 pt-3" style={{ borderTop: `1px solid ${isPreview ? theme.border : "#e2e8f0"}` }}>
+        <div className="px-4 sm:px-5 pb-4 pt-3 animate-fade-in" style={{ borderTop: `1px solid ${isPreview ? theme.border : "#e2e8f0"}` }}>
           {isPreview ? (
             <TieredPaywallCard
               theme={theme}
