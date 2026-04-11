@@ -874,12 +874,16 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
           </Button>
         </div>
 
-        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-2 px-3 flex gap-2 -mx-3">
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-2 px-3 flex gap-2 flex-wrap -mx-3">
           <Button size="sm" variant="outline" className="text-xs" onClick={approveAll}>
             <Check className="h-3 w-3 mr-1" /> Approve All ✓
           </Button>
           <Button size="sm" variant="outline" className="text-xs text-destructive" onClick={rejectAll}>
             <X className="h-3 w-3 mr-1" /> Reject All ✗
+          </Button>
+          <Button size="sm" variant="outline" className="text-xs" onClick={handleRewriteTooltips} disabled={rewritingTooltips}>
+            {rewritingTooltips ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Edit3 className="h-3.5 w-3.5 mr-1" />}
+            Rewrite Tooltips (Tutor Voice)
           </Button>
           <Button size="sm" variant="ghost" className="text-xs ml-auto" onClick={() => handleGenerate()} disabled={generating}>
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
