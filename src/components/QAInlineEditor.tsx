@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Edit3, Save, X, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Edit3, Save, X, Loader2, Bold, Paintbrush, RemoveFormatting } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,8 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [hasSelection, setHasSelection] = useState(false);
+  const [bgPickerOpen, setBgPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
