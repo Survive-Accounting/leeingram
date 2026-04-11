@@ -209,7 +209,10 @@ Generate the corrected/additional content now.`;
         is_approved: false,
         sort_order: nextSort++,
       }));
-      const { error } = await sb.from("chapter_accounts").insert(rows);
+      const { error } = await sb.from("chapter_accounts").upsert(rows, {
+        onConflict: "chapter_id,account_name",
+        ignoreDuplicates: true,
+      });
       if (error) throw new Error(`DB error: ${error.message}`);
       insertedCount = rows.length;
     }
