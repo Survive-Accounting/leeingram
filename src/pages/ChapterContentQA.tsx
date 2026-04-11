@@ -729,6 +729,19 @@ function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chap
 
   const invalidate = () => { refetch(); qc.invalidateQueries({ queryKey: ["cqa-je-counts"] }); };
 
+  const handleRewriteTooltips = async () => {
+    setRewritingTooltips(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("rewrite-chapter-je-tooltips", {
+        body: { chapterId, chapterName, courseCode },
+      });
+      if (error) throw error;
+      toast.success(`Tooltips rewritten — ${data.updated}/${data.total} entries updated.`);
+      invalidate();
+    } catch (err: any) { toast.error(err.message); }
+    finally { setRewritingTooltips(false); }
+  };
+
   const handleGenerate = async (extra?: string) => {
     setGenerating(true);
     try {
