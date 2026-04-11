@@ -727,8 +727,10 @@ export default function SolutionsQAAdmin() {
       reviewed_issues: "bg-amber-500/20 text-amber-400",
       fix_approved: "bg-blue-500/20 text-blue-400",
       fix_generated: "bg-purple-500/20 text-purple-400",
+      pending_lee_review: "bg-purple-500/20 text-purple-400",
     };
-    return <Badge className={`text-[10px] ${colors[s] || colors.pending}`}>{s.replace(/_/g, " ")}</Badge>;
+    const label = s === "pending_lee_review" ? "Pending Review 🔍" : s.replace(/_/g, " ");
+    return <Badge className={`text-[10px] ${colors[s] || colors.pending}`}>{label}</Badge>;
   };
 
   const issueCountMap = useMemo(() => {
