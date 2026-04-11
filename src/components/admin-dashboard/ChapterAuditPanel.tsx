@@ -154,6 +154,28 @@ export function ChapterAuditPanel({
           <Button variant="ghost" size="sm" onClick={onDismiss}><X className="h-4 w-4" /></Button>
         </div>
 
+        {/* Content Inventory */}
+        {inventory && (
+          <div className="rounded-lg border border-border p-3 space-y-2 bg-muted/30">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">What Actually Exists</p>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {[
+                { label: "Purpose", val: inventory.purpose.exists ? (inventory.purpose.approved ? "✓ Approved" : "Pending") : "None" },
+                { label: "Key Terms", val: inventory.key_terms.total > 0 ? `${inventory.key_terms.approved}✓ / ${inventory.key_terms.total} total` : "None" },
+                { label: "Memory Items", val: inventory.memory_items.total > 0 ? `${inventory.memory_items.approved}✓ / ${inventory.memory_items.total} total` : "None" },
+                { label: "Formulas", val: inventory.formulas.total > 0 ? `${inventory.formulas.approved}✓ / ${inventory.formulas.total} total` : "None" },
+                { label: "Mistakes", val: inventory.mistakes.total > 0 ? `${inventory.mistakes.approved}✓ / ${inventory.mistakes.total} total` : "None" },
+                { label: "JE Assets", val: inventory.je_assets > 0 ? `${inventory.je_assets} assets` : "None" },
+              ].map(({ label, val }) => (
+                <div key={label} className="flex items-center justify-between gap-1 rounded-md border border-border px-2 py-1.5 bg-background">
+                  <span className="text-muted-foreground font-medium">{label}</span>
+                  <span className={val === "None" ? "text-destructive font-semibold" : "text-foreground font-semibold"}>{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Findings */}
         {groupedFindings.length > 0 && (
           <div className="space-y-2">
