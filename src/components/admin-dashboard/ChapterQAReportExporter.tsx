@@ -227,7 +227,7 @@ export function ChapterQAReportExporter() {
       });
 
       autoTable(doc, {
-        startY: summTop + 14,
+        startY: cursorY + 14,
         head: [["Ref", "Issue Reported", "Fix Status", "Fix Notes", "Action"]],
         body: tableRows,
         margin: { left: margin, right: margin },
