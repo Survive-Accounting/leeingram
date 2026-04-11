@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Edit3, Save, X, Loader2, Paintbrush } from "lucide-react";
+import { Edit3, Save, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,187 @@ export function QAEditButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+// ── Helpers ─────────────────────────────────────────────────────────
+
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function wrapSelection(
+  ta: HTMLTextAreaElement,
+  value: string,
+  marker: string
+): string {
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const selected = value.substring(start, end);
+
+  if (selected) {
+    // Toggle: unwrap if already wrapped
+    if (selected.startsWith(marker) && selected.endsWith(marker)) {
+      const unwrapped = selected.slice(marker.length, -marker.length);
+      const nv = value.substring(0, start) + unwrapped + value.substring(end);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.selectionStart = start;
+        ta.selectionEnd = start + unwrapped.length;
+      });
+      return nv;
+    }
+    // Also check if surrounding text has the markers
+    const bStart = start - marker.length;
+    const aEnd = end + marker.length;
+    if (
+      bStart >= 0 &&
+      aEnd <= value.length &&
+      value.substring(bStart, start) === marker &&
+      value.substring(end, aEnd) === marker
+    ) {
+      const nv = value.substring(0, bStart) + selected + value.substring(aEnd);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.selectionStart = bStart;
+        ta.selectionEnd = bStart + selected.length;
+      });
+      return nv;
+    }
+    // Wrap
+    const nv = value.substring(0, start) + marker + selected + marker + value.substring(end);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.selectionStart = start;
+      ta.selectionEnd = end + marker.length * 2;
+    });
+    return nv;
+  } else {
+    // No selection: insert markers, cursor between
+    const nv = value.substring(0, start) + marker + marker + value.substring(end);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.selectionStart = start + marker.length;
+      ta.selectionEnd = start + marker.length;
+    });
+    return nv;
+  }
+}
+
+function toggleLinePrefix(
+  ta: HTMLTextAreaElement,
+  value: string,
+  mode: "bullet" | "number"
+): string {
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+  const lineEnd = value.indexOf("\n", end);
+  const actualEnd = lineEnd === -1 ? value.length : lineEnd;
+  const block = value.substring(lineStart, actualEnd);
+  const lines = block.split("\n");
+
+  const allPrefixed = lines.every((l) =>
+    mode === "bullet" ? /^- /.test(l) : /^\d+\. /.test(l)
+  );
+
+  const transformed = lines
+    .map((line, i) => {
+      if (allPrefixed) {
+        // Remove prefix
+        return mode === "bullet"
+          ? line.replace(/^- /, "")
+          : line.replace(/^\d+\. /, "");
+      }
+      // Add prefix
+      const stripped =
+        mode === "bullet"
+          ? line.replace(/^- /, "")
+          : line.replace(/^\d+\. /, "");
+      return mode === "bullet" ? `- ${stripped}` : `${i + 1}. ${stripped}`;
+    })
+    .join("\n");
+
+  const nv = value.substring(0, lineStart) + transformed + value.substring(actualEnd);
+  requestAnimationFrame(() => {
+    ta.focus();
+    ta.selectionStart = lineStart;
+    ta.selectionEnd = lineStart + transformed.length;
+  });
+  return nv;
+}
+
+function stripAllFormatting(text: string): string {
+  let t = text;
+  // Bold **text** → text
+  t = t.replace(/\*\*(.+?)\*\*/g, "$1");
+  // Italic *text* → text (but not **)
+  t = t.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "$1");
+  // Backtick code `text` → text
+  t = t.replace(/`([^`]+)`/g, "$1");
+  // Triple backtick code blocks → plain text
+  t = t.replace(/```[\s\S]*?```/g, (m) => {
+    return m.replace(/```\w*\n?/g, "").replace(/```/g, "");
+  });
+  // Header prefixes
+  t = t.replace(/^#{1,3}\s+/gm, "");
+  // Bullet prefixes
+  t = t.replace(/^- /gm, "");
+  // Numbered prefixes
+  t = t.replace(/^\d+\. /gm, "");
+  // bg: tags
+  t = t.replace(/<bg:(red|yellow)>(.*?)<\/bg:\1>/g, "$2");
+  // HTML tags
+  t = t.replace(/<[^>]+>/g, "");
+  // Collapse 3+ blank lines → 2
+  t = t.replace(/\n{3,}/g, "\n\n");
+  // Trim trailing whitespace per line
+  t = t.replace(/[ \t]+$/gm, "");
+  return t;
+}
+
+function fixSpacing(text: string): string {
+  let t = text;
+  // Trim trailing spaces per line
+  t = t.replace(/[ \t]+$/gm, "");
+  // Blank line before step labels
+  t = t.replace(/([^\n])\n(Step \d+:)/g, "$1\n\n$2");
+  // Blank line before/after monospace blocks (```)
+  t = t.replace(/([^\n])\n(```)/g, "$1\n\n$2");
+  t = t.replace(/(```)\n([^\n])/g, "$1\n\n$2");
+  // Blank line between lettered parts (a), (b), (c)
+  t = t.replace(/([^\n])\n(\([a-z]\))/g, "$1\n\n$2");
+  // Normalize: collapse 3+ blank lines → 2
+  t = t.replace(/\n{3,}/g, "\n\n");
+  // Remove blank lines at start/end
+  t = t.replace(/^\n+/, "").replace(/\n+$/, "");
+  return t;
+}
+
+// ── Toolbar Button ──────────────────────────────────────────────────
+
+function ToolbarBtn({
+  label,
+  title,
+  onClick,
+}: {
+  label: string;
+  title: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="h-7 px-2 rounded text-[11px] font-semibold transition-colors"
+      style={{
+        background: "transparent",
+        border: "1px solid #D1D5DB",
+        color: "#14213D",
+      }}
+      title={title}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ── Inline Editor Panel ─────────────────────────────────────────────
 
 interface QAInlineEditorProps {
@@ -38,6 +219,9 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [flashMsg, setFlashMsg] = useState<string | null>(null);
+  const [showStripConfirm, setShowStripConfirm] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -57,24 +241,62 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
   };
 
   const hasChanges = value !== initialValue;
+  const wordCount = countWords(value);
+  const charCount = value.length;
+
+  const flash = (msg: string) => {
+    setFlashMsg(msg);
+    setTimeout(() => setFlashMsg(null), 2000);
+  };
+
+  const doWrap = useCallback(
+    (marker: string) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      setValue((v) => wrapSelection(ta, v, marker));
+    },
+    []
+  );
+
+  const doLinePrefix = useCallback(
+    (mode: "bullet" | "number") => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      setValue((v) => toggleLinePrefix(ta, v, mode));
+    },
+    []
+  );
+
+  const insertBlankLine = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    setValue((v) => v.substring(0, pos) + "\n\n" + v.substring(pos));
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.selectionStart = pos + 2;
+      ta.selectionEnd = pos + 2;
+    });
+  }, []);
 
   const applyBgTag = useCallback((color: "red" | "yellow" | "clear") => {
     const ta = textareaRef.current;
     if (!ta) return;
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-    // Work on whole lines that intersect the selection
     const lineStart = value.lastIndexOf("\n", start - 1) + 1;
     const lineEnd = value.indexOf("\n", end);
     const actualEnd = lineEnd === -1 ? value.length : lineEnd;
     const selectedLines = value.substring(lineStart, actualEnd);
 
-    const transformed = selectedLines.split("\n").map(line => {
-      // Strip existing bg tags first
-      const stripped = line.replace(/<bg:(red|yellow)>(.*?)<\/bg:\1>/g, "$2");
-      if (color === "clear") return stripped;
-      return `<bg:${color}>${stripped}</bg:${color}>`;
-    }).join("\n");
+    const transformed = selectedLines
+      .split("\n")
+      .map((line) => {
+        const stripped = line.replace(/<bg:(red|yellow)>(.*?)<\/bg:\1>/g, "$2");
+        if (color === "clear") return stripped;
+        return `<bg:${color}>${stripped}</bg:${color}>`;
+      })
+      .join("\n");
 
     const newVal = value.substring(0, lineStart) + transformed + value.substring(actualEnd);
     setValue(newVal);
@@ -85,13 +307,43 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
     });
   }, [value]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key === "b") {
+      e.preventDefault();
+      doWrap("**");
+    } else if (mod && e.key === "i") {
+      e.preventDefault();
+      doWrap("*");
+    } else if (mod && e.key === "m") {
+      e.preventDefault();
+      doWrap("`");
+    } else if (mod && e.key === "s") {
+      e.preventDefault();
+      if (hasChanges) handleSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  const wordCountColor =
+    wordCount < 100
+      ? "#D97706"
+      : wordCount > 800
+      ? "#D97706"
+      : "#9CA3AF";
+  const wordCountSuffix =
+    wordCount < 100
+      ? " · possibly incomplete"
+      : wordCount > 800
+      ? " · possibly too long"
+      : "";
+
   return (
     <div
       className="rounded-lg overflow-hidden my-3 animate-in slide-in-from-top-2 duration-200"
-      style={{
-        border: "2px solid #3B82F6",
-        background: "#FAFBFF",
-      }}
+      style={{ border: "2px solid #3B82F6", background: "#FAFBFF" }}
     >
       {/* Header */}
       <div
@@ -102,6 +354,25 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
           ✏️ Editing: {label}
         </span>
         <div className="flex items-center gap-1.5">
+          {/* Strip Formatting */}
+          <button
+            onClick={() => setShowStripConfirm(true)}
+            className="text-[10px] px-2 py-0.5 rounded transition-colors"
+            style={{ border: "1px solid #D1D5DB", color: "#6B7280", background: "transparent" }}
+          >
+            Strip Formatting
+          </button>
+          {/* Fix Spacing */}
+          <button
+            onClick={() => {
+              setValue((v) => fixSpacing(v));
+              flash("Spacing fixed ✓");
+            }}
+            className="text-[10px] px-2 py-0.5 rounded transition-colors"
+            style={{ border: "1px solid #D1D5DB", color: "#6B7280", background: "transparent" }}
+          >
+            Fix Spacing
+          </button>
           <button
             onClick={() => setPreview(!preview)}
             className="text-[10px] px-2 py-0.5 rounded transition-colors"
@@ -121,46 +392,98 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
             Save
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onCancel}
-            className="h-6 text-[11px] px-1.5"
-          >
+          <Button size="sm" variant="ghost" onClick={onCancel} className="h-6 text-[11px] px-1.5">
             <X className="h-3 w-3" />
           </Button>
         </div>
       </div>
 
-        {!preview && (
-          <div className="flex items-center gap-1 px-3 py-1.5" style={{ borderBottom: "1px solid rgba(59, 130, 246, 0.1)" }}>
-            <span className="text-[10px] mr-1" style={{ color: "#9CA3AF" }}>BG:</span>
+      {/* Strip Confirm Dialog */}
+      {showStripConfirm && (
+        <div
+          className="flex items-center justify-between px-3 py-2"
+          style={{ background: "#FEF3C7", borderBottom: "1px solid #F59E0B" }}
+        >
+          <span className="text-[11px]" style={{ color: "#92400E" }}>
+            Remove all formatting? Text content will be preserved.
+          </span>
+          <div className="flex gap-1.5">
             <button
-              onClick={() => applyBgTag("red")}
-              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
-              style={{ background: "#FEF2F2", border: "1px solid #CE1126", color: "#991B1B" }}
-              title="Red background"
+              onClick={() => {
+                setValue((v) => stripAllFormatting(v));
+                setShowStripConfirm(false);
+                flash("Formatting stripped ✓");
+              }}
+              className="text-[10px] px-2 py-0.5 rounded font-medium"
+              style={{ background: "#DC2626", color: "#fff" }}
             >
-              🔴 Red
+              Confirm
             </button>
             <button
-              onClick={() => applyBgTag("yellow")}
-              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
-              style={{ background: "#FEFCE8", border: "1px solid #D97706", color: "#92400E" }}
-              title="Yellow highlight"
+              onClick={() => setShowStripConfirm(false)}
+              className="text-[10px] px-2 py-0.5 rounded"
+              style={{ border: "1px solid #D1D5DB", color: "#6B7280" }}
             >
-              🟡 Yellow
-            </button>
-            <button
-              onClick={() => applyBgTag("clear")}
-              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
-              style={{ background: "#F3F4F6", border: "1px solid #D1D5DB", color: "#6B7280" }}
-              title="Clear background"
-            >
-              ✕ Clear
+              Cancel
             </button>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Flash message */}
+      {flashMsg && (
+        <div className="px-3 py-1.5 text-[11px] font-medium" style={{ background: "#ECFDF5", color: "#059669" }}>
+          {flashMsg}
+        </div>
+      )}
+
+      {/* Formatting Toolbar */}
+      {!preview && (
+        <div
+          className="flex items-center gap-1 px-3 py-1.5 flex-wrap"
+          style={{ borderBottom: "1px solid rgba(59, 130, 246, 0.1)" }}
+        >
+          <ToolbarBtn label="B" title="Bold (⌘B)" onClick={() => doWrap("**")} />
+          <ToolbarBtn label="I" title="Italic (⌘I)" onClick={() => doWrap("*")} />
+          <ToolbarBtn label="M" title="Monospace (⌘M)" onClick={() => doWrap("`")} />
+          <ToolbarBtn label="1." title="Numbered list" onClick={() => doLinePrefix("number")} />
+          <ToolbarBtn label="•" title="Bullet list" onClick={() => doLinePrefix("bullet")} />
+          <ToolbarBtn label="¶" title="Insert blank line" onClick={insertBlankLine} />
+          <ToolbarBtn
+            label="↕"
+            title="Toggle expand"
+            onClick={() => setExpanded((e) => !e)}
+          />
+
+          <span className="mx-1 h-4 w-px" style={{ background: "#E5E7EB" }} />
+          <span className="text-[10px] mr-1" style={{ color: "#9CA3AF" }}>BG:</span>
+          <button
+            onClick={() => applyBgTag("red")}
+            className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+            style={{ background: "#FEF2F2", border: "1px solid #CE1126", color: "#991B1B" }}
+            title="Red background"
+          >
+            🔴 Red
+          </button>
+          <button
+            onClick={() => applyBgTag("yellow")}
+            className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+            style={{ background: "#FEFCE8", border: "1px solid #D97706", color: "#92400E" }}
+            title="Yellow highlight"
+          >
+            🟡 Yellow
+          </button>
+          <button
+            onClick={() => applyBgTag("clear")}
+            className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+            style={{ background: "#F3F4F6", border: "1px solid #D1D5DB", color: "#6B7280" }}
+            title="Clear background"
+          >
+            ✕ Clear
+          </button>
+        </div>
+      )}
+
       <div className="p-3">
         {preview ? (
           <div
@@ -178,56 +501,24 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            rows={rows}
+            rows={expanded ? 20 : 8}
             className="text-[13px] leading-[1.7] font-mono resize-y min-h-[120px]"
-            style={{
-              background: "#fff",
-              border: "1px solid #D1D5DB",
-              color: "#1A1A1A",
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                const ta = textareaRef.current;
-                if (!ta) return;
-                const start = ta.selectionStart;
-                const end = ta.selectionEnd;
-                const selected = value.substring(start, end);
-                if (selected) {
-                  const before = value.substring(0, start);
-                  const after = value.substring(end);
-                  const newVal = `${before}**${selected}**${after}`;
-                  setValue(newVal);
-                  requestAnimationFrame(() => {
-                    ta.selectionStart = start;
-                    ta.selectionEnd = end + 4;
-                  });
-                }
-              }
-              if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                if (hasChanges) handleSave();
-              }
-              if (e.key === "Escape") {
-                e.preventDefault();
-                onCancel();
-              }
-            }}
+            style={{ background: "#fff", border: "1px solid #D1D5DB", color: "#1A1A1A" }}
+            onKeyDown={handleKeyDown}
           />
         )}
         <div className="flex items-center justify-between mt-2">
           <span className="text-[10px]" style={{ color: "#9CA3AF" }}>
-            {hasChanges ? "⚡ Unsaved changes" : "No changes"} · ⌘S to save · Esc to cancel
+            {hasChanges ? "⚡ Unsaved changes" : "No changes"} · ⌘S save · ⌘B bold · ⌘I italic · ⌘M mono · Esc cancel
           </span>
-          <span className="text-[10px]" style={{ color: "#9CA3AF" }}>
-            {value.length} chars
+          <span className="text-[10px]" style={{ color: wordCountColor }}>
+            {charCount} characters · {wordCount} words{wordCountSuffix}
           </span>
         </div>
       </div>
     </div>
   );
 }
-
 // ── Instructions Editor ─────────────────────────────────────────────
 
 interface InstructionsEditorProps {
