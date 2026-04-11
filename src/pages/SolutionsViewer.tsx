@@ -3265,6 +3265,9 @@ export default function SolutionsViewer() {
 
   // ── Admin bypass: authenticated user always gets full access ──
   const [isAdmin, setIsAdmin] = useState(false);
+  const [fixOpen, setFixOpen] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
+  });
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setIsAdmin(true);
