@@ -408,6 +408,7 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 const SEPARATOR_RE = /^(Final Answer|Part\s*\(?[a-z]\)?|Situation\s+[A-Z]|Case\s+[A-Z]):/i;
+const BG_TAG_RE = /^<bg:(red|yellow)>(.*)<\/bg:\1>$/;
 
 function renderBoldInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*.*?\*\*)/g);
