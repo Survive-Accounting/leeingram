@@ -84,59 +84,130 @@ export function ChapterQAReportExporter() {
       const margin = 40;
       const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
-      // ── Cover block ──
+      let cursorY = 30;
+
+      // ── 1. HEADER IMAGE ──
+      try {
+        const imgResp = await fetch("https://surviveaccounting.com/og-image.png");
+        if (imgResp.ok) {
+          const blob = await imgResp.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          const imgW = pageW - margin * 2;
+          const imgH = 60;
+          doc.addImage(base64, "PNG", margin, cursorY, imgW, imgH);
+          cursorY += imgH + 10;
+        }
+      } catch {
+        // Skip silently
+      }
+
+      // ── 2. TITLE BLOCK ──
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.text("Survive Accounting — Post-Fix Review Sheet", margin, 50);
+      doc.text("Survive Accounting — Post-Fix Review Sheet", margin, cursorY + 16);
+      cursorY += 24;
 
       doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
-      doc.text(`Chapter ${ch.chapter_number}: ${ch.chapter_name}`, margin, 72);
+      doc.text(`Chapter ${ch.chapter_number}: ${ch.chapter_name}`, margin, cursorY + 14);
+      cursorY += 20;
 
       doc.setFontSize(11);
-      doc.text("Reviewer: ____________  ·  Date: ________", margin, 92);
+      doc.text("Reviewer: ____________  ·  Date: ________", margin, cursorY + 12);
+      cursorY += 22;
 
-      // Thank-you box
-      const tyTop = 112;
+      // ── 3. BULK FIXES APPLIED block ──
+      // Count from fix_notes patterns
+      const fixPatterns: { label: string; pattern: string }[] = [
+        { label: "Standardize Formatting", pattern: "Standardize Formatting" },
+        { label: "Remove AI Thinking", pattern: "Remove AI Thinking" },
+        { label: "Remove Duplicates", pattern: "Remove Duplicates" },
+        { label: "Regenerate Missing", pattern: "Regenerate Missing" },
+      ];
+      const fixCounts: { label: string; count: number }[] = [];
+      for (const fp of fixPatterns) {
+        const count = assets.filter((a: any) => a.fix_notes && a.fix_notes.includes(fp.pattern)).length;
+        if (count > 0) fixCounts.push({ label: fp.label, count });
+      }
+      if (needsLee > 0) fixCounts.push({ label: "Flagged Needs Lee", count: needsLee });
+
+      if (fixCounts.length > 0) {
+        const boxH = 16 + fixCounts.length * 14 + 30;
+        doc.setFillColor(20, 33, 61);
+        doc.roundedRect(margin, cursorY, pageW - margin * 2, boxH, 4, 4, "F");
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        doc.text("Bulk Fixes Applied to This Chapter", margin + 10, cursorY + 14);
+
+        doc.setFont("helvetica", "normal");
+        let fy = cursorY + 28;
+        for (const fc of fixCounts) {
+          const padded = fc.label.padEnd(28, " ");
+          doc.text(`${padded}→  ${fc.count} assets`, margin + 10, fy);
+          fy += 14;
+        }
+
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.text(
+          `These fixes were applied automatically based on VA review findings from Ch ${ch.chapter_number}. Your job now is to confirm each one looks correct.`,
+          margin + 10, fy + 4, { maxWidth: pageW - margin * 2 - 20 }
+        );
+
+        doc.setTextColor(0, 0, 0);
+        cursorY += boxH + 10;
+      }
+
+      // ── 4. THANK-YOU NOTE ──
       doc.setDrawColor(180, 180, 180);
       doc.setLineWidth(0.5);
-      doc.roundedRect(margin, tyTop, pageW - margin * 2, 72, 4, 4);
+      const tyBoxH = 72;
+      doc.roundedRect(margin, cursorY, pageW - margin * 2, tyBoxH, 4, 4);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
-      const tyText = "King, Mae, Rona, Ella, EJ — thank you. Seriously. The work you've put into reviewing these assets is what makes this platform worth building. This final pass is the last step before students start using this material for real. Let's get it across the finish line.\n\n— Lee";
-      doc.text(tyText, margin + 10, tyTop + 14, { maxWidth: pageW - margin * 2 - 20 });
+      doc.setTextColor(0, 0, 0);
+      const tyText = "King, Mae, Rona, Ella, EJ — thank you. Seriously.\n\nThe work you put into reviewing these assets is what makes this platform worth building. This final pass is the last step before students start using this material for real. Let's get it across the finish line.\n\n— Lee";
+      doc.text(tyText, margin + 10, cursorY + 14, { maxWidth: pageW - margin * 2 - 20 });
+      cursorY += tyBoxH + 10;
 
-      // Instructions box
-      const instrTop = tyTop + 84;
+      // ── 5. INSTRUCTIONS BLOCK ──
       doc.setDrawColor(100, 100, 100);
-      doc.roundedRect(margin, instrTop, pageW - margin * 2, 136, 4, 4);
+      const instrBoxH = 150;
+      doc.roundedRect(margin, cursorY, pageW - margin * 2, instrBoxH, 4, 4);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("HOW TO USE THIS SHEET", margin + 10, instrTop + 16);
+      doc.text("HOW TO USE THIS SHEET", margin + 10, cursorY + 16);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       const instrLines = [
         "Goal: get every asset to Ready for Students ✓",
         "",
         "For each asset in the table below:",
-        "1. Open the asset at learn.surviveaccounting.com/solutions/[Ref] (replace [Ref] with the code in column 1)",
+        "1. Open the asset at: learn.surviveaccounting.com/solutions/[Ref]  (replace [Ref] with column 1, e.g. BE13.4)",
         "2. Read the Explanation section",
-        "3. If it looks correct and complete — circle: Ready ✓",
-        "4. If something still looks wrong or is missing — circle: Needs Lee 🚩",
-        "5. Log your decision in the admin tool at learn.surviveaccounting.com/solutions-qa",
+        "3. If correct and complete — circle: Ready ✓",
+        "4. If something still looks wrong — circle: Needs Lee 🚩",
+        "5. Log your decision in the admin tool at: learn.surviveaccounting.com/solutions-qa",
         "",
-        "Tip: assets highlighted in amber already have a known issue flagged. Pay extra attention to these.",
-        "Assets already in green are provisionally signed off — but give them a quick look anyway.",
+        "Tip: amber rows have a known issue flagged. Pay extra attention to these.",
+        "Green rows are provisionally signed off — quick look still appreciated.",
         "",
-        "When done: share your completed sheet findings in Slack #asset-fixes. Thank you — this matters.",
+        "When done: King can share findings in Slack. Thank you all — this is a huge help.",
       ];
-      doc.text(instrLines.join("\n"), margin + 10, instrTop + 30, { maxWidth: pageW - margin * 2 - 20 });
+      doc.text(instrLines.join("\n"), margin + 10, cursorY + 30, { maxWidth: pageW - margin * 2 - 20 });
+      cursorY += instrBoxH + 10;
 
-      // Summary line
-      const summTop = instrTop + 148;
+      // ── 6. SUMMARY LINE ──
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(`${total} assets total · ${fixApplied} fix_applied · ${readyForStudents} ready_for_students · ${needsLee} needs_lee · ${noStatus} no status`, margin, summTop);
+      doc.text(`${total} assets total · ${fixApplied} fix_applied · ${readyForStudents} ready_for_students · ${needsLee} needs_lee · ${noStatus} no status`, margin, cursorY + 4);
+      cursorY += 14;
 
       // Asset table
       const tableRows = assets.map((a: any) => {
