@@ -2839,9 +2839,6 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  const [fixOpen, setFixOpen] = useState(() => {
-    try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
-  });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
   });
@@ -2932,20 +2929,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
             {!collapsed && (
               <>
                 {/* Admin: Fix This Now — only in QA mode */}
-                {isAdmin && isQaMode && (
-                  <>
-                    <button
-                      onClick={() => setFixOpen(true)}
-                      className="text-[11px] font-semibold px-3 py-2 rounded-md transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5 text-white"
-                      style={{ backgroundColor: "#14213D", boxShadow: "0 0 0 0 rgba(20,33,61,0)" }}
-                      onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 12px 2px rgba(20,33,61,0.35)")}
-                      onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 0 0 rgba(20,33,61,0)")}
-                    >
-                      <Sparkles className="h-3 w-3" /> ✨ Fix This Now
-                    </button>
-                    <div className="w-px h-5" style={{ background: theme.border }} />
-                  </>
-                )}
+                    {/* Fix button moved to main content area */}
                 {showShare && (
                   <>
                     <button
@@ -3050,7 +3034,6 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
       {asset && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} asset={asset} />}
-      {fixOpen && asset && <FixThisNowModal assetCode={assetCode} teachingAssetId={asset.id} onClose={() => setFixOpen(false)} />}
     </>
   );
 }
@@ -3265,6 +3248,9 @@ export default function SolutionsViewer() {
 
   // ── Admin bypass: authenticated user always gets full access ──
   const [isAdmin, setIsAdmin] = useState(false);
+  const [fixOpen, setFixOpen] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("fix") === "true"; } catch { return false; }
+  });
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setIsAdmin(true);
@@ -4035,6 +4021,19 @@ export default function SolutionsViewer() {
                   border: `1px solid ${t.border}`,
                 }}
               >
+                {/* Admin: Fix This Page — prominent position above problem */}
+                {isAdmin && isQaMode && (
+                  <button
+                    onClick={() => setFixOpen(true)}
+                    className="w-full mb-3 text-[12px] font-semibold px-4 py-2.5 rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 text-white"
+                    style={{ backgroundColor: "#14213D", boxShadow: "0 2px 12px rgba(20,33,61,0.25)" }}
+                    onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 2px 20px rgba(20,33,61,0.4)")}
+                    onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 2px 12px rgba(20,33,61,0.25)")}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> ✨ Fix This Page
+                  </button>
+                )}
+
                 {/* Source ref label */}
                 {sourceRef && (
                   <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
@@ -4338,6 +4337,7 @@ export default function SolutionsViewer() {
       </main>
 
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
+      {fixOpen && asset && <FixThisNowModal assetCode={asset.asset_name} teachingAssetId={asset.id} onClose={() => setFixOpen(false)} />}
     </div>
     </>
   );
