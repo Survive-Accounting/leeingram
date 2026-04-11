@@ -12,10 +12,13 @@ import { toast } from "sonner";
 
 // ── Types ────────────────────────────────────────────────────────
 
+type FindingType = "content" | "ui";
+
 type Finding = {
   severity: "high" | "medium" | "low";
   title: string;
   description: string;
+  fixType: FindingType;
 };
 
 type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "jes" | "mistakes";
@@ -46,6 +49,20 @@ function makeInitialTabs(): Record<TabKey, TabState> {
   const tabs = {} as Record<TabKey, TabState>;
   TAB_CONFIG.forEach(({ key }) => { tabs[key] = makeEmptyTab(); });
   return tabs;
+}
+
+// ── Finding classification ────────────────────────────────────────
+
+const UI_KEYWORDS = [
+  "display", "render", "layout", "format", "formatting", "spacing",
+  "alignment", "font", "color", "style", "css", "truncat", "overflow",
+  "responsive", "mobile", "breakpoint", "animation", "visual", "ui",
+  "component", "button", "icon", "badge",
+];
+
+function classifyFinding(title: string, description: string): FindingType {
+  const text = `${title} ${description}`.toLowerCase();
+  return UI_KEYWORDS.some((kw) => text.includes(kw)) ? "ui" : "content";
 }
 
 // ── Severity helpers ─────────────────────────────────────────────
@@ -146,7 +163,9 @@ function FindingCard({
 
 function TabPanel({
   tab,
+  tabKey,
   tabLabel,
+  chapterId,
   chapterLabel,
   courseCode,
   onToggleFinding,
@@ -155,7 +174,9 @@ function TabPanel({
   onRetry,
 }: {
   tab: TabState;
+  tabKey: TabKey;
   tabLabel: string;
+  chapterId: string;
   chapterLabel: string;
   courseCode: string;
   onToggleFinding: (idx: number) => void;
@@ -165,7 +186,10 @@ function TabPanel({
 }) {
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [genError, setGenError] = useState("");
+  const [applyError, setApplyError] = useState("");
+  const [applySuccess, setApplySuccess] = useState("");
   const [copied, setCopied] = useState(false);
 
   if (tab.status === "loading" || tab.status === "idle") {
@@ -192,15 +216,51 @@ function TabPanel({
   }
 
   const { high, medium, low, total } = countBySeverity(tab.findings);
-  const acceptedCount = Object.values(tab.accepted).filter(Boolean).length;
-
   const acceptedFindings = tab.findings.filter((_, i) => tab.accepted[i]);
+  const contentFindings = acceptedFindings.filter((f) => f.fixType === "content");
+  const uiFindings = acceptedFindings.filter((f) => f.fixType === "ui");
+  const hasContent = contentFindings.length > 0;
+  const hasUI = uiFindings.length > 0;
 
-  const generatePrompt = async () => {
+  const applyContentFixes = async () => {
+    setApplying(true);
+    setApplyError("");
+    setApplySuccess("");
+    try {
+      const findingsList = contentFindings
+        .map((f, i) => `${i + 1}. [${f.severity}] ${f.title}\n   ${f.description}`)
+        .join("\n");
+
+      const { data, error } = await supabase.functions.invoke("apply-content-fixes", {
+        body: {
+          chapter_id: chapterId,
+          chapter_name: chapterLabel,
+          course_code: courseCode,
+          tab: tabKey,
+          findings: findingsList,
+          admin_notes: notes.trim() || "None",
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      const count = data?.inserted_count || 0;
+      setApplySuccess(`✓ ${count} item${count !== 1 ? "s" : ""} added — review in the ${tabLabel} tab to approve`);
+      toast.success(`Content fixes applied — ${count} item${count !== 1 ? "s" : ""} added as pending`);
+    } catch (err: any) {
+      console.error("Apply content fixes failed:", err);
+      setApplyError(err.message || "Unknown error");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const generateUIPrompt = async () => {
     setGenerating(true);
     setGenError("");
     try {
-      const findingsList = acceptedFindings
+      const findingsList = uiFindings
         .map((f, i) => `${i + 1}. [${f.severity}] ${f.title}\n   ${f.description}`)
         .join("\n");
 
@@ -211,6 +271,7 @@ function TabPanel({
           tab_name: tabLabel,
           findings: findingsList,
           admin_notes: notes.trim() || "None",
+          ui_only: true,
         },
       });
 
@@ -219,7 +280,7 @@ function TabPanel({
 
       setGeneratedPrompt(data.prompt || "");
     } catch (err: any) {
-      console.error("Generate prompt failed:", err);
+      console.error("Generate UI prompt failed:", err);
       setGenError(err.message || "Unknown error");
     } finally {
       setGenerating(false);
@@ -259,7 +320,7 @@ function TabPanel({
         />
       ))}
 
-      {/* Notes + generate button */}
+      {/* Notes + action buttons */}
       {total > 0 && (
         <div className="space-y-3 pt-2">
           <div>
@@ -271,19 +332,45 @@ function TabPanel({
               onChange={(e) => onNotesChange(e.target.value)}
             />
           </div>
-          <Button
-            className="w-full text-sm font-semibold text-white"
-            style={{ backgroundColor: "#14213D" }}
-            disabled={acceptedCount === 0 || generating}
-            onClick={generatePrompt}
-          >
-            {generating ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating...</>
-            ) : (
-              "Generate Lovable Prompt →"
-            )}
-          </Button>
 
+          {/* Two-button system */}
+          <div className="flex gap-3">
+            {hasContent && (
+              <Button
+                className="flex-1 text-sm font-semibold text-white"
+                style={{ backgroundColor: "#14213D" }}
+                disabled={applying}
+                onClick={applyContentFixes}
+              >
+                {applying ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Fixing...</>
+                ) : (
+                  "🔧 Apply Content Fixes →"
+                )}
+              </Button>
+            )}
+            {hasUI && (
+              <Button
+                variant="outline"
+                className="flex-1 text-sm font-semibold"
+                disabled={generating}
+                onClick={generateUIPrompt}
+              >
+                {generating ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating...</>
+                ) : (
+                  "📋 Copy UI Prompt →"
+                )}
+              </Button>
+            )}
+          </div>
+
+          {applyError && (
+            <p className="text-xs text-destructive">Fix failed — try again</p>
+          )}
+          {applySuccess && (
+            <p className="text-xs text-emerald-600 font-medium">{applySuccess}</p>
+          )}
           {genError && (
             <p className="text-xs text-destructive">Generation failed — try again</p>
           )}
@@ -318,7 +405,7 @@ function TabPanel({
                 variant="outline"
                 size="sm"
                 className="text-xs gap-1.5"
-                onClick={generatePrompt}
+                onClick={generateUIPrompt}
                 disabled={generating}
               >
                 <RefreshCw className="h-3 w-3" /> Regenerate
@@ -375,6 +462,7 @@ export function ChapterAuditModal({
         severity: f.severity || "low",
         title: f.title || "Untitled",
         description: f.description || "",
+        fixType: classifyFinding(f.title || "", f.description || ""),
       }));
 
       const accepted: Record<number, boolean> = {};
@@ -485,7 +573,9 @@ export function ChapterAuditModal({
                 <TabsContent key={key} value={key} className="mt-0">
                   <TabPanel
                     tab={tabs[key]}
+                    tabKey={key}
                     tabLabel={label}
+                    chapterId={chapterId}
                     chapterLabel={`Ch ${chapterNumber} — ${chapterName}`}
                     courseCode={courseCode}
                     onToggleFinding={(idx) => toggleFinding(key, idx)}
