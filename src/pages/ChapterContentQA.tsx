@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import {
   Check, X, ChevronDown, ChevronRight, GripVertical, Trash2, Edit3,
@@ -42,6 +44,25 @@ import { cn } from "@/lib/utils";
 import { isContraAccount } from "@/lib/contraDetection";
 import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPanel";
 import { ChapterAuditModal } from "@/components/admin-dashboard/ChapterAuditModal";
+
+/** Mobile-aware tooltip: popover on mobile, tooltip on desktop */
+function MobileTip({ children, content, side = "top", className = "" }: { children: React.ReactNode; content: React.ReactNode; side?: "top" | "bottom" | "left" | "right"; className?: string }) {
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{children}</PopoverTrigger>
+        <PopoverContent side={side} className={cn("text-sm px-3 py-2 max-w-[260px] w-auto z-[9999]", className)}>{content}</PopoverContent>
+      </Popover>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side} className={cn("text-xs", className)}>{content}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -1049,24 +1070,14 @@ function JEEntryRowBlock({
                       <span className="flex items-center gap-1.5">
                         <span className={cn(line.side === "credit" && "pl-4")}>{line.account}</span>
                         {contra && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[9px] h-4 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30 cursor-help">Contra</Badge>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs max-w-[200px]">
-                              Contra account — has opposite normal balance to its paired account type
-                            </TooltipContent>
-                          </Tooltip>
+                          <MobileTip content="Contra account — has opposite normal balance to its paired account type" className="max-w-[200px]">
+                            <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-[9px] h-4 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30 cursor-help">Contra</Badge>
+                          </MobileTip>
                         )}
                         {line.account_tooltip && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-3 w-3 text-muted-foreground/50 cursor-help shrink-0" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs max-w-[250px]">
-                              {line.account_tooltip}
-                            </TooltipContent>
-                          </Tooltip>
+                          <MobileTip content={line.account_tooltip} className="max-w-[250px]">
+                            <Info className="h-3 w-3 md:h-3 md:w-3 min-w-[20px] min-h-[20px] md:min-w-0 md:min-h-0 text-muted-foreground/50 cursor-help shrink-0" />
+                          </MobileTip>
                         )}
                       </span>
                     </td>
