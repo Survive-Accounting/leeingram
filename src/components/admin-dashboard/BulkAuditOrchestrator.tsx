@@ -446,9 +446,10 @@ export function BulkAuditOrchestrator() {
                         const isSkipped = skippedChapterIds.has(ch.id);
                         const wasAudited = alreadyAuditedIds.has(ch.id);
                         return (
-                          <label key={ch.id} className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs">
+                          <label key={ch.id} className="flex items-start gap-2 py-1.5 px-1 rounded hover:bg-muted/50 cursor-pointer text-xs">
                             <Checkbox
                               checked={!isSkipped}
+                              className="mt-0.5 shrink-0"
                               onCheckedChange={(checked) => {
                                 setSkippedChapterIds(prev => {
                                   const next = new Set(prev);
@@ -458,11 +459,11 @@ export function BulkAuditOrchestrator() {
                                 });
                               }}
                             />
-                            <span className="font-medium">Ch {ch.chapter_number}</span>
-                            <span className="text-muted-foreground truncate">{ch.chapter_name}</span>
+                            <span className="font-medium shrink-0">Ch {ch.chapter_number}</span>
+                            <span className="text-muted-foreground break-words min-w-0">{ch.chapter_name}</span>
                             {wasAudited && (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto shrink-0">
-                                Already audited
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0 whitespace-nowrap">
+                                Audited
                               </Badge>
                             )}
                           </label>
