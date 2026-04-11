@@ -838,7 +838,7 @@ export default function BulkFixTool() {
       assets = matchingAssets;
       console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
     } else {
-      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates"].includes(opKey);
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates", "regenerate_missing"].includes(opKey);
       let scopeQuery = buildScopeQuery(isLightweight);
       if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
         scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
@@ -1100,10 +1100,22 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (result?.skipped) { skipped++; return; }
               changed = true;
             } catch { errors++; return; }
+          } else if (opKey === "regenerate_missing") {
+            const problemText = (asset as any).survive_problem_text || (asset as any).problem_context || "";
+            if (!problemText.trim()) { skipped++; return; }
+
+            try {
+              const { data: result, error: fnErr } = await supabase.functions.invoke("regenerate-missing", {
+                body: { teaching_asset_id: asset.id },
+              });
+              if (fnErr || result?.error) { errors++; return; }
+              if (result?.skipped) { skipped++; return; }
+              changed = true;
+            } catch { errors++; return; }
           }
 
           if (changed) {
-            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates"].includes(opKey)) {
+            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates", "regenerate_missing"].includes(opKey)) {
               await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
             }
             updated++;
@@ -1117,7 +1129,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       onProgress?.(Math.min(i + batchSize, total), total, (batch[batch.length - 1] as any)?.asset_name || "");
 
       // Delay for AI-heavy operations
-      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking", "remove_duplicates"].includes(opKey)) {
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking", "remove_duplicates", "regenerate_missing"].includes(opKey)) {
         await new Promise(r => setTimeout(r, 500));
       }
     }
