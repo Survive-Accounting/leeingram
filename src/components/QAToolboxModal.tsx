@@ -59,8 +59,6 @@ export function QAToolboxModal({
   const [view, setView] = useState<ToolboxView>("actions");
   const [operation, setOperation] = useState<OperationType>(null);
   const [fixPrompt, setFixPrompt] = useState("");
-  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set(["solution_je"]));
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -91,18 +89,9 @@ export function QAToolboxModal({
 
   const canRun = operation !== null;
 
-  const toggleSection = (key: string) => {
-    setSelectedSections(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
-
   // ── Run fix ──
   const runFix = async () => {
-    const sections = [...selectedSections];
-    if (!sections.length) sections.push("solution_je");
+    const sections = ["solution_je"];
     setView("fix-running");
 
     try {
