@@ -4343,7 +4343,7 @@ export default function SolutionsViewer() {
           assetName={asset.asset_name}
           assetCode={sourceRef || asset.asset_name}
           teachingAssetId={asset.id}
-          chapterLabel={chapterName ? `Ch ${chapterNumber}` : undefined}
+          chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
           onClose={() => setFixOpen(false)}
         />
       )}
