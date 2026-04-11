@@ -2872,8 +2872,18 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
   return (
     <>
-      {/* Mobile: compact floating share button bottom-right */}
-      {showShare && (
+      {/* Mobile: QA mode → QA pill; otherwise share button */}
+      {isQaMode && isAdmin ? (
+        <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
+          <button
+            onClick={onQaToolboxClick}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg text-white"
+            style={{ background: "#14213D" }}
+          >
+            ⚙ QA Review Tools
+          </button>
+        </div>
+      ) : showShare ? (
         <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
           <button
             onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
@@ -2883,7 +2893,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
         </div>
-      )}
+      ) : null}
 
       {/* Desktop: full action bar with feedback banner */}
       <div
@@ -2927,7 +2937,18 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
 
           {/* Button row */}
           <div className="flex items-center">
-            {!collapsed && !isQaMode && (
+            {/* QA mode: show single "QA Review Tools" button */}
+            {isQaMode && isAdmin ? (
+              <>
+                <button
+                  onClick={onQaToolboxClick}
+                  className="text-[12px] font-bold px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-1.5 text-white"
+                  style={{ backgroundColor: "#14213D", borderRadius: 6 }}
+                >
+                  QA Review Tools ⚙
+                </button>
+              </>
+            ) : !collapsed ? (
               <>
                 {showShare && (
                   <>
@@ -2958,7 +2979,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 </button>
                 <div className="w-px h-5" style={{ background: theme.border }} />
               </>
-            )}
+            ) : null}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
