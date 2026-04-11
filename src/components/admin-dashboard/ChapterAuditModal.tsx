@@ -481,10 +481,13 @@ export function ChapterAuditModal({
 
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 pb-6">
-              {TAB_CONFIG.map(({ key }) => (
+              {TAB_CONFIG.map(({ key, label }) => (
                 <TabsContent key={key} value={key} className="mt-0">
                   <TabPanel
                     tab={tabs[key]}
+                    tabLabel={label}
+                    chapterLabel={`Ch ${chapterNumber} — ${chapterName}`}
+                    courseCode={courseCode}
                     onToggleFinding={(idx) => toggleFinding(key, idx)}
                     notes={tabs[key].notes}
                     onNotesChange={(v) => setNotes(key, v)}
