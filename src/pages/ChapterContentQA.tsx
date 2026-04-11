@@ -265,6 +265,34 @@ export default function ChapterContentQA() {
     finally { setBulkGenerating(null); setBulkProgress(""); }
   };
 
+  const runBulkTooltipRewrite = async () => {
+    if (!chapters || !courses) return;
+    setBulkGenerating("tooltips");
+    let completed = 0;
+    const errors: string[] = [];
+    const total = chapters.length;
+
+    for (const ch of chapters) {
+      const course = courses.find(c => c.id === ch.course_id);
+      setBulkProgress(`Rewriting tooltips: ${completed + 1}/${total} — ${ch.chapter_name}`);
+      try {
+        const { data, error } = await supabase.functions.invoke("rewrite-chapter-je-tooltips", {
+          body: { chapterId: ch.id, chapterName: ch.chapter_name, courseCode: course?.code || "" },
+        });
+        if (error) throw error;
+        completed++;
+      } catch (err: any) {
+        errors.push(`${ch.chapter_name}: ${err.message}`);
+      }
+    }
+
+    toast.success(`JE tooltips rewritten: ${completed}/${total}. ${errors.length} errors.`);
+    captureBulkDebug("Rewrite All JE Tooltips (Tutor Voice)", { completed, total, errors });
+    qc.invalidateQueries({ queryKey: ["cqa-je-detail"] });
+    setBulkGenerating(null);
+    setBulkProgress("");
+  };
+
   const handleOnboardingGenerate = async () => {
     const ia2Course = courses?.find(c => c.code === "ACCY304" || c.course_name.includes("Intermediate Accounting 2"));
     const ch13 = chapters?.find(ch => ch.chapter_number === 13 && ch.course_id === ia2Course?.id);
