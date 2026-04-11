@@ -3053,6 +3053,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
       </div>
