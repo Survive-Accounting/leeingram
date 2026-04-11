@@ -4229,6 +4229,8 @@ export default function SolutionsViewer() {
                   onReportClick={() => setReportOpen(true)}
                   onReveal={handleReveal}
                   onBuyClick={handleBuyClick}
+                  controlledOpen={openSection === "Explanation"}
+                  onControlledToggle={handleToggleSection}
                 >
                   {isQaMode && (
                     <div className="flex items-center gap-2 mb-3">
