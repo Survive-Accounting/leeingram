@@ -645,6 +645,7 @@ function ChapterQAModal({
             chapterNumber={chapter.chapter_number}
             chapterName={chapter.chapter_name}
             chapterId={chapter.id}
+            courseCode={courseCode}
           />
         )}
 
