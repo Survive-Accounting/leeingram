@@ -49,7 +49,7 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
   };
 
   const approve = async (id: string) => { await supabase.from("chapter_exam_mistakes").update({ is_approved: true, is_rejected: false }).eq("id", id); invalidate(); };
-  const reject = async (id: string) => { await supabase.from("chapter_exam_mistakes").update({ is_rejected: true, is_approved: false }).eq("id", id); invalidate(); };
+  const hide = async (id: string) => { await supabase.from("chapter_exam_mistakes").update({ is_rejected: true, is_approved: false }).eq("id", id); invalidate(); };
   const remove = async (id: string) => { await supabase.from("chapter_exam_mistakes").delete().eq("id", id); invalidate(); };
   const update = async (id: string, field: string, value: string) => { await supabase.from("chapter_exam_mistakes").update({ [field]: value }).eq("id", id); invalidate(); };
   const approveAll = async () => { await supabase.from("chapter_exam_mistakes").update({ is_approved: true, is_rejected: false }).eq("chapter_id", chapterId); invalidate(); toast.success("All mistakes approved"); };
@@ -75,7 +75,7 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
     <div className="space-y-1 pb-20">
       {mistakes?.map((m, idx) => (
         <MistakeRowBlock key={m.id} mistake={m} rank={idx + 1}
-          onApprove={() => approve(m.id)} onReject={() => reject(m.id)} onDelete={() => remove(m.id)} onUpdate={update}
+          onApprove={() => approve(m.id)} onHide={() => hide(m.id)} onDelete={() => remove(m.id)} onUpdate={update}
           onMoveUp={idx > 0 ? () => swap(m, mistakes[idx - 1]) : undefined}
           onMoveDown={idx < mistakes.length - 1 ? () => swap(m, mistakes[idx + 1]) : undefined}
         />
@@ -101,8 +101,8 @@ export function MistakesTab({ chapterId, chapterName, courseCode }: { chapterId:
   );
 }
 
-function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdate, onMoveUp, onMoveDown }: {
-  mistake: MistakeRow; rank: number; onApprove: () => void; onReject: () => void; onDelete: () => void;
+function MistakeRowBlock({ mistake, rank, onApprove, onHide, onDelete, onUpdate, onMoveUp, onMoveDown }: {
+  mistake: MistakeRow; rank: number; onApprove: () => void; onHide: () => void; onDelete: () => void;
   onUpdate: (id: string, field: string, value: string) => void;
   onMoveUp?: () => void; onMoveDown?: () => void;
 }) {
@@ -118,7 +118,7 @@ function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdat
   const statusPill = mistake.is_approved
     ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">✓</Badge>
     : mistake.is_rejected
-    ? <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] h-5">✗</Badge>
+    ? <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] h-5">Hidden</Badge>
     : <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge>;
 
   return (
@@ -136,8 +136,8 @@ function MistakeRowBlock({ mistake, rank, onApprove, onReject, onDelete, onUpdat
         )}
         {statusPill}
         <div className="flex items-center gap-1 ml-auto shrink-0">
-          <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors"><Check className="h-3.5 w-3.5" /></button>
-          <button onClick={onReject} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
+          <button onClick={onApprove} className="p-1 rounded hover:bg-emerald-500/20 text-emerald-500 transition-colors" title="Approve"><Check className="h-3.5 w-3.5" /></button>
+          <button onClick={onHide} className="p-1 rounded hover:bg-amber-500/20 text-amber-500 transition-colors" title="Hide"><X className="h-3.5 w-3.5" /></button>
           <button onClick={onDelete} className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
