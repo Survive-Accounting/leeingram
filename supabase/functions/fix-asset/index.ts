@@ -225,11 +225,7 @@ serve(async (req) => {
         }
       }
 
-      // Trigger 2 — Slack: Fix started
-      const sectionLabels = sections.join(", ");
-      postToSlack(
-        `🔁 *Fix in progress*\nAsset: ${sourceRef}\nSections: ${sectionLabels}\n<${pageUrl}|View Page>`
-      ).catch(() => {});
+      // (Slack notifications removed — handled client-side now)
 
       return new Response(JSON.stringify({ results, after }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -253,10 +249,7 @@ serve(async (req) => {
       }).eq("id", teaching_asset_id);
       if (error) throw new Error("Failed to save: " + error.message);
 
-      // Trigger 3 — Slack: Fix approved
-      postToSlack(
-        `✅ *Fix approved*\nAsset: ${sourceRef}\n<${pageUrl}|View Page>`
-      ).catch(() => {});
+      // (Slack notifications removed — handled client-side now)
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -277,10 +270,7 @@ serve(async (req) => {
       const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
       if (error) throw new Error("Restore failed: " + error.message);
 
-      // Trigger 4 — Slack: Fix rejected
-      postToSlack(
-        `❌ *Fix rejected — reverted*\nAsset: ${sourceRef}\n<${pageUrl}|View Page>`
-      ).catch(() => {});
+      // (Slack notifications removed — handled client-side now)
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
