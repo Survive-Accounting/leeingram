@@ -4337,6 +4337,7 @@ export default function SolutionsViewer() {
       </main>
 
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
+      {fixOpen && asset && <FixThisNowModal assetCode={asset.asset_name} teachingAssetId={asset.id} onClose={() => setFixOpen(false)} />}
     </div>
     </>
   );
