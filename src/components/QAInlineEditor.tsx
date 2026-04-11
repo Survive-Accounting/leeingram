@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Edit3, Save, X, Loader2, Bold, Paintbrush, RemoveFormatting } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Edit3, Save, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,8 +38,6 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
-  const [hasSelection, setHasSelection] = useState(false);
-  const [bgPickerOpen, setBgPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -59,69 +57,6 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
   };
 
   const hasChanges = value !== initialValue;
-
-  const checkSelection = useCallback(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    setHasSelection(ta.selectionStart !== ta.selectionEnd);
-  }, []);
-
-  const wrapSelection = useCallback((before: string, after: string) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = value.substring(start, end);
-    if (!selected) return;
-    const newVal = `${value.substring(0, start)}${before}${selected}${after}${value.substring(end)}`;
-    setValue(newVal);
-    requestAnimationFrame(() => {
-      ta.focus();
-      ta.selectionStart = start;
-      ta.selectionEnd = end + before.length + after.length;
-    });
-  }, [value]);
-
-  const toggleBold = useCallback(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = value.substring(start, end);
-    if (!selected) return;
-    // If already bold, unwrap
-    if (selected.startsWith("**") && selected.endsWith("**")) {
-      const inner = selected.slice(2, -2);
-      const newVal = `${value.substring(0, start)}${inner}${value.substring(end)}`;
-      setValue(newVal);
-      requestAnimationFrame(() => { ta.focus(); ta.selectionStart = start; ta.selectionEnd = start + inner.length; });
-    } else if (start >= 2 && value.substring(start - 2, start) === "**" && value.substring(end, end + 2) === "**") {
-      const newVal = `${value.substring(0, start - 2)}${selected}${value.substring(end + 2)}`;
-      setValue(newVal);
-      requestAnimationFrame(() => { ta.focus(); ta.selectionStart = start - 2; ta.selectionEnd = start - 2 + selected.length; });
-    } else {
-      wrapSelection("**", "**");
-    }
-  }, [value, wrapSelection]);
-
-  const clearFormatting = useCallback(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = value.substring(start, end);
-    if (!selected) return;
-    const cleaned = selected.replace(/\*\*/g, "");
-    const newVal = `${value.substring(0, start)}${cleaned}${value.substring(end)}`;
-    setValue(newVal);
-    requestAnimationFrame(() => { ta.focus(); ta.selectionStart = start; ta.selectionEnd = start + cleaned.length; });
-  }, [value]);
-
-  const BG_PRESETS = [
-    { label: "Red", color: "#FEF2F2", swatch: "#FECACA" },
-    { label: "Yellow", color: "#FEFCE8", swatch: "#FEF08A" },
-    { label: "None", color: null, swatch: "transparent" },
-  ];
 
   return (
     <div
@@ -172,88 +107,6 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
 
       {/* Content */}
       <div className="p-3">
-        {/* Formatting toolbar */}
-        {!preview && (
-          <div className="flex items-center gap-1 mb-2 relative">
-            <button
-              onClick={toggleBold}
-              disabled={!hasSelection}
-              className="flex items-center justify-center rounded transition-colors disabled:opacity-30"
-              style={{
-                width: 28, height: 28,
-                background: hasSelection ? "rgba(20,33,61,0.08)" : "transparent",
-                color: hasSelection ? "#14213D" : "#9CA3AF",
-                border: "1px solid",
-                borderColor: hasSelection ? "rgba(20,33,61,0.2)" : "#E5E7EB",
-              }}
-              title="Bold (⌘B)"
-            >
-              <Bold className="h-3.5 w-3.5" />
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => { if (hasSelection) setBgPickerOpen(!bgPickerOpen); }}
-                disabled={!hasSelection}
-                className="flex items-center justify-center rounded transition-colors disabled:opacity-30"
-                style={{
-                  width: 28, height: 28,
-                  background: hasSelection ? "rgba(20,33,61,0.08)" : "transparent",
-                  color: hasSelection ? "#14213D" : "#9CA3AF",
-                  border: "1px solid",
-                  borderColor: hasSelection ? "rgba(20,33,61,0.2)" : "#E5E7EB",
-                }}
-                title="Background color"
-              >
-                <Paintbrush className="h-3.5 w-3.5" />
-              </button>
-              {bgPickerOpen && (
-                <div
-                  className="absolute top-full left-0 mt-1 flex items-center gap-1 p-1.5 rounded-md shadow-lg z-50"
-                  style={{ background: "#fff", border: "1px solid #E5E7EB" }}
-                >
-                  {BG_PRESETS.map(p => (
-                    <button
-                      key={p.label}
-                      onClick={() => {
-                        setBgPickerOpen(false);
-                        // Background color is informational only in raw text — not supported in current renderer
-                        toast.info(`Background colors are not yet supported in the renderer`);
-                      }}
-                      className="flex flex-col items-center gap-0.5 px-2 py-1 rounded hover:bg-gray-50 transition-colors"
-                      title={p.label}
-                    >
-                      <div
-                        className="w-4 h-4 rounded border"
-                        style={{
-                          background: p.swatch,
-                          borderColor: p.color ? "#D1D5DB" : "#9CA3AF",
-                        }}
-                      />
-                      <span className="text-[9px]" style={{ color: "#6B7280" }}>{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={clearFormatting}
-              disabled={!hasSelection}
-              className="flex items-center justify-center rounded transition-colors disabled:opacity-30"
-              style={{
-                width: 28, height: 28,
-                background: hasSelection ? "rgba(20,33,61,0.08)" : "transparent",
-                color: hasSelection ? "#14213D" : "#9CA3AF",
-                border: "1px solid",
-                borderColor: hasSelection ? "rgba(20,33,61,0.2)" : "#E5E7EB",
-              }}
-              title="Clear formatting"
-            >
-              <RemoveFormatting className="h-3.5 w-3.5" />
-            </button>
-            <span className="text-[9px] ml-1" style={{ color: "#9CA3AF" }}>Select text first</span>
-          </div>
-        )}
-
         {preview ? (
           <div
             className="text-[14px] leading-[1.7] whitespace-pre-wrap min-h-[80px] p-3 rounded"
@@ -270,9 +123,6 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            onSelect={checkSelection}
-            onMouseUp={checkSelection}
-            onKeyUp={checkSelection}
             rows={rows}
             className="text-[13px] leading-[1.7] font-mono resize-y min-h-[120px]"
             style={{
@@ -283,7 +133,21 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             onKeyDown={(e) => {
               if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                toggleBold();
+                const ta = textareaRef.current;
+                if (!ta) return;
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                const selected = value.substring(start, end);
+                if (selected) {
+                  const before = value.substring(0, start);
+                  const after = value.substring(end);
+                  const newVal = `${before}**${selected}**${after}`;
+                  setValue(newVal);
+                  requestAnimationFrame(() => {
+                    ta.selectionStart = start;
+                    ta.selectionEnd = end + 4;
+                  });
+                }
               }
               if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();

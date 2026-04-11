@@ -407,9 +407,10 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
 
 // ── Answer Summary ──────────────────────────────────────────────────
 
+const SEPARATOR_RE = /^(Final Answer|Part\s*\(?[a-z]\)?|Situation\s+[A-Z]|Case\s+[A-Z]):/i;
+
 function renderBoldInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  if (parts.length === 1) return text;
+  const parts = text.split(/(\*\*.*?\*\*)/g);
   return parts.map((part, i) =>
     part.startsWith("**") && part.endsWith("**")
       ? <strong key={i}>{part.slice(2, -2)}</strong>
@@ -420,46 +421,108 @@ function renderBoldInline(text: string): React.ReactNode {
 function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
   const lines = text.split('\n');
 
-  return (
-    <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
-      {lines.map((line, i) => {
-        const trimmed = line.trim();
+  // Group consecutive non-empty lines into blocks (blank lines = block break)
+  const blocks: { type: 'block'; lines: { raw: string; trimmed: string; origIdx: number }[] }[] = [];
+  let current: { raw: string; trimmed: string; origIdx: number }[] = [];
 
-        if (!trimmed) {
-          return <div key={i} style={{ height: 10, marginBottom: 4 }} />;
-        }
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) {
+      if (current.length > 0) {
+        blocks.push({ type: 'block', lines: [...current] });
+        current = [];
+      }
+    } else {
+      current.push({ raw: lines[i], trimmed, origIdx: i });
+    }
+  }
+  if (current.length > 0) blocks.push({ type: 'block', lines: [...current] });
 
-        if (/^Step \d+/i.test(trimmed)) {
-          return (
-            <p key={i} style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: theme.text,
-              marginTop: 14,
-              marginBottom: 6,
-              fontFamily: 'Inter, sans-serif'
-            }}>
-              {renderBoldInline(trimmed)}
-            </p>
-          );
-        }
-
-        return (
-          <div key={i} style={{
-            fontFamily: 'monospace',
-            fontSize: 13,
-            background: theme.answerBg,
-            color: (theme as any).answerColor || '#991B1B',
-            borderLeft: '3px solid ' + theme.answerBorder,
-            borderRadius: 3,
-            padding: '3px 10px',
-            marginBottom: 3,
-            display: 'block'
+  function renderLine(trimmed: string, key: string | number) {
+    // Separator labels: Final Answer, Part (a):, Situation A:, Case A:
+    const sepMatch = trimmed.match(SEPARATOR_RE);
+    if (sepMatch) {
+      const colonIdx = trimmed.indexOf(':');
+      const label = trimmed.slice(0, colonIdx + 1);
+      const rest = trimmed.slice(colonIdx + 1).trim();
+      return (
+        <div key={key}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase' as const,
+            color: theme.text,
+            opacity: 0.5,
+            marginTop: 16,
+            marginBottom: 4,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.05em',
           }}>
-            {renderBoldInline(trimmed)}
+            {label}
           </div>
-        );
-      })}
+          {rest && (
+            <div style={{
+              fontFamily: 'monospace',
+              fontSize: 13,
+              background: theme.answerBg,
+              color: (theme as any).answerColor || '#991B1B',
+              borderLeft: '3px solid ' + theme.answerBorder,
+              borderRadius: 3,
+              padding: '3px 10px',
+              marginBottom: 3,
+            }}>
+              {renderBoldInline(rest)}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Step labels
+    if (/^Step \d+/i.test(trimmed)) {
+      return (
+        <p key={key} style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: theme.text,
+          marginTop: 14,
+          marginBottom: 6,
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          {renderBoldInline(trimmed)}
+        </p>
+      );
+    }
+
+    // Default: monospace code block line
+    return (
+      <div key={key} style={{
+        fontFamily: 'monospace',
+        fontSize: 13,
+        background: theme.answerBg,
+        color: (theme as any).answerColor || '#991B1B',
+        borderLeft: '3px solid ' + theme.answerBorder,
+        borderRadius: 3,
+        padding: '3px 10px',
+        marginBottom: 3,
+        display: 'block'
+      }}>
+        {renderBoldInline(trimmed)}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {blocks.map((block, bi) => (
+        <div key={bi} className="rounded-md p-4 pl-5 border-l-[3px]" style={{
+          background: theme.answerBg,
+          borderColor: theme.answerBorder,
+          marginBottom: bi < blocks.length - 1 ? 12 : 0,
+        }}>
+          {block.lines.map((l, li) => renderLine(l.trimmed, `${bi}-${li}`))}
+        </div>
+      ))}
     </div>
   );
 }
