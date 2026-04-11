@@ -378,6 +378,7 @@ export function ChapterAuditModal({
         severity: f.severity || "low",
         title: f.title || "Untitled",
         description: f.description || "",
+        fixType: classifyFinding(f.title || "", f.description || ""),
       }));
 
       const accepted: Record<number, boolean> = {};
