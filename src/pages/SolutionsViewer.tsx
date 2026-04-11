@@ -4038,6 +4038,19 @@ export default function SolutionsViewer() {
                   border: `1px solid ${t.border}`,
                 }}
               >
+                {/* Admin: Fix This Page — prominent position above problem */}
+                {isAdmin && isQaMode && (
+                  <button
+                    onClick={() => setFixOpen(true)}
+                    className="w-full mb-3 text-[12px] font-semibold px-4 py-2.5 rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 text-white"
+                    style={{ backgroundColor: "#14213D", boxShadow: "0 2px 12px rgba(20,33,61,0.25)" }}
+                    onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 2px 20px rgba(20,33,61,0.4)")}
+                    onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 2px 12px rgba(20,33,61,0.25)")}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> ✨ Fix This Page
+                  </button>
+                )}
+
                 {/* Source ref label */}
                 {sourceRef && (
                   <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
