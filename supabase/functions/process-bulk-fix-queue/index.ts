@@ -113,6 +113,14 @@ const DELEGATED_OPS: Record<string, QueueHandler> = {
       return !data?.survive_solution_text?.trim();
     },
   },
+  regenerate_missing: {
+    fn: "regenerate-missing",
+    bodyFn: (id) => ({ teaching_asset_id: id }),
+    skipCheck: async (sb, id) => {
+      const { data } = await sb.from("teaching_assets").select("survive_problem_text, problem_context").eq("id", id).single();
+      return !data?.survive_problem_text?.trim() && !data?.problem_context?.trim();
+    },
+  },
 };
 
 /**
