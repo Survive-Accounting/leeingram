@@ -132,7 +132,35 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
         </div>
       </div>
 
-      {/* Content */}
+        {!preview && (
+          <div className="flex items-center gap-1 px-3 py-1.5" style={{ borderBottom: "1px solid rgba(59, 130, 246, 0.1)" }}>
+            <span className="text-[10px] mr-1" style={{ color: "#9CA3AF" }}>BG:</span>
+            <button
+              onClick={() => applyBgTag("red")}
+              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+              style={{ background: "#FEF2F2", border: "1px solid #CE1126", color: "#991B1B" }}
+              title="Red background"
+            >
+              🔴 Red
+            </button>
+            <button
+              onClick={() => applyBgTag("yellow")}
+              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+              style={{ background: "#FEFCE8", border: "1px solid #D97706", color: "#92400E" }}
+              title="Yellow highlight"
+            >
+              🟡 Yellow
+            </button>
+            <button
+              onClick={() => applyBgTag("clear")}
+              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+              style={{ background: "#F3F4F6", border: "1px solid #D1D5DB", color: "#6B7280" }}
+              title="Clear background"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        )}
       <div className="p-3">
         {preview ? (
           <div
