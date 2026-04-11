@@ -125,35 +125,35 @@ function FindingCard({
   onToggle: () => void;
 }) {
   return (
-    <div className={`rounded-lg border p-4 space-y-2 transition-colors ${isAccepted ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"}`}>
-      <div className="flex items-start justify-between gap-3">
+    <div className={`rounded-lg border p-3 md:p-4 space-y-2 transition-colors ${isAccepted ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"}`}>
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-2 md:gap-3">
         <div className="flex items-start gap-2.5 flex-1 min-w-0">
           <Badge className={`text-[10px] shrink-0 mt-0.5 ${SEV_COLORS[finding.severity]}`}>
             {finding.severity}
           </Badge>
           <div className="min-w-0">
-            <p className="text-[15px] font-semibold text-foreground leading-tight">{finding.title}</p>
-            <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{finding.description}</p>
+            <p className="text-sm md:text-[15px] font-semibold text-foreground leading-tight">{finding.title}</p>
+            <p className="text-sm md:text-[13px] text-muted-foreground mt-1 leading-relaxed">{finding.description}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 w-full md:w-auto md:shrink-0">
           {isAccepted ? (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-muted-foreground/30 text-muted-foreground hover:text-destructive"
+              className="h-12 md:h-7 text-sm md:text-xs flex-1 md:flex-none border-destructive/30 text-destructive hover:bg-destructive/10"
               onClick={onToggle}
             >
-              <X className="h-3 w-3 mr-1" /> Dismiss
+              <X className="h-4 md:h-3 w-4 md:w-3 mr-1" /> Dismiss
             </Button>
           ) : (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
+              className="h-12 md:h-7 text-sm md:text-xs flex-1 md:flex-none border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
               onClick={onToggle}
             >
-              <Check className="h-3 w-3 mr-1" /> Accept
+              <Check className="h-4 md:h-3 w-4 md:w-3 mr-1" /> Accept
             </Button>
           )}
         </div>
@@ -329,7 +329,8 @@ function TabPanel({
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Your notes</p>
             <Textarea
-              rows={4}
+              rows={5}
+              className="text-sm md:text-xs"
               placeholder="Any overrides or additions? Accepted findings above will be included automatically."
               value={notes}
               onChange={(e) => onNotesChange(e.target.value)}
@@ -337,10 +338,10 @@ function TabPanel({
           </div>
 
           {/* Two-button system */}
-          <div className="flex gap-3">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3">
             {hasContent && (
               <Button
-                className="flex-1 text-sm font-semibold text-white"
+                className="flex-1 text-sm font-semibold text-white h-14 md:h-auto"
                 style={{ backgroundColor: "#14213D" }}
                 disabled={applying}
                 onClick={applyContentFixes}
@@ -355,7 +356,7 @@ function TabPanel({
             {hasUI && (
               <Button
                 variant="outline"
-                className="flex-1 text-sm font-semibold"
+                className="flex-1 text-sm font-semibold h-14 md:h-auto"
                 disabled={generating}
                 onClick={generateUIPrompt}
               >
@@ -389,7 +390,7 @@ function TabPanel({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute top-2 right-2 h-7 text-[11px] text-white/70 hover:text-white hover:bg-white/10 z-10"
+                  className="absolute top-2 right-2 h-11 md:h-7 text-[11px] text-white/70 hover:text-white hover:bg-white/10 z-10 w-full md:w-auto static md:absolute mt-2 md:mt-0"
                   onClick={copyPrompt}
                 >
                   {copied ? (
@@ -542,14 +543,14 @@ export function ChapterAuditModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-[95vw] w-full h-[100dvh] md:h-[90vh] flex flex-col p-0 gap-0 rounded-none md:rounded-lg">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <h2 className="text-lg font-bold text-foreground">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border shrink-0">
+          <h2 className="text-base md:text-lg font-bold text-foreground truncate mr-2">
             Chapter Audit — Ch {chapterNumber} — {chapterName}
           </h2>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-11 w-11 md:h-8 md:w-8 shrink-0">
+            <X className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
         </div>
 
@@ -559,10 +560,10 @@ export function ChapterAuditModal({
           onValueChange={(v) => setActiveTab(v as TabKey)}
           className="flex flex-col flex-1 min-h-0"
         >
-          <div className="px-6 pt-3 pb-0 shrink-0">
-            <TabsList className="w-full justify-start">
+          <div className="px-4 md:px-6 pt-3 pb-0 shrink-0 overflow-x-auto">
+            <TabsList className="w-auto md:w-full justify-start flex-nowrap">
               {TAB_CONFIG.map(({ key, label }) => (
-                <TabsTrigger key={key} value={key} className="flex items-center">
+                <TabsTrigger key={key} value={key} className="flex items-center shrink-0 min-h-[44px] md:min-h-0 text-sm md:text-xs">
                   {label}
                   <TabBadge tab={tabs[key]} />
                 </TabsTrigger>
@@ -571,7 +572,7 @@ export function ChapterAuditModal({
           </div>
 
           <ScrollArea className="flex-1 min-h-0">
-            <div className="px-6 pb-6">
+            <div className="px-4 md:px-6 pb-6">
               {TAB_CONFIG.map(({ key, label }) => (
                 <TabsContent key={key} value={key} className="mt-0">
                   <TabPanel

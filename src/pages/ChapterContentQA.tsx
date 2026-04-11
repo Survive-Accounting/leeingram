@@ -294,7 +294,7 @@ export default function ChapterContentQA() {
           </Card>
         )}
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {[
             { label: "Total Chapters", value: totalChapters, color: "text-foreground" },
             { label: "Pending JEs", value: pendingJEChapters, color: "text-amber-400" },
@@ -305,7 +305,7 @@ export default function ChapterContentQA() {
             <Card key={c.label} className="bg-card/50">
               <CardContent className="p-3 text-center">
                 <p className={`text-xl font-bold ${c.color}`}>{c.value}</p>
-                <p className="text-[10px] text-muted-foreground">{c.label}</p>
+                <p className="text-[10px] md:text-[10px] text-muted-foreground">{c.label}</p>
               </CardContent>
             </Card>
           ))}
@@ -416,7 +416,7 @@ function CourseGroupBlock({
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors text-left">
         {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-        <span className="text-xs font-bold text-foreground uppercase tracking-wider">{label}</span>
+        <span className="text-xs font-bold text-foreground uppercase tracking-wider min-w-0 truncate">{label}</span>
         <Badge variant="secondary" className="text-[9px] h-4 ml-auto">{chapters.length} chapters</Badge>
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-1 space-y-0.5">
@@ -425,15 +425,15 @@ function CourseGroupBlock({
             key={ch.id}
             onClick={() => onSelect(ch.id)}
             className={cn(
-              "w-full flex items-center gap-2 px-4 py-2 rounded-md text-left transition-colors text-sm",
+              "w-full flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2.5 md:py-2 rounded-md text-left transition-colors text-sm",
               selectedId === ch.id
                 ? "bg-primary/15 text-foreground border border-primary/30"
                 : "hover:bg-muted/30 text-foreground/80"
             )}
           >
-            <span className="font-medium text-xs">Ch {ch.chapter_number}</span>
-            <span className="text-xs truncate">{ch.chapter_name}</span>
-            <div className="flex gap-1 ml-auto shrink-0">
+            <span className="font-medium text-xs shrink-0">Ch {ch.chapter_number}</span>
+            <span className="text-xs truncate flex-1 min-w-0">{ch.chapter_name}</span>
+            <div className="flex gap-1 shrink-0 w-full md:w-auto md:ml-auto mt-1 md:mt-0">
               {statusPill(jeStatus(ch.id), "JEs")}
               {statusPill(formulaStatus(ch.id), "Formulas")}
             </div>
@@ -513,28 +513,28 @@ function ChapterQAModal({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="max-w-3xl md:max-h-[85vh] max-h-[100dvh] w-full md:w-auto h-[100dvh] md:h-auto overflow-hidden flex flex-col p-0 md:rounded-lg rounded-none">
         {/* Fixed header */}
-        <div className="shrink-0 px-6 pt-6 pb-0 space-y-2">
+        <div className="shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-0 space-y-2">
           <DialogHeader>
-            <DialogTitle className="text-base">
+            <DialogTitle className="text-sm md:text-base truncate">
               {courseCode} — Ch {chapter.chapter_number}: {chapter.chapter_name}
             </DialogTitle>
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onPrev} disabled={index <= 0}>
-                  <ChevronLeft className="h-3.5 w-3.5" /> Prev
-                </Button>
-                <span className="text-xs text-muted-foreground">{index + 1} / {total}</span>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onNext} disabled={index >= total - 1}>
-                  Next <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-[11px]"
+              <div className="flex flex-wrap items-center justify-between pt-1 gap-2">
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" className="h-11 md:h-7 min-w-[44px] text-xs" onClick={onPrev} disabled={index <= 0}>
+                    <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                  </Button>
+                  <span className="text-xs text-muted-foreground">{index + 1} / {total}</span>
+                  <Button size="sm" variant="ghost" className="h-11 md:h-7 min-w-[44px] text-xs" onClick={onNext} disabled={index >= total - 1}>
+                    Next <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-11 md:h-7 text-[11px]"
                   onClick={async () => {
                     toast.loading("Building PDF…", { id: "pdf" });
                     try {
@@ -585,14 +585,14 @@ function ChapterQAModal({
           </DialogHeader>
 
           {/* Generate All Content + Audit button */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button size="sm" onClick={runFullSuite} disabled={suiteRunning} className="text-xs">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 flex-wrap">
+            <Button size="sm" onClick={runFullSuite} disabled={suiteRunning} className="text-xs h-11 md:h-8 w-full md:w-auto">
               {suiteRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               {suiteRunning ? `Generating ${suiteStep}…` : "Generate All Content →"}
             </Button>
             <Button
               size="sm"
-              className="text-xs text-white font-semibold h-7"
+              className="text-xs text-white font-semibold h-11 md:h-7 w-full md:w-auto"
               style={{ backgroundColor: "#14213D" }}
               onClick={() => setAuditOpen(true)}
             >
@@ -625,14 +625,14 @@ function ChapterQAModal({
           {/* Audit panel moved to scrollable area below */}
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
-            <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
-              <TabsTrigger value="je" className="gap-1 text-[11px]"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
-              <TabsTrigger value="formulas" className="gap-1 text-[11px]"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
-              <TabsTrigger value="accounts" className="gap-1 text-[11px]"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
-              <TabsTrigger value="terms" className="gap-1 text-[11px]"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
-              <TabsTrigger value="memory" className="gap-1 text-[11px]"><Brain className="h-3 w-3" /> Memory</TabsTrigger>
-              <TabsTrigger value="mistakes" className="gap-1 text-[11px]"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
-              <TabsTrigger value="purpose" className="gap-1 text-[11px]"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
+            <TabsList className="bg-secondary flex-nowrap h-auto gap-0.5 p-1 w-full overflow-x-auto justify-start md:justify-start">
+              <TabsTrigger value="je" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><BookOpen className="h-3 w-3" /> JEs</TabsTrigger>
+              <TabsTrigger value="formulas" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><FlaskConical className="h-3 w-3" /> Formulas</TabsTrigger>
+              <TabsTrigger value="accounts" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><Layers className="h-3 w-3" /> Accounts</TabsTrigger>
+              <TabsTrigger value="terms" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
+              <TabsTrigger value="memory" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><Brain className="h-3 w-3" /> Memory</TabsTrigger>
+              <TabsTrigger value="mistakes" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
+              <TabsTrigger value="purpose" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -650,7 +650,7 @@ function ChapterQAModal({
         )}
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-3">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-3">
           <Tabs value={tab} onValueChange={onTabChange}>
             <TabsContent value="je" className="mt-0">
               <JETab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
