@@ -1065,7 +1065,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       onProgress?.(Math.min(i + batchSize, total), total, (batch[batch.length - 1] as any)?.asset_name || "");
 
       // Delay for AI-heavy operations
-      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights"].includes(opKey)) {
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking"].includes(opKey)) {
         await new Promise(r => setTimeout(r, 500));
       }
     }
