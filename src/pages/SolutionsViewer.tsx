@@ -3376,6 +3376,10 @@ export default function SolutionsViewer() {
 
   // QA: force open all toggles via postMessage
   const [allTogglesForceOpen, setAllTogglesForceOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const handleToggleSection = useCallback((sectionName: string) => {
+    setOpenSection(prev => prev === sectionName ? null : sectionName);
+  }, []);
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === "QA_OPEN_ALL_TOGGLES") setAllTogglesForceOpen(true);
