@@ -79,6 +79,8 @@ const FIX_STATUS_OPTIONS = [
   { value: "fix_verified", label: "Verified ✓", bg: "rgba(16,185,129,0.2)", text: "#10B981" },
   { value: "still_has_issues", label: "Still Has Issues", bg: "rgba(239,68,68,0.2)", text: "#EF4444" },
   { value: "needs_lee", label: "Needs Lee 🚩", bg: "rgba(249,115,22,0.2)", text: "#F97316" },
+  { value: "pending_lee_review", label: "Pending Review 🔍", bg: "rgba(139,92,246,0.2)", text: "#8B5CF6" },
+  { value: "ready_for_students", label: "Ready ✓", bg: "rgba(16,185,129,0.2)", text: "#10B981" },
 ] as const;
 
 function FixStatusControl({ teachingAssetId }: { teachingAssetId: string | undefined }) {
