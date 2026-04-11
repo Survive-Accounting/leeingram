@@ -83,14 +83,29 @@ function fmtDollar(n: number | null | undefined): string {
 }
 
 function SmallTooltip({ text, side = "top", style }: { text: string; side?: "top" | "bottom" | "left" | "right"; style?: React.CSSProperties }) {
+  const isMobile = useIsMobile();
   if (!text) return null;
+
+  const trigger = (
+    <button type="button" className="inline-flex items-center justify-center opacity-40 hover:opacity-80 transition-opacity" style={{ ...style, ...(isMobile ? { minWidth: 28, minHeight: 28 } : {}) }} onClick={(e) => e.stopPropagation()}>
+      <Info className={isMobile ? "h-4 w-4" : "h-3 w-3"} />
+    </button>
+  );
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverContent side={side} className="max-w-[260px] text-sm leading-relaxed z-[9999] text-left px-3 py-2">
+          {text}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <Tooltip delayDuration={150}>
-      <TooltipTrigger asChild>
-        <button type="button" className="inline-flex items-center justify-center opacity-40 hover:opacity-80 transition-opacity" style={style} onClick={(e) => e.stopPropagation()}>
-          <Info className="h-3 w-3" />
-        </button>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent side={side} className="max-w-[260px] text-xs leading-relaxed z-[100] text-left">
         {text}
       </TooltipContent>
@@ -99,14 +114,29 @@ function SmallTooltip({ text, side = "top", style }: { text: string; side?: "top
 }
 
 function CategoryTooltip({ text, style }: { text: string; style?: React.CSSProperties }) {
+  const isMobile = useIsMobile();
   if (!text) return null;
+
+  const trigger = (
+    <button type="button" className="inline-flex items-center justify-center opacity-40 hover:opacity-80 transition-opacity" style={{ ...style, ...(isMobile ? { minWidth: 32, minHeight: 32 } : {}) }} onClick={(e) => e.stopPropagation()}>
+      <Info className={isMobile ? "h-4.5 w-4.5" : "h-3.5 w-3.5"} />
+    </button>
+  );
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverContent side="right" className="max-w-[300px] text-sm leading-relaxed z-[9999] text-left whitespace-pre-line px-3 py-2">
+          {text}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <Tooltip delayDuration={150}>
-      <TooltipTrigger asChild>
-        <button type="button" className="inline-flex items-center justify-center opacity-40 hover:opacity-80 transition-opacity" style={style} onClick={(e) => e.stopPropagation()}>
-          <Info className="h-3.5 w-3.5" />
-        </button>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent side="right" className="max-w-[300px] text-xs leading-relaxed z-[100] text-left whitespace-pre-line">
         {text}
       </TooltipContent>
