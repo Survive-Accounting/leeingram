@@ -543,14 +543,14 @@ export function ChapterAuditModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-[95vw] w-full h-[100dvh] md:h-[90vh] flex flex-col p-0 gap-0 rounded-none md:rounded-lg">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <h2 className="text-lg font-bold text-foreground">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border shrink-0">
+          <h2 className="text-base md:text-lg font-bold text-foreground truncate mr-2">
             Chapter Audit — Ch {chapterNumber} — {chapterName}
           </h2>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-11 w-11 md:h-8 md:w-8 shrink-0">
+            <X className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
         </div>
 
@@ -560,10 +560,10 @@ export function ChapterAuditModal({
           onValueChange={(v) => setActiveTab(v as TabKey)}
           className="flex flex-col flex-1 min-h-0"
         >
-          <div className="px-6 pt-3 pb-0 shrink-0">
-            <TabsList className="w-full justify-start">
+          <div className="px-4 md:px-6 pt-3 pb-0 shrink-0 overflow-x-auto">
+            <TabsList className="w-auto md:w-full justify-start flex-nowrap">
               {TAB_CONFIG.map(({ key, label }) => (
-                <TabsTrigger key={key} value={key} className="flex items-center">
+                <TabsTrigger key={key} value={key} className="flex items-center shrink-0 min-h-[44px] md:min-h-0 text-sm md:text-xs">
                   {label}
                   <TabBadge tab={tabs[key]} />
                 </TabsTrigger>
@@ -572,7 +572,7 @@ export function ChapterAuditModal({
           </div>
 
           <ScrollArea className="flex-1 min-h-0">
-            <div className="px-6 pb-6">
+            <div className="px-4 md:px-6 pb-6">
               {TAB_CONFIG.map(({ key, label }) => (
                 <TabsContent key={key} value={key} className="mt-0">
                   <TabPanel
