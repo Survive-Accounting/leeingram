@@ -38,6 +38,77 @@ Output: Same structure with account_tooltip added/rewritten for each line.
 
 Return ONLY valid JSON: { "entries": [ { "id": "...", "lines": [ { "account": "...", "side": "...", "account_tooltip": "..." } ] } ] }`;
 
+function extractJsonFromResponse(response: string): unknown {
+  let cleaned = response
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const jsonStart = cleaned.search(/[\{\[]/);
+  const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === '[' ? ']' : '}');
+
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error("No JSON object found in response");
+  }
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e) {
+    // Fix common LLM JSON issues: trailing commas, control chars
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : "");
+
+    return JSON.parse(cleaned);
+  }
+}
+
+async function callAnthropicWithRetry(
+  apiKey: string,
+  body: any,
+  maxRetries = 2
+): Promise<any> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Exponential backoff: 2s, 4s
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+      console.log(`Retry attempt ${attempt}/${maxRetries}`);
+    }
+
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (aiRes.ok) {
+      return await aiRes.json();
+    }
+
+    const errText = await aiRes.text();
+    lastError = new Error(`Anthropic API error ${aiRes.status}: ${errText}`);
+
+    // Only retry on 500/502/503/529 (server errors / overloaded)
+    if (aiRes.status < 500 && aiRes.status !== 429) {
+      throw lastError;
+    }
+
+    // On 429, wait longer
+    if (aiRes.status === 429 && attempt < maxRetries) {
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+  throw lastError!;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -72,7 +143,6 @@ serve(async (req) => {
         if (l.side === "debit" || l.side === "credit") {
           return { account: l.account, side: l.side, account_tooltip: l.account_tooltip || "" };
         }
-        // Legacy format
         const isDebit = l.debit != null && l.debit !== 0;
         return { account: l.account, side: isDebit ? "debit" : "credit", account_tooltip: l.account_tooltip || "" };
       });
@@ -86,41 +156,31 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
 
-    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8000,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `${contextLabel}\n\nRewrite all account_tooltips for these ${normalizedEntries.length} journal entries:\n\n${userContent}`,
-          },
-        ],
-      }),
+    const aiData = await callAnthropicWithRetry(ANTHROPIC_API_KEY, {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 16384,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `${contextLabel}\n\nRewrite all account_tooltips for these ${normalizedEntries.length} journal entries:\n\n${userContent}`,
+        },
+      ],
     });
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      throw new Error(`Anthropic API error ${aiRes.status}: ${errText}`);
-    }
-
-    const aiData = await aiRes.json();
     const rawText = aiData.content?.[0]?.text || "";
 
-    // Extract JSON from response
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in AI response");
+    // Extract JSON with robust parser
+    let parsed: any;
+    try {
+      parsed = extractJsonFromResponse(rawText);
+    } catch (parseErr) {
+      console.error("JSON parse failed. Raw text length:", rawText.length, "Last 200 chars:", rawText.slice(-200));
+      throw new Error(`Failed to parse AI response: ${parseErr.message}`);
+    }
 
-    const parsed = JSON.parse(jsonMatch[0]);
     const rewrittenEntries = parsed.entries;
-    if (!Array.isArray(rewrittenEntries)) throw new Error("Invalid AI response structure");
+    if (!Array.isArray(rewrittenEntries)) throw new Error("Invalid AI response structure — missing entries array");
 
     // Log cost
     const inputTokens = aiData.usage?.input_tokens || 0;
@@ -142,21 +202,17 @@ serve(async (req) => {
     // Update each entry in the DB
     let updated = 0;
     for (const rewritten of rewrittenEntries) {
-      // Find matching original entry
       const original = entries.find((e: any) => e.id === rewritten.id);
       if (!original) continue;
 
-      // Rebuild je_lines with new tooltips but preserve all other fields
       const originalLines = Array.isArray(original.je_lines) ? original.je_lines : [];
       const updatedLines = originalLines.map((origLine: any, idx: number) => {
         const rewrittenLine = rewritten.lines?.[idx];
         if (!rewrittenLine) return origLine;
 
-        // Normalize legacy format while adding tooltip
         if (origLine.side === "debit" || origLine.side === "credit") {
           return { ...origLine, account_tooltip: rewrittenLine.account_tooltip || origLine.account_tooltip };
         }
-        // Convert legacy format to canonical
         const isDebit = origLine.debit != null && origLine.debit !== 0;
         return {
           account: origLine.account,
