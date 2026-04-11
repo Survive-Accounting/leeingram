@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ChapterQAReportExporter } from "@/components/admin-dashboard/ChapterQAReportExporter";
+import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPanel";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -468,6 +469,7 @@ export default function SolutionsQAAdmin() {
   const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [fixIssue, setFixIssue] = useState<QAIssue | null>(null);
+  const [auditChapter, setAuditChapter] = useState<{ id: string; name: string } | null>(null);
 
   // ── Server-side COUNT queries ──
   const { data: counts } = useQuery<StatusCounts>({
@@ -660,7 +662,30 @@ export default function SolutionsQAAdmin() {
     <SurviveSidebarLayout>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Solutions QA — Admin</h1>
-        <ChapterQAReportExporter />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ChapterQAReportExporter />
+          {allAssetsChapter !== "all" && chapters?.find(c => c.id === allAssetsChapter) && (
+            <Button
+              size="sm"
+              className="text-xs text-white"
+              style={{ backgroundColor: "#14213D" }}
+              onClick={() => {
+                const ch = chapters!.find(c => c.id === allAssetsChapter)!;
+                setAuditChapter({ id: ch.id, name: `Ch ${ch.chapter_number}: ${ch.chapter_name}` });
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" /> Audit This Chapter →
+            </Button>
+          )}
+        </div>
+
+        {auditChapter && (
+          <ChapterAuditPanel
+            chapterId={auditChapter.id}
+            chapterName={auditChapter.name}
+            onDismiss={() => setAuditChapter(null)}
+          />
+        )}
 
         {/* Summary stats */}
         <div className="grid grid-cols-8 gap-2">
