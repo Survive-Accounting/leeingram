@@ -651,6 +651,109 @@ Rules:
           </span>
         </div>
       </div>
+
+      {/* Regenerate Solution Section */}
+      {teachingAssetId && label.toLowerCase().includes("explanation") && (
+        <>
+          <Separator className="opacity-40" />
+
+          {/* Regen Confirm Dialog */}
+          {showRegenConfirm && (
+            <div className="px-4 py-3" style={{ background: "#FFFBEB", borderBottom: "1px solid #F59E0B" }}>
+              <p className="text-[12px] font-semibold mb-1.5" style={{ color: "#92400E" }}>
+                Regenerate this solution using Claude Opus?
+              </p>
+              <p className="text-[11px] leading-[1.6] mb-2" style={{ color: "#78350F" }}>
+                This will rewrite the entire explanation from scratch using the problem text and instructions as source material.
+              </p>
+              <ul className="text-[11px] leading-[1.6] mb-3 space-y-0.5" style={{ color: "#78350F" }}>
+                <li>• Current explanation will be replaced</li>
+                <li>• A snapshot will be saved so you can restore if needed</li>
+                <li>• Result must be reviewed and approved before saving</li>
+                <li>• This uses a more powerful AI model</li>
+              </ul>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRegenerate}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded"
+                  style={{ background: "#F59E0B", color: "#fff", border: "none" }}
+                >
+                  Yes, Regenerate
+                </button>
+                <button
+                  onClick={() => setShowRegenConfirm(false)}
+                  className="text-[11px] px-3 py-1.5 rounded"
+                  style={{ border: "1px solid #D1D5DB", color: "#6B7280", background: "transparent" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {regenState === "loading" && (
+            <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#FFFBEB" }}>
+              <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#F59E0B" }} />
+              <span className="text-[12px] font-medium" style={{ color: "#92400E" }}>
+                Regenerating with Opus — this may take 30 seconds…
+              </span>
+            </div>
+          )}
+
+          {/* Review state: approve or restore */}
+          {regenState === "review" && regenSnapshot && (
+            <div className="px-4 py-3" style={{ background: "#F0FDF4", borderTop: "1px solid #22C55E" }}>
+              <p className="text-[12px] font-semibold mb-2" style={{ color: "#166534" }}>
+                ✨ Regeneration complete — review the result above, then:
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRegenApprove}
+                  disabled={saving}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1"
+                  style={{ background: "#22C55E", color: "#fff", border: "none", opacity: saving ? 0.6 : 1 }}
+                >
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  Approve & Save
+                </button>
+                <button
+                  onClick={handleRegenRestore}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1"
+                  style={{ background: "#EF4444", color: "#fff", border: "none" }}
+                >
+                  <RotateCcw className="h-3 w-3" /> Restore Original
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Trigger button */}
+          {regenState === "idle" && !showRegenConfirm && (
+            <div className="px-4 py-3">
+              <button
+                onClick={() => setShowRegenConfirm(true)}
+                disabled={regenCooldown > 0}
+                className="text-[11px] font-medium px-3 py-1.5 rounded transition-colors w-full"
+                style={{
+                  border: "1px solid #F59E0B",
+                  color: regenCooldown > 0 ? "#D1D5DB" : "#F59E0B",
+                  background: "transparent",
+                  cursor: regenCooldown > 0 ? "not-allowed" : "pointer",
+                  opacity: regenCooldown > 0 ? 0.5 : 1,
+                }}
+              >
+                {regenCooldown > 0
+                  ? `Available again in ${regenCooldown}s`
+                  : "Looks Wrong? Regenerate Solution →"}
+              </button>
+              <p className="text-[10px] mt-1 text-center" style={{ color: "#9CA3AF" }}>
+                Last resort — uses Opus AI. Review carefully before approving.
+              </p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
