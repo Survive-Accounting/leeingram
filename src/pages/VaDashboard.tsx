@@ -15,6 +15,7 @@ import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
   HelpCircle, MessageSquare, ExternalLink, Library, FileUp, Rocket,
+  FlaskConical, XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QuizDeployPanel } from "@/components/va-dashboards/QuizDeployPanel";
