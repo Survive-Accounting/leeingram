@@ -620,10 +620,11 @@ function RevealToggle({
 
   return (
     <div
-      className="rounded-lg mt-4 overflow-hidden transition-all"
+      className="rounded-lg mt-4 overflow-hidden"
       style={{
         background: isPreview ? theme.toggleBg : (open ? "#ffffff" : "#f8fafc"),
         border: `1px solid ${isPreview ? theme.border : "#e2e8f0"}`,
+        transition: "background 0.2s ease",
       }}
     >
       <button
