@@ -40,6 +40,7 @@ import { useVaAccount } from "@/hooks/useVaAccount";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { isContraAccount } from "@/lib/contraDetection";
+import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPanel";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -473,6 +474,7 @@ function ChapterQAModal({
   const [suiteRunning, setSuiteRunning] = useState(false);
   const [suiteStep, setSuiteStep] = useState("");
   const [suiteResults, setSuiteResults] = useState<Record<string, "ok" | "error" | "pending">>({});
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const runFullSuite = async () => {
     setSuiteRunning(true);
@@ -581,11 +583,19 @@ function ChapterQAModal({
             </div>
           </DialogHeader>
 
-          {/* Generate All Content button */}
+          {/* Generate All Content + Audit button */}
           <div className="flex items-center gap-2 flex-wrap">
             <Button size="sm" onClick={runFullSuite} disabled={suiteRunning} className="text-xs">
               {suiteRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               {suiteRunning ? `Generating ${suiteStep}…` : "Generate All Content →"}
+            </Button>
+            <Button
+              size="sm"
+              className="text-xs text-white font-semibold h-7"
+              style={{ backgroundColor: "#14213D" }}
+              onClick={() => setAuditOpen(true)}
+            >
+              Audit This Chapter →
             </Button>
             {Object.keys(suiteResults).length > 0 && (
               <div className="flex gap-1 items-center">
@@ -610,6 +620,15 @@ function ChapterQAModal({
               </div>
             )}
           </div>
+
+          {/* Audit Panel */}
+          {auditOpen && (
+            <ChapterAuditPanel
+              chapterId={chapter.id}
+              chapterName={`Ch ${chapter.chapter_number} — ${chapter.chapter_name}`}
+              onDismiss={() => setAuditOpen(false)}
+            />
+          )}
 
           <Tabs value={tab} onValueChange={onTabChange} className="w-full">
             <TabsList className="bg-secondary flex-wrap h-auto gap-0.5 p-1 w-full">
