@@ -4018,7 +4018,7 @@ export default function SolutionsViewer() {
       </div>
 
       {/* ── Floating Action Panel (desktop) ── */}
-      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} showShare={shareButtonsVisible && !isQaMode} isAdmin={isAdmin} isQaMode={isQaMode} courseCode={courseCode} />
+      <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} onQaToolboxClick={() => setFixOpen(true)} showShare={shareButtonsVisible && !isQaMode} isAdmin={isAdmin} isQaMode={isQaMode} courseCode={courseCode} />
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
@@ -4041,7 +4041,7 @@ export default function SolutionsViewer() {
                   border: `1px solid ${t.border}`,
                 }}
               >
-                {/* Admin: Fix This Page — prominent position above problem */}
+                {/* Admin: QA Toolbox button — prominent position above problem */}
                 {isAdmin && isQaMode && (
                   <button
                     onClick={() => setFixOpen(true)}
@@ -4050,7 +4050,7 @@ export default function SolutionsViewer() {
                     onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 2px 20px rgba(20,33,61,0.4)")}
                     onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 2px 12px rgba(20,33,61,0.25)")}
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> ✨ Fix This Page
+                    <Sparkles className="h-3.5 w-3.5" /> ⚙ QA Toolbox
                   </button>
                 )}
 
@@ -4357,15 +4357,15 @@ export default function SolutionsViewer() {
       </main>
 
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
-      {fixOpen && asset && (
-        <FixThisAssetPanel
-          assetName={asset.asset_name}
-          assetCode={sourceRef || asset.asset_name}
-          teachingAssetId={asset.id}
-          chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
-          onClose={() => setFixOpen(false)}
-        />
-      )}
+      <QAToolboxModal
+        open={fixOpen}
+        onClose={() => setFixOpen(false)}
+        assetName={asset.asset_name}
+        assetCode={sourceRef || asset.asset_name}
+        teachingAssetId={asset.id}
+        chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
+        chapterName={chapterName || undefined}
+      />
     </div>
     </>
   );
