@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking" | "remove_duplicates";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking" | "remove_duplicates" | "regenerate_missing";
 
 interface HistoryEntry {
   label: string;
@@ -66,6 +66,7 @@ const OPERATION_LABELS: Record<string, string> = {
   standardize_formatting: "Standardize Formatting (solution text only)",
   remove_ai_thinking: "Remove AI Thinking (solution text only — Opus)",
   remove_duplicates: "Remove Duplicates & Redundancies (solution text — Opus)",
+  regenerate_missing: "Regenerate Missing Content (solution + JE — Opus)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
@@ -324,6 +325,7 @@ export default function BulkFixTool() {
     if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
     if (operation === "remove_ai_thinking") return "Remove AI Thinking (solution text only — Opus)";
     if (operation === "remove_duplicates") return "Remove Duplicates & Redundancies (solution text — Opus)";
+    if (operation === "regenerate_missing") return "Regenerate Missing Content (solution + JE — Opus)";
     return "";
   }, [operation, findText, replaceText]);
 
