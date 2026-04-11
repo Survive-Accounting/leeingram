@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
@@ -2424,18 +2425,90 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
     }
   };
 
-  const handleApprove = async () => {
+  const handleMarkReady = async () => {
+    setApproving(true);
+    try {
+      // Approve the fix
+      const { error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, fix_prompt: fixPrompt, action: "approve" },
+      });
+      if (error) throw error;
+      // Set fix_status = ready_for_students + append fix_notes
+      const { data: current } = await supabase.from("teaching_assets").select("fix_notes").eq("id", teachingAssetId).single();
+      const prev = (current as any)?.fix_notes || "";
+      const ts = new Date().toISOString();
+      const note = `Marked ready by VA — ${ts}`;
+      await supabase.from("teaching_assets").update({
+        fix_status: "ready_for_students",
+        fix_notes: prev ? `${prev}\n---\n${note}` : note,
+      } as any).eq("id", teachingAssetId);
+      // Confetti
+      const colors = ['#14213D', '#CE1126', '#FFFFFF'];
+      confetti({ particleCount: 80, spread: 60, origin: { x: 0.15, y: 0.6 }, colors });
+      confetti({ particleCount: 80, spread: 60, origin: { x: 0.85, y: 0.6 }, colors });
+      toast.success("🎉 Ready for students!");
+      setTimeout(() => { onClose(); window.location.reload(); }, 1500);
+    } catch (err: any) {
+      toast.error("Failed: " + (err.message || "Unknown error"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleSubmitForReview = async () => {
     setApproving(true);
     try {
       const { error } = await supabase.functions.invoke("fix-asset", {
         body: { teaching_asset_id: teachingAssetId, fix_prompt: fixPrompt, action: "approve" },
       });
       if (error) throw error;
-      toast.success("Fix approved and saved");
-      onClose();
-      window.location.reload();
+      const { data: current } = await supabase.from("teaching_assets").select("fix_notes, source_ref, asset_name").eq("id", teachingAssetId).single();
+      const prev = (current as any)?.fix_notes || "";
+      const ts = new Date().toISOString();
+      const note = `Fix submitted for Lee review — ${ts}`;
+      await supabase.from("teaching_assets").update({
+        fix_status: "pending_lee_review",
+        fix_notes: prev ? `${prev}\n---\n${note}` : note,
+      } as any).eq("id", teachingAssetId);
+      // Slack notification
+      const sourceRef = (current as any)?.source_ref || assetCode;
+      const assetName = (current as any)?.asset_name || assetCode;
+      await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "notify_slack", slack_message: `🔍 *${sourceRef}* needs your review.\n${assetName}\nhttps://learn.surviveaccounting.com/solutions/${assetName}?admin=true` },
+      });
+      toast.success("Submitted — Lee has been notified");
+      setTimeout(() => { onClose(); window.location.reload(); }, 1500);
     } catch (err: any) {
-      toast.error("Approve failed: " + (err.message || "Unknown error"));
+      toast.error("Failed: " + (err.message || "Unknown error"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleNeedsLee = async () => {
+    setApproving(true);
+    try {
+      const { error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, fix_prompt: fixPrompt, action: "approve" },
+      });
+      if (error) throw error;
+      const { data: current } = await supabase.from("teaching_assets").select("fix_notes, source_ref, asset_name").eq("id", teachingAssetId).single();
+      const prev = (current as any)?.fix_notes || "";
+      const ts = new Date().toISOString();
+      const note = `Flagged Needs Lee — ${ts}`;
+      await supabase.from("teaching_assets").update({
+        fix_status: "needs_lee",
+        fix_notes: prev ? `${prev}\n---\n${note}` : note,
+      } as any).eq("id", teachingAssetId);
+      const sourceRef = (current as any)?.source_ref || assetCode;
+      const assetName = (current as any)?.asset_name || assetCode;
+      await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "notify_slack", slack_message: `🚩 *${sourceRef}* needs Lee's attention.\n${assetName}\nhttps://learn.surviveaccounting.com/solutions/${assetName}?admin=true` },
+      });
+      toast.success("🚩 Lee notified");
+      setTimeout(() => { onClose(); window.location.reload(); }, 1500);
+    } catch (err: any) {
+      toast.error("Failed: " + (err.message || "Unknown error"));
     } finally {
       setApproving(false);
     }
@@ -2455,7 +2528,6 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
       setAfterData(null);
       setSnapshot(null);
       setAttemptNumber(prev => prev + 1);
-      // Keep fixPrompt pre-filled for refinement
     } catch (err: any) {
       toast.error("Restore failed: " + (err.message || "Unknown error"));
     } finally {
@@ -2715,24 +2787,41 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
             </Button>
           )}
           {step === "review" && (
-            <>
+            <div className="flex flex-col gap-2 w-full">
               <Button
+                onClick={handleMarkReady}
+                disabled={approving || restoring}
+                className="w-full text-white text-sm bg-emerald-600 hover:bg-emerald-700"
+              >
+                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "🎉 Mark Ready for Students"}
+              </Button>
+              <Button
+                onClick={handleSubmitForReview}
+                disabled={approving || restoring}
                 variant="outline"
+                className="w-full text-sm"
+                style={{ borderColor: "#14213D", color: "#14213D" }}
+              >
+                Submit for Lee's Review 🔍
+              </Button>
+              <Button
+                onClick={handleNeedsLee}
+                disabled={approving || restoring}
+                variant="outline"
+                className="w-full text-sm"
+                style={{ borderColor: "#D97706", color: "#D97706" }}
+              >
+                Needs Lee 🚩
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={handleReject}
                 disabled={restoring || approving}
-                className="text-xs"
+                className="w-full text-xs text-muted-foreground"
               >
-                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Try Again"}
+                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Reject & Try Again"}
               </Button>
-              <Button
-                onClick={handleApprove}
-                disabled={approving || restoring}
-                className="text-white text-xs"
-                style={{ background: "#14213D" }}
-              >
-                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "✓ Looks Good — Apply Fix"}
-              </Button>
-            </>
+            </div>
           )}
         </DialogFooter>
       </DialogContent>
@@ -2847,10 +2936,12 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                   <>
                     <button
                       onClick={() => setFixOpen(true)}
-                      className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                      style={{ color: "#14213D" }}
+                      className="text-[11px] font-semibold px-3 py-2 rounded-md transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5 text-white"
+                      style={{ backgroundColor: "#14213D", boxShadow: "0 0 0 0 rgba(20,33,61,0)" }}
+                      onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 12px 2px rgba(20,33,61,0.35)")}
+                      onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 0 0 rgba(20,33,61,0)")}
                     >
-                      <Wrench className="h-3 w-3" /> Fix This Now
+                      <Sparkles className="h-3 w-3" /> ✨ Fix This Now
                     </button>
                     <div className="w-px h-5" style={{ background: theme.border }} />
                   </>
