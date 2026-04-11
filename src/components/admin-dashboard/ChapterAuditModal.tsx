@@ -573,7 +573,9 @@ export function ChapterAuditModal({
                 <TabsContent key={key} value={key} className="mt-0">
                   <TabPanel
                     tab={tabs[key]}
+                    tabKey={key}
                     tabLabel={label}
+                    chapterId={chapterId}
                     chapterLabel={`Ch ${chapterNumber} — ${chapterName}`}
                     courseCode={courseCode}
                     onToggleFinding={(idx) => toggleFinding(key, idx)}
