@@ -58,10 +58,18 @@ Deno.serve(async (req) => {
     const parts: string[] = [];
     parts.push(`CHAPTER: Ch ${chapter.chapter_number} — ${chapter.chapter_name}`);
 
+    // Helper to summarize approval status
+    const statusSummary = (items: any[]) => {
+      const approved = items.filter(i => i.is_approved).length;
+      const hidden = items.filter(i => i.is_rejected).length;
+      const pending = items.length - approved - hidden;
+      return `Total: ${items.length} | Approved: ${approved} | Hidden: ${hidden} | Pending: ${pending}`;
+    };
+
     // Purpose
     if (purposeRes.data) {
       const p = purposeRes.data as any;
-      parts.push(`\n--- PURPOSE ---`);
+      parts.push(`\n--- PURPOSE (${p.is_approved ? 'Approved' : 'Not yet approved'}) ---`);
       if (p.purpose_bullets) parts.push(`Purpose: ${JSON.stringify(p.purpose_bullets)}`);
       if (p.consequence_bullets) parts.push(`Consequences: ${JSON.stringify(p.consequence_bullets)}`);
     } else {
@@ -69,37 +77,44 @@ Deno.serve(async (req) => {
     }
 
     // Key Terms
-    parts.push(`\n--- KEY TERMS (${keyTermsRes.data?.length || 0}) ---`);
-    if (keyTermsRes.data?.length) {
-      for (const t of keyTermsRes.data) {
-        parts.push(`• ${(t as any).term}: ${(t as any).definition}`);
+    const allTerms = keyTermsRes.data || [];
+    parts.push(`\n--- KEY TERMS — ${statusSummary(allTerms)} ---`);
+    if (allTerms.length) {
+      for (const t of allTerms) {
+        const ti = t as any;
+        const tag = ti.is_approved ? '✓' : ti.is_rejected ? '(hidden)' : '(pending)';
+        parts.push(`• ${tag} ${ti.term}: ${ti.definition}`);
       }
     } else {
-      parts.push(`(No approved key terms)`);
+      parts.push(`(No key terms exist)`);
     }
 
     // Memory Items
-    parts.push(`\n--- MEMORY ITEMS (${memoryRes.data?.length || 0}) ---`);
-    if (memoryRes.data?.length) {
-      for (const m of memoryRes.data) {
+    const allMemory = memoryRes.data || [];
+    parts.push(`\n--- MEMORY ITEMS — ${statusSummary(allMemory)} ---`);
+    if (allMemory.length) {
+      for (const m of allMemory) {
         const mi = m as any;
-        parts.push(`• [${mi.item_type}] ${mi.title}${mi.subtitle ? ` — ${mi.subtitle}` : ""}`);
+        const tag = mi.is_approved ? '✓' : mi.is_rejected ? '(hidden)' : '(pending)';
+        parts.push(`• ${tag} [${mi.item_type}] ${mi.title}${mi.subtitle ? ` — ${mi.subtitle}` : ""}`);
         if (mi.items) parts.push(`  Items: ${JSON.stringify(mi.items)}`);
       }
     } else {
-      parts.push(`(No approved memory items)`);
+      parts.push(`(No memory items exist)`);
     }
 
     // Formulas
-    parts.push(`\n--- FORMULAS (${formulasRes.data?.length || 0}) ---`);
-    if (formulasRes.data?.length) {
-      for (const f of formulasRes.data) {
+    const allFormulas = formulasRes.data || [];
+    parts.push(`\n--- FORMULAS — ${statusSummary(allFormulas)} ---`);
+    if (allFormulas.length) {
+      for (const f of allFormulas) {
         const fi = f as any;
-        parts.push(`• ${fi.formula_name}: ${fi.formula_expression}`);
+        const tag = fi.is_approved ? '✓' : fi.is_rejected ? '(hidden)' : '(pending)';
+        parts.push(`• ${tag} ${fi.formula_name}: ${fi.formula_expression}`);
         if (fi.formula_explanation) parts.push(`  Explanation: ${fi.formula_explanation}`);
       }
     } else {
-      parts.push(`(No approved formulas)`);
+      parts.push(`(No formulas exist)`);
     }
 
     // JE samples
@@ -125,14 +140,16 @@ Deno.serve(async (req) => {
     }
 
     // Common Mistakes
-    parts.push(`\n--- COMMON EXAM MISTAKES (${mistakesRes.data?.length || 0}) ---`);
-    if (mistakesRes.data?.length) {
-      for (const m of mistakesRes.data) {
+    const allMistakes = mistakesRes.data || [];
+    parts.push(`\n--- COMMON EXAM MISTAKES — ${statusSummary(allMistakes)} ---`);
+    if (allMistakes.length) {
+      for (const m of allMistakes) {
         const mi = m as any;
-        parts.push(`• ${mi.mistake}: ${mi.explanation || ""}`);
+        const tag = mi.is_approved ? '✓' : mi.is_rejected ? '(hidden)' : '(pending)';
+        parts.push(`• ${tag} ${mi.mistake}: ${mi.explanation || ""}`);
       }
     } else {
-      parts.push(`(No approved exam mistakes)`);
+      parts.push(`(No exam mistakes exist)`);
     }
 
     const contentBlock = parts.join("\n");
