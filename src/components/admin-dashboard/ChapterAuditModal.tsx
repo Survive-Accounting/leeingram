@@ -12,10 +12,13 @@ import { toast } from "sonner";
 
 // ── Types ────────────────────────────────────────────────────────
 
+type FindingType = "content" | "ui";
+
 type Finding = {
   severity: "high" | "medium" | "low";
   title: string;
   description: string;
+  fixType: FindingType;
 };
 
 type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "jes" | "mistakes";
