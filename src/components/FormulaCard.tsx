@@ -1,10 +1,12 @@
 /**
  * FormulaCard — Interactive formula display card with component tooltips.
- * Used in admin chapter-qa, cram modal, and solutions viewer.
+ * Uses tap-to-open popovers on mobile, hover tooltips on desktop.
  */
 import { useMemo, Fragment } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Info } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type FormulaComponent = {
   symbol: string;
@@ -31,14 +33,73 @@ function isOperatorChar(ch: string): boolean {
   return OPERATORS.has(ch);
 }
 
+function ComponentWithTooltip({ symbol, tooltip, isMobile }: { symbol: string; tooltip: string; isMobile: boolean }) {
+  const trigger = (
+    <span className="inline-flex items-center gap-0.5 cursor-help" style={{ color: "white", fontWeight: 700 }}>
+      {symbol}
+      <Info className="inline-block shrink-0" style={{ width: isMobile ? 14 : 11, height: isMobile ? 14 : 11, color: "rgba(255,255,255,0.45)", verticalAlign: "super", marginTop: -4 }} />
+    </span>
+  );
+
+  const content = (
+    <>
+      <span style={{ fontWeight: 600 }}>{symbol}</span> — {tooltip}
+    </>
+  );
+
+  const contentStyle = {
+    background: "#14213D",
+    color: "white",
+    fontFamily: "Inter, sans-serif",
+    fontSize: 13,
+    lineHeight: 1.5,
+    maxWidth: 260,
+    borderRadius: 6,
+    padding: "10px 12px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255,255,255,0.1)",
+  };
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverContent
+          side="top"
+          sideOffset={8}
+          className="z-[9999] p-0 border-0 bg-transparent"
+        >
+          <div style={contentStyle}>{content}</div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        className="z-[9999]"
+        style={contentStyle}
+      >
+        {content}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /**
  * Parse formula_expression and wrap component symbols with tooltip triggers.
  * Falls back to plain text if no components provided.
  */
-function renderExpression(expression: string, components?: FormulaComponent[] | null) {
+function RenderExpression({ expression, components }: { expression: string; components?: FormulaComponent[] | null }) {
+  const isMobile = useIsMobile();
+
   if (!components || components.length === 0) {
     return (
-      <span style={{ color: "#CE1126", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 20, fontWeight: 500 }}>
+      <span style={{ color: "#CE1126", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: isMobile ? 16 : 20, fontWeight: 500 }}>
         {expression}
       </span>
     );
@@ -56,57 +117,33 @@ function renderExpression(expression: string, components?: FormulaComponent[] | 
 
   const symbolMap = new Map(sorted.map(c => [c.symbol, c.tooltip]));
 
+  const inner = (
+    <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: isMobile ? 16 : 20, fontWeight: 500 }}>
+      {parts.map((part, i) => {
+        const tooltip = symbolMap.get(part);
+        if (tooltip) {
+          return <ComponentWithTooltip key={i} symbol={part} tooltip={tooltip} isMobile={isMobile} />;
+        }
+
+        // Non-symbol text — render operators muted, other chars as-is
+        return (
+          <Fragment key={i}>
+            {[...part].map((ch, j) => (
+              <span key={j} style={{ color: "rgba(255,255,255,0.5)" }}>{ch}</span>
+            ))}
+          </Fragment>
+        );
+      })}
+    </span>
+  );
+
+  if (isMobile) {
+    return inner;
+  }
+
   return (
     <TooltipProvider delayDuration={100}>
-      <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 20, fontWeight: 500 }}>
-        {parts.map((part, i) => {
-          const tooltip = symbolMap.get(part);
-          if (tooltip) {
-            // This is a component symbol — render with tooltip
-            return (
-              <Tooltip key={i}>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-0.5 cursor-help" style={{ color: "white", fontWeight: 700 }}>
-                    {part}
-                    <Info className="inline-block shrink-0" style={{ width: 11, height: 11, color: "rgba(255,255,255,0.45)", verticalAlign: "super", marginTop: -4 }} />
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="top"
-                  sideOffset={8}
-                  className="z-[9999]"
-                  style={{
-                    background: "#14213D",
-                    color: "white",
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                    maxWidth: 260,
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>{part}</span> — {tooltip}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          // Non-symbol text — render operators muted, other chars as-is
-          return (
-            <Fragment key={i}>
-              {[...part].map((ch, j) => {
-                if (isOperatorChar(ch)) {
-                  return <span key={j} style={{ color: "rgba(255,255,255,0.5)" }}>{ch}</span>;
-                }
-                return <span key={j} style={{ color: "rgba(255,255,255,0.5)" }}>{ch}</span>;
-              })}
-            </Fragment>
-          );
-        })}
-      </span>
+      {inner}
     </TooltipProvider>
   );
 }
@@ -142,7 +179,7 @@ export function FormulaCard({ formula, className = "" }: FormulaCardProps) {
 
       {/* Expression with component tooltips */}
       <div className="text-center" style={{ marginBottom: 16 }}>
-        {renderExpression(formula.formula_expression, components)}
+        <RenderExpression expression={formula.formula_expression} components={components} />
       </div>
 
       {/* Explanation */}
