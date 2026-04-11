@@ -8,7 +8,7 @@ import MarketingSection from "@/components/preview/MarketingSection";
 import SolutionsViewerSection from "@/components/preview/SolutionsViewerSection";
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
-const PASSWORD = "survive2026";
+const PASSWORD = "Survive2026";
 const SESSION_KEY = "sa_preview_auth";
 
 const COURSE_ORDER: Record<string, number> = { INTRO1: 0, INTRO2: 1, IA1: 2, IA2: 3 };
