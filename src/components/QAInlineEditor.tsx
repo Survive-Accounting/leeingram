@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Edit3, Save, X, Loader2 } from "lucide-react";
+import { Edit3, Save, X, Loader2, AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -213,20 +214,154 @@ interface QAInlineEditorProps {
   onCancel: () => void;
   label: string;
   rows?: number;
+  teachingAssetId?: string;
+  onRegenerated?: () => void;
 }
 
-export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, rows = 12 }: QAInlineEditorProps) {
+export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, rows = 12, teachingAssetId, onRegenerated }: QAInlineEditorProps) {
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [flashMsg, setFlashMsg] = useState<string | null>(null);
   const [showStripConfirm, setShowStripConfirm] = useState(false);
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [regenState, setRegenState] = useState<"idle" | "loading" | "review">("idle");
+  const [regenResult, setRegenResult] = useState<string | null>(null);
+  const [regenSnapshot, setRegenSnapshot] = useState<Record<string, Record<string, unknown>> | null>(null);
+  const [regenCooldown, setRegenCooldown] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
+
+  // Cooldown timer for regenerate button
+  useEffect(() => {
+    if (regenCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setRegenCooldown((c) => {
+        if (c <= 1) { clearInterval(timer); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [regenCooldown]);
+
+  const handleRegenerate = async () => {
+    if (!teachingAssetId) return;
+    setShowRegenConfirm(false);
+    setRegenState("loading");
+
+    try {
+      // 1. Snapshot
+      const { data: snapData, error: snapErr } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "snapshot", sections: ["solution"] },
+      });
+      if (snapErr) throw new Error(snapErr.message || "Snapshot failed");
+      setRegenSnapshot(snapData.snapshot);
+
+      // 2. Run regeneration with Opus
+      const fixPrompt = `Completely rewrite this accounting explanation from scratch.
+Use ONLY the problem text and instructions as your source.
+Do not reference any previous explanation.
+Rules:
+- Company name: Survive Company
+- US GAAP only
+- Show every step — never skip to the answer
+- All calculations in monospace format
+- Journal entries must balance (debits = credits)
+- Second-person "you" voice throughout
+- No AI thinking traces, no self-correction, no hedging
+- If a figure cannot be derived from the problem text, write [NEEDS LEE — insufficient data]
+- Output must read like a confident human tutor who knew the answer immediately`;
+
+      const { data: runData, error: runErr } = await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          action: "run",
+          sections: ["solution"],
+          fix_prompt: fixPrompt,
+          model: "opus",
+        },
+      });
+      if (runErr) throw new Error(runErr.message || "Regeneration failed");
+
+      const newSolution = runData?.after?.solution?.survive_solution_text;
+      if (!newSolution) throw new Error("No solution returned");
+
+      setRegenResult(newSolution);
+      setValue(newSolution);
+      setRegenState("review");
+      setRegenCooldown(60);
+    } catch (err: any) {
+      console.error("Regenerate error:", err);
+      toast.error(`Regeneration failed: ${err.message}`);
+      setRegenState("idle");
+    }
+  };
+
+  const handleRegenApprove = async () => {
+    if (!teachingAssetId) return;
+    setSaving(true);
+    try {
+      const vaName = localStorage.getItem("sa_reviewer_name") || "VA";
+      const timestamp = new Date().toISOString().slice(0, 16);
+
+      // Save + approve
+      const { error } = await supabase
+        .from("teaching_assets")
+        .update({
+          survive_solution_text: value,
+          fix_status: "fix_verified",
+          reviewed_issues: false,
+          last_reviewed_by: vaName,
+          last_reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", teachingAssetId);
+      if (error) throw error;
+
+      // Append fix note
+      await supabase.functions.invoke("fix-asset", {
+        body: {
+          teaching_asset_id: teachingAssetId,
+          action: "approve",
+          fix_prompt: `VA Opus regeneration — ${vaName} — ${timestamp}`,
+          reviewer_name: vaName,
+        },
+      });
+
+      toast.success("Regenerated solution approved & saved");
+      setRegenState("idle");
+      setRegenResult(null);
+      setRegenSnapshot(null);
+      onRegenerated?.();
+    } catch (err: any) {
+      toast.error(`Approve failed: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRegenRestore = async () => {
+    if (!teachingAssetId || !regenSnapshot) return;
+    try {
+      const { error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "restore", snapshot: regenSnapshot },
+      });
+      if (error) throw new Error(typeof error === "string" ? error : error.message || "Restore failed");
+
+      const original = regenSnapshot?.solution?.survive_solution_text;
+      if (typeof original === "string") setValue(original);
+
+      toast.success("Original restored ✓");
+      setRegenState("idle");
+      setRegenResult(null);
+      setRegenSnapshot(null);
+    } catch (err: any) {
+      toast.error(`Restore failed: ${err.message}`);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -516,6 +651,109 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
           </span>
         </div>
       </div>
+
+      {/* Regenerate Solution Section */}
+      {teachingAssetId && label.toLowerCase().includes("explanation") && (
+        <>
+          <Separator className="opacity-40" />
+
+          {/* Regen Confirm Dialog */}
+          {showRegenConfirm && (
+            <div className="px-4 py-3" style={{ background: "#FFFBEB", borderBottom: "1px solid #F59E0B" }}>
+              <p className="text-[12px] font-semibold mb-1.5" style={{ color: "#92400E" }}>
+                Regenerate this solution using Claude Opus?
+              </p>
+              <p className="text-[11px] leading-[1.6] mb-2" style={{ color: "#78350F" }}>
+                This will rewrite the entire explanation from scratch using the problem text and instructions as source material.
+              </p>
+              <ul className="text-[11px] leading-[1.6] mb-3 space-y-0.5" style={{ color: "#78350F" }}>
+                <li>• Current explanation will be replaced</li>
+                <li>• A snapshot will be saved so you can restore if needed</li>
+                <li>• Result must be reviewed and approved before saving</li>
+                <li>• This uses a more powerful AI model</li>
+              </ul>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRegenerate}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded"
+                  style={{ background: "#F59E0B", color: "#fff", border: "none" }}
+                >
+                  Yes, Regenerate
+                </button>
+                <button
+                  onClick={() => setShowRegenConfirm(false)}
+                  className="text-[11px] px-3 py-1.5 rounded"
+                  style={{ border: "1px solid #D1D5DB", color: "#6B7280", background: "transparent" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {regenState === "loading" && (
+            <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#FFFBEB" }}>
+              <Loader2 className="h-4 w-4 animate-spin" style={{ color: "#F59E0B" }} />
+              <span className="text-[12px] font-medium" style={{ color: "#92400E" }}>
+                Regenerating with Opus — this may take 30 seconds…
+              </span>
+            </div>
+          )}
+
+          {/* Review state: approve or restore */}
+          {regenState === "review" && regenSnapshot && (
+            <div className="px-4 py-3" style={{ background: "#F0FDF4", borderTop: "1px solid #22C55E" }}>
+              <p className="text-[12px] font-semibold mb-2" style={{ color: "#166534" }}>
+                ✨ Regeneration complete — review the result above, then:
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRegenApprove}
+                  disabled={saving}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1"
+                  style={{ background: "#22C55E", color: "#fff", border: "none", opacity: saving ? 0.6 : 1 }}
+                >
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  Approve & Save
+                </button>
+                <button
+                  onClick={handleRegenRestore}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1"
+                  style={{ background: "#EF4444", color: "#fff", border: "none" }}
+                >
+                  <RotateCcw className="h-3 w-3" /> Restore Original
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Trigger button */}
+          {regenState === "idle" && !showRegenConfirm && (
+            <div className="px-4 py-3">
+              <button
+                onClick={() => setShowRegenConfirm(true)}
+                disabled={regenCooldown > 0}
+                className="text-[11px] font-medium px-3 py-1.5 rounded transition-colors w-full"
+                style={{
+                  border: "1px solid #F59E0B",
+                  color: regenCooldown > 0 ? "#D1D5DB" : "#F59E0B",
+                  background: "transparent",
+                  cursor: regenCooldown > 0 ? "not-allowed" : "pointer",
+                  opacity: regenCooldown > 0 ? 0.5 : 1,
+                }}
+              >
+                {regenCooldown > 0
+                  ? `Available again in ${regenCooldown}s`
+                  : "Looks Wrong? Regenerate Solution →"}
+              </button>
+              <p className="text-[10px] mt-1 text-center" style={{ color: "#9CA3AF" }}>
+                Last resort — uses Opus AI. Review carefully before approving.
+              </p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
