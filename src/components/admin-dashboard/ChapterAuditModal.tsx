@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Check, Loader2 } from "lucide-react";
+import { X, Check, Loader2, RefreshCw } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -19,10 +20,12 @@ type Finding = {
 type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "jes" | "mistakes";
 
 type TabState = {
-  status: "idle" | "loading" | "done";
+  status: "idle" | "loading" | "done" | "error";
   findings: Finding[];
   accepted: Record<number, boolean>;
   notes: string;
+  overall: string;
+  errorMsg: string;
 };
 
 const TAB_CONFIG: { key: TabKey; label: string }[] = [
@@ -34,34 +37,13 @@ const TAB_CONFIG: { key: TabKey; label: string }[] = [
   { key: "mistakes", label: "Mistakes" },
 ];
 
-// Mock data for layout testing
-const MOCK_FINDINGS: Finding[] = [
-  {
-    severity: "high",
-    title: "Missing pension expense formulas",
-    description:
-      "Chapter has no formulas for pension expense calculation or funded status. Students need these cold for every pension problem.",
-  },
-  {
-    severity: "medium",
-    title: "Explanation voice too textbook-generic",
-    description:
-      "Current explanations read like a textbook. Need second-person tutor voice throughout.",
-  },
-];
+function makeEmptyTab(): TabState {
+  return { status: "idle", findings: [], accepted: {}, notes: "", overall: "", errorMsg: "" };
+}
 
 function makeInitialTabs(): Record<TabKey, TabState> {
   const tabs = {} as Record<TabKey, TabState>;
-  TAB_CONFIG.forEach(({ key }) => {
-    // Give "purpose" tab mock data so layout is testable
-    if (key === "purpose") {
-      const accepted: Record<number, boolean> = {};
-      MOCK_FINDINGS.forEach((_, i) => { accepted[i] = true; });
-      tabs[key] = { status: "done", findings: MOCK_FINDINGS, accepted, notes: "" };
-    } else {
-      tabs[key] = { status: "idle", findings: [], accepted: {}, notes: "" };
-    }
-  });
+  TAB_CONFIG.forEach(({ key }) => { tabs[key] = makeEmptyTab(); });
   return tabs;
 }
 
@@ -88,6 +70,9 @@ function countBySeverity(findings: Finding[]) {
 function TabBadge({ tab }: { tab: TabState }) {
   if (tab.status === "loading" || tab.status === "idle") {
     return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-1.5" />;
+  }
+  if (tab.status === "error") {
+    return <X className="h-3 w-3 text-destructive ml-1.5" />;
   }
   const { high, medium, total } = countBySeverity(tab.findings);
   if (total === 0) {
@@ -163,11 +148,13 @@ function TabPanel({
   onToggleFinding,
   notes,
   onNotesChange,
+  onRetry,
 }: {
   tab: TabState;
   onToggleFinding: (idx: number) => void;
   notes: string;
   onNotesChange: (v: string) => void;
+  onRetry: () => void;
 }) {
   if (tab.status === "loading" || tab.status === "idle") {
     return (
@@ -176,6 +163,18 @@ function TabPanel({
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-24 w-full rounded-lg" />
         ))}
+      </div>
+    );
+  }
+
+  if (tab.status === "error") {
+    return (
+      <div className="py-4 space-y-3">
+        <p className="text-sm text-destructive font-medium">Audit failed</p>
+        <p className="text-xs text-muted-foreground">{tab.errorMsg}</p>
+        <Button variant="outline" size="sm" onClick={onRetry} className="gap-1.5">
+          <RefreshCw className="h-3 w-3" /> Retry
+        </Button>
       </div>
     );
   }
@@ -243,23 +242,93 @@ export function ChapterAuditModal({
   chapterNumber,
   chapterName,
   chapterId,
+  courseCode,
 }: {
   open: boolean;
   onClose: () => void;
   chapterNumber: number;
   chapterName: string;
   chapterId: string;
+  courseCode: string;
 }) {
   const [tabs, setTabs] = useState<Record<TabKey, TabState>>(makeInitialTabs);
   const [activeTab, setActiveTab] = useState<TabKey>("purpose");
+  const hasStartedRef = useRef(false);
 
-  // Reset state when modal opens
+  const auditTab = useCallback(async (tabKey: TabKey) => {
+    setTabs((prev) => ({
+      ...prev,
+      [tabKey]: { ...makeEmptyTab(), status: "loading" },
+    }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke("audit-chapter-tab", {
+        body: {
+          chapter_id: chapterId,
+          tab: tabKey,
+          chapter_name: `Ch ${chapterNumber} — ${chapterName}`,
+          course_code: courseCode,
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      const findings: Finding[] = (data.findings || []).map((f: any) => ({
+        severity: f.severity || "low",
+        title: f.title || "Untitled",
+        description: f.description || "",
+      }));
+
+      const accepted: Record<number, boolean> = {};
+      findings.forEach((_, i) => { accepted[i] = true; });
+
+      setTabs((prev) => ({
+        ...prev,
+        [tabKey]: {
+          status: "done",
+          findings,
+          accepted,
+          notes: "",
+          overall: data.overall || "",
+          errorMsg: "",
+        },
+      }));
+    } catch (err: any) {
+      console.error(`Audit tab ${tabKey} failed:`, err);
+      setTabs((prev) => ({
+        ...prev,
+        [tabKey]: {
+          ...makeEmptyTab(),
+          status: "error",
+          errorMsg: err.message || "Unknown error",
+        },
+      }));
+    }
+  }, [chapterId, chapterNumber, chapterName, courseCode]);
+
+  // Fire all 6 audits on open
+  useEffect(() => {
+    if (open && !hasStartedRef.current) {
+      hasStartedRef.current = true;
+      const allTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "jes", "mistakes"];
+      // Set all to loading, then fire all simultaneously
+      setTabs(() => {
+        const t = makeInitialTabs();
+        allTabs.forEach((k) => { t[k].status = "loading"; });
+        return t;
+      });
+      // Fire all — Promise.allSettled ensures none block others
+      Promise.allSettled(allTabs.map((k) => auditTab(k)));
+    }
+  }, [open, auditTab]);
+
   const handleOpenChange = (v: boolean) => {
     if (!v) {
       onClose();
-      // Reset on close
       setTabs(makeInitialTabs());
       setActiveTab("purpose");
+      hasStartedRef.current = false;
     }
   };
 
@@ -322,6 +391,7 @@ export function ChapterAuditModal({
                     onToggleFinding={(idx) => toggleFinding(key, idx)}
                     notes={tabs[key].notes}
                     onNotesChange={(v) => setNotes(key, v)}
+                    onRetry={() => auditTab(key)}
                   />
                 </TabsContent>
               ))}
