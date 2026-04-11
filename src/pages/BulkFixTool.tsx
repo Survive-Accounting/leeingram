@@ -798,7 +798,7 @@ export default function BulkFixTool() {
       assets = matchingAssets;
       console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
     } else {
-      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking"].includes(opKey);
       let scopeQuery = buildScopeQuery(isLightweight);
       if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
         scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
