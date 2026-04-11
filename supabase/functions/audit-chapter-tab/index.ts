@@ -36,27 +36,27 @@ async function fetchTabData(sb: any, chapterId: string, tab: TabKey) {
       return data;
     }
     case "key_terms": {
-      const { data } = await sb.from("chapter_key_terms").select("term, definition, category, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_key_terms").select("term, definition, category, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
     case "accounts": {
-      const { data } = await sb.from("chapter_accounts").select("account_name, account_type, normal_balance, account_description, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("account_type").order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_accounts").select("account_name, account_type, normal_balance, account_description, is_approved, is_rejected").eq("chapter_id", chapterId).order("account_type").order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
     case "memory": {
-      const { data } = await sb.from("chapter_memory_items").select("title, item_type, subtitle, items, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_memory_items").select("title, item_type, subtitle, items, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
     case "jes": {
       const [catRes, jeRes] = await Promise.all([
         sb.from("chapter_je_categories").select("id, category_name, sort_order").eq("chapter_id", chapterId).order("sort_order"),
-        sb.from("chapter_journal_entries").select("transaction_label, je_lines, category_id, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order"),
+        sb.from("chapter_journal_entries").select("transaction_label, je_lines, category_id, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order"),
       ]);
-      return { categories: catRes.data || [], entries: jeRes.data || [] };
+      return { categories: catRes.data || [], entries: (jeRes.data || []).filter((r: any) => !r.is_rejected) };
     }
     case "mistakes": {
-      const { data } = await sb.from("chapter_exam_mistakes").select("mistake, explanation, is_approved").eq("chapter_id", chapterId).eq("is_approved", true).order("sort_order");
-      return data || [];
+      const { data } = await sb.from("chapter_exam_mistakes").select("mistake, explanation, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
     }
   }
 }
