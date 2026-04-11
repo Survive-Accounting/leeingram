@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import confetti from "canvas-confetti";
+
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -142,7 +142,7 @@ export default function SolutionsQAAdmin() {
   const [allAssetsChapter, setAllAssetsChapter] = useState<string>("all");
   const [highlightAsset, setHighlightAsset] = useState<string | null>(null);
   const highlightRef = useRef<HTMLTableRowElement>(null);
-  const [fixIssue, setFixIssue] = useState<QAIssue | null>(null);
+  const [_fixIssue, _setFixIssue] = useState<QAIssue | null>(null); // kept for future use
   const [fixPanelAsset, setFixPanelAsset] = useState<{ assetName: string; teachingAssetId: string } | null>(null);
   const [auditChapter, setAuditChapter] = useState<{ id: string; name: string } | null>(null);
 
