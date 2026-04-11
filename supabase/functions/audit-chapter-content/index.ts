@@ -154,7 +154,11 @@ Deno.serve(async (req) => {
 
     const contentBlock = parts.join("\n");
 
-    const userMessage = `Audit the following chapter content for educational value, crammability, and tutor voice quality. Return ONLY valid JSON matching this schema exactly:
+    const userMessage = `Audit the following chapter content for educational value, crammability, and tutor voice quality.
+
+IMPORTANT: Items marked with ✓ are approved, (pending) means they exist but haven't been reviewed yet, and (hidden) means they were hidden for now. When evaluating whether content EXISTS, count ALL items regardless of status. Only flag "missing" if there are truly ZERO items in a category. If items exist but are pending approval, note that they need review — don't say the section is missing.
+
+Return ONLY valid JSON matching this schema exactly:
 
 {
   "chapter": "Ch N — Chapter Name",
