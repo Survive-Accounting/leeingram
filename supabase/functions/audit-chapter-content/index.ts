@@ -236,8 +236,19 @@ ${contentBlock}`;
       metadata: { chapter_number: chapter.chapter_number, chapter_name: chapter.chapter_name },
     });
 
+    // Build content inventory for the UI
+    const inventory = {
+      purpose: purposeRes.data ? { exists: true, approved: !!(purposeRes.data as any).is_approved } : { exists: false, approved: false },
+      key_terms: { total: allTerms.length, approved: allTerms.filter((t: any) => t.is_approved).length, hidden: allTerms.filter((t: any) => t.is_rejected).length },
+      memory_items: { total: allMemory.length, approved: allMemory.filter((m: any) => m.is_approved).length, hidden: allMemory.filter((m: any) => m.is_rejected).length },
+      formulas: { total: allFormulas.length, approved: allFormulas.filter((f: any) => f.is_approved).length, hidden: allFormulas.filter((f: any) => f.is_rejected).length },
+      mistakes: { total: allMistakes.length, approved: allMistakes.filter((m: any) => m.is_approved).length, hidden: allMistakes.filter((m: any) => m.is_rejected).length },
+      je_assets: assetsRes.data?.length || 0,
+    };
+
     return new Response(JSON.stringify({
       report,
+      inventory,
       cost_usd: estimatedCost,
       tokens: { input: inputTokens, output: outputTokens },
     }), {
