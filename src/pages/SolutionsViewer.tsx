@@ -4364,7 +4364,7 @@ export default function SolutionsViewer() {
         assetCode={sourceRef || asset.asset_name}
         teachingAssetId={asset.id}
         chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
-        chapterName={chapterName || undefined}
+        chapterName={chapter?.chapter_name || undefined}
       />
     </div>
     </>
