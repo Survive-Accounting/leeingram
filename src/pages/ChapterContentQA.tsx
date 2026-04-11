@@ -380,6 +380,10 @@ export default function ChapterContentQA() {
                 {bulkGenerating === "images" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
                 Generate All Formula Images
               </Button>
+              <Button size="sm" variant="outline" onClick={runBulkTooltipRewrite} disabled={!!bulkGenerating}>
+                {bulkGenerating === "tooltips" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Edit3 className="h-3.5 w-3.5 mr-1" />}
+                Rewrite All JE Tooltips (Tutor Voice)
+              </Button>
             </div>
             <BatchSuiteOrchestrator />
             <MemoryBatchOrchestrator />
