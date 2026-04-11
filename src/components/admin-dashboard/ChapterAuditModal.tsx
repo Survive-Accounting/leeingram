@@ -51,6 +51,20 @@ function makeInitialTabs(): Record<TabKey, TabState> {
   return tabs;
 }
 
+// ── Finding classification ────────────────────────────────────────
+
+const UI_KEYWORDS = [
+  "display", "render", "layout", "format", "formatting", "spacing",
+  "alignment", "font", "color", "style", "css", "truncat", "overflow",
+  "responsive", "mobile", "breakpoint", "animation", "visual", "ui",
+  "component", "button", "icon", "badge",
+];
+
+function classifyFinding(title: string, description: string): FindingType {
+  const text = `${title} ${description}`.toLowerCase();
+  return UI_KEYWORDS.some((kw) => text.includes(kw)) ? "ui" : "content";
+}
+
 // ── Severity helpers ─────────────────────────────────────────────
 
 const SEV_COLORS: Record<string, string> = {
