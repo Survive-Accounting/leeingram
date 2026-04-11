@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
@@ -217,7 +218,7 @@ function FixAssetModal({
     }
   };
 
-  const approveChanges = async () => {
+  const handleMarkReady = async () => {
     if (!teachingAssetId) return;
     try {
       const res = await supabase.functions.invoke("fix-asset", {
@@ -228,11 +229,83 @@ function FixAssetModal({
         fix_status: "approved",
         fix_description: fixPrompt.trim(),
       }).eq("id", issue.id);
-      toast.success("Changes approved and saved");
-      setStep("done");
-      onComplete();
+      const { data: current } = await supabase.from("teaching_assets").select("fix_notes").eq("id", teachingAssetId).single();
+      const prev = (current as any)?.fix_notes || "";
+      const ts = new Date().toISOString();
+      const note = `Marked ready by VA — ${ts}`;
+      await supabase.from("teaching_assets").update({
+        fix_status: "ready_for_students",
+        fix_notes: prev ? `${prev}\n---\n${note}` : note,
+      } as any).eq("id", teachingAssetId);
+      const colors = ['#14213D', '#CE1126', '#FFFFFF'];
+      confetti({ particleCount: 80, spread: 60, origin: { x: 0.15, y: 0.6 }, colors });
+      confetti({ particleCount: 80, spread: 60, origin: { x: 0.85, y: 0.6 }, colors });
+      toast.success("🎉 Ready for students!");
+      setTimeout(() => { setStep("done"); onComplete(); }, 1500);
     } catch (err: any) {
-      toast.error("Approve failed: " + err.message);
+      toast.error("Failed: " + err.message);
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!teachingAssetId) return;
+    try {
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, fix_prompt: fixPrompt.trim(), action: "approve" },
+      });
+      if (res.error) throw new Error(res.error.message);
+      await supabase.from("solutions_qa_issues" as any).update({
+        fix_status: "approved",
+        fix_description: fixPrompt.trim(),
+      }).eq("id", issue.id);
+      const { data: current } = await supabase.from("teaching_assets").select("fix_notes, source_ref, asset_name").eq("id", teachingAssetId).single();
+      const prev = (current as any)?.fix_notes || "";
+      const ts = new Date().toISOString();
+      const note = `Fix submitted for Lee review — ${ts}`;
+      await supabase.from("teaching_assets").update({
+        fix_status: "pending_lee_review",
+        fix_notes: prev ? `${prev}\n---\n${note}` : note,
+      } as any).eq("id", teachingAssetId);
+      const sourceRef = (current as any)?.source_ref || issue.asset_name;
+      const assetName = (current as any)?.asset_name || issue.asset_name;
+      await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "notify_slack", slack_message: `🔍 *${sourceRef}* needs your review.\n${assetName}\nhttps://learn.surviveaccounting.com/solutions/${assetName}?admin=true` },
+      });
+      toast.success("Submitted — Lee has been notified");
+      setTimeout(() => { setStep("done"); onComplete(); }, 1500);
+    } catch (err: any) {
+      toast.error("Failed: " + err.message);
+    }
+  };
+
+  const handleNeedsLee = async () => {
+    if (!teachingAssetId) return;
+    try {
+      const res = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, fix_prompt: fixPrompt.trim(), action: "approve" },
+      });
+      if (res.error) throw new Error(res.error.message);
+      await supabase.from("solutions_qa_issues" as any).update({
+        fix_status: "approved",
+        fix_description: fixPrompt.trim(),
+      }).eq("id", issue.id);
+      const { data: current } = await supabase.from("teaching_assets").select("fix_notes, source_ref, asset_name").eq("id", teachingAssetId).single();
+      const prev = (current as any)?.fix_notes || "";
+      const ts = new Date().toISOString();
+      const note = `Flagged Needs Lee — ${ts}`;
+      await supabase.from("teaching_assets").update({
+        fix_status: "needs_lee",
+        fix_notes: prev ? `${prev}\n---\n${note}` : note,
+      } as any).eq("id", teachingAssetId);
+      const sourceRef = (current as any)?.source_ref || issue.asset_name;
+      const assetName = (current as any)?.asset_name || issue.asset_name;
+      await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: teachingAssetId, action: "notify_slack", slack_message: `🚩 *${sourceRef}* needs Lee's attention.\n${assetName}\nhttps://learn.surviveaccounting.com/solutions/${assetName}?admin=true` },
+      });
+      toast.success("🚩 Lee notified");
+      setTimeout(() => { setStep("done"); onComplete(); }, 1500);
+    } catch (err: any) {
+      toast.error("Failed: " + err.message);
     }
   };
 
