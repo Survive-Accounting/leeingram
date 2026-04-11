@@ -4,6 +4,7 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount, VA_ROLE_LABELS } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,10 +16,11 @@ import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
   HelpCircle, MessageSquare, ExternalLink, Library, FileUp, Rocket,
-  FlaskConical, XCircle,
+  FlaskConical, XCircle, Download,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QuizDeployPanel } from "@/components/va-dashboards/QuizDeployPanel";
+import JSZip from "jszip";
 
 const PIPELINE_STAGES = [
   { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
@@ -209,21 +211,28 @@ export default function VaDashboard() {
   };
 
   // ═══ AI Fix Self-Test ═══
+  const { user } = useAuth();
   const [testRunning, setTestRunning] = useState(false);
   const [testResults, setTestResults] = useState<{ edgeFn: null | { ok: boolean; msg: string }; anthropic: null | { ok: boolean; msg: string }; apiKey: null | { ok: boolean; msg: string } } | null>(null);
+  const [rawResponses, setRawResponses] = useState<{ edgeFn: string; anthropic: string }>({ edgeFn: "", anthropic: "" });
 
   const runAiFixTest = useCallback(async () => {
     setTestRunning(true);
     setTestResults({ edgeFn: null, anthropic: null, apiKey: null });
+    setRawResponses({ edgeFn: "", anthropic: "" });
+
+    let edgeFnRaw = "";
+    let anthropicRaw = "";
 
     // 1. Edge function reachability test
     try {
       const { data, error } = await supabase.functions.invoke("fix-asset", {
         body: { teaching_asset_id: "test", operation: "test_ping", action: "test" },
       });
-      // Any response (even error JSON) means the function is reachable
+      edgeFnRaw = JSON.stringify(data || error, null, 2);
       setTestResults(prev => prev && ({ ...prev, edgeFn: { ok: true, msg: "Edge function reachable" } }));
     } catch (e: any) {
+      edgeFnRaw = e?.message || String(e);
       setTestResults(prev => prev && ({ ...prev, edgeFn: { ok: false, msg: e?.message || "Network error" } }));
     }
 
@@ -232,6 +241,7 @@ export default function VaDashboard() {
       const { data, error } = await supabase.functions.invoke("fix-asset", {
         body: { teaching_asset_id: "test", asset_name: "TEST_PING", operation: "test_ping", action: "snapshot" },
       });
+      anthropicRaw = JSON.stringify(data || error, null, 2);
       if (error) {
         setTestResults(prev => prev && ({ ...prev, anthropic: { ok: false, msg: error.message || "Anthropic API error" } }));
       } else if (data?.error) {
@@ -240,6 +250,7 @@ export default function VaDashboard() {
         setTestResults(prev => prev && ({ ...prev, anthropic: { ok: true, msg: "Anthropic API reachable" } }));
       }
     } catch (e: any) {
+      anthropicRaw = e?.message || String(e);
       setTestResults(prev => prev && ({ ...prev, anthropic: { ok: false, msg: e?.message || "Network error" } }));
     }
 
@@ -250,8 +261,56 @@ export default function VaDashboard() {
       return { ...prev, apiKey: { ok: !!keyOk, msg: keyOk ? "API key configured" : "API key may be missing — edge function failed" } };
     });
 
+    setRawResponses({ edgeFn: edgeFnRaw, anthropic: anthropicRaw });
     setTestRunning(false);
   }, []);
+
+  const downloadDebugZip = useCallback(async () => {
+    if (!testResults) return;
+    const ts = new Date().toISOString();
+    const mark = (r: { ok: boolean } | null) => r ? (r.ok ? "✓" : "✗") : "?";
+    const msg = (r: { ok: boolean; msg: string } | null) => r?.msg ?? "not run";
+
+    const report = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SURVIVE ACCOUNTING — AI FIX DEBUG REPORT
+Generated: ${ts}
+VA User: ${user?.email ?? "unknown"}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TEST RESULTS:
+[ ${mark(testResults.edgeFn)} ] Edge function reachable — ${msg(testResults.edgeFn)}
+[ ${mark(testResults.anthropic)} ] Anthropic API reachable — ${msg(testResults.anthropic)}
+[ ${mark(testResults.apiKey)} ] API key configured — ${msg(testResults.apiKey)}
+
+EDGE FUNCTION RESPONSE:
+${rawResponses.edgeFn || "(no response)"}
+
+ANTHROPIC API RESPONSE:
+${rawResponses.anthropic || "(no response)"}
+
+BROWSER INFO:
+User Agent: ${navigator.userAgent}
+Timestamp: ${Date.now()}
+URL: ${window.location.href}
+
+INSTRUCTIONS:
+Share this file in Slack #asset-fixes
+with message "AI Fix debug report"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+    const zip = new JSZip();
+    zip.file("debug-report.txt", report);
+    const blob = await zip.generateAsync({ type: "blob" });
+    const slug = ts.replace(/[:.]/g, "-").slice(0, 19);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ai-fix-debug-${slug}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [testResults, rawResponses, user]);
 
   const showTestButton = isAdmin || activeIsVa;
 
@@ -322,6 +381,16 @@ export default function VaDashboard() {
                   : <span className="text-muted-foreground">Running tests…</span>
               }
             </div>
+            {!testRunning && testResults.edgeFn && testResults.anthropic && testResults.apiKey && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] px-3 gap-1.5 mt-2"
+                onClick={downloadDebugZip}
+              >
+                <Download className="h-3 w-3" /> Download Debug Report
+              </Button>
+            )}
           </div>
         )}
 
