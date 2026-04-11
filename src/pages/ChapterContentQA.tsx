@@ -41,6 +41,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { isContraAccount } from "@/lib/contraDetection";
 import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPanel";
+import { ChapterAuditModal } from "@/components/admin-dashboard/ChapterAuditModal";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -636,17 +637,19 @@ function ChapterQAModal({
           </Tabs>
         </div>
 
+        {/* Audit modal */}
+        {chapter && (
+          <ChapterAuditModal
+            open={auditOpen}
+            onClose={() => setAuditOpen(false)}
+            chapterNumber={chapter.chapter_number}
+            chapterName={chapter.chapter_name}
+            chapterId={chapter.id}
+          />
+        )}
+
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 pb-6 pt-3">
-          {auditOpen && (
-            <div className="mb-4">
-              <ChapterAuditPanel
-                chapterId={chapter.id}
-                chapterName={`Ch ${chapter.chapter_number} — ${chapter.chapter_name}`}
-                onDismiss={() => setAuditOpen(false)}
-              />
-            </div>
-          )}
           <Tabs value={tab} onValueChange={onTabChange}>
             <TabsContent value="je" className="mt-0">
               <JETab chapterId={chapter.id} chapterName={chapter.chapter_name} courseCode={courseCode} />
