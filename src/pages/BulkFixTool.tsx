@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking";
 
 interface HistoryEntry {
   label: string;
@@ -64,6 +64,7 @@ const OPERATION_LABELS: Record<string, string> = {
   rewrite_je_amounts: "Rewrite Amount Sources (Plain English)",
   generate_calculation_formulas: "Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)",
   standardize_formatting: "Standardize Formatting (solution text only)",
+  remove_ai_thinking: "Remove AI Thinking (solution text only — Opus)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
@@ -320,6 +321,7 @@ export default function BulkFixTool() {
     if (operation === "rewrite_je_reasons") return "Rewrite JE Reasons (YOU Format)";
     if (operation === "rewrite_je_amounts") return "Rewrite Amount Sources (Plain English)";
     if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
+    if (operation === "remove_ai_thinking") return "Remove AI Thinking (solution text only — Opus)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -729,6 +731,25 @@ export default function BulkFixTool() {
           numericWarning: hasNumericDiff(original, after),
         }]);
         setIsAiPreview(true);
+      } else if (operation === "remove_ai_thinking") {
+        // Count assets in scope with solution text
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_solution_text", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: totalCount } = await countQ;
+        setTotalMatched(totalCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "survive_solution_text",
+          before: `${totalCount ?? 0} assets with solution text`,
+          after: `Will remove AI thinking traces from solution text via Claude Opus — manual review required`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -777,7 +798,7 @@ export default function BulkFixTool() {
       assets = matchingAssets;
       console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
     } else {
-      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey);
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking"].includes(opKey);
       let scopeQuery = buildScopeQuery(isLightweight);
       if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
         scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
@@ -1015,10 +1036,22 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               backupUpdate["solution_text_backup"] = original;
               changed = true;
             }
+          } else if (opKey === "remove_ai_thinking") {
+            const original = (asset as any).survive_solution_text || "";
+            if (!original.trim()) { skipped++; return; }
+
+            try {
+              const { data: result, error: fnErr } = await supabase.functions.invoke("remove-ai-thinking", {
+                body: { teaching_asset_id: asset.id },
+              });
+              if (fnErr || result?.error) { errors++; return; }
+              if (result?.skipped) { skipped++; return; }
+              changed = true;
+            } catch { errors++; return; }
           }
 
           if (changed) {
-            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
+            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking"].includes(opKey)) {
               await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
             }
             updated++;
@@ -1032,7 +1065,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       onProgress?.(Math.min(i + batchSize, total), total, (batch[batch.length - 1] as any)?.asset_name || "");
 
       // Delay for AI-heavy operations
-      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights"].includes(opKey)) {
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking"].includes(opKey)) {
         await new Promise(r => setTimeout(r, 500));
       }
     }
@@ -1357,6 +1390,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="rewrite_je_amounts">Rewrite Amount Sources (Plain English)</SelectItem>
                 <SelectItem value="generate_calculation_formulas">Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)</SelectItem>
                 <SelectItem value="standardize_formatting">Standardize Formatting (solution text only)</SelectItem>
+                <SelectItem value="remove_ai_thinking">Remove AI Thinking (solution text only — Opus)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1369,6 +1403,20 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-200">
                     ⚠ TEST MODE: This will only process asset BE15.4. Hard limit of 1 asset enforced. Scope filters are ignored.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {operation === "remove_ai_thinking" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Removes AI reasoning traces from <code className="text-foreground">survive_solution_text</code> — "Let me recalculate...", "Actually...", self-correction, duplicate paragraphs, meta-commentary. Leaves clean textbook-style content.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    ⚠ Opus model — review carefully before approving. This operation uses Claude Opus (~15x cost). Never auto-approved — always snapshot + manual review.
                   </p>
                 </div>
               </div>

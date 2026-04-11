@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.backup-to-gdrive]
 verify_jwt = false
+
+[functions.remove-ai-thinking]
+verify_jwt = false
