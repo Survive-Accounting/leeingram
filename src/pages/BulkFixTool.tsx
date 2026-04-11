@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking" | "remove_duplicates";
 
 interface HistoryEntry {
   label: string;
@@ -65,6 +65,7 @@ const OPERATION_LABELS: Record<string, string> = {
   generate_calculation_formulas: "Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)",
   standardize_formatting: "Standardize Formatting (solution text only)",
   remove_ai_thinking: "Remove AI Thinking (solution text only — Opus)",
+  remove_duplicates: "Remove Duplicates & Redundancies (solution text — Opus)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
@@ -322,6 +323,7 @@ export default function BulkFixTool() {
     if (operation === "rewrite_je_amounts") return "Rewrite Amount Sources (Plain English)";
     if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
     if (operation === "remove_ai_thinking") return "Remove AI Thinking (solution text only — Opus)";
+    if (operation === "remove_duplicates") return "Remove Duplicates & Redundancies (solution text — Opus)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -1391,6 +1393,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="generate_calculation_formulas">Generate Calculation Formulas (e.g. $180,000 × 8% = $14,400)</SelectItem>
                 <SelectItem value="standardize_formatting">Standardize Formatting (solution text only)</SelectItem>
                 <SelectItem value="remove_ai_thinking">Remove AI Thinking (solution text only — Opus)</SelectItem>
+                <SelectItem value="remove_duplicates">Remove Duplicates &amp; Redundancies (solution text — Opus)</SelectItem>
               </SelectContent>
             </Select>
 
