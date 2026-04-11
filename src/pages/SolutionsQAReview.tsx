@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import confetti from "canvas-confetti";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -2363,6 +2364,83 @@ export default function SolutionsQAReview() {
                   🚩 Needs Lee
                 </Button>
               )}
+              {/* ── Mark Ready for Students / Undo Ready toggle ── */}
+              {current?.teaching_asset_id && canUseFixer && (() => {
+                const currentFixStatus = fixStatusMap?.[current.teaching_asset_id];
+                const isReady = currentFixStatus === "ready_for_students";
+                return (
+                  <button
+                    className="w-full text-sm font-bold rounded-[10px] px-4 py-3.5 mt-2 transition-transform duration-100 active:scale-[0.97]"
+                    style={isReady ? {
+                      background: "transparent",
+                      border: "1.5px solid #14213D",
+                      color: "#14213D",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                    } : {
+                      background: "linear-gradient(135deg, #14213D, #1a3a6b)",
+                      color: "white",
+                      fontWeight: 700,
+                      fontSize: "14px",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      animation: "readyGlow 2s ease-in-out infinite",
+                    }}
+                    onMouseEnter={e => { if (!isReady) (e.currentTarget as HTMLElement).style.transform = "scale(1.02)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+                    onClick={async () => {
+                      const taId = current.teaching_asset_id;
+                      const now = new Date().toISOString();
+                      // Fetch current fix_notes
+                      const { data: taRow } = await supabase
+                        .from("teaching_assets")
+                        .select("fix_notes")
+                        .eq("id", taId)
+                        .single();
+                      const prev = (taRow as any)?.fix_notes || "";
+
+                      if (isReady) {
+                        // ── Undo Ready ──
+                        const appendedNotes = prev
+                          ? `${prev}\nReady status removed — ${now}`
+                          : `Ready status removed — ${now}`;
+                        await supabase.from("teaching_assets").update({
+                          fix_status: "fix_applied",
+                          fix_notes: appendedNotes,
+                        }).eq("id", taId);
+                        qc.invalidateQueries({ queryKey: ["qa-teaching-asset-fix-status"] });
+                        toast("↩ Marked back to Fix Applied");
+                      } else {
+                        // ── Mark Ready ──
+                        const appendedNotes = prev
+                          ? `${prev}\nMarked Ready for Students — ${now}`
+                          : `Marked Ready for Students — ${now}`;
+                        await supabase.from("teaching_assets").update({
+                          fix_status: "ready_for_students",
+                          fix_notes: appendedNotes,
+                        }).eq("id", taId);
+                        await supabase.from("solutions_qa_assets" as any)
+                          .update({ qa_status: "reviewed_clean", reviewed_at: now, reviewed_by: reviewerName || "VA" })
+                          .eq("id", current.id);
+                        qc.invalidateQueries({ queryKey: ["qa-teaching-asset-fix-status"] });
+                        qc.invalidateQueries({ queryKey: ["qa-assets"] });
+
+                        // Confetti from both corners
+                        const colors = ["#14213D", "#CE1126", "#FFFFFF"];
+                        confetti({ particleCount: 80, spread: 60, origin: { x: 0.1, y: 1 }, colors });
+                        confetti({ particleCount: 80, spread: 60, origin: { x: 0.9, y: 1 }, colors });
+                        toast.success("🎉 Ready for students!");
+
+                        // Auto-advance after 1.5s
+                        setTimeout(() => {
+                          if (navPos < navOrder.length - 1) setCurrentIndex(navOrder[navPos + 1]);
+                        }, 1500);
+                      }
+                    }}
+                  >
+                    {isReady ? "↩ Undo Ready" : "🎉 Mark Ready for Students"}
+                  </button>
+                );
+              })()}
               {flaggedSections.size === 0 && current?.teaching_asset_id && canUseFixer && (
                 <Button
                   variant="outline"
