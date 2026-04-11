@@ -28,7 +28,6 @@ import {
   SkipForward, Eye, Users, RefreshCw, Wrench, Loader2, RotateCcw, Check, List, Info, Copy, Edit3, Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
 import SmartTextRenderer from "@/components/SmartTextRenderer";
 
 // ── Constants ────────────────────────────────────────────────────────
