@@ -2980,18 +2980,23 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                 <div className="w-px h-5" style={{ background: theme.border }} />
               </>
             ) : null}
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
-              style={{ color: theme.textMuted }}
-            >
-              {collapsed ? (
-                <>Show <ChevronDown className="h-3 w-3" /></>
-              ) : (
-                <ChevronUp className="h-3 w-3" />
-              )}
-            </button>
-            <div className="w-px h-5" style={{ background: theme.border }} />
+            {!(isQaMode && isAdmin) && (
+              <>
+                <button
+                  onClick={() => setCollapsed(!collapsed)}
+                  className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5"
+                  style={{ color: theme.textMuted }}
+                >
+                  {collapsed ? (
+                    <>Show <ChevronDown className="h-3 w-3" /></>
+                  ) : (
+                    <ChevronUp className="h-3 w-3" />
+                  )}
+                </button>
+                <div className="w-px h-5" style={{ background: theme.border }} />
+              </>
+            )}
+            {!(isQaMode && isAdmin) && (
             <div className="relative">
               <button
                 ref={menuBtnRef}
