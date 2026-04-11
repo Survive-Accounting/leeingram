@@ -15,13 +15,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 type ToolboxView = "actions" | "fix-input" | "fix-running" | "fix-result";
 
-type OperationType = "standardize" | "remove_thinking" | "remove_duplicates" | "regenerate_missing" | "something_else" | null;
+type OperationType = "standardize" | "remove_thinking" | "remove_duplicates" | "regenerate_missing" | null;
 
-const OPERATIONS: { key: OperationType; label: string; icon: string }[] = [
+const OPERATIONS: { key: Exclude<OperationType, null>; label: string; icon: string }[] = [
   { key: "standardize", label: "Formatting", icon: "🎨" },
   { key: "remove_thinking", label: "AI Thinking", icon: "🤖" },
   { key: "remove_duplicates", label: "Duplicates", icon: "♻️" },
-  { key: "regenerate_missing", label: "Missing Content", icon: "✨" },
+  { key: "regenerate_missing", label: "Missing Content", icon: "📝" },
 ];
 
 const OPERATION_PROMPTS: Record<string, string> = {
@@ -34,18 +34,6 @@ const OPERATION_PROMPTS: Record<string, string> = {
   regenerate_missing:
     "Regenerate any missing content for lettered parts (a), (b), (c) etc. that are referenced in the instructions but not addressed in the solution. For each missing part, provide a complete worked solution with calculations and journal entries where applicable. If data is insufficient to solve a part, mark it with [NEEDS LEE] and explain what's missing.",
 };
-
-type SectionOption = { key: string; label: string };
-
-const FIX_SECTIONS: SectionOption[] = [
-  { key: "solution_je", label: "Solution text + JE reasons" },
-  { key: "supplementary_je", label: "Supplementary journal entries" },
-  { key: "dissector", label: "Problem dissector highlights" },
-  { key: "formulas", label: "Important formulas" },
-  { key: "concepts", label: "Key concepts" },
-  { key: "traps", label: "Exam traps" },
-  { key: "flowchart", label: "Flowchart" },
-];
 
 // ── Props ────────────────────────────────────────────────────────────
 
