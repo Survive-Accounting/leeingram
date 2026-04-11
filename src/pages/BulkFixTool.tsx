@@ -731,6 +731,25 @@ export default function BulkFixTool() {
           numericWarning: hasNumericDiff(original, after),
         }]);
         setIsAiPreview(true);
+      } else if (operation === "remove_ai_thinking") {
+        // Count assets in scope with solution text
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_solution_text", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: totalCount } = await countQ;
+        setTotalMatched(totalCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "survive_solution_text",
+          before: `${totalCount ?? 0} assets with solution text`,
+          after: `Will remove AI thinking traces from solution text via Claude Opus — manual review required`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
