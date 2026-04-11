@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Edit3, Save, X, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Edit3, Save, X, Loader2, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,33 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
 
   const hasChanges = value !== initialValue;
 
+  const applyBgTag = useCallback((color: "red" | "yellow" | "clear") => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    // Work on whole lines that intersect the selection
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const lineEnd = value.indexOf("\n", end);
+    const actualEnd = lineEnd === -1 ? value.length : lineEnd;
+    const selectedLines = value.substring(lineStart, actualEnd);
+
+    const transformed = selectedLines.split("\n").map(line => {
+      // Strip existing bg tags first
+      const stripped = line.replace(/<bg:(red|yellow)>(.*?)<\/bg:\1>/g, "$2");
+      if (color === "clear") return stripped;
+      return `<bg:${color}>${stripped}</bg:${color}>`;
+    }).join("\n");
+
+    const newVal = value.substring(0, lineStart) + transformed + value.substring(actualEnd);
+    setValue(newVal);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.selectionStart = lineStart;
+      ta.selectionEnd = lineStart + transformed.length;
+    });
+  }, [value]);
+
   return (
     <div
       className="rounded-lg overflow-hidden my-3 animate-in slide-in-from-top-2 duration-200"
@@ -105,7 +132,35 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
         </div>
       </div>
 
-      {/* Content */}
+        {!preview && (
+          <div className="flex items-center gap-1 px-3 py-1.5" style={{ borderBottom: "1px solid rgba(59, 130, 246, 0.1)" }}>
+            <span className="text-[10px] mr-1" style={{ color: "#9CA3AF" }}>BG:</span>
+            <button
+              onClick={() => applyBgTag("red")}
+              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+              style={{ background: "#FEF2F2", border: "1px solid #CE1126", color: "#991B1B" }}
+              title="Red background"
+            >
+              🔴 Red
+            </button>
+            <button
+              onClick={() => applyBgTag("yellow")}
+              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+              style={{ background: "#FEFCE8", border: "1px solid #D97706", color: "#92400E" }}
+              title="Yellow highlight"
+            >
+              🟡 Yellow
+            </button>
+            <button
+              onClick={() => applyBgTag("clear")}
+              className="h-7 px-2 rounded text-[10px] font-medium transition-colors"
+              style={{ background: "#F3F4F6", border: "1px solid #D1D5DB", color: "#6B7280" }}
+              title="Clear background"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        )}
       <div className="p-3">
         {preview ? (
           <div

@@ -408,6 +408,7 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 const SEPARATOR_RE = /^(Final Answer|Part\s*\(?[a-z]\)?|Situation\s+[A-Z]|Case\s+[A-Z]):/i;
+const BG_TAG_RE = /^<bg:(red|yellow)>(.*)<\/bg:\1>$/;
 
 function renderBoldInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -439,6 +440,43 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
   if (current.length > 0) blocks.push({ type: 'block', lines: [...current] });
 
   function renderLine(trimmed: string, key: string | number) {
+    // Background color tags: <bg:red>...</bg:red> or <bg:yellow>...</bg:yellow>
+    const bgMatch = trimmed.match(BG_TAG_RE);
+    if (bgMatch) {
+      const color = bgMatch[1] as "red" | "yellow";
+      const inner = bgMatch[2];
+      if (color === "red") {
+        return (
+          <div key={key} style={{
+            fontFamily: 'monospace',
+            fontSize: 13,
+            background: '#FEF2F2',
+            color: '#991B1B',
+            borderLeft: '3px solid #CE1126',
+            borderRadius: 3,
+            padding: '3px 10px',
+            marginBottom: 3,
+          }}>
+            {renderBoldInline(inner)}
+          </div>
+        );
+      }
+      return (
+        <div key={key} style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 13,
+          background: '#FEFCE8',
+          borderLeft: '3px solid #D97706',
+          borderRadius: 3,
+          padding: '3px 10px',
+          marginBottom: 3,
+          color: theme.text,
+        }}>
+          {renderBoldInline(inner)}
+        </div>
+      );
+    }
+
     // Separator labels: Final Answer, Part (a):, Situation A:, Case A:
     const sepMatch = trimmed.match(SEPARATOR_RE);
     if (sepMatch) {
