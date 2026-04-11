@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     const { chapter_id } = await req.json();
     if (!chapter_id) throw new Error("chapter_id required");
 
-    // Fetch all chapter data in parallel
+    // Fetch all chapter data in parallel — include ALL items, not just approved
     const [
       chapterRes,
       purposeRes,
@@ -37,10 +37,10 @@ Deno.serve(async (req) => {
       mistakesRes,
     ] = await Promise.all([
       sb.from("chapters").select("chapter_number, chapter_name").eq("id", chapter_id).single(),
-      sb.from("chapter_purpose").select("purpose_bullets, consequence_bullets").eq("chapter_id", chapter_id).single(),
-      sb.from("chapter_key_terms").select("term, definition").eq("chapter_id", chapter_id).eq("is_approved", true).order("sort_order"),
-      sb.from("chapter_memory_items").select("title, item_type, subtitle, items").eq("chapter_id", chapter_id).eq("is_approved", true).order("sort_order"),
-      sb.from("chapter_formulas").select("formula_name, formula_expression, formula_explanation").eq("chapter_id", chapter_id).eq("is_approved", true).order("sort_order"),
+      sb.from("chapter_purpose").select("purpose_bullets, consequence_bullets, is_approved").eq("chapter_id", chapter_id).single(),
+      sb.from("chapter_key_terms").select("term, definition, is_approved, is_rejected").eq("chapter_id", chapter_id).order("sort_order"),
+      sb.from("chapter_memory_items").select("title, item_type, subtitle, items, is_approved, is_rejected").eq("chapter_id", chapter_id).order("sort_order"),
+      sb.from("chapter_formulas").select("formula_name, formula_expression, formula_explanation, is_approved, is_rejected").eq("chapter_id", chapter_id).order("sort_order"),
       sb.from("teaching_assets")
         .select("source_ref, journal_entry_completed_json")
         .eq("chapter_id", chapter_id)
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         .not("journal_entry_completed_json", "is", null)
         .order("asset_name")
         .limit(20),
-      sb.from("chapter_exam_mistakes").select("mistake, explanation").eq("chapter_id", chapter_id).eq("is_approved", true).order("sort_order"),
+      sb.from("chapter_exam_mistakes").select("mistake, explanation, is_approved, is_rejected").eq("chapter_id", chapter_id).order("sort_order"),
     ]);
 
     if (chapterRes.error || !chapterRes.data) throw new Error("Chapter not found");
