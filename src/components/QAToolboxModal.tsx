@@ -238,8 +238,6 @@ export function QAToolboxModal({
     setFixPrompt("");
     setSnapshot(null);
     setAttemptNumber(1);
-    setAdvancedOpen(false);
-    setSelectedSections(new Set(["solution_je"]));
   }, []);
 
   // Reset when modal opens
