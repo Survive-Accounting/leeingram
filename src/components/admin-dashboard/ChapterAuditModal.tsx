@@ -125,35 +125,35 @@ function FindingCard({
   onToggle: () => void;
 }) {
   return (
-    <div className={`rounded-lg border p-4 space-y-2 transition-colors ${isAccepted ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"}`}>
-      <div className="flex items-start justify-between gap-3">
+    <div className={`rounded-lg border p-3 md:p-4 space-y-2 transition-colors ${isAccepted ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"}`}>
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-2 md:gap-3">
         <div className="flex items-start gap-2.5 flex-1 min-w-0">
           <Badge className={`text-[10px] shrink-0 mt-0.5 ${SEV_COLORS[finding.severity]}`}>
             {finding.severity}
           </Badge>
           <div className="min-w-0">
-            <p className="text-[15px] font-semibold text-foreground leading-tight">{finding.title}</p>
-            <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{finding.description}</p>
+            <p className="text-sm md:text-[15px] font-semibold text-foreground leading-tight">{finding.title}</p>
+            <p className="text-sm md:text-[13px] text-muted-foreground mt-1 leading-relaxed">{finding.description}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 w-full md:w-auto md:shrink-0">
           {isAccepted ? (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-muted-foreground/30 text-muted-foreground hover:text-destructive"
+              className="h-12 md:h-7 text-sm md:text-xs flex-1 md:flex-none border-destructive/30 text-destructive hover:bg-destructive/10"
               onClick={onToggle}
             >
-              <X className="h-3 w-3 mr-1" /> Dismiss
+              <X className="h-4 md:h-3 w-4 md:w-3 mr-1" /> Dismiss
             </Button>
           ) : (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
+              className="h-12 md:h-7 text-sm md:text-xs flex-1 md:flex-none border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
               onClick={onToggle}
             >
-              <Check className="h-3 w-3 mr-1" /> Accept
+              <Check className="h-4 md:h-3 w-4 md:w-3 mr-1" /> Accept
             </Button>
           )}
         </div>

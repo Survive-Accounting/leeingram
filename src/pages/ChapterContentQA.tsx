@@ -425,15 +425,15 @@ function CourseGroupBlock({
             key={ch.id}
             onClick={() => onSelect(ch.id)}
             className={cn(
-              "w-full flex items-center gap-2 px-4 py-2 rounded-md text-left transition-colors text-sm",
+              "w-full flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2.5 md:py-2 rounded-md text-left transition-colors text-sm",
               selectedId === ch.id
                 ? "bg-primary/15 text-foreground border border-primary/30"
                 : "hover:bg-muted/30 text-foreground/80"
             )}
           >
-            <span className="font-medium text-xs">Ch {ch.chapter_number}</span>
-            <span className="text-xs truncate">{ch.chapter_name}</span>
-            <div className="flex gap-1 ml-auto shrink-0">
+            <span className="font-medium text-xs shrink-0">Ch {ch.chapter_number}</span>
+            <span className="text-xs truncate flex-1 min-w-0">{ch.chapter_name}</span>
+            <div className="flex gap-1 shrink-0 w-full md:w-auto md:ml-auto mt-1 md:mt-0">
               {statusPill(jeStatus(ch.id), "JEs")}
               {statusPill(formulaStatus(ch.id), "Formulas")}
             </div>
