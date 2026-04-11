@@ -439,7 +439,7 @@ function AnswerSummarySection({ text, theme, instructions }: { text: string; the
             fontFamily: 'monospace',
             fontSize: 13,
             background: theme.answerBg,
-            color: theme.answerColor || '#991B1B',
+            color: (theme as any).answerColor || '#991B1B',
             borderLeft: '3px solid ' + theme.answerBorder,
             borderRadius: 3,
             padding: '3px 10px',
