@@ -17,7 +17,7 @@ Return ONLY valid JSON. No preamble, no markdown fences.
 Return empty findings array if content is genuinely strong.
 Be specific to this chapter — never generic accounting advice.`;
 
-type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "jes" | "mistakes";
+type TabKey = "purpose" | "key_terms" | "accounts" | "memory" | "formulas" | "jes" | "mistakes";
 
 const RETURN_SCHEMA = `Return:
 {
@@ -49,6 +49,10 @@ async function fetchTabData(sb: any, chapterId: string, tab: TabKey) {
       const { data } = await sb.from("chapter_memory_items").select("title, item_type, subtitle, items, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
       return (data || []).filter((r: any) => !r.is_rejected);
     }
+    case "formulas": {
+      const { data } = await sb.from("chapter_formulas").select("formula_name, formula_expression, formula_explanation, is_approved, is_rejected").eq("chapter_id", chapterId).order("sort_order");
+      return (data || []).filter((r: any) => !r.is_rejected);
+    }
     case "jes": {
       const [catRes, jeRes] = await Promise.all([
         sb.from("chapter_je_categories").select("id, category_name, sort_order").eq("chapter_id", chapterId).order("sort_order"),
@@ -64,7 +68,7 @@ async function fetchTabData(sb: any, chapterId: string, tab: TabKey) {
 }
 
 function buildPrompt(tab: TabKey, chapterName: string, courseCode: string, data: any): string {
-  const header = `Audit the ${tab === "jes" ? "Journal Entries" : tab === "key_terms" ? "Key Terms" : tab.charAt(0).toUpperCase() + tab.slice(1)} content for: ${chapterName} (${courseCode})`;
+  const header = `Audit the ${tab === "jes" ? "Journal Entries" : tab === "key_terms" ? "Key Terms" : tab === "formulas" ? "Formulas" : tab.charAt(0).toUpperCase() + tab.slice(1)} content for: ${chapterName} (${courseCode})`;
 
   switch (tab) {
     case "purpose": {
