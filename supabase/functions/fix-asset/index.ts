@@ -160,7 +160,6 @@ serve(async (req) => {
           "claude-sonnet-4-20250514",
           "Reply with exactly the text requested.",
           "Reply with exactly: AI Fix working",
-          20,
         );
         return new Response(JSON.stringify({ ok: true, response: testResult.text }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
