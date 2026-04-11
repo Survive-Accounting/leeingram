@@ -440,7 +440,7 @@ export function BulkAuditOrchestrator() {
                       </Button>
                     </div>
                   </div>
-                  <ScrollArea className="max-h-48 rounded-md border border-border p-2">
+                  <ScrollArea className="max-h-[50vh] md:max-h-64 rounded-md border border-border p-2">
                     <div className="space-y-1">
                       {courseChapters.map(ch => {
                         const isSkipped = skippedChapterIds.has(ch.id);
