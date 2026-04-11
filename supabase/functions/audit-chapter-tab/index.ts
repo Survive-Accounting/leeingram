@@ -87,7 +87,10 @@ ${RETURN_SCHEMA}`;
 
     case "key_terms": {
       if (!data?.length) return `${header}\n\nNo content generated yet for this tab.\n\nNote this is empty — return a single high-severity finding about missing key terms.\n\n${RETURN_SCHEMA}`;
-      const lines = data.map((t: any) => `${t.category ? `[${t.category}] ` : ""}${t.term}: ${t.definition}`).join("\n");
+      const lines = data.map((t: any) => {
+        const status = t.is_approved ? "[approved]" : "[pending]";
+        return `${status} ${t.category ? `[${t.category}] ` : ""}${t.term}: ${t.definition}`;
+      }).join("\n");
       return `${header}
 
 Current terms (grouped by category):
