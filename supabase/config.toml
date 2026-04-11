@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.remove-ai-thinking]
 verify_jwt = false
+
+[functions.remove-duplicates]
+verify_jwt = false
