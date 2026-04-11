@@ -329,7 +329,8 @@ function TabPanel({
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Your notes</p>
             <Textarea
-              rows={4}
+              rows={5}
+              className="text-sm md:text-xs"
               placeholder="Any overrides or additions? Accepted findings above will be included automatically."
               value={notes}
               onChange={(e) => onNotesChange(e.target.value)}
@@ -337,10 +338,10 @@ function TabPanel({
           </div>
 
           {/* Two-button system */}
-          <div className="flex gap-3">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3">
             {hasContent && (
               <Button
-                className="flex-1 text-sm font-semibold text-white"
+                className="flex-1 text-sm font-semibold text-white h-14 md:h-auto"
                 style={{ backgroundColor: "#14213D" }}
                 disabled={applying}
                 onClick={applyContentFixes}
@@ -355,7 +356,7 @@ function TabPanel({
             {hasUI && (
               <Button
                 variant="outline"
-                className="flex-1 text-sm font-semibold"
+                className="flex-1 text-sm font-semibold h-14 md:h-auto"
                 disabled={generating}
                 onClick={generateUIPrompt}
               >
@@ -389,7 +390,7 @@ function TabPanel({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute top-2 right-2 h-7 text-[11px] text-white/70 hover:text-white hover:bg-white/10 z-10"
+                  className="absolute top-2 right-2 h-11 md:h-7 text-[11px] text-white/70 hover:text-white hover:bg-white/10 z-10 w-full md:w-auto static md:absolute mt-2 md:mt-0"
                   onClick={copyPrompt}
                 >
                   {copied ? (
