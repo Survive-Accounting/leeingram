@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ export function ChapterAuditPanel({
   const [costUsd, setCostUsd] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const runAudit = async () => {
+  const runAudit = useCallback(async () => {
     setState("loading");
     setErrorMsg("");
     try {
@@ -56,12 +56,12 @@ export function ChapterAuditPanel({
       setErrorMsg(err.message || "Unknown error");
       setState("error");
     }
-  };
+  }, [chapterId]);
 
   // Auto-run on mount
-  if (state === "idle") {
+  useEffect(() => {
     runAudit();
-  }
+  }, [runAudit]);
 
   const severityColor: Record<string, string> = {
     high: "bg-destructive/20 text-destructive border-destructive/30",
