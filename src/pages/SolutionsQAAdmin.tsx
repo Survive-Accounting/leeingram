@@ -453,11 +453,17 @@ function FixAssetModal({
                 );
               })}
 
-              <div className="flex gap-2 pt-2">
-                <Button onClick={approveChanges} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
-                  <Check className="h-3.5 w-3.5 mr-1" /> Approve Changes
+              <div className="flex flex-col gap-2 pt-2">
+                <Button onClick={handleMarkReady} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                  🎉 Mark Ready for Students
                 </Button>
-                <Button onClick={rejectChanges} variant="outline" className="flex-1">
+                <Button onClick={handleSubmitForReview} variant="outline" className="w-full" style={{ borderColor: "#14213D", color: "#14213D" }}>
+                  Submit for Lee's Review 🔍
+                </Button>
+                <Button onClick={handleNeedsLee} variant="outline" className="w-full" style={{ borderColor: "#D97706", color: "#D97706" }}>
+                  Needs Lee 🚩
+                </Button>
+                <Button onClick={rejectChanges} variant="ghost" className="w-full text-muted-foreground">
                   <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reject & Try Again
                 </Button>
               </div>
@@ -846,6 +852,7 @@ export default function SolutionsQAAdmin() {
                   <SelectItem value="reviewed_issues">Issues</SelectItem>
                   <SelectItem value="fix_approved">Fix Approved</SelectItem>
                   <SelectItem value="fix_generated">Generated</SelectItem>
+                  <SelectItem value="pending_lee_review">Pending Review 🔍</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={allAssetsChapter} onValueChange={v => handleFilterChange(setAllAssetsChapter, v)}>
