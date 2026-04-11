@@ -772,6 +772,24 @@ export default function BulkFixTool() {
           after: `Will remove duplicate JEs, repeated calculations, and redundant content via Claude Opus — manual review required`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "regenerate_missing") {
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_problem_text", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: totalCount } = await countQ;
+        setTotalMatched(totalCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "survive_solution_text + je_data",
+          before: `${totalCount ?? 0} assets with problem text`,
+          after: `Will regenerate missing content (parts a/b/c) via Claude Opus — EVERY asset must be reviewed individually. [NEEDS LEE] auto-escalated.`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
