@@ -989,7 +989,23 @@ function JEEntryRowBlock({
   const [editingLabel, setEditingLabel] = useState(false);
   const [label, setLabel] = useState(entry.transaction_label);
   const [editingLines, setEditingLines] = useState(false);
-  const jeLines = (Array.isArray(entry.je_lines) ? entry.je_lines : []) as JELine[];
+  const jeLines = useMemo(() => {
+    const raw = Array.isArray(entry.je_lines) ? entry.je_lines : [];
+    return raw.map((l: any): JELine => {
+      // Already in canonical format
+      if (l.side === "debit" || l.side === "credit") {
+        return { account: l.account || "", account_tooltip: l.account_tooltip || "", side: l.side, amount: l.amount || "???" };
+      }
+      // Legacy format: { account, debit: number|null, credit: number|null }
+      const isDebit = l.debit != null && l.debit !== 0;
+      return {
+        account: l.account || "",
+        account_tooltip: l.account_tooltip || l.tooltip || "",
+        side: isDebit ? "debit" : "credit",
+        amount: l.amount || "???",
+      };
+    });
+  }, [entry.je_lines]);
   const [lines, setLines] = useState<JELine[]>(jeLines);
 
   const statusPill = entry.is_approved
