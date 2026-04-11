@@ -450,7 +450,7 @@ export function QAToolboxModal({
                   className="w-full text-center text-[11px] font-medium transition-colors flex items-center justify-center gap-1"
                   style={{ color: "var(--muted-foreground)" }}
                 >
-                  <RotateCcw className="h-3 w-3" /> ↩ Try Again
+                  <RotateCcw className="h-3 w-3" /> ↩ Try a different fix type
                 </button>
               </>
             )}
