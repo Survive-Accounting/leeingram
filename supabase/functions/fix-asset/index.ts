@@ -145,6 +145,33 @@ serve(async (req) => {
     const assetCode = (assetRow as any)?.asset_name || teaching_asset_id;
     const sourceRef = (assetRow as any)?.source_ref || assetCode;
     const pageUrl = `https://learn.surviveaccounting.com/solutions/${encodeURIComponent(assetCode)}`;
+    // ── TEST PING: Verify Anthropic API connectivity ──
+    if (body.operation === "test_ping") {
+      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!ANTHROPIC_API_KEY) {
+        return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const testResult = await callAnthropic(
+          ANTHROPIC_API_KEY,
+          "claude-sonnet-4-20250514",
+          "Reply with exactly the text requested.",
+          "Reply with exactly: AI Fix working",
+        );
+        return new Response(JSON.stringify({ ok: true, response: testResult.text }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e?.message || "Anthropic API call failed" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // ── SNAPSHOT: Get current values before fix ──
     if (action === "snapshot") {
       if (!sections?.length) throw new Error("Missing sections");

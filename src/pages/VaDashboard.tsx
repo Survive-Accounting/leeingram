@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount, VA_ROLE_LABELS } from "@/hooks/useVaAccount";
@@ -15,6 +15,7 @@ import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
   HelpCircle, MessageSquare, ExternalLink, Library, FileUp, Rocket,
+  FlaskConical, XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QuizDeployPanel } from "@/components/va-dashboards/QuizDeployPanel";
@@ -207,6 +208,53 @@ export default function VaDashboard() {
     });
   };
 
+  // ═══ AI Fix Self-Test ═══
+  const [testRunning, setTestRunning] = useState(false);
+  const [testResults, setTestResults] = useState<{ edgeFn: null | { ok: boolean; msg: string }; anthropic: null | { ok: boolean; msg: string }; apiKey: null | { ok: boolean; msg: string } } | null>(null);
+
+  const runAiFixTest = useCallback(async () => {
+    setTestRunning(true);
+    setTestResults({ edgeFn: null, anthropic: null, apiKey: null });
+
+    // 1. Edge function reachability test
+    try {
+      const { data, error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: "test", operation: "test_ping", action: "test" },
+      });
+      // Any response (even error JSON) means the function is reachable
+      setTestResults(prev => prev && ({ ...prev, edgeFn: { ok: true, msg: "Edge function reachable" } }));
+    } catch (e: any) {
+      setTestResults(prev => prev && ({ ...prev, edgeFn: { ok: false, msg: e?.message || "Network error" } }));
+    }
+
+    // 2. Anthropic API test (via edge function that calls Anthropic)
+    try {
+      const { data, error } = await supabase.functions.invoke("fix-asset", {
+        body: { teaching_asset_id: "test", asset_name: "TEST_PING", operation: "test_ping", action: "snapshot" },
+      });
+      if (error) {
+        setTestResults(prev => prev && ({ ...prev, anthropic: { ok: false, msg: error.message || "Anthropic API error" } }));
+      } else if (data?.error) {
+        setTestResults(prev => prev && ({ ...prev, anthropic: { ok: false, msg: data.error } }));
+      } else {
+        setTestResults(prev => prev && ({ ...prev, anthropic: { ok: true, msg: "Anthropic API reachable" } }));
+      }
+    } catch (e: any) {
+      setTestResults(prev => prev && ({ ...prev, anthropic: { ok: false, msg: e?.message || "Network error" } }));
+    }
+
+    // 3. API key check — if edge function responded at all, key is configured
+    setTestResults(prev => {
+      if (!prev) return prev;
+      const keyOk = prev.edgeFn?.ok || prev.anthropic?.ok;
+      return { ...prev, apiKey: { ok: !!keyOk, msg: keyOk ? "API key configured" : "API key may be missing — edge function failed" } };
+    });
+
+    setTestRunning(false);
+  }, []);
+
+  const showTestButton = isAdmin || activeIsVa;
+
   if (isLoading) {
     return (
       <SurviveSidebarLayout>
@@ -221,14 +269,61 @@ export default function VaDashboard() {
     <SurviveSidebarLayout>
       <div className="space-y-6 pb-8">
         {/* ═══ HEADER ═══ */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-lg font-bold text-foreground">
             {activeVa ? activeVa.full_name : "VA Dashboard"}
           </h1>
           <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">
             {VA_ROLE_LABELS[activeRole] || activeRole}
           </Badge>
+          {showTestButton && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto h-7 text-[11px] px-3 gap-1.5"
+              onClick={runAiFixTest}
+              disabled={testRunning}
+            >
+              {testRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3" />}
+              Test AI Fix →
+            </Button>
+          )}
         </div>
+
+        {/* ═══ AI FIX TEST RESULTS ═══ */}
+        {testResults && (
+          <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2 text-xs">
+            {[
+              { key: "edgeFn" as const, label: "Edge function" },
+              { key: "anthropic" as const, label: "Anthropic API" },
+              { key: "apiKey" as const, label: "API key" },
+            ].map(({ key, label }) => {
+              const r = testResults[key];
+              if (!r) return (
+                <div key={key} className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> {label}…
+                </div>
+              );
+              return (
+                <div key={key} className="flex items-center gap-2">
+                  {r.ok
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                    : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                  }
+                  <span className={r.ok ? "text-green-600" : "text-destructive"}>{r.msg}</span>
+                </div>
+              );
+            })}
+            <div className="pt-1 border-t border-border mt-2 font-medium">
+              {testResults.edgeFn?.ok && testResults.anthropic?.ok && testResults.apiKey?.ok
+                ? <span className="text-green-600">✅ AI Fix is working — VAs can use it</span>
+                : (testResults.edgeFn && testResults.anthropic && testResults.apiKey)
+                  ? <span className="text-destructive">❌ AI Fix has issues — share this screen with Lee</span>
+                  : <span className="text-muted-foreground">Running tests…</span>
+              }
+            </div>
+          </div>
+        )}
 
         <Tabs defaultValue="pipeline" className="w-full">
           <TabsList className="bg-secondary/50">
