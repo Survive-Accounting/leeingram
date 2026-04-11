@@ -4,6 +4,7 @@ import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
 import { useVaAccount, VA_ROLE_LABELS } from "@/hooks/useVaAccount";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useActiveWorkspace } from "@/hooks/useActiveWorkspace";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,10 +16,11 @@ import {
   Loader2, ArrowRight, CheckCircle2,
   Upload, Sparkles, Eye, BookOpen,
   HelpCircle, MessageSquare, ExternalLink, Library, FileUp, Rocket,
-  FlaskConical, XCircle,
+  FlaskConical, XCircle, Download,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QuizDeployPanel } from "@/components/va-dashboards/QuizDeployPanel";
+import JSZip from "jszip";
 
 const PIPELINE_STAGES = [
   { key: "import", label: "Import & Mark Ready", route: "/problem-bank", icon: Upload },
