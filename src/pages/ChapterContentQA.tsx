@@ -706,6 +706,7 @@ function ChapterQAModal({
 function JETab({ chapterId, chapterName, courseCode }: { chapterId: string; chapterName: string; courseCode: string }) {
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
+  const [rewritingTooltips, setRewritingTooltips] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState("");
 
   const { data, refetch } = useQuery({
