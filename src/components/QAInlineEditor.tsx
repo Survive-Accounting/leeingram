@@ -270,6 +270,9 @@ export function QAInlineEditorPanel({ initialValue, onSave, onCancel, label, row
             ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
+            onSelect={checkSelection}
+            onMouseUp={checkSelection}
+            onKeyUp={checkSelection}
             rows={rows}
             className="text-[13px] leading-[1.7] font-mono resize-y min-h-[120px]"
             style={{
