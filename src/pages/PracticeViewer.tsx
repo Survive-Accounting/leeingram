@@ -408,40 +408,45 @@ function RawJEFallback({ text, theme }: { text: string; theme: Theme }) {
 // ── Answer Summary ──────────────────────────────────────────────────
 
 function AnswerSummarySection({ text, theme, instructions }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[] }) {
-  const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
+  const lines = text.split('\n');
+
   return (
     <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: theme.answerBg, borderColor: theme.answerBorder }}>
-      {subSections.map((section, si) => {
-        const labelMatch = section.match(/^\(([a-z])\)\s*(.*)/i);
-        const letterIndex = labelMatch ? labelMatch[1].toLowerCase().charCodeAt(0) - 96 : 0;
-        const matchedInstruction = labelMatch && instructions?.find(i => i.instruction_number === letterIndex);
-        const label = labelMatch
-          ? matchedInstruction
-            ? `(${labelMatch[1]}) ${matchedInstruction.instruction_text}`
-            : `(${labelMatch[1]}) ${labelMatch[2].split("\n")[0]}`
-          : null;
-        const content = labelMatch ? section.slice(labelMatch[0].split("\n")[0].length) : section;
-        const contentLines = content.split("\n").filter(l => l.trim());
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          return <div key={i} style={{ height: 10, marginBottom: 4 }} />;
+        }
+
+        if (/^Step \d+/i.test(trimmed)) {
+          return (
+            <p key={i} style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: theme.text,
+              marginTop: 14,
+              marginBottom: 6,
+              fontFamily: 'Inter, sans-serif'
+            }}>
+              {trimmed}
+            </p>
+          );
+        }
+
         return (
-          <div key={si}>
-            {si > 0 && <div className="my-3" style={{ borderTop: `1px solid ${theme.border}` }} />}
-            {label && <p className="font-bold text-[14px]" style={{ color: theme.text, marginTop: si > 0 ? 16 : 0, marginBottom: 8 }}>{label}</p>}
-            {contentLines.map((line, li) => {
-              const trimmed = line.trim();
-              const isStepLabel = /^step \d+/i.test(trimmed);
-              const isYearLabel = /^\d{4}\s*:/.test(trimmed);
-              const isNumberedStep = /^\d+\.\s/.test(trimmed);
-              if (isStepLabel) {
-                return <p key={li} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: "#1A1A1A", marginTop: 10 }}>{trimmed}</p>;
-              }
-              if (isYearLabel) {
-                return <p key={li} className="font-bold text-[13px]" style={{ color: theme.text, marginTop: 10, marginBottom: 4 }}>{trimmed}</p>;
-              }
-              if (isNumberedStep) {
-                return <p key={li} className="font-semibold text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text, marginTop: 14 }}>{trimmed}</p>;
-              }
-              return <p key={li} className="text-[13px] ml-4 mb-1 leading-[1.6]" style={{ color: theme.text }}>{trimmed}</p>;
-            })}
+          <div key={i} style={{
+            fontFamily: 'monospace',
+            fontSize: 13,
+            background: theme.answerBg,
+            color: theme.answerColor || '#991B1B',
+            borderLeft: '3px solid ' + theme.answerBorder,
+            borderRadius: 3,
+            padding: '3px 10px',
+            marginBottom: 3,
+            display: 'block'
+          }}>
+            {trimmed}
           </div>
         );
       })}
