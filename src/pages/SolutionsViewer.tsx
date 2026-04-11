@@ -589,20 +589,28 @@ function RevealToggle({
   onReveal?: (sectionName: string) => void;
   onBuyClick?: () => void;
   onReportClick?: () => void;
+  controlledOpen?: boolean;
+  onControlledToggle?: (sectionName: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
 
   useEffect(() => {
-    if (forceOpen) setOpen(true);
-  }, [forceOpen]);
+    if (forceOpen && !isControlled) setInternalOpen(true);
+  }, [forceOpen, isControlled]);
 
   const hasReportLink = !!(sectionName && assetCode);
 
   const handleToggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next && sectionName && onReveal) {
-      onReveal(sectionName);
+    if (isControlled && sectionName && onControlledToggle) {
+      onControlledToggle(sectionName);
+    } else {
+      const next = !internalOpen;
+      setInternalOpen(next);
+      if (next && sectionName && onReveal) {
+        onReveal(sectionName);
+      }
     }
   };
 
