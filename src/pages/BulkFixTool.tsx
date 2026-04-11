@@ -21,7 +21,7 @@ import { AlertTriangle, Wrench, ChevronDown, Loader2, Undo2, History, Eye, Play,
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking" | "remove_duplicates";
+type OperationType = "fix_entity_naming" | "find_replace_simple" | "custom_ai" | "fix_entity_perspective" | "enrich_je_rows" | "generate_supplementary_je" | "generate_worked_steps" | "generate_flowcharts" | "generate_dissector_highlights" | "enrich_je_tooltips" | "rewrite_je_reasons" | "rewrite_je_amounts" | "generate_calculation_formulas" | "standardize_formatting" | "remove_ai_thinking" | "remove_duplicates" | "regenerate_missing";
 
 interface HistoryEntry {
   label: string;
@@ -66,6 +66,7 @@ const OPERATION_LABELS: Record<string, string> = {
   standardize_formatting: "Standardize Formatting (solution text only)",
   remove_ai_thinking: "Remove AI Thinking (solution text only — Opus)",
   remove_duplicates: "Remove Duplicates & Redundancies (solution text — Opus)",
+  regenerate_missing: "Regenerate Missing Content (solution + JE — Opus)",
 };
 
 const ENTITY_PERSPECTIVE_INSTRUCTION = `You are making surgical text corrections to an accounting problem. You must follow these rules with absolute precision:
@@ -324,6 +325,7 @@ export default function BulkFixTool() {
     if (operation === "standardize_formatting") return "Standardize Formatting (solution text only)";
     if (operation === "remove_ai_thinking") return "Remove AI Thinking (solution text only — Opus)";
     if (operation === "remove_duplicates") return "Remove Duplicates & Redundancies (solution text — Opus)";
+    if (operation === "regenerate_missing") return "Regenerate Missing Content (solution + JE — Opus)";
     return "";
   }, [operation, findText, replaceText]);
 
@@ -770,6 +772,24 @@ export default function BulkFixTool() {
           after: `Will remove duplicate JEs, repeated calculations, and redundant content via Claude Opus — manual review required`,
         }]);
         setIsAiPreview(true);
+      } else if (operation === "regenerate_missing") {
+        let countQ = supabase.from("teaching_assets").select("id", { count: "exact", head: true })
+          .not("survive_problem_text", "is", null);
+        if (courseFilter !== "all") countQ = countQ.eq("course_id", courseFilter);
+        if (chapterFilter !== "all") countQ = countQ.eq("chapter_id", chapterFilter);
+        if (statusFilter === "approved") countQ = countQ.not("asset_approved_at", "is", null);
+        if (statusFilter === "core") countQ = countQ.not("core_rank", "is", null);
+        const { count: totalCount } = await countQ;
+        setTotalMatched(totalCount ?? 0);
+
+        setPreviewRows([{
+          id: "summary",
+          asset_name: "All in scope",
+          field: "survive_solution_text + je_data",
+          before: `${totalCount ?? 0} assets with problem text`,
+          after: `Will regenerate missing content (parts a/b/c) via Claude Opus — EVERY asset must be reviewed individually. [NEEDS LEE] auto-escalated.`,
+        }]);
+        setIsAiPreview(true);
       }
     } catch (e: any) {
       toast.error("Preview failed: " + e.message);
@@ -818,7 +838,7 @@ export default function BulkFixTool() {
       assets = matchingAssets;
       console.log("[Standardize Formatting] Processing asset:", assets[0].asset_name, "id:", assets[0].id);
     } else {
-      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates"].includes(opKey);
+      const isLightweight = ["generate_flowcharts", "generate_supplementary_je", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates", "regenerate_missing"].includes(opKey);
       let scopeQuery = buildScopeQuery(isLightweight);
       if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts"].includes(opKey)) {
         scopeQuery = scopeQuery.not("journal_entry_completed_json", "is", null);
@@ -1080,10 +1100,22 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
               if (result?.skipped) { skipped++; return; }
               changed = true;
             } catch { errors++; return; }
+          } else if (opKey === "regenerate_missing") {
+            const problemText = (asset as any).survive_problem_text || (asset as any).problem_context || "";
+            if (!problemText.trim()) { skipped++; return; }
+
+            try {
+              const { data: result, error: fnErr } = await supabase.functions.invoke("regenerate-missing", {
+                body: { teaching_asset_id: asset.id },
+              });
+              if (fnErr || result?.error) { errors++; return; }
+              if (result?.skipped) { skipped++; return; }
+              changed = true;
+            } catch { errors++; return; }
           }
 
           if (changed) {
-            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates"].includes(opKey)) {
+            if (!["generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "remove_ai_thinking", "remove_duplicates", "regenerate_missing"].includes(opKey)) {
               await supabase.from("teaching_assets").update({ ...backupUpdate, ...newValues }).eq("id", asset.id);
             }
             updated++;
@@ -1097,7 +1129,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
       onProgress?.(Math.min(i + batchSize, total), total, (batch[batch.length - 1] as any)?.asset_name || "");
 
       // Delay for AI-heavy operations
-      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking", "remove_duplicates"].includes(opKey)) {
+      if (["enrich_je_tooltips", "rewrite_je_reasons", "rewrite_je_amounts", "enrich_je_rows", "generate_supplementary_je", "generate_flowcharts", "generate_dissector_highlights", "remove_ai_thinking", "remove_duplicates", "regenerate_missing"].includes(opKey)) {
         await new Promise(r => setTimeout(r, 500));
       }
     }
@@ -1424,6 +1456,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="standardize_formatting">Standardize Formatting (solution text only)</SelectItem>
                 <SelectItem value="remove_ai_thinking">Remove AI Thinking (solution text only — Opus)</SelectItem>
                 <SelectItem value="remove_duplicates">Remove Duplicates &amp; Redundancies (solution text — Opus)</SelectItem>
+                <SelectItem value="regenerate_missing">Regenerate Missing Content (solution + JE — Opus)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1465,6 +1498,21 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   <p className="text-xs text-amber-200">
                     ⚠ Opus model — review carefully before approving. This operation uses Claude Opus (~15x cost). Never auto-approved — always snapshot + manual review.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {operation === "regenerate_missing" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Generates complete explanations for missing parts (a)(b)(c) of practice problems. Uses problem text + instructions to derive answers. Preserves all existing correct content. If Claude can't derive a figure, it writes <code className="text-foreground">[NEEDS LEE]</code> and auto-flags for manual review.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="text-sm text-destructive">
+                    <p className="font-bold">⚠ Highest risk operation — review EVERY asset individually before approving. Never bulk approve.</p>
+                    <p className="text-xs mt-1 opacity-80">Uses Claude Opus (~15x cost). Assets with [NEEDS LEE] are auto-rejected and escalated.</p>
+                  </div>
                 </div>
               </div>
             )}

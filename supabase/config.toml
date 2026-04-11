@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.remove-duplicates]
 verify_jwt = false
+
+[functions.regenerate-missing]
+verify_jwt = false
