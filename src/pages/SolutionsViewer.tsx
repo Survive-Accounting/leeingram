@@ -2787,24 +2787,41 @@ function FixThisNowModal({ assetCode, teachingAssetId, onClose }: { assetCode: s
             </Button>
           )}
           {step === "review" && (
-            <>
+            <div className="flex flex-col gap-2 w-full">
               <Button
+                onClick={handleMarkReady}
+                disabled={approving || restoring}
+                className="w-full text-white text-sm bg-emerald-600 hover:bg-emerald-700"
+              >
+                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "🎉 Mark Ready for Students"}
+              </Button>
+              <Button
+                onClick={handleSubmitForReview}
+                disabled={approving || restoring}
                 variant="outline"
+                className="w-full text-sm"
+                style={{ borderColor: "#14213D", color: "#14213D" }}
+              >
+                Submit for Lee's Review 🔍
+              </Button>
+              <Button
+                onClick={handleNeedsLee}
+                disabled={approving || restoring}
+                variant="outline"
+                className="w-full text-sm"
+                style={{ borderColor: "#D97706", color: "#D97706" }}
+              >
+                Needs Lee 🚩
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={handleReject}
                 disabled={restoring || approving}
-                className="text-xs"
+                className="w-full text-xs text-muted-foreground"
               >
-                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Try Again"}
+                {restoring ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Reverting…</> : "✗ Reject & Try Again"}
               </Button>
-              <Button
-                onClick={handleApprove}
-                disabled={approving || restoring}
-                className="text-white text-xs"
-                style={{ background: "#14213D" }}
-              >
-                {approving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving…</> : "✓ Looks Good — Apply Fix"}
-              </Button>
-            </>
+            </div>
           )}
         </DialogFooter>
       </DialogContent>
