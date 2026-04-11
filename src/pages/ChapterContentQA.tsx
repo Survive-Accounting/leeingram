@@ -385,6 +385,7 @@ export default function ChapterContentQA() {
                 Rewrite All JE Tooltips (Tutor Voice)
               </Button>
             </div>
+            <BulkAuditOrchestrator />
             <BatchSuiteOrchestrator />
             <MemoryBatchOrchestrator />
             <FormulaBatchRegenOrchestrator />

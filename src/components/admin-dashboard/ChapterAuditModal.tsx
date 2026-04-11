@@ -424,6 +424,13 @@ function TabPanel({
 
 // ── Main modal ───────────────────────────────────────────────────
 
+export type PreloadedTabFindings = Partial<Record<TabKey, {
+  status: "done" | "error";
+  findings: Array<{ severity: "high" | "medium" | "low"; title: string; description: string; tab?: string }>;
+  overall: string;
+  errorMsg: string;
+}>>;
+
 export function ChapterAuditModal({
   open,
   onClose,
@@ -431,6 +438,7 @@ export function ChapterAuditModal({
   chapterName,
   chapterId,
   courseCode,
+  preloadedFindings,
 }: {
   open: boolean;
   onClose: () => void;
@@ -438,6 +446,7 @@ export function ChapterAuditModal({
   chapterName: string;
   chapterId: string;
   courseCode: string;
+  preloadedFindings?: PreloadedTabFindings;
 }) {
   const [tabs, setTabs] = useState<Record<TabKey, TabState>>(makeInitialTabs);
   const [activeTab, setActiveTab] = useState<TabKey>("purpose");
@@ -496,21 +505,42 @@ export function ChapterAuditModal({
     }
   }, [chapterId, chapterNumber, chapterName, courseCode]);
 
-  // Fire all 6 audits on open
+  // Fire all audits on open, or populate from preloaded data
   useEffect(() => {
     if (open && !hasStartedRef.current) {
       hasStartedRef.current = true;
-      const allTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "formulas", "jes", "mistakes"];
-      // Set all to loading, then fire all simultaneously
-      setTabs(() => {
+
+      if (preloadedFindings) {
+        // Populate from bulk audit cache — no API calls needed
         const t = makeInitialTabs();
-        allTabs.forEach((k) => { t[k].status = "loading"; });
-        return t;
-      });
-      // Fire all — Promise.allSettled ensures none block others
-      Promise.allSettled(allTabs.map((k) => auditTab(k)));
+        const allTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "formulas", "jes", "mistakes"];
+        allTabs.forEach((k) => {
+          const preloaded = preloadedFindings[k];
+          if (preloaded) {
+            const findings: Finding[] = (preloaded.findings || []).map((f: any) => ({
+              severity: f.severity || "low",
+              title: f.title || "Untitled",
+              description: f.description || "",
+              fixType: classifyFinding(f.title || "", f.description || ""),
+            }));
+            const accepted: Record<number, boolean> = {};
+            findings.forEach((_, i) => { accepted[i] = true; });
+            t[k] = { status: preloaded.status === "error" ? "error" : "done", findings, accepted, notes: "", overall: preloaded.overall || "", errorMsg: preloaded.errorMsg || "" };
+          }
+        });
+        setTabs(t);
+      } else {
+        // Normal: fire all audits
+        const allTabs: TabKey[] = ["purpose", "key_terms", "accounts", "memory", "formulas", "jes", "mistakes"];
+        setTabs(() => {
+          const t = makeInitialTabs();
+          allTabs.forEach((k) => { t[k].status = "loading"; });
+          return t;
+        });
+        Promise.allSettled(allTabs.map((k) => auditTab(k)));
+      }
     }
-  }, [open, auditTab]);
+  }, [open, auditTab, preloadedFindings]);
 
   const handleOpenChange = (v: boolean) => {
     if (!v) {
