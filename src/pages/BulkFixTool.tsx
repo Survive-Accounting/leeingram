@@ -1426,6 +1426,7 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                 <SelectItem value="standardize_formatting">Standardize Formatting (solution text only)</SelectItem>
                 <SelectItem value="remove_ai_thinking">Remove AI Thinking (solution text only — Opus)</SelectItem>
                 <SelectItem value="remove_duplicates">Remove Duplicates &amp; Redundancies (solution text — Opus)</SelectItem>
+                <SelectItem value="regenerate_missing">Regenerate Missing Content (solution + JE — Opus)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1467,6 +1468,21 @@ Rules: Return rows in SAME ORDER. Be concise but specific. If amount is given di
                   <p className="text-xs text-amber-200">
                     ⚠ Opus model — review carefully before approving. This operation uses Claude Opus (~15x cost). Never auto-approved — always snapshot + manual review.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {operation === "regenerate_missing" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Generates complete explanations for missing parts (a)(b)(c) of practice problems. Uses problem text + instructions to derive answers. Preserves all existing correct content. If Claude can't derive a figure, it writes <code className="text-foreground">[NEEDS LEE]</code> and auto-flags for manual review.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="text-sm text-destructive">
+                    <p className="font-bold">⚠ Highest risk operation — review EVERY asset individually before approving. Never bulk approve.</p>
+                    <p className="text-xs mt-1 opacity-80">Uses Claude Opus (~15x cost). Assets with [NEEDS LEE] are auto-rejected and escalated.</p>
+                  </div>
                 </div>
               </div>
             )}
