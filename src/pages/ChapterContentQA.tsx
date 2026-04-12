@@ -579,6 +579,7 @@ function ChapterQAModal({
   const [suiteStep, setSuiteStep] = useState("");
   const [suiteResults, setSuiteResults] = useState<Record<string, "ok" | "error" | "pending">>({});
   const [auditOpen, setAuditOpen] = useState(false);
+  const [prepPackOpen, setPrepPackOpen] = useState(false);
 
   const runFullSuite = async () => {
     setSuiteRunning(true);
