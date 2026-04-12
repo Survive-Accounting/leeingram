@@ -4227,7 +4227,22 @@ export default function SolutionsViewer() {
                 </RevealToggle>
               )}
 
-              {/* 2. How to Solve This */}
+              {/* 2. Journal Entries */}
+              {hasJE && (
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection}>
+                  {isPreview ? (
+                    <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
+                  ) : (
+                    hasCanonicalJE ? (
+                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} instructions={asset._instructions} />
+                    ) : (
+                      <RawJEFallback text={jeBlock} theme={t} />
+                    )
+                  )}
+                </RevealToggle>
+              )}
+
+              {/* 3. How to Solve This */}
               {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
                 <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "How to Solve This"} onControlledToggle={handleToggleSection}>
                   {asset._flowcharts?.length > 1 ? (
@@ -4254,86 +4269,6 @@ export default function SolutionsViewer() {
                   ) : (
                     <FlowchartImage src={asset.flowchart_image_url} alt="How to Solve This — step-by-step flowchart" />
                   )}
-                </RevealToggle>
-              )}
-
-              {/* 3. Journal Entries */}
-              {hasJE && (
-                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection}>
-                  {isPreview ? (
-                    <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
-                  ) : (
-                    hasCanonicalJE ? (
-                      <CanonicalJESection data={typeof jeData === "string" ? JSON.parse(jeData) : jeData} theme={t} instructions={asset._instructions} />
-                    ) : (
-                      <RawJEFallback text={jeBlock} theme={t} />
-                    )
-                  )}
-                </RevealToggle>
-              )}
-
-              {/* 3b. Chapter-Level Journal Entries — replaces per-asset Related JEs */}
-              {chapterJEData && chapterJEData.entries.length > 0 && (
-                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Journal Entries`} theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Related Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Related Journal Entries"} onControlledToggle={handleToggleSection}>
-                  <ChapterJEAccordion categories={chapterJEData.categories} entries={chapterJEData.entries} theme={t} />
-                </RevealToggle>
-              )}
-
-              {/* 4. Important Formulas — hidden in QA mode */}
-              {formulas.trim() && !isQaMode && (
-                <RevealToggle label="Reveal Important Formulas" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Important Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Important Formulas"} onControlledToggle={handleToggleSection}>
-                  <GroupedFormulas text={formulas} theme={t} />
-                </RevealToggle>
-              )}
-
-              {/* 4b. Ch [N] — Important Formulas (chapter-level, not paywalled) */}
-              {chapterFormulas && chapterFormulas.length > 0 && (
-                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Important Formulas`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Formulas" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Chapter Formulas"} onControlledToggle={handleToggleSection}>
-                  <ChapterFormulaCarousel formulas={chapterFormulas} />
-                </RevealToggle>
-              )}
-
-              {/* 5. Ch [N] — Accounts */}
-              {chapterAccounts && chapterAccounts.length > 0 && (
-                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Accounts`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Accounts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Chapter Accounts"} onControlledToggle={handleToggleSection}>
-                  <ChapterAccountsSection accounts={chapterAccounts} theme={t} />
-                </RevealToggle>
-              )}
-
-              {/* 6. Ch [N] — Key Terms */}
-              {chapterKeyTerms && chapterKeyTerms.length > 0 && (
-                <RevealToggle label={`Reveal Ch ${chapterNum || "?"} — Key Terms`} theme={t} isPreview={false} enrollUrl={enrollUrl} sectionName="Chapter Key Terms" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Chapter Key Terms"} onControlledToggle={handleToggleSection}>
-                  <ChapterKeyTermsSection terms={chapterKeyTerms} theme={t} />
-                </RevealToggle>
-              )}
-
-              {/* 7. Key Concepts — hidden in QA mode */}
-              {conceptNotes.trim() && !isQaMode && (
-                <RevealToggle label="Reveal Key Concepts" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Key Concepts" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Key Concepts"} onControlledToggle={handleToggleSection}>
-                  <ul className="space-y-3">
-                    {splitLongBullets(conceptNotes).map((sentence: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: t.text }}>
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#131E35" }} />
-                        <span>{sentence}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </RevealToggle>
-              )}
-
-              {/* 6. Exam Traps — hidden in QA mode */}
-              {examTraps.trim() && !isQaMode && (
-                <RevealToggle label="Reveal Exam Traps" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Exam Traps" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Exam Traps"} onControlledToggle={handleToggleSection}>
-                  <div className="rounded-md p-4 pl-5 border-l-[3px]" style={{ background: t.trapBg, borderColor: t.trapBorder }}>
-                    <ul className="space-y-3">
-                      {parseExamTraps(examTraps).map((trap: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: "#C0392B" }}>
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "#C0392B" }} />
-                          <span>{trap}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
                 </RevealToggle>
               )}
             </div>
