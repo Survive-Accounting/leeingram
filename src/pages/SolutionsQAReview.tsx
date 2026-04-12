@@ -2364,7 +2364,7 @@ export default function SolutionsQAReview() {
                 </Button>
               )}
               {/* ── Mark Ready for Students / Undo Ready toggle ── */}
-              {current?.teaching_asset_id && canUseFixer && (() => {
+              {current?.teaching_asset_id && (() => {
                 const currentFixStatus = fixStatusMap?.[current.teaching_asset_id];
                 const isReady = currentFixStatus === "ready_for_students";
                 return (
