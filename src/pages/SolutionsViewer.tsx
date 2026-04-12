@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { AboutLeeModal } from "@/components/AboutLeeModal";
 import confetti from "canvas-confetti";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
@@ -3004,7 +3005,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
         </div>
       </div>
 
-      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
       {asset && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} asset={asset} />}
     </>
   );
