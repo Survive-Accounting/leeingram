@@ -1430,7 +1430,7 @@ function CramFeedbackFormInline({ chapterId, chapterNumber, chapterName, courseD
   return (
     <>
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Share Feedback</h3>
+        <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Suggest a Fix</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
       </div>
       <p className="text-[12px] mb-4" style={{ color: "#999" }}>I read every message personally.</p>
