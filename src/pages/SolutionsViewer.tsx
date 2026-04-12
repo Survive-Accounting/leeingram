@@ -7,7 +7,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu, Target, BookOpen, LayoutGrid, FileText, Calculator } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
@@ -3193,6 +3193,97 @@ function ChapterKeyTermsSection({ terms, theme }: { terms: { id: string; term: s
   );
 }
 
+const CRAM_CARDS = [
+  { key: "whats-the-point", param: "whats-the-point", title: "What's the Point", icon: Target },
+  { key: "key-terms", param: "key-terms", title: "Key Terms", icon: BookOpen },
+  { key: "accounts", param: "accounts", title: "Accounts", icon: LayoutGrid },
+  { key: "journal-entries", param: "journal-entries", title: "Journal Entries", icon: FileText },
+  { key: "formulas", param: "formulas", title: "Formulas", icon: Calculator },
+  { key: "exam-mistakes", param: "exam-mistakes", title: "Exam Mistakes", icon: AlertTriangle },
+] as const;
+
+function CramToolsGrid({ chapterId, chapterNum, purposeCount, keyTermsCount, accountsCount, jeCount, formulasCount, mistakesCount, theme: t }: {
+  chapterId: string; chapterNum: number | null;
+  purposeCount: number; keyTermsCount: number; accountsCount: number; jeCount: number; formulasCount: number; mistakesCount: number;
+  theme: Theme;
+}) {
+  const [confirmCard, setConfirmCard] = useState<string | null>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  const counts: Record<string, number> = {
+    "whats-the-point": purposeCount,
+    "key-terms": keyTermsCount,
+    "accounts": accountsCount,
+    "journal-entries": jeCount,
+    "formulas": formulasCount,
+    "exam-mistakes": mistakesCount,
+  };
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!confirmCard) return;
+    const handler = (e: MouseEvent) => {
+      if (popRef.current && !popRef.current.contains(e.target as Node)) setConfirmCard(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [confirmCard]);
+
+  const handleOpen = (param: string) => {
+    window.open(`/cram/${chapterId}?cram=${param}`, "_blank");
+    setConfirmCard(null);
+  };
+
+  return (
+    <div className="mt-6 rounded-xl px-4 sm:px-6 py-5 sm:py-6" style={{ background: "#F8F8FA", border: `1px solid ${t.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+      <p className="text-[18px] sm:text-[20px]" style={{ color: "#14213D", fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
+        Chapter Cram Tools · Ch {chapterNum || "?"}
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {CRAM_CARDS.map((card) => {
+          const Icon = card.icon;
+          const count = counts[card.key] || 0;
+          const isActive = confirmCard === card.key;
+          return (
+            <div key={card.key} className="relative">
+              <button
+                type="button"
+                onClick={() => setConfirmCard(isActive ? null : card.key)}
+                className="w-full group text-left rounded-lg p-5 transition-all duration-200 cursor-pointer"
+                style={{ background: "#14213D", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 4px 20px rgba(0,0,0,0.35)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(206,17,38,0.4)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.35)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+              >
+                <Icon className="h-5 w-5 mb-2" style={{ color: "rgba(255,255,255,0.6)" }} />
+                <p className="text-[13px] font-bold text-white">{card.title}</p>
+                {count > 0 && (
+                  <span className="absolute bottom-3 right-3 rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ background: "#CE1126" }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+              {isActive && (
+                <div ref={popRef} className="absolute z-20 left-0 right-0 mt-1 rounded-lg p-4 shadow-lg" style={{ background: "#FFFFFF", border: `1px solid ${t.border}` }}>
+                  <p className="text-[13px] font-bold mb-1" style={{ color: "#14213D" }}>{card.title}</p>
+                  <p className="text-[12px] mb-3" style={{ color: "#64748B" }}>Open in Cram Tool?</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleOpen(card.param)} className="flex-1 rounded-md px-3 py-2 text-[12px] font-bold text-white" style={{ background: "#14213D" }}>
+                      Open →
+                    </button>
+                    <button onClick={() => setConfirmCard(null)} className="flex-1 rounded-md px-3 py-2 text-[12px] font-semibold" style={{ background: "#F1F5F9", color: "#64748B", border: `1px solid ${t.border}` }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN COMPONENT ──────────────────────────────────────────────────
 
 export default function SolutionsViewer() {
@@ -3584,6 +3675,39 @@ export default function SolutionsViewer() {
       const { data: rows } = await supabase
         .from("chapter_key_terms")
         .select("id, term, definition, category, sort_order")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return rows || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
+  // Fetch chapter-level purpose
+  const { data: chapterPurpose } = useQuery({
+    queryKey: ["chapter-purpose-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return null;
+      const { data: row } = await supabase
+        .from("chapter_purpose")
+        .select("*")
+        .eq("chapter_id", chapterIdForJE)
+        .maybeSingle();
+      return row;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
+  // Fetch chapter-level exam mistakes (approved)
+  const { data: chapterExamMistakes } = useQuery({
+    queryKey: ["chapter-mistakes-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return [];
+      const { data: rows } = await supabase
+        .from("chapter_exam_mistakes")
+        .select("id, mistake, explanation, sort_order")
         .eq("chapter_id", chapterIdForJE)
         .eq("is_approved", true)
         .order("sort_order");
@@ -4273,8 +4397,20 @@ export default function SolutionsViewer() {
               )}
             </div>
 
-
-
+            {/* ── Chapter Cram Tools Grid ── */}
+            {chapterIdForJE && (
+              <CramToolsGrid
+                chapterId={chapterIdForJE}
+                chapterNum={chapterNum}
+                purposeCount={chapterPurpose ? (Array.isArray((chapterPurpose as any).purpose_bullets) ? (chapterPurpose as any).purpose_bullets.length : (chapterPurpose as any).purpose_text ? 1 : 0) : 0}
+                keyTermsCount={(chapterKeyTerms || []).length}
+                accountsCount={(chapterAccounts || []).length}
+                jeCount={chapterJEData?.entries?.length || 0}
+                formulasCount={(chapterFormulas || []).length}
+                mistakesCount={(chapterExamMistakes || []).length}
+                theme={t}
+              />
+            )}
 
 
           </div>

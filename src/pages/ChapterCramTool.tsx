@@ -630,6 +630,23 @@ export default function ChapterCramTool() {
   const [feedbackSection, setFeedbackSection] = useState("");
   const [openDrawer, setOpenDrawer] = useState<CardKey | null>(null);
 
+  // Auto-open cram modal from URL param (e.g. ?cram=formulas)
+  const cramParam = searchParams.get("cram");
+  useEffect(() => {
+    if (!cramParam) return;
+    const CRAM_KEY_MAP: Record<string, CardKey> = {
+      "whats-the-point": "whats-the-point",
+      "purpose": "whats-the-point",
+      "key-terms": "key-terms",
+      "accounts": "accounts",
+      "journal-entries": "journal-entries",
+      "formulas": "formulas",
+      "exam-mistakes": "exam-mistakes",
+    };
+    const key = CRAM_KEY_MAP[cramParam];
+    if (key) setOpenDrawer(key);
+  }, [cramParam]);
+
   // Got It / Not Sure tracking per card
   const [gotItSet, setGotItSet] = useState<Set<CardKey>>(() => {
     try { const s = sessionStorage.getItem(`sa_cram_gotit_${chapterId}`); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
