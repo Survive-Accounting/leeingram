@@ -1120,7 +1120,7 @@ export default function SolutionsQAReview() {
 
   const activeQaRole = impersonating?.role || vaAccount?.role || null;
   const isScopedVaSession = false; // All VAs see all courses/chapters
-  const canUseFixer = !activeQaRole || activeQaRole === "admin" || activeQaRole === "lead_va";
+  const canUseFixer = !activeQaRole || ["admin", "lead_va", "content_creation_va", "sheet_prep_va", "va_test"].includes(activeQaRole);
   const activeQaVaId = isScopedVaSession ? (impersonating?.id || vaAccount?.id || null) : null;
 
   const { data: impersonatedAssignments, isLoading: isImpersonatedAssignmentsLoading } = useQuery<QAReviewerAssignment[]>({
