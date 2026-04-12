@@ -4306,8 +4306,20 @@ export default function SolutionsViewer() {
               )}
             </div>
 
-
-
+            {/* ── Chapter Cram Tools Grid ── */}
+            {chapterIdForJE && (
+              <CramToolsGrid
+                chapterId={chapterIdForJE}
+                chapterNum={chapterNum}
+                purposeCount={chapterPurpose ? (Array.isArray((chapterPurpose as any).purpose_bullets) ? (chapterPurpose as any).purpose_bullets.length : (chapterPurpose as any).purpose_text ? 1 : 0) : 0}
+                keyTermsCount={(chapterKeyTerms || []).length}
+                accountsCount={(chapterAccounts || []).length}
+                jeCount={chapterJEData?.entries?.length || 0}
+                formulasCount={(chapterFormulas || []).length}
+                mistakesCount={(chapterExamMistakes || []).length}
+                theme={t}
+              />
+            )}
 
 
           </div>
