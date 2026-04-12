@@ -388,6 +388,7 @@ export default function ChapterContentQA() {
               </Button>
             </div>
             <BulkAuditOrchestrator />
+            <BulkApproveOrchestrator />
             <BatchSuiteOrchestrator />
             <MemoryBatchOrchestrator />
             <FormulaBatchRegenOrchestrator />
