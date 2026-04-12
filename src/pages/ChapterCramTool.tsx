@@ -1059,7 +1059,7 @@ export default function ChapterCramTool() {
                               style={{ borderBottom: index < Math.min(solutionsFiltered.length, isTabExpanded(solutionsTab) ? solutionsFiltered.length : SOLUTIONS_INITIAL_SHOW) - 1 ? `1px solid ${theme.border}` : "none" }}
                             >
                               <span className="min-w-[64px] shrink-0 font-mono text-[11px]" style={{ color: theme.heading }}>{asset.source_ref || "—"}</span>
-                              <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>{asset.problem_title || asset.asset_name}</span>
+                              <span className="min-w-0 flex-1 truncate" style={{ color: theme.text }}>{asset.problem_title || ""}</span>
                               <a href={`https://learn.surviveaccounting.com/solutions/${asset.asset_name}`} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[12px] font-semibold" style={{ color: "#2563EB" }}>View →</a>
                             </div>
                           );
