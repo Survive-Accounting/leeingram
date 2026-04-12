@@ -517,16 +517,14 @@ function FinalsCountdown() {
 
 // ── Chapter Navigator ──
 function ChapterNavigator({ chapters, currentChapterId }: { chapters: { id: string; chapter_number: number; chapter_name: string }[]; currentChapterId: string }) {
-  const [showAll, setShowAll] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const displayed = showAll ? chapters : chapters.slice(0, 4);
 
   return (
     <div style={{ width: 200 }}>
       <div style={{ borderTop: "1px solid #E5E7EB", paddingTop: 12 }}>
         <p className="text-[12px] uppercase font-semibold" style={{ color: "#6B7280", letterSpacing: "0.08em", marginBottom: 10 }}>Other Chapters</p>
         <div className="space-y-0.5">
-          {displayed.map((ch) => {
+          {chapters.map((ch) => {
             const isCurrent = ch.id === currentChapterId;
             const truncName = ch.chapter_name.length > 20 ? ch.chapter_name.slice(0, 20) + "…" : ch.chapter_name;
             const isHovered = hoveredId === ch.id;
@@ -552,11 +550,6 @@ function ChapterNavigator({ chapters, currentChapterId }: { chapters: { id: stri
             );
           })}
         </div>
-        {!showAll && chapters.length > 4 && (
-          <button type="button" onClick={() => setShowAll(true)} className="mt-2 text-[11px] font-semibold" style={{ color: "#2563EB", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
-            Show all →
-          </button>
-        )}
       </div>
     </div>
   );
@@ -963,22 +956,6 @@ export default function ChapterCramTool() {
         </svg>
       </div>
 
-      {/* ── CTA Card ── */}
-      <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginTop: 24, marginBottom: 24 }}>
-        <div style={{ background: theme.navy, borderLeft: `3px solid ${theme.red}`, padding: "28px 32px", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
-          <p className="text-[20px] leading-[1.5]" style={{ color: "#FFFFFF", fontWeight: 700 }}>
-            Your exam is coming!
-          </p>
-          <p className="text-[15px] leading-[1.7] mt-2" style={{ color: "rgba(255,255,255,0.85)" }}>
-            Everything you need to survive it is right below. Built from a decade of helping aspiring accountants.
-          </p>
-          <p className="text-[15px] leading-[1.7] mt-3" style={{ color: "rgba(255,255,255,0.85)" }}>
-            <a href="#get-in-touch" onClick={(e) => { e.preventDefault(); document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ color: theme.red, textDecoration: "underline" }}>Get in touch</a> if you need anything. <span style={{ fontWeight: 600, color: "#FFFFFF" }}>You've got this!</span>
-          </p>
-          <p className="text-[15px] leading-[1.7] mt-2 italic" style={{ color: "rgba(255,255,255,0.65)" }}>— Lee Ingram</p>
-          <p className="text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>Tutor since 2015 · B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA</p>
-        </div>
-      </div>
 
       {/* ──── Testimonials ──── */}
       <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginBottom: 24 }}>
@@ -991,11 +968,11 @@ export default function ChapterCramTool() {
       </div>
 
       {/* ── Main Content with Sidebar ── */}
-      <main className="mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: 792 }}>
+      <main className="mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: 1032 }}>
         <style>{`
           @media (min-width: 1025px) {
             .cram-layout { display: flex; gap: 32px; }
-            .cram-content { flex: 1; max-width: 560px; }
+            .cram-content { flex: 1; max-width: 800px; }
             .cram-nav { width: 200px; flex-shrink: 0; position: sticky; top: 80px; align-self: flex-start; }
           }
           @media (max-width: 1024px) {
