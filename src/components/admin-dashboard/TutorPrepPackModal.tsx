@@ -64,13 +64,13 @@ export function TutorPrepPackModal({ open, onOpenChange, chapterId, chapterNumbe
     queryKey: ["prep-pack-assets", chapterId],
     enabled: open && !!chapterId,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("teaching_assets")
         .select("id, asset_name, source_ref, problem_text, instructions, solution_text, je_data, problem_screenshot_url, solution_screenshot_url")
         .eq("chapter_id", chapterId)
         .eq("status", "approved")
         .order("source_ref");
-      return data || [];
+      return (data || []) as any[];
     },
   });
 
