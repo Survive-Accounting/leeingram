@@ -1273,6 +1273,17 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const shareUrl = `${STUDENT_BASE_URL}/cram/${chapterId}?preview=true`;
 
+  // Hero bottom = nav (56px) + hero (300px) = 356px; bar anchors near that edge
+  const HERO_BOTTOM = 356;
+  const [isSticky, setIsSticky] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setIsSticky(window.scrollY > HERO_BOTTOM - 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
       {/* Mobile: share button */}
@@ -1281,8 +1292,15 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
           <Share2 className="h-3.5 w-3.5" /> Share
         </button>
       </div>
-      {/* Desktop: horizontal pill matching SolutionsViewer */}
-      <div className="hidden sm:block fixed z-30" style={{ top: 56, right: 16 }}>
+      {/* Desktop: horizontal pill — starts at hero bottom, then fixed on scroll */}
+      <div
+        className="hidden sm:block z-30"
+        style={{
+          position: isSticky ? "fixed" : "absolute",
+          top: isSticky ? 64 : HERO_BOTTOM - 16,
+          right: 16,
+        }}
+      >
         <div className="flex items-center rounded-full overflow-hidden" style={{ background: "#FFFFFF", border: `1px solid ${theme.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
           {!collapsed && (
             <>
