@@ -642,7 +642,7 @@ function ChapterQAModal({
                   onClick={async () => {
                     toast.loading("Building PDF…", { id: "pdf" });
                     try {
-                      const [purposeRes, termsRes, accRes, formRes, catRes, jeRes, mistRes] = await Promise.all([
+                      const [purposeRes, termsRes, accRes, formRes, catRes, jeRes, mistRes, memRes] = await Promise.all([
                         supabase.from("chapter_purpose").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).maybeSingle(),
                         supabase.from("chapter_key_terms").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
                         supabase.from("chapter_accounts").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
@@ -650,6 +650,7 @@ function ChapterQAModal({
                         supabase.from("chapter_je_categories").select("*").eq("chapter_id", chapter.id).order("sort_order"),
                         supabase.from("chapter_journal_entries").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
                         supabase.from("chapter_exam_mistakes").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
+                        supabase.from("chapter_memory_items").select("*").eq("chapter_id", chapter.id).eq("is_approved", true).order("sort_order"),
                       ]);
                       const pdfData: ChapterPdfData = {
                         chapterName: chapter.chapter_name,
@@ -666,6 +667,7 @@ function ChapterQAModal({
                         jeCategories: (catRes.data || []).map((c: any) => ({ id: c.id, category_name: c.category_name, sort_order: c.sort_order ?? 0 })),
                         jeEntries: (jeRes.data || []).map((j: any) => ({ transaction_label: j.transaction_label, category_id: j.category_id, je_lines: j.je_lines, sort_order: j.sort_order ?? 0 })),
                         mistakes: (mistRes.data || []).map((m: any) => ({ mistake: m.mistake, explanation: m.explanation, sort_order: m.sort_order ?? 0 })),
+                        memoryItems: (memRes.data || []).map((mi: any) => ({ title: mi.title, subtitle: mi.subtitle, item_type: mi.item_type, items: mi.items || [], sort_order: mi.sort_order ?? 0 })),
                       };
                       generateChapterPdf(pdfData);
                       toast.success("PDF downloaded!", { id: "pdf" });
