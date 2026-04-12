@@ -329,13 +329,7 @@ function DrawerKeyTermsContent({ terms, chapterId }: { terms: any[]; chapterId: 
         <button type="button" disabled={termIndex === 0} onClick={() => setTermIndex(i => i - 1)} className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30" style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}>
           <ChevronLeft className="h-4 w-4" /> Prev
         </button>
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => handleSeen(currentTerm.id)} disabled={seenSet.has(currentTerm.id)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold" style={{ background: seenSet.has(currentTerm.id) ? theme.successBg : "#DCFCE7", color: seenSet.has(currentTerm.id) ? "#15803D" : theme.successText, border: `1px solid ${seenSet.has(currentTerm.id) ? theme.successBorder : "#86EFAC"}`, cursor: seenSet.has(currentTerm.id) ? "default" : "pointer" }}>
-            <CheckCircle className="h-3.5 w-3.5" />
-            {seenSet.has(currentTerm.id) ? "Got It ✓" : "Got It"}
-          </button>
-          <span className="text-[13px]" style={{ color: theme.textMuted }}>{termIndex + 1} / {terms.length}</span>
-        </div>
+        <span className="text-[13px]" style={{ color: theme.textMuted }}>{termIndex + 1} / {terms.length}</span>
         <button type="button" disabled={termIndex >= terms.length - 1} onClick={() => setTermIndex(i => i + 1)} className="inline-flex items-center gap-1 rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-30" style={{ color: theme.navy, border: `1px solid ${theme.navy}`, background: "transparent" }}>
           Next <ChevronRight className="h-4 w-4" />
         </button>
@@ -381,12 +375,7 @@ function DrawerFormulasContent({ formulas, chapterId, isAdmin, isItemHidden, tog
             components: currentFormula.components,
           }}
         />
-        <div className="flex items-center gap-3 px-5 pb-4 -mt-2" style={{ background: "#14213D", borderRadius: "0 0 12px 12px" }}>
-          <button type="button" onClick={() => handleSeen(currentFormula.id)} disabled={seenSet.has(currentFormula.id)} className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-semibold" style={{ background: seenSet.has(currentFormula.id) ? theme.successBg : "#DCFCE7", color: seenSet.has(currentFormula.id) ? "#15803D" : theme.successText, border: `1px solid ${seenSet.has(currentFormula.id) ? theme.successBorder : "#86EFAC"}`, cursor: seenSet.has(currentFormula.id) ? "default" : "pointer" }}>
-            <CheckCircle className="h-3.5 w-3.5" />
-            {seenSet.has(currentFormula.id) ? "Got It ✓" : "Got It"}
-          </button>
-        </div>
+        <div style={{ height: 8, background: "#14213D", borderRadius: "0 0 12px 12px" }} />
       </div>
       {formulas.length > 1 && (
         <div className="mt-4 flex items-center justify-between">
