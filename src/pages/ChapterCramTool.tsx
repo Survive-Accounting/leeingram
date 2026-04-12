@@ -641,6 +641,70 @@ export default function ChapterCramTool() {
   const [feedbackSection, setFeedbackSection] = useState("");
   const [openDrawer, setOpenDrawer] = useState<CardKey | null>(null);
 
+  // Got It / Not Sure tracking per card
+  const [gotItSet, setGotItSet] = useState<Set<CardKey>>(() => {
+    try { const s = sessionStorage.getItem(`sa_cram_gotit_${chapterId}`); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
+  });
+  const [notSureSet, setNotSureSet] = useState<Set<CardKey>>(() => {
+    try { const s = sessionStorage.getItem(`sa_cram_notsure_${chapterId}`); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
+  });
+  const sessionId = useMemo(() => {
+    const key = "sa_cram_session_id";
+    try {
+      let sid = sessionStorage.getItem(key);
+      if (!sid) { sid = crypto.randomUUID(); sessionStorage.setItem(key, sid); }
+      return sid;
+    } catch { return crypto.randomUUID(); }
+  }, []);
+
+  const handleGotIt = useCallback((cardKey: CardKey) => {
+    setGotItSet(prev => {
+      const next = new Set(prev).add(cardKey);
+      try { sessionStorage.setItem(`sa_cram_gotit_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    // Remove from notSure if previously marked
+    setNotSureSet(prev => {
+      if (!prev.has(cardKey)) return prev;
+      const next = new Set(prev); next.delete(cardKey);
+      try { sessionStorage.setItem(`sa_cram_notsure_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    setOpenDrawer(null);
+  }, [chapterId]);
+
+  const CONTENT_TYPE_MAP: Record<CardKey, string> = {
+    "whats-the-point": "purpose",
+    "key-terms": "key_term",
+    "accounts": "account",
+    "journal-entries": "journal_entry",
+    "formulas": "formula",
+    "exam-mistakes": "exam_mistake",
+  };
+
+  const handleNotSure = useCallback((cardKey: CardKey) => {
+    setNotSureSet(prev => {
+      const next = new Set(prev).add(cardKey);
+      try { sessionStorage.setItem(`sa_cram_notsure_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    // Remove from gotIt if previously marked
+    setGotItSet(prev => {
+      if (!prev.has(cardKey)) return prev;
+      const next = new Set(prev); next.delete(cardKey);
+      try { sessionStorage.setItem(`sa_cram_gotit_${chapterId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    // Log to cram_feedback silently
+    supabase.from("cram_feedback" as any).insert({
+      chapter_id: chapterId,
+      content_type: CONTENT_TYPE_MAP[cardKey] || cardKey,
+      content_id: cardKey,
+      session_id: sessionId,
+    }).then(() => {});
+    setOpenDrawer(null);
+  }, [chapterId, sessionId]);
+
   const { data: isAdmin = false } = useQuery({
     queryKey: ["cram-admin-check", user?.id],
     enabled: !authLoading,
