@@ -3593,6 +3593,39 @@ export default function SolutionsViewer() {
     enabled: !!chapterIdForJE,
   });
 
+  // Fetch chapter-level purpose
+  const { data: chapterPurpose } = useQuery({
+    queryKey: ["chapter-purpose-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return null;
+      const { data: row } = await supabase
+        .from("chapter_purpose")
+        .select("*")
+        .eq("chapter_id", chapterIdForJE)
+        .maybeSingle();
+      return row;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
+  // Fetch chapter-level exam mistakes (approved)
+  const { data: chapterExamMistakes } = useQuery({
+    queryKey: ["chapter-mistakes-viewer", chapterIdForJE],
+    queryFn: async () => {
+      if (!chapterIdForJE) return [];
+      const { data: rows } = await supabase
+        .from("chapter_exam_mistakes")
+        .select("id, mistake, explanation, sort_order")
+        .eq("chapter_id", chapterIdForJE)
+        .eq("is_approved", true)
+        .order("sort_order");
+      return rows || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!chapterIdForJE,
+  });
+
   // ── QA status gate: only show reviewed_clean assets to students ──
   const { data: qaStatusData } = useQuery({
     queryKey: ["solutions-qa-status", data?.id],
