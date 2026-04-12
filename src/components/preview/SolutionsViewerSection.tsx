@@ -175,7 +175,7 @@ export default function SolutionsViewerSection() {
                           {a.source_ref || "—"}
                         </span>
                         <span className="flex-1 truncate text-white" style={{ maxWidth: "calc(100% - 100px)" }}>
-                          {a.problem_title ? a.problem_title.slice(0, 60) : a.asset_name}
+                          {a.problem_title ? a.problem_title.slice(0, 60) : ""}
                         </span>
                         <ExternalLink className="h-3 w-3 shrink-0 opacity-30 group-hover:opacity-70 transition-opacity" style={{ color: "#FFFFFF" }} />
                       </a>
