@@ -760,6 +760,17 @@ function ChapterQAModal({
             courseCode={courseCode}
           />
         )}
+        {chapter && (
+          <TutorPrepPackModal
+            open={prepPackOpen}
+            onOpenChange={setPrepPackOpen}
+            chapterId={chapter.id}
+            chapterNumber={chapter.chapter_number}
+            chapterName={chapter.chapter_name}
+            courseCode={courseCode}
+            courseName={course?.course_name || ""}
+          />
+        )}
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-3">
