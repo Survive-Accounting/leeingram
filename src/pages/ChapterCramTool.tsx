@@ -1351,30 +1351,34 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
 
   return (
     <>
+      {/* Mobile: share button */}
       <div className="block sm:hidden fixed z-30" style={{ bottom: 20, right: 16 }}>
         <button onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Preview link copied — share with classmates!")); }} className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-bold shadow-lg" style={{ background: "#FFFFFF", color: "#3B82F6", border: `1px solid ${theme.border}` }}>
           <Share2 className="h-3.5 w-3.5" /> Share
         </button>
       </div>
-      <div className="hidden sm:block fixed z-30" style={{ bottom: 20, right: 16 }}>
-        <div className="rounded-xl overflow-hidden" style={{ background: theme.navy, border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
-          <div className="flex flex-col">
-            {!collapsed && (
-              <>
-                <button onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Preview link copied — share with classmates!")); }} className="text-[11px] font-bold px-4 py-2.5 transition-all whitespace-nowrap flex items-center gap-2 hover:bg-white/10" style={{ color: "#FFFFFF" }}>
-                  <Share2 className="h-3.5 w-3.5" /> Share This
-                </button>
-                <div className="h-px mx-3" style={{ background: "rgba(255,255,255,0.12)" }} />
-                <button onClick={() => setAboutOpen(true)} className="text-[11px] font-semibold px-4 py-2.5 transition-all whitespace-nowrap flex items-center gap-2 hover:bg-white/10" style={{ color: "#FFFFFF" }}>
-                  <User className="h-3.5 w-3.5" /> About Lee Ingram
-                </button>
-                <div className="h-px mx-3" style={{ background: "rgba(255,255,255,0.12)" }} />
-              </>
-            )}
-            <button onClick={() => setCollapsed(!collapsed)} className="px-4 py-2 text-[10px] transition-colors hover:bg-white/10 flex items-center justify-center" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {collapsed ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </button>
-          </div>
+      {/* Desktop: horizontal pill matching SolutionsViewer */}
+      <div className="hidden sm:block fixed z-30" style={{ top: 56, right: 16 }}>
+        <div className="flex items-center rounded-full overflow-hidden" style={{ background: "#FFFFFF", border: `1px solid ${theme.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.10)" }}>
+          {!collapsed && (
+            <>
+              <button onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Preview link copied — share with classmates!")); }} className="text-[11px] font-bold px-3 py-2 whitespace-nowrap flex items-center gap-1.5" style={{ color: "#3B82F6" }}>
+                <Share2 className="h-3 w-3" /> Share This
+              </button>
+              <div className="w-px h-5" style={{ background: theme.border }} />
+              <button onClick={() => setAboutOpen(true)} className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap" style={{ color: theme.text }}>
+                About Lee Ingram
+              </button>
+              <div className="w-px h-5" style={{ background: theme.border }} />
+              <button onClick={() => setFeedbackOpen(true)} className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1" style={{ color: theme.textMuted }}>
+                ⚠ Suggest Fix →
+              </button>
+              <div className="w-px h-5" style={{ background: theme.border }} />
+            </>
+          )}
+          <button onClick={() => setCollapsed(!collapsed)} className="px-2.5 py-2 text-[10px] transition-colors hover:bg-gray-50 flex items-center gap-0.5" style={{ color: theme.textMuted }}>
+            {collapsed ? <>Show <ChevronDown className="h-3 w-3" /></> : <ChevronUp className="h-3 w-3" />}
+          </button>
         </div>
       </div>
       <CramAboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
@@ -1426,7 +1430,7 @@ function CramFeedbackFormInline({ chapterId, chapterNumber, chapterName, courseD
   return (
     <>
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Share Feedback</h3>
+        <h3 className="text-[16px] font-bold" style={{ color: "#14213D" }}>Suggest a Fix</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
       </div>
       <p className="text-[12px] mb-4" style={{ color: "#999" }}>I read every message personally.</p>

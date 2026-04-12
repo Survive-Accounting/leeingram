@@ -600,7 +600,7 @@ function ReportIssueModal({ open, onOpenChange, asset }: { open: boolean; onOpen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Report an Issue</DialogTitle>
+          <DialogTitle>Suggest a Fix</DialogTitle>
           <DialogDescription>{asset.source_ref} · {asset.asset_name}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -987,7 +987,7 @@ export default function PracticeViewer() {
               className="text-xs h-7 border-amber-400 text-amber-600 hover:bg-amber-50"
               onClick={() => setReportOpen(true)}
             >
-              <AlertTriangle className="h-3 w-3 mr-1" /> Report Issue
+              <AlertTriangle className="h-3 w-3 mr-1" /> Suggest Fix
             </Button>
           </div>
         </div>
@@ -1163,7 +1163,7 @@ export default function PracticeViewer() {
           </p>
           <p className="text-center mt-1">
             <button onClick={() => setReportOpen(true)} className="text-[11px] hover:underline" style={{ color: t.textMuted }}>
-              Report Issue
+               Suggest Fix
             </button>
           </p>
         </div>
