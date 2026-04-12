@@ -13,7 +13,7 @@ import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PREVIEW_LIMIT = 3;
