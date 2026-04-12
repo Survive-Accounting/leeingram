@@ -1024,11 +1024,11 @@ export default function ChapterCramTool() {
 
 
       {/* ── Main Content with Sidebar ── */}
-      <main className="mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: 1032 }}>
+      <main className="mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: 1200 }}>
         <style>{`
           @media (min-width: 1025px) {
             .cram-layout { display: flex; gap: 32px; }
-            .cram-content { flex: 1; max-width: 800px; }
+            .cram-content { flex: 1; max-width: 968px; }
             .cram-nav { width: 200px; flex-shrink: 0; position: sticky; top: 80px; align-self: flex-start; }
           }
           @media (max-width: 1024px) {
