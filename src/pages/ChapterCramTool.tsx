@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AboutLeeModal } from "@/components/AboutLeeModal";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -1286,61 +1287,7 @@ function CramFeedbackForm({ chapterId, chapterNumber, chapterName, courseDisplay
 }
 
 // ── About Lee Modal ──
-function CramAboutLeeModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-6 sm:p-8" style={{ borderRadius: 16 }}>
-        <DialogHeader className="sr-only">
-          <DialogTitle>About Lee Ingram</DialogTitle>
-          <DialogDescription>Bio and contact info</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
-          <img
-            src="https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg"
-            alt="Lee Ingram"
-            className="w-full sm:w-[200px] shrink-0 object-cover rounded-lg"
-            style={{ maxHeight: 220, aspectRatio: "3/4", objectPosition: "center" }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-[20px] font-bold" style={{ color: theme.heading }}>Lee Ingram</p>
-            <p className="text-[12px] mt-1.5 leading-[1.5]" style={{ color: theme.label }}>
-              B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA
-            </p>
-            <p className="text-[11px] mt-3 font-semibold uppercase" style={{ color: theme.red, letterSpacing: "0.1em" }}>About Me</p>
-            <div className="mt-2 mb-3 h-px" style={{ background: theme.border }} />
-            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
-              I loved accounting so much in college that I became a full-time tutor. During the pandemic I went fully virtual and created SurviveAccounting.com — and it's been a blast watching it grow.
-            </p>
-            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
-              Now I travel the world while helping college students actually understand — and even love — accounting. Not just survive it.
-            </p>
-            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 16 }}>
-              I will help you ace exams, but also I hope you discover something I think is more important: <em>thinking like an accountant</em> is an incredibly valuable skill. Both now and for your career. I'm going to help you learn it. Once you think like an accountant, your exam will feel way less brutal.
-            </p>
-            <p className="text-[13px] leading-[1.7]" style={{ color: theme.text, marginBottom: 4 }}>
-              Best of luck studying!
-            </p>
-            <p className="text-[13px] leading-[1.7] italic" style={{ color: theme.text, marginBottom: 16 }}>
-              — Lee
-            </p>
-            <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted, marginBottom: 0 }}>
-              PS: A huge thanks to all the students who've enjoyed and supported my work over the years, so much so that I can work full-time on growing Survive Accounting. As a lifelong teacher, it means a lot.
-            </p>
-            <div className="mt-3 flex flex-col gap-1.5 text-[12px]">
-              <a href="mailto:lee@surviveaccounting.com" className="flex items-center gap-1.5 hover:underline" style={{ color: "#3B82F6" }}>
-                ✉ lee@surviveaccounting.com
-              </a>
-              <a href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:underline font-semibold" style={{ color: "#3B82F6" }}>
-                📅 Book 1-on-1 Tutoring →
-              </a>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// Uses shared AboutLeeModal component (imported at top)
 
 // ── Floating Action Bar ──
 function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDisplayName }: { chapterId: string; chapterNumber?: number; chapterName: string; courseDisplayName: string }) {
@@ -1381,7 +1328,7 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
           </button>
         </div>
       </div>
-      <CramAboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
       {feedbackOpen && (
         <>
           <div onClick={() => setFeedbackOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }} />

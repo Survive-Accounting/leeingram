@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState, useMemo } from "react";
+import { AboutLeeModal } from "@/components/AboutLeeModal";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -843,25 +844,7 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
   );
 }
 
-// ── About Lee ───────────────────────────────────────────────────────
-
-function AboutLeeSection({ theme }: { theme: Theme }) {
-  return (
-    <div className="flex flex-col items-center text-center gap-4">
-      <img src={LEE_HERO_URL} alt="Lee Ingram" className="w-full" style={{ objectFit: "contain", borderRadius: 12, maxHeight: 280 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-      <div className="max-w-[400px]">
-        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Founder of <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>SurviveAccounting.com</a>.<br />
-          Tutoring entrepreneur since 2015.<br />Hope my study tools give you more confidence going into your exam 👍<br /><span className="italic">— Lee</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenChange: (v: boolean) => void; theme: Theme }) {
-  return (<Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" style={{ borderRadius: 16 }}><DialogHeader><DialogTitle className="text-center">About Lee Ingram</DialogTitle><DialogDescription className="sr-only">Bio</DialogDescription></DialogHeader><AboutLeeSection theme={theme} /></DialogContent></Dialog>);
-}
+// ── About Lee — uses shared AboutLeeModal component ──
 
 // ── Floating Action Bar ─────────────────────────────────────────────
 
@@ -894,7 +877,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
           </button>
         </div>
       </div>
-      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
     </>
   );
 }
