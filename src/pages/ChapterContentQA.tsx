@@ -34,6 +34,7 @@ import { FormulaBatchRegenOrchestrator } from "@/components/admin-dashboard/Form
 import { BulkAuditOrchestrator } from "@/components/admin-dashboard/BulkAuditOrchestrator";
 import { CourseZipExporter } from "@/components/admin-dashboard/CourseZipExporter";
 import { BulkApproveOrchestrator } from "@/components/admin-dashboard/BulkApproveOrchestrator";
+import { BulkApplyFixesOrchestrator } from "@/components/admin-dashboard/BulkApplyFixesOrchestrator";
 import { AccountsTab } from "@/components/chapter-qa/AccountsTab";
 import { KeyTermsTab } from "@/components/chapter-qa/KeyTermsTab";
 import { MemoryItemsTab } from "@/components/chapter-qa/MemoryItemsTab";
