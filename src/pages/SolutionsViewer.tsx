@@ -9,6 +9,7 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu, Target, BookOpen, LayoutGrid, FileText, Calculator } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
+import { ProblemNavigation } from "@/components/ProblemNavigation";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
 
@@ -4129,6 +4130,14 @@ export default function SolutionsViewer() {
 
       {/* ── Two-Column Content ── */}
       <main className="relative mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ zIndex: 5, maxWidth: 1200 }}>
+        {/* ── Problem Navigation Bar ── */}
+        <div className="mb-6 rounded-xl px-4 sm:px-6 py-4 sm:py-5" style={{ background: t.pageBg, boxShadow: "0 4px 16px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.02)", border: `1px solid ${t.border}` }}>
+          <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
+            Practice Problems · {chapterLabel || "Browse"}
+          </h2>
+          <ProblemNavigation currentAsset={asset} />
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-0">
 
           {/* ── LEFT COLUMN: Problem + Instructions (sticky on desktop) ── */}
