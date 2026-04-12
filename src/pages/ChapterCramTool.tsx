@@ -1328,7 +1328,7 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
           </button>
         </div>
       </div>
-      <CramAboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
       {feedbackOpen && (
         <>
           <div onClick={() => setFeedbackOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100 }} />

@@ -877,7 +877,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode }: { theme: Theme; share
           </button>
         </div>
       </div>
-      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} theme={theme} />
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
     </>
   );
 }
