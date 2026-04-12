@@ -1003,15 +1003,8 @@ export default function ChapterCramTool() {
       </div>
 
 
-      {/* ──── Testimonials ──── */}
-      <div className="mx-auto max-w-[780px] px-4 sm:px-6" style={{ marginBottom: 24 }}>
-        <section className="mb-10">
-          <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
-            What Students Are Saying
-          </p>
-          <TestimonialEmbed />
-        </section>
-      </div>
+
+
 
       {/* ── Main Content with Sidebar ── */}
       <main className="mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: 1032 }}>
@@ -1174,6 +1167,14 @@ export default function ChapterCramTool() {
                   })}
                 </div>
               </div>
+            </section>
+
+            {/* ──── Testimonials ──── */}
+            <section style={{ marginTop: 32 }}>
+              <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
+                What Students Are Saying
+              </p>
+              <TestimonialEmbed />
             </section>
 
             {/* ── Horizontal Divider ── */}
