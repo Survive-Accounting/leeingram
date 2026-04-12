@@ -2791,6 +2791,22 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
     try { return localStorage.getItem("sa_feedback_banner_dismissed") === "true"; } catch { return false; }
   });
 
+  // Hero-anchored positioning: starts near hero bottom, becomes fixed on scroll
+  const HERO_HEIGHT = 300; // matches .sv-hero height
+  const NAV_HEIGHT = 48;
+  const ANCHOR_TOP = NAV_HEIGHT + HERO_HEIGHT - 20; // 20px above hero bottom edge
+  const [isFixed, setIsFixed] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      setIsFixed(scrollY > ANCHOR_TOP - 56);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const dismissBanner = () => {
     setBannerDismissed(true);
     try { localStorage.setItem("sa_feedback_banner_dismissed", "true"); } catch {}
@@ -2842,10 +2858,13 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
         </div>
       ) : null}
 
-      {/* Desktop: full action bar with feedback banner */}
+      {/* Desktop: full action bar — anchored to hero bottom, then fixed */}
       <div
-        className="hidden sm:block fixed z-30"
-        style={{ top: 56, right: 16 }}
+        className="hidden sm:block z-30"
+        style={isFixed
+          ? { position: "fixed" as const, top: 56, right: 16 }
+          : { position: "absolute" as const, top: ANCHOR_TOP, right: 16 }
+        }
       >
         <div
           className="rounded-xl overflow-hidden"
