@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { isContraAccount } from "@/lib/contraDetection";
 import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPanel";
 import { ChapterAuditModal } from "@/components/admin-dashboard/ChapterAuditModal";
+import { TutorPrepPackModal } from "@/components/admin-dashboard/TutorPrepPackModal";
 
 /** Mobile-aware tooltip: popover on mobile, tooltip on desktop */
 function MobileTip({ children, content, side = "top", className = "" }: { children: React.ReactNode; content: React.ReactNode; side?: "top" | "bottom" | "left" | "right"; className?: string }) {
