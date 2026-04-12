@@ -667,7 +667,7 @@ function RevealToggle({
                       style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}
                     >
                       <AlertTriangle className="h-3 w-3" />
-                      Report an issue with this section →
+                      Suggest fix for this section →
                     </button>
                   ) : <div />}
                 </div>
@@ -1325,7 +1325,7 @@ function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boo
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[16px] font-bold" style={{ color: "#14213D" }}>Report an Issue</p>
+          <p className="text-[16px] font-bold" style={{ color: "#14213D" }}>Suggest a Fix</p>
           <button onClick={onClose} style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", fontSize: 24, lineHeight: 1 }}>×</button>
         </div>
 
@@ -1401,7 +1401,7 @@ function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boo
 
             {/* Message */}
             <div className="mb-3">
-              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>Describe the issue</label>
+              <label className="text-[12px] font-semibold block mb-1" style={{ color: "#14213D" }}>Describe the fix needed</label>
               <textarea
                 value={message}
                 onChange={e => { setMessage(e.target.value); setSubmitError(""); }}
@@ -1428,7 +1428,7 @@ function ReportIssueModal({ open, onClose, asset, isAdmin = false }: { open: boo
                 border: "none",
               }}
             >
-              {submitting ? "Sending..." : "Submit Report →"}
+              {submitting ? "Sending..." : "Submit Fix →"}
             </button>
             {submitError && <p className="text-[12px] mt-2" style={{ color: "#dc2626" }}>{submitError}</p>}
           </>
@@ -2878,7 +2878,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
     { q: "What textbook are these problems based on?", a: (() => { const cc = courseCode.toUpperCase(); if (cc === "IA1" || cc === "IA2") return "Intermediate Accounting, 18th Edition by Donald E. Kieso, Jerry J. Weygandt, and Terry D. Warfield (ISBN: 978-1-119-77889-9)."; return "Financial and Managerial Accounting by John J. Wild and Ken W. Shaw."; })() },
     { q: "Why are the numbers different from my textbook?", a: "The dollar amounts are intentionally different — we use original numbers so you practice the concept, not just memorize an answer. The accounting method and journal entries are identical to your textbook." },
     { q: "What's included for free vs. paid?", a: "The practice problem, instructions, and a blank Practice PDF are always free. The full solution, journal entries, key formulas, and more are included with a Study Pass." },
-    { q: "Something looks wrong — how do I report it?", a: "Use the 'Report Issue' button in the top-right corner. Lee reviews every report personally and fixes issues as they come in." },
+    { q: "Something looks wrong — how do I report it?", a: "Use the 'Suggest Fix' button in the top-right corner. Lee reviews every suggestion personally and fixes issues as they come in." },
   ];
 
   return (
@@ -2986,7 +2986,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
                   className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
                   style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
                 >
-                  ⚠ Report Issue →
+                  ⚠ Suggest Fix →
                 </button>
                 <div className="w-px h-5" style={{ background: theme.border }} />
               </>
