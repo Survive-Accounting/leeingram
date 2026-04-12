@@ -676,6 +676,14 @@ function ChapterQAModal({
                 >
                   <FileDown className="h-3 w-3 mr-1" /> Export PDF
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-11 md:h-7 text-[11px]"
+                  onClick={() => setPrepPackOpen(true)}
+                >
+                  <FileDown className="h-3 w-3 mr-1" /> Tutor Prep Pack →
+                </Button>
                 <a
                   href={`/cram/${chapter.id}`}
                   target="_blank"
