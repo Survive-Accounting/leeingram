@@ -99,7 +99,7 @@ function RenderExpression({ expression, components }: { expression: string; comp
 
   if (!components || components.length === 0) {
     return (
-      <span style={{ color: "#CE1126", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: isMobile ? 16 : 20, fontWeight: 500 }}>
+      <span style={{ color: "#E8E8E8", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: isMobile ? 16 : 20, fontWeight: 500 }}>
         {expression}
       </span>
     );

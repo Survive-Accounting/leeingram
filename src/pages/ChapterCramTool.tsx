@@ -7,13 +7,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, EyeOff, ExternalLink, Calendar, Lock, Share2, Shuffle, X, AlertTriangle, Info, Target, BookOpen, LayoutGrid, FileText, Calculator, User } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, EyeOff, ExternalLink, Calendar, Lock, Share2, Shuffle, X, AlertTriangle, Info, Target, BookOpen, LayoutGrid, FileText, Calculator, User, Maximize2, Minimize2 } from "lucide-react";
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+
 
 const LOGO_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 const PREVIEW_LIMIT = 3;
@@ -846,14 +846,7 @@ export default function ChapterCramTool() {
     setTimeout(() => document.getElementById("get-in-touch")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   }, []);
 
-  // Drawer navigation
-  const currentDrawerIndex = openDrawer ? TOOL_CARDS.findIndex(c => c.key === openDrawer) : -1;
-  const goToPrevCard = useCallback(() => {
-    if (currentDrawerIndex > 0) setOpenDrawer(TOOL_CARDS[currentDrawerIndex - 1].key);
-  }, [currentDrawerIndex]);
-  const goToNextCard = useCallback(() => {
-    if (currentDrawerIndex < TOOL_CARDS.length - 1) setOpenDrawer(TOOL_CARDS[currentDrawerIndex + 1].key);
-  }, [currentDrawerIndex]);
+  const [modalFullScreen, setModalFullScreen] = useState(false);
 
   useEffect(() => {
     if (!chapter) return;
@@ -1079,7 +1072,7 @@ export default function ChapterCramTool() {
                       <button
                         key={card.key}
                         type="button"
-                        onClick={() => setOpenDrawer(card.key)}
+                        onClick={() => { setModalFullScreen(false); setOpenDrawer(card.key); }}
                         className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
                         style={{
                           background: theme.navy,
@@ -1098,7 +1091,7 @@ export default function ChapterCramTool() {
                         }}
                       >
                         <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
-                        <p className="text-[14px] font-bold text-white">{card.title}</p>
+                        <p className="text-[14px] font-bold text-white" style={{ fontFamily: "Inter, sans-serif" }}>{card.title}</p>
                         {count > 0 && (
                           <span
                             className="absolute bottom-4 right-4 rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white"
@@ -1145,48 +1138,68 @@ export default function ChapterCramTool() {
         </div>
       </main>
 
-      {/* ── Content Drawer ── */}
-      <Sheet open={!!openDrawer} onOpenChange={(open) => { if (!open) setOpenDrawer(null); }}>
-        <SheetContent side="right" className="w-full sm:w-[480px] sm:max-w-[480px] p-0 flex flex-col overflow-hidden [&>button.absolute]:hidden">
-          {/* Drawer header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: theme.border, background: theme.mutedBg }}>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={currentDrawerIndex <= 0}
-                onClick={goToPrevCard}
-                className="inline-flex items-center gap-0.5 text-[12px] font-semibold disabled:opacity-30 transition-opacity"
-                style={{ color: theme.navy, background: "none", border: "none", cursor: currentDrawerIndex <= 0 ? "default" : "pointer" }}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> Previous
-              </button>
+      {/* ── Content Modal ── */}
+      {openDrawer && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setOpenDrawer(null)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 50,
+              background: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+            }}
+          />
+          {/* Modal */}
+          <div
+            style={{
+              position: "fixed", zIndex: 51,
+              ...(modalFullScreen
+                ? { inset: 0, borderRadius: 0 }
+                : {
+                    top: "50%", left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: "min(560px, 90vw)",
+                    maxHeight: "80vh",
+                    borderRadius: 12,
+                  }
+              ),
+              background: "#FFFFFF",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b shrink-0" style={{ borderColor: theme.border, background: theme.mutedBg }}>
+              <p className="text-[15px] font-bold" style={{ color: theme.heading, fontFamily: "Inter, sans-serif" }}>{drawerTitle}</p>
+              <div className="flex items-center gap-1.5">
+                {/* Mobile full-screen toggle */}
+                <button
+                  type="button"
+                  onClick={() => setModalFullScreen(f => !f)}
+                  className="sm:hidden inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-gray-100"
+                  style={{ color: theme.textMuted }}
+                >
+                  {modalFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+                <button type="button" onClick={() => setOpenDrawer(null)} className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-gray-100" style={{ color: theme.textMuted }}>
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <SheetTitle className="text-[15px] font-bold" style={{ color: theme.heading }}>{drawerTitle}</SheetTitle>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={currentDrawerIndex >= TOOL_CARDS.length - 1}
-                onClick={goToNextCard}
-                className="inline-flex items-center gap-0.5 text-[12px] font-semibold disabled:opacity-30 transition-opacity"
-                style={{ color: theme.navy, background: "none", border: "none", cursor: currentDrawerIndex >= TOOL_CARDS.length - 1 ? "default" : "pointer" }}
-              >
-                Next <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-              <button type="button" onClick={() => setOpenDrawer(null)} className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-gray-100" style={{ color: theme.textMuted }}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
 
-          {/* Drawer content */}
-          <div className="flex-1 overflow-y-auto px-5 py-5">
-            {openDrawer && renderDrawerContent(openDrawer)}
-            {openDrawer && (
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-5 py-5" style={{ fontFamily: "Inter, sans-serif" }}>
+              {renderDrawerContent(openDrawer)}
               <SectionReportLink sectionLabel={drawerTitle} onClick={openFeedbackForSection} />
-            )}
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </>
+      )}
 
       {/* Floating Action Bar */}
       <CramFloatingActionBar
