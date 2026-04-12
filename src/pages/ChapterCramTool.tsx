@@ -1124,14 +1124,21 @@ export default function ChapterCramTool() {
             {/* ──── Chapter Cram Tools Card Grid ──── */}
             <section style={{ marginTop: 32 }}>
               <div style={{ background: "#F8F8FA", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
-                  Chapter Cram Tools
-                </p>
+                <div className="flex items-center justify-between" style={{ paddingLeft: 4, marginBottom: 16 }}>
+                  <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700 }}>
+                    Chapter Cram Tools
+                  </p>
+                  <span className="text-[13px] font-semibold" style={{ color: theme.text }}>
+                    {gotItSet.size} ✓ / {TOOL_CARDS.length}
+                  </span>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {TOOL_CARDS.map((card) => {
                     const Icon = card.icon;
                     const count = cardCounts[card.key];
+                    const isGotIt = gotItSet.has(card.key);
+                    const isNotSure = notSureSet.has(card.key);
                     return (
                       <button
                         key={card.key}
@@ -1154,6 +1161,15 @@ export default function ChapterCramTool() {
                           el.style.transform = "translateY(0)";
                         }}
                       >
+                        {/* Status indicator */}
+                        {isGotIt && (
+                          <span className="absolute top-3 right-3">
+                            <CheckCircle className="h-4 w-4" style={{ color: "#22c55e" }} />
+                          </span>
+                        )}
+                        {isNotSure && !isGotIt && (
+                          <span className="absolute top-3 right-3 rounded-full" style={{ width: 10, height: 10, background: "#F59E0B" }} />
+                        )}
                         <Icon className="h-5 w-5 mb-3" style={{ color: "rgba(255,255,255,0.6)" }} />
                         <p className="text-[14px] font-bold text-white" style={{ fontFamily: "Inter, sans-serif" }}>{card.title}</p>
                         {count > 0 && (
@@ -1260,6 +1276,26 @@ export default function ChapterCramTool() {
             <div className="flex-1 overflow-y-auto px-5 py-5" style={{ fontFamily: "Inter, sans-serif" }}>
               {renderDrawerContent(openDrawer)}
               <SectionReportLink sectionLabel={drawerTitle} onClick={openFeedbackForSection} />
+            </div>
+
+            {/* Footer: Got It / Not Sure */}
+            <div className="shrink-0 flex items-center gap-3 px-5 py-3.5 border-t" style={{ borderColor: theme.border, background: theme.mutedBg }}>
+              <button
+                type="button"
+                onClick={() => handleGotIt(openDrawer)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-[13px] font-bold transition-colors"
+                style={{ background: "#DCFCE7", color: "#166534", border: "1px solid #86EFAC" }}
+              >
+                <CheckCircle className="h-4 w-4" /> Got It
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNotSure(openDrawer)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-[13px] font-bold transition-colors"
+                style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" }}
+              >
+                Not Sure
+              </button>
             </div>
           </div>
         </>
