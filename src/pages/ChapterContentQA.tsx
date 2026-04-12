@@ -428,6 +428,32 @@ export default function ChapterContentQA() {
               statusPill={statusPill}
               selectedId={selectedChapterId}
               onSelect={setSelectedChapterId}
+              onBulkApprove={async (chapterId: string) => {
+                const tables = [
+                  "chapter_journal_entries",
+                  "chapter_formulas",
+                  "chapter_accounts",
+                  "chapter_key_terms",
+                  "chapter_exam_mistakes",
+                  "chapter_memory_items",
+                ] as const;
+                let approved = 0;
+                for (const table of tables) {
+                  const { error } = await supabase
+                    .from(table)
+                    .update({ is_approved: true } as any)
+                    .eq("chapter_id", chapterId);
+                  if (!error) approved++;
+                }
+                // Also approve purpose
+                await supabase
+                  .from("chapter_purpose")
+                  .update({ is_approved: true })
+                  .eq("chapter_id", chapterId);
+                toast.success(`Bulk approved all content for this chapter (${approved + 1} tables)`);
+                qc.invalidateQueries({ queryKey: ["cqa-je-counts"] });
+                qc.invalidateQueries({ queryKey: ["cqa-formula-counts"] });
+              }}
             />
           ))}
         </div>
