@@ -2077,72 +2077,7 @@ function GroupedFormulas({ text, theme }: { text: string; theme: Theme }) {
   );
 }
 
-// ── About Lee Content ──────────────────────────────────────────────
-
-function AboutLeeSection({ theme }: { theme: Theme }) {
-  return (
-    <div className="flex flex-col items-center text-center gap-4">
-      <img
-        src={LEE_HERO_URL}
-        alt="Lee Ingram"
-        className="w-full"
-        style={{ objectFit: "contain", borderRadius: 12, maxHeight: 280 }}
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-      />
-      <div className="max-w-[400px]">
-        <p className="text-[13px] leading-[1.6]" style={{ color: theme.text }}>
-          Creator of{" "}
-          <a href="https://surviveaccounting.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: "#3B82F6" }}>
-            SurviveAccounting.com
-          </a>.
-          <br />
-          Accounting tutor since 2015.
-          <br />
-          Loves helping students.
-          <br /><br />
-          Thanks for trying my study tools. Best of luck on your exam!
-          <br />
-          <span className="italic">— Lee</span>
-        </p>
-        <p className="text-[12px] leading-[1.6]" style={{ color: theme.textMuted }}>
-          Ole Miss Alum<br />
-          B.A. &amp; M.Acc. in Accounting • 3.75 GPA
-        </p>
-      </div>
-      <div className="flex flex-col gap-1.5 text-[12px]">
-        <a href="mailto:lee@surviveaccounting.com" className="flex items-center justify-center gap-1 hover:underline" style={{ color: "#3B82F6" }}>
-          <ExternalLink className="h-3 w-3" /> lee@surviveaccounting.com
-        </a>
-        <a
-          href="https://app.squareup.com/appointments/book/30fvidwxlwh9vt/LY1BCZ6Q74JRF/start"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1 hover:underline font-semibold"
-          style={{ color: "#3B82F6" }}
-        >
-          <Calendar className="h-3 w-3" /> Book 1-on-1 Tutoring →
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// ── About Lee Modal ─────────────────────────────────────────────────
-
-function AboutLeeModal({ open, onOpenChange, theme }: { open: boolean; onOpenChange: (v: boolean) => void; theme: Theme }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" style={{ borderRadius: 16 }}>
-        <DialogHeader>
-          <DialogTitle className="text-center">About Lee Ingram</DialogTitle>
-          <DialogDescription className="sr-only">Bio and contact info</DialogDescription>
-        </DialogHeader>
-        <AboutLeeSection theme={theme} />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
+// ── About Lee — uses shared AboutLeeModal component ──
 // ── Feedback Modal ──────────────────────────────────────────────────
 
 function FeedbackModal({ open, onClose, asset }: { open: boolean; onClose: () => void; asset: any }) {
