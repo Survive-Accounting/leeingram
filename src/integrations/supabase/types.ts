@@ -2070,6 +2070,41 @@ export type Database = {
         }
         Relationships: []
       }
+      cram_feedback: {
+        Row: {
+          chapter_id: string
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          chapter_id: string
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          chapter_id?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cram_feedback_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dissector_problems: {
         Row: {
           chapter_id: string | null
