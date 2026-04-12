@@ -3934,45 +3934,52 @@ export default function SolutionsViewer() {
         )}
       </div>
 
-      {/* ── Hero Section ── */}
-      <div className="relative" style={{ zIndex: 5 }}>
-        <div className="mx-auto px-4 sm:px-6 mt-4" style={{ maxWidth: 1200 }}>
-          <span
-            className="inline-block text-[11px] px-3 py-1 rounded-full"
-            style={{ background: t.badgeBg, border: `1px solid ${t.badgeBorder}`, color: t.badgeColor }}
-          >
-            ✦ Survive the exam—think like an accountant
-          </span>
-        </div>
-
-        <div className="mt-3" style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
-          <div className="mx-auto px-4 sm:px-6 py-4" style={{ maxWidth: 1200 }}>
-            {/* Three-line header hierarchy */}
-            <div className="min-w-0">
-              <h1 className="text-[20px] font-bold leading-tight" style={{ color: "#131E35" }}>
-                {courseDisplayName}
-              </h1>
-              {chapterLabel && (
-                <p className="text-[15px] font-medium mt-0.5" style={{ color: t.textMuted }}>
-                  {chapterLabel}
-                </p>
-              )}
-              {problemTitle && (
-                <p className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>
-                  Topic: {problemTitle}
-                </p>
-              )}
-            </div>
-
-            {/* Browse problems bar — below header with top border */}
-            {isPreview && (
-              <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${t.border}` }}>
-                <BrowseProblemsBar currentAsset={asset} theme={t} />
-              </div>
-            )}
-          </div>
+      {/* ── Hero Header — Mt Cook photo (same as Survive This Chapter) ── */}
+      <div className="relative overflow-hidden sv-hero" style={{ zIndex: 5, height: 300 }}>
+        <style>{`
+          @media (max-width: 640px) { .sv-hero { height: 220px !important; } }
+          .sv-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg');
+            background-size: cover;
+            background-position: 60% 40%;
+            background-repeat: no-repeat;
+            transform: scaleX(-1);
+            z-index: 0;
+          }
+          .sv-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.55) 25%, rgba(20,33,61,0.12) 55%, rgba(20,33,61,0.35) 100%);
+            z-index: 1;
+          }
+        `}</style>
+        <div className="relative h-full mx-auto px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2, maxWidth: 1200 }}>
+          {courseDisplayName && (
+            <p className="text-[11px] uppercase" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em", fontWeight: 500 }}>
+              {courseDisplayName}
+            </p>
+          )}
+          <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800 }}>
+            {chapterLabel || courseDisplayName}
+          </h1>
+          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
+            Exam prep by Lee Ingram · Tutor since 2015
+          </p>
         </div>
       </div>
+
+      {/* Browse problems bar — only in preview mode */}
+      {isPreview && (
+        <div style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
+          <div className="mx-auto px-4 sm:px-6 py-4" style={{ maxWidth: 1200 }}>
+            <BrowseProblemsBar currentAsset={asset} theme={t} />
+          </div>
+        </div>
+      )}
 
       {/* ── Floating Action Panel (desktop) ── */}
       <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} onQaToolboxClick={() => setFixOpen(true)} showShare={shareButtonsVisible && !isQaMode} isAdmin={isAdmin} isQaMode={isQaMode} courseCode={courseCode} />
