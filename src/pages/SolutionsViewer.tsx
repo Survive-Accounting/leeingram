@@ -4112,10 +4112,10 @@ export default function SolutionsViewer() {
               {courseDisplayName}
             </p>
           )}
-          <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800 }}>
+          <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
             {chapterLabel || courseDisplayName}
           </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
+          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
             Exam prep by Lee Ingram · Tutor since 2015
           </p>
         </div>
