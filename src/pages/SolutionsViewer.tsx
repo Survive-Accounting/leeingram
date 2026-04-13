@@ -4033,7 +4033,6 @@ export default function SolutionsViewer() {
           <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img src={LOGO_URL} alt="Survive Accounting" className="h-7 sm:h-8 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <span className="text-[11px] sm:text-[12px] text-white/50 truncate">Created by Lee Ingram · Tutor since 2015</span>
             </div>
           </div>
         </header>
@@ -4093,11 +4092,17 @@ export default function SolutionsViewer() {
             transform: scaleX(-1);
             z-index: 0;
           }
+          @media (max-width: 640px) {
+            .sv-hero::before {
+              background-position: 55% 30%;
+              background-size: cover;
+            }
+          }
           .sv-hero::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to right, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.55) 25%, rgba(20,33,61,0.12) 55%, rgba(20,33,61,0.35) 100%);
+            background: linear-gradient(to right, rgba(20,33,61,0.85) 0%, rgba(20,33,61,0.75) 30%, rgba(20,33,61,0.35) 60%, rgba(20,33,61,0.5) 100%);
             z-index: 1;
           }
         `}</style>
