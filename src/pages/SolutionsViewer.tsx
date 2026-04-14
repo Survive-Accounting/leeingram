@@ -3674,6 +3674,23 @@ export default function SolutionsViewer() {
     enabled: !!assetCode,
   });
 
+  // Update access control IDs when data loads
+  useEffect(() => {
+    if (data?.course_id) setAccessCourseId(data.course_id);
+    if (data?.chapter_id) setAccessChapterId(data.chapter_id);
+  }, [data?.course_id, data?.chapter_id]);
+
+  // Compute access mode
+  const isPreview = (() => {
+    if (isAdmin) return rawIsPreview;
+    if (rawIsPreview) return true;
+    if (isLovablePreviewDomain) return false;
+    if (hasPurchasedAccess) return false;
+    if (previewToken) return !tokenValidForAsset || previewExpired;
+    if (lwVerified) return false;
+    return true;
+  })();
+
   // Fetch payment links for tiered paywall
   const { data: paymentLinks } = useQuery({
     queryKey: ["payment-links-public"],
