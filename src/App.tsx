@@ -108,6 +108,7 @@ const Preview = lazy(() => import("./pages/Preview"));
 const CheckoutComplete = lazy(() => import("./pages/CheckoutComplete"));
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
@@ -168,6 +169,7 @@ const AppRoutes = () => {
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/my-dashboard" element={<StudentDashboard />} />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
         <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
         <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />

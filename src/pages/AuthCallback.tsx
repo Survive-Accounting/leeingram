@@ -31,7 +31,7 @@ export default function AuthCallback() {
           .limit(1);
 
         if (purchases && purchases.length > 0) {
-          navigate("/dashboard", { replace: true });
+          navigate("/my-dashboard", { replace: true });
         } else {
           navigate("/login?message=no_purchase", { replace: true });
         }
