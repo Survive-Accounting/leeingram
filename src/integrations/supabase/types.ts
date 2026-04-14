@@ -2007,6 +2007,72 @@ export type Database = {
         }
         Relationships: []
       }
+      course_products: {
+        Row: {
+          chapter_id: string | null
+          course_id: string
+          created_at: string | null
+          display_name: string
+          id: string
+          is_active: boolean | null
+          original_price_cents: number | null
+          price_cents: number
+          product_type: string
+          sale_expires_at: string | null
+          sale_label: string | null
+          stripe_price_id_live: string | null
+          stripe_price_id_test: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id: string
+          created_at?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          original_price_cents?: number | null
+          price_cents?: number
+          product_type: string
+          sale_expires_at?: string | null
+          sale_label?: string | null
+          stripe_price_id_live?: string | null
+          stripe_price_id_test?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          original_price_cents?: number | null
+          price_cents?: number
+          product_type?: string
+          sale_expires_at?: string | null
+          sale_label?: string | null
+          stripe_price_id_live?: string | null
+          stripe_price_id_test?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_products_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_products_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_textbooks: {
         Row: {
           course_id: string
