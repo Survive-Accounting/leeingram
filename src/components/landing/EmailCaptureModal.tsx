@@ -12,9 +12,11 @@ interface EmailCaptureModalProps {
   onClose: () => void;
   courseId: string;
   courseSlug: string;
+  /** If "pricing", redirect to campus page with show_pricing param */
+  redirectTo?: string;
 }
 
-export default function EmailCaptureModal({ open, onClose, courseId, courseSlug }: EmailCaptureModalProps) {
+export default function EmailCaptureModal({ open, onClose, courseId, courseSlug, redirectTo }: EmailCaptureModalProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [warning, setWarning] = useState("");
@@ -37,7 +39,12 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug 
       });
       if (error) throw error;
       const slug = data?.campus_slug || "general";
-      navigate(`/accy304`);
+
+      if (redirectTo === "pricing") {
+        navigate(`/campus/${slug}/${courseSlug}?show_pricing=true`);
+      } else {
+        navigate(`/accy304`);
+      }
     } catch {
       toast.error("Something went wrong. Try again.");
     } finally {
@@ -49,7 +56,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug 
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm p-6 [&>button]:hidden" style={{ borderRadius: 16 }}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-lg font-semibold" style={{ color: NAVY }}>
+          <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
             Enter your school email
           </h2>
           <div className="space-y-1.5">
@@ -66,6 +73,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug 
                 background: "#F8F9FA",
                 border: "1px solid #E5E7EB",
                 color: NAVY,
+                fontFamily: "Inter, sans-serif",
               }}
             />
             {warning && (
@@ -76,7 +84,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug 
             type="submit"
             disabled={loading}
             className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-            style={{ minHeight: 48, background: NAVY }}
+            style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
           </button>

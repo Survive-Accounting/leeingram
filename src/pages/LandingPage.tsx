@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { LogIn } from "lucide-react";
 import CourseCard from "@/components/landing/CourseCard";
 import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
 import NotifyModal from "@/components/landing/NotifyModal";
+import LandingHeader from "@/components/landing/LandingHeader";
 
 const COURSES = [
   {
@@ -51,7 +51,7 @@ const COURSES = [
 
 type ModalState =
   | { type: "none" }
-  | { type: "email"; course: typeof COURSES[0] }
+  | { type: "email"; course: typeof COURSES[0]; redirectTo?: string }
   | { type: "notify"; course: typeof COURSES[0] };
 
 export default function LandingPage() {
@@ -65,12 +65,21 @@ export default function LandingPage() {
     }
   };
 
+  const handlePricingClick = () => {
+    // Use the live IA2 course for pricing redirect
+    const ia2 = COURSES.find((c) => c.slug === "intermediate-accounting-2")!;
+    setModal({ type: "email", course: ia2, redirectTo: "pricing" });
+  };
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
+      {/* Header */}
+      <LandingHeader onPricingClick={handlePricingClick} />
+
       {/* Hero */}
-      <div className="relative overflow-hidden landing-hero" style={{ height: 300 }}>
+      <div className="relative overflow-hidden landing-hero" style={{ height: 280 }}>
         <style>{`
-          @media (max-width: 640px) { .landing-hero { height: 220px !important; } }
+          @media (max-width: 640px) { .landing-hero { height: 200px !important; } }
           .landing-hero::before {
             content: '';
             position: absolute;
@@ -91,44 +100,15 @@ export default function LandingPage() {
           }
         `}</style>
 
-        {/* Admin link */}
-        <div className="absolute top-4 right-4" style={{ zIndex: 10 }}>
-          <a
-            href="/admin"
-            className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest transition-colors"
-            style={{ color: "rgba(255,255,255,0.2)" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)")}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            Admin
-          </a>
-        </div>
-
-        {/* Student login */}
-        <div className="absolute top-4 left-4" style={{ zIndex: 10 }}>
-          <a
-            href="/login"
-            className="text-[11px] uppercase tracking-widest transition-colors"
-            style={{ color: "rgba(255,255,255,0.2)" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)")}
-          >
-            Student Login
-          </a>
-        </div>
-
         <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2 }}>
           <h1
             className="text-[26px] sm:text-[34px] text-white leading-tight"
             style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
           >
-            Your exam is right now.
-            <br />
-            Let's survive it.
+            Your exam is coming up.
           </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
-            Exam prep trusted by 1,000+ accounting students.
+          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}>
+            Online exam prep by Lee Ingram · Trusted by 1,000+ students
           </p>
         </div>
       </div>
@@ -142,7 +122,7 @@ export default function LandingPage() {
 
       {/* Course selector */}
       <div className="relative z-10 flex-1 flex flex-col items-center px-4 py-8">
-        <p className="text-[14px] font-medium mb-5" style={{ color: "#6B7280" }}>
+        <p className="text-[14px] font-medium mb-5" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
           What course are you studying?
         </p>
         <div className="w-full max-w-[700px] grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -164,10 +144,10 @@ export default function LandingPage() {
 
       {/* Footer */}
       <div className="relative z-10 text-center pb-6 space-y-0.5">
-        <p className="text-[12px]" style={{ color: "#9CA3AF" }}>
+        <p className="text-[12px]" style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>
           Made by Lee Ingram · Ole Miss Accounting Tutor since 2015
         </p>
-        <p className="text-[12px]" style={{ color: "#B0B5BD" }}>
+        <p className="text-[12px]" style={{ color: "#B0B5BD", fontFamily: "Inter, sans-serif" }}>
           Questions?{" "}
           <a href="mailto:lee@surviveaccounting.com" className="underline" style={{ color: "#9CA3AF" }}>
             lee@surviveaccounting.com
@@ -182,6 +162,7 @@ export default function LandingPage() {
           onClose={() => setModal({ type: "none" })}
           courseId={modal.course.id}
           courseSlug={modal.course.slug}
+          redirectTo={modal.redirectTo}
         />
       )}
       {modal.type === "notify" && (
