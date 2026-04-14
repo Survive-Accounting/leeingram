@@ -54,7 +54,36 @@ export function useAccessControl({ courseId, chapterId }: UseAccessControlParams
       const email = session.user.email.toLowerCase();
       const cacheKey = `sa_access_${courseId}_${chapterId ?? "full"}`;
 
-      // 2. Check sessionStorage cache
+      // 2. Check admin bypass (session-long cache, no expiry)
+      const cachedAdmin = sessionStorage.getItem("sa_is_admin");
+      if (cachedAdmin === "true") {
+        if (!cancelled) setResult({ hasAccess: true, isLoading: false, isExpired: false, accessType: "full_pass" });
+        return;
+      }
+
+      if (cachedAdmin === null) {
+        // Check hardcoded list or va_accounts for admin/lead_va
+        let isAdmin = ADMIN_EMAILS.includes(email);
+        if (!isAdmin) {
+          try {
+            const { data: vaRow } = await supabase
+              .from("va_accounts")
+              .select("role")
+              .eq("email", email)
+              .in("role", ["admin", "lead_va"])
+              .limit(1);
+            if (vaRow && vaRow.length > 0) isAdmin = true;
+          } catch { /* ignore */ }
+        }
+        sessionStorage.setItem("sa_is_admin", String(isAdmin));
+        if (isAdmin) {
+          if (!cancelled) setResult({ hasAccess: true, isLoading: false, isExpired: false, accessType: "full_pass" });
+          return;
+        }
+      }
+
+      // 3. Check sessionStorage cache for purchase
+      const cacheKey = `sa_access_${courseId}_${chapterId ?? "full"}`;
       try {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
