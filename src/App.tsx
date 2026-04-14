@@ -106,6 +106,8 @@ const QuizRating = lazy(() => import("./pages/QuizRating"));
 const LegacyNotionPage = lazy(() => import("./pages/LegacyNotionPage"));
 const Preview = lazy(() => import("./pages/Preview"));
 const CheckoutComplete = lazy(() => import("./pages/CheckoutComplete"));
+const Login = lazy(() => import("./pages/Login"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
@@ -164,6 +166,8 @@ const AppRoutes = () => {
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
         <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
         <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
