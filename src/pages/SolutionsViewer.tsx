@@ -2875,78 +2875,10 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
             boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Feedback banner row */}
-          {!bannerDismissed && !collapsed && (
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5"
-              style={{ borderBottom: `1px solid ${theme.border}` }}
-            >
-              <span className="text-[11px]" style={{ color: theme.textMuted }}>
-                This content is brand new —{" "}
-                <button
-                  onClick={() => setFeedbackOpen(true)}
-                  className="underline hover:no-underline"
-                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
-                >
-                  share your feedback
-                </button>
-                .
-              </span>
-              <button
-                onClick={dismissBanner}
-                className="ml-auto shrink-0 hover:opacity-70"
-                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
+          {/* Action buttons now in navbar — only keep collapse/menu here */}
 
-          {/* Button row */}
+          {/* Button row — only menu/FAQ remains; share/about/suggest-fix moved to navbar */}
           <div className="flex items-center">
-            {/* QA mode: show single "QA Review Tools" button */}
-            {isQaMode && isAdmin ? (
-              <>
-                <button
-                  onClick={onQaToolboxClick}
-                  className="text-[12px] font-bold px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-1.5 text-white"
-                  style={{ backgroundColor: "#14213D", borderRadius: 6 }}
-                >
-                  QA Review Tools ⚙
-                </button>
-              </>
-            ) : !collapsed ? (
-              <>
-                {showShare && (
-                  <>
-                    <button
-                      onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-                      className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                      style={{ color: "#3B82F6" }}
-                    >
-                      <Share2 className="h-3 w-3" /> Share This
-                    </button>
-                    <div className="w-px h-5" style={{ background: theme.border }} />
-                  </>
-                )}
-                <button
-                  onClick={() => setAboutOpen(true)}
-                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
-                  style={{ color: theme.text }}
-                >
-                  About Lee Ingram
-                </button>
-                <div className="w-px h-5" style={{ background: theme.border }} />
-                <button
-                  onClick={onReportClick}
-                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
-                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
-                >
-                  ⚠ Suggest Fix →
-                </button>
-                <div className="w-px h-5" style={{ background: theme.border }} />
-              </>
-            ) : null}
             {!(isQaMode && isAdmin) && (
               <>
                 <button
@@ -3407,7 +3339,8 @@ export default function SolutionsViewer() {
 
   const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
   const isPreview = (() => {
-    if (isAdmin) return false;
+    if (isAdmin) return rawIsPreview; // Admin can force preview mode with ?preview=true
+    if (rawIsPreview) return true; // Explicit ?preview=true always forces preview mode
     if (isLovablePreviewDomain) return false; // Allow full access on Lovable preview domains for testing
     if (previewToken) return !tokenValidForAsset || previewExpired;
     if (lwVerified) return false;
@@ -3421,6 +3354,7 @@ export default function SolutionsViewer() {
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
+  const [aboutLeeOpen, setAboutLeeOpen] = useState(false);
 
   // QA: force open all toggles via postMessage
   const [allTogglesForceOpen, setAllTogglesForceOpen] = useState(false);
@@ -4030,9 +3964,48 @@ export default function SolutionsViewer() {
       {/* ── Navy Header Bar + Preview Banner (sticky together) ── */}
       <div className="relative sticky top-0" style={{ zIndex: 20 }}>
         <header style={{ background: "#14213D", height: HEADER_HEIGHT }}>
-          <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
+          <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between" style={{ maxWidth: 1200 }}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img src={LOGO_URL} alt="Survive Accounting" className="h-7 sm:h-8 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            </div>
+            {/* Action buttons — right side of navbar */}
+            <div className="hidden sm:flex items-center gap-0.5">
+              {shareButtonsVisible && !isQaMode && (
+                <button
+                  onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); handleShareClick(); }}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap flex items-center gap-1.5"
+                  style={{ color: "rgba(255,255,255,0.75)" }}
+                >
+                  <Share2 className="h-3 w-3" /> Share
+                </button>
+              )}
+              {!isQaMode && (
+                <>
+                  <button
+                    onClick={() => setAboutLeeOpen(true)}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap"
+                    style={{ color: "rgba(255,255,255,0.75)" }}
+                  >
+                    About Lee
+                  </button>
+                  <button
+                    onClick={() => setReportOpen(true)}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap flex items-center gap-1"
+                    style={{ color: "rgba(255,255,255,0.55)" }}
+                  >
+                    ⚠ Suggest Fix
+                  </button>
+                </>
+              )}
+              {isQaMode && isAdmin && (
+                <button
+                  onClick={() => setFixOpen(true)}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap flex items-center gap-1.5"
+                  style={{ color: "#FFFFFF" }}
+                >
+                  QA Review Tools ⚙
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -4431,6 +4404,7 @@ export default function SolutionsViewer() {
         </div>
       </main>
 
+      <AboutLeeModal open={aboutLeeOpen} onOpenChange={setAboutLeeOpen} />
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
       <QAToolboxModal
         open={fixOpen}
