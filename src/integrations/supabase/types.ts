@@ -2313,6 +2313,48 @@ export type Database = {
         }
         Relationships: []
       }
+      enrollment_cache: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          email: string
+          id: string
+          is_enrolled: boolean | null
+          last_checked_at: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          email: string
+          id?: string
+          is_enrolled?: boolean | null
+          last_checked_at?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          email?: string
+          id?: string
+          is_enrolled?: boolean | null
+          last_checked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollment_cache_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_cache_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_builder_accounts: {
         Row: {
           account_name: string
@@ -4234,6 +4276,105 @@ export type Database = {
             columns: ["story_idea_id"]
             isOneToOne: false
             referencedRelation: "story_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_emails: {
+        Row: {
+          attempted_at: string | null
+          chapter_id: string | null
+          converted: boolean | null
+          course_id: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          attempted_at?: string | null
+          chapter_id?: string | null
+          converted?: boolean | null
+          course_id?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          attempted_at?: string | null
+          chapter_id?: string | null
+          converted?: boolean | null
+          course_id?: string | null
+          email?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_emails_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_emails_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_purchases: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          lw_enrollment_id: string | null
+          lw_enrollment_status: string | null
+          purchase_type: string
+          stripe_customer_id: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          lw_enrollment_id?: string | null
+          lw_enrollment_status?: string | null
+          purchase_type: string
+          stripe_customer_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          lw_enrollment_id?: string | null
+          lw_enrollment_status?: string | null
+          purchase_type?: string
+          stripe_customer_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_purchases_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_purchases_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
