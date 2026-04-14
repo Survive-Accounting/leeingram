@@ -178,6 +178,7 @@ const AppRoutes = () => {
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
+        <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
