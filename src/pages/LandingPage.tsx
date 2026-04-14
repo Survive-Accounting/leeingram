@@ -3,6 +3,8 @@ import CourseCard from "@/components/landing/CourseCard";
 import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
 import NotifyModal from "@/components/landing/NotifyModal";
 import LandingHeader from "@/components/landing/LandingHeader";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import ContactForm from "@/components/landing/ContactForm";
 
 const COURSES = [
   {
@@ -142,8 +144,14 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Testimonials */}
+      <TestimonialsSection />
+
+      {/* Contact Form */}
+      <ContactForm />
+
       {/* Footer */}
-      <div className="relative z-10 text-center pb-6 space-y-0.5">
+      <div className="relative z-10 text-center pb-6 pt-6 space-y-0.5" style={{ background: "#0F1A2E" }}>
         <p className="text-[12px]" style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>
           Made by Lee Ingram · Ole Miss Accounting Tutor since 2015
         </p>

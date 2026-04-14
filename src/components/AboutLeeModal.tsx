@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const LEE_HEADSHOT_URL = "https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg";
+const LEE_HEADSHOT_URL = "https://i.ibb.co/nNmPgMws/Lee-About-Me-Image.jpg";
 
 const FALLBACK_BIO = `I loved accounting so much in college that I became a full-time tutor. During the pandemic I went fully virtual and created SurviveAccounting.com — and it's been a blast watching it grow.
 
