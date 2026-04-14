@@ -2877,51 +2877,8 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
         >
           {/* Action buttons now in navbar — only keep collapse/menu here */}
 
-          {/* Button row */}
+          {/* Button row — only menu/FAQ remains; share/about/suggest-fix moved to navbar */}
           <div className="flex items-center">
-            {/* QA mode: show single "QA Review Tools" button */}
-            {isQaMode && isAdmin ? (
-              <>
-                <button
-                  onClick={onQaToolboxClick}
-                  className="text-[12px] font-bold px-4 py-2 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap flex items-center gap-1.5 text-white"
-                  style={{ backgroundColor: "#14213D", borderRadius: 6 }}
-                >
-                  QA Review Tools ⚙
-                </button>
-              </>
-            ) : !collapsed ? (
-              <>
-                {showShare && (
-                  <>
-                    <button
-                      onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); onShareClick?.(); }}
-                      className="text-[11px] font-bold px-3 py-2 transition-all hover:scale-[1.03] active:scale-[0.97] whitespace-nowrap flex items-center gap-1.5"
-                      style={{ color: "#3B82F6" }}
-                    >
-                      <Share2 className="h-3 w-3" /> Share This
-                    </button>
-                    <div className="w-px h-5" style={{ background: theme.border }} />
-                  </>
-                )}
-                <button
-                  onClick={() => setAboutOpen(true)}
-                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap"
-                  style={{ color: theme.text }}
-                >
-                  About Lee Ingram
-                </button>
-                <div className="w-px h-5" style={{ background: theme.border }} />
-                <button
-                  onClick={onReportClick}
-                  className="text-[11px] font-semibold px-3 py-2 transition-colors hover:bg-gray-50 whitespace-nowrap flex items-center gap-1"
-                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer" }}
-                >
-                  ⚠ Suggest Fix →
-                </button>
-                <div className="w-px h-5" style={{ background: theme.border }} />
-              </>
-            ) : null}
             {!(isQaMode && isAdmin) && (
               <>
                 <button
