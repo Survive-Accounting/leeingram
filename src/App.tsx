@@ -109,6 +109,7 @@ const CheckoutComplete = lazy(() => import("./pages/CheckoutComplete"));
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
+const CourseLanding = lazy(() => import("./pages/CourseLanding"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
@@ -149,7 +150,7 @@ const AppRoutes = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Survive Accounting — default to Asset Factory */}
-        <Route path="/" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+        <Route path="/" element={<CourseLanding />} />
         <Route path="/survive" element={<Navigate to="/content" replace />} />
         <Route path="/survive" element={<Navigate to="/" replace />} />
         {/* Public tools */}
