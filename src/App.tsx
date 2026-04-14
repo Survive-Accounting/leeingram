@@ -110,6 +110,7 @@ const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const CourseLanding = lazy(() => import("./pages/CourseLanding"));
+const CampusOperations = lazy(() => import("./pages/CampusOperations"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
