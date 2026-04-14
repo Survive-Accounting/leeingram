@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import confetti from "canvas-confetti";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
@@ -3480,10 +3481,17 @@ export default function SolutionsViewer() {
     (tokenSession.asset_codes as string[])?.includes(assetCode);
 
   const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
+  // ── Access control: check student purchase ──
+  const { hasAccess: hasPurchasedAccess, isLoading: accessLoading, isExpired: accessExpired } = useAccessControl({
+    courseId: data?.course_id || "",
+    chapterId: data?.chapter_id || undefined,
+  });
+
   const isPreview = (() => {
     if (isAdmin) return rawIsPreview; // Admin can force preview mode with ?preview=true
     if (rawIsPreview) return true; // Explicit ?preview=true always forces preview mode
     if (isLovablePreviewDomain) return false; // Allow full access on Lovable preview domains for testing
+    if (hasPurchasedAccess) return false; // Student has valid purchase
     if (previewToken) return !tokenValidForAsset || previewExpired;
     if (lwVerified) return false;
     return true; // Default: preview mode (no valid access method)
