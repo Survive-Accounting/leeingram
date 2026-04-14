@@ -777,6 +777,34 @@ export default function ChapterCramTool() {
     },
   });
 
+  // Fetch global tab visibility settings
+  const TAB_KEY_TO_CARD: Record<string, CardKey> = {
+    "the_why": "whats-the-point",
+    "key_terms": "key-terms",
+    "accounts": "accounts",
+    "journal_entries": "journal-entries",
+    "formulas": "formulas",
+    "exam_mistakes": "exam-mistakes",
+  };
+
+  const { data: hiddenCardKeys = new Set<CardKey>() } = useQuery({
+    queryKey: ["cram-tab-visibility"],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cram_tab_visibility").select("tab_name, is_visible");
+      if (error) return new Set<CardKey>(); // fail open
+      const hidden = new Set<CardKey>();
+      (data || []).forEach((r: any) => {
+        if (!r.is_visible && TAB_KEY_TO_CARD[r.tab_name]) {
+          hidden.add(TAB_KEY_TO_CARD[r.tab_name]);
+        }
+      });
+      return hidden;
+    },
+  });
+
+  const visibleToolCards = TOOL_CARDS.filter(c => !hiddenCardKeys.has(c.key));
+
   const { data: paymentLinks = [] } = useQuery({
     queryKey: ["payment-links-cram"],
     enabled: isPreview,
@@ -1128,12 +1156,12 @@ export default function ChapterCramTool() {
                     Chapter Cram Tools
                   </p>
                   <span className="text-[13px] font-semibold" style={{ color: theme.text }}>
-                    {gotItSet.size} ✓ / {TOOL_CARDS.length}
+                    {gotItSet.size} ✓ / {visibleToolCards.length}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {TOOL_CARDS.map((card) => {
+                  {visibleToolCards.map((card) => {
                     const Icon = card.icon;
                     const count = cardCounts[card.key];
                     const isGotIt = gotItSet.has(card.key);
