@@ -218,12 +218,12 @@ export default function CourseLanding() {
 
       {/* Footer */}
       <div className="relative z-10 text-center pb-6 space-y-0.5">
-        <p className="text-[12px] text-white/30">
+        <p className="text-[12px]" style={{ color: "#9CA3AF" }}>
           Made by Lee Ingram · Ole Miss Accounting Tutor since 2015
         </p>
-        <p className="text-[12px] text-white/25">
+        <p className="text-[12px]" style={{ color: "#B0B5BD" }}>
           Questions?{" "}
-          <a href="mailto:lee@surviveaccounting.com" className="underline hover:text-white/40">
+          <a href="mailto:lee@surviveaccounting.com" className="underline" style={{ color: "#9CA3AF" }}>
             lee@surviveaccounting.com
           </a>
         </p>
