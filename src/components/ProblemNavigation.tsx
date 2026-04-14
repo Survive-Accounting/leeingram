@@ -215,15 +215,15 @@ export function ProblemNavigation({ currentAsset }: ProblemNavigationProps) {
           ]).map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => setSelectedType(key)}
-              style={tabBtnStyle(selectedType === key)}
+              onClick={() => handleTypeClick(key)}
+              style={tabBtnStyle(selectedType === key && showPills)}
             >
               {label}
               <span
                 className="ml-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-bold"
                 style={{
-                  background: selectedType === key ? RED : "rgba(20,33,61,0.1)",
-                  color: selectedType === key ? "#fff" : NAVY,
+                  background: selectedType === key && showPills ? RED : "rgba(20,33,61,0.1)",
+                  color: selectedType === key && showPills ? "#fff" : NAVY,
                   width: 20,
                   height: 20,
                   lineHeight: "20px",
@@ -237,7 +237,7 @@ export function ProblemNavigation({ currentAsset }: ProblemNavigationProps) {
       )}
 
       {/* PROBLEM LIST — horizontal scroll pills */}
-      {selectedChapterId && activeList.length > 0 && (
+      {selectedChapterId && showPills && activeList.length > 0 && (
         <div
           className="flex items-center gap-1.5 overflow-x-auto pb-1"
           style={{ scrollbarWidth: "thin" }}
