@@ -110,6 +110,7 @@ const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const CourseLanding = lazy(() => import("./pages/CourseLanding"));
+const CampusOperations = lazy(() => import("./pages/CampusOperations"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
@@ -247,6 +248,7 @@ const AppRoutes = () => {
         <Route path="/study-tools/entry-builder" element={<ProtectedRoute><StudyToolsEntryBuilder /></ProtectedRoute>} />
         <Route path="/study-tools/problem-dissector" element={<ProtectedRoute><StudyToolsProblemDissector /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/campus-ops" element={<ProtectedRoute><CampusOperations /></ProtectedRoute>} />
         <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
         <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
         <Route path="/admin/chapter-qa" element={<ProtectedRoute><ChapterContentQA /></ProtectedRoute>} />
