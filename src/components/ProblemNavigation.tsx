@@ -42,6 +42,7 @@ export function ProblemNavigation({ currentAsset }: ProblemNavigationProps) {
   const [selectedCourseCode, setSelectedCourseCode] = useState(currentCourseCode);
   const [selectedChapterId, setSelectedChapterId] = useState(currentChapterId);
   const [selectedType, setSelectedType] = useState<"BE" | "E" | "P">(currentType);
+  const [showPills, setShowPills] = useState(false);
 
   // Sync when navigating to different asset
   useEffect(() => {
