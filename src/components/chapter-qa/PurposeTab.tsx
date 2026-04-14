@@ -81,8 +81,8 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
   if (!purpose && !generating) {
     return (
       <div className="text-center py-10 space-y-4">
-        <p className="text-sm text-muted-foreground">No chapter purpose generated yet.</p>
-        <Button onClick={handleGenerate} disabled={generating}><Sparkles className="h-4 w-4 mr-2" /> Generate Purpose →</Button>
+        <p className="text-sm text-muted-foreground">No chapter "why" generated yet.</p>
+        <Button onClick={handleGenerate} disabled={generating}><Sparkles className="h-4 w-4 mr-2" /> Generate The Why →</Button>
       </div>
     );
   }
