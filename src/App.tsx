@@ -105,6 +105,7 @@ const QuizEnd = lazy(() => import("./pages/QuizEnd"));
 const QuizRating = lazy(() => import("./pages/QuizRating"));
 const LegacyNotionPage = lazy(() => import("./pages/LegacyNotionPage"));
 const Preview = lazy(() => import("./pages/Preview"));
+const CheckoutComplete = lazy(() => import("./pages/CheckoutComplete"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
