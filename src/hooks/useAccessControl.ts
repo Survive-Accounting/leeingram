@@ -52,7 +52,7 @@ export function useAccessControl({ courseId, chapterId }: UseAccessControlParams
       }
 
       const email = session.user.email.toLowerCase();
-      const cacheKey = `sa_access_${courseId}_${chapterId ?? "full"}`;
+
 
       // 2. Check admin bypass (session-long cache, no expiry)
       const cachedAdmin = sessionStorage.getItem("sa_is_admin");
