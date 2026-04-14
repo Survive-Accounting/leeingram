@@ -884,6 +884,7 @@ export type Database = {
       campuses: {
         Row: {
           created_at: string
+          domains: string[]
           id: string
           is_active: boolean
           name: string
@@ -896,6 +897,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          domains?: string[]
           id?: string
           is_active?: boolean
           name: string
@@ -908,6 +910,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          domains?: string[]
           id?: string
           is_active?: boolean
           name?: string
