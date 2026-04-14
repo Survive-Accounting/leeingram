@@ -440,12 +440,19 @@ function SectionHeading({ children, theme }: { children: React.ReactNode; theme:
 
 // ── Tiered Paywall Card ──────────────────────────────────────────────
 
+const EMAIL_BYPASS_LIST = [
+  "lee@survivestudios.com",
+  "jking.cim@gmail.com",
+];
+
 function TieredPaywallCard({
   theme,
   enrollUrl,
   fullPassLink,
   chapterLink,
   chapterNumber,
+  courseId,
+  chapterId,
   onBuyClick,
 }: {
   theme: Theme;
@@ -453,8 +460,14 @@ function TieredPaywallCard({
   fullPassLink?: { label: string; price_cents: number; original_price_cents?: number | null; sale_label?: string | null; sale_expires_at?: string | null; url: string } | null;
   chapterLink?: { label: string; price_cents: number; url: string } | null;
   chapterNumber?: number | null;
+  courseId?: string;
+  chapterId?: string;
   onBuyClick?: () => void;
 }) {
+  const [email, setEmail] = useState(() => sessionStorage.getItem("sa_checkout_email") || "");
+  const [emailError, setEmailError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at
     ? now < new Date(fullPassLink.sale_expires_at)
@@ -465,14 +478,72 @@ function TieredPaywallCard({
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
+  const isValidEmail = (e: string): boolean => {
+    const trimmed = e.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes("@")) return false;
+    if (EMAIL_BYPASS_LIST.includes(trimmed)) return true;
+    return trimmed.endsWith(".edu");
+  };
+
+  const handleBuyClick = async (type: "full_pass" | "chapter") => {
+    setEmailError("");
+    const trimmed = email.trim().toLowerCase();
+    if (!isValidEmail(trimmed)) {
+      setEmailError("Please use your .edu email address");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await supabase.from("student_emails").insert({
+        email: trimmed,
+        course_id: courseId || null,
+        chapter_id: type === "chapter" ? (chapterId || null) : null,
+        converted: false,
+      });
+      sessionStorage.setItem("sa_checkout_email", trimmed);
+      onBuyClick?.();
+      // Step 2 (Stripe checkout) will be wired in a future prompt.
+      // For now, redirect to the existing URL.
+      const url = type === "full_pass" ? fullPassUrl : chapterUrl;
+      window.open(url, "_blank");
+    } catch {
+      // fail open — still let them through
+      sessionStorage.setItem("sa_checkout_email", trimmed);
+      const url = type === "full_pass" ? fullPassUrl : chapterUrl;
+      window.open(url, "_blank");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="rounded-xl p-5 space-y-4" style={{ background: "#FFFBF0" }}>
       {/* Lock icon + text */}
       <div className="text-center mb-2">
         <Lock className="h-6 w-6 mx-auto mb-2" style={{ color: "#14213D" }} />
         <p className="text-[15px] font-bold" style={{ color: "#14213D" }}>
-          Unlock with a Study Pass to reveal this section
+          Unlock with a Study Pass
         </p>
+      </div>
+
+      {/* Email input */}
+      <div>
+        <input
+          type="email"
+          placeholder="your@university.edu"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
+          className="w-full rounded-lg px-4 text-[14px] outline-none transition-all focus:ring-2 focus:ring-[#14213D]/30"
+          style={{
+            background: "#FFFFFF",
+            border: emailError ? "1.5px solid #CE1126" : "1px solid #D1D5DB",
+            color: "#1A1A1A",
+            minHeight: 48,
+          }}
+        />
+        {emailError && (
+          <p className="text-[12px] mt-1.5 font-medium" style={{ color: "#CE1126" }}>{emailError}</p>
+        )}
       </div>
 
       {/* Option 1 — Full Pass (navy card) */}
@@ -508,16 +579,18 @@ function TieredPaywallCard({
             </span>
           )}
         </div>
-        <a
-          href={fullPassUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => onBuyClick?.()}
-          className="block w-full mt-4 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
-          style={{ background: "#CE1126", height: 48, lineHeight: "24px" }}
+        <button
+          onClick={() => handleBuyClick("full_pass")}
+          disabled={submitting}
+          className="block w-full mt-4 px-6 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98] disabled:opacity-60"
+          style={{ background: "#CE1126", minHeight: 56, lineHeight: "24px" }}
         >
-          Get Full Access →
-        </a>
+          {submitting ? (
+            <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing…</span>
+          ) : (
+            "Get Full Access →"
+          )}
+        </button>
         <p className="text-[11px] mt-3 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>
           7-day refund policy · Covers Ch 13–22 · Access expires after finals
         </p>
@@ -538,16 +611,18 @@ function TieredPaywallCard({
           <p className="font-bold text-[22px] mt-1" style={{ color: theme.text }}>
             {formatPrice(chapterLink?.price_cents || 3000)}
           </p>
-          <a
-            href={chapterUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onBuyClick?.()}
-            className="block w-full mt-3 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]"
-            style={{ background: "#006BA6", height: 48, lineHeight: "24px" }}
+          <button
+            onClick={() => handleBuyClick("chapter")}
+            disabled={submitting}
+            className="block w-full mt-3 px-6 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98] disabled:opacity-60"
+            style={{ background: "#006BA6", minHeight: 56, lineHeight: "24px" }}
           >
-            Buy Chapter {chapterNumber} →
-          </a>
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing…</span>
+            ) : (
+              `Buy Chapter ${chapterNumber} →`
+            )}
+          </button>
           <p className="text-[11px] mt-2.5 text-center" style={{ color: theme.textMuted }}>
             Covers Ch {chapterNumber} only · Access expires after finals
           </p>
@@ -571,6 +646,8 @@ function RevealToggle({
   fullPassLink,
   chapterLink,
   chapterNumber,
+  courseId,
+  chapterId,
   forceOpen,
   onReveal,
   onBuyClick,
@@ -589,6 +666,8 @@ function RevealToggle({
   fullPassLink?: any;
   chapterLink?: any;
   chapterNumber?: number | null;
+  courseId?: string;
+  chapterId?: string;
   forceOpen?: boolean;
   onReveal?: (sectionName: string) => void;
   onBuyClick?: () => void;
@@ -654,6 +733,8 @@ function RevealToggle({
               fullPassLink={fullPassLink}
               chapterLink={chapterLink}
               chapterNumber={chapterNumber}
+              courseId={courseId}
+              chapterId={chapterId}
               onBuyClick={onBuyClick}
             />
           ) : (
@@ -4291,6 +4372,8 @@ export default function SolutionsViewer() {
                   fullPassLink={fullPassLink}
                   chapterLink={chapterLink}
                   chapterNumber={chapterNum}
+                  courseId={asset.course_id}
+                  chapterId={asset.chapter_id}
                   forceOpen={allTogglesForceOpen}
                   onReportClick={() => setReportOpen(true)}
                   onReveal={handleReveal}
@@ -4332,7 +4415,7 @@ export default function SolutionsViewer() {
 
               {/* 2. Journal Entries */}
               {hasJE && (
-                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection}>
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection}>
                   {isPreview ? (
                     <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
                   ) : (
@@ -4347,7 +4430,7 @@ export default function SolutionsViewer() {
 
               {/* 3. How to Solve This */}
               {(asset._flowcharts?.length > 0 || asset.flowchart_image_url) && (
-                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "How to Solve This"} onControlledToggle={handleToggleSection}>
+                <RevealToggle label="Reveal How to Solve This" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="How to Solve This" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "How to Solve This"} onControlledToggle={handleToggleSection}>
                   {asset._flowcharts?.length > 1 ? (
                     <div className="space-y-2">
                       {asset._flowcharts.map((fc: any) => {
