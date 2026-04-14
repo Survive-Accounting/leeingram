@@ -3407,7 +3407,8 @@ export default function SolutionsViewer() {
 
   const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
   const isPreview = (() => {
-    if (isAdmin) return false;
+    if (isAdmin) return rawIsPreview; // Admin can force preview mode with ?preview=true
+    if (rawIsPreview) return true; // Explicit ?preview=true always forces preview mode
     if (isLovablePreviewDomain) return false; // Allow full access on Lovable preview domains for testing
     if (previewToken) return !tokenValidForAsset || previewExpired;
     if (lwVerified) return false;
@@ -4471,6 +4472,7 @@ export default function SolutionsViewer() {
         </div>
       </main>
 
+      <AboutLeeModal open={aboutLeeOpen} onOpenChange={setAboutLeeOpen} />
       <ReportIssueModal open={reportOpen} onClose={() => setReportOpen(false)} asset={asset} isAdmin={isAdmin} />
       <QAToolboxModal
         open={fixOpen}
