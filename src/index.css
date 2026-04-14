@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+
   :root {
     --background: 220 20% 97%;
     --foreground: 220 20% 10%;
