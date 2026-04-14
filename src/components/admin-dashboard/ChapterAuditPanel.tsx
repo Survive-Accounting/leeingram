@@ -160,7 +160,7 @@ export function ChapterAuditPanel({
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">What Actually Exists</p>
             <div className="grid grid-cols-3 gap-2 text-xs">
               {[
-                { label: "Purpose", val: inventory.purpose.exists ? (inventory.purpose.approved ? "✓ Approved" : "Pending") : "None" },
+                { label: "The Why", val: inventory.purpose.exists ? (inventory.purpose.approved ? "✓ Approved" : "Pending") : "None" },
                 { label: "Key Terms", val: inventory.key_terms.total > 0 ? `${inventory.key_terms.approved}✓ / ${inventory.key_terms.total} total` : "None" },
                 { label: "Memory Items", val: inventory.memory_items.total > 0 ? `${inventory.memory_items.approved}✓ / ${inventory.memory_items.total} total` : "None" },
                 { label: "Formulas", val: inventory.formulas.total > 0 ? `${inventory.formulas.approved}✓ / ${inventory.formulas.total} total` : "None" },

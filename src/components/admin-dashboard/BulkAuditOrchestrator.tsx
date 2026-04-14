@@ -34,7 +34,7 @@ const TAB_KEYS = ["purpose", "key_terms", "accounts", "memory", "formulas", "jes
 type TabKey = typeof TAB_KEYS[number];
 
 const TAB_LABELS: Record<TabKey, string> = {
-  purpose: "Purpose",
+  purpose: "The Why",
   key_terms: "Key Terms",
   accounts: "Accounts",
   memory: "Memory",

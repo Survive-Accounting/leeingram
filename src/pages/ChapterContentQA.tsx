@@ -566,7 +566,7 @@ function ChapterQAModal({
   const courseCode = course?.code || "???";
 
   const SUITE_STEPS = [
-    { key: "purpose", label: "Purpose" },
+    { key: "purpose", label: "The Why" },
     { key: "key_terms", label: "Key Terms" },
     { key: "exam_mistakes", label: "Mistakes" },
     { key: "accounts", label: "Accounts" },
@@ -746,7 +746,7 @@ function ChapterQAModal({
               <TabsTrigger value="terms" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><BookText className="h-3 w-3" /> Key Terms</TabsTrigger>
               <TabsTrigger value="memory" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><Brain className="h-3 w-3" /> Memory</TabsTrigger>
               <TabsTrigger value="mistakes" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><AlertCircle className="h-3 w-3" /> Mistakes</TabsTrigger>
-              <TabsTrigger value="purpose" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><Target className="h-3 w-3" /> Purpose</TabsTrigger>
+              <TabsTrigger value="purpose" className="gap-1 text-[11px] shrink-0 min-h-[44px] md:min-h-0"><Target className="h-3 w-3" /> The Why</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

@@ -33,7 +33,7 @@ type TabState = {
 };
 
 const TAB_CONFIG: { key: TabKey; label: string }[] = [
-  { key: "purpose", label: "Purpose" },
+  { key: "purpose", label: "The Why" },
   { key: "key_terms", label: "Key Terms" },
   { key: "accounts", label: "Accounts" },
   { key: "memory", label: "Memory" },
