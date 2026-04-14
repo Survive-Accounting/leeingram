@@ -744,6 +744,11 @@ export default function ChapterCramTool() {
     },
   });
 
+  // Update access control course ID when chapter data loads
+  useEffect(() => {
+    if (chapter?.course_id) setAccessCourseId(chapter.course_id);
+  }, [chapter?.course_id]);
+
   // Fetch sibling chapters for navigator
   const { data: siblingChapters = [] } = useQuery({
     queryKey: ["cram-sibling-chapters", chapter?.course_id],
