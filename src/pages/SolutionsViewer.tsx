@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import confetti from "canvas-confetti";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
@@ -3480,14 +3481,14 @@ export default function SolutionsViewer() {
     (tokenSession.asset_codes as string[])?.includes(assetCode);
 
   const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
-  const isPreview = (() => {
-    if (isAdmin) return rawIsPreview; // Admin can force preview mode with ?preview=true
-    if (rawIsPreview) return true; // Explicit ?preview=true always forces preview mode
-    if (isLovablePreviewDomain) return false; // Allow full access on Lovable preview domains for testing
-    if (previewToken) return !tokenValidForAsset || previewExpired;
-    if (lwVerified) return false;
-    return true; // Default: preview mode (no valid access method)
-  })();
+
+  // ── Access control: check student purchase (IDs updated via effect below) ──
+  const [accessCourseId, setAccessCourseId] = useState("");
+  const [accessChapterId, setAccessChapterId] = useState<string | undefined>(undefined);
+  const { hasAccess: hasPurchasedAccess, isExpired: accessExpired } = useAccessControl({
+    courseId: accessCourseId,
+    chapterId: accessChapterId,
+  });
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
@@ -3672,6 +3673,23 @@ export default function SolutionsViewer() {
     },
     enabled: !!assetCode,
   });
+
+  // Update access control IDs when data loads
+  useEffect(() => {
+    if (data?.course_id) setAccessCourseId(data.course_id);
+    if (data?.chapter_id) setAccessChapterId(data.chapter_id);
+  }, [data?.course_id, data?.chapter_id]);
+
+  // Compute access mode
+  const isPreview = (() => {
+    if (isAdmin) return rawIsPreview;
+    if (rawIsPreview) return true;
+    if (isLovablePreviewDomain) return false;
+    if (hasPurchasedAccess) return false;
+    if (previewToken) return !tokenValidForAsset || previewExpired;
+    if (lwVerified) return false;
+    return true;
+  })();
 
   // Fetch payment links for tiered paywall
   const { data: paymentLinks } = useQuery({

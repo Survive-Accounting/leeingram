@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
@@ -625,6 +626,14 @@ export default function ChapterCramTool() {
   const queryClient = useQueryClient();
   const { user, loading: authLoading } = useAuth();
 
+  // Access control for gating cram tool content
+  const [accessCourseId, setAccessCourseId] = useState("");
+  const { hasAccess: hasPurchasedAccess, isExpired: accessExpired } = useAccessControl({
+    courseId: accessCourseId,
+    chapterId: chapterId || undefined,
+  });
+  const [showPaywallDrawer, setShowPaywallDrawer] = useState(false);
+
   const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p" | null>(null);
   const [expandedTabs, setExpandedTabs] = useState<Record<string, boolean>>({});
   const [feedbackSection, setFeedbackSection] = useState("");
@@ -734,6 +743,11 @@ export default function ChapterCramTool() {
       return data as any;
     },
   });
+
+  // Update access control course ID when chapter data loads
+  useEffect(() => {
+    if (chapter?.course_id) setAccessCourseId(chapter.course_id);
+  }, [chapter?.course_id]);
 
   // Fetch sibling chapters for navigator
   const { data: siblingChapters = [] } = useQuery({
@@ -1170,7 +1184,14 @@ export default function ChapterCramTool() {
                       <button
                         key={card.key}
                         type="button"
-                        onClick={() => { setModalFullScreen(false); setOpenDrawer(card.key); }}
+                       onClick={() => {
+                          if (!hasPurchasedAccess && !user) {
+                            setShowPaywallDrawer(true);
+                            return;
+                          }
+                          setModalFullScreen(false);
+                          setOpenDrawer(card.key);
+                        }}
                         className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
                         style={{
                           background: theme.navy,
@@ -1335,6 +1356,21 @@ export default function ChapterCramTool() {
           </div>
         </>
       )}
+
+      {/* Paywall dialog for gated cram cards */}
+      <Dialog open={showPaywallDrawer} onOpenChange={setShowPaywallDrawer}>
+        <DialogContent className="max-w-md p-6" style={{ background: "#FFFBF0" }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg" style={{ color: "#14213D" }}>
+              <Lock className="h-5 w-5" /> {accessExpired ? "Your Study Pass has expired" : "Unlock with a Study Pass"}
+            </DialogTitle>
+            <DialogDescription className="text-[13px]" style={{ color: "#666" }}>
+              {accessExpired ? "Purchase a new pass to regain access." : "Get full access to all study tools and practice problems."}
+            </DialogDescription>
+          </DialogHeader>
+          <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+        </DialogContent>
+      </Dialog>
 
       {/* Floating Action Bar */}
       <CramFloatingActionBar
