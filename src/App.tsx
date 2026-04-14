@@ -112,6 +112,7 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const CourseLanding = lazy(() => import("./pages/CourseLanding"));
 const CampusOperations = lazy(() => import("./pages/CampusOperations"));
+const CampusLandingPage = lazy(() => import("./pages/CampusLandingPage"));
 const CampusesPage = lazy(() => import("./pages/campus-ops/CampusesPage"));
 const CampusNew = lazy(() => import("./pages/campus-ops/CampusNew"));
 const PricingPage = lazy(() => import("./pages/campus-ops/PricingPage"));
@@ -177,6 +178,7 @@ const AppRoutes = () => {
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
+        <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
