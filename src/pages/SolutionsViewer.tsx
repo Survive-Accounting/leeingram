@@ -3482,18 +3482,13 @@ export default function SolutionsViewer() {
 
   const isLovablePreviewDomain = typeof window !== "undefined" && window.location.hostname.endsWith("lovableproject.com");
 
-  // ── Access control: check student purchase ──
-  // We track loaded IDs in state so the hook can be called unconditionally
+  // ── Access control: check student purchase (IDs updated via effect below) ──
   const [accessCourseId, setAccessCourseId] = useState("");
   const [accessChapterId, setAccessChapterId] = useState<string | undefined>(undefined);
   const { hasAccess: hasPurchasedAccess, isExpired: accessExpired } = useAccessControl({
     courseId: accessCourseId,
     chapterId: accessChapterId,
   });
-
-  const isPreviewRef = useRef(true);
-  // isPreview is computed below after data loads, but we need a stable value for hooks
-  // The actual isPreview logic follows after data query
 
   // Highlight toggle
   const [showHighlights, setShowHighlights] = useState(false);
