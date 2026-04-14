@@ -1184,7 +1184,14 @@ export default function ChapterCramTool() {
                       <button
                         key={card.key}
                         type="button"
-                        onClick={() => { setModalFullScreen(false); setOpenDrawer(card.key); }}
+                       onClick={() => {
+                          if (!hasPurchasedAccess && !user) {
+                            setShowPaywallDrawer(true);
+                            return;
+                          }
+                          setModalFullScreen(false);
+                          setOpenDrawer(card.key);
+                        }}
                         className="group relative text-left rounded-lg p-6 transition-all duration-200 cursor-pointer"
                         style={{
                           background: theme.navy,
