@@ -256,6 +256,13 @@ const AppRoutes = () => {
         <Route path="/study-tools/problem-dissector" element={<ProtectedRoute><StudyToolsProblemDissector /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/campus-ops" element={<ProtectedRoute><CampusOperations /></ProtectedRoute>} />
+        <Route path="/campus-ops/campuses" element={<ProtectedRoute><CampusOperations><CampusesPage /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/campuses/new" element={<ProtectedRoute><CampusOperations><CampusNew /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/pricing" element={<ProtectedRoute><CampusOperations><PricingPage /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/students" element={<ProtectedRoute><CampusOperations><StudentsPage /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/purchases" element={<ProtectedRoute><CampusOperations><PurchasesPage /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/professors" element={<ProtectedRoute><CampusOperations><ProfessorsPage /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/analytics" element={<ProtectedRoute><CampusOperations><CampusAnalyticsPage /></CampusOperations></ProtectedRoute>} />
         <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
         <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
         <Route path="/admin/chapter-qa" element={<ProtectedRoute><ChapterContentQA /></ProtectedRoute>} />
