@@ -121,7 +121,6 @@ export default function Login() {
                     background: "#F8F9FA",
                     border: `1px solid ${error ? "#EF4444" : "#E5E7EB"}`,
                     color: "#14213D",
-                    focusRingColor: "#14213D",
                   }}
                 />
                 {error && (
