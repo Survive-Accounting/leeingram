@@ -158,7 +158,7 @@ export default function CourseLanding() {
             className="text-[26px] sm:text-[34px] text-white leading-tight"
             style={{ fontWeight: 800, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
           >
-            Your exam is right now.
+            Your exam is coming up.
             <br />
             Let's survive it.
           </h1>
