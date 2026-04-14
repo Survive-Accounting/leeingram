@@ -16,7 +16,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, course_id, chapter_id, product_type, return_url } = await req.json();
+    const {
+      email, course_id, chapter_id, product_type, return_url,
+      campus_id: rawCampusId, campus_slug,
+    } = await req.json();
 
     if (!email || !course_id || !product_type) {
       return new Response(
@@ -37,11 +40,112 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Look up the correct stripe_price_id from course_products
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ── Resolve campus_id from slug if needed ──
+    let campusId = rawCampusId || null;
+    let resolvedSlug = campus_slug || "";
+
+    if (!campusId && campus_slug) {
+      const { data: campus } = await supabase
+        .from("campuses")
+        .select("id")
+        .eq("slug", campus_slug)
+        .maybeSingle();
+      if (campus) campusId = campus.id;
+    } else if (campusId && !resolvedSlug) {
+      const { data: campus } = await supabase
+        .from("campuses")
+        .select("slug")
+        .eq("id", campusId)
+        .maybeSingle();
+      if (campus) resolvedSlug = campus.slug;
+    }
+
+    // ── Price resolution ──
+    // Try campus-specific pricing first via get_campus_price RPC
+    let useCampusPricing = false;
+    let priceCents = 0;
+    let originalCents = 0;
+    let discountLabel = "";
+    let courseName = "Survive Accounting";
+
+    // Fetch course name for Stripe product description
+    const { data: courseRow } = await supabase
+      .from("courses")
+      .select("course_name")
+      .eq("id", course_id)
+      .maybeSingle();
+    if (courseRow) courseName = `Survive Accounting – ${courseRow.course_name}`;
+
+    if (campusId || campus_slug) {
+      const slug = resolvedSlug || campus_slug || "general";
+      const { data: campusPrice } = await supabase.rpc("get_campus_price", {
+        p_campus_slug: slug,
+        p_product_type: product_type,
+      });
+
+      if (campusPrice && campusPrice > 0) {
+        priceCents = campusPrice;
+        useCampusPricing = true;
+
+        // Check for original/anchor price (global pricing as anchor)
+        const { data: globalPrice } = await supabase.rpc("get_campus_price", {
+          p_campus_slug: "general",
+          p_product_type: product_type,
+        });
+        if (globalPrice && globalPrice > priceCents) {
+          originalCents = globalPrice;
+          discountLabel = "Campus Discount";
+        }
+      }
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+
+    // ── Campus pricing path: use price_data (dynamic) ──
+    if (useCampusPricing) {
+      const description = discountLabel
+        ? `${discountLabel} · Was $${Math.round(originalCents / 100)}`
+        : undefined;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        ui_mode: "embedded",
+        line_items: [{
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: courseName,
+              ...(description ? { description } : {}),
+            },
+            unit_amount: priceCents,
+          },
+          quantity: 1,
+        }],
+        customer_email: email,
+        return_url: `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`,
+        metadata: {
+          email,
+          course_id,
+          chapter_id: chapter_id || "",
+          product_type,
+          campus_id: campusId || "",
+          campus_slug: resolvedSlug || "",
+          original_price_cents: String(originalCents || priceCents),
+          discount_applied_cents: String(originalCents > priceCents ? originalCents - priceCents : 0),
+        },
+      });
+
+      return new Response(
+        JSON.stringify({ clientSecret: session.client_secret }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Existing path: look up stripe_price_id from course_products ──
     let query = supabase
       .from("course_products")
       .select("stripe_price_id_live, stripe_price_id_test")
@@ -72,8 +176,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       ui_mode: "embedded",
@@ -85,6 +187,8 @@ Deno.serve(async (req) => {
         course_id,
         chapter_id: chapter_id || "",
         product_type,
+        campus_id: campusId || "",
+        campus_slug: resolvedSlug || "",
       },
     });
 
