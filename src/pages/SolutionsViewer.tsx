@@ -4030,9 +4030,48 @@ export default function SolutionsViewer() {
       {/* ── Navy Header Bar + Preview Banner (sticky together) ── */}
       <div className="relative sticky top-0" style={{ zIndex: 20 }}>
         <header style={{ background: "#14213D", height: HEADER_HEIGHT }}>
-          <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center" style={{ maxWidth: 1200 }}>
+          <div className="mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between" style={{ maxWidth: 1200 }}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img src={LOGO_URL} alt="Survive Accounting" className="h-7 sm:h-8 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            </div>
+            {/* Action buttons — right side of navbar */}
+            <div className="hidden sm:flex items-center gap-0.5">
+              {shareButtonsVisible && !isQaMode && (
+                <button
+                  onClick={() => { copyToClipboard(shareUrl).then(() => toast.success("Link copied — share with classmates!")); handleShareClick(); }}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap flex items-center gap-1.5"
+                  style={{ color: "rgba(255,255,255,0.75)" }}
+                >
+                  <Share2 className="h-3 w-3" /> Share
+                </button>
+              )}
+              {!isQaMode && (
+                <>
+                  <button
+                    onClick={() => setAboutLeeOpen(true)}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap"
+                    style={{ color: "rgba(255,255,255,0.75)" }}
+                  >
+                    About Lee
+                  </button>
+                  <button
+                    onClick={() => setReportOpen(true)}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap flex items-center gap-1"
+                    style={{ color: "rgba(255,255,255,0.55)" }}
+                  >
+                    ⚠ Suggest Fix
+                  </button>
+                </>
+              )}
+              {isQaMode && isAdmin && (
+                <button
+                  onClick={() => setFixOpen(true)}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-md transition-all hover:bg-white/10 whitespace-nowrap flex items-center gap-1.5"
+                  style={{ color: "#FFFFFF" }}
+                >
+                  QA Review Tools ⚙
+                </button>
+              )}
             </div>
           </div>
         </header>
