@@ -181,6 +181,8 @@ const AppRoutes = () => {
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
         <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
