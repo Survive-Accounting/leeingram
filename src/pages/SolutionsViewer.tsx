@@ -4094,14 +4094,6 @@ export default function SolutionsViewer() {
         </div>
       </div>
 
-      {/* Browse problems bar — only in preview mode */}
-      {isPreview && (
-        <div style={{ background: "rgba(248,249,250,0.9)", borderBottom: `1px solid ${t.border}` }}>
-          <div className="mx-auto px-4 sm:px-6 py-4" style={{ maxWidth: 1200 }}>
-            <BrowseProblemsBar currentAsset={asset} theme={t} />
-          </div>
-        </div>
-      )}
 
       {/* ── Floating Action Panel (desktop) ── */}
       <FloatingActionBar theme={t} shareUrl={shareUrl} assetCode={asset.asset_name} chapterId={asset.chapter_id} asset={asset} onShareClick={handleShareClick} onReportClick={() => setReportOpen(true)} onQaToolboxClick={() => setFixOpen(true)} showShare={shareButtonsVisible && !isQaMode} isAdmin={isAdmin} isQaMode={isQaMode} courseCode={courseCode} />
@@ -4111,7 +4103,7 @@ export default function SolutionsViewer() {
         {/* ── Problem Navigation Bar ── */}
         <div className="mb-6 rounded-xl px-4 sm:px-6 py-4 sm:py-5" style={{ background: t.pageBg, boxShadow: "0 4px 16px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.02)", border: `1px solid ${t.border}` }}>
           <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
-            Practice Problems · {chapterLabel || "Browse"}
+            Browse Practice Problems
           </h2>
           <ProblemNavigation currentAsset={asset} />
         </div>
