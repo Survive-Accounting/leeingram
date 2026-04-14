@@ -66,6 +66,45 @@ Deno.serve(async (req) => {
 
     const courseId = course.id;
 
+    // 0. Check email_campus_overrides first
+    const { data: override } = await sb
+      .from("email_campus_overrides")
+      .select("campus_id, note")
+      .eq("email", cleanEmail)
+      .maybeSingle();
+
+    if (override) {
+      const { data: overrideCampus } = await sb
+        .from("campuses")
+        .select("id, slug, name")
+        .eq("id", override.campus_id)
+        .single();
+
+      if (overrideCampus) {
+        console.log(`Override match: ${cleanEmail} → ${overrideCampus.slug} (${override.note})`);
+
+        // Save lead + student record
+        await sb.from("student_emails").upsert(
+          { email: cleanEmail, course_id: courseId, attempted_at: new Date().toISOString() },
+          { onConflict: "email,course_id" }
+        );
+        const { data: existingStudent } = await sb.from("students").select("id").eq("email", cleanEmail).maybeSingle();
+        if (!existingStudent) {
+          await sb.from("students").insert({ email: cleanEmail, campus_id: overrideCampus.id });
+        }
+
+        return new Response(
+          JSON.stringify({
+            campus_slug: overrideCampus.slug,
+            campus_name: overrideCampus.name,
+            is_new: false,
+            source: "override",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // 1. Check if domain matches an existing campus
     const { data: existingCampuses } = await sb
       .from("campuses")

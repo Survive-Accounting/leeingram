@@ -27,10 +27,15 @@ export default function ContactForm() {
     }
     setSending(true);
     try {
+      const trimmedData = { name: name.trim(), email: email.trim(), subject, message: message.trim() };
       const { error } = await (supabase as any)
         .from("contact_messages")
-        .insert({ name: name.trim(), email: email.trim(), subject, message: message.trim() });
+        .insert(trimmedData);
       if (error) throw error;
+
+      // Send email notification to Lee (fire-and-forget)
+      supabase.functions.invoke("send-contact-notification", { body: trimmedData }).catch(() => {});
+
       toast.success("Message sent! I'll get back to you soon.");
       setName("");
       setEmail("");

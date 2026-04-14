@@ -2473,6 +2473,38 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campus_overrides: {
+        Row: {
+          campus_id: string
+          created_at: string
+          email: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          campus_id: string
+          created_at?: string
+          email: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          campus_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campus_overrides_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emails: {
         Row: {
           ai_refined_body: string | null
