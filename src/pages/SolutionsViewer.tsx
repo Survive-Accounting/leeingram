@@ -4143,7 +4143,7 @@ export default function SolutionsViewer() {
                 {/* Source ref label */}
                 {sourceRef && (
                   <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
-                    Practice problem based on {sourceRef}
+                    Example based on {sourceRef}
                   </h2>
                 )}
 

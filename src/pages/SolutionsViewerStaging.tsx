@@ -1202,7 +1202,7 @@ export default function SolutionsViewerStaging() {
               <div className="rounded-xl px-4 sm:px-6 py-5 sm:py-6" style={{ background: t.pageBg, boxShadow: "0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03)", border: `1px solid ${t.border}` }}>
                 {sourceRef && (
                   <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase pb-1 mb-3" style={{ color: t.heading, borderBottom: `1px solid ${t.border}` }}>
-                    Practice problem based on {sourceRef}
+                    Example based on {sourceRef}
                   </h2>
                 )}
 
