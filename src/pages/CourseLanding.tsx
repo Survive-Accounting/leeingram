@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, LogIn } from "lucide-react";
-import aorakiBg from "@/assets/aoraki-bg.jpg";
+
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
