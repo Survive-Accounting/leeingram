@@ -3421,6 +3421,7 @@ export default function SolutionsViewer() {
 
   // Report modal
   const [reportOpen, setReportOpen] = useState(false);
+  const [aboutLeeOpen, setAboutLeeOpen] = useState(false);
 
   // QA: force open all toggles via postMessage
   const [allTogglesForceOpen, setAllTogglesForceOpen] = useState(false);
