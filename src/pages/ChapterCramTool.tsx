@@ -1156,12 +1156,12 @@ export default function ChapterCramTool() {
                     Chapter Cram Tools
                   </p>
                   <span className="text-[13px] font-semibold" style={{ color: theme.text }}>
-                    {gotItSet.size} ✓ / {TOOL_CARDS.length}
+                    {gotItSet.size} ✓ / {visibleToolCards.length}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {TOOL_CARDS.map((card) => {
+                  {visibleToolCards.map((card) => {
                     const Icon = card.icon;
                     const count = cardCounts[card.key];
                     const isGotIt = gotItSet.has(card.key);
