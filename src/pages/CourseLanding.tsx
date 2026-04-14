@@ -158,7 +158,7 @@ export default function CourseLanding() {
             className="text-[26px] sm:text-[34px] text-white leading-tight"
             style={{ fontWeight: 800, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
           >
-            Your exam is right now.
+            Your exam is coming up.
             <br />
             Let's survive it.
           </h1>
@@ -186,14 +186,13 @@ export default function CourseLanding() {
               onClick={() => handleCardClick(c)}
               className="text-left rounded-xl p-5 transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{
-                background: "rgba(255,255,255,0.07)",
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "#fff",
+                border: "1px solid #E5E7EB",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
               }}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="text-[15px] font-semibold text-white">{c.name}</span>
+                <span className="text-[15px] font-semibold" style={{ color: NAVY }}>{c.name}</span>
                 <span
                   className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap text-white shrink-0"
                   style={{ background: c.badgeBg }}
@@ -201,13 +200,13 @@ export default function CourseLanding() {
                   {c.badge}
                 </span>
               </div>
-              <p className="text-[13px] text-white/50 mb-4">{c.detail}</p>
+              <p className="text-[13px] mb-4" style={{ color: "#6B7280" }}>{c.detail}</p>
               <span
                 className="inline-block rounded-lg px-4 py-2 text-[13px] font-semibold text-center w-full"
                 style={
                   c.status === "live"
                     ? { background: NAVY, color: "#fff" }
-                    : { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.7)" }
+                    : { background: "transparent", border: `1px solid ${NAVY}33`, color: NAVY }
                 }
               >
                 {c.cta}
@@ -219,12 +218,12 @@ export default function CourseLanding() {
 
       {/* Footer */}
       <div className="relative z-10 text-center pb-6 space-y-0.5">
-        <p className="text-[12px] text-white/30">
+        <p className="text-[12px]" style={{ color: "#9CA3AF" }}>
           Made by Lee Ingram · Ole Miss Accounting Tutor since 2015
         </p>
-        <p className="text-[12px] text-white/25">
+        <p className="text-[12px]" style={{ color: "#B0B5BD" }}>
           Questions?{" "}
-          <a href="mailto:lee@surviveaccounting.com" className="underline hover:text-white/40">
+          <a href="mailto:lee@surviveaccounting.com" className="underline" style={{ color: "#9CA3AF" }}>
             lee@surviveaccounting.com
           </a>
         </p>
