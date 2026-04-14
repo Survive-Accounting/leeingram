@@ -111,6 +111,13 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const CourseLanding = lazy(() => import("./pages/CourseLanding"));
 const CampusOperations = lazy(() => import("./pages/CampusOperations"));
+const CampusesPage = lazy(() => import("./pages/campus-ops/CampusesPage"));
+const CampusNew = lazy(() => import("./pages/campus-ops/CampusNew"));
+const PricingPage = lazy(() => import("./pages/campus-ops/PricingPage"));
+const StudentsPage = lazy(() => import("./pages/campus-ops/StudentsPage"));
+const PurchasesPage = lazy(() => import("./pages/campus-ops/PurchasesPage"));
+const ProfessorsPage = lazy(() => import("./pages/campus-ops/ProfessorsPage"));
+const CampusAnalyticsPage = lazy(() => import("./pages/campus-ops/AnalyticsPage"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
