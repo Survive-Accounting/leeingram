@@ -646,6 +646,8 @@ function RevealToggle({
   fullPassLink,
   chapterLink,
   chapterNumber,
+  courseId,
+  chapterId,
   forceOpen,
   onReveal,
   onBuyClick,
@@ -664,6 +666,8 @@ function RevealToggle({
   fullPassLink?: any;
   chapterLink?: any;
   chapterNumber?: number | null;
+  courseId?: string;
+  chapterId?: string;
   forceOpen?: boolean;
   onReveal?: (sectionName: string) => void;
   onBuyClick?: () => void;
