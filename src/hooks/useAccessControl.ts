@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const ADMIN_EMAILS = [
+  "lee@survivestudios.com",
+  "jking.cim@gmail.com",
+];
+
 interface UseAccessControlParams {
   courseId: string;
   chapterId?: string;
