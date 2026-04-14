@@ -2875,32 +2875,7 @@ function FloatingActionBar({ theme, shareUrl, assetCode, chapterId, asset, onSha
             boxShadow: "0 2px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Feedback banner row */}
-          {!bannerDismissed && !collapsed && (
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5"
-              style={{ borderBottom: `1px solid ${theme.border}` }}
-            >
-              <span className="text-[11px]" style={{ color: theme.textMuted }}>
-                This content is brand new —{" "}
-                <button
-                  onClick={() => setFeedbackOpen(true)}
-                  className="underline hover:no-underline"
-                  style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
-                >
-                  share your feedback
-                </button>
-                .
-              </span>
-              <button
-                onClick={dismissBanner}
-                className="ml-auto shrink-0 hover:opacity-70"
-                style={{ color: theme.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
+          {/* Action buttons now in navbar — only keep collapse/menu here */}
 
           {/* Button row */}
           <div className="flex items-center">
