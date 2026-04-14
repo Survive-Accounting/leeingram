@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, LogIn } from "lucide-react";
-import aorakiBg from "@/assets/aoraki-bg.jpg";
+
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
@@ -101,66 +101,82 @@ export default function CourseLanding() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Hero background */}
-      <div className="absolute inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${aorakiBg})` }}
-        />
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
-      </div>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
+      {/* Hero — Mt Cook, same pattern as cram pages */}
+      <div className="relative overflow-hidden course-hero" style={{ height: 300 }}>
+        <style>{`
+          @media (max-width: 640px) { .course-hero { height: 220px !important; } }
+          .course-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg');
+            background-size: cover;
+            background-position: 60% 40%;
+            background-repeat: no-repeat;
+            transform: scaleX(-1);
+            z-index: 0;
+          }
+          .course-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.55) 25%, rgba(20,33,61,0.12) 55%, rgba(20,33,61,0.35) 100%);
+            z-index: 1;
+          }
+        `}</style>
 
-      {/* Admin link */}
-      <div className="absolute top-4 right-4 z-20">
-        <a
-          href="/admin"
-          className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest transition-colors"
-          style={{ color: "rgba(255,255,255,0.2)" }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)")}
-        >
-          <LogIn className="w-3.5 h-3.5" />
-          Admin
-        </a>
-      </div>
-
-      {/* Student login link */}
-      <div className="absolute top-4 left-4 z-20">
-        <a
-          href="/login"
-          className="text-[11px] uppercase tracking-widest transition-colors"
-          style={{ color: "rgba(255,255,255,0.2)" }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)")}
-        >
-          Student Login
-        </a>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-12">
-        {/* Hero text */}
-        <div className="text-center mb-8 sm:mb-10">
-          <div
-            className="mx-auto w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg mb-4"
-            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)", fontFamily: "'DM Serif Display', Georgia, serif" }}
+        {/* Admin link */}
+        <div className="absolute top-4 right-4" style={{ zIndex: 10 }}>
+          <a
+            href="/admin"
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest transition-colors"
+            style={{ color: "rgba(255,255,255,0.2)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)")}
           >
-            SA
-          </div>
+            <LogIn className="w-3.5 h-3.5" />
+            Admin
+          </a>
+        </div>
+
+        {/* Student login link */}
+        <div className="absolute top-4 left-4" style={{ zIndex: 10 }}>
+          <a
+            href="/login"
+            className="text-[11px] uppercase tracking-widest transition-colors"
+            style={{ color: "rgba(255,255,255,0.2)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)")}
+          >
+            Student Login
+          </a>
+        </div>
+
+        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2 }}>
           <h1
-            className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-tight max-w-lg mx-auto"
-            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)", fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="text-[26px] sm:text-[34px] text-white leading-tight"
+            style={{ fontWeight: 800, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
           >
             Your exam is right now.
             <br />
             Let's survive it.
           </h1>
-          <p className="text-white/50 text-[15px] mt-3">
+          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
             Choose your course to get started.
           </p>
         </div>
+      </div>
+
+      {/* Wave divider */}
+      <div style={{ background: "#F8F8FA", marginTop: "-2px", overflow: "hidden", lineHeight: 0 }}>
+        <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "60px" }}>
+          <path d="M0,30 C240,60 480,55 720,35 C960,15 1200,50 1440,30 L1440,0 L0,0 Z" fill="#14213D" />
+        </svg>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-8">
 
         {/* Course cards */}
         <div className="w-full max-w-[700px] grid grid-cols-1 sm:grid-cols-2 gap-3">
