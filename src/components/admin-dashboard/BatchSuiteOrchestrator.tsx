@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 const STORAGE_KEY = "sa_batch_progress";
 const CONTENT_TYPES = ["purpose", "key_terms", "exam_mistakes", "accounts", "formulas", "journal_entries"];
 const CONTENT_LABELS: Record<string, string> = {
-  purpose: "Purpose",
+  purpose: "The Why",
   key_terms: "Key Terms",
   exam_mistakes: "Mistakes",
   accounts: "Accounts",

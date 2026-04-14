@@ -96,7 +96,7 @@ export function PurposeTab({ chapterId, chapterName, courseCode }: { chapterId: 
       <Card className="border-border">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-foreground">Chapter Purpose</span>
+            <span className="text-xs font-semibold text-foreground">The Why</span>
             {purpose.is_approved
               ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] h-5">Approved ✓</Badge>
               : <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge>
