@@ -7,11 +7,13 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu, Target, BookOpen, LayoutGrid, FileText, Calculator } from "lucide-react";
+import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu, Target, BookOpen, LayoutGrid, FileText, Calculator, ArrowLeft } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
 import { ProblemNavigation } from "@/components/ProblemNavigation";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
+import { loadStripe } from "@stripe/stripe-js";
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
@@ -445,6 +447,9 @@ const EMAIL_BYPASS_LIST = [
   "jking.cim@gmail.com",
 ];
 
+const STRIPE_PK_LIVE = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_LIVE || "";
+const STRIPE_PK_TEST = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST || "";
+
 function TieredPaywallCard({
   theme,
   enrollUrl,
@@ -467,14 +472,14 @@ function TieredPaywallCard({
   const [email, setEmail] = useState(() => sessionStorage.getItem("sa_checkout_email") || "");
   const [emailError, setEmailError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<null | "full_pass" | "chapter">(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
 
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at
     ? now < new Date(fullPassLink.sale_expires_at)
     : false;
-
-  const fullPassUrl = fullPassLink?.url || enrollUrl;
-  const chapterUrl = chapterLink?.url || enrollUrl;
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
@@ -485,8 +490,18 @@ function TieredPaywallCard({
     return trimmed.endsWith(".edu");
   };
 
+  const isBypassEmail = EMAIL_BYPASS_LIST.includes(email.trim().toLowerCase());
+  const stripePromise = useMemo(
+    () => {
+      const key = isBypassEmail ? STRIPE_PK_TEST : STRIPE_PK_LIVE;
+      return key ? loadStripe(key) : null;
+    },
+    [isBypassEmail]
+  );
+
   const handleBuyClick = async (type: "full_pass" | "chapter") => {
     setEmailError("");
+    setCheckoutError("");
     const trimmed = email.trim().toLowerCase();
     if (!isValidEmail(trimmed)) {
       setEmailError("Please use your .edu email address");
@@ -494,6 +509,7 @@ function TieredPaywallCard({
     }
     setSubmitting(true);
     try {
+      // Insert lead
       await supabase.from("student_emails").insert({
         email: trimmed,
         course_id: courseId || null,
@@ -501,21 +517,63 @@ function TieredPaywallCard({
         converted: false,
       });
       sessionStorage.setItem("sa_checkout_email", trimmed);
+
+      // Create checkout session
+      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: {
+          email: trimmed,
+          course_id: courseId,
+          chapter_id: type === "chapter" ? chapterId : null,
+          product_type: type === "full_pass" ? "full_pass" : "chapter_pass",
+          return_url: window.location.origin,
+        },
+      });
+
+      if (error || !data?.clientSecret) {
+        throw new Error(data?.error || error?.message || "Failed to create checkout session");
+      }
+
+      setClientSecret(data.clientSecret);
+      setCheckoutStep(type);
       onBuyClick?.();
-      // Step 2 (Stripe checkout) will be wired in a future prompt.
-      // For now, redirect to the existing URL.
-      const url = type === "full_pass" ? fullPassUrl : chapterUrl;
-      window.open(url, "_blank");
-    } catch {
-      // fail open — still let them through
-      sessionStorage.setItem("sa_checkout_email", trimmed);
-      const url = type === "full_pass" ? fullPassUrl : chapterUrl;
-      window.open(url, "_blank");
+    } catch (err: any) {
+      setCheckoutError(err.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleBackToEmail = () => {
+    setCheckoutStep(null);
+    setClientSecret(null);
+    setCheckoutError("");
+    sessionStorage.removeItem("sa_checkout_email");
+  };
+
+  // ── Step 2: Stripe Embedded Checkout ──
+  if (checkoutStep && clientSecret && stripePromise) {
+    return (
+      <div className="rounded-xl p-5 space-y-3" style={{ background: "#FFFBF0", maxHeight: "90vh", overflowY: "auto" }}>
+        <button
+          onClick={handleBackToEmail}
+          className="flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:opacity-80"
+          style={{ color: "#14213D", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Change email
+        </button>
+        <p className="text-[12px]" style={{ color: "#666666" }}>
+          Charging: {email.trim().toLowerCase()}
+        </p>
+        <div className="rounded-lg overflow-hidden" style={{ minHeight: 400 }}>
+          <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
+            <EmbeddedCheckout />
+          </EmbeddedCheckoutProvider>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 1: Email + Product Cards ──
   return (
     <div className="rounded-xl p-5 space-y-4" style={{ background: "#FFFBF0" }}>
       {/* Lock icon + text */}
@@ -543,6 +601,9 @@ function TieredPaywallCard({
         />
         {emailError && (
           <p className="text-[12px] mt-1.5 font-medium" style={{ color: "#CE1126" }}>{emailError}</p>
+        )}
+        {checkoutError && (
+          <p className="text-[12px] mt-1.5 font-medium" style={{ color: "#CE1126" }}>{checkoutError}</p>
         )}
       </div>
 
