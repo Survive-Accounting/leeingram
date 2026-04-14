@@ -626,6 +626,14 @@ export default function ChapterCramTool() {
   const queryClient = useQueryClient();
   const { user, loading: authLoading } = useAuth();
 
+  // Access control for gating cram tool content
+  const [accessCourseId, setAccessCourseId] = useState("");
+  const { hasAccess: hasPurchasedAccess, isExpired: accessExpired } = useAccessControl({
+    courseId: accessCourseId,
+    chapterId: chapterId || undefined,
+  });
+  const [showPaywallDrawer, setShowPaywallDrawer] = useState(false);
+
   const [solutionsTab, setSolutionsTab] = useState<"be" | "ex" | "p" | null>(null);
   const [expandedTabs, setExpandedTabs] = useState<Record<string, boolean>>({});
   const [feedbackSection, setFeedbackSection] = useState("");
