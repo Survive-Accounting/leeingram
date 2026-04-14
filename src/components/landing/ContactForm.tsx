@@ -15,7 +15,7 @@ const SUBJECTS = [
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [subject, setSubject] = useState("Just saying hi");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -39,7 +39,7 @@ export default function ContactForm() {
       toast.success("Message sent! I'll get back to you soon.");
       setName("");
       setEmail("");
-      setSubject(SUBJECTS[0]);
+      setSubject("Just saying hi");
       setMessage("");
     } catch {
       toast.error("Failed to send — please try again");
@@ -65,17 +65,19 @@ export default function ContactForm() {
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-6 sm:gap-8">
             {/* Left: Photo + caption */}
             <div className="flex flex-col items-center text-center">
-              <img
-                src={LEE_STADIUM_URL}
-                alt="Lee Ingram"
-                className="w-[110px] h-[110px] rounded-full object-cover"
-                style={{ border: "3px solid rgba(255,255,255,0.15)" }}
-              />
+              <div className="w-[110px] h-[110px] rounded-full overflow-hidden" style={{ border: "3px solid rgba(255,255,255,0.15)" }}>
+                <img
+                  src={LEE_STADIUM_URL}
+                  alt="Lee Ingram"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: "center 20%", transform: "scale(1.3)" }}
+                />
+              </div>
               <p className="text-[11px] text-white/60 mt-3 leading-snug" style={{ fontFamily: "Inter, sans-serif" }}>
                 Founder of<br />SurviveAccounting.com
               </p>
               <p className="text-[10px] text-white/40 mt-2 leading-snug max-w-[160px]" style={{ fontFamily: "Inter, sans-serif" }}>
-                Ask a question, share feedback, or just say hello — I read every message personally.
+                Ask a question, share feedback, or just say hello — I read and reply to every message personally.
               </p>
             </div>
 
