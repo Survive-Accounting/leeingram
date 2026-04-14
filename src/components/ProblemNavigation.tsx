@@ -120,10 +120,21 @@ export function ProblemNavigation({ currentAsset }: ProblemNavigationProps) {
   const handleCourseChange = (code: string) => {
     setSelectedCourseCode(code);
     setSelectedChapterId("");
+    setShowPills(false);
   };
 
   const handleChapterChange = (chId: string) => {
     setSelectedChapterId(chId);
+    setShowPills(false);
+  };
+
+  const handleTypeClick = (key: "BE" | "E" | "P") => {
+    if (selectedType === key) {
+      setShowPills(!showPills);
+    } else {
+      setSelectedType(key);
+      setShowPills(true);
+    }
   };
 
   const handlePillClick = (assetName: string) => {
