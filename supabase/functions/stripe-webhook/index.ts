@@ -64,6 +64,70 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  // ── Resolve campus ──
+  let campusId = metadata.campus_id || null;
+  const campusSlug = metadata.campus_slug || null;
+  const originalPriceCents = metadata.original_price_cents ? parseInt(metadata.original_price_cents) : null;
+  const discountAppliedCents = metadata.discount_applied_cents ? parseInt(metadata.discount_applied_cents) : 0;
+  const pricePaidCents = session.amount_total || null;
+
+  if (!campusId && campusSlug) {
+    console.log("Resolving campus_id from slug:", campusSlug);
+    const { data: campus } = await supabase
+      .from("campuses")
+      .select("id")
+      .eq("slug", campusSlug)
+      .maybeSingle();
+    if (campus) {
+      campusId = campus.id;
+      console.log("Resolved campus_id:", campusId);
+    } else {
+      console.log("Campus not found for slug:", campusSlug);
+    }
+  }
+
+  // ── Upsert student record ──
+  let studentId: string | null = null;
+  try {
+    const stripeCustomerId = (session.customer as string) || null;
+
+    const { data: existingStudent } = await supabase
+      .from("students")
+      .select("id, campus_id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingStudent) {
+      studentId = existingStudent.id;
+      const updates: Record<string, unknown> = {};
+      if (stripeCustomerId) updates.stripe_customer_id = stripeCustomerId;
+      if (campusId && !existingStudent.campus_id) updates.campus_id = campusId;
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from("students").update(updates).eq("id", studentId);
+        console.log("Updated student:", studentId, updates);
+      }
+    } else {
+      const { data: newStudent, error: studentErr } = await supabase
+        .from("students")
+        .insert({
+          email,
+          campus_id: campusId,
+        })
+        .select("id")
+        .single();
+
+      if (studentErr) {
+        console.error("Failed to insert student:", studentErr);
+      } else {
+        studentId = newStudent.id;
+        console.log("Created student:", studentId);
+      }
+    }
+  } catch (err) {
+    console.error("Student upsert error:", err);
+  }
+
   // ── Step 1: Insert student_purchases ──
   let purchaseId: string | null = null;
   try {
@@ -74,10 +138,14 @@ Deno.serve(async (req) => {
         course_id,
         chapter_id: chapter_id || null,
         purchase_type: product_type,
-        stripe_customer_id: session.customer as string || null,
+        stripe_customer_id: (session.customer as string) || null,
         stripe_session_id: session.id,
         expires_at: "2026-05-16T23:59:59Z",
         lw_enrollment_status: "pending",
+        campus_id: campusId,
+        student_id: studentId,
+        price_paid_cents: pricePaidCents,
+        discount_applied_cents: discountAppliedCents || 0,
       })
       .select("id")
       .single();
@@ -86,7 +154,7 @@ Deno.serve(async (req) => {
       console.error("Failed to insert student_purchases:", purchaseErr);
     } else {
       purchaseId = purchase.id;
-      console.log("Purchase recorded:", purchaseId);
+      console.log("Purchase recorded:", purchaseId, { campusId, studentId, pricePaidCents });
     }
   } catch (err) {
     console.error("student_purchases insert error:", err);
