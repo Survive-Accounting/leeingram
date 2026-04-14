@@ -733,6 +733,8 @@ function RevealToggle({
               fullPassLink={fullPassLink}
               chapterLink={chapterLink}
               chapterNumber={chapterNumber}
+              courseId={courseId}
+              chapterId={chapterId}
               onBuyClick={onBuyClick}
             />
           ) : (
