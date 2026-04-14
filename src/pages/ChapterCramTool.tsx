@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
