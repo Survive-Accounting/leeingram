@@ -2105,6 +2105,24 @@ export type Database = {
           },
         ]
       }
+      cram_tab_visibility: {
+        Row: {
+          is_visible: boolean
+          tab_name: string
+          updated_at: string
+        }
+        Insert: {
+          is_visible?: boolean
+          tab_name: string
+          updated_at?: string
+        }
+        Update: {
+          is_visible?: boolean
+          tab_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dissector_problems: {
         Row: {
           chapter_id: string | null
