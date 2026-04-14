@@ -1357,6 +1357,21 @@ export default function ChapterCramTool() {
         </>
       )}
 
+      {/* Paywall dialog for gated cram cards */}
+      <Dialog open={showPaywallDrawer} onOpenChange={setShowPaywallDrawer}>
+        <DialogContent className="max-w-md p-6" style={{ background: "#FFFBF0" }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg" style={{ color: "#14213D" }}>
+              <Lock className="h-5 w-5" /> {accessExpired ? "Your Study Pass has expired" : "Unlock with a Study Pass"}
+            </DialogTitle>
+            <DialogDescription className="text-[13px]" style={{ color: "#666" }}>
+              {accessExpired ? "Purchase a new pass to regain access." : "Get full access to all study tools and practice problems."}
+            </DialogDescription>
+          </DialogHeader>
+          <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+        </DialogContent>
+      </Dialog>
+
       {/* Floating Action Bar */}
       <CramFloatingActionBar
         chapterId={chapterId}
