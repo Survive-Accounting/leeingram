@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import CourseCard from "@/components/landing/CourseCard";
 import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
 import NotifyModal from "@/components/landing/NotifyModal";
 import LandingHeader from "@/components/landing/LandingHeader";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
+import LandingFooter from "@/components/landing/LandingFooter";
+import SmartEmailModal from "@/components/landing/SmartEmailModal";
 
 const COURSES = [
   {
@@ -54,10 +56,13 @@ const COURSES = [
 type ModalState =
   | { type: "none" }
   | { type: "email"; course: typeof COURSES[0]; redirectTo?: string }
-  | { type: "notify"; course: typeof COURSES[0] };
+  | { type: "notify"; course: typeof COURSES[0] }
+  | { type: "smart" };
 
 export default function LandingPage() {
   const [modal, setModal] = useState<ModalState>({ type: "none" });
+  const coursesRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLDivElement>(null);
 
   const handleCardClick = (course: typeof COURSES[0]) => {
     if (course.status === "live") {
@@ -68,7 +73,6 @@ export default function LandingPage() {
   };
 
   const handlePricingClick = () => {
-    // Use the live IA2 course for pricing redirect
     const ia2 = COURSES.find((c) => c.slug === "intermediate-accounting-2")!;
     setModal({ type: "email", course: ia2, redirectTo: "pricing" });
   };
@@ -76,7 +80,10 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
       {/* Header */}
-      <LandingHeader onPricingClick={handlePricingClick} />
+      <LandingHeader
+        onPricingClick={handlePricingClick}
+        onSignUpClick={() => setModal({ type: "smart" })}
+      />
 
       {/* Hero */}
       <div className="relative overflow-hidden landing-hero" style={{ height: 280 }}>
@@ -123,7 +130,7 @@ export default function LandingPage() {
       </div>
 
       {/* Course selector */}
-      <div className="relative z-10 flex-1 flex flex-col items-center px-4 py-8">
+      <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-8">
         <p className="text-[14px] font-medium mb-5" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
           What course are you studying?
         </p>
@@ -148,20 +155,15 @@ export default function LandingPage() {
       <TestimonialsSection />
 
       {/* Contact Form */}
-      <ContactForm />
+      <div ref={contactRef}>
+        <ContactForm />
+      </div>
 
       {/* Footer */}
-      <div className="relative z-10 text-center pb-6 pt-6 space-y-0.5" style={{ background: "#0F1A2E" }}>
-        <p className="text-[12px]" style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>
-          Made by Lee Ingram · Ole Miss Accounting Tutor since 2015
-        </p>
-        <p className="text-[12px]" style={{ color: "#B0B5BD", fontFamily: "Inter, sans-serif" }}>
-          Questions?{" "}
-          <a href="mailto:lee@surviveaccounting.com" className="underline" style={{ color: "#9CA3AF" }}>
-            lee@surviveaccounting.com
-          </a>
-        </p>
-      </div>
+      <LandingFooter
+        onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
+        onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
+      />
 
       {/* Modals */}
       {modal.type === "email" && (
@@ -179,6 +181,12 @@ export default function LandingPage() {
           onClose={() => setModal({ type: "none" })}
           courseName={modal.course.name}
           courseId={modal.course.id}
+        />
+      )}
+      {modal.type === "smart" && (
+        <SmartEmailModal
+          open
+          onClose={() => setModal({ type: "none" })}
         />
       )}
     </div>

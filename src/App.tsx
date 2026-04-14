@@ -120,6 +120,8 @@ const StudentsPage = lazy(() => import("./pages/campus-ops/StudentsPage"));
 const PurchasesPage = lazy(() => import("./pages/campus-ops/PurchasesPage"));
 const ProfessorsPage = lazy(() => import("./pages/campus-ops/ProfessorsPage"));
 const CampusAnalyticsPage = lazy(() => import("./pages/campus-ops/AnalyticsPage"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
