@@ -757,6 +757,169 @@ export type Database = {
           },
         ]
       }
+      campus_courses: {
+        Row: {
+          campus_id: string
+          course_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          override_chapter_price_cents: number | null
+          override_semester_price_cents: number | null
+        }
+        Insert: {
+          campus_id: string
+          course_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          override_chapter_price_cents?: number | null
+          override_semester_price_cents?: number | null
+        }
+        Update: {
+          campus_id?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          override_chapter_price_cents?: number | null
+          override_semester_price_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_courses_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campus_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campus_pricing: {
+        Row: {
+          campus_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string | null
+          price_cents: number
+          product_type: string
+          updated_at: string
+        }
+        Insert: {
+          campus_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          price_cents: number
+          product_type: string
+          updated_at?: string
+        }
+        Update: {
+          campus_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          price_cents?: number
+          product_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_pricing_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campus_professors: {
+        Row: {
+          campus_id: string
+          created_at: string
+          department: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          campus_id: string
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          campus_id?: string
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_professors_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campuses: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          semester_end: string | null
+          semester_start: string | null
+          slug: string
+          stripe_coupon_id: string | null
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          semester_end?: string | null
+          semester_start?: string | null
+          slug: string
+          stripe_coupon_id?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          semester_end?: string | null
+          semester_start?: string | null
+          slug?: string
+          stripe_coupon_id?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       changelog: {
         Row: {
           created_at: string
@@ -4390,45 +4553,64 @@ export type Database = {
       }
       student_purchases: {
         Row: {
+          campus_id: string | null
           chapter_id: string | null
           course_id: string | null
           created_at: string | null
+          discount_applied_cents: number | null
           email: string
           expires_at: string | null
           id: string
           lw_enrollment_id: string | null
           lw_enrollment_status: string | null
+          price_paid_cents: number | null
           purchase_type: string
           stripe_customer_id: string | null
           stripe_session_id: string | null
+          student_id: string | null
         }
         Insert: {
+          campus_id?: string | null
           chapter_id?: string | null
           course_id?: string | null
           created_at?: string | null
+          discount_applied_cents?: number | null
           email: string
           expires_at?: string | null
           id?: string
           lw_enrollment_id?: string | null
           lw_enrollment_status?: string | null
+          price_paid_cents?: number | null
           purchase_type: string
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
+          student_id?: string | null
         }
         Update: {
+          campus_id?: string | null
           chapter_id?: string | null
           course_id?: string | null
           created_at?: string | null
+          discount_applied_cents?: number | null
           email?: string
           expires_at?: string | null
           id?: string
           lw_enrollment_id?: string | null
           lw_enrollment_status?: string | null
+          price_paid_cents?: number | null
           purchase_type?: string
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
+          student_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "student_purchases_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "student_purchases_chapter_id_fkey"
             columns: ["chapter_id"]
@@ -4441,6 +4623,61 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_purchases_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          auth_user_id: string | null
+          campus_id: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          professor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          campus_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          professor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          campus_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          professor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "campus_professors"
             referencedColumns: ["id"]
           },
         ]
@@ -5761,6 +5998,10 @@ export type Database = {
     }
     Functions: {
       calculate_respond_by: { Args: { p_created_at: string }; Returns: string }
+      get_campus_price: {
+        Args: { p_campus_slug: string; p_product_type: string }
+        Returns: number
+      }
       increment_practice_views: {
         Args: { asset_id: string }
         Returns: undefined
