@@ -8,6 +8,7 @@ import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import StagingHero from "@/components/landing/StagingHero";
+import ThisIsForYouSection from "@/components/landing/ThisIsForYouSection";
 
 const COURSES = [
   {
@@ -93,6 +94,8 @@ export default function StagingLandingPage() {
         onLiveCourseClick={() => handleCardClick(liveCourse)}
         onNotifyClick={handleNotifyClick}
       />
+
+      <ThisIsForYouSection onCtaClick={() => handleCardClick(liveCourse)} />
 
       <TestimonialsSection />
 
