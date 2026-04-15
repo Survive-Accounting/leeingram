@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
 
 const NAVY = "#14213D";
 
@@ -20,6 +21,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const { trackEvent } = useEventTracking();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +36,8 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
       if (error) throw error;
       const slug = data?.campus_slug || "general";
       sessionStorage.setItem("student_email", trimmed);
+      setStoredEmail(trimmed);
+      trackEvent('email_captured', { course_slug: courseSlug, email_domain: trimmed.split('@')[1] });
       if (data?.is_test_mode) {
         sessionStorage.setItem("sa_test_mode", "true");
         sessionStorage.setItem("sa_email_override", data.email_override || "");

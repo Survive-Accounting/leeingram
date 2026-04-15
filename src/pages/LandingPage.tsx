@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import CourseCard from "@/components/landing/CourseCard";
 import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
 import NotifyModal from "@/components/landing/NotifyModal";
@@ -6,7 +6,7 @@ import SiteNavbar from "@/components/landing/SiteNavbar";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
-
+import { useEventTracking } from "@/hooks/useEventTracking";
 
 const COURSES = [
   {
@@ -54,11 +54,16 @@ export default function LandingPage() {
   const [modal, setModal] = useState<ModalState>({ type: "none" });
   const coursesRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
+  const { trackEvent, trackPageView } = useEventTracking();
+
+  useEffect(() => { trackPageView('landing'); }, [trackPageView]);
 
   const handleCardClick = (course: typeof COURSES[0]) => {
     if (course.status === "live") {
+      trackEvent('course_selected', { course_name: course.name, course_slug: course.slug });
       setModal({ type: "email", course });
     } else {
+      trackEvent('waitlist_signup', { course_name: course.name });
       setModal({ type: "notify", course });
     }
   };
