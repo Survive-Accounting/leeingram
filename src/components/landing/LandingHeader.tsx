@@ -6,10 +6,10 @@ const NAVY = "#14213D";
 
 interface LandingHeaderProps {
   onPricingClick: () => void;
-  onSignUpClick: () => void;
+  onCoursesClick: () => void;
 }
 
-export default function LandingHeader({ onPricingClick, onSignUpClick }: LandingHeaderProps) {
+export default function LandingHeader({ onPricingClick, onCoursesClick }: LandingHeaderProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -56,11 +56,11 @@ export default function LandingHeader({ onPricingClick, onSignUpClick }: Landing
               </button>
             ))}
             <button
-              onClick={() => { onSignUpClick(); setMenuOpen(false); }}
+              onClick={() => { onCoursesClick(); setMenuOpen(false); }}
               className="text-[13px] font-semibold text-white px-5 py-2 rounded-lg transition-opacity hover:opacity-90"
               style={{ background: "#CE1126", fontFamily: "Inter, sans-serif" }}
             >
-              Sign Up
+              Courses
             </button>
           </nav>
 
@@ -90,11 +90,11 @@ export default function LandingHeader({ onPricingClick, onSignUpClick }: Landing
               </button>
             ))}
             <button
-              onClick={() => { onSignUpClick(); setMenuOpen(false); }}
+              onClick={() => { onCoursesClick(); setMenuOpen(false); }}
               className="block w-full text-center text-[14px] font-semibold text-white py-2.5 mt-2 rounded-lg"
               style={{ background: "#CE1126", fontFamily: "Inter, sans-serif" }}
             >
-              Sign Up
+              Courses
             </button>
           </div>
         )}
