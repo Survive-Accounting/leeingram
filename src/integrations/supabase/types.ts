@@ -4218,6 +4218,56 @@ export type Database = {
           },
         ]
       }
+      sharing_warnings: {
+        Row: {
+          action_taken: string | null
+          created_at: string | null
+          details: Json | null
+          email: string
+          id: string
+          is_reviewed: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          student_id: string
+          warning_level: string
+          warning_type: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string | null
+          details?: Json | null
+          email: string
+          id?: string
+          is_reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          student_id: string
+          warning_level?: string
+          warning_type: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string | null
+          details?: Json | null
+          email?: string
+          id?: string
+          is_reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          student_id?: string
+          warning_level?: string
+          warning_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sharing_warnings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sheet_prep_log: {
         Row: {
           archived: boolean
