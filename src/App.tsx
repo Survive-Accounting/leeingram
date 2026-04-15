@@ -16,6 +16,7 @@ import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 // ── Lazy-loaded pages ────────────────────────────────────────────────
 const Landing = lazy(() => import("./pages/Landing"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const StagingLandingPage = lazy(() => import("./pages/StagingLandingPage"));
 const SurviveHome = lazy(() => import("./pages/SurviveHome"));
 const ContentFactory = lazy(() => import("./pages/ContentFactory"));
 const ContentRoadmap = lazy(() => import("./pages/ContentRoadmap"));
