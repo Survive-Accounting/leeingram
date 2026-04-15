@@ -88,6 +88,7 @@ const JEDebug = lazy(() => import("./pages/JEDebug"));
 const AssetStatsDashboard = lazy(() => import("./pages/AssetStatsDashboard"));
 const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging"));
 const ChapterCramTool = lazy(() => import("./pages/ChapterCramTool"));
+const ChapterPreviewPage = lazy(() => import("./pages/ChapterPreviewPage"));
 const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
 const ChapterJEManager = lazy(() => import("./pages/ChapterJEManager"));
 const ChapterFormulasManager = lazy(() => import("./pages/ChapterFormulasManager"));
@@ -181,6 +182,7 @@ const AppRoutes = () => {
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
         <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
+        <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber" element={<ChapterPreviewPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/login" element={<Login />} />
