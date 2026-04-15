@@ -1387,7 +1387,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
       />
 
       {isPreview && (
-        <PreviewPurchaseBar priceCents={12500} campusSlug="ole-miss" courseSlug="intermediate-accounting-2" />
+        <PreviewPurchaseBar priceCents={12500} campusSlug={campusContext?.slug || "ole-miss"} courseSlug={campusContext?.courseSlug || "intermediate-accounting-2"} />
       )}
     </div>
   );
