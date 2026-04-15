@@ -1,6 +1,6 @@
 // Staging clone of LandingPage.tsx — experiment here, then push changes live
 import { useState, useRef, useEffect } from "react";
-import SiteNavbar from "@/components/landing/SiteNavbar";
+import StagingNavbar from "@/components/landing/StagingNavbar";
 import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -83,7 +83,7 @@ export default function StagingLandingPage() {
       </div>
       <div style={{ height: 28 }} />
 
-      <SiteNavbar />
+      <StagingNavbar onCtaClick={() => openWithCourse(liveCourse)} />
 
       <StagingHero
         liveCourse={liveCourse}
