@@ -75,7 +75,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
-      <SiteNavbar onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })} />
+      <SiteNavbar />
 
       {/* Hero */}
       <div className="relative overflow-hidden landing-hero" style={{ height: 340 }}>
