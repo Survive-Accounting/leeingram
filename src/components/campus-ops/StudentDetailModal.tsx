@@ -3,8 +3,20 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { X, AlertTriangle, Shield, ShieldAlert } from "lucide-react";
+import { X, AlertTriangle, Shield, ShieldAlert, Monitor, Smartphone } from "lucide-react";
 import { toast } from "sonner";
+
+interface DeviceRow {
+  id: string;
+  device_name: string | null;
+  device_fingerprint: string;
+  last_login_at: string;
+  first_login_at: string;
+  login_count: number;
+  is_active: boolean;
+  is_flagged: boolean;
+  flag_reason: string | null;
+}
 
 interface Props {
   open: boolean;
@@ -80,6 +92,7 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
   const [events, setEvents] = useState<EventRow[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [stats, setStats] = useState({ visits: 0, paywallHits: 0, chaptersViewed: 0, lastSeen: "" });
   const [meta, setMeta] = useState({ firstSeen: "", device: "—", referral: "Direct", sessions: 0 });
 
@@ -88,16 +101,18 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
     setLoading(true);
 
     const load = async () => {
-      const [evRes, purchRes, warnRes] = await Promise.all([
+      const [evRes, purchRes, warnRes, devRes] = await Promise.all([
         (supabase as any).from("student_events").select("created_at, event_type, event_data, course_slug, session_id, device_type, utm_source").eq("email", email).order("created_at", { ascending: false }).limit(50),
         (supabase as any).from("student_purchases").select("course_slug, price_paid_cents, created_at, expires_at").eq("email", email).order("created_at", { ascending: false }),
         (supabase as any).from("sharing_warnings").select("*").eq("email", email).order("created_at", { ascending: false }),
+        (supabase as any).from("student_devices").select("id, device_name, device_fingerprint, last_login_at, first_login_at, login_count, is_active, is_flagged, flag_reason").eq("email", email).order("last_login_at", { ascending: false }),
       ]);
 
       const allEvents: EventRow[] = evRes.data ?? [];
       setEvents(allEvents.slice(0, 20));
       setPurchases(purchRes.data ?? []);
       setWarnings(warnRes.data ?? []);
+      setDevices(devRes.data ?? []);
 
       // Stats
       const sessionIds = new Set(allEvents.map(e => e.session_id).filter(Boolean));
@@ -187,6 +202,52 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
                 </div>
               )}
             </div>
+
+            {/* Registered Devices */}
+            {devices.length > 0 && (() => {
+              const activeCount = devices.filter(d => d.is_active).length;
+              const limitColor = activeCount > 5 ? "text-destructive" : activeCount === 5 ? "text-yellow-500" : "text-green-500";
+              return (
+                <div>
+                  <h3 className="text-sm font-semibold mb-1 flex items-center gap-1.5">
+                    <Monitor className="w-4 h-4" /> Registered Devices
+                  </h3>
+                  <p className={`text-xs mb-2 font-medium ${limitColor}`}>
+                    {activeCount} device{activeCount !== 1 ? "s" : ""} registered (limit: 5)
+                  </p>
+                  <div className="space-y-2">
+                    {devices.map((d) => {
+                      const isMobile = d.device_name?.includes("iPhone") || d.device_name?.includes("iPad") || d.device_name?.includes("Android");
+                      const DevIcon = isMobile ? Smartphone : Monitor;
+                      return (
+                        <div key={d.id} className={`rounded-lg border p-3 text-xs space-y-1 ${d.is_flagged ? "border-destructive/40 bg-destructive/5" : ""}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <DevIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="font-medium">{d.device_name || d.device_fingerprint}</span>
+                            </div>
+                            {d.is_flagged ? (
+                              <Badge className="bg-destructive text-[10px] gap-0.5"><AlertTriangle className="w-3 h-3" /> Flagged</Badge>
+                            ) : d.is_active ? (
+                              <Badge className="bg-green-600 text-[10px]">Active ✓</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px]">Inactive</Badge>
+                            )}
+                          </div>
+                          <p className="text-muted-foreground">
+                            Last login: {relativeTime(d.last_login_at)} · First login: {fmtDate(d.first_login_at)}
+                          </p>
+                          <p className="text-muted-foreground">Logins: {d.login_count}</p>
+                          {d.is_flagged && d.flag_reason && (
+                            <p className="text-destructive/80">Reason: {d.flag_reason}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Sharing Warnings */}
             {warnings.length > 0 && (
