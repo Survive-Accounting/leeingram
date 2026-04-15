@@ -25,7 +25,7 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
                 <sup className="text-[8px] font-normal ml-0.5 opacity-50">™</sup>
               </span>
               <p className="text-[13px] mt-3 leading-relaxed" style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}>
-                Exam prep that helps you think like an accountant.
+                Exam prep that helps you do more than survive.
               </p>
             </div>
 

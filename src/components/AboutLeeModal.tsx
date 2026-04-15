@@ -20,7 +20,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
           <DialogDescription>Bio and contact info</DialogDescription>
         </DialogHeader>
 
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-5 sm:p-7 space-y-4">
           {/* 1. Header row */}
           <div className="flex items-start gap-4 sm:gap-5">
             <div className="flex-1 min-w-0 pt-1">
@@ -52,30 +52,30 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
           </div>
 
           {/* 2. Bio */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <p
-              className="text-[17px] sm:text-[18px] font-semibold text-white"
+              className="text-[15px] sm:text-[16px] font-semibold text-white"
               style={{ lineHeight: 1.5, fontFamily: "Inter, sans-serif" }}
             >
-              I loved accounting so much in college that I became a full-time tutor.
+              I loved accounting so much in college, I turned it into a full-time tutoring career.
             </p>
             {[
-              "During the pandemic I went fully virtual and created SurviveAccounting.com — and it's been a blast watching it help 1,000+ students since then.",
-              "Now I travel the world while helping college students actually understand — and even love — accounting. Not just survive it.",
+              "During the pandemic, I built SurviveAccounting.com — and since then, it's helped 1,000+ students finally understand what's going on.",
+              "Now I travel the world doing what I love: helping students not just survive accounting, but feel confident in it.",
             ].map((p, i) => (
               <p
                 key={i}
-                className="text-[13px] sm:text-[14px]"
-                style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.7, fontFamily: "Inter, sans-serif" }}
+                className="text-[12px] sm:text-[13px]"
+                style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.65, fontFamily: "Inter, sans-serif" }}
               >
                 {p}
               </p>
             ))}
             <p
-              className="text-[13px] sm:text-[14px]"
-              style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.7, fontFamily: "Inter, sans-serif" }}
+              className="text-[12px] sm:text-[13px]"
+              style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.65, fontFamily: "Inter, sans-serif" }}
             >
-              Best of luck on your exam!
+              Good luck on your exam — you've got this.
               <br />
               <span className="font-medium text-white">— Lee</span>
             </p>
@@ -83,8 +83,8 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
 
           {/* 3. PS */}
           <p
-            className="text-[11px] sm:text-[12px] italic"
-            style={{ color: "rgba(255,255,255,0.4)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}
+            className="text-[10px] sm:text-[11px] italic"
+            style={{ color: "rgba(255,255,255,0.35)", lineHeight: 1.5, fontFamily: "Inter, sans-serif" }}
           >
             PS: A huge thanks to all the students who've enjoyed my tutoring content over the years. As a lifelong teacher, it means a lot.
           </p>

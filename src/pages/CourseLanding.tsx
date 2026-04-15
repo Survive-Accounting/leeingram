@@ -40,7 +40,7 @@ const COURSES = [
     status: "future" as const,
     badge: "Fall 2026",
     badgeBg: "#6B7280",
-    cta: "Request Early Access →",
+    cta: "Notify Me →",
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
@@ -50,7 +50,7 @@ const COURSES = [
     status: "future" as const,
     badge: "Fall 2026",
     badgeBg: "#6B7280",
-    cta: "Request Early Access →",
+    cta: "Notify Me →",
   },
 ];
 
