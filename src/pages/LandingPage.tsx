@@ -178,7 +178,7 @@ export default function LandingPage() {
               key={c.id}
               name={c.name}
               subtext={c.subtext}
-              subtitle={c.subtitle}
+              availability={c.availability}
               cta={c.cta}
               onClick={() => handleCardClick(c)}
             />
