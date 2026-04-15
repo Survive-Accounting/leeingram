@@ -132,14 +132,14 @@ export default function CampusLandingPage() {
     setProblemsLoading(true);
 
     const prefix = problemType;
-    supabase
+    (supabase as any)
       .from("teaching_assets")
       .select("id, asset_name, source_ref, problem_type")
       .eq("chapter_id", selectedChapterId)
       .eq("status", "approved")
       .ilike("source_ref", `${prefix}%`)
       .order("source_ref")
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         setProblems(data ?? []);
         setProblemsLoading(false);
       });
