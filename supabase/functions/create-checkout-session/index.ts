@@ -12,7 +12,6 @@ const BYPASS_BASE_EMAILS = [
 
 function isTestEmail(email: string): boolean {
   const lower = email.trim().toLowerCase();
-  // Strip plus-alias: lee+test1@survivestudios.com → lee@survivestudios.com
   const normalized = lower.replace(/\+[^@]*@/, "@");
   return BYPASS_BASE_EMAILS.includes(normalized);
 }
@@ -25,7 +24,7 @@ Deno.serve(async (req) => {
   try {
     const {
       email, course_id, chapter_id, product_type, return_url,
-      campus_id: rawCampusId, campus_slug,
+      campus_id: rawCampusId, campus_slug, course_slug,
     } = await req.json();
 
     if (!email || !course_id || !product_type) {
@@ -71,15 +70,24 @@ Deno.serve(async (req) => {
       if (campus) resolvedSlug = campus.slug;
     }
 
+    // ── Resolve course slug if not provided ──
+    let resolvedCourseSlug = course_slug || "";
+    if (!resolvedCourseSlug) {
+      const { data: courseRow } = await supabase
+        .from("courses")
+        .select("slug")
+        .eq("id", course_id)
+        .maybeSingle();
+      if (courseRow) resolvedCourseSlug = courseRow.slug;
+    }
+
     // ── Price resolution ──
-    // Try campus-specific pricing first via get_campus_price RPC
     let useCampusPricing = false;
     let priceCents = 0;
     let originalCents = 0;
     let discountLabel = "";
     let courseName = "Survive Accounting";
 
-    // Fetch course name for Stripe product description
     const { data: courseRow } = await supabase
       .from("courses")
       .select("course_name")
@@ -98,7 +106,6 @@ Deno.serve(async (req) => {
         priceCents = campusPrice;
         useCampusPricing = true;
 
-        // Check for original/anchor price (global pricing as anchor)
         const { data: globalPrice } = await supabase.rpc("get_campus_price", {
           p_campus_slug: "general",
           p_product_type: product_type,
@@ -111,14 +118,29 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const baseUrl = return_url || "https://learn.surviveaccounting.com";
+    const returnUrl = `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = resolvedSlug && resolvedCourseSlug
+      ? `${baseUrl}/campus/${resolvedSlug}/${resolvedCourseSlug}`
+      : baseUrl;
 
-    // ── Campus pricing path: use price_data (dynamic) ──
+    const sessionMetadata = {
+      email,
+      course_id,
+      chapter_id: chapter_id || "",
+      product_type,
+      campus_id: campusId || "",
+      campus_slug: resolvedSlug || "",
+      course_slug: resolvedCourseSlug || "",
+      original_price_cents: String(originalCents || priceCents),
+      discount_applied_cents: String(originalCents > priceCents ? originalCents - priceCents : 0),
+      is_test: String(isTest),
+    };
+
     if (useCampusPricing) {
       const description = discountLabel
         ? `${discountLabel} · Was $${Math.round(originalCents / 100)}`
         : undefined;
-
-      const returnUrl = `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
@@ -135,17 +157,8 @@ Deno.serve(async (req) => {
         }],
         customer_email: email,
         success_url: returnUrl,
-        cancel_url: `${return_url || "https://learn.surviveaccounting.com"}/campus/${resolvedSlug || "general"}/${campus_slug || "intermediate-accounting-2"}`,
-        metadata: {
-          email,
-          course_id,
-          chapter_id: chapter_id || "",
-          product_type,
-          campus_id: campusId || "",
-          campus_slug: resolvedSlug || "",
-          original_price_cents: String(originalCents || priceCents),
-          discount_applied_cents: String(originalCents > priceCents ? originalCents - priceCents : 0),
-        },
+        cancel_url: cancelUrl,
+        metadata: sessionMetadata,
       });
 
       return new Response(
@@ -185,22 +198,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const returnUrl = `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email,
       success_url: returnUrl,
-      cancel_url: `${return_url || "https://learn.surviveaccounting.com"}`,
-      metadata: {
-        email,
-        course_id,
-        chapter_id: chapter_id || "",
-        product_type,
-        campus_id: campusId || "",
-        campus_slug: resolvedSlug || "",
-      },
+      cancel_url: cancelUrl,
+      metadata: sessionMetadata,
     });
 
     return new Response(

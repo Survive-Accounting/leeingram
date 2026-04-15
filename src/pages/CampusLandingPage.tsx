@@ -134,7 +134,9 @@ export default function CampusLandingPage() {
       <PurchaseBar
         priceCents={priceCents}
         campusId={campusId}
+        campusSlug={campusSlug}
         courseId={courseId}
+        courseSlug={courseSlug}
       />
     </div>
   );

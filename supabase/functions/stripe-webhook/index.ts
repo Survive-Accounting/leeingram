@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
 
   const body = await req.text();
 
-  // Determine if this is a test webhook by checking the signature prefix
-  // Stripe test events use whsec_ prefixed secrets
+  // Verify webhook signature — use the LIVE key for constructing events
+  // (Stripe webhook endpoints receive events from one mode; the webhook secret handles verification)
   let event: Stripe.Event;
   try {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY_LIVE")!, {
@@ -39,8 +39,19 @@ Deno.serve(async (req) => {
     });
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    // If LIVE key fails, try TEST key (for test mode webhooks with separate endpoint)
+    try {
+      const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+      if (testKey) {
+        const stripeTest = new Stripe(testKey, { apiVersion: "2024-12-18.acacia" });
+        event = await stripeTest.webhooks.constructEventAsync(body, signature, webhookSecret);
+      } else {
+        throw err;
+      }
+    } catch {
+      console.error("Webhook signature verification failed:", err.message);
+      return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    }
   }
 
   // Only handle checkout.session.completed
@@ -189,7 +200,6 @@ Deno.serve(async (req) => {
     const lwBaseUrl = Deno.env.get("LW_BASE_URL");
 
     if (lwApiKey && lwBaseUrl) {
-      // First, create or find user in LW
       const userRes = await fetch(`${lwBaseUrl}/v2/users`, {
         method: "POST",
         headers: {
@@ -203,9 +213,6 @@ Deno.serve(async (req) => {
       const userBody = await userRes.text();
       console.log("LW user create response:", userRes.status, userBody);
 
-      // Enroll user in course - need to look up the LW course ID
-      // The course_id in our DB is a UUID, LW uses its own IDs
-      // For now, we attempt enrollment using the course slug or a mapping
       const { data: course } = await supabase
         .from("courses")
         .select("slug")
@@ -281,27 +288,43 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── Step 4: Generate magic link & send welcome email via Resend ──
+  // ── Step 4: Create auth user & send welcome email via Resend ──
   try {
-    // Generate magic link via Supabase admin auth
-    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+    // Create or find Supabase auth user (for magic link login later)
+    const { data: authUser } = await supabase.auth.admin.listUsers();
+    const existingAuthUser = authUser?.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (!existingAuthUser) {
+      // Create auth user with a random password (they'll use magic link to log in)
+      const { error: createErr } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { source: "stripe_purchase" },
+      });
+      if (createErr) {
+        console.error("Failed to create auth user:", createErr);
+      } else {
+        console.log("Created auth user for:", email);
+      }
+    }
+
+    // Generate OTP magic link for the welcome email
+    const { data: otpData, error: otpErr } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email,
       options: {
-        redirectTo: `${supabaseUrl.replace('.supabase.co', '')}/auth/callback`,
+        redirectTo: "https://learn.surviveaccounting.com/auth/callback",
       },
     });
 
     let magicLink = "";
-    if (linkErr) {
-      console.error("Failed to generate magic link:", linkErr);
-      // Still send email without magic link
-    } else {
-      // The hashed_token from generateLink needs to be used to construct the link
-      const token = linkData?.properties?.hashed_token;
-      if (token) {
-        magicLink = `https://learn.surviveaccounting.com/auth/callback?token=${token}&type=magiclink`;
-      }
+    if (otpErr) {
+      console.error("Failed to generate magic link:", otpErr);
+    } else if (otpData?.properties?.action_link) {
+      magicLink = otpData.properties.action_link;
+      console.log("Generated magic link for:", email);
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -329,7 +352,7 @@ Deno.serve(async (req) => {
       console.error("RESEND_API_KEY not configured, skipping welcome email");
     }
   } catch (err) {
-    console.error("Magic link / email error:", err);
+    console.error("Auth user / email error:", err);
   }
 
   // Always return 200 to Stripe
