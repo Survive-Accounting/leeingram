@@ -10,33 +10,27 @@ import LandingFooter from "@/components/landing/LandingFooter";
 
 const COURSES = [
   {
-    id: "11111111-1111-1111-1111-111111111111",
-    name: "Introductory Accounting 1",
-    subtext: "Financial Principles",
-    badge: "FALL 2026",
-    badgeColor: "#6B7280",
-    subtitle: "Available next semester",
-    cta: "Notify Me →",
-    status: "future" as const,
-    slug: "intro-accounting-1",
-  },
-  {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Introductory Accounting 2",
     subtext: "Managerial Principles",
-    badge: "LAUNCHING APRIL 24",
-    badgeColor: "#F97316",
-    subtitle: "Coming before finals",
+    subtitle: "Coming April 27th",
     cta: "Notify Me →",
     status: "upcoming" as const,
     slug: "intro-accounting-2",
   },
   {
+    id: "11111111-1111-1111-1111-111111111111",
+    name: "Introductory Accounting 1",
+    subtext: "Financial Principles",
+    subtitle: "Available Fall 2026",
+    cta: "Notify Me →",
+    status: "future" as const,
+    slug: "intro-accounting-1",
+  },
+  {
     id: "33333333-3333-3333-3333-333333333333",
     name: "Intermediate Accounting 1",
-    badge: "FALL 2026",
-    badgeColor: "#6B7280",
-    subtitle: "Available next semester",
+    subtitle: "Available Fall 2026",
     cta: "Notify Me →",
     status: "future" as const,
     slug: "intermediate-accounting-1",
@@ -44,9 +38,7 @@ const COURSES = [
   {
     id: "44444444-4444-4444-4444-444444444444",
     name: "Intermediate Accounting 2",
-    badge: "LIVE",
-    badgeColor: "#22C55E",
-    subtitle: "Ch 13–22 · Finals prep · $125",
+    subtitle: "Ch 13–22 · Finals prep",
     cta: "Start Studying →",
     status: "live" as const,
     slug: "intermediate-accounting-2",
@@ -155,15 +147,8 @@ export default function LandingPage() {
                   <h3 className="text-[20px] sm:text-[22px] font-bold mb-1" style={{ color: "#14213D" }}>
                     {live.name}
                   </h3>
-                  <p className="text-[13px] mb-2" style={{ color: "#6B7280" }}>
+                  <p className="text-[13px]" style={{ color: "#6B7280" }}>
                     Ch 13–22 · Finals prep
-                  </p>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-[14px] line-through" style={{ color: "#9CA3AF" }}>$250</span>
-                    <span className="text-[22px] font-bold" style={{ color: "#14213D" }}>$125</span>
-                  </div>
-                  <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
-                    First semester pricing · Access through May 2026
                   </p>
                 </div>
                 <div className="sm:w-[170px] shrink-0">
@@ -173,9 +158,6 @@ export default function LandingPage() {
                   >
                     Start Studying →
                   </span>
-                  <p className="text-[10px] text-center mt-1.5" style={{ color: "#9CA3AF" }}>
-                    One-time payment
-                  </p>
                 </div>
               </div>
             </button>
@@ -196,11 +178,8 @@ export default function LandingPage() {
               key={c.id}
               name={c.name}
               subtext={c.subtext}
-              badge={c.badge}
-              badgeColor={c.badgeColor}
               subtitle={c.subtitle}
               cta={c.cta}
-              isLive={false}
               onClick={() => handleCardClick(c)}
             />
           ))}
