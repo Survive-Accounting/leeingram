@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     const {
       email, course_id, chapter_id, product_type, return_url,
       campus_id: rawCampusId, campus_slug, course_slug,
+      ui_mode,
     } = await req.json();
 
     if (!email || !course_id || !product_type) {
