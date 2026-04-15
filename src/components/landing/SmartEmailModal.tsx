@@ -100,7 +100,7 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
                 className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
                 style={{ minHeight: 48, background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
               />
-              {warning && <p className="text-[12px]" style={{ color: "#D97706" }}>{warning}</p>}
+              
             </div>
             <button
               type="submit"
