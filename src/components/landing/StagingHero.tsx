@@ -1,5 +1,5 @@
 import { CheckCircle2, Users, BookOpen, Zap } from "lucide-react";
-import { GlobeHeadshot } from "@/components/GlobeHeadshot";
+import leeHeadshot from "@/assets/lee-headshot-styled.png";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -94,7 +94,7 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
         {/* Authority element */}
         <div className="mt-5 flex items-center justify-center gap-3">
           <div className="w-9 h-9 rounded-full overflow-hidden border-2" style={{ borderColor: "rgba(255,255,255,0.15)" }}>
-            <GlobeHeadshot size={36} />
+            <img src={leeHeadshot} alt="Lee Ingram" className="w-full h-full object-cover" />
           </div>
           <div className="text-left">
             <p className="text-[12px] font-semibold text-white/80" style={{ fontFamily: "Inter, sans-serif" }}>
