@@ -123,7 +123,7 @@ export default function LandingPage() {
       </div>
 
       {/* Course selector */}
-      <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-10" style={{ scrollMarginTop: "80px" }}>
+      <div id="courses" ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-10" style={{ scrollMarginTop: "80px" }}>
         <h2
           className="text-[28px] sm:text-[34px] text-center mb-8"
           style={{ fontFamily: "'DM Serif Display', serif", color: "#14213D", fontWeight: 400 }}
