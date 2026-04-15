@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import CampusHeader from "@/components/campus/CampusHeader";
 import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
+import { BookOpen, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
@@ -42,6 +44,7 @@ export default function CampusLandingPage() {
   const [topicsByChapter, setTopicsByChapter] = useState<Record<string, Topic[]>>({});
   const [priceCents, setPriceCents] = useState(12500);
   const [loading, setLoading] = useState(true);
+  const [showChapterGrid, setShowChapterGrid] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -121,6 +124,63 @@ export default function CampusLandingPage() {
           <p className="text-[12px] mt-1" style={{ color: "#9CA3AF" }}>
             {chapters.length} chapters · All practice problems · Explanations included
           </p>
+        </div>
+
+        {/* Tour options */}
+        <h2 className="text-2xl font-bold text-center mb-6" style={{ color: "#14213D" }}>
+          See what's included
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card 1: Cram Tools */}
+          <div
+            className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            style={{ border: "1px solid #E5E7EB" }}
+            onClick={() => setShowChapterGrid(true)}
+          >
+            <BookOpen className="w-10 h-10 mb-3" style={{ color: "#14213D" }} />
+            <h3 className="text-xl font-semibold mb-2" style={{ color: "#14213D" }}>
+              Tour Cram Tools
+            </h3>
+            <p className="text-[14px] mb-4" style={{ color: "#6B7280" }}>
+              Flashcards, formulas, journal entries & more for each chapter
+            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowChapterGrid(true);
+              }}
+            >
+              Explore Cram Tools →
+            </Button>
+          </div>
+
+          {/* Card 2: Practice Problems */}
+          <div
+            className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            style={{ border: "1px solid #E5E7EB" }}
+            onClick={() => window.open('/practice?preview=true', '_blank')}
+          >
+            <FileText className="w-10 h-10 mb-3" style={{ color: "#14213D" }} />
+            <h3 className="text-xl font-semibold mb-2" style={{ color: "#14213D" }}>
+              Tour Practice Problems
+            </h3>
+            <p className="text-[14px] mb-4" style={{ color: "#6B7280" }}>
+              Hundreds of practice problems with step-by-step explanations
+            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open('/practice?preview=true', '_blank');
+              }}
+            >
+              Browse Problems →
+            </Button>
+          </div>
         </div>
       </div>
 
