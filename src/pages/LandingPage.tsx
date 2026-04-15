@@ -130,7 +130,7 @@ export default function LandingPage() {
       </div>
 
       {/* Course selector */}
-      <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-8">
+      <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-8" style={{ scrollMarginTop: "80px" }}>
         <p className="text-[17px] sm:text-[19px] font-semibold mb-6" style={{ color: "#374151", fontFamily: "Inter, sans-serif" }}>
           What course are you studying?
         </p>
