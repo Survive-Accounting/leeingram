@@ -762,8 +762,11 @@ export type Database = {
           campus_id: string
           course_id: string
           created_at: string
+          display_order: number | null
           id: string
           is_active: boolean
+          local_course_code: string | null
+          local_course_name: string | null
           override_chapter_price_cents: number | null
           override_semester_price_cents: number | null
         }
@@ -771,8 +774,11 @@ export type Database = {
           campus_id: string
           course_id: string
           created_at?: string
+          display_order?: number | null
           id?: string
           is_active?: boolean
+          local_course_code?: string | null
+          local_course_name?: string | null
           override_chapter_price_cents?: number | null
           override_semester_price_cents?: number | null
         }
@@ -780,8 +786,11 @@ export type Database = {
           campus_id?: string
           course_id?: string
           created_at?: string
+          display_order?: number | null
           id?: string
           is_active?: boolean
+          local_course_code?: string | null
+          local_course_name?: string | null
           override_chapter_price_cents?: number | null
           override_semester_price_cents?: number | null
         }
