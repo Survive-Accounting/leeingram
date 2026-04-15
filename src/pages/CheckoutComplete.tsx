@@ -1,22 +1,50 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import SiteNavbar from "@/components/landing/SiteNavbar";
 
 const NAVY = "#14213D";
 
+const COURSE_DISPLAY: Record<string, string> = {
+  "intermediate-accounting-2": "Intermediate Accounting 2",
+  "intermediate-accounting-1": "Intermediate Accounting 1",
+  "intro-accounting-1": "Introductory Accounting 1",
+  "intro-accounting-2": "Introductory Accounting 2",
+};
+
 export default function CheckoutComplete() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const campusSlug = searchParams.get("campus");
+  const courseSlug = searchParams.get("course");
+
   const [status, setStatus] = useState<"confirming" | "success" | "no_session">(
     sessionId ? "confirming" : "no_session"
   );
+  const [campusName, setCampusName] = useState<string | null>(null);
+
+  const courseName = courseSlug ? (COURSE_DISPLAY[courseSlug] || courseSlug) : null;
 
   useEffect(() => {
     if (!sessionId) return;
     const timer = setTimeout(() => setStatus("success"), 1500);
     return () => clearTimeout(timer);
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!campusSlug) return;
+    supabase
+      .from("campuses")
+      .select("name")
+      .eq("slug", campusSlug)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setCampusName(data.name);
+      });
+  }, [campusSlug]);
+
+  const contextLine = [campusName, courseName].filter(Boolean).join(" · ");
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#F8F9FA" }}>
@@ -38,6 +66,11 @@ export default function CheckoutComplete() {
               <h1 className="text-2xl font-bold" style={{ color: NAVY }}>
                 Payment received!
               </h1>
+              {contextLine && (
+                <p className="text-[14px] font-medium" style={{ color: "#6B7280" }}>
+                  {contextLine}
+                </p>
+              )}
               <p className="text-[15px]" style={{ color: NAVY }}>
                 Check your email for your login link.
               </p>
