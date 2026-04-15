@@ -5,10 +5,17 @@ const corsHeaders = {
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
 
-const BYPASS_EMAILS = [
+const BYPASS_BASE_EMAILS = [
   "lee@survivestudios.com",
   "jking.cim@gmail.com",
 ];
+
+function isTestEmail(email: string): boolean {
+  const lower = email.trim().toLowerCase();
+  // Strip plus-alias: lee+test1@survivestudios.com → lee@survivestudios.com
+  const normalized = lower.replace(/\+[^@]*@/, "@");
+  return BYPASS_BASE_EMAILS.includes(normalized);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -28,7 +35,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const isTest = BYPASS_EMAILS.includes(email.trim().toLowerCase());
+    const isTest = isTestEmail(email);
     const stripeKey = isTest
       ? Deno.env.get("STRIPE_SECRET_KEY_TEST")
       : Deno.env.get("STRIPE_SECRET_KEY_LIVE");

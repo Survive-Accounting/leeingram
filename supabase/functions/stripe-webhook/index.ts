@@ -1,10 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
 
-const BYPASS_EMAILS = [
+const BYPASS_BASE_EMAILS = [
   "lee@survivestudios.com",
   "jking.cim@gmail.com",
 ];
+
+function isTestEmail(email: string): boolean {
+  const lower = email.trim().toLowerCase();
+  const normalized = lower.replace(/\+[^@]*@/, "@");
+  return BYPASS_BASE_EMAILS.includes(normalized);
+}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {

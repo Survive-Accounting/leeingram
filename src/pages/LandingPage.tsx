@@ -82,7 +82,7 @@ export default function LandingPage() {
       {/* Header */}
       <LandingHeader
         onPricingClick={handlePricingClick}
-        onSignUpClick={() => setModal({ type: "smart" })}
+        onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
       {/* Hero */}
