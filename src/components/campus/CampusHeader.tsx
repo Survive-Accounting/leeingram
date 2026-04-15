@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import SiteNavbar from "@/components/landing/SiteNavbar";
 
 const NAVY = "#14213D";
 
@@ -18,6 +19,8 @@ export default function CampusHeader({ campusName, courseName }: CampusHeaderPro
         />
       </Helmet>
 
+      <SiteNavbar />
+
       <div className="relative overflow-hidden campus-hero" style={{ height: 260 }}>
         <style>{`
           @media (max-width: 640px) { .campus-hero { height: 200px !important; } }
@@ -36,23 +39,20 @@ export default function CampusHeader({ campusName, courseName }: CampusHeaderPro
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to right, rgba(20,33,61,0.5) 0%, rgba(20,33,61,0.6) 30%, rgba(20,33,61,0.15) 60%, rgba(20,33,61,0.4) 100%);
+            background: linear-gradient(to right, rgba(20,33,61,0.35) 0%, rgba(20,33,61,0.5) 30%, rgba(20,33,61,0.65) 50%, rgba(20,33,61,0.5) 70%, rgba(20,33,61,0.35) 100%);
             z-index: 1;
           }
         `}</style>
 
-        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2 }}>
-          <p className="text-[12px] uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>
-            {campusName}
-          </p>
+        <div className="relative h-full mx-auto max-w-[900px] px-4 sm:px-6 flex flex-col items-center justify-center text-center" style={{ zIndex: 2 }}>
           <h1
-            className="text-[24px] sm:text-[32px] text-white leading-tight"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+            className="text-[30px] sm:text-[42px] md:text-[48px] text-white leading-[1.15] tracking-tight"
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)" }}
           >
             {courseName}
           </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Practice problems, explanations & exam prep
+          <p className="mt-3 text-[14px] sm:text-[15px] tracking-wide" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
+            {campusName} · Exam prep by Lee Ingram
           </p>
         </div>
       </div>

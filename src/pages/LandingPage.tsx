@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import CourseCard from "@/components/landing/CourseCard";
 import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
 import NotifyModal from "@/components/landing/NotifyModal";
-import LandingHeader from "@/components/landing/LandingHeader";
+import SiteNavbar from "@/components/landing/SiteNavbar";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -78,11 +78,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
-      {/* Header */}
-      <LandingHeader
-        onPricingClick={handlePricingClick}
-        onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
-      />
+      <SiteNavbar onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })} />
 
       {/* Hero */}
       <div className="relative overflow-hidden landing-hero" style={{ height: 340 }}>
@@ -151,21 +147,17 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Testimonials */}
       <TestimonialsSection />
 
-      {/* Contact Form */}
       <div ref={contactRef}>
         <ContactForm />
       </div>
 
-      {/* Footer */}
       <LandingFooter
         onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
-      {/* Modals */}
       {modal.type === "email" && (
         <EmailCaptureModal
           open
