@@ -167,6 +167,7 @@ const AppRoutes = () => {
       <Routes>
         {/* Survive Accounting — default to Asset Factory */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/staging" element={<StagingLandingPage />} />
         <Route path="/survive" element={<Navigate to="/content" replace />} />
         <Route path="/survive" element={<Navigate to="/" replace />} />
         {/* Public tools */}
