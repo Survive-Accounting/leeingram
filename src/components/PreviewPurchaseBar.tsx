@@ -57,8 +57,11 @@ export default function PreviewPurchaseBar({
     >
       <div className="max-w-[1200px] mx-auto w-full flex items-center justify-between">
         <div>
-          <p className="text-2xl font-bold text-white">{priceDisplay}</p>
-          <p className="text-sm text-white/60">One-time payment · Access through finals</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-sm text-white/40 line-through">$250</p>
+            <p className="text-2xl font-bold text-white">{priceDisplay}</p>
+          </div>
+          <p className="text-sm text-white/60">Finals special · Access through May 2026</p>
         </div>
 
         <Button
