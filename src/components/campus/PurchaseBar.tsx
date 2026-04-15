@@ -12,10 +12,12 @@ interface PurchaseBarProps {
   originalPriceCents?: number;
   saleLabel?: string;
   campusId: string | null;
+  campusSlug?: string;
   courseId: string;
+  courseSlug?: string;
 }
 
-export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel, campusId, courseId }: PurchaseBarProps) {
+export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel, campusId, campusSlug, courseId, courseSlug }: PurchaseBarProps) {
   const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,9 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
         body: {
           email: purchaseEmail,
           campus_id: campusId,
+          campus_slug: campusSlug || "",
           course_id: courseId,
+          course_slug: courseSlug || "",
           product_type: "semester_pass",
           return_url: window.location.origin,
         },
