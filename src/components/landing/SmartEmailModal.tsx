@@ -65,6 +65,8 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
 
   const handleCourseSelect = async (course: typeof COURSES[0]) => {
     const trimmed = email.trim().toLowerCase();
+    // Store email so PurchaseBar can use it on campus page
+    sessionStorage.setItem("student_email", trimmed);
     setStep("resolving");
     try {
       const { data, error } = await supabase.functions.invoke("resolve-campus", {
