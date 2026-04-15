@@ -125,7 +125,6 @@ Deno.serve(async (req) => {
       ? `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`
       : `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = resolvedSlug && resolvedCourseSlug
-    const cancelUrl = resolvedSlug && resolvedCourseSlug
       ? `${baseUrl}/campus/${resolvedSlug}/${resolvedCourseSlug}`
       : baseUrl;
 
