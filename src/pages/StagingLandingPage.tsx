@@ -1,13 +1,14 @@
 // Staging clone of LandingPage.tsx — experiment here, then push changes live
 import { useState, useRef, useEffect } from "react";
 import SiteNavbar from "@/components/landing/SiteNavbar";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import StagingHero from "@/components/landing/StagingHero";
 import ThisIsForYouSection from "@/components/landing/ThisIsForYouSection";
 import OutcomesSection from "@/components/landing/OutcomesSection";
+import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
 
 const COURSES: CtaCourse[] = [
@@ -93,7 +94,9 @@ export default function StagingLandingPage() {
 
       <OutcomesSection onCtaClick={() => openWithCourse(liveCourse)} />
 
-      <TestimonialsSection />
+      <HowItWorksSection onCtaClick={() => openCourseSelect()} />
+
+      <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <div ref={contactRef}>
         <ContactForm />
