@@ -120,7 +120,11 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
     const baseUrl = return_url || "https://learn.surviveaccounting.com";
-    const returnUrl = `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+    const isEmbedded = ui_mode === "embedded";
+    const returnUrl = isEmbedded
+      ? `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`
+      : `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = resolvedSlug && resolvedCourseSlug
     const cancelUrl = resolvedSlug && resolvedCourseSlug
       ? `${baseUrl}/campus/${resolvedSlug}/${resolvedCourseSlug}`
       : baseUrl;
