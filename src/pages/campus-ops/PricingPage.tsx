@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, differenceInDays, isPast, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,13 +11,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Plus, Trash2, CalendarIcon } from "lucide-react";
 
 interface PricingRow {
   id: string;
   campus_id: string | null;
   product_type: string;
   price_cents: number;
+  anchor_price_cents: number | null;
+  discount_percent: number | null;
+  discount_label: string | null;
+  valid_from: string | null;
+  valid_until: string | null;
   label: string | null;
   is_active: boolean;
   campus_name?: string;
@@ -28,24 +37,47 @@ interface Campus {
   slug: string;
 }
 
+interface GlobalEdit {
+  anchor: string;
+  discount: string;
+  discountLabel: string;
+  validUntil: Date | undefined;
+}
+
 const PRODUCT_LABELS: Record<string, string> = {
   semester_pass: "Semester Pass",
   chapter_pass: "Chapter Pass",
 };
 
+const DISCOUNT_OPTIONS = ["0", "10", "20", "25", "30", "40", "50", "custom"];
+
 const centsToStr = (c: number) => (c / 100).toFixed(2);
 const strToCents = (s: string) => Math.round(parseFloat(s || "0") * 100);
+
+function calcFinal(anchorCents: number, discountPct: number, validUntil: string | null): number {
+  if (discountPct <= 0) return anchorCents;
+  if (validUntil && isPast(parseISO(validUntil))) return anchorCents;
+  return Math.round(anchorCents * (1 - discountPct / 100));
+}
+
+function ExpiryBadge({ validUntil }: { validUntil: string | null }) {
+  if (!validUntil) return null;
+  const d = parseISO(validUntil);
+  if (isPast(d)) return <Badge variant="destructive" className="text-xs">Expired</Badge>;
+  const days = differenceInDays(d, new Date());
+  if (days <= 7) return <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">Expires in {days}d</Badge>;
+  return null;
+}
 
 export default function PricingPage() {
   const [globals, setGlobals] = useState<PricingRow[]>([]);
   const [overrides, setOverrides] = useState<PricingRow[]>([]);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editValues, setEditValues] = useState<Record<string, string>>({});
+  const [globalEdits, setGlobalEdits] = useState<Record<string, GlobalEdit>>({});
   const [saving, setSaving] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
 
-  // Add form state
   const [newCampusId, setNewCampusId] = useState("");
   const [newProductType, setNewProductType] = useState("semester_pass");
   const [newPrice, setNewPrice] = useState("");
@@ -62,25 +94,49 @@ export default function PricingPage() {
     const campMap: Record<string, string> = {};
     (camps ?? []).forEach(c => { campMap[c.id] = c.name; });
 
-    const rows = (pricing ?? []).map(r => ({ ...r, campus_name: r.campus_id ? campMap[r.campus_id] : undefined }));
-    setGlobals(rows.filter(r => !r.campus_id));
-    setOverrides(rows.filter(r => r.campus_id));
+    const rows = (pricing ?? []).map((r: any) => ({ ...r, campus_name: r.campus_id ? campMap[r.campus_id] : undefined }));
+    setGlobals(rows.filter((r: any) => !r.campus_id));
+    setOverrides(rows.filter((r: any) => r.campus_id));
 
-    const ev: Record<string, string> = {};
-    rows.filter(r => !r.campus_id).forEach(r => { ev[r.id] = centsToStr(r.price_cents); });
-    setEditValues(ev);
+    const edits: Record<string, GlobalEdit> = {};
+    rows.filter((r: any) => !r.campus_id).forEach((r: any) => {
+      const anchor = r.anchor_price_cents ?? r.price_cents;
+      const pct = r.discount_percent ?? 0;
+      edits[r.id] = {
+        anchor: centsToStr(anchor),
+        discount: DISCOUNT_OPTIONS.includes(String(pct)) ? String(pct) : "custom",
+        discountLabel: r.discount_label ?? "",
+        validUntil: r.valid_until ? parseISO(r.valid_until) : undefined,
+      };
+    });
+    setGlobalEdits(edits);
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
 
+  const getEditPct = (id: string): number => {
+    const e = globalEdits[id];
+    if (!e) return 0;
+    if (e.discount === "custom") return 0;
+    return parseInt(e.discount) || 0;
+  };
+
   const handleSaveGlobals = async () => {
     setSaving(true);
     for (const g of globals) {
-      const newCents = strToCents(editValues[g.id] || "0");
-      if (newCents !== g.price_cents) {
-        await supabase.from("campus_pricing").update({ price_cents: newCents }).eq("id", g.id);
-      }
+      const e = globalEdits[g.id];
+      if (!e) continue;
+      const anchorCents = strToCents(e.anchor);
+      const pct = e.discount === "custom" ? 0 : parseInt(e.discount) || 0;
+      const finalCents = calcFinal(anchorCents, pct, e.validUntil?.toISOString() ?? null);
+      await supabase.from("campus_pricing").update({
+        anchor_price_cents: anchorCents,
+        price_cents: finalCents,
+        discount_percent: pct,
+        discount_label: e.discountLabel.trim() || null,
+        valid_until: e.validUntil ? e.validUntil.toISOString() : null,
+      } as any).eq("id", g.id);
     }
     toast.success("Global pricing updated");
     await fetchAll();
@@ -111,6 +167,10 @@ export default function PricingPage() {
     fetchAll();
   };
 
+  const updateEdit = (id: string, patch: Partial<GlobalEdit>) => {
+    setGlobalEdits(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   return (
@@ -120,28 +180,114 @@ export default function PricingPage() {
         <p className="text-sm text-muted-foreground">Manage global and campus-specific pricing</p>
       </div>
 
-      {/* Global Defaults */}
+      {/* Global Pricing & Discounts */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Global Defaults</CardTitle>
+          <CardTitle className="text-base">Global Pricing & Discounts</CardTitle>
           <p className="text-xs text-muted-foreground">Applied when no campus-specific price exists</p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {globals.map(g => (
-            <div key={g.id} className="flex items-center gap-4">
-              <Label className="w-32 shrink-0 text-sm">{PRODUCT_LABELS[g.product_type] || g.product_type}</Label>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-muted-foreground">$</span>
-                <Input
-                  className="w-28"
-                  value={editValues[g.id] ?? ""}
-                  onChange={e => setEditValues(prev => ({ ...prev, [g.id]: e.target.value }))}
-                />
+        <CardContent className="space-y-6">
+          {globals.map(g => {
+            const e = globalEdits[g.id];
+            if (!e) return null;
+            const anchorCents = strToCents(e.anchor);
+            const pct = getEditPct(g.id);
+            const finalCents = calcFinal(anchorCents, pct, e.validUntil?.toISOString() ?? null);
+            const isExpired = e.validUntil && isPast(e.validUntil);
+
+            return (
+              <div key={g.id} className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{PRODUCT_LABELS[g.product_type] || g.product_type}</span>
+                  <ExpiryBadge validUntil={e.validUntil?.toISOString() ?? null} />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Base Price */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Base Price</Label>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-muted-foreground">$</span>
+                      <Input
+                        className="w-28"
+                        value={e.anchor}
+                        onChange={ev => updateEdit(g.id, { anchor: ev.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Discount */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Discount</Label>
+                    <Select value={e.discount} onValueChange={v => updateEdit(g.id, { discount: v })}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">None</SelectItem>
+                        <SelectItem value="10">10% off</SelectItem>
+                        <SelectItem value="20">20% off</SelectItem>
+                        <SelectItem value="25">25% off</SelectItem>
+                        <SelectItem value="30">30% off</SelectItem>
+                        <SelectItem value="40">40% off</SelectItem>
+                        <SelectItem value="50">50% off</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Expiry */}
+                  {pct > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Discount Expires</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-44 justify-start text-left font-normal", !e.validUntil && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {e.validUntil ? format(e.validUntil, "MMM d, yyyy") : "No expiry"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={e.validUntil}
+                            onSelect={d => updateEdit(g.id, { validUntil: d })}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+                </div>
+
+                {/* Discount Label */}
+                {pct > 0 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Discount Label</Label>
+                    <Input
+                      className="w-64"
+                      placeholder="e.g. Finals Special"
+                      value={e.discountLabel}
+                      onChange={ev => updateEdit(g.id, { discountLabel: ev.target.value })}
+                    />
+                  </div>
+                )}
+
+                {/* Final Price */}
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-xs text-muted-foreground">Final price:</span>
+                  {pct > 0 && !isExpired && (
+                    <span className="text-sm line-through text-muted-foreground">${centsToStr(anchorCents)}</span>
+                  )}
+                  <span className="text-lg font-semibold">${centsToStr(finalCents)}</span>
+                  {isExpired && pct > 0 && (
+                    <span className="text-xs text-muted-foreground">(discount expired — showing base price)</span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <Button size="sm" onClick={handleSaveGlobals} disabled={saving}>
-            {saving ? "Saving…" : "Update Global Pricing"}
+            {saving ? "Saving…" : "Save Global Pricing"}
           </Button>
         </CardContent>
       </Card>
