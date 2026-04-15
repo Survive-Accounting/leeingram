@@ -34,6 +34,10 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
       if (error) throw error;
       const slug = data?.campus_slug || "general";
       sessionStorage.setItem("student_email", trimmed);
+      if (data?.is_test_mode) {
+        sessionStorage.setItem("sa_test_mode", "true");
+        sessionStorage.setItem("sa_email_override", data.email_override || "");
+      }
 
       if (redirectTo === "pricing") {
         navigate(`/campus/${slug}/${courseSlug}?show_pricing=true`);
