@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const isTestMode = cleanEmail.startsWith("satest@");
     const domain = cleanEmail.split("@")[1];
 
     // Resolve course_id from slug
@@ -237,6 +238,8 @@ Deno.serve(async (req) => {
         campus_slug: campusSlug,
         campus_name: campusName,
         is_new: isNew,
+        is_test_mode: isTestMode,
+        email_override: isTestMode ? "lee@surviveaccounting.com" : null,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
