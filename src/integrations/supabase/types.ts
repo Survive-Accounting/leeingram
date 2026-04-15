@@ -4580,6 +4580,71 @@ export type Database = {
           },
         ]
       }
+      student_devices: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          device_fingerprint: string
+          device_name: string | null
+          email: string
+          first_login_at: string | null
+          flag_reason: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          is_flagged: boolean | null
+          last_login_at: string | null
+          login_count: number | null
+          region: string | null
+          student_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_fingerprint: string
+          device_name?: string | null
+          email: string
+          first_login_at?: string | null
+          flag_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          is_flagged?: boolean | null
+          last_login_at?: string | null
+          login_count?: number | null
+          region?: string | null
+          student_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_fingerprint?: string
+          device_name?: string | null
+          email?: string
+          first_login_at?: string | null
+          flag_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          is_flagged?: boolean | null
+          last_login_at?: string | null
+          login_count?: number | null
+          region?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_devices_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_emails: {
         Row: {
           attempted_at: string | null
@@ -6138,6 +6203,7 @@ export type Database = {
     }
     Functions: {
       calculate_respond_by: { Args: { p_created_at: string }; Returns: string }
+      count_student_devices: { Args: { p_student_id: string }; Returns: number }
       get_campus_price: {
         Args: { p_campus_slug: string; p_product_type: string }
         Returns: number
