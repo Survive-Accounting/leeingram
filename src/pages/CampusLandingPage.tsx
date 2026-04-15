@@ -3,8 +3,9 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import CampusHeader from "@/components/campus/CampusHeader";
 import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen, FileText, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ChapterGrid from "@/components/campus/ChapterGrid";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
@@ -134,9 +135,9 @@ export default function CampusLandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Cram Tools */}
           <div
-            className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            className={`bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer ${showChapterGrid ? "ring-2 ring-[#14213D]" : ""}`}
             style={{ border: "1px solid #E5E7EB" }}
-            onClick={() => setShowChapterGrid(true)}
+            onClick={() => setShowChapterGrid(!showChapterGrid)}
           >
             <BookOpen className="w-10 h-10 mb-3" style={{ color: "#14213D" }} />
             <h3 className="text-xl font-semibold mb-2" style={{ color: "#14213D" }}>
@@ -150,10 +151,14 @@ export default function CampusLandingPage() {
               className="w-full"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowChapterGrid(true);
+                setShowChapterGrid(!showChapterGrid);
               }}
             >
-              Explore Cram Tools →
+              {showChapterGrid ? (
+                <span className="flex items-center gap-1">Hide Chapters <ChevronUp className="w-4 h-4" /></span>
+              ) : (
+                "Explore Cram Tools →"
+              )}
             </Button>
           </div>
 
@@ -182,6 +187,11 @@ export default function CampusLandingPage() {
             </Button>
           </div>
         </div>
+
+        {/* Chapter grid */}
+        {showChapterGrid && (
+          <ChapterGrid chapters={chapters} />
+        )}
       </div>
 
       <PreviewPurchaseBar
