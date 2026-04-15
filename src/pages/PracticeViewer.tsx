@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -1170,6 +1171,10 @@ export default function PracticeViewer() {
       </main>
 
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
+
+      {isPreview && (
+        <PreviewPurchaseBar priceCents={12500} campusSlug="ole-miss" courseSlug="intermediate-accounting-2" />
+      )}
     </div>
   );
 }
