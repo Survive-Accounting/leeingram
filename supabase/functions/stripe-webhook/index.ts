@@ -68,6 +68,10 @@ Deno.serve(async (req) => {
   const course_id = metadata.course_id;
   const chapter_id = metadata.chapter_id || null;
   const product_type = metadata.product_type;
+  const isSaTestMode = metadata.is_test_mode === "true";
+  const emailOverride = metadata.email_override || "";
+  // For auth/magic link, use override email in test mode
+  const emailForAuth = isSaTestMode && emailOverride ? emailOverride : email;
 
   if (!email || !course_id || !product_type) {
     console.error("Missing metadata on checkout session:", session.id);
@@ -75,6 +79,10 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  if (isSaTestMode) {
+    console.log(`[TEST MODE] satest@ purchase: original=${email}, auth/email override=${emailForAuth}`);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
