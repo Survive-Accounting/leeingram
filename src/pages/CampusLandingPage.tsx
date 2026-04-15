@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import CampusHeader from "@/components/campus/CampusHeader";
-import ChapterAccordion from "@/components/campus/ChapterAccordion";
-import PurchaseBar from "@/components/campus/PurchaseBar";
+import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
@@ -123,21 +122,13 @@ export default function CampusLandingPage() {
             {chapters.length} chapters · All practice problems · Explanations included
           </p>
         </div>
-
-        {/* Chapter list */}
-        <h2 className="text-[15px] font-semibold mb-3" style={{ color: "#14213D" }}>
-          What's Included
-        </h2>
-        <ChapterAccordion chapters={chapters} topicsByChapter={topicsByChapter} />
       </div>
 
-      <PurchaseBar
+      <PreviewPurchaseBar
         priceCents={priceCents}
-        campusId={campusId}
         campusSlug={campusSlug}
-        courseId={courseId}
         courseSlug={courseSlug}
-        studentEmail={sessionStorage.getItem("student_email") || ""}
+        email={sessionStorage.getItem("student_email") || undefined}
       />
     </div>
   );
