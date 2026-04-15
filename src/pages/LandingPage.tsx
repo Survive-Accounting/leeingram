@@ -86,9 +86,9 @@ export default function LandingPage() {
       />
 
       {/* Hero */}
-      <div className="relative overflow-hidden landing-hero" style={{ height: 280 }}>
+      <div className="relative overflow-hidden landing-hero" style={{ height: 340 }}>
         <style>{`
-          @media (max-width: 640px) { .landing-hero { height: 200px !important; } }
+          @media (max-width: 640px) { .landing-hero { height: 260px !important; } }
           .landing-hero::before {
             content: '';
             position: absolute;
@@ -104,19 +104,20 @@ export default function LandingPage() {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to right, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.55) 25%, rgba(20,33,61,0.12) 55%, rgba(20,33,61,0.35) 100%);
+            background: linear-gradient(to right, rgba(20,33,61,0.35) 0%, rgba(20,33,61,0.5) 30%, rgba(20,33,61,0.65) 50%, rgba(20,33,61,0.5) 70%, rgba(20,33,61,0.35) 100%);
             z-index: 1;
           }
         `}</style>
 
-        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2 }}>
+        <div className="relative h-full mx-auto max-w-[900px] px-4 sm:px-6 flex flex-col items-center justify-center text-center" style={{ zIndex: 2 }}>
           <h1
-            className="text-[26px] sm:text-[34px] text-white leading-tight"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+            className="text-[30px] sm:text-[42px] md:text-[48px] text-white leading-[1.15] tracking-tight"
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)" }}
           >
-            Your exam is coming up.
+            Your exam is coming up.<br />
+            <span style={{ color: "#CE1126" }}>Let's survive it.</span>
           </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}>
+          <p className="mt-3 text-[14px] sm:text-[15px] tracking-wide" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
             Online exam prep by Lee Ingram · Trusted by 1,000+ students
           </p>
         </div>
@@ -131,7 +132,7 @@ export default function LandingPage() {
 
       {/* Course selector */}
       <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-8">
-        <p className="text-[14px] font-medium mb-5" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
+        <p className="text-[17px] sm:text-[19px] font-semibold mb-6" style={{ color: "#374151", fontFamily: "Inter, sans-serif" }}>
           What course are you studying?
         </p>
         <div className="w-full max-w-[700px] grid grid-cols-1 sm:grid-cols-2 gap-3">
