@@ -6,7 +6,7 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
-import SmartEmailModal from "@/components/landing/SmartEmailModal";
+
 
 const COURSES = [
   {
@@ -56,8 +56,7 @@ const COURSES = [
 type ModalState =
   | { type: "none" }
   | { type: "email"; course: typeof COURSES[0]; redirectTo?: string }
-  | { type: "notify"; course: typeof COURSES[0] }
-  | { type: "smart" };
+  | { type: "notify"; course: typeof COURSES[0] };
 
 export default function LandingPage() {
   const [modal, setModal] = useState<ModalState>({ type: "none" });
@@ -182,12 +181,6 @@ export default function LandingPage() {
           onClose={() => setModal({ type: "none" })}
           courseName={modal.course.name}
           courseId={modal.course.id}
-        />
-      )}
-      {modal.type === "smart" && (
-        <SmartEmailModal
-          open
-          onClose={() => setModal({ type: "none" })}
         />
       )}
     </div>
