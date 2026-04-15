@@ -20,7 +20,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
           <DialogDescription>Bio and contact info</DialogDescription>
         </DialogHeader>
 
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-5 sm:p-7 space-y-4">
           {/* 1. Header row */}
           <div className="flex items-start gap-4 sm:gap-5">
             <div className="flex-1 min-w-0 pt-1">
