@@ -55,7 +55,10 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
   };
 
   const handleClick = () => {
-    if (storedEmail) {
+    const saved = sessionStorage.getItem("student_email");
+    if (saved) {
+      handlePurchase(saved);
+    } else if (storedEmail) {
       handlePurchase(storedEmail);
     } else {
       setShowModal(true);
