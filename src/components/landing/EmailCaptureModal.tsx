@@ -19,7 +19,6 @@ interface EmailCaptureModalProps {
 export default function EmailCaptureModal({ open, onClose, courseId, courseSlug, redirectTo }: EmailCaptureModalProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [warning, setWarning] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
