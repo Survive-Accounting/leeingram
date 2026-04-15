@@ -618,11 +618,16 @@ function TieredPaywallCard({ enrollUrl, chapterNumber, fullPassLink, chapterLink
 
 // ── Main Component ──
 
-export default function ChapterCramTool() {
+interface ChapterCramToolProps {
+  overrideChapterId?: string;
+  campusContext?: { slug: string; courseSlug: string; name: string };
+}
+
+export default function ChapterCramTool({ overrideChapterId, campusContext }: ChapterCramToolProps = {}) {
   const { chapterId: routeChapterId } = useParams<{ chapterId: string }>();
   const [searchParams] = useSearchParams();
-  const chapterId = routeChapterId || searchParams.get("chapter_id") || "";
-  const isPreview = searchParams.get("preview") === "true";
+  const chapterId = overrideChapterId || routeChapterId || searchParams.get("chapter_id") || "";
+  const isPreview = !!campusContext || searchParams.get("preview") === "true";
   const enrollUrl = useEnrollUrl();
   const queryClient = useQueryClient();
   const { user, loading: authLoading } = useAuth();
@@ -1382,7 +1387,7 @@ export default function ChapterCramTool() {
       />
 
       {isPreview && (
-        <PreviewPurchaseBar priceCents={12500} campusSlug="ole-miss" courseSlug="intermediate-accounting-2" />
+        <PreviewPurchaseBar priceCents={12500} campusSlug={campusContext?.slug || "ole-miss"} courseSlug={campusContext?.courseSlug || "intermediate-accounting-2"} />
       )}
     </div>
   );
