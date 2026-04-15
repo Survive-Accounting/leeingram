@@ -126,12 +126,61 @@ export default function LandingPage() {
       </div>
 
       {/* Course selector */}
-      <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-8" style={{ scrollMarginTop: "80px" }}>
-        <p className="text-[17px] sm:text-[19px] font-semibold mb-6" style={{ color: "#374151", fontFamily: "Inter, sans-serif" }}>
+      <div ref={coursesRef} className="relative z-10 flex-1 flex flex-col items-center px-4 py-10" style={{ scrollMarginTop: "80px" }}>
+        <h2
+          className="text-[28px] sm:text-[34px] text-center mb-8"
+          style={{ fontFamily: "'DM Serif Display', serif", color: "#14213D", fontWeight: 400 }}
+        >
           What course are you studying?
+        </h2>
+
+        {/* Hero card — Live course */}
+        {(() => {
+          const live = COURSES.find(c => c.status === "live")!;
+          return (
+            <button
+              onClick={() => handleCardClick(live)}
+              className="w-full max-w-2xl text-left rounded-2xl p-6 sm:p-8 mb-10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              style={{
+                background: "#fff",
+                borderLeft: "4px solid #22C55E",
+                boxShadow: "0 4px 24px rgba(20,33,61,0.10), 0 0 0 1px rgba(229,231,235,0.6)",
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white mb-3" style={{ background: "#22C55E" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                  </span>
+                  <h3 className="text-[22px] sm:text-[26px] font-bold mb-1" style={{ color: "#14213D" }}>
+                    {live.name}
+                  </h3>
+                  <p className="text-[14px] mb-2" style={{ color: "#6B7280" }}>
+                    Ch 13–22 · Finals prep
+                  </p>
+                  <p className="text-[20px] font-bold" style={{ color: "#14213D" }}>
+                    $125 <span className="text-[14px] font-normal" style={{ color: "#9CA3AF" }}>for the semester</span>
+                  </p>
+                </div>
+                <div className="sm:w-[200px] shrink-0">
+                  <span
+                    className="block rounded-xl px-6 py-3.5 text-[15px] font-bold text-center text-white transition-all hover:brightness-110"
+                    style={{ background: "#CE1126" }}
+                  >
+                    Start Studying →
+                  </span>
+                </div>
+              </div>
+            </button>
+          );
+        })()}
+
+        {/* Coming soon row */}
+        <p className="text-[16px] sm:text-[18px] font-medium text-center mb-5" style={{ color: "#9CA3AF" }}>
+          More courses coming soon
         </p>
-        <div className="w-full max-w-[700px] grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {COURSES.map((c) => (
+        <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {COURSES.filter(c => c.status !== "live").map((c) => (
             <CourseCard
               key={c.id}
               name={c.name}
@@ -140,7 +189,7 @@ export default function LandingPage() {
               badgeColor={c.badgeColor}
               subtitle={c.subtitle}
               cta={c.cta}
-              isLive={c.status === "live"}
+              isLive={false}
               onClick={() => handleCardClick(c)}
             />
           ))}
