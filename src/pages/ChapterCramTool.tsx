@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import { FormulaCard as FormulaCardComponent } from "@/components/FormulaCard";
@@ -1379,6 +1380,10 @@ export default function ChapterCramTool() {
         chapterName={chapter?.chapter_name || ""}
         courseDisplayName={courseDisplayName}
       />
+
+      {isPreview && (
+        <PreviewPurchaseBar priceCents={12500} campusSlug="ole-miss" courseSlug="intermediate-accounting-2" />
+      )}
     </div>
   );
 }

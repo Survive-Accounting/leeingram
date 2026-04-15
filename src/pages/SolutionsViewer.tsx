@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import confetti from "canvas-confetti";
@@ -4569,6 +4570,10 @@ export default function SolutionsViewer() {
         chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
         chapterName={chapter?.chapter_name || undefined}
       />
+
+      {rawIsPreview && (
+        <PreviewPurchaseBar priceCents={12500} campusSlug="ole-miss" courseSlug="intermediate-accounting-2" />
+      )}
     </div>
     </>
   );
