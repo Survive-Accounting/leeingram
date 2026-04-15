@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     const {
       email, course_id, chapter_id, product_type, return_url,
       campus_id: rawCampusId, campus_slug, course_slug,
-      ui_mode,
+      ui_mode, is_test_mode, email_override,
     } = await req.json();
 
     if (!email || !course_id || !product_type) {
@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const isTest = isTestEmail(email);
+    const isSaTest = is_test_mode === true || email.trim().toLowerCase().startsWith("satest@");
+    const isTest = isTestEmail(email) || isSaTest;
     const stripeKey = isTest
       ? Deno.env.get("STRIPE_SECRET_KEY_TEST")
       : Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -139,6 +140,8 @@ Deno.serve(async (req) => {
       original_price_cents: String(originalCents || priceCents),
       discount_applied_cents: String(originalCents > priceCents ? originalCents - priceCents : 0),
       is_test: String(isTest),
+      is_test_mode: String(isSaTest),
+      email_override: isSaTest ? (email_override || "lee@surviveaccounting.com") : "",
     };
 
     if (useCampusPricing) {
