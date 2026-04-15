@@ -43,25 +43,16 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
                 { label: "Student Login", onClick: () => setLoginOpen(true) },
               ].map((item) => (
                 <div key={item.label}>
-                  {item.href ? (
-                    <a
-                      href={item.href}
-                      className="block text-[13px] text-white/50 hover:text-white transition-colors"
-                      style={{ fontFamily: "Inter, sans-serif" }}
-                    >
-                      {item.label}
-                    </a>
-                  ) : (
-                    <button
-                      onClick={item.onClick}
-                      className="block text-[13px] text-white/50 hover:text-white transition-colors"
-                      style={{ fontFamily: "Inter, sans-serif" }}
-                    >
-                      {item.label}
-                    </button>
-                  )}
+                  <button
+                    onClick={item.onClick}
+                    className="block text-[13px] text-white/50 hover:text-white transition-colors"
+                    style={{ fontFamily: "Inter, sans-serif" }}
+                  >
+                    {item.label}
+                  </button>
                 </div>
               ))}
+
             </div>
 
             {/* Column 3: Legal */}
