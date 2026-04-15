@@ -2,6 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
+const COURSE_SLUG_MAP: Record<string, string> = {
+  "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
+  "intermediate-accounting-1": "33333333-3333-3333-3333-333333333333",
+  "intro-accounting-1": "11111111-1111-1111-1111-111111111111",
+  "intro-accounting-2": "22222222-2222-2222-2222-222222222222",
+};
+
 interface PreviewPurchaseBarProps {
   priceCents: number;
   campusSlug: string;
@@ -20,12 +27,22 @@ export default function PreviewPurchaseBar({
   const handleGetAccess = async () => {
     setLoading(true);
     try {
+      const courseId = COURSE_SLUG_MAP[courseSlug] || COURSE_SLUG_MAP["intermediate-accounting-2"];
+      const studentEmail = email || sessionStorage.getItem("student_email") || "";
+
+      if (!studentEmail) {
+        window.location.href = "/#courses";
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
         body: {
-          campusSlug,
-          courseSlug,
-          productType: "semester_pass",
-          email: email || "",
+          email: studentEmail,
+          campus_slug: campusSlug,
+          course_id: courseId,
+          course_slug: courseSlug,
+          product_type: "semester_pass",
+          return_url: window.location.origin,
           is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
           email_override: sessionStorage.getItem("sa_email_override") || "",
         },
