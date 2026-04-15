@@ -36,9 +36,7 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
-    if (!trimmed.endsWith(".edu")) {
-      setWarning("Tip: Use your .edu email for campus pricing.");
-    }
+    // No warning needed for pricing modal
 
     setLoading(true);
     try {
@@ -89,7 +87,7 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
         {step === "email" && (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-              Enter your email to get started
+              Enter your school email to see pricing
             </h2>
             <div className="space-y-1.5">
               <input
@@ -102,7 +100,7 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
                 className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
                 style={{ minHeight: 48, background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
               />
-              {warning && <p className="text-[12px]" style={{ color: "#D97706" }}>{warning}</p>}
+              
             </div>
             <button
               type="submit"
