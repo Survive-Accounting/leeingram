@@ -180,6 +180,31 @@ Deno.serve(async (req) => {
     } else {
       purchaseId = purchase.id;
       console.log("Purchase recorded:", purchaseId, { campusId, studentId, pricePaidCents });
+
+      // Track purchase_completed event
+      try {
+        const { data: courseData } = await supabase
+          .from("courses")
+          .select("slug")
+          .eq("id", course_id)
+          .maybeSingle();
+
+        await supabase.from("student_events").insert({
+          email,
+          student_id: studentId,
+          campus_id: campusId,
+          course_slug: courseData?.slug || null,
+          event_type: "purchase_completed",
+          event_data: {
+            amount_cents: pricePaidCents,
+            stripe_session_id: session.id,
+            product_type,
+          },
+        });
+        console.log("Tracked purchase_completed event for:", email);
+      } catch (evErr) {
+        console.error("Failed to track purchase event:", evErr);
+      }
     }
   } catch (err) {
     console.error("student_purchases insert error:", err);
@@ -357,6 +382,22 @@ Deno.serve(async (req) => {
 
       const resendBody = await resendRes.text();
       console.log("Resend response:", resendRes.status, resendBody);
+
+      // Track magic_link_sent event
+      if (magicLink) {
+        try {
+          await supabase.from("student_events").insert({
+            email: emailForAuth,
+            student_id: studentId,
+            campus_id: campusId,
+            event_type: "magic_link_sent",
+            event_data: { trigger: "purchase" },
+          });
+          console.log("Tracked magic_link_sent event for:", emailForAuth);
+        } catch (evErr) {
+          console.error("Failed to track magic_link_sent event:", evErr);
+        }
+      }
     } else {
       console.error("RESEND_API_KEY not configured, skipping welcome email");
     }
