@@ -6,6 +6,7 @@ import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { BookOpen, FileText, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChapterGrid from "@/components/campus/ChapterGrid";
+import { useEventTracking } from "@/hooks/useEventTracking";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
@@ -38,6 +39,7 @@ export default function CampusLandingPage() {
   const { campusSlug = "general", courseSlug = "intermediate-accounting-2" } = useParams();
   const courseId = COURSE_SLUG_MAP[courseSlug] || COURSE_SLUG_MAP["intermediate-accounting-2"];
   const courseName = COURSE_NAMES[courseSlug] || "Intermediate Accounting 2";
+  const { trackEvent, trackPageView } = useEventTracking();
 
   const [campusName, setCampusName] = useState("");
   const [campusId, setCampusId] = useState<string | null>(null);
@@ -46,6 +48,10 @@ export default function CampusLandingPage() {
   const [priceCents, setPriceCents] = useState(12500);
   const [loading, setLoading] = useState(true);
   const [showChapterGrid, setShowChapterGrid] = useState(false);
+
+  useEffect(() => {
+    trackPageView('campus_landing', { campus_slug: campusSlug, course_slug: courseSlug });
+  }, [campusSlug, courseSlug, trackPageView]);
 
   useEffect(() => {
     const load = async () => {
@@ -137,7 +143,10 @@ export default function CampusLandingPage() {
           <div
             className={`bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer ${showChapterGrid ? "ring-2 ring-[#14213D]" : ""}`}
             style={{ border: "1px solid #E5E7EB" }}
-            onClick={() => setShowChapterGrid(!showChapterGrid)}
+            onClick={() => {
+              trackEvent('chapter_preview', { campus_slug: campusSlug, course_slug: courseSlug });
+              setShowChapterGrid(!showChapterGrid);
+            }}
           >
             <BookOpen className="w-10 h-10 mb-3" style={{ color: "#14213D" }} />
             <h3 className="text-xl font-semibold mb-2" style={{ color: "#14213D" }}>
@@ -166,7 +175,10 @@ export default function CampusLandingPage() {
           <div
             className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
             style={{ border: "1px solid #E5E7EB" }}
-            onClick={() => window.open('/practice?preview=true', '_blank')}
+            onClick={() => {
+              trackEvent('practice_browse', { campus_slug: campusSlug, course_slug: courseSlug });
+              window.open('/practice?preview=true', '_blank');
+            }}
           >
             <FileText className="w-10 h-10 mb-3" style={{ color: "#14213D" }} />
             <h3 className="text-xl font-semibold mb-2" style={{ color: "#14213D" }}>
