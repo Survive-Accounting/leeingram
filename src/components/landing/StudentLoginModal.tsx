@@ -126,9 +126,21 @@ export default function StudentLoginModal({ open, onClose }: StudentLoginModalPr
             </button>
             <p className="text-center text-[13px]" style={{ color: "#999", fontFamily: "Inter, sans-serif" }}>
               Don't have an account?{" "}
-              <a href="mailto:lee@surviveaccounting.com" className="font-medium hover:underline" style={{ color: "#CE1126" }}>
-                Contact Lee →
-              </a>
+              <button
+                type="button"
+                className="font-medium hover:underline"
+                style={{ color: "#CE1126" }}
+                onClick={() => {
+                  onClose();
+                  if (window.location.pathname === "/" || window.location.pathname === "") {
+                    document.getElementById("courses")?.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    window.location.href = "/#courses";
+                  }
+                }}
+              >
+                What course are you studying? →
+              </button>
             </p>
           </form>
         )}
