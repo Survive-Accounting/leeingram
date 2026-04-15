@@ -57,7 +57,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
             <input
               type="email"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setWarning(""); }}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="your@university.edu"
               required
               disabled={loading}
@@ -70,10 +70,6 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
                 fontFamily: "Inter, sans-serif",
               }}
             />
-            {warning && (
-              <p className="text-[12px]" style={{ color: "#D97706" }}>{warning}</p>
-            )}
-          </div>
           <button
             type="submit"
             disabled={loading}
