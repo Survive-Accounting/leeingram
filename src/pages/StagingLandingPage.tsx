@@ -7,6 +7,7 @@ import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import StagingHero from "@/components/landing/StagingHero";
 import ThisIsForYouSection from "@/components/landing/ThisIsForYouSection";
+import OutcomesSection from "@/components/landing/OutcomesSection";
 import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
 
 const COURSES: CtaCourse[] = [
@@ -89,6 +90,8 @@ export default function StagingLandingPage() {
       />
 
       <ThisIsForYouSection onCtaClick={() => openWithCourse(liveCourse)} />
+
+      <OutcomesSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <TestimonialsSection />
 
