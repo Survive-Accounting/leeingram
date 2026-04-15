@@ -19,18 +19,12 @@ interface EmailCaptureModalProps {
 export default function EmailCaptureModal({ open, onClose, courseId, courseSlug, redirectTo }: EmailCaptureModalProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [warning, setWarning] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
-
-    // Soft .edu warning — don't block
-    if (!trimmed.endsWith(".edu")) {
-      setWarning("Tip: Use your .edu email for campus pricing.");
-    }
 
     setLoading(true);
     try {
@@ -43,7 +37,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
       if (redirectTo === "pricing") {
         navigate(`/campus/${slug}/${courseSlug}?show_pricing=true`);
       } else {
-        navigate(`/accy304`);
+        navigate(`/campus/${slug}/${courseSlug}`);
       }
     } catch {
       toast.error("Something went wrong. Try again.");
@@ -63,7 +57,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
             <input
               type="email"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setWarning(""); }}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="your@university.edu"
               required
               disabled={loading}
@@ -76,9 +70,6 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
                 fontFamily: "Inter, sans-serif",
               }}
             />
-            {warning && (
-              <p className="text-[12px]" style={{ color: "#D97706" }}>{warning}</p>
-            )}
           </div>
           <button
             type="submit"
