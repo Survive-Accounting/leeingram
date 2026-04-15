@@ -26,6 +26,8 @@ export default function PreviewPurchaseBar({
           courseSlug,
           productType: "semester_pass",
           email: email || "",
+          is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
+          email_override: sessionStorage.getItem("sa_email_override") || "",
         },
       });
 

@@ -68,6 +68,10 @@ Deno.serve(async (req) => {
   const course_id = metadata.course_id;
   const chapter_id = metadata.chapter_id || null;
   const product_type = metadata.product_type;
+  const isSaTestMode = metadata.is_test_mode === "true";
+  const emailOverride = metadata.email_override || "";
+  // For auth/magic link, use override email in test mode
+  const emailForAuth = isSaTestMode && emailOverride ? emailOverride : email;
 
   if (!email || !course_id || !product_type) {
     console.error("Missing metadata on checkout session:", session.id);
@@ -75,6 +79,10 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  if (isSaTestMode) {
+    console.log(`[TEST MODE] satest@ purchase: original=${email}, auth/email override=${emailForAuth}`);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -293,27 +301,26 @@ Deno.serve(async (req) => {
     // Create or find Supabase auth user (for magic link login later)
     const { data: authUser } = await supabase.auth.admin.listUsers();
     const existingAuthUser = authUser?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
+      (u) => u.email?.toLowerCase() === emailForAuth.toLowerCase()
     );
 
     if (!existingAuthUser) {
-      // Create auth user with a random password (they'll use magic link to log in)
       const { error: createErr } = await supabase.auth.admin.createUser({
-        email,
+        email: emailForAuth,
         email_confirm: true,
-        user_metadata: { source: "stripe_purchase" },
+        user_metadata: { source: "stripe_purchase", ...(isSaTestMode ? { test_original_email: email } : {}) },
       });
       if (createErr) {
         console.error("Failed to create auth user:", createErr);
       } else {
-        console.log("Created auth user for:", email);
+        console.log("Created auth user for:", emailForAuth);
       }
     }
 
     // Generate OTP magic link for the welcome email
     const { data: otpData, error: otpErr } = await supabase.auth.admin.generateLink({
       type: "magiclink",
-      email,
+      email: emailForAuth,
       options: {
         redirectTo: "https://learn.surviveaccounting.com/auth/callback",
       },
@@ -324,12 +331,12 @@ Deno.serve(async (req) => {
       console.error("Failed to generate magic link:", otpErr);
     } else if (otpData?.properties?.action_link) {
       magicLink = otpData.properties.action_link;
-      console.log("Generated magic link for:", email);
+      console.log("Generated magic link for:", emailForAuth);
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (resendApiKey) {
-      const emailHtml = buildWelcomeEmail(email, magicLink);
+      const emailHtml = buildWelcomeEmail(emailForAuth, magicLink);
 
       const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -339,8 +346,10 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           from: "Survive Accounting <lee@mail.surviveaccounting.com>",
-          to: [email],
-          subject: "You're in — here's your login link",
+          to: [emailForAuth],
+          subject: isSaTestMode
+            ? `[TEST] You're in — login link (test for ${email})`
+            : "You're in — here's your login link",
           html: emailHtml,
           reply_to: "lee@surviveaccounting.com",
         }),

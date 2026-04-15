@@ -45,6 +45,8 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
           product_type: "semester_pass",
           return_url: window.location.origin,
           ui_mode: "embedded",
+          is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
+          email_override: sessionStorage.getItem("sa_email_override") || "",
         },
       });
       if (error) throw error;
