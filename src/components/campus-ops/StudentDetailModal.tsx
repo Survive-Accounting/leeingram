@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { X } from "lucide-react";
+import { X, AlertTriangle, Shield, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -10,6 +12,17 @@ interface Props {
   email: string;
   name: string | null;
   campusName?: string;
+}
+
+interface Warning {
+  id: string;
+  warning_type: string;
+  warning_level: string;
+  details: any;
+  is_reviewed: boolean;
+  reviewed_by: string | null;
+  action_taken: string | null;
+  created_at: string;
 }
 
 interface Purchase {
@@ -66,6 +79,7 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
   const [stats, setStats] = useState({ visits: 0, paywallHits: 0, chaptersViewed: 0, lastSeen: "" });
   const [meta, setMeta] = useState({ firstSeen: "", device: "—", referral: "Direct", sessions: 0 });
 
@@ -74,14 +88,16 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
     setLoading(true);
 
     const load = async () => {
-      const [evRes, purchRes] = await Promise.all([
+      const [evRes, purchRes, warnRes] = await Promise.all([
         (supabase as any).from("student_events").select("created_at, event_type, event_data, course_slug, session_id, device_type, utm_source").eq("email", email).order("created_at", { ascending: false }).limit(50),
         (supabase as any).from("student_purchases").select("course_slug, price_paid_cents, created_at, expires_at").eq("email", email).order("created_at", { ascending: false }),
+        (supabase as any).from("sharing_warnings").select("*").eq("email", email).order("created_at", { ascending: false }),
       ]);
 
       const allEvents: EventRow[] = evRes.data ?? [];
       setEvents(allEvents.slice(0, 20));
       setPurchases(purchRes.data ?? []);
+      setWarnings(warnRes.data ?? []);
 
       // Stats
       const sessionIds = new Set(allEvents.map(e => e.session_id).filter(Boolean));
@@ -171,6 +187,61 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
                 </div>
               )}
             </div>
+
+            {/* Sharing Warnings */}
+            {warnings.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-destructive" /> Sharing Warnings
+                </h3>
+                <div className="space-y-2">
+                  {warnings.map((w) => {
+                    const levelIcon = w.warning_level === "high" ? <ShieldAlert className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />;
+                    const levelColor = w.warning_level === "high" ? "bg-destructive" : w.warning_level === "medium" ? "bg-orange-500" : "bg-yellow-500";
+                    return (
+                      <div key={w.id} className="rounded-lg border p-3 text-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            {levelIcon}
+                            <span className="font-medium capitalize">{w.warning_type.replace(/_/g, " ")}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Badge className={`${levelColor} text-[10px] capitalize`}>{w.warning_level}</Badge>
+                            <Badge variant={w.is_reviewed ? "secondary" : "destructive"} className="text-[10px]">
+                              {w.is_reviewed ? "Reviewed" : "Unreviewed"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {w.details?.device_count ? `${w.details.device_count} devices registered` : w.details?.flag_reason || "—"}
+                          {" · "}{fmtDate(w.created_at)}
+                        </p>
+                        {w.action_taken && <p className="text-muted-foreground">Action: {w.action_taken}</p>}
+                        {!w.is_reviewed && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={async () => {
+                              await (supabase as any).from("sharing_warnings").update({
+                                is_reviewed: true,
+                                reviewed_by: "admin",
+                                reviewed_at: new Date().toISOString(),
+                                action_taken: "none",
+                              }).eq("id", w.id);
+                              setWarnings(prev => prev.map(x => x.id === w.id ? { ...x, is_reviewed: true, reviewed_by: "admin", action_taken: "none" } : x));
+                              toast.success("Warning marked as reviewed");
+                            }}
+                          >
+                            Mark as Reviewed
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Activity Timeline */}
             {events.length > 0 && (

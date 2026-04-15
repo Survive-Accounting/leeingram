@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LogOut, PanelLeftClose, PanelLeft,
@@ -13,6 +13,7 @@ import { NightSkyOverlay } from "@/components/NightSkyOverlay";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
 
 function useNavSection(key: string, childPaths: string[], pathname: string) {
   const storageKey = `campus_nav_${key}_expanded`;
@@ -37,6 +38,13 @@ export function CampusOpsSidebarLayout({ children }: { children: React.ReactNode
   const { signOut } = useAuth();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("campus-sidebar-collapsed") === "true");
+  const [warningCount, setWarningCount] = useState(0);
+
+  useEffect(() => {
+    (supabase as any).from("sharing_warnings").select("id", { count: "exact", head: true }).eq("is_reviewed", false).then(({ count }: any) => {
+      setWarningCount(count || 0);
+    });
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
@@ -155,7 +163,7 @@ export function CampusOpsSidebarLayout({ children }: { children: React.ReactNode
           <div className="border-t border-border my-3" />
           {renderTopLabel("Students")}
           <div className="space-y-0.5">
-            {renderItem("All Students", "/campus-ops/students", Users)}
+            {renderItem(warningCount > 0 ? `All Students (${warningCount})` : "All Students", "/campus-ops/students", Users)}
             {renderItem("Purchases", "/campus-ops/purchases", ShoppingCart)}
           </div>
 
