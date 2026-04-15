@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
+import StudentLoginModal from "@/components/landing/StudentLoginModal";
 
 const NAVY = "#14213D";
 const FOOTER_BG = "#0B1120";
@@ -11,6 +12,7 @@ interface LandingFooterProps {
 
 export default function LandingFooter({ onScrollToCourses, onScrollToContact }: LandingFooterProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <>
@@ -38,28 +40,19 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
                 { label: "Courses", onClick: onScrollToCourses },
                 { label: "About Lee", onClick: () => setAboutOpen(true) },
                 { label: "Contact", onClick: onScrollToContact },
-                { label: "Student Login", href: "/login" },
+                { label: "Student Login", onClick: () => setLoginOpen(true) },
               ].map((item) => (
                 <div key={item.label}>
-                  {item.href ? (
-                    <a
-                      href={item.href}
-                      className="block text-[13px] text-white/50 hover:text-white transition-colors"
-                      style={{ fontFamily: "Inter, sans-serif" }}
-                    >
-                      {item.label}
-                    </a>
-                  ) : (
-                    <button
-                      onClick={item.onClick}
-                      className="block text-[13px] text-white/50 hover:text-white transition-colors"
-                      style={{ fontFamily: "Inter, sans-serif" }}
-                    >
-                      {item.label}
-                    </button>
-                  )}
+                  <button
+                    onClick={item.onClick}
+                    className="block text-[13px] text-white/50 hover:text-white transition-colors"
+                    style={{ fontFamily: "Inter, sans-serif" }}
+                  >
+                    {item.label}
+                  </button>
                 </div>
               ))}
+
             </div>
 
             {/* Column 3: Legal */}
@@ -91,6 +84,7 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
       </footer>
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
+      <StudentLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 }
