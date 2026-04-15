@@ -12,10 +12,10 @@ export default function CampusHeader({ campusName, courseName }: CampusHeaderPro
   return (
     <>
       <Helmet>
-        <title>{campusName} | {courseName} Exam Prep | Survive Accounting</title>
+        <title>{campusName ? `${campusName} | ` : ""}{courseName} Exam Prep | Survive Accounting</title>
         <meta
           name="description"
-          content={`Practice problems and exam prep for ${courseName} at ${campusName}. Trusted by 1,000+ students.`}
+          content={`Practice problems and exam prep for ${courseName}${campusName ? ` at ${campusName}` : ""}. Trusted by 1,000+ students.`}
         />
       </Helmet>
 
