@@ -70,6 +70,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
                 fontFamily: "Inter, sans-serif",
               }}
             />
+          </div>
           <button
             type="submit"
             disabled={loading}
