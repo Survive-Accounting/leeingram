@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     const {
       email, course_id, chapter_id, product_type, return_url,
       campus_id: rawCampusId, campus_slug, course_slug,
+      ui_mode,
     } = await req.json();
 
     if (!email || !course_id || !product_type) {
@@ -119,7 +120,11 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
     const baseUrl = return_url || "https://learn.surviveaccounting.com";
-    const returnUrl = `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+    const isEmbedded = ui_mode === "embedded";
+    const returnUrl = isEmbedded
+      ? `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`
+      : `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = resolvedSlug && resolvedCourseSlug
     const cancelUrl = resolvedSlug && resolvedCourseSlug
       ? `${baseUrl}/campus/${resolvedSlug}/${resolvedCourseSlug}`
       : baseUrl;
@@ -142,7 +147,7 @@ Deno.serve(async (req) => {
         ? `${discountLabel} · Was $${Math.round(originalCents / 100)}`
         : undefined;
 
-      const session = await stripe.checkout.sessions.create({
+      const sessionParams: any = {
         mode: "payment",
         line_items: [{
           price_data: {
@@ -156,13 +161,21 @@ Deno.serve(async (req) => {
           quantity: 1,
         }],
         customer_email: email,
-        success_url: returnUrl,
-        cancel_url: cancelUrl,
         metadata: sessionMetadata,
-      });
+      };
+
+      if (isEmbedded) {
+        sessionParams.ui_mode = "embedded";
+        sessionParams.return_url = returnUrl;
+      } else {
+        sessionParams.success_url = returnUrl;
+        sessionParams.cancel_url = cancelUrl;
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
       return new Response(
-        JSON.stringify({ url: session.url }),
+        JSON.stringify(isEmbedded ? { clientSecret: session.client_secret } : { url: session.url }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -198,17 +211,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams2: any = {
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email,
-      success_url: returnUrl,
-      cancel_url: cancelUrl,
       metadata: sessionMetadata,
-    });
+    };
+
+    if (isEmbedded) {
+      sessionParams2.ui_mode = "embedded";
+      sessionParams2.return_url = returnUrl;
+    } else {
+      sessionParams2.success_url = returnUrl;
+      sessionParams2.cancel_url = cancelUrl;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams2);
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify(isEmbedded ? { clientSecret: session.client_secret } : { url: session.url }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

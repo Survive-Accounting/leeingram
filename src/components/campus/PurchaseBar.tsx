@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import EmbeddedCheckoutModal from "./EmbeddedCheckoutModal";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -15,37 +15,44 @@ interface PurchaseBarProps {
   campusSlug?: string;
   courseId: string;
   courseSlug?: string;
+  studentEmail?: string;
 }
 
-export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel, campusId, campusSlug, courseId, courseSlug }: PurchaseBarProps) {
-  const [showModal, setShowModal] = useState(false);
-  const [email, setEmail] = useState("");
+export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel, campusId, campusSlug, courseId, courseSlug, studentEmail }: PurchaseBarProps) {
   const [loading, setLoading] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showCheckout, setShowCheckout] = useState(false);
 
   const priceDisplay = `$${Math.round(priceCents / 100)}`;
   const originalDisplay = originalPriceCents ? `$${Math.round(originalPriceCents / 100)}` : null;
 
-  const storedEmail = typeof window !== "undefined" ? sessionStorage.getItem("student_email") : null;
+  const email = studentEmail || sessionStorage.getItem("student_email") || "";
 
-  const handlePurchase = async (purchaseEmail: string) => {
+  const handleClick = async () => {
+    if (!email) {
+      toast.error("No email found. Please go back and enter your email.");
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
         body: {
-          email: purchaseEmail,
+          email,
           campus_id: campusId,
           campus_slug: campusSlug || "",
           course_id: courseId,
           course_slug: courseSlug || "",
           product_type: "semester_pass",
           return_url: window.location.origin,
+          ui_mode: "embedded",
         },
       });
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
+      if (data?.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setShowCheckout(true);
       } else {
-        toast.error("Couldn't start checkout. Try again.");
+        throw new Error("No client secret returned");
       }
     } catch {
       toast.error("Couldn't start checkout. Try again.");
@@ -54,29 +61,8 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
     }
   };
 
-  const handleClick = () => {
-    const saved = sessionStorage.getItem("student_email");
-    if (saved) {
-      handlePurchase(saved);
-    } else if (storedEmail) {
-      handlePurchase(storedEmail);
-    } else {
-      setShowModal(true);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) return;
-    sessionStorage.setItem("student_email", trimmed);
-    setShowModal(false);
-    handlePurchase(trimmed);
-  };
-
   return (
     <>
-      {/* Fixed bottom bar */}
       <div
         className="fixed bottom-0 left-0 right-0 z-50 border-t"
         style={{ background: "#fff", borderColor: "#E5E7EB" }}
@@ -104,30 +90,14 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
         </div>
       </div>
 
-      {/* Quick email modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-sm p-6 [&>button]:hidden" style={{ borderRadius: 16 }}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-lg font-semibold" style={{ color: NAVY }}>Enter your email</h2>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@university.edu"
-              required
-              className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
-              style={{ minHeight: 48, background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY }}
-            />
-            <button
-              type="submit"
-              className="w-full rounded-lg text-white text-[15px] font-semibold transition-opacity hover:opacity-90"
-              style={{ minHeight: 48, background: RED }}
-            >
-              Continue to Checkout →
-            </button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <EmbeddedCheckoutModal
+        open={showCheckout}
+        onOpenChange={(open) => {
+          setShowCheckout(open);
+          if (!open) setClientSecret(null);
+        }}
+        clientSecret={clientSecret}
+      />
     </>
   );
 }
