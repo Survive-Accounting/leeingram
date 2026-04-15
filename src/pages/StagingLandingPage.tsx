@@ -97,6 +97,8 @@ export default function StagingLandingPage() {
 
       <HowItWorksSection onCtaClick={() => openCourseSelect()} />
 
+      <CourseExplorerSection onCtaClick={() => openWithCourse(liveCourse)} />
+
       <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <div ref={contactRef}>
