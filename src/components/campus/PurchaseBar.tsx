@@ -43,7 +43,7 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
       });
       if (error) throw error;
       if (data?.url) {
-        window.location.href = data.url;
+        window.open(data.url, "_blank");
       } else {
         toast.error("Couldn't start checkout. Try again.");
       }
