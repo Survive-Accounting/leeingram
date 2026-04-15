@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import StudentDetailModal from "@/components/campus-ops/StudentDetailModal";
 
 interface StudentRow {
   id: string;
@@ -29,6 +30,7 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("");
   const [campusFilter, setCampusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<StudentRow | null>(null);
 
   const fetchCampuses = useCallback(async () => {
     const { data } = await supabase.from("campuses").select("id, name").order("name");
@@ -97,7 +99,7 @@ export default function StudentsPage() {
               </TableHeader>
               <TableBody>
                 {students.map(s => (
-                  <TableRow key={s.id}>
+                  <TableRow key={s.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(s)}>
                     <TableCell className="font-medium text-sm">{s.email}</TableCell>
                     <TableCell className="text-sm">{s.name || "—"}</TableCell>
                     <TableCell className="text-sm">{s.campus_name || "—"}</TableCell>
@@ -136,6 +138,16 @@ export default function StudentsPage() {
             </div>
           )}
         </>
+      )}
+
+      {selected && (
+        <StudentDetailModal
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          email={selected.email}
+          name={selected.name}
+          campusName={selected.campus_name}
+        />
       )}
     </div>
   );
