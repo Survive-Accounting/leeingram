@@ -140,46 +140,57 @@ export default function LandingPage() {
           return (
             <button
               onClick={() => handleCardClick(live)}
-              className="w-full max-w-2xl text-left rounded-2xl p-6 sm:p-8 mb-10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full max-w-xl text-left rounded-xl p-5 sm:p-6 mb-8 transition-all hover:scale-[1.01] active:scale-[0.99]"
               style={{
                 background: "#fff",
                 borderLeft: "4px solid #22C55E",
-                boxShadow: "0 4px 24px rgba(20,33,61,0.10), 0 0 0 1px rgba(229,231,235,0.6)",
+                boxShadow: "0 2px 16px rgba(20,33,61,0.08), 0 0 0 1px rgba(229,231,235,0.6)",
               }}
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex-1">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white mb-3" style={{ background: "#22C55E" }}>
+                <div className="flex-1 min-w-0">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-white mb-2" style={{ background: "#22C55E" }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
                   </span>
-                  <h3 className="text-[22px] sm:text-[26px] font-bold mb-1" style={{ color: "#14213D" }}>
+                  <h3 className="text-[20px] sm:text-[22px] font-bold mb-1" style={{ color: "#14213D" }}>
                     {live.name}
                   </h3>
-                  <p className="text-[14px] mb-2" style={{ color: "#6B7280" }}>
+                  <p className="text-[13px] mb-2" style={{ color: "#6B7280" }}>
                     Ch 13–22 · Finals prep
                   </p>
-                  <p className="text-[20px] font-bold" style={{ color: "#14213D" }}>
-                    $125 <span className="text-[14px] font-normal" style={{ color: "#9CA3AF" }}>for the semester</span>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-[14px] line-through" style={{ color: "#9CA3AF" }}>$250</span>
+                    <span className="text-[22px] font-bold" style={{ color: "#14213D" }}>$125</span>
+                  </div>
+                  <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
+                    First semester pricing · Access through May 2026
                   </p>
                 </div>
-                <div className="sm:w-[200px] shrink-0">
+                <div className="sm:w-[170px] shrink-0">
                   <span
-                    className="block rounded-xl px-6 py-3.5 text-[15px] font-bold text-center text-white transition-all hover:brightness-110"
+                    className="block rounded-lg px-5 py-3 text-[14px] font-bold text-center text-white transition-all hover:brightness-110"
                     style={{ background: "#CE1126" }}
                   >
                     Start Studying →
                   </span>
+                  <p className="text-[10px] text-center mt-1.5" style={{ color: "#9CA3AF" }}>
+                    One-time payment
+                  </p>
                 </div>
               </div>
             </button>
           );
         })()}
 
-        {/* Coming soon row */}
-        <p className="text-[16px] sm:text-[18px] font-medium text-center mb-5" style={{ color: "#9CA3AF" }}>
-          More courses coming soon
-        </p>
-        <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Separator + coming soon */}
+        <div className="w-full max-w-xl flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px" style={{ background: "#E5E7EB" }} />
+          <p className="text-[15px] sm:text-[16px] font-medium whitespace-nowrap" style={{ color: "#9CA3AF" }}>
+            More courses coming soon
+          </p>
+          <div className="flex-1 h-px" style={{ background: "#E5E7EB" }} />
+        </div>
+        <div className="w-full max-w-xl grid grid-cols-1 sm:grid-cols-3 gap-4">
           {COURSES.filter(c => c.status !== "live").map((c) => (
             <CourseCard
               key={c.id}
