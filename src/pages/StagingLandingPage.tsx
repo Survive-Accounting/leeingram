@@ -1,7 +1,7 @@
 // Staging clone of LandingPage.tsx — experiment here, then push changes live
 import { useState, useRef, useEffect } from "react";
 import SiteNavbar from "@/components/landing/SiteNavbar";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
@@ -90,7 +90,7 @@ export default function StagingLandingPage() {
 
       <ThisIsForYouSection onCtaClick={() => openWithCourse(liveCourse)} />
 
-      <TestimonialsSection />
+      <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <div ref={contactRef}>
         <ContactForm />
