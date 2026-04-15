@@ -10,6 +10,7 @@ import ThisIsForYouSection from "@/components/landing/ThisIsForYouSection";
 import OutcomesSection from "@/components/landing/OutcomesSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import CourseExplorerSection from "@/components/landing/CourseExplorerSection";
+import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
 
 const COURSES: CtaCourse[] = [
@@ -100,6 +101,8 @@ export default function StagingLandingPage() {
       <CourseExplorerSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
+
+      <ClosingCtaSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <div ref={contactRef}>
         <ContactForm />
