@@ -137,6 +137,7 @@ export default function CampusLandingPage() {
         campusSlug={campusSlug}
         courseId={courseId}
         courseSlug={courseSlug}
+        studentEmail={sessionStorage.getItem("student_email") || ""}
       />
     </div>
   );
