@@ -813,34 +813,49 @@ export type Database = {
       }
       campus_pricing: {
         Row: {
+          anchor_price_cents: number | null
           campus_id: string | null
           created_at: string
+          discount_label: string | null
+          discount_percent: number | null
           id: string
           is_active: boolean
           label: string | null
           price_cents: number
           product_type: string
           updated_at: string
+          valid_from: string | null
+          valid_until: string | null
         }
         Insert: {
+          anchor_price_cents?: number | null
           campus_id?: string | null
           created_at?: string
+          discount_label?: string | null
+          discount_percent?: number | null
           id?: string
           is_active?: boolean
           label?: string | null
           price_cents: number
           product_type: string
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Update: {
+          anchor_price_cents?: number | null
           campus_id?: string | null
           created_at?: string
+          discount_label?: string | null
+          discount_percent?: number | null
           id?: string
           is_active?: boolean
           label?: string | null
           price_cents?: number
           product_type?: string
           updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Relationships: [
           {
