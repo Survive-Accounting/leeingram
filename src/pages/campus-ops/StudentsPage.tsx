@@ -48,6 +48,7 @@ export default function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<UnifiedRow | null>(null);
+  const [flaggedEmails, setFlaggedEmails] = useState<Set<string>>(new Set());
 
   const fetchCampuses = useCallback(async () => {
     const { data } = await supabase.from("campuses").select("id, name").order("name");
@@ -58,6 +59,13 @@ export default function StudentsPage() {
     setLoading(true);
     const campMap: Record<string, string> = {};
     campuses.forEach(c => { campMap[c.id] = c.name; });
+
+    // Fetch unreviewed sharing warnings
+    const { data: warnings } = await (supabase as any)
+      .from("sharing_warnings")
+      .select("email")
+      .eq("is_reviewed", false);
+    setFlaggedEmails(new Set((warnings ?? []).map((w: any) => w.email)));
 
     // Fetch students with purchases
     const { data: students } = await supabase
@@ -239,7 +247,16 @@ export default function StudentsPage() {
                     <TableCell className="font-medium text-sm">{r.email}</TableCell>
                     <TableCell className="text-sm">{r.name || "—"}</TableCell>
                     <TableCell className="text-sm">{r.campus_name || "—"}</TableCell>
-                    <TableCell>{statusBadge(r.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {statusBadge(r.status)}
+                        {flaggedEmails.has(r.email) && (
+                          <Badge className="bg-destructive text-destructive-foreground text-[10px] gap-0.5">
+                            <AlertTriangle className="w-3 h-3" /> Flagged
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{r.course_interest || "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{r.last_activity ? relTime(r.last_activity) : "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{new Date(r.first_seen).toLocaleDateString()}</TableCell>
