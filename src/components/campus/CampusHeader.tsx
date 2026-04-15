@@ -12,10 +12,10 @@ export default function CampusHeader({ campusName, courseName }: CampusHeaderPro
   return (
     <>
       <Helmet>
-        <title>{campusName} | {courseName} Exam Prep | Survive Accounting</title>
+        <title>{campusName ? `${campusName} | ` : ""}{courseName} Exam Prep | Survive Accounting</title>
         <meta
           name="description"
-          content={`Practice problems and exam prep for ${courseName} at ${campusName}. Trusted by 1,000+ students.`}
+          content={`Practice problems and exam prep for ${courseName}${campusName ? ` at ${campusName}` : ""}. Trusted by 1,000+ students.`}
         />
       </Helmet>
 
@@ -51,9 +51,15 @@ export default function CampusHeader({ campusName, courseName }: CampusHeaderPro
           >
             {courseName}
           </h1>
-          <p className="mt-3 text-[14px] sm:text-[15px] tracking-wide" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
-            {campusName} · Exam prep by Lee Ingram
-          </p>
+          {campusName ? (
+            <p className="mt-3 text-[14px] sm:text-[15px] tracking-wide" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
+              {campusName} · Exam prep by Lee Ingram
+            </p>
+          ) : (
+            <p className="mt-3 text-[14px] sm:text-[15px] tracking-wide" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
+              Exam prep by Lee Ingram · Trusted by 1,000+ students
+            </p>
+          )}
         </div>
       </div>
 

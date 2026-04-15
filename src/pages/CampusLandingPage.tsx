@@ -37,7 +37,7 @@ export default function CampusLandingPage() {
   const courseId = COURSE_SLUG_MAP[courseSlug] || COURSE_SLUG_MAP["intermediate-accounting-2"];
   const courseName = COURSE_NAMES[courseSlug] || "Intermediate Accounting 2";
 
-  const [campusName, setCampusName] = useState("Your School");
+  const [campusName, setCampusName] = useState("");
   const [campusId, setCampusId] = useState<string | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [topicsByChapter, setTopicsByChapter] = useState<Record<string, Topic[]>>({});
