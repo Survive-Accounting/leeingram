@@ -4613,6 +4613,75 @@ export type Database = {
           },
         ]
       }
+      student_events: {
+        Row: {
+          campus_id: string | null
+          course_slug: string | null
+          created_at: string | null
+          device_type: string | null
+          email: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          page_url: string | null
+          referrer: string | null
+          session_id: string | null
+          student_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          campus_id?: string | null
+          course_slug?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          email?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          student_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          campus_id?: string | null
+          course_slug?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          email?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          student_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_events_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_purchases: {
         Row: {
           campus_id: string | null
