@@ -439,7 +439,8 @@ function buildWelcomeEmail(email: string, magicLink: string): string {
           <div style="text-align:center;">
             ${buttonHtml}
           </div>
-          ${magicLink ? `<p style="margin:16px 0 0;color:#888;font-size:12px;text-align:center;">This link expires in 24 hours.</p>` : ''}
+          ${magicLink ? `<p style="margin:16px 0 0;color:#888;font-size:12px;text-align:center;">This link expires in 15 minutes.</p>
+          <p style="margin:8px 0 0;color:#888;font-size:12px;text-align:center;">If it's expired, request a new one at: <a href="https://learn.surviveaccounting.com/login" style="color:#CE1126;">learn.surviveaccounting.com/login</a></p>` : ''}
           <hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0;">
           <p style="margin:0;color:#666;font-size:13px;line-height:1.5;">
             Questions? Just reply to this email — I read every message.<br>
