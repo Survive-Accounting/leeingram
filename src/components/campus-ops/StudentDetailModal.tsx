@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { X } from "lucide-react";
+import { X, AlertTriangle, Shield, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -10,6 +12,17 @@ interface Props {
   email: string;
   name: string | null;
   campusName?: string;
+}
+
+interface Warning {
+  id: string;
+  warning_type: string;
+  warning_level: string;
+  details: any;
+  is_reviewed: boolean;
+  reviewed_by: string | null;
+  action_taken: string | null;
+  created_at: string;
 }
 
 interface Purchase {
@@ -66,6 +79,7 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
   const [stats, setStats] = useState({ visits: 0, paywallHits: 0, chaptersViewed: 0, lastSeen: "" });
   const [meta, setMeta] = useState({ firstSeen: "", device: "—", referral: "Direct", sessions: 0 });
 
@@ -74,14 +88,16 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
     setLoading(true);
 
     const load = async () => {
-      const [evRes, purchRes] = await Promise.all([
+      const [evRes, purchRes, warnRes] = await Promise.all([
         (supabase as any).from("student_events").select("created_at, event_type, event_data, course_slug, session_id, device_type, utm_source").eq("email", email).order("created_at", { ascending: false }).limit(50),
         (supabase as any).from("student_purchases").select("course_slug, price_paid_cents, created_at, expires_at").eq("email", email).order("created_at", { ascending: false }),
+        (supabase as any).from("sharing_warnings").select("*").eq("email", email).order("created_at", { ascending: false }),
       ]);
 
       const allEvents: EventRow[] = evRes.data ?? [];
       setEvents(allEvents.slice(0, 20));
       setPurchases(purchRes.data ?? []);
+      setWarnings(warnRes.data ?? []);
 
       // Stats
       const sessionIds = new Set(allEvents.map(e => e.session_id).filter(Boolean));
