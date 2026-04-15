@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.audit-chapter-content]
 verify_jwt = false
+
+[functions.resend-login-link]
+verify_jwt = false
