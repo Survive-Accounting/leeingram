@@ -28,6 +28,8 @@ Deno.serve(async (req) => {
       ui_mode, is_test_mode, email_override,
     } = await req.json();
 
+    const isEmbedded = ui_mode === "embedded";
+
     if (!email || !course_id || !product_type) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: email, course_id, product_type" }),
