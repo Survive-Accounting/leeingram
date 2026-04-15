@@ -12,6 +12,7 @@ interface LandingFooterProps {
 
 export default function LandingFooter({ onScrollToCourses, onScrollToContact }: LandingFooterProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <>
@@ -39,7 +40,7 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
                 { label: "Courses", onClick: onScrollToCourses },
                 { label: "About Lee", onClick: () => setAboutOpen(true) },
                 { label: "Contact", onClick: onScrollToContact },
-                { label: "Student Login", href: "/login" },
+                { label: "Student Login", onClick: () => setLoginOpen(true) },
               ].map((item) => (
                 <div key={item.label}>
                   {item.href ? (
@@ -92,6 +93,7 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
       </footer>
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
+      <StudentLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 }
