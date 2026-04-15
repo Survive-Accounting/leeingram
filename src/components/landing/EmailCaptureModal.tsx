@@ -27,11 +27,6 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
-    // Soft .edu warning — don't block
-    if (!trimmed.endsWith(".edu")) {
-      setWarning("Tip: Use your .edu email for campus pricing.");
-    }
-
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("resolve-campus", {
@@ -43,7 +38,7 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
       if (redirectTo === "pricing") {
         navigate(`/campus/${slug}/${courseSlug}?show_pricing=true`);
       } else {
-        navigate(`/accy304`);
+        navigate(`/campus/${slug}/${courseSlug}`);
       }
     } catch {
       toast.error("Something went wrong. Try again.");
