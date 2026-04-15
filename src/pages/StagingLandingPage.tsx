@@ -1,7 +1,5 @@
 // Staging clone of LandingPage.tsx — experiment here, then push changes live
 import { useState, useRef, useEffect } from "react";
-import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
-import NotifyModal from "@/components/landing/NotifyModal";
 import SiteNavbar from "@/components/landing/SiteNavbar";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
@@ -9,8 +7,17 @@ import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import StagingHero from "@/components/landing/StagingHero";
 import ThisIsForYouSection from "@/components/landing/ThisIsForYouSection";
+import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
 
-const COURSES = [
+const COURSES: CtaCourse[] = [
+  {
+    id: "44444444-4444-4444-4444-444444444444",
+    name: "Intermediate Accounting 2",
+    availability: "",
+    cta: "Start Studying →",
+    status: "live" as const,
+    slug: "intermediate-accounting-2",
+  },
   {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Intro Accounting 2",
@@ -37,46 +44,32 @@ const COURSES = [
     status: "future" as const,
     slug: "intermediate-accounting-1",
   },
-  {
-    id: "44444444-4444-4444-4444-444444444444",
-    name: "Intermediate Accounting 2",
-    availability: "",
-    cta: "Start Studying →",
-    status: "live" as const,
-    slug: "intermediate-accounting-2",
-  },
 ];
 
-type ModalState =
-  | { type: "none" }
-  | { type: "email"; course: typeof COURSES[0]; redirectTo?: string }
-  | { type: "notify"; course: typeof COURSES[0] };
-
 export default function StagingLandingPage() {
-  const [modal, setModal] = useState<ModalState>({ type: "none" });
+  const [intent, setIntent] = useState<CtaModalIntent>({ type: "none" });
   const contactRef = useRef<HTMLDivElement>(null);
   const coursesRef = useRef<HTMLDivElement>(null);
-  const { trackEvent, trackPageView } = useEventTracking();
+  const { trackPageView } = useEventTracking();
 
   useEffect(() => { trackPageView('staging_landing'); }, [trackPageView]);
 
-  const handleCardClick = (course: typeof COURSES[0]) => {
+  const liveCourse = COURSES.find(c => c.status === "live")!;
+  const futureCourses = COURSES.filter(c => c.status !== "live");
+
+  /** Open modal with a specific course pre-selected */
+  const openWithCourse = (course: CtaCourse) => {
     if (course.status === "live") {
-      trackEvent('course_selected', { course_name: course.name, course_slug: course.slug });
-      setModal({ type: "email", course });
+      setIntent({ type: "enroll", course });
     } else {
-      trackEvent('waitlist_signup', { course_name: course.name });
-      setModal({ type: "notify", course });
+      setIntent({ type: "notify", course });
     }
   };
 
-  const handleNotifyClick = (course: typeof COURSES[0]) => {
-    trackEvent('waitlist_signup', { course_name: course.name });
-    setModal({ type: "notify", course });
+  /** Open modal at course selection step (no course context) */
+  const openCourseSelect = () => {
+    setIntent({ type: "select-course" });
   };
-
-  const liveCourse = COURSES.find(c => c.status === "live")!;
-  const futureCourses = COURSES.filter(c => c.status !== "live");
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
@@ -91,11 +84,11 @@ export default function StagingLandingPage() {
       <StagingHero
         liveCourse={liveCourse}
         futureCourses={futureCourses}
-        onLiveCourseClick={() => handleCardClick(liveCourse)}
-        onNotifyClick={handleNotifyClick}
+        onLiveCourseClick={() => openWithCourse(liveCourse)}
+        onNotifyClick={(c) => openWithCourse(c)}
       />
 
-      <ThisIsForYouSection onCtaClick={() => handleCardClick(liveCourse)} />
+      <ThisIsForYouSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <TestimonialsSection />
 
@@ -108,23 +101,12 @@ export default function StagingLandingPage() {
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
-      {modal.type === "email" && (
-        <EmailCaptureModal
-          open
-          onClose={() => setModal({ type: "none" })}
-          courseId={modal.course.id}
-          courseSlug={modal.course.slug}
-          redirectTo={modal.redirectTo}
-        />
-      )}
-      {modal.type === "notify" && (
-        <NotifyModal
-          open
-          onClose={() => setModal({ type: "none" })}
-          courseName={modal.course.name}
-          courseId={modal.course.id}
-        />
-      )}
+      <StagingCtaModal
+        intent={intent}
+        onClose={() => setIntent({ type: "none" })}
+        courses={COURSES}
+        onIntentChange={setIntent}
+      />
     </div>
   );
 }
