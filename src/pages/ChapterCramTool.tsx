@@ -1191,7 +1191,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
                         key={card.key}
                         type="button"
                        onClick={() => {
-                          if (!hasPurchasedAccess && !user) {
+                          if (isPreview || (!hasPurchasedAccess && !user)) {
                             setShowPaywallDrawer(true);
                             return;
                           }
