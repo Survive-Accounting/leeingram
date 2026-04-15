@@ -11,18 +11,18 @@ import LandingFooter from "@/components/landing/LandingFooter";
 const COURSES = [
   {
     id: "22222222-2222-2222-2222-222222222222",
-    name: "Introductory Accounting 2",
+    name: "Intro Accounting 2",
     subtext: "Managerial Principles",
-    subtitle: "Coming April 27th",
+    availability: "Coming April 27th",
     cta: "Notify Me →",
     status: "upcoming" as const,
     slug: "intro-accounting-2",
   },
   {
     id: "11111111-1111-1111-1111-111111111111",
-    name: "Introductory Accounting 1",
+    name: "Intro Accounting 1",
     subtext: "Financial Principles",
-    subtitle: "Available Fall 2026",
+    availability: "Available Fall 2026",
     cta: "Notify Me →",
     status: "future" as const,
     slug: "intro-accounting-1",
@@ -30,7 +30,7 @@ const COURSES = [
   {
     id: "33333333-3333-3333-3333-333333333333",
     name: "Intermediate Accounting 1",
-    subtitle: "Available Fall 2026",
+    availability: "Available Fall 2026",
     cta: "Notify Me →",
     status: "future" as const,
     slug: "intermediate-accounting-1",
@@ -38,7 +38,7 @@ const COURSES = [
   {
     id: "44444444-4444-4444-4444-444444444444",
     name: "Intermediate Accounting 2",
-    subtitle: "Ch 13–22 · Finals prep",
+    availability: "",
     cta: "Start Studying →",
     status: "live" as const,
     slug: "intermediate-accounting-2",
@@ -178,7 +178,7 @@ export default function LandingPage() {
               key={c.id}
               name={c.name}
               subtext={c.subtext}
-              subtitle={c.subtitle}
+              availability={c.availability}
               cta={c.cta}
               onClick={() => handleCardClick(c)}
             />
