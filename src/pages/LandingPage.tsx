@@ -107,7 +107,7 @@ export default function LandingPage() {
             style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)" }}
           >
             Your exam is coming up.<br />
-            <span style={{ color: "#CE1126", fontStyle: "italic" }}>Let's do more than survive it.</span>
+            <span style={{ fontStyle: "italic" }}>Do more than just survive it.</span>
           </h1>
           <p className="mt-3 text-[14px] sm:text-[15px] tracking-wide" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
             Online exam prep by Lee Ingram · Trusted by 1,000+ students
