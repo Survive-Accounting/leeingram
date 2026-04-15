@@ -1,10 +1,20 @@
+import { useNavigate } from "react-router-dom";
+
 interface Chapter {
   id: string;
   chapter_number: number;
   chapter_name: string;
 }
 
-export default function ChapterGrid({ chapters }: { chapters: Chapter[] }) {
+interface ChapterGridProps {
+  chapters: Chapter[];
+  campusSlug?: string;
+  courseSlug?: string;
+}
+
+export default function ChapterGrid({ chapters, campusSlug, courseSlug }: ChapterGridProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="mt-8 animate-in fade-in slide-in-from-top-2 duration-300">
       <h3 className="text-xl font-bold mb-4" style={{ color: "#14213D" }}>
@@ -14,7 +24,13 @@ export default function ChapterGrid({ chapters }: { chapters: Chapter[] }) {
         {chapters.map((ch) => (
           <div
             key={ch.id}
-            onClick={() => window.open(`/survive-this-chapter/${ch.id}?preview=true`, "_blank")}
+            onClick={() => {
+              if (campusSlug && courseSlug) {
+                navigate(`/campus/${campusSlug}/${courseSlug}/chapter-${ch.chapter_number}`);
+              } else {
+                navigate(`/survive-this-chapter/${ch.id}?preview=true`);
+              }
+            }}
             className="bg-white rounded-lg p-4 cursor-pointer transition-all hover:shadow-md"
             style={{ border: "1px solid #E5E7EB" }}
             onMouseEnter={(e) => {
