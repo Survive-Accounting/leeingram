@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { CheckCircle, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteNavbar from "@/components/landing/SiteNavbar";
+import { Button } from "@/components/ui/button";
 
 const NAVY = "#14213D";
 
@@ -18,11 +19,14 @@ export default function CheckoutComplete() {
   const sessionId = searchParams.get("session_id");
   const campusSlug = searchParams.get("campus");
   const courseSlug = searchParams.get("course");
+  const emailParam = searchParams.get("email");
 
   const [status, setStatus] = useState<"confirming" | "success" | "no_session">(
     sessionId ? "confirming" : "no_session"
   );
   const [campusName, setCampusName] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [cooldown, setCooldown] = useState(0);
 
   const courseName = courseSlug ? (COURSE_DISPLAY[courseSlug] || courseSlug) : null;
 
@@ -43,6 +47,34 @@ export default function CheckoutComplete() {
         if (data?.name) setCampusName(data.name);
       });
   }, [campusSlug]);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const handleResend = useCallback(async () => {
+    if (!emailParam || cooldown > 0) return;
+    setResendState("sending");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-login-link", {
+        body: { email: emailParam },
+      });
+
+      if (error || data?.error) {
+        setResendState("error");
+        return;
+      }
+
+      setResendState("sent");
+      setCooldown(60);
+    } catch {
+      setResendState("error");
+    }
+  }, [emailParam, cooldown]);
 
   const contextLine = [campusName, courseName].filter(Boolean).join(" · ");
 
@@ -74,9 +106,46 @@ export default function CheckoutComplete() {
               <p className="text-[15px]" style={{ color: NAVY }}>
                 Check your email for your login link.
               </p>
+              {emailParam && (
+                <p className="text-[13px] font-medium" style={{ color: "#374151" }}>
+                  Sent to: {emailParam}
+                </p>
+              )}
               <p className="text-[13px]" style={{ color: "#666666" }}>
-                It may take a minute to arrive. Check your spam folder if you don't see it.
+                This link expires in 15 minutes. Check your spam folder if you don't see it.
               </p>
+
+              {/* Resend section */}
+              {emailParam && (
+                <div className="pt-3 space-y-2">
+                  {resendState === "sent" ? (
+                    <p className="text-[13px] font-medium" style={{ color: "#22C55E" }}>
+                      ✓ New link sent! Check your email.
+                    </p>
+                  ) : resendState === "error" ? (
+                    <p className="text-[13px]" style={{ color: "#CE1126" }}>
+                      Couldn't send a new link. Try again shortly.
+                    </p>
+                  ) : null}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={resendState === "sending" || cooldown > 0}
+                    onClick={handleResend}
+                    className="text-[13px] gap-2"
+                  >
+                    {resendState === "sending" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    )}
+                    {cooldown > 0
+                      ? `Resend in ${cooldown}s`
+                      : "Resend Login Link"}
+                  </Button>
+                </div>
+              )}
             </>
           )}
 
