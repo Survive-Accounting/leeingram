@@ -31,10 +31,16 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                 About Lee Ingram
               </h2>
               <p
-                className="text-[12px] sm:text-[13px] mt-1.5 font-semibold uppercase tracking-wide"
+                className="text-[11px] sm:text-[12px] mt-1 font-semibold uppercase tracking-wide"
                 style={{ color: "#CE1126" }}
               >
-                Founder of SurviveAccounting.com
+                Founder, Survive Accounting
+              </p>
+              <p
+                className="text-[10px] sm:text-[11px] mt-1"
+                style={{ color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}
+              >
+                B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA
               </p>
             </div>
             <img
@@ -45,27 +51,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
             />
           </div>
 
-          {/* 2. Quick links */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <a
-              href="mailto:lee@surviveaccounting.com"
-              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium text-white/90 hover:text-white transition-colors"
-              style={{ border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}
-            >
-              ✉️ lee@surviveaccounting.com
-            </a>
-            <a
-              href={BOOKING_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ background: "#CE1126" }}
-            >
-              📅 Book 1-on-1 Tutoring →
-            </a>
-          </div>
-
-          {/* 3. Bio */}
+          {/* 2. Bio */}
           <div className="space-y-4">
             <p
               className="text-[17px] sm:text-[18px] font-semibold text-white"
@@ -95,25 +81,32 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
             </p>
           </div>
 
-          {/* 4. PS */}
+          {/* 3. PS */}
           <p
             className="text-[11px] sm:text-[12px] italic"
             style={{ color: "rgba(255,255,255,0.4)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}
           >
-            PS: A huge thanks to all the students who've used my tutoring content over the years, so much so that I can work full-time on growing Survive Accounting. As a lifelong teacher, it means a lot.
+            PS: A huge thanks to all the students who've enjoyed my tutoring content over the years. As a lifelong teacher, it means a lot.
           </p>
 
-          {/* 5. Credentials */}
-          <div
-            className="pt-2"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <p
-              className="text-[10px] sm:text-[11px]"
-              style={{ color: "rgba(255,255,255,0.35)", fontFamily: "Inter, sans-serif" }}
+          {/* 4. Quick links */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a
+              href="mailto:lee@surviveaccounting.com"
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium text-white/90 hover:text-white transition-colors"
+              style={{ border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}
             >
-              B.A. &amp; M.Acc. in Accounting · University of Mississippi · 3.75 GPA
-            </p>
+              ✉️ lee@surviveaccounting.com
+            </a>
+            <a
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: "#CE1126" }}
+            >
+              📅 Book 1-on-1 Tutoring →
+            </a>
           </div>
         </div>
       </DialogContent>
