@@ -188,6 +188,61 @@ export default function StudentDetailModal({ open, onClose, email, name, campusN
               )}
             </div>
 
+            {/* Sharing Warnings */}
+            {warnings.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-destructive" /> Sharing Warnings
+                </h3>
+                <div className="space-y-2">
+                  {warnings.map((w) => {
+                    const levelIcon = w.warning_level === "high" ? <ShieldAlert className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />;
+                    const levelColor = w.warning_level === "high" ? "bg-destructive" : w.warning_level === "medium" ? "bg-orange-500" : "bg-yellow-500";
+                    return (
+                      <div key={w.id} className="rounded-lg border p-3 text-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            {levelIcon}
+                            <span className="font-medium capitalize">{w.warning_type.replace(/_/g, " ")}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Badge className={`${levelColor} text-[10px] capitalize`}>{w.warning_level}</Badge>
+                            <Badge variant={w.is_reviewed ? "secondary" : "destructive"} className="text-[10px]">
+                              {w.is_reviewed ? "Reviewed" : "Unreviewed"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {w.details?.device_count ? `${w.details.device_count} devices registered` : w.details?.flag_reason || "—"}
+                          {" · "}{fmtDate(w.created_at)}
+                        </p>
+                        {w.action_taken && <p className="text-muted-foreground">Action: {w.action_taken}</p>}
+                        {!w.is_reviewed && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={async () => {
+                              await (supabase as any).from("sharing_warnings").update({
+                                is_reviewed: true,
+                                reviewed_by: "admin",
+                                reviewed_at: new Date().toISOString(),
+                                action_taken: "none",
+                              }).eq("id", w.id);
+                              setWarnings(prev => prev.map(x => x.id === w.id ? { ...x, is_reviewed: true, reviewed_by: "admin", action_taken: "none" } : x));
+                              toast.success("Warning marked as reviewed");
+                            }}
+                          >
+                            Mark as Reviewed
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Activity Timeline */}
             {events.length > 0 && (
               <div>
