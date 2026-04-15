@@ -2,16 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
+import StudentLoginModal from "@/components/landing/StudentLoginModal";
 
 const NAVY = "#14213D";
 
-interface SiteNavbarProps {
-  onCoursesClick?: () => void;
-}
-
-export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
+export default function SiteNavbar() {
   const navigate = useNavigate();
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -20,15 +18,6 @@ export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const handleCoursesClick = () => {
-    setMenuOpen(false);
-    if (onCoursesClick) {
-      onCoursesClick();
-    } else {
-      navigate("/");
-    }
-  };
 
   const navLinks = [
     { label: "About Lee", onClick: () => { setAboutOpen(true); setMenuOpen(false); } },
@@ -45,7 +34,6 @@ export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
         }}
       >
         <div className="mx-auto max-w-[900px] h-full px-4 sm:px-6 flex items-center justify-between">
-          {/* Logo — always links home */}
           <button
             onClick={() => navigate("/")}
             className="text-[17px] text-white tracking-tight hover:opacity-90 transition-opacity"
@@ -56,7 +44,6 @@ export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
             <sup className="text-[9px] font-normal ml-0.5 opacity-60">™</sup>
           </button>
 
-          {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-6">
             {navLinks.map((l) => (
               <button
@@ -69,15 +56,14 @@ export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
               </button>
             ))}
             <button
-              onClick={handleCoursesClick}
+              onClick={() => setLoginOpen(true)}
               className="text-[13px] font-semibold text-white px-5 py-2 rounded-lg transition-opacity hover:opacity-90"
-              style={{ background: "#CE1126", fontFamily: "Inter, sans-serif" }}
+              style={{ background: NAVY, fontFamily: "Inter, sans-serif", border: "1px solid rgba(255,255,255,0.25)" }}
             >
-              Courses
+              Student Login
             </button>
           </nav>
 
-          {/* Mobile hamburger */}
           <button
             className="sm:hidden text-white/70 hover:text-white"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -86,7 +72,6 @@ export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
           </button>
         </div>
 
-        {/* Mobile menu */}
         {menuOpen && (
           <div
             className="sm:hidden px-4 pb-4 pt-2 space-y-1"
@@ -103,20 +88,20 @@ export default function SiteNavbar({ onCoursesClick }: SiteNavbarProps) {
               </button>
             ))}
             <button
-              onClick={handleCoursesClick}
+              onClick={() => { setLoginOpen(true); setMenuOpen(false); }}
               className="block w-full text-center text-[14px] font-semibold text-white py-2.5 mt-2 rounded-lg"
-              style={{ background: "#CE1126", fontFamily: "Inter, sans-serif" }}
+              style={{ background: NAVY, fontFamily: "Inter, sans-serif", border: "1px solid rgba(255,255,255,0.25)" }}
             >
-              Courses
+              Student Login
             </button>
           </div>
         )}
       </header>
 
-      {/* Spacer for fixed header */}
       <div style={{ height: 64 }} />
 
       <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
+      <StudentLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 }
