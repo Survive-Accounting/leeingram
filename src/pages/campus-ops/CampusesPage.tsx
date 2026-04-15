@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus } from "lucide-react";
+import CampusDetailModal from "@/components/campus-ops/CampusDetailModal";
 
 interface CampusRow {
   id: string;
@@ -19,6 +20,7 @@ interface CampusRow {
 export default function CampusesPage() {
   const [campuses, setCampuses] = useState<CampusRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<CampusRow | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,7 +32,6 @@ export default function CampusesPage() {
 
       if (!rows) { setLoading(false); return; }
 
-      // fetch student counts per campus
       const { data: counts } = await supabase
         .from("students")
         .select("campus_id")
@@ -79,7 +80,7 @@ export default function CampusesPage() {
                 <TableRow
                   key={c.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/campus-ops/campuses/${c.slug}`)}
+                  onClick={() => setSelected(c)}
                 >
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground text-xs font-mono">{c.slug}</TableCell>
@@ -98,6 +99,19 @@ export default function CampusesPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {selected && (
+        <CampusDetailModal
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          campusId={selected.id}
+          campusName={selected.name}
+          campusSlug={selected.slug}
+          domains={selected.domains}
+          isActive={selected.is_active}
+          createdAt={selected.created_at}
+        />
       )}
     </div>
   );
