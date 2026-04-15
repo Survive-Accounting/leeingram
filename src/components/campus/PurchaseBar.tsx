@@ -34,11 +34,14 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
           campus_id: campusId,
           course_id: courseId,
           product_type: "semester_pass",
+          return_url: window.location.origin,
         },
       });
       if (error) throw error;
       if (data?.url) {
         window.location.href = data.url;
+      } else {
+        toast.error("Couldn't start checkout. Try again.");
       }
     } catch {
       toast.error("Couldn't start checkout. Try again.");

@@ -111,9 +111,10 @@ Deno.serve(async (req) => {
         ? `${discountLabel} · Was $${Math.round(originalCents / 100)}`
         : undefined;
 
+      const returnUrl = `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
-        ui_mode: "embedded",
         line_items: [{
           price_data: {
             currency: "usd",
@@ -126,7 +127,8 @@ Deno.serve(async (req) => {
           quantity: 1,
         }],
         customer_email: email,
-        return_url: `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: returnUrl,
+        cancel_url: `${return_url || "https://learn.surviveaccounting.com"}/campus/${resolvedSlug || "general"}/${campus_slug || "intermediate-accounting-2"}`,
         metadata: {
           email,
           course_id,
@@ -140,7 +142,7 @@ Deno.serve(async (req) => {
       });
 
       return new Response(
-        JSON.stringify({ clientSecret: session.client_secret }),
+        JSON.stringify({ url: session.url }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -176,12 +178,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    const returnUrl = `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      ui_mode: "embedded",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email,
-      return_url: `${return_url || "https://learn.surviveaccounting.com"}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: returnUrl,
+      cancel_url: `${return_url || "https://learn.surviveaccounting.com"}`,
       metadata: {
         email,
         course_id,
@@ -193,7 +197,7 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ clientSecret: session.client_secret }),
+      JSON.stringify({ url: session.url }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
