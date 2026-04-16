@@ -149,6 +149,12 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               >
                 Start Studying →
               </span>
+
+              {/* Pricing */}
+              <div className="mt-3 text-center">
+                <p className="text-[14px] font-semibold" style={{ color: NAVY }}>$99 one-time</p>
+                <p className="text-[11px]" style={{ color: "#9CA3AF" }}>Access through finals week</p>
+              </div>
             </button>
 
             {/* Separator */}
