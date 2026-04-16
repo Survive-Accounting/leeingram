@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Brain } from "lucide-react";
+import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Brain, MessageCircle, X, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -426,12 +427,6 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
           >
             Click around — this is the real course.
-          </p>
-          <p
-            className="text-[13px] sm:text-[14px]"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            No demos. This is exactly what you'll use.
           </p>
         </div>
 
