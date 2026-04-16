@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, ChevronRight } from "lucide-react";
@@ -8,6 +8,13 @@ import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
+
+const TRANSITION_MESSAGES = [
+  "Matching you to your course...",
+  "Getting things set up...",
+  "Pulling the right material...",
+  "Making sure you're in the right place...",
+];
 
 export interface CtaCourse {
   id: string;
@@ -21,9 +28,9 @@ export interface CtaCourse {
 
 export type CtaModalIntent =
   | { type: "none" }
-  | { type: "select-course" }                         // step 1: pick a course
-  | { type: "enroll"; course: CtaCourse }              // step 2: email for live course
-  | { type: "notify"; course: CtaCourse };             // lightweight notify for upcoming
+  | { type: "select-course" }
+  | { type: "enroll"; course: CtaCourse }
+  | { type: "notify"; course: CtaCourse };
 
 interface StagingCtaModalProps {
   intent: CtaModalIntent;
@@ -37,6 +44,9 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [transitionMsg, setTransitionMsg] = useState(0);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const { trackEvent } = useEventTracking();
 
   const open = intent.type !== "none";
@@ -48,9 +58,30 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
         setEmail("");
         setLoading(false);
         setNotifySuccess(false);
+        setTransitioning(false);
+        setTransitionMsg(0);
+        setPendingRoute(null);
       }, 200);
     }
   }, [open]);
+
+  // Rotate transition messages
+  useEffect(() => {
+    if (!transitioning) return;
+    const interval = setInterval(() => {
+      setTransitionMsg((prev) => (prev + 1) % TRANSITION_MESSAGES.length);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [transitioning]);
+
+  // Navigate after transition
+  useEffect(() => {
+    if (!pendingRoute || !transitioning) return;
+    const timer = setTimeout(() => {
+      navigate(pendingRoute);
+    }, 2400);
+    return () => clearTimeout(timer);
+  }, [pendingRoute, transitioning, navigate]);
 
   const handleCourseSelect = (course: CtaCourse) => {
     trackEvent("course_selected", { course_name: course.name, course_slug: course.slug });
@@ -84,10 +115,12 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
         sessionStorage.setItem("sa_test_mode", "true");
         sessionStorage.setItem("sa_email_override", data.email_override || "");
       }
-      navigate(`/campus/${slug}/${intent.course.slug}`);
+      // Start transition instead of navigating immediately
+      setLoading(false);
+      setTransitioning(true);
+      setPendingRoute(`/campus/${slug}/${intent.course.slug}`);
     } catch {
       toast.error("Something went wrong. Try again.");
-    } finally {
       setLoading(false);
     }
   };
