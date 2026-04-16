@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       let hipoResult: { name: string } | null = null;
       try {
         const hipoResp = await fetch(
-          `https://universities.hipolabs.com/search?domain=${encodeURIComponent(domain)}`,
+          `http://universities.hipolabs.com/search?domain=${encodeURIComponent(domain)}`,
           { signal: AbortSignal.timeout(5000) }
         );
         if (hipoResp.ok) {
