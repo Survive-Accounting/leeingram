@@ -40,7 +40,7 @@ export default function ClosingCtaSection({ onCtaClick }: ClosingCtaSectionProps
           className="mt-5 text-[13px]"
           style={{ color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}
         >
-          Built from real tutoring. Designed to actually help.
+          Built by a real tutor. Designed to actually help.
         </p>
       </div>
     </section>
