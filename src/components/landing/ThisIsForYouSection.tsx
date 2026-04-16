@@ -13,32 +13,32 @@ const PAIN_POINTS: PainPoint[] = [
   {
     icon: Brain,
     title: "You feel lost during lectures",
-    text: "Your professor moves so fast that you don't know what you're even learning.",
+    text: "The professor is explaining it… but it's just not clicking.",
   },
   {
     icon: Clock,
-    title: "You're cramming (hard) before exams",
-    text: "You wait until the last minute and hope something clicks, until it doesn't.",
+    title: "You're cramming before exams",
+    text: "You wait until the last minute and hope something sticks.",
   },
   {
     icon: PenLine,
     title: "Homework problems don't make sense",
-    text: 'You look at solutions and still don\'t understand the "why" behind the steps.',
+    text: "You look at the solution and still don't understand the steps.",
   },
   {
     icon: RotateCw,
     title: "You memorize instead of understanding",
-    text: "Things feel familiar — but you can't apply them on exams.",
+    text: "It feels familiar — until you have to actually do it.",
   },
   {
     icon: Target,
-    title: "You don't know what will be tested",
-    text: "It feels like guessing what actually matters vs. what doesn't.",
+    title: "You don't know what to focus on",
+    text: "Everything feels important… which makes it hard to know where to start.",
   },
   {
     icon: AlertCircle,
     title: "You've already struggled on a test",
-    text: "And you don't want to go through that again.",
+    text: "And you want to turn things around before the next one.",
   },
 ];
 
@@ -51,20 +51,22 @@ export default function ThisIsForYouSection({ onCtaClick }: ThisIsForYouSectionP
     <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: "#F8F8FA" }}>
       <div className="mx-auto max-w-[800px]">
         {/* Section Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h2
             className="text-[24px] sm:text-[30px] font-bold tracking-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
             This is for you if...
           </h2>
-          <p
-            className="mt-2 text-[14px] sm:text-[15px]"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            You're not alone — most students feel this way before exams.
-          </p>
         </div>
+
+        {/* Intro text above cards */}
+        <p
+          className="text-center mb-10 text-[14px] sm:text-[15px]"
+          style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+        >
+          You're not alone — this is basically every accounting student at some point.
+        </p>
 
         {/* Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
@@ -115,7 +117,7 @@ export default function ThisIsForYouSection({ onCtaClick }: ThisIsForYouSectionP
           >
             You don't need more studying.
             <br />
-            You need the <em style={{ fontStyle: "italic" }}>right</em> kind of studying.
+            You need better direction.
           </p>
         </div>
 
