@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Brain } from "lucide-react";
+import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Brain, MessageCircle, X, Send } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -153,8 +154,11 @@ function ensureHighlightStyle() {
 export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSectionProps) {
   const [selectedCourseId, setSelectedCourseId] = useState(COURSE_DATA[0].id);
   const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null);
-  const [expandedPractice, setExpandedPractice] = useState<string | null>(null); // chapterId that has practice expanded
+  const [expandedPractice, setExpandedPractice] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [questionOpen, setQuestionOpen] = useState(false);
+  const [questionText, setQuestionText] = useState("");
+  const [questionSending, setQuestionSending] = useState(false);
   const previewPaneRef = useRef<HTMLDivElement>(null);
 
   const selectedCourse = useMemo(
@@ -359,9 +363,9 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
     const totalProblems = (groupedProblems.be?.length || 0) + (groupedProblems.ex?.length || 0) + (groupedProblems.p?.length || 0);
 
     return (
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div ref={previewPaneRef} className="p-5 space-y-6">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <ScrollArea className="flex-1">
+          <div ref={previewPaneRef} className="p-5 space-y-6 pb-20">
             {/* Chapter header */}
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
@@ -379,6 +383,14 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 Chapter Cram Tools
               </p>
               {renderCramPreview()}
+              {/* Paywall signal */}
+              <div
+                className="mt-3 rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
+                style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
+              >
+                <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
+                Full interactive cram tools available after purchase
+              </div>
             </div>
 
             {/* Practice Problems */}
@@ -403,11 +415,57 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                   <div id="section-p">{renderProblemList("p", "Problems")}</div>
                 </div>
               )}
+              {/* Paywall signal */}
+              <div
+                className="mt-3 rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
+                style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
+              >
+                <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
+                Unlock full walkthroughs and step-by-step explanations
+              </div>
             </div>
           </div>
         </ScrollArea>
+
+        {/* Sticky CTA inside preview pane */}
+        <div
+          className="px-4 py-3 flex items-center justify-between gap-3"
+          style={{ borderTop: "1px solid #E5E7EB", background: "rgba(248,249,250,0.95)", backdropFilter: "blur(8px)" }}
+        >
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold" style={{ color: NAVY }}>
+              <span className="text-[12px] line-through mr-1.5" style={{ color: "#9CA3AF" }}>$250</span>
+              $99 one-time
+            </p>
+            <p className="text-[11px]" style={{ color: "#9CA3AF" }}>Access through finals week</p>
+          </div>
+          <button
+            onClick={onCtaClick}
+            className="shrink-0 rounded-lg px-5 py-2.5 text-[13px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.97]"
+            style={{ background: RED, boxShadow: "0 2px 8px rgba(206,17,38,0.2)" }}
+          >
+            Get Access →
+          </button>
+        </div>
       </div>
     );
+  };
+
+  const handleQuestionSubmit = async () => {
+    if (!questionText.trim()) return;
+    setQuestionSending(true);
+    try {
+      await supabase.functions.invoke("send-contact-notification", {
+        body: { name: "Course Preview Visitor", email: "anonymous@preview", message: questionText.trim() },
+      });
+      toast.success("Question sent — we'll get back to you!");
+      setQuestionText("");
+      setQuestionOpen(false);
+    } catch {
+      toast.error("Couldn't send. Try again.");
+    } finally {
+      setQuestionSending(false);
+    }
   };
 
   return (
@@ -427,23 +485,26 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
           >
             Click around — this is the real course.
           </p>
-          <p
-            className="text-[13px] sm:text-[14px]"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            No demos. This is exactly what you'll use.
-          </p>
         </div>
 
         {/* Explorer */}
         <div
-          className="rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-hidden relative"
           style={{
             background: "#fff",
             boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
             border: "1px solid rgba(0,0,0,0.06)",
           }}
         >
+          {/* Have questions? link */}
+          <button
+            onClick={() => setQuestionOpen(true)}
+            className="absolute top-3 right-4 z-10 flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:underline"
+            style={{ color: "#6B7280" }}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Have questions?
+          </button>
           <div className="flex flex-col lg:flex-row" style={{ minHeight: 520 }}>
             {/* Left sidebar */}
             <div
@@ -608,6 +669,45 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             Start Studying →
           </button>
         </div>
+
+        {/* Questions modal */}
+        {questionOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+            <div
+              className="relative w-full max-w-sm rounded-2xl p-6 space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
+              style={{ background: "#fff", boxShadow: "0 25px 60px -12px rgba(20,33,61,0.25)" }}
+            >
+              <button
+                onClick={() => setQuestionOpen(false)}
+                className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4" style={{ color: "#9CA3AF" }} />
+              </button>
+              <div>
+                <h3 className="text-[18px] font-semibold" style={{ color: NAVY }}>Have a question?</h3>
+                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>Ask anything — I'll get back to you personally.</p>
+              </div>
+              <textarea
+                value={questionText}
+                onChange={(e) => setQuestionText(e.target.value)}
+                placeholder="What would you like to know?"
+                rows={4}
+                className="w-full rounded-xl px-4 py-3 text-[14px] outline-none resize-none transition-all"
+                style={{ background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY }}
+                onFocus={(e) => { e.target.style.borderColor = NAVY; }}
+                onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; }}
+              />
+              <button
+                onClick={handleQuestionSubmit}
+                disabled={questionSending || !questionText.trim()}
+                className="w-full rounded-xl text-white text-[14px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:brightness-110"
+                style={{ minHeight: 44, background: NAVY }}
+              >
+                {questionSending ? "Sending…" : <><Send className="w-4 h-4" /> Send Question</>}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
