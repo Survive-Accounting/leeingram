@@ -130,15 +130,12 @@ export default function VaHome() {
       {/* Callout Box */}
       <div className="max-w-2xl mx-auto -mt-8 relative z-10 px-4">
         <div className="bg-white rounded-xl shadow-md border px-8 py-7 text-center" style={{ borderColor: "#E8E4DF" }}>
-          <p className="text-[11px] tracking-[0.18em] uppercase mb-2" style={{ color: RED }}>
-            Survive Accounting — Team Hub
-          </p>
-          <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "#4B5563" }}>
-            I'm excited to build this together and create something that genuinely helps students succeed in accounting.
-          </p>
-          <p className="text-sm leading-relaxed max-w-md mx-auto mt-2" style={{ color: "#4B5563" }}>
-            Succeed in learning accounting, too.
-          </p>
+           <p className="text-[11px] tracking-[0.18em] uppercase mb-2" style={{ color: RED }}>
+             Survive Accounting — Team Hub
+           </p>
+           <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "#4B5563" }}>
+             Thanks for joining the team. I'm excited to build this platform together!
+           </p>
         </div>
       </div>
 
