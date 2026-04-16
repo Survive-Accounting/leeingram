@@ -16,6 +16,7 @@ import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser
 import { QAToolboxModal } from "@/components/QAToolboxModal";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+import { STRIPE_PK_LIVE, STRIPE_PK_TEST } from "@/lib/stripeConfig";
 
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
@@ -449,8 +450,7 @@ const EMAIL_BYPASS_LIST = [
   "jking.cim@gmail.com",
 ];
 
-const STRIPE_PK_LIVE = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_LIVE || "";
-const STRIPE_PK_TEST = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST || "";
+
 
 function TieredPaywallCard({
   theme,
