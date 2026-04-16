@@ -8,19 +8,19 @@ const STEPS = [
     number: "1",
     icon: BookOpen,
     title: "Choose your course",
-    text: "We'll match you to the exact material you need.",
+    text: "We'll point you to the material that matches what you're learning.",
   },
   {
     number: "2",
     icon: Layers,
-    title: "Study what actually matters",
-    text: "Use targeted videos, problems, and tools built around real exams.",
+    title: "Work through targeted explanations and problems",
+    text: "Use videos, practice, and breakdowns to go deeper than lectures.",
   },
   {
     number: "3",
     icon: CheckCircle2,
-    title: "Walk into your exam confident",
-    text: "You'll know what to expect — and how to solve it.",
+    title: "Build real understanding over time",
+    text: "So exams feel more familiar — and less overwhelming.",
   },
 ];
 
