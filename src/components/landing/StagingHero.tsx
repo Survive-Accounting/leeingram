@@ -86,25 +86,31 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
                 className="text-[14px] sm:text-[15px] leading-[1.7]"
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif" }}
               >
-                I built this platform from years of real tutoring sessions — helping students go from completely lost to actually getting it.
+                Since 2015, I've helped students go from feeling completely lost to actually getting it.
               </p>
               <p
                 className="mt-4 text-[14px] sm:text-[15px] leading-[1.7]"
                 style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
               >
-                It's not a replacement for your class — it's what makes things finally click.
+                I built Survive Accounting to make that kind of help more accessible.
+              </p>
+              <p
+                className="mt-4 text-[14px] sm:text-[15px] leading-[1.7] font-semibold"
+                style={{ color: "rgba(255,255,255,0.9)", fontFamily: "Inter, sans-serif" }}
+              >
+                This isn't a replacement for your class — it's what makes it finally click.
               </p>
 
               {/* Value bullets */}
               <ul className="mt-5 space-y-3">
                 {[
-                  "Built for students who want to do well — not just get by",
-                  "Helps you actually understand what you're doing",
-                  "Helps you stop wasting time on the wrong material",
-                ].map((text) => (
-                  <li key={text} className="flex items-start gap-2.5 text-[12px] sm:text-[13px]" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}>
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} />
-                    {text}
+                  { text: "Built for students who want to do well, not just survive", bold: true },
+                  { text: "Helps you actually understand what you're doing", bold: false },
+                  { text: "Helps you stop wasting time on the wrong material", bold: false },
+                ].map((item) => (
+                  <li key={item.text} className={`flex items-start gap-2.5 text-[12px] sm:text-[13px] ${item.bold ? 'font-semibold' : ''}`} style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}>
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.5)" }} />
+                    {item.text}
                   </li>
                 ))}
               </ul>
