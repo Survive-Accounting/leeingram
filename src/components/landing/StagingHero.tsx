@@ -46,7 +46,7 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
       </div>
 
       {/* Content — 2 column desktop, stacked mobile */}
-      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-12 sm:pt-16 pb-14 sm:pb-20">
+      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
         <div className="flex flex-col md:flex-row gap-10 md:gap-14 items-start">
 
           {/* LEFT — Message */}
@@ -110,19 +110,13 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
                 This isn't a replacement for your class — it's what makes it finally click.
               </p>
 
-              {/* Value bullets */}
-              <ul className="mt-5 space-y-3">
-                {[
-                  { text: "Built for students who want to do well, not just survive", bold: true },
-                  { text: "Helps you actually understand what you're doing", bold: false },
-                  { text: "Helps you stop wasting time on the wrong material", bold: false },
-                ].map((item) => (
-                  <li key={item.text} className={`flex items-start gap-2.5 text-[12px] sm:text-[13px] ${item.bold ? 'font-semibold' : ''}`} style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}>
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.5)" }} />
-                    {item.text}
-                  </li>
-                ))}
-              </ul>
+              {/* Single value prop */}
+              <p
+                className="mt-5 text-[13px] sm:text-[14px] leading-[1.6]"
+                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
+              >
+                Built for students who want to do well, not just survive.
+              </p>
             </div>
           </div>
 
