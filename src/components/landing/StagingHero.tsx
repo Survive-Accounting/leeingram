@@ -84,10 +84,11 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
 
             {/* Block 3 — Message + Value (subtle container) */}
             <div
-              className="mt-7 rounded-xl px-5 py-5"
+              className="mt-7 rounded-2xl px-6 py-6"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.03)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.04)",
               }}
             >
               <p
