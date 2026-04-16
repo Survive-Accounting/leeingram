@@ -136,8 +136,6 @@ export default function VaHome() {
            <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "#4B5563" }}>
              Thanks for joining the team. I'm excited to build this platform together!
            </p>
-            Succeed in learning accounting, too.
-          </p>
         </div>
       </div>
 
