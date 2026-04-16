@@ -136,8 +136,8 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="max-w-sm p-0 [&>button]:hidden overflow-hidden"
-        style={{ borderRadius: 16 }}
+        className="max-w-sm p-0 [&>button]:hidden overflow-hidden animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
+        style={{ borderRadius: 20, boxShadow: "0 25px 60px -12px rgba(20,33,61,0.25), 0 0 0 1px rgba(0,0,0,0.04)" }}
       >
         {/* ── Step 1: Course Selection ── */}
         {intent.type === "select-course" && (
@@ -244,12 +244,27 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                     {intent.course.name}
                   </span>
                 </div>
-                <h2
-                  className="text-[18px] font-semibold mt-3"
-                  style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                >
-                  Enter your school email
-                </h2>
+
+                {/* Lee avatar + title */}
+                <div className="flex items-center gap-3 mt-4">
+                  <img
+                    src="https://i.ibb.co/9HhgJrS/Lee-Ingram-Headshot.jpg"
+                    alt="Lee Ingram"
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
+                    style={{ border: "2px solid #E5E7EB" }}
+                  />
+                  <div>
+                    <h2
+                      className="text-[18px] font-semibold leading-tight"
+                      style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                    >
+                      Enter your school email
+                    </h2>
+                    <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+                      I'll match you to your course and get you to the right material.
+                    </p>
+                  </div>
+                </div>
               </div>
               <input
                 type="email"
@@ -270,11 +285,30 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
               </button>
+
+              {/* Microcopy */}
+              <p className="text-[11px] text-center" style={{ color: "#9CA3AF" }}>
+                No spam. Just access to your course.
+              </p>
+
+              {/* Secondary link */}
+              <p className="text-[12px] text-center">
+                <button
+                  type="button"
+                  className="font-medium hover:underline"
+                  style={{ color: "#6B7280" }}
+                  onClick={() => {
+                    toast.info("Contact lee@surviveaccounting.com for gift purchases.");
+                  }}
+                >
+                  Buying for someone else?
+                </button>
+              </p>
             </form>
           </div>
         )}
@@ -339,7 +373,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+                  className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                   style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
                 >
                   {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Notify Me →"}
