@@ -259,8 +259,8 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
         )}
 
         {/* ── Step 2: Enroll (live course) ── */}
-        {intent.type === "enroll" && (
-          <div className="p-6">
+        {intent.type === "enroll" && !transitioning && (
+          <div className="p-6 animate-in fade-in-0 duration-200">
             <form onSubmit={handleEnrollSubmit} className="space-y-4">
               <div>
                 <button
@@ -321,7 +321,14 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Finding your course...
+                  </>
+                ) : (
+                  "Continue →"
+                )}
               </button>
 
               {/* Microcopy */}
@@ -343,6 +350,33 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 </button>
               </p>
             </form>
+          </div>
+        )}
+
+        {/* ── Transition State ── */}
+        {transitioning && (
+          <div className="p-8 flex flex-col items-center justify-center text-center space-y-5 animate-in fade-in-0 duration-300" style={{ minHeight: 220 }}>
+            <div className="relative">
+              <div
+                className="w-12 h-12 rounded-full animate-spin"
+                style={{
+                  border: "3px solid #E5E7EB",
+                  borderTopColor: NAVY,
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p
+                key={transitionMsg}
+                className="text-[16px] font-semibold animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                {TRANSITION_MESSAGES[transitionMsg]}
+              </p>
+              <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
+                Hang tight — this just takes a second.
+              </p>
+            </div>
           </div>
         )}
 
