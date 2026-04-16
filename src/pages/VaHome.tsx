@@ -44,7 +44,7 @@ const FUNCTIONAL_AREAS = [
   "Bookkeeping & Financials",
 ];
 
-const CURRENT_VIDEO_ID = "dQw4w9WgXcQ";
+const CURRENT_VIDEO_ID = "";
 
 /* ── Sortable Item ─────────────────────────────────── */
 function SortableItem({ id, index }: { id: string; index: number }) {
@@ -188,6 +188,16 @@ function MeetingToggle({ number, title, date, items }: { number: number; title: 
 
 /* ── Video Embed ───────────────────────────────────── */
 function VideoEmbed({ videoId }: { videoId: string }) {
+  if (!videoId) {
+    return (
+      <div className="aspect-video rounded-lg overflow-hidden border flex items-center justify-center" style={{ borderColor: "#E5E2DD", background: "#F3F4F6" }}>
+        <div className="text-center space-y-2">
+          <Video className="h-8 w-8 mx-auto" style={{ color: "#CBD5E1" }} />
+          <p className="text-sm" style={{ color: "#9CA3AF" }}>Video coming soon</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="aspect-video rounded-lg overflow-hidden border" style={{ borderColor: "#E5E2DD" }}>
       <iframe
